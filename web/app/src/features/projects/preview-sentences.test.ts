@@ -142,6 +142,47 @@ describe("prj_03 the preview of a refused move and of what this version cannot s
   });
 });
 
+describe("prj_03 what changes in the same way is said once", () => {
+  it("puts the fields that go from one level to another into one sentence, and keeps the others apart", () => {
+    const many = preview([
+      {
+        person: cleo,
+        projects: [
+          {
+            project: web,
+            now: viewer,
+            after: viewer,
+            gains: [],
+            loses: [],
+            fields: [
+              { field: word("title"), before: word("can-change"), after: word("hidden") },
+              { field: word("status"), before: word("can-change"), after: word("hidden") },
+              { field: word("labels"), before: word("can-see"), after: word("hidden") },
+            ],
+            people: [],
+          },
+        ],
+      },
+    ]);
+    expect(sentencesOfPreview(many)).toEqual([
+      t("projects.line-fields-many", {
+        person: "Cleo",
+        project: "Website",
+        before: "can-change",
+        after: "hidden",
+        fields: "title and status",
+      }),
+      t("projects.line-field", {
+        person: "Cleo",
+        project: "Website",
+        field: "labels",
+        before: "can-see",
+        after: "hidden",
+      }),
+    ]);
+  });
+});
+
 describe("prj_03 the keys of the sentences", () => {
   it("name whose change in which project a sentence is, not the words of the sentence", () => {
     const same = [

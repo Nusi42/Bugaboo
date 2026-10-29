@@ -47,3 +47,26 @@ test("ux_7_4 on a computer a main button is as wide as its words", async ({ page
     ),
   );
 });
+
+/** How wide the main buttons of a page are, in pixels, each rounded. */
+function widthsOfMainButtons(area: Locator): Promise<readonly number[]> {
+  return area.evaluate((node) => {
+    const widths: number[] = [];
+    for (const button of node.querySelectorAll("[data-part='button'][data-variant~='primary']")) {
+      widths.push(Math.round(button.getBoundingClientRect().width));
+    }
+    return widths;
+  });
+}
+
+test("ux_7_4 on a phone the main buttons of the security page have one width", async ({ page }) => {
+  test.skip(layoutOf(page) !== "phone", "a computer has buttons as wide as their words");
+  await signIn(page, sampleAdministrator());
+  await page.goto(paths.security);
+  await expect(
+    page.locator("main [data-part='button'][data-variant~='primary']").first(),
+  ).toBeVisible();
+  const widths = await widthsOfMainButtons(page.locator("main"));
+  expect(widths.length).toBeGreaterThan(1);
+  expect([...new Set(widths)], "the widths of the main buttons").toHaveLength(1);
+});

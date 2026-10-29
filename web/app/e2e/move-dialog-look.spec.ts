@@ -54,6 +54,9 @@ test("ux_6 the question Move stays on the screen, its title and answers in view 
   const titleBox = await boxOf(title);
   expect(titleBox.y).toBeGreaterThanOrEqual(box.y);
   expect(titleBox.y).toBeLessThan(box.y + 80);
+  // A line under the title and a line above the answers end what scrolls between them.
+  await expect(title).toHaveCSS("border-bottom-width", "1px");
+  await expect(partIn(dialog, "confirm.actions")).toHaveCSS("border-top-width", "1px");
   const answers = await boxOf(partIn(dialog, "confirm.actions"));
   const bodyBox = await boxOf(body);
   expect(bodyBox.y + bodyBox.height).toBeLessThanOrEqual(answers.y + 0.5);

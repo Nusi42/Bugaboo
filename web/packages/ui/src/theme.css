@@ -2842,11 +2842,6 @@ optgroup {
   background: var(--bg-surface);
 }
 
-[data-part="overlay.modal"][data-variant~="full"] [data-part="window.title-bar"] {
-  min-height: var(--size-bar);
-  background: var(--bg-canvas);
-}
-
 [data-part="window.title"] {
   flex: 1;
   min-width: 0;
@@ -2897,6 +2892,25 @@ optgroup {
   width: auto;
   padding: 0 var(--pad-control);
   gap: var(--space-1);
+}
+
+[data-part="overlay.modal"][data-variant~="full"] [data-part="window.title-bar"] {
+  gap: var(--space-3);
+  min-height: var(--size-bar);
+  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
+  border-radius: 0;
+  background: var(--bg-canvas);
+}
+
+[data-part="overlay.modal"][data-variant~="full"] [data-part="window.title"] {
+  padding: 0;
+  line-height: var(--lh-tight);
+}
+
+[data-part="overlay.modal"][data-variant~="full"]
+  [data-part="window.control"][data-variant~="back"] {
+  margin-inline-start: calc(-1 * var(--pad-control));
+  color: var(--accent-fg);
 }
 
 [data-part="window.control"][data-focus-visible] {
@@ -3501,6 +3515,17 @@ optgroup {
   margin-block: 0;
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
+  background-image:
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(to top, var(--border), transparent);
+  background-position: bottom, bottom;
+  background-size:
+    100% var(--space-3),
+    100% var(--space-2);
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  background-attachment: local, scroll;
 }
 
 [data-part="confirm.title"] {
@@ -3513,7 +3538,8 @@ optgroup {
 [data-part="confirm.body"] [data-part="confirm.title"] {
   position: sticky;
   top: calc(-1 * var(--ring-room));
-  padding-block: var(--ring-room) var(--space-1);
+  padding-block: var(--ring-room) var(--space-2);
+  border-bottom: var(--border-width) solid var(--border-subtle);
   background: var(--bg-raised);
 }
 
@@ -3523,6 +3549,8 @@ optgroup {
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-subtle);
 }
 
 [data-part="search-panel.actions"],

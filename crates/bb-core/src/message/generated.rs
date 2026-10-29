@@ -8738,6 +8738,27 @@ pub fn projects_line_field(
     )
 }
 
+/// The message `projects.line-fields-many`.
+#[must_use]
+pub fn projects_line_fields_many(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    fields: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-fields-many"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("fields", Value::Text(fields.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
 /// The message `projects.line-gains`.
 #[must_use]
 pub fn projects_line_gains(
@@ -8830,6 +8851,27 @@ pub fn projects_line_people(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("kind", Value::Text(kind.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-people-many`.
+#[must_use]
+pub fn projects_line_people_many(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    kinds: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-people-many"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("kinds", Value::Text(kinds.to_string())),
             ("person", Value::Text(person.to_string())),
             ("project", Value::Text(project.to_string())),
         ],
@@ -13805,6 +13847,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "In {project}, for {person}, {field} goes from {before} to {after}.",
     ),
     (
+        "projects.line-fields-many",
+        "In {project}, for {person}, these fields go from {before} to {after}: {fields}.",
+    ),
+    (
         "projects.line-gains",
         "{person} gets access to {project}, as {roles}.",
     ),
@@ -13824,6 +13870,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "projects.line-people",
         "In {project}, for {person}, {kind} goes from {before} to {after}.",
+    ),
+    (
+        "projects.line-people-many",
+        "In {project}, for {person}, these kinds of people information go from {before} to {after}: {kinds}.",
     ),
     (
         "projects.line-roles",

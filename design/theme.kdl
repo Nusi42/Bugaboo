@@ -698,6 +698,18 @@ mixin "stacked-facts" {
     justify-content center
 }
 
+// A box that scrolls says there is more below: a soft line at its foot that goes away when the end is reached.
+mixin "scroll-cue-foot" {
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
+    background-position "bottom, bottom"
+    background-size "100% $space-3, 100% $space-2"
+    background-repeat no-repeat
+    // The cue stays inside the edges of the field above the box, not in the padding for the ring.
+    background-origin content-box
+    background-clip content-box
+    background-attachment "local, scroll"
+}
+
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
 mixin "page-column" {
     width "100%"
@@ -1625,14 +1637,7 @@ part "picker.options[variant=list]" {
     use "ring-room"
     list-style none
     overflow-y auto
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
-    background-position "bottom, bottom"
-    background-size "100% $space-3, 100% $space-2"
-    background-repeat no-repeat
-    // The cue stays inside the edges of the field above the list, not in the padding for the ring.
-    background-origin content-box
-    background-clip content-box
-    background-attachment "local, scroll"
+    use "scroll-cue-foot"
 }
 
 // Rows that are one button each reach out by the ring room, so their text stands on the edge of the
@@ -2802,13 +2807,6 @@ part "window.title-bar" {
     background "$bg-surface"
 }
 
-// On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
-// surface of the bar of a window (M5 exit, O13).
-part "overlay.modal[variant=full] window.title-bar" {
-    min-height "$size-bar"
-    background "$bg-canvas"
-}
-
 part "window.title" {
     flex 1
     min-width 0
@@ -2859,6 +2857,27 @@ part "window.control[variant=back]" {
     width auto
     padding 0 "$pad-control"
     gap "$space-1"
+}
+
+// On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
+// surface of the bar of a window (M5 exit, O13).
+part "overlay.modal[variant=full] window.title-bar" {
+    gap "$space-3"
+    min-height "$size-bar"
+    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    border-radius 0
+    background "$bg-canvas"
+}
+
+// The same bar as every page of a phone: Back in the color of a quiet button, the title at its side, one line (M5 exit, O13).
+part "overlay.modal[variant=full] window.title" {
+    padding 0
+    line-height "$lh-tight"
+}
+
+part "overlay.modal[variant=full] window.control[variant=back]" {
+    margin-inline-start "calc(-1 * $pad-control)"
+    color "$accent-fg"
 }
 
 part "window.control[focus-visible]" {
@@ -3458,6 +3477,7 @@ part "confirm.body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
+    use "scroll-cue-foot"
 }
 
 part "confirm.title" {
@@ -3472,12 +3492,16 @@ part "confirm.title" {
 part "confirm.body confirm.title" {
     position sticky
     top "calc(-1 * $ring-room)"
-    padding-block "$ring-room $space-1"
+    padding-block "$ring-room $space-2"
+    border-bottom "$border-width solid $border-subtle"
     background "$bg-raised"
 }
 
+// A line above the answers, so what scrolls above them ends at a line and not at the buttons.
 part "confirm.actions" {
     use "answer-row"
+    padding-top "$space-3"
+    border-top "$border-width solid $border-subtle"
 }
 
 // The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end;

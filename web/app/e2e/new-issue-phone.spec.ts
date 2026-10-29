@@ -30,6 +30,19 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
   await expect(body.getByRole("button", { name: t("issues.create-another") })).toHaveCount(1);
   await expect(body.getByText(t("issues.draft-kept"))).toHaveCount(1);
   await expect(partIn(dialog, "window.footer").getByRole("button")).toHaveCount(1);
+  // The bar is the bar of every page: Back in the color of a quiet button, the title as large as the one of the top bar.
+  await expect(partIn(dialog, "window.control").first()).toHaveCSS(
+    "color",
+    await resolved(page, "color", "var(--accent-fg)"),
+  );
+  await expect(partIn(dialog, "window.title")).toHaveCSS(
+    "font-size",
+    await resolved(page, "font-size", "var(--fs-lg)"),
+  );
+  await expect(partIn(dialog, "window.title-bar")).toHaveCSS(
+    "min-height",
+    await resolved(page, "min-height", "var(--size-bar)"),
+  );
   await expect(partIn(dialog, "window.title-bar")).toHaveCSS(
     "background-color",
     await resolved(page, "background-color", "var(--bg-canvas)"),

@@ -369,6 +369,13 @@ export interface MessageArguments {
     person: string | number;
     project: string | number;
   };
+  "projects.line-fields-many": {
+    after: string | number;
+    before: string | number;
+    fields: string | number;
+    person: string | number;
+    project: string | number;
+  };
   "projects.line-gains": {
     person: string | number;
     project: string | number;
@@ -382,6 +389,13 @@ export interface MessageArguments {
     after: string | number;
     before: string | number;
     kind: string | number;
+    person: string | number;
+    project: string | number;
+  };
+  "projects.line-people-many": {
+    after: string | number;
+    before: string | number;
+    kinds: string | number;
     person: string | number;
     project: string | number;
   };

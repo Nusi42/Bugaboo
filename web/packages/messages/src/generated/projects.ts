@@ -72,6 +72,10 @@ export const messages = {
   "projects.line-can-no-more": "In {project}, {person} can no longer: {things}.",
   "projects.line-field": "In {project}, for {person}, {field} goes from {before} to {after}.",
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
+  "projects.line-fields-many":
+    "In {project}, for {person}, these fields go from {before} to {after}: {fields}.",
+  "projects.line-people-many":
+    "In {project}, for {person}, these kinds of people information go from {before} to {after}: {kinds}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
   "projects.tabs": "Settings of the project",
