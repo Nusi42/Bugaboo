@@ -87,7 +87,7 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
           <Node key={project.id} project={project} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </ul>
-      {<ShowMoreOf label={t("projects.tree-more")} list={list} />}
+      <ShowMoreOf label={t("projects.tree-more")} list={list} />
     </>
   );
 }

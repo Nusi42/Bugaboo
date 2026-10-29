@@ -49,7 +49,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
           <ChangeEntry key={group[0]?.event} items={group} highlighted={at === found} />
         ),
       )}
-      {<ShowMoreOf label={t("history.more")} list={list} />}
+      <ShowMoreOf label={t("history.more")} list={list} />
     </div>
   );
 }

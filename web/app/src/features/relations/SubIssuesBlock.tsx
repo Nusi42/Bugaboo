@@ -235,7 +235,7 @@ export function SubIssuesBlock({ readableId }: BlockProps) {
         <Progress done={progress.done} total={progress.total} />
       )}
       <Parts parts={itemsOf(list.data?.pages)} mayChange={mayChange} />
-      {<ShowMoreOf label={t("sub-issues.more")} list={list} />}
+      <ShowMoreOf label={t("sub-issues.more")} list={list} />
       {mayChange ? <AddSubIssue readableId={readableId} /> : null}
     </section>
   );

@@ -33,7 +33,7 @@ export function RoleList() {
           </li>
         ))}
       </ul>
-      {<ShowMoreOf label={t("roles.more")} list={roles} />}
+      <ShowMoreOf label={t("roles.more")} list={roles} />
     </div>
   );
 }

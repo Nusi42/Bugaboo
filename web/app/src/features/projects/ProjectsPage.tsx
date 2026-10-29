@@ -63,7 +63,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
             onClose={onClose}
           />
         )}
-        {<ShowMoreOf label={t("projects.more")} list={list} />}
+        <ShowMoreOf label={t("projects.more")} list={list} />
       </Card>
       <Card heading={t("projects.create-title")}>
         <p {...partOf(part.text)}>{t("projects.create-intro")}</p>

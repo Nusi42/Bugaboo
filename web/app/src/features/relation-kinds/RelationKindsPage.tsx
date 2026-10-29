@@ -48,7 +48,7 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
           onOpen={onOpen}
           onClose={onClose}
         />
-        {<ShowMoreOf label={t("relation-kinds.more")} list={list} />}
+        <ShowMoreOf label={t("relation-kinds.more")} list={list} />
       </Card>
       <Card heading={t("relation-kinds.create-title")}>
         <p {...partOf(part.text)}>{t("relation-kinds.create-intro")}</p>

@@ -37,7 +37,7 @@ export function TagsSection({ open, onOpen, onClose }: OpenProps) {
         onOpen={onOpen}
         onClose={onClose}
       />
-      {<ShowMoreOf label={t("labels.tags-more")} list={tags} />}
+      <ShowMoreOf label={t("labels.tags-more")} list={tags} />
     </Card>
   );
 }

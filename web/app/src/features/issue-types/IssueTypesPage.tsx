@@ -63,7 +63,7 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
           onOpen={onOpen}
           onClose={onClose}
         />
-        {<ShowMoreOf label={t("issue-types.more")} list={list} />}
+        <ShowMoreOf label={t("issue-types.more")} list={list} />
       </Card>
       <Card heading={t("issue-types.create-title")}>
         <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>

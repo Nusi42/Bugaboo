@@ -37,7 +37,7 @@ function MemberList({ group, changes }: ListProps) {
           ))}
         </ul>
       )}
-      {<ShowMoreOf label={t("groups.members-more")} list={members} />}
+      <ShowMoreOf label={t("groups.members-more")} list={members} />
     </div>
   );
 }

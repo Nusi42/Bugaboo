@@ -85,7 +85,7 @@ export function OpenInvitations() {
           />
         ))}
       </ul>
-      {<ShowMoreOf label={t("invitations.more")} list={invitations} />}
+      <ShowMoreOf label={t("invitations.more")} list={invitations} />
     </>
   );
 }

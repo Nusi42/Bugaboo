@@ -59,7 +59,7 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
           ))}
         </ListGrid>
       )}
-      {<ShowMoreOf label={t("related-issues.more")} list={list} />}
+      <ShowMoreOf label={t("related-issues.more")} list={list} />
       {mayChange ? <Adding readableId={readableId} /> : null}
     </section>
   );

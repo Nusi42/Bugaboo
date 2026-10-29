@@ -60,7 +60,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
             onClose={onClose}
           />
         )}
-        {<ShowMoreOf label={t("groups.more")} list={list} />}
+        <ShowMoreOf label={t("groups.more")} list={list} />
       </Card>
       <Card heading={t("groups.create-title")}>
         <p {...partOf(part.text)}>{t("groups.create-intro")}</p>

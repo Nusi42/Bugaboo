@@ -36,7 +36,7 @@ function SubProjectList({ project }: { readonly project: string }) {
           </li>
         ))}
       </ul>
-      {<ShowMoreOf label={t("projects.sub-projects-more")} list={list} />}
+      <ShowMoreOf label={t("projects.sub-projects-more")} list={list} />
     </>
   );
 }
