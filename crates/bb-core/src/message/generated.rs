@@ -14715,7 +14715,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
     ),
-    ("search.saved-by", "{name} · {person}"),
+    ("search.saved-by", "{name}\u{a0}· {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
     ("search.saved-shared", "Shared with me"),
