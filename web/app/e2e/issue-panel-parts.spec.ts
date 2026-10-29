@@ -61,6 +61,10 @@ test("ux_4_2 beside the panel a filter chip does not wrap inside itself, and Cus
   await expect(chip).toBeVisible();
   // One line: a chip as high as the buttons beside it, not two lines of text.
   expect((await boxOf(chip)).height).toBeLessThanOrEqual(48);
+  // And its words are whole: the chip grows to its label and the buttons beside it move below, so no ellipsis cuts the value.
+  const words = chip.locator("button").first();
+  const cut = await words.evaluate((node) => node.scrollWidth > node.clientWidth);
+  expect(cut, "the label of the chip is cut by an ellipsis").toBe(false);
   const customize = await boxOf(page.getByRole("button", { name: t("issues.customize") }));
   const compact = await boxOf(
     page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }),

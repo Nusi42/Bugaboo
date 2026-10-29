@@ -13088,7 +13088,8 @@ part "search-filters" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    flex 1
+    // As wide as its chips want: the buttons beside it move to the next line before a chip is cut short.
+    flex "1 1 auto"
     min-width 0
 }
 
