@@ -12702,7 +12702,22 @@ part "search-mistake" {
 // The room of the buttons of a changed saved search is held before they are there, so nothing
 // under the title moves when *Changed, not saved* appears (S29).
 part "search-held-actions" {
-    display contents
+    display flex
+    flex-wrap nowrap
+    align-items center
+    gap "$space-2"
+    min-width 0
+    max-width "100%"
+}
+
+// The words of the note give way (they wrap) before the buttons do, so the row never leaves its card.
+part "search-held-actions > span" {
+    flex "0 1 auto"
+    min-width 0
+}
+
+part "search-held-actions > button" {
+    flex none
 }
 
 part "search-held-actions[state=held]" {
