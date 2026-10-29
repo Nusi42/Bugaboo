@@ -163,6 +163,18 @@ fn starts_with_import(text: &str, module: &str) -> bool {
         && string_literals(first, Quotes::DoubleAndSingle) == [module]
 }
 
+/// Whether a text says "between 4 and 8": the words of a bound that the registry owns.
+fn writes_bounds(message: &str) -> bool {
+    let lower = message.to_ascii_lowercase();
+    lower.match_indices("between ").any(|(at, word)| {
+        let rest = &lower[at + word.len()..];
+        let digits = rest.chars().take_while(char::is_ascii_digit).count();
+        digits > 0
+            && rest[digits..].starts_with(" and ")
+            && rest[digits + 5..].starts_with(|next: char| next.is_ascii_digit())
+    })
+}
+
 /// Parses one catalog; returns its keys with their placeholders and the problems found inside.
 fn read_locale(
     path: &str,
@@ -186,6 +198,15 @@ fn read_locale(
         }
         if message.trim().is_empty() {
             problems.push(Finding::at(path, format!("`{key}` has no text.")));
+        }
+        if key.starts_with("setting.")
+            && key.rsplit('.').next() == Some("help")
+            && writes_bounds(&message)
+        {
+            problems.push(Finding::at(
+                path,
+                format!("`{key}` writes the bounds of the setting; the registry says them once (`setting.ui.between`)."),
+            ));
         }
         match placeholders(&message) {
             Ok(found) => {
@@ -429,6 +450,26 @@ mod tests {
         let locales = [locale(r#"{"a.b": "x", "a.b": "y"}"#)];
         let code = [source("web/a.ts", r#"t("a.b")"#)];
         assert!(messages(&evaluate(&locales, &code, &[])).contains("appears twice"));
+    }
+
+    #[test]
+    fn the_help_of_a_setting_does_not_write_its_bounds() {
+        let locales = [locale(
+            r#"{"setting.a.help": "How many. Between 4 and 8. Grows.", "setting.ui.between": "Between {least} and {most}."}"#,
+        )];
+        let code = [source(
+            "web/a.ts",
+            r#"t("setting.a.help"); t("setting.ui.between")"#,
+        )];
+        let text = messages(&evaluate(&locales, &code, &[]));
+        assert!(
+            text.contains("`setting.a.help`") && text.contains("bounds"),
+            "{text}"
+        );
+        let plain = [locale(
+            r#"{"setting.a.help": "How many. Grows.", "setting.ui.between": "Between {least} and {most}."}"#,
+        )];
+        assert!(!messages(&evaluate(&plain, &code, &[])).contains("bounds"));
     }
 
     #[test]
