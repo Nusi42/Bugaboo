@@ -13049,9 +13049,12 @@ part "search-filter" {
 
 // The text of the button of a filter starts a little in from the edge of its outline (R3).
 part "search-filter > button" {
+    min-width 0
+    overflow hidden
     padding-inline-start "$space-3"
     border-color transparent
     min-height "calc($size-control - $border-width * 2)"
+    text-overflow ellipsis
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
@@ -13132,6 +13135,12 @@ part "search-filters.action" {
 
 part "search-filters.action > button" {
     width "100%"
+}
+
+// The button that takes the filter away stays whole inside the border; the words before it give way, with an ellipsis (the
+// sign was outside the border and touched Advanced search, M5 exit).
+part "search-filter > button:last-child" {
+    flex none
 }
 
 // In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.

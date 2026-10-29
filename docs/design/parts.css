@@ -6098,9 +6098,12 @@ optgroup {
 }
 
 [data-part="search-filter"] > [data-part="button"] {
+  min-width: 0;
+  overflow: hidden;
   padding-inline-start: var(--space-3);
   border-color: transparent;
   min-height: calc(var(--size-control) - var(--border-width) * 2);
+  text-overflow: ellipsis;
 }
 
 [data-part="search-panel"],
@@ -6172,6 +6175,10 @@ optgroup {
 
 [data-part="search-filters.action"] > [data-part="button"] {
   width: 100%;
+}
+
+[data-part="search-filter"] > [data-part="button"]:last-child {
+  flex: none;
 }
 
 [data-part="confirm.body"] [data-part="search-filters"] {

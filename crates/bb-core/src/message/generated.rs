@@ -11259,7 +11259,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.kind-group", "A group"),
     ("assignments.kind-person", "A person"),
     ("assignments.list", "Who has which role"),
-    ("assignments.more", "Show more rows"),
+    ("assignments.more", "Show more"),
     (
         "assignments.no-access-help",
         "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
