@@ -1,5 +1,8 @@
+import { useMemo } from "react";
+
 import { linesFrom } from "../../shared/paged.ts";
-import { FocusView } from "../shell/index.ts";
+import { issueAddress, projectAddress } from "../../shared/paths.ts";
+import { FocusView, usePageTrail, type TrailStep } from "../shell/index.ts";
 import { issueShow } from "./issue-show.ts";
 import { IssuePage } from "./IssuePage.tsx";
 import { lineOf, useIssue, useProjectIssues, type IssueLine } from "./issues.ts";
@@ -25,6 +28,18 @@ interface InnerProps extends IssueFocusPageProps {
 function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerProps) {
   const at = lines.findIndex((line) => line.key === address || line.id === address);
   const here = lines[at]?.key ?? address;
+  // Where you are: the project, then the issue (the bar of a computer, like every other page).
+  const trail = useMemo(
+    (): readonly TrailStep[] | undefined =>
+      project === undefined
+        ? undefined
+        : [
+            { label: project, href: projectAddress(project) },
+            { label: here, href: issueAddress(here) },
+          ],
+    [project, here],
+  );
+  usePageTrail(trail);
   const step = (direction: 1 | -1): void => {
     const next = lines[at + direction];
     if (next !== undefined) {
