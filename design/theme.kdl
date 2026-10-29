@@ -1110,7 +1110,9 @@ part "alert" {
     color "$fg"
     font-size "$fs-md"
     line-height "$lh-text"
-    overflow-wrap anywhere
+    // A long word (an address) moves to the next line whole and is cut only when it is longer than a line, not
+    // before its last letter (M5 exit, O8).
+    overflow-wrap break-word
 }
 
 part "alert[variant=danger]" {

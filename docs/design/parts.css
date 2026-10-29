@@ -327,7 +327,7 @@ optgroup {
   color: var(--fg);
   font-size: var(--fs-md);
   line-height: var(--lh-text);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 [data-part="alert"][data-variant~="danger"] {
