@@ -1539,6 +1539,11 @@ optgroup {
   min-height: var(--size-control);
 }
 
+[data-part="list-panel.item"] [data-part="button"][data-variant~="square"] {
+  width: var(--size-control-small);
+  min-height: var(--size-control-small);
+}
+
 [data-part="list-panel.items"] {
   margin: 0;
   padding: 0;

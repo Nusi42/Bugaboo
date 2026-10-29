@@ -2236,6 +2236,12 @@ part "list-panel.item" {
 }
 
 // The checklist stands in as many columns as the panel has room for: one beside the list, two or more under it, as wide as the list.
+// The arrows that move a column are quiet buttons of 28 px (44 for a finger).
+part "list-panel.item button[variant=square]" {
+    width "$size-control-small"
+    min-height "$size-control-small"
+}
+
 part "list-panel.items" {
     use "list-reset"
     display grid
