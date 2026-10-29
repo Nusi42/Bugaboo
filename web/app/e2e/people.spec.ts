@@ -4,9 +4,8 @@ import { type Page } from "@playwright/test";
 import { ada, bob, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-
-import { addressEndingAt, itemArea, openFromMenu, signIn } from "./support/flows.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
+import { itemArea, onThisLayout } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // People and Groups (SEC-02, PRIV-12, WP-11): the list of people (a searchable list that draws only

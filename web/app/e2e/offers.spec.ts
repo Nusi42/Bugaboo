@@ -5,8 +5,8 @@ import { check } from "./support/access.ts";
 import { ada, bob, cleo } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-
-import { itemArea, openFromMenu, signIn, signOut } from "./support/flows.ts";
+import { openFromMenu, signIn, signOut } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { previewMoveToLab } from "./support/offers-look.ts";
 import { offerSwitch, prepareOffers, switchOff, typesOffered } from "./support/offers.ts";
 

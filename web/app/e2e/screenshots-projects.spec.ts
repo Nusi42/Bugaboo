@@ -3,8 +3,8 @@ import { t } from "@bugaboo/messages";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { answerPreviewsWithEverything } from "./support/fake-preview.ts";
 import { expect, test } from "./support/fixtures.ts";
-
-import { itemArea, signIn } from "./support/flows.ts";
+import { signIn } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { createProject, openMove, tree } from "./support/projects.ts";
 import { screenshotFolder, shot } from "./support/screenshots.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";

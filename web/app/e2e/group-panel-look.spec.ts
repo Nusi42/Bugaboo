@@ -94,5 +94,5 @@ test("ux_5 the box of the people shows a shadow at its end while more people fol
   await page.goto(paths.people);
   const list = page.getByRole("listbox", { name: t("people.list") });
   await expect(list.getByRole("option").first()).toBeVisible();
-  await expect.poll(() => shadowsOf(list)).toEqual({ top: 0, end: 1 });
+  await expect.poll(() => shadowsOf(list)).toEqual({ start: 0, end: 1 });
 });

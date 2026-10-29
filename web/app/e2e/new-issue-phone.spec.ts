@@ -28,7 +28,7 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
   );
   const body = partIn(dialog, "window.body");
   // The form scrolls above the footer, and says so: a soft shadow at each edge that has more behind it.
-  await expect.poll(() => shadowsOf(body)).toEqual({ top: 0, end: 1 });
+  await expect.poll(() => shadowsOf(body)).toEqual({ start: 0, end: 1 });
   await expect(body.getByRole("button", { name: t("issues.create-another") })).toHaveCount(1);
   await expect(body.getByText(t("issues.draft-kept"))).toHaveCount(1);
   await expect(partIn(dialog, "window.footer").getByRole("button")).toHaveCount(1);

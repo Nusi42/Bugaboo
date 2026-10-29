@@ -4,8 +4,8 @@ import { type Page } from "@playwright/test";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-
-import { itemArea, openFromMenu, signIn } from "./support/flows.ts";
+import { openFromMenu, signIn } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { createProject } from "./support/projects.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 

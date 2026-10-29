@@ -4,7 +4,8 @@ import { type Page } from "@playwright/test";
 import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin, forgetChoices } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea, signIn } from "./support/flows.ts";
+import { signIn } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 

@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { type ApiSession } from "./api.ts";
 import { tickBox } from "./issues.ts";
-import { layoutOf } from "./layout.ts";
+import { itemArea, layoutOf } from "./layout.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
 /** Makes a label through the API and returns its ID. */
@@ -56,4 +56,9 @@ export async function addTag(within: Page | Locator, name: string): Promise<void
   await add.click();
   await within.getByLabel(t("labels.add-tag"), { exact: true }).fill(name);
   await add.click();
+}
+
+/** The place where one label is changed: the panel beside the list on a computer, its own screen on a phone. */
+export function labelArea(page: Page, name: string): Locator {
+  return itemArea(page, name);
 }
