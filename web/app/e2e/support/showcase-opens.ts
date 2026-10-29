@@ -86,6 +86,13 @@ async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
   await takeBackInvitationsOf(page, email);
 }
 
+/** The people of the organization, after the invitation of an earlier theme was taken back: every theme shows the same. */
+export async function openPeople({ page }: Needs): Promise<void> {
+  await page.goto(paths.people);
+  await expectPage(page);
+  await takeBackInvitationsOf(page, NEW_COLLEAGUE);
+}
+
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
 export async function openInvitation({ page }: Needs): Promise<void> {
   await page.goto(paths.people);

@@ -2,6 +2,7 @@ import {
   at,
   openCheckAccess,
   openInvitation,
+  openPeople,
   openMovePreview,
   openQuickSearch,
   openTree,
@@ -106,11 +107,7 @@ export const screens: readonly Screen[] = [
     at(paths.organizationSettings),
   ),
   organization("projects", "all the projects, with the form that makes one", at(paths.projects)),
-  organization(
-    "people",
-    "everybody who has an account, and the open invitations",
-    at(paths.people),
-  ),
+  organization("people", "everybody who has an account, and the open invitations", openPeople),
   organization("invitations", "making an invitation, with the link to send", openInvitation),
   organization(
     "person",
