@@ -296,6 +296,7 @@ tokens {
     // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
+    color "divider" daylight="#c5cad3" paper="#c6bcab" dusk="#5a6272" midnight="#454b57" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
     color "fg-subtle" daylight="#5c6172" paper="#645b51" dusk="#a9afbb" midnight="#9198a4" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
@@ -431,7 +432,7 @@ contrast min=4.5 {
         on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "cat*-bg"
     }
 
-    non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border" "border-subtle" "divider" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
     non-text "border-control" reason="The edge of a control is a line, not text; it is kept at 3:1 by the `lines` rule below."
     lines min=3 reason="The edge of a box to tick and of the track of a switch is a line a person has to see: WCAG 1.4.11 asks 3:1 against every surface in every theme." {
         colors "border-control"
@@ -443,6 +444,11 @@ contrast min=4.5 {
     lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
         colors "accent" "border-control" "hover-line" "edge-high" "danger"
         on "tint-ns" "tint-ip" "tint-done"
+    }
+
+    lines min=1.5 reason="The line under the title of a question and above its answers ends what scrolls between them: it is seen in every theme on the plain surfaces (a line of 1.1:1 was lost in Dusk and Midnight, M5 exit), without being as strong as the edge of a control." {
+        colors "divider"
+        on "bg-canvas" "bg-surface" "bg-raised"
     }
 
     lines min=3 reason="The edge of High and the line of a hovered row stand on the raised and plain surfaces too (a row of no group, a card of the phone): WCAG 1.4.11 asks 3:1 against every surface." {
@@ -715,9 +721,6 @@ mixin "scroll-cue" {
     background-position "top, bottom, top, bottom"
     background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
     background-repeat no-repeat
-    // The cue stays inside the edges of the field above the box, not in the padding for the ring.
-    background-origin content-box
-    background-clip content-box
     background-attachment "local, local, scroll, scroll"
 }
 
@@ -3557,7 +3560,7 @@ part "confirm.title" {
 part "confirm.dialog > confirm.title" {
     flex none
     padding-block-end "$space-2"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
 }
 
 // A line above the answers, so what scrolls above them ends at a line and not at the buttons.
@@ -3565,7 +3568,7 @@ part "confirm.actions" {
     use "answer-row"
     margin-top "calc(-1 * $space-2)"
     padding-top "$space-3"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 // The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end;

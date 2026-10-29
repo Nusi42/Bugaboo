@@ -54,6 +54,12 @@ test("ux_6 the question Move stays on the screen, its title and answers in view 
   expect(await boxOf(title)).toEqual(before);
   await expect(body.getByRole("heading", { level: 2 })).toHaveCount(0);
   await expect(body).toHaveCSS("background-image", /(linear-gradient.*){4}/u);
+  // The shadows sit at the edges of the box itself (not inside its padding), so they show where the words go under them.
+  await expect(body).toHaveCSS("background-origin", /^padding-box(, padding-box){3}$/u);
+  await expect(body).toHaveCSS("background-clip", /^border-box(, border-box){3}$/u);
+  // The line under the title and the line above the answers are one color, the divider (its contrast is a rule of the theme).
+  const line = await title.evaluate((node) => getComputedStyle(node).borderBottomColor);
+  await expect(partIn(dialog, "confirm.actions")).toHaveCSS("border-top-color", line);
   // The title stays at the top of the question, whatever the body has scrolled: within its first line or two.
   const titleBox = await boxOf(title);
   expect(titleBox.y).toBeGreaterThanOrEqual(box.y);
