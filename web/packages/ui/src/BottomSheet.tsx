@@ -11,6 +11,8 @@ export interface BottomSheetProps {
   readonly onOpenChange: (isOpen: boolean) => void;
   /** The name of the sheet, for screen readers. */
   readonly label: string;
+  /** The title at the top of the sheet; none where the content says what it is. */
+  readonly title?: string;
   /** What the button at the foot says (*Close*). */
   readonly closeLabel: string;
   /** The sheet has the height of the sheet of the filters, so it does not jump as its content changes. */
@@ -23,6 +25,7 @@ export function BottomSheet({
   isOpen,
   onOpenChange,
   label,
+  title,
   closeLabel,
   tall = false,
   children,
@@ -30,6 +33,7 @@ export function BottomSheet({
   return (
     <Overlay isOpen={isOpen} onOpenChange={onOpenChange} label={label} from={overlayEdge.bottom}>
       <div {...partOf(part.bottomSheet, { variants: [tall && "tall"] })}>
+        {title === undefined ? null : <h2 {...partOf(part.bottomSheetTitle)}>{title}</h2>}
         {children}
         <div {...partOf(part.bottomSheetActions)}>
           <Button

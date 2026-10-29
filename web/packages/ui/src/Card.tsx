@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { useLayout } from "./layout.ts";
 import { partOf } from "./parts.ts";
 import type { CardLook } from "./props.ts";
 import { part } from "./tokens.ts";
@@ -10,7 +11,8 @@ export interface CardProps {
   readonly level?: 1 | 2;
   /**
    * The heading is for screen readers only: the page already shows the same words where a person
-   * sees them (the title in the top bar of a phone).
+   * sees them. The one card that is the whole page (level 1) does so on a phone always: the top bar
+   * is its title, and a screen has one title (UX §7.3).
    */
   readonly headingHidden?: boolean;
   /** How the card looks besides the usual. */
@@ -30,13 +32,15 @@ export function Card({
   children,
 }: CardProps) {
   const headingId = useId();
+  const phone = useLayout() === "phone";
+  const hidden = headingHidden || (level === 1 && phone);
   const Heading = level === 1 ? "h1" : "h2";
   return (
     <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
       <div {...partOf(part.cardHeader)}>
         <Heading
           id={headingId}
-          {...partOf(headingHidden ? part.visuallyHidden : part.cardHeading)}
+          {...partOf(hidden ? part.visuallyHidden : part.cardHeading)}
           tabIndex={-1}
         >
           {heading}

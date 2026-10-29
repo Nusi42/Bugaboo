@@ -14,6 +14,8 @@ export interface PhoneFiltersProps {
   /** The names of the fields the person reads, for *Group by*. */
   readonly fields: SearchFieldsAnswer;
   readonly listView: ListViewControl | undefined;
+  /** Buttons before *Filters* in its row. */
+  readonly start?: ReactNode;
   /** The bar itself, which the sheet holds. */
   readonly children: ReactNode;
 }
@@ -28,24 +30,27 @@ export function PhoneFilters({
   onOpenChange,
   fields,
   listView,
+  start,
   children,
 }: PhoneFiltersProps) {
   const count = search === null ? 0 : filtersOf(search).length;
   return (
     <div {...partOf(part.searchBar)}>
       <div {...partOf(part.searchBarHead)}>
+        {start}
         <Button
           onPress={() => {
             onOpenChange(true);
           }}
         >
-          {search === null ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
+          {count === 0 ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
         </Button>
       </div>
       <BottomSheet
         isOpen={open}
         onOpenChange={onOpenChange}
         label={t("search.bar.filters")}
+        title={t("search.bar.filters")}
         closeLabel={t("common.close")}
         tall
       >

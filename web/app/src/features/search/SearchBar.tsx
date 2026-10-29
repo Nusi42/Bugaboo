@@ -24,6 +24,8 @@ export interface SearchBarProps {
   readonly actions?: ReactNode;
   /** How the results are shown: on a phone *Group by* and *Spacing* are in the sheet of the filters (D2). */
   readonly listView?: ListViewControl;
+  /** What a phone shows in the row of its one button, before it: *New issue* and *Legend* of a list. */
+  readonly phoneStart?: ReactNode;
 }
 
 /**
@@ -31,7 +33,15 @@ export interface SearchBarProps {
  * filter buttons, or Advanced search as text. Both edit the same tree, so switching never loses
  * anything. On a phone it is one button, *Filters (n)*, that opens the same in a sheet.
  */
-export function SearchBar({ text, onText, within, onStale, actions, listView }: SearchBarProps) {
+export function SearchBar({
+  text,
+  onText,
+  within,
+  onStale,
+  actions,
+  listView,
+  phoneStart,
+}: SearchBarProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(within);
   if (fields.isError) {
@@ -50,6 +60,7 @@ export function SearchBar({ text, onText, within, onStale, actions, listView }: 
       onStale={onStale}
       actions={actions}
       listView={listView}
+      phoneStart={phoneStart}
     />
   );
 }
@@ -61,7 +72,7 @@ type LoadedProps = Omit<SearchBarProps, "within" | "onStale" | "listView"> & {
 } & Required<Pick<Parameters<typeof useSearchBar>[0], "language" | "fields">>;
 
 function LoadedBar(props: LoadedProps) {
-  const { language, fields, names, text, onText, onStale, actions, listView } = props;
+  const { language, fields, names, text, onText, onStale, actions, listView, phoneStart } = props;
   const bar = useSearchBar({ language, fields, text, onText });
   const stale = bar.answer.mistakes.length > 0;
   useEffect(() => {
@@ -89,6 +100,7 @@ function LoadedBar(props: LoadedProps) {
       onOpenChange={setOpen}
       fields={{ fields, names }}
       listView={listView}
+      start={phoneStart}
     >
       {body}
     </PhoneFilters>

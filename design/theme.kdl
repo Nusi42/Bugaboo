@@ -491,6 +491,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "side-panel.title" role="title"
     selector "top-bar.title" role="title"
     selector "card.heading" role="title"
+    selector "bottom-sheet.title" role="title"
     selector "issue-details.heading" role="section"
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
@@ -12800,6 +12801,15 @@ part "bottom-sheet" {
 // The sheet of the filters has a fixed height (see size-bar-sheet), so it does not jump as the filters change.
 part "bottom-sheet[variant=tall]" {
     height "$size-bar-sheet"
+}
+
+// The name of what the sheet is for (Filters), as the title of a page is.
+part "bottom-sheet.title" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+    color "$fg"
+    font-weight "$weight-bold"
 }
 
 // The button that closes a sheet stays at the foot of it.

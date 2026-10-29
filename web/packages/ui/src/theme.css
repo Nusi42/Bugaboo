@@ -6660,6 +6660,14 @@ optgroup {
   height: var(--size-bar-sheet);
 }
 
+[data-part="bottom-sheet.title"] {
+  margin: 0;
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+  color: var(--fg);
+  font-weight: var(--weight-bold);
+}
+
 [data-part="bottom-sheet.actions"] {
   margin-block-start: auto;
 }

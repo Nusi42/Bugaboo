@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook, part, partOf, useLayout } from "@bugaboo/ui";
+import { Card, cardLook, part, partOf } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { personName } from "../../shared/person.ts";
@@ -33,8 +33,6 @@ export interface SavedSearchViewProps {
 /** A saved search that was opened: its name, the bar with its text, what it finds with its columns. */
 export function SavedSearchView({ search, state, onState, results }: SavedSearchViewProps) {
   const [stale, setStale] = useState(false);
-  // The top bar of a phone already shows the title: one title for the screen (UX §7.3).
-  const phone = useLayout() === "phone";
   const text = textShown(state, search.search_text);
   const { view, defaults, onView } = useListView(state, onState, {
     everywhere: true,
@@ -48,7 +46,6 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
     <Card
       heading={search.name}
       level={1}
-      headingHidden={phone}
       look={cardLook.openOnPhone}
       actions={
         text === search.search_text && !viewIsChanged(state) ? null : (

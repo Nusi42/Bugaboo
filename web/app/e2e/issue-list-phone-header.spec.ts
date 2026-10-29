@@ -31,6 +31,16 @@ test("ux_4_2 on a phone the list header is New issue and Filters, with Group by,
   await expect(
     page.getByRole("button", { name: new RegExp(`^${t("search.bar.filters")}`, "u") }),
   ).toBeVisible();
+  // One row of three buttons, and "Filters" shows a count only where there is one.
+  const filters = page.getByRole("button", { name: t("search.bar.filters"), exact: true });
+  const tops = await Promise.all(
+    [
+      page.getByRole("button", { name: t("issues.new"), exact: true }).first(),
+      page.getByRole("button", { name: t("issues.legend-button"), exact: true }),
+      filters,
+    ].map(async (button) => (await boxOf(button)).y),
+  );
+  expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(2);
   // Not on the page: they are in the sheet.
   await expect(page.getByRole("combobox", { name: t("issues.group-by") })).toHaveCount(0);
   await expect(page.getByText(t("appearance.spacing.legend"), { exact: true })).toHaveCount(0);
@@ -40,13 +50,14 @@ test("ux_4_2 on a phone the list header is New issue and Filters, with Group by,
     name: t("issues.page-title", { project: "Website" }),
   });
   expect((await boxOf(heading)).width).toBeLessThanOrEqual(1);
-  // The Key opens the legend.
+  // The Legend button opens the legend.
   await page.getByRole("button", { name: t("issues.legend-button"), exact: true }).click();
   await expect(page.getByRole("dialog", { name: t("issues.legend") })).toBeVisible();
   await page.getByRole("button", { name: t("common.close"), exact: true }).click();
   // The sheet of the filters holds Group by and Spacing.
   await openBar(page);
   const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+  await expect(sheet.getByRole("heading", { name: t("search.bar.filters") })).toBeVisible();
   await expect(sheet.getByText(t("issues.group-by"), { exact: true })).toBeVisible();
   await expect(sheet.getByText(t("appearance.spacing.legend"), { exact: true })).toBeVisible();
 });
