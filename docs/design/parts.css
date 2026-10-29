@@ -814,42 +814,71 @@ optgroup {
   outline: none;
 }
 
-[data-part="overlay.dialog"]::before {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-in;
-  animation-range: 0% var(--space-3);
-  top: 0;
+@supports not (animation-timeline: scroll()) {
+  [data-part="overlay.dialog"] {
+    background-image:
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(
+        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
+        transparent
+      ),
+      linear-gradient(
+        to top,
+        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
+        transparent
+      );
+    background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
+  }
 }
 
-[data-part="overlay.dialog"]::after {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-out;
-  animation-range: calc(100% - var(--space-3)) 100%;
-  bottom: 0;
+@supports (animation-timeline: scroll()) {
+  [data-part="overlay.dialog"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="overlay.dialog"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: 0;
+  }
 }
 
 [data-part="overlay"][data-entering]::before {
@@ -941,8 +970,8 @@ optgroup {
 @supports not (animation-timeline: scroll()) {
   [data-part="picker.options"][data-variant~="list"] {
     background-image:
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
       linear-gradient(
         color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
         transparent
@@ -2268,8 +2297,8 @@ optgroup {
 @supports not (animation-timeline: scroll()) {
   [data-part="window.body"] {
     background-image:
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
       linear-gradient(
         color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
         transparent
@@ -2290,42 +2319,46 @@ optgroup {
   }
 }
 
-[data-part="window.body"]::before {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-in;
-  animation-range: 0% var(--space-3);
-  top: calc(-1 * var(--pad-dialog));
+@supports (animation-timeline: scroll()) {
+  [data-part="window.body"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: calc(-1 * var(--pad-dialog));
+  }
 }
 
-[data-part="window.body"]::after {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-out;
-  animation-range: calc(100% - var(--space-3)) 100%;
-  bottom: calc(-1 * var(--pad-dialog));
+@supports (animation-timeline: scroll()) {
+  [data-part="window.body"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: calc(-1 * var(--pad-dialog));
+  }
 }
 
 [data-part="window.footer"] {
@@ -2946,8 +2979,8 @@ optgroup {
 @supports not (animation-timeline: scroll()) {
   [data-part="confirm.body"] {
     background-image:
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
       linear-gradient(
         color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
         transparent
@@ -2968,44 +3001,48 @@ optgroup {
   }
 }
 
-[data-part="confirm.body"]::before {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-in;
-  animation-range: 0% var(--space-3);
-  top: calc(-1 * var(--ring-room));
-  margin-block-end: calc(-1 * var(--size-body-gap));
+@supports (animation-timeline: scroll()) {
+  [data-part="confirm.body"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: calc(-1 * var(--ring-room));
+    margin-block-end: calc(-1 * var(--size-body-gap));
+  }
 }
 
-[data-part="confirm.body"]::after {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-out;
-  animation-range: calc(100% - var(--space-3)) 100%;
-  bottom: calc(-1 * var(--ring-room));
-  margin-block-start: calc(-1 * var(--size-body-gap));
+@supports (animation-timeline: scroll()) {
+  [data-part="confirm.body"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: calc(-1 * var(--ring-room));
+    margin-block-start: calc(-1 * var(--size-body-gap));
+  }
 }
 
 [data-part="confirm.title"] {
@@ -3150,6 +3187,7 @@ optgroup {
 
 [data-part="access.scroll"] {
   position: relative;
+  display: flex;
   overflow-x: auto;
   container-type: inline-size;
   scroll-snap-type: x proximity;
@@ -3165,9 +3203,54 @@ optgroup {
 }
 
 [data-part="access.matrix"] {
+  flex: none;
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="access.scroll"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    width: 0;
+    align-self: stretch;
+    inset-inline-start: 0;
+    animation-timeline: scroll(nearest inline);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="access.scroll"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    width: 0;
+    align-self: stretch;
+    inset-inline-end: 0;
+    animation-timeline: scroll(nearest inline);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+  }
 }
 
 [data-part="access.matrix-cell"] {
@@ -3324,9 +3407,10 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="people"] {
+    --cue-cover: var(--bg-surface);
     background-image:
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
-      linear-gradient(var(--bg-raised), var(--bg-raised)),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
+      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
       linear-gradient(
         color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
         transparent
@@ -3347,42 +3431,46 @@ optgroup {
   }
 }
 
-[data-part="people"]::before {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-in;
-  animation-range: 0% var(--space-3);
-  top: 0;
+@supports (animation-timeline: scroll()) {
+  [data-part="people"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: 0;
+  }
 }
 
-[data-part="people"]::after {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-out;
-  animation-range: calc(100% - var(--space-3)) 100%;
-  bottom: 0;
+@supports (animation-timeline: scroll()) {
+  [data-part="people"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: 0;
+  }
 }
 
 [data-part="people.person"] {
@@ -3969,7 +4057,7 @@ optgroup {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--size-page-gutter);
 }
 
 [data-part="app-layout.inner"][data-variant~="wide"] {

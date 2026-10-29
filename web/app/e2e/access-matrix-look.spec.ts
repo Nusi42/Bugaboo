@@ -6,6 +6,7 @@ import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
+import { shadowsOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O2): in the tables of Field permissions and Who sees people the name of a field stands
@@ -103,4 +104,20 @@ test("ux_5 no select is cut by the edge of the table at rest", async ({ page }) 
   const scroll = partIn(page, "access.scroll");
   await expect(scroll).toBeVisible();
   expect(await selectsCutAtTheEdge(scroll), "selects cut by the right edge").toBe(0);
+});
+
+test("ux_5 the table shades its right edge while roles are hidden, and not at its end", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");
+  await signIn(page, sampleAdministrator());
+  await page.goto(paths.fieldPermissions);
+  const scroll = partIn(page, "access.scroll");
+  await expect(scroll).toBeVisible();
+  // Columns are hidden at the end: its shadow shows, the one at the start does not.
+  await expect.poll(() => shadowsOf(scroll)).toEqual({ top: 0, end: 1 });
+  await scroll.evaluate((node) => {
+    node.scrollLeft = node.scrollWidth;
+  });
+  await expect.poll(() => shadowsOf(scroll)).toEqual({ top: 1, end: 0 });
 });

@@ -729,23 +729,46 @@ mixin "edge-shadow" {
     z-index "$z-raised"
     display block
     flex none
-    height 0
     opacity 0
     pointer-events none
     box-shadow "0 0 $space-3 $border-width color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent)"
-    animation-timeline "scroll(nearest)"
     animation-fill-mode both
     animation-timing-function linear
 }
 
 mixin "edge-shadow-start" {
     use "edge-shadow"
+    height 0
+    animation-timeline "scroll(nearest block)"
     animation-name "cue-in"
     animation-range "0% $space-3"
 }
 
 mixin "edge-shadow-end" {
     use "edge-shadow"
+    height 0
+    animation-timeline "scroll(nearest block)"
+    animation-name "cue-out"
+    animation-range "calc(100% - $space-3) 100%"
+}
+
+// The same on the inline axis: a line of no width, as high as the box, at the start edge and at the end edge.
+mixin "edge-shadow-inline-start" {
+    use "edge-shadow"
+    width 0
+    align-self stretch
+    inset-inline-start 0
+    animation-timeline "scroll(nearest inline)"
+    animation-name "cue-in"
+    animation-range "0% $space-3"
+}
+
+mixin "edge-shadow-inline-end" {
+    use "edge-shadow"
+    width 0
+    align-self stretch
+    inset-inline-end 0
+    animation-timeline "scroll(nearest inline)"
     animation-name "cue-out"
     animation-range "calc(100% - $space-3) 100%"
 }
@@ -753,7 +776,7 @@ mixin "edge-shadow-end" {
 // A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
 // where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
 mixin "scroll-cue" {
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient(color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent)"
+    background-image "linear-gradient(var(--cue-cover, $bg-raised), var(--cue-cover, $bg-raised)), linear-gradient(var(--cue-cover, $bg-raised), var(--cue-cover, $bg-raised)), linear-gradient(color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent)"
     background-position "top, bottom, top, bottom"
     background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
     background-repeat no-repeat
@@ -1679,17 +1702,24 @@ part "overlay.dialog" {
     min-height 0
     overflow-y auto
     outline none
+    supports "not (animation-timeline: scroll())" {
+        use "scroll-cue"
+    }
 }
 
 // A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
 part "overlay.dialog::before" {
-    use "edge-shadow-start"
-    top 0
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-start"
+        top 0
+    }
 }
 
 part "overlay.dialog::after" {
-    use "edge-shadow-end"
-    bottom 0
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-end"
+        bottom 0
+    }
 }
 
 part "overlay[entering]::before" {
@@ -3042,13 +3072,17 @@ part "window.body" {
 }
 
 part "window.body::before" {
-    use "edge-shadow-start"
-    top "calc(-1 * $pad-dialog)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-start"
+        top "calc(-1 * $pad-dialog)"
+    }
 }
 
 part "window.body::after" {
-    use "edge-shadow-end"
-    bottom "calc(-1 * $pad-dialog)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-end"
+        bottom "calc(-1 * $pad-dialog)"
+    }
 }
 
 // Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
@@ -3667,15 +3701,19 @@ part "confirm.body" {
 
 // The gap of the body is taken back, so the lines at its ends take no room.
 part "confirm.body::before" {
-    use "edge-shadow-start"
-    top "calc(-1 * $ring-room)"
-    margin-block-end "calc(-1 * $size-body-gap)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-start"
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $size-body-gap)"
+    }
 }
 
 part "confirm.body::after" {
-    use "edge-shadow-end"
-    bottom "calc(-1 * $ring-room)"
-    margin-block-start "calc(-1 * $size-body-gap)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-end"
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $size-body-gap)"
+    }
 }
 
 // The title of a question or of a sheet (the fields, the help): bold, at the top, with no line of its own.
@@ -3806,6 +3844,8 @@ part "access.subheading" {
 part "access.scroll" {
     // The names of the lists that only screen readers read are positioned boxes: this keeps them in the region.
     position relative
+    // The table and the two lines of the edge shadows (below) are side by side, so a line is as high as the table.
+    display flex
     overflow-x auto
     container-type inline-size
     // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
@@ -3822,9 +3862,24 @@ part "access.scroll:focus-visible" {
 }
 
 part "access.matrix" {
+    flex none
     border-collapse separate
     border-spacing 0
     width "100%"
+}
+
+// The shadows at the sides of the table while columns are hidden at that side (the scroll position drives them); where the
+// browser has no scroll-driven animation there is none.
+part "access.scroll::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-inline-start"
+    }
+}
+
+part "access.scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-inline-end"
+    }
 }
 
 // A column is as wide as the room allows for a whole number of them beside the names: the box shows 2, 3 or 4
@@ -3972,19 +4027,25 @@ part "people" {
     overflow-y auto
     use "surface-box"
     supports "not (animation-timeline: scroll())" {
+        // The covers of the old cue are the color of this box, the plain surface.
+        --cue-cover "$bg-surface"
         use "scroll-cue"
     }
 }
 
 // The shadows at the ends of the box that have more people behind them.
 part "people::before" {
-    use "edge-shadow-start"
-    top 0
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-start"
+        top 0
+    }
 }
 
 part "people::after" {
-    use "edge-shadow-end"
-    bottom 0
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-end"
+        bottom 0
+    }
 }
 
 // A row of the list is as tall as its words: the name, the address and the groups and roles under it, each one
