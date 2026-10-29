@@ -5,6 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
+import { layoutOf } from "./support/layout.ts";
 import { grid, rowOf } from "./support/list-look.ts";
 import { panelCloseOf, preparePanel } from "./support/list-panel.ts";
 
@@ -30,6 +31,8 @@ function parts(page: Page): Record<string, string> {
 test("ux_4_2 opening an issue in the panel and closing it keeps the search, the sort, the group and the view", async ({
   page,
 }) => {
+  // The panel is for computers; a phone opens the page (issue-list-phone-open.spec.ts).
+  test.skip(layoutOf(page) === "phone", "a phone has no side panel");
   await signIn(page, ada);
   await page.goto(`${projectIssuesAddress("WEB")}?${new URLSearchParams(kept).toString()}`);
   await expect(rowOf(page, webIssues.login)).toBeVisible();

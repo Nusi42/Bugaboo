@@ -1088,7 +1088,7 @@ export const partWords = {
   "keys.then": { variant: [], state: [] },
   "keys.key": { variant: [], state: [] },
   "list-editor": { variant: [], state: [] },
-  "list-editor.list": { variant: [], state: ["hidden"] },
+  "list-editor.list": { variant: [], state: [] },
   "list-editor.open": { variant: ["columns"], state: ["open"] },
   "list-editor.name": { variant: [], state: [] },
   "list-editor.details": { variant: [], state: [] },

@@ -9,6 +9,7 @@ import {
   routeParam,
   targetParam,
 } from "../shared/paths.ts";
+import { listReturnFor } from "../shared/list-return.ts";
 import { issuePanelAddress, panelClosedAddress, validateSearch } from "../shared/search-address.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
@@ -242,7 +243,10 @@ export const issueRoute = createRoute({
         }}
         onBack={(project: string | undefined) => {
           void navigate({
-            href: project === undefined ? paths.home : projectIssuesAddress(project),
+            href:
+              project === undefined
+                ? paths.home
+                : (listReturnFor(project) ?? projectIssuesAddress(project)),
           });
         }}
         onPanel={(project: string, key: string) => {
