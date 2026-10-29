@@ -839,6 +839,24 @@
   }
 }
 
+@keyframes cue-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cue-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes from-bottom {
   from {
     transform: translateY(100%);
@@ -3621,26 +3639,37 @@ optgroup {
   margin-block: 0;
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
-  background-image:
-    linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(
-      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
-      transparent
-    ),
-    linear-gradient(
-      to top,
-      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
-      transparent
-    );
-  background-position: top, bottom, top, bottom;
-  background-size:
-    100% var(--space-3),
-    100% var(--space-3),
-    100% var(--space-1),
-    100% var(--space-1);
-  background-repeat: no-repeat;
-  background-attachment: local, local, scroll, scroll;
+}
+
+[data-part="confirm.body"]::before,
+[data-part="confirm.body"]::after {
+  content: "";
+  position: sticky;
+  z-index: var(--z-raised);
+  display: block;
+  flex: none;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 var(--space-1) var(--border-width)
+    color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent);
+  animation-timeline: scroll(nearest);
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+}
+
+[data-part="confirm.body"]::before {
+  top: calc(-1 * var(--ring-room));
+  margin-block-end: calc(-1 * var(--space-4));
+  animation-name: cue-in;
+  animation-range: 0% var(--space-3);
+}
+
+[data-part="confirm.body"]::after {
+  bottom: calc(-1 * var(--ring-room));
+  margin-block-start: calc(-1 * var(--space-4));
+  animation-name: cue-out;
+  animation-range: calc(100% - var(--space-3)) 100%;
 }
 
 [data-part="confirm.title"] {

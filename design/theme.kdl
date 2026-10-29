@@ -912,6 +912,26 @@ keyframes "fade" {
     }
 }
 
+// The shadows at the ends of a scrolling box that has boxes of its own inside (the question Move): they follow the
+// scroll position, so a shadow is there only where more is behind it.
+keyframes "cue-in" {
+    from {
+        opacity 0
+    }
+    to {
+        opacity 1
+    }
+}
+
+keyframes "cue-out" {
+    from {
+        opacity 1
+    }
+    to {
+        opacity 0
+    }
+}
+
 keyframes "from-bottom" {
     from {
         transform "translateY(100%)"
@@ -3552,7 +3572,37 @@ part "confirm.body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
-    use "scroll-cue"
+}
+
+// The ends of the body: a line of no height that stays at the edge and casts a shadow over the boxes that scroll under it,
+// there only while the body is scrolled away from that end (the gap of the body is taken back, so the line takes no room).
+part "confirm.body::before" "confirm.body::after" {
+    content "\"\""
+    position sticky
+    z-index "$z-raised"
+    display block
+    flex none
+    height 0
+    opacity 0
+    pointer-events none
+    box-shadow "0 0 $space-1 $border-width color-mix(in srgb, $border-control $size-cue-strength, transparent)"
+    animation-timeline "scroll(nearest)"
+    animation-fill-mode both
+    animation-timing-function linear
+}
+
+part "confirm.body::before" {
+    top "calc(-1 * $ring-room)"
+    margin-block-end "calc(-1 * $space-4)"
+    animation-name "cue-in"
+    animation-range "0% $space-3"
+}
+
+part "confirm.body::after" {
+    bottom "calc(-1 * $ring-room)"
+    margin-block-start "calc(-1 * $space-4)"
+    animation-name "cue-out"
+    animation-range "calc(100% - $space-3) 100%"
 }
 
 // The title stands above the body that scrolls, so it never moves, and a line under it ends what scrolls (the review of

@@ -25,6 +25,14 @@ test.use({
   },
 });
 
+/** How much of the shadow at the top and at the end of a box shows: 1 where more is behind it, 0 where it ends. */
+function shadowsOf(box: Locator): Promise<{ readonly top: number; readonly end: number }> {
+  return box.evaluate((node) => ({
+    top: Math.round(Number(getComputedStyle(node, "::before").opacity)),
+    end: Math.round(Number(getComputedStyle(node, "::after").opacity)),
+  }));
+}
+
 /** Scrolls an element to its end and says whether there was anything to scroll. */
 function scrollToEnd(element: Locator): Promise<boolean> {
   return element.evaluate((node) => {
@@ -49,14 +57,14 @@ test("ux_6 the question Move stays on the screen, its title and answers in view 
     name: t("projects.move-dialog-title", { name: "Documents" }),
   });
   const before = await boxOf(title);
+  // At the start there is more below (the shadow at the end shows) and nothing above.
+  await expect.poll(() => shadowsOf(body)).toEqual({ top: 0, end: 1 });
   expect(await scrollToEnd(body), "the body has more than it shows").toBe(true);
   // The title is not in the body that scrolls: it does not move by a pixel, and the body casts a shadow at each end.
   expect(await boxOf(title)).toEqual(before);
   await expect(body.getByRole("heading", { level: 2 })).toHaveCount(0);
-  await expect(body).toHaveCSS("background-image", /(linear-gradient.*){4}/u);
-  // The shadows sit at the edges of the box itself (not inside its padding), so they show where the words go under them.
-  await expect(body).toHaveCSS("background-origin", /^padding-box(, padding-box){3}$/u);
-  await expect(body).toHaveCSS("background-clip", /^border-box(, border-box){3}$/u);
+  // Scrolled to the end: more is above (the shadow at the top shows) and the one at the end is gone.
+  await expect.poll(() => shadowsOf(body)).toEqual({ top: 1, end: 0 });
   // The line under the title and the line above the answers are one color, the divider (its contrast is a rule of the theme).
   const line = await title.evaluate((node) => getComputedStyle(node).borderBottomColor);
   await expect(partIn(dialog, "confirm.actions")).toHaveCSS("border-top-color", line);
