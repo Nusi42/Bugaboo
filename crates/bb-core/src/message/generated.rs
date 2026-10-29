@@ -11547,7 +11547,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
-    ("common.issue-id", "Issue ID, for example WEB‑142"),
+    ("common.issue-id", "Issue ID, for example WEB-142"),
     ("common.loading", "Loading…"),
     ("common.nothing", "nothing"),
     ("common.off", "Off"),

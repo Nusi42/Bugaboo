@@ -197,7 +197,7 @@ export const messages = {
   "window.taller": "Taller",
   "window.shorter": "Shorter",
   "common.nothing": "nothing",
-  "common.issue-id": "Issue ID, for example WEB‑142",
+  "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",
   "shell.narrow": "Narrow the menu",
   "shell.back": "Back",
