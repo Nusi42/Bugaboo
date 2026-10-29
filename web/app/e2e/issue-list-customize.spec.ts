@@ -24,19 +24,20 @@ test("ux_4_2 Customize sits beside the list on a computer window of 1280", async
   const panel = page.getByRole("complementary", { name: t("issues.customize") });
   const [list, side] = [await boxOf(page.locator("[data-part='list-main']")), await boxOf(panel)];
   expect(side.x).toBeGreaterThanOrEqual(list.x + list.width);
-  // Every default column stays in view beside Customize: the list does not scroll sideways, and
-  // the head of each column is inside the box of the list (UX §4.2, R5, R9).
+  // Beside Customize the title keeps its least width of 160 and the columns of fields that do not
+  // fit are dropped from the right: the list does not scroll sideways and every head is in the box
+  // of the list (UX §4.2, R5, R9).
   const frame = page.locator("[data-part='list-frame']");
   expect(await frame.evaluate((box) => box.scrollWidth - box.clientWidth)).toBe(0);
   const main = await boxOf(page.locator("[data-part='list-main']"));
-  const heads = await Promise.all(
-    [t("issue-field.priority"), t("issue-field.assigned-to"), t("issue-field.changed")].map(
-      (column) => boxOf(page.getByRole("columnheader", { name: column, exact: true })),
-    ),
+  const title = await boxOf(
+    page.getByRole("columnheader", { name: t("issue-field.title"), exact: true }),
   );
-  for (const head of heads) {
-    expect(head.x + head.width).toBeLessThanOrEqual(main.x + main.width + 0.5);
-  }
+  expect(title.width).toBeGreaterThanOrEqual(160);
+  const priority = await boxOf(
+    page.getByRole("columnheader", { name: t("issue-field.priority"), exact: true }),
+  );
+  expect(priority.x + priority.width).toBeLessThanOrEqual(main.x + main.width + 0.5);
 });
 
 test("ux_4_2 Customize under the list is as wide as the list, in more than one column (L15)", async ({

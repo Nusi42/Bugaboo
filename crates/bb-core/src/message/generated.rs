@@ -5031,6 +5031,9 @@ pub const SHELL_MORE: MessageKey = MessageKey::new("shell.more");
 /// The message `shell.narrow`.
 pub const SHELL_NARROW: MessageKey = MessageKey::new("shell.narrow");
 
+/// The message `shell.quick-search`.
+pub const SHELL_QUICK_SEARCH: MessageKey = MessageKey::new("shell.quick-search");
+
 /// The message `shell.search`.
 pub const SHELL_SEARCH: MessageKey = MessageKey::new("shell.search");
 
@@ -15405,6 +15408,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shell.menu-button", "Menu"),
     ("shell.more", "More"),
     ("shell.narrow", "Narrow the menu"),
+    ("shell.quick-search", "Quick search"),
     ("shell.search", "Search"),
     ("shell.signed-in-as", "Signed in as {name}"),
     ("shell.skip", "Skip to the content"),

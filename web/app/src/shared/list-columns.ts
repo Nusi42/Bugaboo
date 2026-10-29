@@ -131,10 +131,11 @@ export function isOwnField(word: string): boolean {
 export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
 
 /**
- * The columns the list keeps while an issue is open in the side panel beside it (UX §4.2): the
- * list has the room that is left, so only the status, the ID, the title and the priority stay.
+ * The columns the list never drops where it has little room (UX §4.2, beside the side panel or with
+ * Customize open): the status, the ID, the title and the priority. The columns of fields go first,
+ * from the right.
  */
-export const besidePanelColumns: ReadonlySet<string> = new Set([
+export const staysColumns: ReadonlySet<string> = new Set([
   listWord.status,
   listWord.id,
   listWord.title,

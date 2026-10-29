@@ -14,6 +14,7 @@ export function LoadedResults(props: LoadedProps) {
   const { view, fields, defaults, onView } = props;
   const phone = useLayout() === "phone";
   const [customizing, setCustomizing] = useState(false);
+  const [room, setRoom] = useState<number>();
   const [dragged, setDragged] = useState<Readonly<Record<string, number>>>({});
   const shown = useListShown();
   // The latest `onText`, so the function that clears the filters is the same on every draw.
@@ -24,7 +25,7 @@ export function LoadedResults(props: LoadedProps) {
   const onClear = useCallback(() => {
     onText.current("", historyStep.push);
   }, []);
-  const context = useListContextValue({ ...props, onClear, report: shown.report });
+  const context = useListContextValue({ ...props, onClear, report: shown.report, room });
   return (
     <ListContext value={context}>
       <div {...partOf(part.listEditor)}>
@@ -38,6 +39,7 @@ export function LoadedResults(props: LoadedProps) {
             setCustomizing(!customizing);
           }}
           onDragged={setDragged}
+          onRoom={setRoom}
         />
         {customizing && !phone ? (
           <ListPanel

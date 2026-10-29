@@ -5810,9 +5810,10 @@ optgroup {
 
 [data-part="nav-subheading"] {
   margin: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  border-top: var(--border-width) solid var(--border-subtle);
   color: var(--fg-muted);
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
 }
 

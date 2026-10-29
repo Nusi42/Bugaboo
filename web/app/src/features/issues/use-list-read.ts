@@ -2,8 +2,9 @@ import type { SearchLanguage } from "@bugaboo/wasm-search";
 import { useLayout } from "@bugaboo/ui";
 import { useMemo } from "react";
 
-import { besidePanelColumns, isOwnField, phoneColumns } from "../../shared/list-columns.ts";
+import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { ListView } from "../../shared/list-view.ts";
+import { columnsThatFit } from "./fit-columns.ts";
 import { useFoundGroups, useFoundIssues, type FoundSearch } from "./found-issues.ts";
 import { useOwnColumns, type OwnColumns } from "./own-columns.ts";
 
@@ -27,24 +28,32 @@ function needsOwn(view: ListView): boolean {
   return view.columns.some(isOwnField) || (view.groupBy !== null && isOwnField(view.groupBy));
 }
 
+/** What reading the list needs: the search, how it is shown, and the room it has. */
+export interface ReadInput {
+  readonly text: string;
+  readonly within: string | undefined;
+  readonly view: ListView;
+  readonly language: SearchLanguage;
+  /** The width the list has, in pixels; none before it is measured. */
+  readonly room: number | undefined;
+  /** The project whose list it is; the rows of a list of a project have a box to tick. */
+  readonly project: string | undefined;
+}
+
 /** Reads what the list shows: the same queries as its rows and groups, which are the same entries of the server-state cache. */
-export function useListRead(
-  search: FoundSearch,
-  view: ListView,
-  language: SearchLanguage,
-  open: string | undefined,
-): ListRead {
-  // A phone has its own few columns; beside the side panel the list has little room.
+export function useListRead(input: ReadInput): ListRead {
+  const { text, within, view, language, room, project } = input;
+  const search: FoundSearch = { text, within };
+  const ticks = project !== undefined;
+  // A phone has its own few columns; where the list has little room (beside the side panel, or with Customize open) the columns of fields give way.
   const phone = useLayout() === "phone";
-  const besidePanel = open !== undefined;
   const columns = view.columns.join(",");
   const words = useMemo(() => {
     if (phone) {
       return phoneColumns;
     }
-    const chosen = columns.split(",");
-    return besidePanel ? chosen.filter((word) => besidePanelColumns.has(word)) : chosen;
-  }, [phone, besidePanel, columns]);
+    return columnsThatFit(columns.split(","), room, ticks);
+  }, [phone, room, ticks, columns]);
   const own = useOwnColumns(language, needsOwn(view));
   const rows = useFoundIssues(search, words, view.groupBy === null);
   const groups = useFoundGroups(search, view.groupBy);

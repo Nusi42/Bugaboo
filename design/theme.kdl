@@ -12858,11 +12858,13 @@ part "search-help.title" {
 }
 
 // The name of a list in the sidebar (*Mine*, *Shared with me*).
+// The sub-groups of Saved searches (Mine, Shared with me): a smaller muted name over a thin line, so they read as groups and not as a second header.
 part "nav-subheading" {
     margin 0
-    padding "$space-2 $space-3"
+    padding "$space-3 $space-3 $space-1"
+    border-top "$border-width solid $border-subtle"
     color "$fg-muted"
-    font-size "$fs-base"
+    font-size "$fs-sm"
     font-weight "$weight-regular"
 }
 

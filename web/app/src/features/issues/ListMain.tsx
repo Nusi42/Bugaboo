@@ -8,7 +8,7 @@ import { ListOptions } from "./ListOptions.tsx";
 import { ListResults } from "./ListResults.tsx";
 import { Selected } from "./Selected.tsx";
 import type { LoadedProps } from "./results-props.ts";
-import { useRowKeys } from "./use-row-keys.ts";
+import { useRoom, useRowKeys } from "./use-row-keys.ts";
 
 export interface ListMainProps {
   readonly props: LoadedProps;
@@ -20,6 +20,8 @@ export interface ListMainProps {
   readonly keyChars: number;
   readonly onCustomize: () => void;
   readonly onDragged: (dragged: Readonly<Record<string, number>>) => void;
+  /** Tells how wide the list is, so the columns that do not fit can give way. */
+  readonly onRoom: (width: number) => void;
 }
 
 /** The box to tick the rows of the head is the first column, where rows can be ticked. */
@@ -34,10 +36,12 @@ export function ListMain({
   keyChars,
   onCustomize,
   onDragged,
+  onRoom,
 }: ListMainProps) {
   const { view, fields, onView, onText } = props;
   const { words, ticks, phone, project, selection, search } = useListContext();
   const rows = useRowKeys();
+  useRoom(() => rows.current, onRoom);
   const compact = view.spacing === "compact";
   const specs: readonly ListColumnSpec[] = [
     ...(ticks && !phone ? [selectSpec] : []),

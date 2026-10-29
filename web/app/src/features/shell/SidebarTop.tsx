@@ -21,7 +21,7 @@ export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onN
       <li>
         <NavButton
           icon={iconName.search}
-          label={t("shell.search")}
+          label={t("shell.quick-search")}
           narrow={narrow}
           hint={<Keys sequence={searchKeys} />}
           onPress={() => {

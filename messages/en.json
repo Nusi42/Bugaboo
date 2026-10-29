@@ -460,6 +460,7 @@
   "common.nothing": "nothing",
   "common.issue-id": "Issue ID, for example WEB\u2011142",
   "shell.search": "Search",
+  "shell.quick-search": "Quick search",
   "shell.more": "More",
   "shell.narrow": "Narrow the menu",
   "shell.widen": "Widen the menu",

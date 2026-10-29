@@ -10,13 +10,13 @@ describe("ux_4_2 the columns of the list as one template", () => {
       { column: "changed" },
     ]);
     expect(template).toBe(
-      "minmax(var(--size-col-title), 1fr) minmax(var(--size-col-least), var(--size-col-person)) minmax(var(--size-col-least), var(--size-col-changed))",
+      "minmax(calc(var(--size-col-title) * 4 / 3), 1fr) minmax(var(--size-col-least), var(--size-col-person)) minmax(var(--size-col-least), var(--size-col-changed))",
     );
   });
 
-  it("keeps the width of the ID and an icon, and gives the priority its head: the name, the arrow and the edge", () => {
+  it("keeps the width of the ID and an icon, and gives the priority its head: the name and the arrow", () => {
     expect(listTemplate([{ column: "priority" }, { column: "key" }, { column: "status" }])).toBe(
-      "calc(var(--size-col-priority) + var(--size-target-compact) + var(--size-icon-small)) var(--size-col-key) var(--size-col-icon)",
+      "calc(var(--size-col-priority) + var(--size-icon-small)) var(--size-col-key) var(--size-col-icon)",
     );
   });
 

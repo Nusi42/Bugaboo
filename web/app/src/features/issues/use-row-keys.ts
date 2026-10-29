@@ -1,5 +1,5 @@
 import { part } from "@bugaboo/ui";
-import { useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 
@@ -31,4 +31,24 @@ export function useRowKeys(): RefObject<HTMLDivElement | null> {
     },
   });
   return list;
+}
+
+/** Calls `onRoom` with the width of the box now and whenever it changes; gives back what stops it. */
+function watchRoom(box: HTMLElement, onRoom: (width: number) => void): () => void {
+  onRoom(box.getBoundingClientRect().width);
+  const watching = new ResizeObserver(() => {
+    onRoom(box.getBoundingClientRect().width);
+  });
+  watching.observe(box);
+  return () => {
+    watching.disconnect();
+  };
+}
+
+/** Tells how wide the list is, now and whenever it changes, so the columns that do not fit can give way. */
+export function useRoom(getBox: () => HTMLElement | null, onRoom: (width: number) => void): void {
+  useLayoutEffect(() => {
+    const box = getBox();
+    return box === null ? undefined : watchRoom(box, onRoom);
+  }, [getBox, onRoom]);
 }

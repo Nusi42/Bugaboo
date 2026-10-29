@@ -184,7 +184,9 @@ export function ListColumnHead({
 }: ListColumnHeadProps) {
   return (
     <ColumnHeaderCell
-      resize={resize === null || iconColumns.includes(column) ? null : resize}
+      resize={
+        resize === null || iconColumns.includes(column) || column === "priority" ? null : resize
+      }
       id={id}
       sort={sortOf(arrow)}
       label={label}
