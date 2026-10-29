@@ -52,7 +52,7 @@ export {
 } from "./IssueTypeIcon.tsx";
 export { PageBack } from "./PageBack.tsx";
 export { RowChevron } from "./RowChevron.tsx";
-export { ShowMore, ShowMoreOf } from "./ShowMore.tsx";
+export { type PagedList, ShowMore, ShowMoreOf } from "./ShowMore.tsx";
 export { TitleCarriedByBar } from "./TitleCarriedByBar.tsx";
 export { layoutForWidth, layoutModes, useLayout, useUpright, type LayoutMode } from "./layout.ts";
 export {

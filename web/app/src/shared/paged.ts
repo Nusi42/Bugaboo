@@ -1,4 +1,5 @@
 import { dataOf, pageSizeDefault, pageSizeMax, type Answer } from "@bugaboo/api-client";
+import type { PagedList } from "@bugaboo/ui";
 import { useInfiniteQuery, type keepPreviousData, type QueryKey } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -85,18 +86,11 @@ export function linesFrom<Item, Line>(
   return (pages ?? []).flatMap((page) => page.items.flatMap((item) => lineOf(item) ?? []));
 }
 
-/** What a query of pages needs to be read to its end. */
-interface Pageable {
-  readonly hasNextPage: boolean;
-  readonly isFetchingNextPage: boolean;
-  readonly fetchNextPage: () => Promise<unknown>;
-}
-
 /**
  * Reads the next page as soon as the one before has arrived, until there is none: for a list that
  * is a choice in a menu (the roles), which must offer every one of them and not the first page.
  */
-export function useAllPages(query: Pageable): void {
+export function useAllPages(query: PagedList): void {
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage) {

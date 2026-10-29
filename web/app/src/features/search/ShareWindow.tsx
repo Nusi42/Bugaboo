@@ -8,7 +8,7 @@ import {
   part,
   partOf,
   Window,
-  ShowMore,
+  ShowMoreOf,
 } from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
 
@@ -27,21 +27,6 @@ export interface ShareWindowProps {
 /** Whether the saved search is shared with this group or project already. */
 function isSharedWith(search: SavedSearch, kind: Schema<"ShareKind">, id: string): boolean {
   return search.shared_with.some((share) => share.kind === kind && share.id === id);
-}
-
-/** *Show more* under a list of choices that has another page. */
-function MoreChoices({
-  hasMore,
-  isPending,
-  onMore,
-}: {
-  readonly hasMore: boolean;
-  readonly isPending: boolean;
-  readonly onMore: () => void;
-}) {
-  return hasMore ? (
-    <ShowMore label={t("search.share-more")} pending={isPending} onPress={onMore} />
-  ) : null;
 }
 
 /** One group or project: its tick box, and for a project of this search its quiet *Use as the list* button. */
@@ -114,13 +99,7 @@ function Choices({
           />
         ))}
       </ul>
-      <MoreChoices
-        hasMore={choices.hasNextPage}
-        isPending={choices.isFetchingNextPage}
-        onMore={() => {
-          void choices.fetchNextPage();
-        }}
-      />
+      <ShowMoreOf label={t("search.share-more")} list={choices} />
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </fieldset>
   );
