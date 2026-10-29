@@ -18,7 +18,7 @@ export function ProjectSettingsFrame({
   children,
 }: {
   readonly project: OneProject;
-  readonly children: ReactNode;
+  readonly children?: ReactNode;
 }) {
   const { pathname, searchStr } = useLocation();
   const topics = projectTopics(project);
