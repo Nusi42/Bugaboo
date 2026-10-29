@@ -9,12 +9,8 @@ import {
 } from "./preview-sentences.ts";
 import type { Preview } from "./use-projects.ts";
 
-/** The lines under a person: the changes, or, where the person is changed in several projects, each project with its changes. */
+/** The lines under a person: each project they are changed in, with its changes under it, also when it is only one. */
 function linesOf(group: PersonSentences): readonly LongPreviewLine[] {
-  const [only, ...others] = group.projects;
-  if (only !== undefined && others.length === 0) {
-    return only.lines.map((line) => ({ key: line.key, content: line.text }));
-  }
   return group.projects.map((project) => ({
     key: project.key,
     content: (
