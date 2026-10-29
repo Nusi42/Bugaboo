@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { useLayout, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { asksForSettingsMenu } from "../../shared/paths.ts";
 import { SettingsScreens, TopicList } from "../shell/index.ts";
 import { projectTopics } from "./settings-tabs.ts";
+import { useShowsSettingsMenu } from "./use-settings-menu.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /**
@@ -20,15 +20,15 @@ export function ProjectSettingsFrame({
   readonly project: OneProject;
   readonly children?: ReactNode;
 }) {
-  const { pathname, searchStr } = useLocation();
+  const { pathname } = useLocation();
   const topics = projectTopics(project);
-  const phone = useLayout() === "phone";
+  const onMenu = useShowsSettingsMenu(project);
   return (
     <SettingsScreens
       heading={t("projects.settings-title", { name: project.project.name })}
       label={t("projects.tabs")}
       menu={topics.length < 2 ? undefined : <TopicList topics={topics} pathname={pathname} />}
-      onMenu={phone && topics.length > 1 && asksForSettingsMenu(searchStr)}
+      onMenu={onMenu}
     >
       <div {...partOf(part.stack)}>{children}</div>
     </SettingsScreens>
