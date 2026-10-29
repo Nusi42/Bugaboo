@@ -21,3 +21,10 @@ export function applyName(kind: ManyChangeKind, count: number): string {
     ? t("many-changes.apply-delete", { count })
     : t("many-changes.apply", { count });
 }
+
+/** What the button of the bar says, with how many issues are ticked: *Change 2 issues*, *Delete 2 issues*; the others keep their name. */
+export function barName(kind: ManyChangeKind, count: number): string {
+  return kind === manyChangeKind.change || kind === manyChangeKind.delete
+    ? applyName(kind, count)
+    : actionName(kind);
+}

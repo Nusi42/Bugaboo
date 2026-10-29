@@ -574,7 +574,6 @@ export const messages = {
   "conflict.field-only": "{field}",
   "common.done": "Done",
   "issues.new": "New issue",
-  "issues.key": "Key",
   "issues.description.edit": "Edit the description",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":

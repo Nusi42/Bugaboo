@@ -2137,6 +2137,9 @@ pub const ISSUES_REMOVE_FILTERS: MessageKey = MessageKey::new("issues.remove-fil
 /// The message `issues.select-shown`.
 pub const ISSUES_SELECT_SHOWN: MessageKey = MessageKey::new("issues.select-shown");
 
+/// The message `issues.selected-bar`.
+pub const ISSUES_SELECTED_BAR: MessageKey = MessageKey::new("issues.selected-bar");
+
 /// The message `issues.sheet`.
 pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
 
@@ -12754,6 +12757,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
     ),
+    ("issues.selected-bar", "The issues you ticked"),
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
@@ -12774,7 +12778,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "issues.tick-narrow",
-        "Narrow the search to {limit, number} issues or fewer to change them together",
+        "Narrow the search to {limit, number} issues or fewer to change them together.",
     ),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),

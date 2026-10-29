@@ -28,16 +28,23 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
   ).toBeVisible();
 }
 
-/** Opens the dialog of one of the five things. */
+/**
+ * Opens the dialog of one of the five things from the bar of the ticked issues. *Change* and
+ * *Delete* carry the count (*Change 2 issues*), the others keep their name; the name given is the
+ * plain one of the action (`many-changes.action-…`).
+ */
 export async function openAction(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).click();
+  const counted = new Map([
+    [t("many-changes.action-change"), /^Change \d+ issues?$/u],
+    [t("many-changes.action-delete"), /^Delete \d+ issues?$/u],
+  ]);
+  await page.getByRole("button", { name: counted.get(name) ?? name, exact: true }).click();
   return page.getByRole("alertdialog");
 }
 
 /** Chooses *Change status* to *Done* for the ticked issues and reads the preview; gives the dialog back. */
 export async function previewDoneOnScreen(page: Page, count: number) {
-  await page.getByRole("button", { name: t("many-changes.action-change"), exact: true }).click();
-  const dialog = page.getByRole("alertdialog");
+  const dialog = await openAction(page, t("many-changes.action-change"));
   await dialog
     .getByLabel(t("issue-field.status"), { exact: true })
     .selectOption({ label: serverWord("workflow-change.mark-as-done") });

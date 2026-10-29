@@ -5,12 +5,9 @@ import { useEffect } from "react";
 import { LegendButton } from "./LegendButton.tsx";
 import { IssueLegend } from "./IssueLegend.tsx";
 import { openNewIssue, rememberProject } from "./new-issue-state.ts";
-import { Selected } from "./Selected.tsx";
-import type { IssueSelection } from "./use-selection.ts";
 
 export interface ProjectToolbarProps {
   readonly shortName: string;
-  readonly selection: IssueSelection;
   /** An issue is open beside the list, which leaves the toolbar little room. */
   readonly beside: boolean;
 }
@@ -19,25 +16,22 @@ export interface ProjectToolbarProps {
  * The rows above a project's list: *New issue* with the key to the colors of the rows at the end (a *Key* button where it has no room),
  * and what is ticked with the bars that act on it. The project is remembered for the next new issue.
  */
-export function ProjectToolbar({ shortName, selection, beside }: ProjectToolbarProps) {
+export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {
   const room = useLayout() === "computer" && !beside;
   useEffect(() => {
     rememberProject(shortName);
   }, [shortName]);
   return (
-    <>
-      <div {...partOf(part.listToolbar)}>
-        <Button
-          look={buttonLook.primary}
-          onPress={() => {
-            openNewIssue(shortName);
-          }}
-        >
-          {t("issues.new")}
-        </Button>
-        {room ? <IssueLegend /> : <LegendButton />}
-      </div>
-      <Selected selection={selection} project={shortName} />
-    </>
+    <div {...partOf(part.listToolbar)}>
+      <Button
+        look={buttonLook.primary}
+        onPress={() => {
+          openNewIssue(shortName);
+        }}
+      >
+        {t("issues.new")}
+      </Button>
+      {room ? <IssueLegend /> : <LegendButton />}
+    </div>
   );
 }

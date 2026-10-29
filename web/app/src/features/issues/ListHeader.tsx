@@ -35,6 +35,8 @@ export function ListHeader({ view, fields, shown, onView, onText, onDragged }: L
         ticks
           ? {
               isSelected: shown.length > 0 && shown.every((id) => selection.has(id)),
+              isMixed:
+                shown.some((id) => selection.has(id)) && !shown.every((id) => selection.has(id)),
               onChange: (on) => {
                 selection.replace(
                   on

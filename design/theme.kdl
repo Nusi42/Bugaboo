@@ -1153,6 +1153,22 @@ part "checkbox[selected] checkbox.box" {
     use "chosen"
 }
 
+// Some, not all, are ticked (the head of a list): the box is filled and holds a dash.
+part "checkbox[indeterminate] checkbox.box" {
+    use "chosen"
+}
+
+part "checkbox[indeterminate] checkbox.box::after" {
+    content "\"\""
+    position absolute
+    top "50%"
+    left "$space-1"
+    width "$space-3"
+    height 0
+    border-top "$ring-width solid $on-accent"
+    transform "translateY(-50%)"
+}
+
 // The tick: two sides of a box, turned.
 part "checkbox[selected] checkbox.box::after" {
     content "\"\""
@@ -1708,9 +1724,14 @@ part "list-row:hover" {
     box-shadow "inset 0 0 0 $border-width $border-control"
 }
 
-// A selected row, and the issue that is open next to the list, are ringed inside their edge, so they never
-// rely on the fill alone.
-part "list-row[state=selected]" "list-row[state=current]" "issue-row[state=selected]" "issue-row[variant=current]" "timeline-bar[state=selected]" {
+// A ticked row shows it by its ticked box and by the line under it in the accent color, so a run of ticked rows reads as one run;
+// it keeps its tint and has no ring of its own.
+part "list-row[state=selected]" {
+    border-bottom-color "$accent"
+}
+
+// The issue that is open next to the list is ringed inside its edge, so it never relies on the fill alone.
+part "list-row[state=current]" "issue-row[state=selected]" "issue-row[variant=current]" "timeline-bar[state=selected]" {
     use "ring-row"
 }
 
@@ -3470,14 +3491,35 @@ part "chip" {
     gap "$space-1"
 }
 
-// The bar of the list that acts on the issues ticked.
+// The bar of the issues ticked (UX §4.2): under the list, where ticking moves nothing above it, and stuck to the
+// bottom of the window while there is more list than window. With nothing ticked it has no look and no room.
+part "selected-bar" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "selected-bar[state=active]" {
+    use "floating-box"
+    position sticky
+    inset-block-end 0
+    z-index "$z-sticky"
+    padding "$space-2" "$space-3"
+    margin-block-start "$space-3"
+    border-radius "$r-card"
+}
+
+// On a phone the bar stays at the end of the list: stuck to the bottom it would cover the cards being ticked.
+part "app-layout[variant=phone] selected-bar[state=active]" {
+    position static
+}
+
+// What the bar offers for the issues ticked.
 part "many-change-bar" {
-    use "surface-box"
     display flex
     flex-wrap wrap
     align-items center
     gap "$space-2" "$space-3"
-    padding "$space-2" "$space-3"
 }
 
 // How far a change that goes on in the background is.

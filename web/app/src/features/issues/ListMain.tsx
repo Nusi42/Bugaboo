@@ -1,5 +1,4 @@
 import { ListFrame, part, partOf, type ListColumnSpec } from "@bugaboo/ui";
-import type { Dispatch, SetStateAction } from "react";
 
 import { cellOf } from "../../shared/list-columns.ts";
 import { useListContext } from "./list-context.ts";
@@ -7,6 +6,7 @@ import { ListHeader } from "./ListHeader.tsx";
 import { ListInfo } from "./ListInfo.tsx";
 import { ListOptions } from "./ListOptions.tsx";
 import { ListResults } from "./ListResults.tsx";
+import { Selected } from "./Selected.tsx";
 import type { LoadedProps } from "./results-props.ts";
 import { useRowKeys } from "./use-row-keys.ts";
 
@@ -19,7 +19,7 @@ export interface ListMainProps {
   /** The characters of the longest readable ID drawn: the ID column is as wide. */
   readonly keyChars: number;
   readonly onCustomize: () => void;
-  readonly onDragged: Dispatch<SetStateAction<Readonly<Record<string, number>>>>;
+  readonly onDragged: (dragged: Readonly<Record<string, number>>) => void;
 }
 
 /** The box to tick the rows of the head is the first column, where rows can be ticked. */
@@ -36,7 +36,7 @@ export function ListMain({
   onDragged,
 }: ListMainProps) {
   const { view, fields, onView, onText } = props;
-  const { words, ticks, phone } = useListContext();
+  const { words, ticks, phone, project, selection, search } = useListContext();
   const rows = useRowKeys();
   const compact = view.spacing === "compact";
   const specs: readonly ListColumnSpec[] = [
@@ -66,6 +66,9 @@ export function ListMain({
         )}
         <ListResults view={view} stale={props.stale} />
       </ListFrame>
+      {project === undefined ? null : (
+        <Selected selection={selection} project={project} search={search} shown={shown} />
+      )}
     </div>
   );
 }

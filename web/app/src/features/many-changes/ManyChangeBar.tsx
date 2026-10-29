@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Button, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import type { SelectionBarProps } from "../issues/index.ts";
-import { actionName } from "./action-names.ts";
+import { barName } from "./action-names.ts";
 import { afterApply } from "./after-apply.ts";
 import { manyChangeKind, type ManyChangeApplied, type ManyChangeKind } from "./many-changes.ts";
 import { ManyChangeDialog } from "./ManyChangeDialog.tsx";
@@ -26,18 +26,19 @@ export function ManyChangeBar({ selection, project }: SelectionBarProps) {
   const [open, setOpen] = useState<ManyChangeKind | null>(null);
   const [applied, setApplied] = useState<ManyChangeApplied | null>(null);
   return (
-    <div {...partOf(part.stack)}>
+    <>
       {selection.ids.length === 0 ? null : (
         <section {...partOf(part.manyChangeBar)} aria-label={t("many-changes.bar")}>
           {kinds.map((kind) => (
             <Button
               key={kind}
+              look={kind === manyChangeKind.delete ? buttonLook.danger : buttonLook.plain}
               onPress={() => {
                 setApplied(null);
                 setOpen(kind);
               }}
             >
-              {actionName(kind)}
+              {barName(kind, selection.ids.length)}
             </Button>
           ))}
         </section>
@@ -60,6 +61,6 @@ export function ManyChangeBar({ selection, project }: SelectionBarProps) {
         />
       )}
       {applied === null ? null : <ManyChangeOutcome applied={applied} />}
-    </div>
+    </>
   );
 }

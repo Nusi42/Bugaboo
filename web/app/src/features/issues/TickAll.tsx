@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Icon, iconName, iconSize, part, partOf } from "@bugaboo/ui";
 import { useMutation } from "@tanstack/react-query";
 
 import { messageOf } from "../../shared/errors.ts";
-import { readIssueIds, type FoundSearch } from "./found-issues.ts";
+import { readIssueIds, useFoundCount, type FoundSearch } from "./found-issues.ts";
 import { MAX_TICKED, tickAllOffer } from "./tick-all.ts";
 import type { IssueSelection } from "./use-selection.ts";
 
@@ -11,17 +11,16 @@ export interface TickAllProps {
   readonly search: FoundSearch;
   /** The issues the list draws now. */
   readonly shown: readonly string[];
-  /** How many issues the search finds. */
-  readonly total: number;
   readonly selection: IssueSelection;
 }
 
 /**
- * Under the head of the list, once every row shown is ticked and more issues match: *Tick all 302
+ * In the bar of the ticked issues, once every row shown is ticked and more issues match: *Tick all 302
  * results* (UX §4.2), up to the most one change may name; above that the sentence that asks to narrow
  * the search (M5-Q9).
  */
-export function TickAll({ search, shown, total, selection }: TickAllProps) {
+export function TickAll({ search, shown, selection }: TickAllProps) {
+  const total = useFoundCount(search).data ?? 0;
   const ticking = useMutation({
     mutationFn: () => readIssueIds(search, MAX_TICKED),
     onSuccess: selection.replace,
@@ -43,7 +42,10 @@ export function TickAll({ search, shown, total, selection }: TickAllProps) {
           {t("issues.tick-all", { count: offer.count })}
         </Button>
       ) : (
-        <p {...partOf(part.muted)}>{t("issues.tick-narrow", { limit: offer.limit })}</p>
+        <p {...partOf(part.row)}>
+          <Icon name={iconName.info} size={iconSize.small} />
+          <span {...partOf(part.muted)}>{t("issues.tick-narrow", { limit: offer.limit })}</span>
+        </p>
       )}
       {ticking.isError ? <Alert tone={alertTone.danger}>{messageOf(ticking.error)}</Alert> : null}
     </div>
