@@ -7,7 +7,7 @@ import type { ResultsInput } from "../shared/use-list-view.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute } from "./layouts.tsx";
 import { loadsScreen } from "./preload.ts";
-import { SearchResultsList } from "./search-results.tsx";
+import { SearchLegendButton, SearchResultsList } from "./search-results.tsx";
 import { useSearchNavigation, useSearchState } from "./search-address.ts";
 
 // The search is loaded when it is first opened, so the first page stays small
@@ -41,7 +41,14 @@ export const searchRoute = createRoute({
   component: function Search() {
     const state = useSearchState();
     const navigateTo = useSearchNavigation();
-    return <SearchScreen state={state} onState={navigateTo} results={results} />;
+    return (
+      <SearchScreen
+        state={state}
+        onState={navigateTo}
+        results={results}
+        phoneStart={<SearchLegendButton />}
+      />
+    );
   },
 });
 
@@ -62,6 +69,7 @@ export const savedSearchRoute = createRoute({
         state={state}
         onState={navigateTo}
         results={results}
+        phoneStart={<SearchLegendButton />}
         notFound={<NotFoundPage />}
       />
     );

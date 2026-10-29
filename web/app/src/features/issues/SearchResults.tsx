@@ -1,6 +1,7 @@
 import type { ResultsInput } from "../../shared/use-list-view.ts";
 import { IssueResults } from "./IssueResults.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
+import { SearchToolbar } from "./ProjectToolbar.tsx";
 import { useSelection } from "./use-selection.ts";
 
 /**
@@ -10,15 +11,18 @@ import { useSelection } from "./use-selection.ts";
  */
 export function SearchResults(input: ResultsInput) {
   return (
-    <IssueResults
-      {...input}
-      within={undefined}
-      scopeName={undefined}
-      project={undefined}
-      openIn={useOpenIssuesIn()}
-      state={undefined}
-      open={undefined}
-      selection={useSelection()}
-    />
+    <>
+      <SearchToolbar />
+      <IssueResults
+        {...input}
+        within={undefined}
+        scopeName={undefined}
+        project={undefined}
+        openIn={useOpenIssuesIn()}
+        state={undefined}
+        open={undefined}
+        selection={useSelection()}
+      />
+    </>
   );
 }

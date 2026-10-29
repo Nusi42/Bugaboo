@@ -27,10 +27,18 @@ export interface SavedSearchViewProps {
   readonly onState: (state: SearchState, step: HistoryStep) => void;
   /** The list of what the search finds (WP-08): the issue list is its own area, so the page is given it. */
   readonly results: (input: ResultsInput) => ReactNode;
+  /** What a phone shows before *Filters* in the row of the bar (the *Legend* button of the list). */
+  readonly phoneStart?: ReactNode;
 }
 
 /** A saved search that was opened: its name, the bar with its text, what it finds with its columns. */
-export function SavedSearchView({ search, state, onState, results }: SavedSearchViewProps) {
+export function SavedSearchView({
+  search,
+  state,
+  onState,
+  results,
+  phoneStart,
+}: SavedSearchViewProps) {
   const [stale, setStale] = useState(false);
   const forms = useCanonicalForms();
   // A search saved before D3 holds the old spelling: what it is compared with is its text as written today.
@@ -66,6 +74,7 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
         onText={onText}
         onStale={setStale}
         listView={{ view, onView }}
+        phoneStart={phoneStart}
         actions={search.mine ? <ShareButton search={search} /> : null}
       />
       {results({ text, onText, view, defaults, onView, stale })}

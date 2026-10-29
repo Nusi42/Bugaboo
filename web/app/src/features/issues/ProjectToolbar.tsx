@@ -59,3 +59,20 @@ export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {
     </div>
   );
 }
+
+/**
+ * The row above the list of the *Search* page and of a saved search on a computer or a tablet: the
+ * legend of the colors of the rows (a *Legend* button where it has no room). A phone has the button in
+ * the row of its search bar.
+ */
+export function SearchToolbar() {
+  const layout = useLayout();
+  if (layout === "phone") {
+    return null;
+  }
+  return (
+    <div {...partOf(part.listToolbar)}>
+      {layout === "computer" ? <IssueLegend /> : <LegendButton />}
+    </div>
+  );
+}

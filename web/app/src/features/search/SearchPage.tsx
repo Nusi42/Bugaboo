@@ -17,6 +17,8 @@ export interface SearchPageProps {
   readonly onState: (state: SearchState, step: HistoryStep) => void;
   /** The list of what the search finds (WP-08): the issue list is its own area, so the page is given it. */
   readonly results: (input: ResultsInput) => ReactNode;
+  /** What a phone shows before *Filters* in the row of the bar (the *Legend* button of the list). */
+  readonly phoneStart?: ReactNode;
 }
 
 /**
@@ -25,7 +27,7 @@ export interface SearchPageProps {
  * search for anyone who may see it. The columns, the spacing and the grouping are in the address
  * too, and *Save search* keeps them with the text.
  */
-export function SearchPage({ state, onState, results }: SearchPageProps) {
+export function SearchPage({ state, onState, results, phoneStart }: SearchPageProps) {
   usePageTitle(t("search.page.title"));
   const [stale, setStale] = useState(false);
   const forms = useCanonicalForms();
@@ -43,6 +45,7 @@ export function SearchPage({ state, onState, results }: SearchPageProps) {
         onText={onText}
         onStale={setStale}
         listView={{ view, onView }}
+        phoneStart={phoneStart}
         actions={
           <SaveSearchButton
             text={state.text}
