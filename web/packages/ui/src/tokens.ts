@@ -210,6 +210,7 @@ export const tokenNames = [
   "size-bar-sheet",
   "size-bar-ticked",
   "size-matrix-cell",
+  "size-option-gap",
   "cue-strength",
   "size-body-gap",
   "size-page-gutter",

@@ -209,6 +209,8 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
+    // The gap between the rows of a list in a picker: the box, its height and the lines at its ends use it.
+    size "size-option-gap" "$space-1"
     // How much of the line color the shadow at the end of a scrolling box starts with (a percent).
     number "cue-strength" 55
     // The gap between the things in the body of the question Move: the shadow lines at its ends take it back.
@@ -764,6 +766,14 @@ mixin "page-column" {
     max-width "$size-page"
     min-width 0
     margin 0 auto
+}
+
+// What the page is drawn in: the centered column, its things under each other with the page gutter between them.
+mixin "page-body" {
+    use "page-column"
+    display flex
+    flex-direction column
+    gap "$size-page-gutter"
 }
 
 // The focus view takes the whole width that the narrowed sidebar leaves.
@@ -1750,10 +1760,10 @@ part "picker.legend[variant=boxed]" {
 part "picker.options[variant=list]" {
     display flex
     flex-direction column
-    gap "$space-1"
+    gap "$size-option-gap"
     // The seven rows are the room inside; the padding for the ring is around them, so the last row has room below it.
     box-sizing content-box
-    max-height "calc($size-control * 7 + $space-1 * 6)"
+    max-height "calc($size-control * 7 + $size-option-gap * 6)"
     use "ring-room"
     list-style none
     overflow-y auto
@@ -1764,15 +1774,19 @@ part "picker.options[variant=list]" {
 
 // The gap of the rows is taken back, so the lines at the ends take no room.
 part "picker.options[variant=list]::before" {
-    use "edge-shadow-start"
-    top "calc(-1 * $ring-room)"
-    margin-block-end "calc(-1 * $space-1)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-start"
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $size-option-gap)"
+    }
 }
 
 part "picker.options[variant=list]::after" {
-    use "edge-shadow-end"
-    bottom "calc(-1 * $ring-room)"
-    margin-block-start "calc(-1 * $space-1)"
+    supports "(animation-timeline: scroll())" {
+        use "edge-shadow-end"
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $size-option-gap)"
+    }
 }
 
 // Rows that are one button each reach out by the ring room, so their text stands on the edge of the
@@ -4522,10 +4536,7 @@ part "app-layout:has(app-layout.inner[variant=wide]) window-dock" {
 }
 
 part "app-layout.inner" {
-    use "page-column"
-    display flex
-    flex-direction column
-    gap "$space-4"
+    use "page-body"
 }
 
 // The focus view (M2C-F81) takes the whole width that the narrowed sidebar leaves.
@@ -4535,10 +4546,7 @@ part "app-layout.inner[variant=wide]" {
 
 // An item of a list on a phone is a screen of its own: the page column and what else the content holds give way to it.
 part "item-screen" {
-    use "page-column"
-    display flex
-    flex-direction column
-    gap "$size-page-gutter"
+    use "page-body"
 }
 
 part "app-layout.main:has(item-screen) app-layout.inner" {

@@ -928,9 +928,9 @@ optgroup {
 [data-part="picker.options"][data-variant~="list"] {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--size-option-gap);
   box-sizing: content-box;
-  max-height: calc(var(--size-control) * 7 + var(--space-1) * 6);
+  max-height: calc(var(--size-control) * 7 + var(--size-option-gap) * 6);
   scroll-padding: var(--ring-room);
   margin-block: 0;
   padding: var(--ring-room);
@@ -963,44 +963,48 @@ optgroup {
   }
 }
 
-[data-part="picker.options"][data-variant~="list"]::before {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-in;
-  animation-range: 0% var(--space-3);
-  top: calc(-1 * var(--ring-room));
-  margin-block-end: calc(-1 * var(--space-1));
+@supports (animation-timeline: scroll()) {
+  [data-part="picker.options"][data-variant~="list"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: calc(-1 * var(--ring-room));
+    margin-block-end: calc(-1 * var(--size-option-gap));
+  }
 }
 
-[data-part="picker.options"][data-variant~="list"]::after {
-  content: "";
-  position: sticky;
-  z-index: var(--z-raised);
-  display: block;
-  flex: none;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 0 var(--space-3) var(--border-width)
-    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
-  animation-timeline: scroll(nearest);
-  animation-fill-mode: both;
-  animation-timing-function: linear;
-  animation-name: cue-out;
-  animation-range: calc(100% - var(--space-3)) 100%;
-  bottom: calc(-1 * var(--ring-room));
-  margin-block-start: calc(-1 * var(--space-1));
+@supports (animation-timeline: scroll()) {
+  [data-part="picker.options"][data-variant~="list"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width)
+      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: calc(-1 * var(--ring-room));
+    margin-block-start: calc(-1 * var(--size-option-gap));
+  }
 }
 
 [data-part="picker.options"][data-variant~="list"]:has([data-part="picker.choice"]) {
