@@ -10,7 +10,7 @@ A filter that has no picker is a button with a dashed outline and its text. Pres
 
 ## Advanced search
 
-Write the search as text, for example `status is Open and assignedTo is me`. The words are marked, suggestions come up where the cursor is, and a mistake is underlined and told in plain words below the box before anything is sent to the server. Press `Esc` to close the suggestions. Press "Help" for a sheet of the words with examples that go into the search with one press.
+Write the search as text, for example `status is Open and assigned to is me`. The words are marked, suggestions come up where the cursor is, and a mistake is underlined and told in plain words below the box before anything is sent to the server. Press `Esc` to close the suggestions. Press "Help" for a sheet of the words with examples that go into the search with one press.
 
 A field you may not read is told exactly like a field that does not exist.
 
