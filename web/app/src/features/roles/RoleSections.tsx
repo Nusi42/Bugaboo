@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card, Link, partOf, part } from "@bugaboo/ui";
+import { Card, PageBack, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { PermissionsCard } from "./PermissionsCard.tsx";
@@ -29,9 +29,7 @@ export function RoleSections({ role, used }: RoleSectionsProps) {
           })}
         </p>
         <RoleName key={role.name} id={role.id} name={role.name} version={role.version} />
-        <div {...partOf(part.row)}>
-          <Link href={paths.roles}>{t("roles.back")}</Link>
-        </div>
+        <PageBack href={paths.roles} label={t("roles.back")} />
       </Card>
       <PermissionsCard role={role} />
       <RoleActions role={role} used={used} />

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Link, Switch, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Link, PageBack, Switch, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { paths } from "../../shared/paths.ts";
@@ -37,7 +37,7 @@ function Page({ field }: { readonly field: OwnField }) {
     <div {...partOf(part.stack)}>
       <Card heading={field.name} level={1}>
         <p {...partOf(part.muted)}>{detailsOf(field)}</p>
-        <Link href={paths.fields}>{t("fields.back")}</Link>
+        <PageBack href={paths.fields} label={t("fields.back")} />
       </Card>
       <FieldSections field={field} />
       <Card heading={t("fields.see-title")}>

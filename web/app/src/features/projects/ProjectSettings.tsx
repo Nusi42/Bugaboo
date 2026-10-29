@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, partOf, part, useLayout } from "@bugaboo/ui";
+import { Card, PageBack } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
@@ -9,15 +9,6 @@ import { MoveProject } from "./MoveProject.tsx";
 import { ProjectSettingsFrame } from "./ProjectSettingsFrame.tsx";
 import type { OneProject } from "./use-projects.ts";
 import { mayChangeProject, mayMoveProject } from "../../shared/project-pages.ts";
-
-/** *Back to the project*; on a phone the bar of the screen has Back already. */
-function BackToProject({ shortName }: { readonly shortName: string }) {
-  return useLayout() === "phone" ? null : (
-    <div {...partOf(part.row)}>
-      <Link href={projectAddress(shortName)}>{t("projects.settings-back")}</Link>
-    </div>
-  );
-}
 
 /** The settings once the project is known: the name and short name, and *Move*, below the tabs. */
 export function ProjectSettings({
@@ -34,7 +25,7 @@ export function ProjectSettings({
   return (
     <ProjectSettingsFrame project={project}>
       <Card heading={t("projects.settings-title", { name })} level={1}>
-        <BackToProject shortName={shortName} />
+        <PageBack href={projectAddress(shortName)} label={t("projects.settings-back")} />
       </Card>
       {mayChange ? (
         <Card heading={t("projects.edit-title")}>
