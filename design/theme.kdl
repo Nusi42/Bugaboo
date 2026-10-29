@@ -3653,6 +3653,7 @@ part "confirm.body::after" {
     margin-block-start "calc(-1 * $size-body-gap)"
 }
 
+// The title of a question or of a sheet (the fields, the help): bold, at the top, with no line of its own.
 part "confirm.title" {
     margin 0
     font-size "$fs-lg"
@@ -4498,8 +4499,8 @@ part "app-layout.main:focus" {
     outline none
 }
 
-// While a window is minimized to its bar at the bottom of the page, the page has room for the bar at its end, so
-// the bar covers no row of a list (M5 exit, O7).
+// While a window is minimized to its strip at the bottom of the page, the page has room for the strip under its end, so
+// the strip covers no row of a list and no frame of a card at the end of the page (M5 exit, O7).
 part "app-layout:has(window-dock) app-layout.main" {
     padding-block-end "calc($size-page-gutter + $size-dock-strip)"
 }
