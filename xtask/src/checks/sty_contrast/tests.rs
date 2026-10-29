@@ -483,6 +483,28 @@ fn the_knob_of_a_switch_is_seen_on_its_track_in_every_theme() {
 }
 
 #[test]
+fn a_main_button_that_cannot_be_pressed_is_told_from_the_surface_and_stays_readable() {
+    // M5 exit: in Dusk and Midnight it read like an enabled outlined button. Its fill, the color of the dividers,
+    // put back next to the raised surface is rejected, and so are quiet words that sink into the fill.
+    let findings = evaluate(&with_value("border", "dusk", "#30363f"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`border`") && f.message.contains("`bg-raised`")),
+        "{:?}",
+        messages(&findings)
+    );
+    let findings = evaluate(&with_value("fg-muted", "dusk", "#555b67"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`fg-muted` on `border`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
 fn bad_example() {
     // Light grey text on the white page in Daylight.
     let findings = evaluate(&with_value("fg", "daylight", "#cccccc"));

@@ -999,8 +999,9 @@ optgroup {
 }
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
-  border-color: var(--fg-muted);
-  background: var(--bg-sunken);
+  opacity: 1;
+  border-color: var(--border);
+  background: var(--border);
   color: var(--fg-muted);
 }
 

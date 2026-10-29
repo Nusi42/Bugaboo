@@ -435,6 +435,11 @@ contrast min=4.5 {
         on "accent"
     }
 
+    stronger min=4.5 reason="The quiet words of a main button that cannot be pressed stand on its grey fill, the color of the dividers: they stay readable (M5 exit)." {
+        text "fg-muted"
+        on "border"
+    }
+
     stronger min=5 reason="The ID, the hint and the quiet words of a row are small and thin and are read on the tints all day: they reach 5:1 there, not only the 4.5:1 that every text color has (M5 exit, L23: sampled in a picture the ID of a row looked like 4.2:1). With the device setting for more contrast every text color already asks 7:1 (the `more` rule)." {
         text "fg-muted" "fg-subtle"
         on "tint-ns" "tint-ip" "tint-done"
@@ -462,6 +467,13 @@ contrast min=4.5 {
 distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="The tints of Not started, In progress and Done differ from each other by at least 11 (delta E) and from the plain card by at least 7.5, in every theme." {
     states "tint-ns" "tint-ip" "tint-done"
     surfaces "bg-canvas" "bg-raised"
+}
+
+// A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
+// the fills of a chosen thing (a selected segment, the soft accent) by a clear difference of color, in every theme.
+distinct min-delta-e-against-surfaces=6 reason="The fill of a main button that cannot be pressed (the color of the dividers) differs from the raised surface, the selected fill and the soft accent fill by at least 6 (delta E), in every theme (M5 exit)." {
+    states "border"
+    surfaces "bg-raised" "bg-selected" "accent-soft"
 }
 
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
@@ -1034,14 +1046,16 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
-// A main button that cannot be pressed yet is a sunken, flat button with quiet words: not a pale copy of the
+// A main button that cannot be pressed yet is a flat grey chip (the color of the dividers) with quiet words and no
+// fading: in the dark themes the sunken fill read like an enabled outlined button, and a faded fill like the card. Not a pale copy of the
 // filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
 // words (the review of M5, S20), and not the soft accent fill either, which a selected segment or menu item
-// has and which reads as "chosen". It has the edge of every button that cannot be pressed. The dashed edge
+// has and which reads as "chosen". It has no edge of its own (its edge is its fill). The dashed edge
 // belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
-    border-color "$fg-muted"
-    background "$bg-sunken"
+    opacity 1
+    border-color "$border"
+    background "$border"
     color "$fg-muted"
 }
 
