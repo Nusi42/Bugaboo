@@ -436,7 +436,7 @@
   --accent: #2f5d8a;
   --accent-soft: #e4ecf4;
   --accent-fg: #284f75;
-  --disabled-fill: #d9d0c2;
+  --disabled-fill: #d3d1ce;
   --on-disabled: #564e45;
   --on-accent: #ffffff;
   --danger: #b23a2e;
@@ -572,7 +572,7 @@
   --accent: #9483ff;
   --accent-soft: #221d47;
   --accent-fg: #b7abff;
-  --disabled-fill: #272a31;
+  --disabled-fill: #30333a;
   --on-disabled: #9ca3af;
   --on-accent: #0b0820;
   --danger: #ff7a70;

@@ -310,7 +310,7 @@ tokens {
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
     // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
     // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
-    color "disabled-fill" daylight="#d7dbe1" paper="#d9d0c2" dusk="#434955" midnight="#272a31" forced="ButtonFace"
+    color "disabled-fill" daylight="#d7dbe1" paper="#d3d1ce" dusk="#434955" midnight="#30333a" forced="ButtonFace"
     color "on-disabled" daylight="#4d5461" paper="#564e45" dusk="#c0c6d1" midnight="#9ca3af" daylight-more="#333843" paper-more="#3d3731" dusk-more="#e6e9ef" midnight-more="#c4c9d2" forced="GrayText"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
     color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
@@ -503,11 +503,12 @@ distinct max-chroma-of-states=3 reason="The tint of Not started is a neutral gre
     surfaces "bg-raised"
 }
 
-// A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
-// the fills of a chosen thing (a selected segment, the soft accent) by a clear difference of color, in every theme.
-distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that cannot be pressed differs from the raised and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit)." {
+// A button with a box that cannot be pressed is a grey chip that is told from every surface it stands on (the page, the
+// panel, the card, the sunken boxes) and from the fills of a chosen thing (a selected segment, the soft accent) by a clear
+// difference of color, in every theme. It is the grey of its theme (Paper's tan chip read as a button to press).
+distinct min-delta-e-against-surfaces=7.5 reason="The fill of a button with a box that cannot be pressed differs from the page, the panel, the card and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit, F-A9)." {
     states "disabled-fill"
-    surfaces "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
+    surfaces "bg-canvas" "bg-surface" "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
 }
 
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
@@ -1083,6 +1084,18 @@ part "visually-hidden" {
     use "hidden-text"
 }
 
+// A button with a box that cannot be pressed: a flat grey chip with quiet words, its edge its fill (F-A9). Forced colors
+// draw its edge in the colour of words that cannot be used.
+mixin "disabled-chip" {
+    border-color "$disabled-fill"
+    background "$disabled-fill"
+    color "$on-disabled"
+    cursor default
+    forced {
+        border-color GrayText
+    }
+}
+
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
 //
 // The variants come before the states, so that a hovered quiet button is hovered.
@@ -1106,13 +1119,7 @@ part "button" {
 // mistake to be fixed). It comes before the looks and has no more weight than they: a look without a box (quiet, item)
 // keeps none and fades instead (the rule after the looks).
 part "button[disabled]" {
-    border-color "$disabled-fill"
-    background "$disabled-fill"
-    color "$on-disabled"
-    cursor default
-    forced {
-        border-color GrayText
-    }
+    use "disabled-chip"
 }
 
 part "button[variant=wide]" {
@@ -1224,14 +1231,7 @@ part "button[variant=quiet][disabled]" "button[variant=item][disabled]" {
 // has and which reads as "chosen". It has no edge of its own (its edge is its fill). The dashed edge
 // belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" "button[variant=danger][disabled]" {
-    opacity 1
-    border-color "$disabled-fill"
-    background "$disabled-fill"
-    color "$on-disabled"
-    // Forced colors draw the edge of a button that cannot be pressed in the colour of words that cannot be used.
-    forced {
-        border-color GrayText
-    }
+    use "disabled-chip"
 }
 
 part "button[state=busy]" {

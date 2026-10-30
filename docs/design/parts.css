@@ -254,10 +254,10 @@ optgroup {
 
 [data-part="button"][data-variant~="primary"][data-disabled],
 [data-part="button"][data-variant~="danger"][data-disabled] {
-  opacity: 1;
   border-color: var(--disabled-fill);
   background: var(--disabled-fill);
   color: var(--on-disabled);
+  cursor: default;
 }
 
 @media (forced-colors: active) {
