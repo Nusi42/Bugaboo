@@ -1071,12 +1071,12 @@ base "h1" "h2" "h3" "h4" "h5" "h6" "th" "strong" "b" "optgroup" {
     font-weight "$weight-regular"
 }
 
-// The rule React Aria would add itself: pressing a control does not wait for a double tap.
 // What a person types wraps as typed: the wrapping of the page that keeps a last word company would move it while typing.
 base "textarea" "[contenteditable]" {
     text-wrap wrap
 }
 
+// The rule React Aria would add itself: pressing a control does not wait for a double tap.
 base "[data-react-aria-pressable]" {
     touch-action "pan-x pan-y pinch-zoom"
 }
