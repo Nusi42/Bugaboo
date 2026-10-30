@@ -1920,13 +1920,6 @@ part "picker.choice" {
     cursor pointer
 }
 
-part "picker.choice picker.name" {
-    overflow hidden
-    overflow-wrap normal
-    text-overflow ellipsis
-    white-space nowrap
-}
-
 part "picker.id" {
     margin-inline-end "$space-2"
     font-family "$mono"

@@ -1907,13 +1907,6 @@ optgroup {
   cursor: pointer;
 }
 
-[data-part="picker.choice"] [data-part="picker.name"] {
-  overflow: hidden;
-  overflow-wrap: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 [data-part="picker.id"] {
   margin-inline-end: var(--space-2);
   font-family: var(--mono);

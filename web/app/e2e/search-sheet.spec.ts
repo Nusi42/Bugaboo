@@ -3,7 +3,7 @@ import { type Locator } from "@playwright/test";
 
 import { createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { createProjectWithIssue } from "./support/issues.ts";
+import { createProjectWithIssue, webIssues } from "./support/issues.ts";
 import { layoutOf, nothing, onThisLayout } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { box, boxOf, openBar, openSearch } from "./support/search-bar.ts";
@@ -168,4 +168,18 @@ test("qry_01 the help that does not fit shows the shadow where more follows (M5 
     .poll(() => panel.evaluate((node) => node.scrollHeight > node.clientHeight + 1))
     .toBe(true);
   await expect.poll(() => shadowsOf(panel)).toEqual({ start: 0, end: 1 });
+});
+
+test("qry_02 the issue finder writes a long title out on more lines, never cut with dots (M5 exit F-A7)", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is High");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Part of" }) }).click();
+  await page.getByRole("searchbox", { name: t("search.bar.issue-search") }).fill("login");
+  const name = page.locator("[data-part='picker.choice'] [data-part='picker.name']").first();
+  await expect(name).toContainText(webIssues.login);
+  await expect(name).not.toHaveCSS("white-space", "nowrap");
+  expect(await name.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
 });
