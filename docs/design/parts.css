@@ -5388,6 +5388,10 @@ optgroup {
   word-break: break-all;
 }
 
+[data-part="list-row"][data-variant~="grid"] [data-part="unbroken-word"] {
+  display: inline;
+}
+
 [data-part="files.name"] {
   font-weight: var(--weight-regular);
   font-size: var(--fs-md);

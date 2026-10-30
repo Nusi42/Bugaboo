@@ -6006,6 +6006,12 @@ part "unbroken-word" {
     word-break break-all
 }
 
+// In a cell of the grid of a computer a line does not wrap: the pieces are plain words there, so a line too long for its
+// column ends in the dots of the cell instead of a name clipped whole (the people of a row).
+part "list-row[variant=grid] unbroken-word" {
+    display inline
+}
+
 part "files.name" {
     font-weight "$weight-regular"
     font-size "$fs-md"
