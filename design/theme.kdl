@@ -713,12 +713,25 @@ mixin "pick-row" {
     cursor pointer
 }
 
-// The words of a button, a menu item or a branch of the tree.
-mixin "menu-text" {
-    color "$fg"
+// What stands in a button: its icon and its words on one line, in the middle, at the gap of a button.
+mixin "button-content" {
+    display inline-flex
+    align-items center
+    justify-content center
+    gap "$space-2"
+}
+
+// The size and weight of the words of a button, whatever their color.
+mixin "button-words" {
     font-size "$fs-ui"
     font-weight "$weight-regular"
     text-decoration none
+}
+
+// The words of a button, a menu item or a branch of the tree.
+mixin "menu-text" {
+    color "$fg"
+    use "button-words"
 }
 
 // Facts under a name, at the start edge: the row of a list on a phone (a field, a label), whatever the facts say.
@@ -1059,6 +1072,11 @@ base "h1" "h2" "h3" "h4" "h5" "h6" "th" "strong" "b" "optgroup" {
 }
 
 // The rule React Aria would add itself: pressing a control does not wait for a double tap.
+// What a person types wraps as typed: the wrapping of the page that keeps a last word company would move it while typing.
+base "textarea" "[contenteditable]" {
+    text-wrap wrap
+}
+
 base "[data-react-aria-pressable]" {
     touch-action "pan-x pan-y pinch-zoom"
 }
@@ -1087,10 +1105,7 @@ part "visually-hidden" {
 // The variants come before the states, so that a hovered quiet button is hovered.
 
 part "button" {
-    display inline-flex
-    align-items center
-    justify-content center
-    gap "$space-2"
+    use "button-content"
     use "control-box"
     padding "$space-1" "$pad-control"
     use "menu-text"
@@ -1685,10 +1700,10 @@ part "overlay.modal[variant=bottom]" {
     border-radius "$r-card $r-card 0 0"
 }
 
-// The menu that slides in on a tablet is the sidebar of a computer: as wide inside its own padding, so its items keep the
-// room they have there (*Quick search* beside its keys on one line, M2 15).
+// The menu that slides in on a tablet is as wide as what it holds, the sidebar of a computer, so its items keep the room
+// they have there (*Quick search* beside its keys on one line, M2 15).
 part "overlay.modal[variant=start]" {
-    width "calc($size-sidebar + 2 * $space-2)"
+    width fit-content
     max-width "$size-sheet-share"
     height "100%"
     border-radius "0 $r-card $r-card 0"
@@ -3043,9 +3058,9 @@ part "window.control[variant=close]" {
 // *Back* stands at the start of the title bar, as on a page (R1, UX review of M4, A10).
 part "window.control[variant=back]" {
     order -1
+    use "button-content"
     width auto
     padding 0 "$pad-control"
-    gap "$space-1"
 }
 
 // On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
@@ -3061,15 +3076,13 @@ part "overlay.modal[variant=full] window.title" {
     line-height "$lh-tight"
 }
 
-// Back of the bar of a screen is Back of the top bar of a page: the size of a button's words and its gap (M5 exit, share on
-// a phone: 14 against 16 px, the title further in).
+// Back of the bar of a screen is Back of the top bar of a page: the words of a button (M5 exit, share on a phone: 14
+// against 16 px, the title further in).
 part "overlay.modal[variant=full] window.control[variant=back]" {
     use "hang-start"
-    gap "$space-2"
+    use "button-words"
     color "$accent-fg"
-    font-size "$fs-ui"
 }
-
 
 part "window.control[focus-visible]" {
     use "ring-inside"
@@ -4512,12 +4525,10 @@ part "shell.title" {
 // The pages before sign-in: the name, the narrow content and the choice of theme in one column, in the middle of the window
 // (M5 exit: it stood about 70 px left of the middle in a wider frame), each the same gap from the next.
 part "shell.page" {
-    box-sizing border-box
     display flex
     flex-direction column
     gap "$space-5"
-    width "100%"
-    max-width "calc($size-form + 2 * $space-4)"
+    max-width "$size-form"
     margin 0 auto
     padding "$space-4"
 }
@@ -4551,9 +4562,8 @@ part "shell.narrow" {
     max-width "$size-form"
 }
 
+// As wide as the column of the page, so no wider than the card above it: the choices of theme wrap there as they do on a phone.
 part "shell.footer" {
-    // No wider than the card above it: the choices of theme wrap there as they do on a phone.
-    max-width "$size-form"
     padding-top "$space-4"
     border-top "$border-width solid $divider"
 }
@@ -4687,7 +4697,6 @@ part "sidebar[variant=drawer]" {
     position static
     height auto
     overflow-y visible
-    width "100%"
     border-right 0
     background transparent
 }
