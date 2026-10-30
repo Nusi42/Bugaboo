@@ -1714,9 +1714,10 @@ part "overlay.modal[variant=top]" {
 
 // The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
 // screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
-// of a window or of a question, the list of people. The scroll position drives them, where the browser has scroll timelines.
+// of a window or of a question, the list of people, the help of the search, the body of a sheet of a phone and the offers
+// of Advanced search (L6). The scroll position drives them, where the browser has scroll timelines.
 // A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
-part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" {
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -1724,7 +1725,7 @@ part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scrol
     }
 }
 
-part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" {
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
@@ -3760,10 +3761,13 @@ part "overlay.modal[variant=full] confirm.dialog" {
     min-height 0
 }
 
-// The foot of a sheet stays at the foot of it, whatever its content adds.
+// The foot of a sheet stays at the foot of it, whatever its content adds, and is told from what scrolls above it by
+// the divider of the foot of a window (M5 exit F-A6).
 part "bottom-sheet.actions" {
     flex none
     margin-block-start auto
+    padding-block-start "$space-4"
+    border-top "$border-width solid $divider"
 }
 
 part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" "overlay[variant=bottom] bottom-sheet.actions" {
@@ -4037,7 +4041,7 @@ part "people" {
 
 // Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
 // boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
-part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" {
+part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" "search-panel" "bottom-sheet search-bar" "search-suggestions" {
     supports "not (animation-timeline: scroll())" {
         use "scroll-cue"
     }
@@ -13383,7 +13387,53 @@ part "bottom-sheet search-bar" {
     flex "1 1 auto"
     min-height 0
     overflow-y auto
+    // It clips what is outside it: room for the ring of the box and the buttons at every side (F-A6).
+    use "ring-room"
+    use "ring-room-flush"
 }
+
+// The shadows of the boxes of the search that scroll stand at the edge of the box, over its padding, and take no gap
+// of the column they stand in.
+part "bottom-sheet search-bar::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $space-3)"
+    }
+}
+
+part "bottom-sheet search-bar::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $space-3)"
+    }
+}
+
+part "search-panel::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $space-5)"
+        margin-block-end "calc(-1 * $space-4)"
+    }
+}
+
+part "search-panel::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-5)"
+        margin-block-start "calc(-1 * $space-4)"
+    }
+}
+
+part "search-suggestions::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $space-1)"
+    }
+}
+
+part "search-suggestions::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-1)"
+    }
+}
+
 
 // The sheet of the filters has a fixed height (see size-bar-sheet), so it does not jump as the filters change.
 part "bottom-sheet[variant=tall]" {

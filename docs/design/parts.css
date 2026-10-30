@@ -811,7 +811,10 @@ optgroup {
   [data-part="list-scroll"]::before,
   [data-part="window.body"]::before,
   [data-part="confirm.body"]::before,
-  [data-part="people"]::before {
+  [data-part="people"]::before,
+  [data-part="search-panel"]::before,
+  [data-part="bottom-sheet"] [data-part="search-bar"]::before,
+  [data-part="search-suggestions"]::before {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -836,7 +839,10 @@ optgroup {
   [data-part="list-scroll"]::after,
   [data-part="window.body"]::after,
   [data-part="confirm.body"]::after,
-  [data-part="people"]::after {
+  [data-part="people"]::after,
+  [data-part="search-panel"]::after,
+  [data-part="bottom-sheet"] [data-part="search-bar"]::after,
+  [data-part="search-suggestions"]::after {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -2907,6 +2913,8 @@ optgroup {
 [data-part="bottom-sheet.actions"] {
   flex: none;
   margin-block-start: auto;
+  padding-block-start: var(--space-4);
+  border-top: var(--border-width) solid var(--divider);
 }
 
 [data-part="overlay"][data-variant~="full"] [data-part="confirm.actions"],
@@ -3224,7 +3232,10 @@ optgroup {
   [data-part="list-scroll"],
   [data-part="window.body"],
   [data-part="confirm.body"],
-  [data-part="people"] {
+  [data-part="people"],
+  [data-part="search-panel"],
+  [data-part="bottom-sheet"] [data-part="search-bar"],
+  [data-part="search-suggestions"] {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
@@ -6367,6 +6378,50 @@ optgroup {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  scroll-padding: var(--ring-room);
+  margin-block: 0;
+  padding: var(--ring-room);
+  margin-inline: calc(var(--ring-room) * -1);
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="bottom-sheet"] [data-part="search-bar"]::before {
+    top: calc(-1 * var(--ring-room));
+    margin-block-end: calc(-1 * var(--space-3));
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="bottom-sheet"] [data-part="search-bar"]::after {
+    bottom: calc(-1 * var(--ring-room));
+    margin-block-start: calc(-1 * var(--space-3));
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="search-panel"]::before {
+    top: calc(-1 * var(--space-5));
+    margin-block-end: calc(-1 * var(--space-4));
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="search-panel"]::after {
+    bottom: calc(-1 * var(--space-5));
+    margin-block-start: calc(-1 * var(--space-4));
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="search-suggestions"]::before {
+    top: calc(-1 * var(--space-1));
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="search-suggestions"]::after {
+    bottom: calc(-1 * var(--space-1));
+  }
 }
 
 [data-part="bottom-sheet"][data-variant~="tall"] {
