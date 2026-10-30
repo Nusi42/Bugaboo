@@ -12342,7 +12342,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.done.go", "Open Bugaboo"),
     (
         "first-run.done.text",
-        "Your account is ready and you are signed in.",
+        "Your account is ready and you're signed in.",
     ),
     ("first-run.done.title", "You are all set"),
     (

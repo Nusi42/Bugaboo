@@ -192,7 +192,7 @@ Rules:
 | **Connected apps**       | Apps you allowed to use your account, including AI apps            | OAuth clients                      |
 | **Sign in / Sign out**   | Open or end your use of Bugaboo with your password or a passkey    | log in, log out, login, logout     |
 | **Sign out everywhere**  | End all your sessions at once, this one included                   | revoke all tokens, global logout   |
-| **Session**              | One place where you are signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
+| **Session**              | One place where you're signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
 | **Where you're signed in** | The list of your sessions, with the browser, the system and when each was last used | active sessions, devices, logins |
 | **Sign up**              | Ask for your own account without an invitation, when an administrator allows it and e-mail is on: an e-mail with a link goes to your address, and opening it lets you choose your name and password | register, registration, self-service signup |
 | **Invitation**           | A link an administrator creates so that one person can create their account; it works once and runs out after 7 days | invite code, signup token |

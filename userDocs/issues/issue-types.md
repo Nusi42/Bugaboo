@@ -13,7 +13,7 @@ Below the list, "Create an issue type" adds a type at the end of the list. It is
 
 If two people change a type at the same time, the second one is told that someone changed it first and can look again.
 
-An access key can never create or change issue types: they stay in the app, where you are signed in.
+An access key can never create or change issue types: they stay in the app, where you're signed in.
 
 ## Offered in
 
