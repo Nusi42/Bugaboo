@@ -197,6 +197,15 @@ macro_rules! define_ordered_id {
             /// Fails when the source gives a moment before 1970.
             pub fn generate(source: &mut impl IdSource) -> Result<Self, IdError> {
                 let time = source.now();
+                Self::generate_at(time, source)
+            }
+
+            /// A new ID made at `time`, with randomness from `source`: for a record whose order is
+            /// the time of what it tells of, not the time it is made.
+            ///
+            /// # Errors
+            /// Fails for a moment before 1970.
+            pub fn generate_at(time: Timestamp, source: &mut impl IdSource) -> Result<Self, IdError> {
                 let mut random = [0; 10];
                 random.copy_from_slice(&source.random()[..10]);
                 Self::from_parts(time, random)
