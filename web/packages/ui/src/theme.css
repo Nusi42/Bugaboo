@@ -4662,6 +4662,10 @@ optgroup {
   padding-block-end: calc(var(--size-page-gutter) + var(--size-dock-strip));
 }
 
+[data-part="app-layout"]:has([data-part="window-dock"]) [data-part="list-scroll"] {
+  max-height: calc(var(--size-list-scroll) - var(--size-dock-strip));
+}
+
 [data-part="app-layout"]:has([data-part="app-layout.inner"][data-variant~="wide"])
   [data-part="window-dock"] {
   padding-inline: var(--size-page-gutter);

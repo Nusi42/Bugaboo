@@ -4585,6 +4585,13 @@ part "app-layout:has(window-dock) app-layout.main" {
     padding-block-end "calc($size-page-gutter + $size-dock-strip)"
 }
 
+// The box of the rows of a list is as high as the window lets it be: with the strip there it gives the strip its room, so at
+// rest the box ends above the strip and the page grows no longer than the window (M5 exit, finding 53). A phone keeps its
+// own height of the box (the rule of a phone list, later).
+part "app-layout:has(window-dock) list-scroll" {
+    max-height "calc($size-list-scroll - $size-dock-strip)"
+}
+
 // The focus view takes the whole width, so the strip has the gutter only.
 part "app-layout:has(app-layout.inner[variant=wide]) window-dock" {
     padding-inline "$size-page-gutter"
