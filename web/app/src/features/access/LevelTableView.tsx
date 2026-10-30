@@ -76,7 +76,12 @@ function TableBody<Subject extends string, Level extends string>({
         />
       ) : null}
       {computer ? (
-        <LevelsMatrix table={table} onChange={edits.change} {...view} />
+        <LevelsMatrix
+          table={table}
+          onChange={edits.change}
+          chosen={previewsRole ? role : undefined}
+          {...view}
+        />
       ) : (
         <RoleLevels table={table} role={role} onChange={edits.change} {...view} />
       )}

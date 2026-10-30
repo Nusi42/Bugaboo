@@ -998,7 +998,7 @@ export const partWords = {
   "access.subheading": { variant: [], state: [] },
   "access.scroll": { variant: [], state: [] },
   "access.matrix": { variant: [], state: [] },
-  "access.matrix-cell": { variant: ["head", "row"], state: [] },
+  "access.matrix-cell": { variant: ["head", "row"], state: ["chosen"] },
   "access.matrix-row": { variant: [], state: [] },
   "access.cell": { variant: ["inline"], state: [] },
   "access.preview-line": { variant: [], state: [] },

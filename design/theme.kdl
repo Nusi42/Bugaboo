@@ -3925,6 +3925,16 @@ part "access.matrix-cell[variant=head]:first-child" {
     z-index "$z-raised"
 }
 
+// The column of the role chosen beside the matrix for its preview (UX §5.2): its head is marked like the open page of a
+// menu, and its cells carry the same fill, so the column is found at a glance once it is scrolled into view.
+part "access.matrix-cell[state=chosen]" {
+    background "$bg-selected"
+}
+
+part "access.matrix-cell[variant=head][state=chosen]" {
+    use "current-item"
+}
+
 part "access.matrix-row:last-child access.matrix-cell" {
     border-bottom 0
 }

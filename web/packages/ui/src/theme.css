@@ -3959,6 +3959,21 @@ optgroup {
   z-index: var(--z-raised);
 }
 
+[data-part="access.matrix-cell"][data-state~="chosen"] {
+  background: var(--bg-selected);
+}
+
+[data-part="access.matrix-cell"][data-variant~="head"][data-state~="chosen"] {
+  background: var(--bg-selected);
+  color: var(--accent-fg);
+}
+
+@media (forced-colors: active) {
+  [data-part="access.matrix-cell"][data-variant~="head"][data-state~="chosen"] {
+    outline: var(--ring-width) solid var(--accent);
+  }
+}
+
 [data-part="access.matrix-row"]:last-child [data-part="access.matrix-cell"] {
   border-bottom: 0;
 }
