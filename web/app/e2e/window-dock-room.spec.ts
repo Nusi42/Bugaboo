@@ -1,20 +1,10 @@
-import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { openNewIssueDialog } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import {
-  boxOf,
-  inDock,
-  minimizeADraft,
-  pageColumn,
-  titleBox,
-  windowButton,
-  windowDock,
-} from "./support/windows.ts";
+import { boxOf, inDock, minimizeADraft, pageColumn, windowDock } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -37,10 +27,7 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   await signIn(page, sampleAdministrator());
   await page.goto(projectIssuesAddress("WEB"));
   await expect(page.getByRole("grid").first()).toBeVisible();
-  await openNewIssueDialog(page);
-  await titleBox(page).fill("A draft");
-  await windowButton(page, t("window.minimize")).click();
-  await expect(windowDock(page)).toBeVisible();
+  await minimizeADraft(page);
   await scrollToEnd(page);
   const dock = await boxOf(windowDock(page));
   const content = await boxOf(pageColumn(page).column);
