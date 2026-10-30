@@ -71,7 +71,11 @@ export function SavedSearchesSection({ narrow, onNavigate }: SavedSearchesSectio
   const sharedList = useSavedList(savedSet.shared, shown);
   const mine = itemsOf(mineList.data?.pages);
   const shared = itemsOf(sharedList.data?.pages);
-  // An empty section keeps its heading and says so in one line, like *Projects* (UX §3.1).
+  // While the lists are read the section says so in one line, and an empty section keeps its heading and says so in
+  // one line, like *Projects* (UX §3.1): the line is there from the start, so the menu does not grow under the person.
+  if (!narrow && (mineList.isPending || sharedList.isPending)) {
+    return <p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>;
+  }
   if (!narrow && mineList.isSuccess && sharedList.isSuccess && mine.length + shared.length === 0) {
     return <p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>;
   }
