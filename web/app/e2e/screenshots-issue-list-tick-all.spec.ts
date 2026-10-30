@@ -6,9 +6,9 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid } from "./support/list-look.ts";
-import { listWindowInFourThemes, tickShown } from "./support/list-pictures.ts";
+import { listInFourThemes, screenshotFolder, tickShown } from "./support/list-pictures.ts";
 import { prepareLong } from "./support/list-pictures-data.ts";
-import { screenshotFolder } from "./support/screenshots.ts";
+import { minimizeADraft } from "./support/windows.ts";
 
 // The pictures of the offer to tick every result and of the sentence that asks to narrow the
 // search (M5 WP-08). Taken only when `BB_SCREENSHOT_DIR` is set; the builder looks at each.
@@ -29,7 +29,7 @@ test("cfg_02 pictures: tick all results, and narrow the search", async ({ page }
     await tickShown(page);
     await expect(offer).toBeVisible({ timeout: 2000 });
   }).toPass();
-  await listWindowInFourThemes(page, "tick-all");
+  await listInFourThemes(page, "tick-all");
   // More issues than one change may name: the bar says to narrow the search.
   await page.route("**/api/v1/search/issues/count*", (route) =>
     route.fulfill({ json: { issues: 6000 } }),
@@ -40,5 +40,17 @@ test("cfg_02 pictures: tick all results, and narrow the search", async ({ page }
     await tickShown(page);
     await expect(narrow).toBeVisible({ timeout: 2000 });
   }).toPass();
-  await listWindowInFourThemes(page, "tick-narrow");
+  await listInFourThemes(page, "tick-narrow");
+});
+
+test("iss_01 pictures: a long list as the window shows it, and with the strip of a minimized window under it", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "the strip of a phone stands above its bar");
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  await expect(grid(page)).toBeVisible();
+  await listInFourThemes(page, "long");
+  await minimizeADraft(page);
+  await listInFourThemes(page, "long-with-strip");
 });

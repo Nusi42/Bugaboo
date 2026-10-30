@@ -227,3 +227,11 @@ export function shadowsOf(box: Locator): Promise<{ readonly start: number; reado
     end: Math.round(Number(getComputedStyle(node, "::after").opacity)),
   }));
 }
+
+/** Starts a new issue and minimizes its window, so its strip stands at the bottom of the page. */
+export async function minimizeADraft(page: Page): Promise<void> {
+  await openNewIssueDialog(page);
+  await titleBox(page).fill("A draft");
+  await windowButton(page, t("window.minimize")).click();
+  await expect(windowDock(page)).toBeVisible();
+}

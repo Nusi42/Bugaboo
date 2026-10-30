@@ -8,21 +8,10 @@ import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { grid } from "./list-look.ts";
-import { folderOf, screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
+import { folderOf, screenshotFolder, shootWindowAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/list";
-
-/** Takes the open list in the four themes, named for the state it shows and the layout it is on. */
-export async function listInFourThemes(page: Page, name: string): Promise<void> {
-  const layout = layoutOf(page);
-  await inOrder(
-    themes.map((theme) => async () => {
-      await chooseTheme(page, theme);
-      await shotWholeAs(page, `${name}-${layout}`, MILESTONE, theme.id);
-    }),
-  );
-}
 
 /** Takes the window as it is, when the pictures are wanted (`BB_SCREENSHOT_DIR` is set). */
 export async function pictureIfWanted(page: Page, name: string): Promise<void> {
@@ -81,8 +70,11 @@ async function settled(page: Page): Promise<void> {
   });
 }
 
-/** The same without growing the window to the list: what a person sees, for a list that reads more rows when it is taller. */
-export async function listWindowInFourThemes(page: Page, name: string): Promise<void> {
+/**
+ * Takes the open list in the four themes, named for the state it shows and the layout it is on, as the window is: the box
+ * of the rows takes the rest of the window, so a window grown to the page would show nothing of the real box.
+ */
+export async function listInFourThemes(page: Page, name: string): Promise<void> {
   const layout = layoutOf(page);
   await inOrder(
     themes.map((theme) => async () => {

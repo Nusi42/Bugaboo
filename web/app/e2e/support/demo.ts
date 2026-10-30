@@ -7,7 +7,7 @@ import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 import { sampleProjectName, sampleProjects } from "./sample.ts";
 import { tree } from "./projects.ts";
-import { shootWhole, shootWholeAs } from "./screenshots.ts";
+import { shootWhole, shootWholeAs, shootWindowAs } from "./screenshots.ts";
 
 // What the exit demo of M2 and its pictures share (m2-exit-demo.spec.ts).
 
@@ -32,18 +32,29 @@ const DEMO_M3 = "M3/demo";
 /**
  * The screen is good in each of the four themes and is in the pictures of the exit demo of M3, one
  * for each theme (`<step>-<phone|computer>-<theme>.png`): the screen is checked in each theme, and
- * then the pictures are taken when a folder is wanted.
+ * then the pictures are taken when a folder is wanted. `shootAs` takes the picture: the whole page
+ * grown into the window, or the window as it is (a page of a list, whose box of rows takes the rest of it).
  */
-export async function goodInFourThemes(page: Page, step: string, folder = DEMO_M3): Promise<void> {
+export async function goodInFourThemes(
+  page: Page,
+  step: string,
+  folder = DEMO_M3,
+  shootAs: typeof shootWholeAs = shootWholeAs,
+): Promise<void> {
   // The checks first, in the window as it is: the window grown for a picture leaves the bars at
   // its edges in a state that no person ever sees.
   await expectGoodInEveryLook(page);
   await inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await shootWholeAs(page, picture(step, page), folder, theme.id);
+      await shootAs(page, picture(step, page), folder, theme.id);
     }),
   );
+}
+
+/** The same, with the pictures of the window as it is: a page of a list, whose box of rows takes the rest of it. */
+export function goodWindowInFourThemes(page: Page, step: string, folder: string): Promise<void> {
+  return goodInFourThemes(page, step, folder, shootWindowAs);
 }
 
 /** Opens a page and waits for its heading. */

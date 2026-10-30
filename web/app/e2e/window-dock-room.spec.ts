@@ -9,6 +9,7 @@ import { sampleAdministrator } from "./support/sample.ts";
 import {
   boxOf,
   inDock,
+  minimizeADraft,
   pageColumn,
   titleBox,
   windowButton,
@@ -98,10 +99,7 @@ test("ux_8 a list takes the rest of the window, and at rest its card and its row
   await signIn(page, sampleAdministrator());
   await expectListTakesTheRest(page, viewports.computer);
   await expectListTakesTheRest(page, tallWindow);
-  await openNewIssueDialog(page);
-  await titleBox(page).fill("A draft");
-  await windowButton(page, t("window.minimize")).click();
-  await expect(windowDock(page)).toBeVisible();
+  await minimizeADraft(page);
   await expectListAboveStrip(page, viewports.computer);
   await expectListAboveStrip(page, tallWindow);
 });
