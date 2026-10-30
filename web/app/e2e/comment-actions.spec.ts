@@ -4,26 +4,18 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { nothing, onThisLayout } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
-import { viewports } from "../../tooling/viewports.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
-// The buttons under an own comment (ISS-05, M5 exit): Upload files while it is edited, and Edit and Delete on one row.
+// The buttons under an own comment (ISS-05, M5 exit): Upload files while it is edited, and Edit and Delete on one row,
+// also on the smallest phone (360).
 
 test.use({ preparation: { run: prepareWeb } });
 
 test("iss_05 an own comment offers Upload files only while it is edited, and Edit and Delete stand on one row", async ({
   page,
 }) => {
-  // On a phone, the phone of the pictures: from this width the two buttons fit on one row (on the smallest phone, 360,
-  // their words at 16 px are wider than the comment, and they wrap).
-  await onThisLayout(page, {
-    computer: nothing,
-    tablet: nothing,
-    phone: (phone) => phone.setViewportSize(viewports.phoneForPictures),
-  });
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   const box = page.getByRole("textbox", { name: t("comments.write"), exact: true });
@@ -37,6 +29,8 @@ test("iss_05 an own comment offers Upload files only while it is edited, and Edi
   const entry = partIn(page, "history.entry").filter({ hasText: "My own words." }).first();
   const edit = entry.getByRole("button", { name: t("comments.edit"), exact: true });
   await expect(edit).toBeVisible();
+  // The short words stand on the buttons, also on the smallest phone; the names say whose comment it is (WCAG 2.5.3).
+  await expect(edit).toHaveText(t("comments.edit-short"));
   const upload = entry.getByRole("button", { name: t("files.add-to-comment"), exact: true });
   await expect(upload).toHaveCount(0);
   const editBox = await boxOf(edit);

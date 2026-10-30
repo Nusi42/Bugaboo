@@ -433,6 +433,8 @@ export const messages = {
   "history.file-restored": "{who} brought back the file {name}",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
+  "comments.edit-short": "Edit",
+  "comments.delete-short": "Delete",
   "error.issue.parent-circle":
     "That would create a circle of issues or a chain that is too long. Choose another issue.",
   "error.limit.reached": "There is no room for more of these. Take some away first.",
