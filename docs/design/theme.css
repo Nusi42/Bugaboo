@@ -90,6 +90,7 @@
   --size-palette: 560px;
   --size-icon: 20px;
   --size-icon-small: 16px;
+  --size-swatch: calc(96px * var(--text-scale));
   --size-list: 300px;
   --size-list-main: 560px;
   --size-list-item: 240px;

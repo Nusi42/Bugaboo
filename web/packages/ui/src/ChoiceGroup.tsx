@@ -16,8 +16,7 @@ export interface ChoiceGroupProps<Value extends string> {
   /** The visible name of the group, already in the person's language. */
   readonly legend: string;
   readonly choices: readonly Choice<Value>[];
-  /** The chosen one; none while nothing is chosen yet (a form where the server picks when nobody does). */
-  readonly value: Value | undefined;
+  readonly value: Value;
   readonly onChange: (value: Value) => void;
   /** How a choice shows its name, next to the input; the usual label by default. */
   readonly renderLabel?: (choice: Choice<Value>) => ReactNode;

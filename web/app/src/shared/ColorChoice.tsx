@@ -1,11 +1,10 @@
 import { choiceColorWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { ChoiceGroup, partOf, part, type ChoiceColorName } from "@bugaboo/ui";
+import { Icon, iconName, iconSize, partOf, part, type ChoiceColorName } from "@bugaboo/ui";
+import { useId } from "react";
 
-const colorChoices = choiceColorWords.map((word) => ({
-  value: word,
-  label: t(`choice-color.${word}`),
-}));
+/** Words of the HTML standard, not text for people. */
+const radio = "radio";
 
 export interface ColorChoiceProps {
   /** What the choice is called for people who read it with a screen reader: "Color of login". */
@@ -16,19 +15,37 @@ export interface ColorChoiceProps {
 }
 
 /**
- * One of the twelve category colors of the theme (UX §7.1), each shown as a swatch with its name.
- * The color of a choice of an own field, of a tag and of a label is chosen the same way.
+ * One of the twelve category colors of the theme (UX §7.1), each a small swatch with its name, several in a row in a
+ * grid that wraps. The chosen one has a ring and a tick, so it is told by more than its color (also under forced
+ * colors). The color of a choice of an own field, of a tag and of a label is chosen here, the same way.
  */
 export function ColorChoice({ legend, value, onChange }: ColorChoiceProps) {
+  const group = useId();
   return (
-    <ChoiceGroup
-      legend={legend}
-      choices={colorChoices}
-      value={value}
-      renderLabel={(color) => (
-        <span {...partOf(part.fieldSwatch, { variants: [color.value] })}>{color.label}</span>
-      )}
-      onChange={onChange}
-    />
+    <fieldset {...partOf(part.colorChoice)}>
+      <legend {...partOf(part.colorChoiceLegend)}>{legend}</legend>
+      <div {...partOf(part.colorChoiceGrid)}>
+        {choiceColorWords.map((color) => (
+          <label key={color} {...partOf(part.colorChoiceOption)}>
+            <input
+              {...partOf(part.colorChoiceInput)}
+              type={radio}
+              name={group}
+              value={color}
+              checked={value === color}
+              onChange={() => {
+                onChange(color);
+              }}
+            />
+            <span {...partOf(part.fieldSwatch, { variants: [color] })}>
+              <span {...partOf(part.colorChoiceTick)}>
+                <Icon name={iconName.check} size={iconSize.small} />
+              </span>
+              {t(`choice-color.${color}`)}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
