@@ -4123,7 +4123,8 @@ optgroup {
 }
 
 @supports not (animation-timeline: scroll()) {
-  [data-part="people"] {
+  [data-part="people"],
+  [data-part="list-panel"] {
     --cue-cover: var(--bg-surface);
   }
 }

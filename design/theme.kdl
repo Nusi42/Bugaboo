@@ -4073,8 +4073,8 @@ part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body"
     }
 }
 
-// The covers of the old cue in the list of people are the color of its box, the plain surface.
-part "people" {
+// The covers of the old cue in the list of people and in Customize are the color of their box, the plain surface.
+part "people" "list-panel" {
     supports "not (animation-timeline: scroll())" {
         --cue-cover "$bg-surface"
     }
