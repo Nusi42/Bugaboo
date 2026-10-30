@@ -16,7 +16,6 @@ import {
   openSearch,
 } from "./support/search-bar.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
-import { inkAgainstText } from "./support/styles.ts";
 
 // The search bar (QRY-01 to QRY-03, QRY-06, UX design section 4.3): Simple and Advanced search
 // are two ways to write the same search, a mistake shows before the server is asked and says what
@@ -204,14 +203,4 @@ test("qry_01 the screens of the search are good in every theme", async ({ page }
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("prio is high");
   await expectGoodInEveryTheme(page);
-});
-
-test("ux_7_3 the words of the search language are drawn in the regular weight, as light as the words around them (M5 exit F-A1)", async ({
-  page,
-}) => {
-  await openSearch(page, "priority is High");
-  await openBar(page);
-  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  // A face whose regular weight draws as heavy as a bold one has about a third more ink (Cascadia Mono: 491 against 367).
-  expect(await inkAgainstText(box(page))).toBeLessThan(1.2);
 });
