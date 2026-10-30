@@ -17,7 +17,7 @@ use bb_core::notification::{
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, OnConflict, Order, Query, SubQueryStatement};
+use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SubQueryStatement};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
@@ -92,15 +92,17 @@ fn time_of(recipient: UserId, before: NotificationId) -> Expr {
 }
 
 /// The rows that come after `before` in the list, newest first by the time of the event and then
-/// by the ID: an earlier event, or one of the same moment with a smaller ID.
-fn after_in_the_list(recipient: UserId, before: NotificationId) -> Cond {
-    Cond::any()
-        .add(Expr::col(NotificationRow::At).lt(time_of(recipient, before)))
-        .add(
-            Cond::all()
-                .add(Expr::col(NotificationRow::At).eq(time_of(recipient, before)))
-                .add(Expr::col(NotificationRow::Id).lt(before.stored())),
-        )
+/// by the ID: an earlier event, or one of the same moment with a smaller ID. One comparison of the
+/// pair, so the index (person, time, ID) seeks to the place; no row there gives an empty page.
+fn after_in_the_list(recipient: UserId, before: NotificationId) -> Expr {
+    Expr::tuple([
+        Expr::col(NotificationRow::At),
+        Expr::col(NotificationRow::Id),
+    ])
+    .lt(Expr::tuple([
+        time_of(recipient, before),
+        Expr::val(before.stored()),
+    ]))
 }
 
 fn ids_of(ids: &[NotificationId]) -> Vec<Vec<u8>> {
@@ -218,7 +220,7 @@ impl NotificationStore for AuthStorage {
             }
         }
         if let Some(before) = before {
-            select.cond_where(after_in_the_list(recipient, before));
+            select.and_where(after_in_the_list(recipient, before));
         }
         self.database()
             .fetch_all(&select)
