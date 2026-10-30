@@ -40,7 +40,8 @@ test("ux_3_2 beside the list the open issue scrolls in a box of its own, as high
   page,
 }) => {
   test.skip(layoutOf(page) !== "computer", "only a computer has the panel beside the list");
-  // A low window: the page of the list does not scroll, the panel ends with the box of the rows, under the top bar.
+  // A low window, where the rows fill the rest of it: the page does not scroll, and the panel, as high as its line, ends
+  // with the box of the rows, under the top bar.
   await page.setViewportSize({ width: 1280, height: 600 });
   await signIn(page, ada);
   await page.goto(`${projectIssuesAddress("WEB")}?open=WEB-1`);

@@ -2419,6 +2419,14 @@ part "list-row" "list-group" "timeline-bar" {
     }
 }
 
+// Under forced colors every border is drawn: the line above a group head would stand right under the line of the row
+// before it. The head keeps the room of its line and draws it in the color of the canvas.
+part "list-group" {
+    forced {
+        border-top-color Canvas
+    }
+}
+
 part "list-group.count" {
     color "$fg-muted"
     font-weight "$weight-regular"
@@ -2527,6 +2535,13 @@ part "list-frame[variant=compact] checkbox.box" {
 
 
 // The rows scroll inside this box; the head stays above them.
+// The shadow at the end of the rows stands on the edge of the box, over its padding at the end.
+part "list-scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-3)"
+    }
+}
+
 // The last row ends the list with its own line; the box adds none, so a list whose rows just fit has no double bar.
 part "list-scroll" {
     box-sizing border-box

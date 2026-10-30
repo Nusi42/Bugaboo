@@ -82,7 +82,8 @@ test("ux_4_2 Customize beside the list fits the room the list has: its columns s
     boxOf(panel),
     boxOf(page.locator("[data-part='list-scroll']")),
   ]);
-  // The panel ends with the box of the rows, inside the card and the window; what does not fit scrolls under a shadow.
+  // In this low window the rows fill the rest of it: the panel, as high as its line, ends with the box of the rows,
+  // inside the card and the window; what does not fit scrolls under a shadow.
   expect(Math.abs(side.y + side.height - (rows.y + rows.height))).toBeLessThanOrEqual(2);
   await expect.poll(() => shadowsOf(panel)).toEqual({ start: 0, end: 1 });
 });
