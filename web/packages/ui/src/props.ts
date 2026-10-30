@@ -86,6 +86,10 @@ export const legendLook = {
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;
 
+/** How a group of choices is laid out besides the usual: a grid that wraps, several in a row (the colors). */
+export const choiceGroupLook = { grid: "grid" } as const;
+export type ChoiceGroupLook = (typeof choiceGroupLook)[keyof typeof choiceGroupLook];
+
 /** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */
 export const appLayoutLook = { phone: "phone", side: "side", sideNarrow: "side-narrow" } as const;
 

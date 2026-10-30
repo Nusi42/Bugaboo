@@ -17,7 +17,7 @@ test.use({ preparation: { run: prepareWeb } });
 const ROUNDING = 0.5;
 
 /** The swatches of the one color choice on the page. */
-const swatchSelector = '[data-part="color-choice"] [data-part="field-swatch"]';
+const swatchSelector = '[data-part="choice-group"] [data-part="field-swatch"]';
 
 /** How many rows the swatches stand in, and how many stick out of the page at a side. It runs in the page. */
 function placeOf({
@@ -54,7 +54,7 @@ test("tag_02 the chosen color is marked by a tick as well as its ring", async ({
   await signIn(page, ada);
   await page.goto(paths.labels);
   const group = page.getByRole("group", { name: t("labels.field-new-color"), exact: true });
-  await expect(partIn(group, "color-choice.tick").filter({ visible: true })).toHaveCount(0);
+  await expect(partIn(group, "field-swatch.tick").filter({ visible: true })).toHaveCount(0);
   await group.getByRole("radio", { name: t("choice-color.cat3"), exact: true }).check();
-  await expect(partIn(group, "color-choice.tick").filter({ visible: true })).toHaveCount(1);
+  await expect(partIn(group, "field-swatch.tick").filter({ visible: true })).toHaveCount(1);
 });

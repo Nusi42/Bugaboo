@@ -185,7 +185,7 @@ tokens {
     size "size-palette" "560px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
-    // The least width of a swatch of a color with its name ("Color 10") and the tick of the chosen one.
+    // The least width of a swatch of a color with its name (the longest, "Sky blue") and the tick of the chosen one.
     size "size-swatch" "calc(96px * $text-scale)"
     size "size-list" "300px"
     // The room the list asks for beside Customize: with this much left over, the panel stands beside the list (UX §4.2); with less it stands under it.
@@ -1612,6 +1612,16 @@ part "choice-group.choices[variant=stacked]" {
 
 part "choice-group.choices[variant=stacked] choice-group.label" {
     flex 1
+}
+
+// Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
+part "choice-group.choices[variant=grid]" {
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax($size-swatch, 1fr))"
+}
+
+part "choice-group.choices[variant=grid] choice-group.choice" {
+    display flex
 }
 
 // ───────────── Overlay (sheets, menus, quick search) ─────────────
@@ -6100,58 +6110,29 @@ part "field-swatch" {
     font-size "$fs-sm"
 }
 
-// The choice of a color (of a label, a tag, a choice of an own field): small swatches in a grid that wraps, several in a
-// row, never a column of single swatches. The chosen one has a ring and a tick, so it is told by more than its color.
-part "color-choice" {
-    use "fieldset-reset"
-}
-
-part "color-choice.legend" {
-    use "control-label"
-    padding 0
-    margin-bottom "$space-1"
-}
-
-part "color-choice.grid" {
-    display grid
-    grid-template-columns "repeat(auto-fill, minmax($size-swatch, 1fr))"
-    gap "$space-2"
-}
-
-part "color-choice.option" {
-    position relative
-    display flex
-}
-
-part "color-choice.input" {
-    position absolute
-    inset 0
-    margin 0
-    opacity 0
-    cursor pointer
-}
-
-part "color-choice.option field-swatch" {
+// The choice of a color (of a label, a tag, a choice of an own field) is a choice group of the grid look with a swatch
+// for each choice. The chosen swatch has a ring and a tick, so it is told by more than its color.
+part "choice-group.choice field-swatch" {
     flex 1
     gap "$space-1"
 }
 
 // The tick takes no room until its swatch is chosen.
-part "color-choice.tick" {
+part "field-swatch.tick" {
     display none
 }
 
-part "color-choice.input:checked + field-swatch color-choice.tick" {
+part "choice-group.input:checked + field-swatch field-swatch.tick" {
     display inline-flex
 }
 
-part "color-choice.input:checked + field-swatch" {
+part "choice-group.input:checked + field-swatch" {
     border "$border-width solid $accent"
     box-shadow "0 0 0 $border-width $accent"
     use "marked"
 }
 
-part "color-choice.input:focus-visible + field-swatch" {
+part "choice-group.input:focus-visible + field-swatch" {
     use "ring"
 }
 

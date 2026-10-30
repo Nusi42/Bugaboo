@@ -142,6 +142,7 @@ export {
   appLayoutLook,
   buttonLook,
   cardLook,
+  choiceGroupLook,
   buttonType,
   fieldKind,
   iconSize,

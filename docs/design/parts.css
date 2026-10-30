@@ -696,6 +696,15 @@ optgroup {
   flex: 1;
 }
 
+[data-part="choice-group.choices"][data-variant~="grid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--size-swatch), 1fr));
+}
+
+[data-part="choice-group.choices"][data-variant~="grid"] [data-part="choice-group.choice"] {
+  display: flex;
+}
+
 [data-part="overlay"] {
   position: fixed;
   inset: 0;
@@ -5468,74 +5477,39 @@ optgroup {
   font-size: var(--fs-sm);
 }
 
-[data-part="color-choice"] {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-[data-part="color-choice.legend"] {
-  font-size: var(--fs-sm);
-  color: var(--fg-muted);
-  text-wrap: pretty;
-  font-weight: var(--weight-regular);
-  padding: 0;
-  margin-bottom: var(--space-1);
-}
-
-[data-part="color-choice.grid"] {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--size-swatch), 1fr));
-  gap: var(--space-2);
-}
-
-[data-part="color-choice.option"] {
-  position: relative;
-  display: flex;
-}
-
-[data-part="color-choice.input"] {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-[data-part="color-choice.option"] [data-part="field-swatch"] {
+[data-part="choice-group.choice"] [data-part="field-swatch"] {
   flex: 1;
   gap: var(--space-1);
 }
 
-[data-part="color-choice.tick"] {
+[data-part="field-swatch.tick"] {
   display: none;
 }
 
-[data-part="color-choice.input"]:checked
+[data-part="choice-group.input"]:checked
   + [data-part="field-swatch"]
-  [data-part="color-choice.tick"] {
+  [data-part="field-swatch.tick"] {
   display: inline-flex;
 }
 
-[data-part="color-choice.input"]:checked + [data-part="field-swatch"] {
+[data-part="choice-group.input"]:checked + [data-part="field-swatch"] {
   border: var(--border-width) solid var(--accent);
   box-shadow: 0 0 0 var(--border-width) var(--accent);
 }
 
 @media (forced-colors: active) {
-  [data-part="color-choice.input"]:checked + [data-part="field-swatch"] {
+  [data-part="choice-group.input"]:checked + [data-part="field-swatch"] {
     outline: var(--ring-width) solid var(--accent);
   }
 }
 
-[data-part="color-choice.input"]:focus-visible + [data-part="field-swatch"] {
+[data-part="choice-group.input"]:focus-visible + [data-part="field-swatch"] {
   outline: var(--ring-width) solid var(--accent);
   outline-offset: var(--ring-offset);
 }
 
 @media (forced-colors: active) {
-  [data-part="color-choice.input"]:focus-visible + [data-part="field-swatch"] {
+  [data-part="choice-group.input"]:focus-visible + [data-part="field-swatch"] {
     outline-style: double;
     outline-width: calc(var(--ring-width) * 2);
   }
