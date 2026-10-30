@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { type Page } from "@playwright/test";
 
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -7,7 +8,8 @@ import { layoutOf } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, final pass, package A: the places of search in the shell. On a phone the Search tab of the bar is current on
-// the Search page (F-A2).
+// the Search page (F-A2); a section of the sidebar or of the sheet More with nothing in it keeps its heading and says so in
+// one line, the projects and the saved searches alike (F-A13, UX §3.1).
 
 test.use({
   preparation: {
@@ -16,6 +18,15 @@ test.use({
     },
   },
 });
+
+/** The sections of the sidebar, or of the sheet More on a phone, opened. */
+async function sectionsOf(page: Page) {
+  if (layoutOf(page) === "phone") {
+    await page.getByRole("button", { name: t("shell.more"), exact: true }).click();
+    return page.getByRole("dialog", { name: t("shell.more") });
+  }
+  return page.getByRole("navigation", { name: t("shell.menu"), exact: true });
+}
 
 test("cfg_08 on a phone the Search tab of the bar is current on the Search page", async ({
   page,
@@ -31,4 +42,19 @@ test("cfg_08 on a phone the Search tab of the bar is current on the Search page"
     [search, home].map((tab) => tab.evaluate((node) => getComputedStyle(node).backgroundColor)),
   );
   expect(fills[0], "the current tab is drawn like a current tab").not.toBe(fills[1]);
+});
+
+test("qry_05 an empty section says so in one line, the saved searches like the projects", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "tablet", "the computer and the phone show both places");
+  await signIn(page, ada);
+  const sections = await sectionsOf(page);
+  const projects = sections.getByRole("region", { name: t("projects.heading"), exact: true });
+  const saved = sections.getByRole("region", { name: t("search.saved-heading"), exact: true });
+  await expect(projects.getByText(t("projects.tree-empty"), { exact: true })).toBeVisible();
+  await expect(saved.getByText(t("search.saved-none"), { exact: true })).toBeVisible();
+  // The two notes are one part, so they look alike.
+  await expect(projects.locator("p")).toHaveAttribute("data-part", "sidebar.note");
+  await expect(saved.locator("p")).toHaveAttribute("data-part", "sidebar.note");
 });

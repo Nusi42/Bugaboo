@@ -648,6 +648,7 @@
   "search.saved-heading": "Saved searches",
   "search.saved-mine": "Mine",
   "search.saved-shared": "Shared with me",
+  "search.saved-none": "You have no saved searches yet.",
   "search.saved-by-separator": ", ",
   "search.help": "Help",
   "search.help-title": "The words of the search",

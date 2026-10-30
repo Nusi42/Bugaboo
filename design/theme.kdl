@@ -4349,7 +4349,9 @@ part "project-tree.link[current] project-tree.short" {
     color "$accent-fg"
 }
 
-part "project-tree.note" {
+// The one line of a section of the sidebar (or of the sheet More) with nothing in it yet: the projects and the saved
+// searches alike, under their heading (UX §3.1).
+part "sidebar.note" {
     margin 0
     padding "0 $space-3"
     color "$fg-muted"

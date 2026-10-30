@@ -4321,6 +4321,9 @@ pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-headi
 /// The message `search.saved-mine`.
 pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
 
+/// The message `search.saved-none`.
+pub const SEARCH_SAVED_NONE: MessageKey = MessageKey::new("search.saved-none");
+
 /// The message `search.saved-shared`.
 pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
 
@@ -14712,6 +14715,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.saved-by-separator", ", "),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
+    ("search.saved-none", "You have no saved searches yet."),
     ("search.saved-shared", "Shared with me"),
     ("search.share", "Share"),
     ("search.share-done", "Done"),

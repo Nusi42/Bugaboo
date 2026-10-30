@@ -75,10 +75,10 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
     return <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert>;
   }
   if (list.isPending) {
-    return <p {...partOf(part.projectTreeNote)}>{t("common.loading")}</p>;
+    return <p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>;
   }
   if (projects.length === 0 && inside === undefined) {
-    return <p {...partOf(part.projectTreeNote)}>{t("projects.tree-empty")}</p>;
+    return <p {...partOf(part.sidebarNote)}>{t("projects.tree-empty")}</p>;
   }
   return (
     <>

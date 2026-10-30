@@ -19,16 +19,16 @@ const shown = 20;
 /** One list of saved searches, with who made each of the ones shared with the person. */
 function SavedList({
   which,
+  searches,
   heading,
   pathname,
   onNavigate,
 }: Omit<SavedSearchesSectionProps, "narrow"> & {
   readonly which: SavedSet;
+  readonly searches: readonly SavedSearch[];
   readonly heading: string;
   readonly pathname: string;
 }) {
-  const list = useSavedList(which, shown);
-  const searches = itemsOf(list.data?.pages);
   if (searches.length === 0) {
     return null;
   }
@@ -66,18 +66,28 @@ function SavedList({
  */
 export function SavedSearchesSection({ narrow, onNavigate }: SavedSearchesSectionProps) {
   const { pathname } = useLocation();
+  const mineList = useSavedList(savedSet.mine, shown);
+  const sharedList = useSavedList(savedSet.shared, shown);
+  const mine = itemsOf(mineList.data?.pages);
+  const shared = itemsOf(sharedList.data?.pages);
+  // An empty section keeps its heading and says so in one line, like *Projects* (UX §3.1).
+  if (!narrow && mineList.isSuccess && sharedList.isSuccess && mine.length + shared.length === 0) {
+    return <p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>;
+  }
   return (
     <ul {...partOf(part.sidebarList)}>
       {narrow ? null : (
         <>
           <SavedList
             which={savedSet.mine}
+            searches={mine}
             heading={t("search.saved-mine")}
             pathname={pathname}
             onNavigate={onNavigate}
           />
           <SavedList
             which={savedSet.shared}
+            searches={shared}
             heading={t("search.saved-shared")}
             pathname={pathname}
             onNavigate={onNavigate}
