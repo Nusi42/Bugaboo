@@ -8,8 +8,17 @@ import { repoRoot } from "./ports.ts";
 /** The style sheet the theme file makes, as the browser gets it. */
 const sheet = readFileSync(resolve(repoRoot, "web/packages/ui/src/theme.css"), "utf8");
 
-/** Fewer selectors with a wrap than the short texts and hints alone would mean the sheet was not read. */
-const MOST_SHORT_TEXTS = 5;
+/** The fewest selectors with a wrap the sheet has (the page, the short texts, the hints): fewer means it was not read. */
+const FEWEST_WRAPPED_SELECTORS = 5;
+
+/** The parts whose short texts are balanced (UX §7.3): the introduction, the preview, the answer titles, the hints. */
+const balancedParts = [
+  "card.intro",
+  "access.preview-line",
+  "access.subheading",
+  "field.description",
+  "settings.help",
+] as const;
 
 /** One rule of the sheet: where it stands (the @media and @supports around it), its selectors and its declarations. */
 interface Rule {
@@ -18,7 +27,24 @@ interface Rule {
   readonly body: string;
 }
 
-/** Every rule of the sheet, at the top level and inside @media or @supports, with the blocks it stands in. */
+/** The value of each `text-wrap` that the rules of the sheet give a selector at the top level, in order. */
+function topLevelWraps(css: string, selector: string): readonly string[] {
+  const found: string[] = [];
+  for (const rule of rulesOf(css)) {
+    if (rule.context === "" && rule.selectors.includes(selector)) {
+      for (const [, wrap = ""] of rule.body.matchAll(/text-wrap\s*:\s*([a-z-]+)/gu)) {
+        found.push(wrap);
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Every rule of the sheet, at the top level and inside @media or @supports, with the blocks it stands in. A statement
+ * that ends in `;` instead of a block (`@import`, `@charset`, `@layer a, b;`) is skipped, at the top level as inside a
+ * block.
+ */
 function rulesOf(css: string): readonly Rule[] {
   const rules: Rule[] = [];
   const around: string[] = [];
@@ -43,7 +69,7 @@ function rulesOf(css: string): readonly Rule[] {
     } else if (char === "}") {
       around.pop();
       start = at + 1;
-    } else if (char === ";" && around.length > 0 && css.slice(start, at).trim().startsWith("@")) {
+    } else if (char === ";" && css.slice(start, at).trim().startsWith("@")) {
       start = at + 1;
     }
   }
@@ -77,13 +103,17 @@ function setTwice(css: string): readonly string[] {
 describe("ux_5 each text wrap is set once", () => {
   it("gives no selector more than one text-wrap, at the top level or inside @media", () => {
     // The sheet does set wraps (the page, the short texts, the hints), so the reading of it works.
-    expect(wrapsBySelector(sheet).size).toBeGreaterThan(MOST_SHORT_TEXTS);
+    expect(wrapsBySelector(sheet).size).toBeGreaterThan(FEWEST_WRAPPED_SELECTORS);
     expect(setTwice(sheet)).toEqual([]);
   });
 
   it("finds a selector that gets two, so the check can fail", () => {
     const twice = '[data-part="x"] { text-wrap: balance; } [data-part="x"] { text-wrap: pretty; }';
     expect(setTwice(twice)).toEqual(['[data-part="x"]']);
+  });
+
+  it.each(balancedParts)("balances %s, once", (name) => {
+    expect(topLevelWraps(sheet, `[data-part="${name}"]`)).toEqual(["balance"]);
   });
 
   it("leaves the words of a switch to the wrap of the page", () => {
