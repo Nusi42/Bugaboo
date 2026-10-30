@@ -5,7 +5,7 @@ use crate::lexer::TokenKind;
 use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{Direction, SortKey};
-use crate::words::{Keyword, Part, direction_phrase, starts_phrase};
+use crate::words::{Keyword, direction_phrase, starts_direction, starts_phrase};
 
 impl Parser<'_> {
     pub(super) fn sort_clause(&mut self) -> Step<Vec<SortKey>> {
@@ -68,17 +68,16 @@ impl Parser<'_> {
         })
     }
 
-    /// Whether a direction begins `ahead` tokens on: its first word, and for a letter also `to`.
+    /// Whether a direction begins `ahead` tokens on (`words::starts_direction`).
     fn direction_starts(&self, ahead: usize) -> bool {
         let Some(TokenKind::Word(word)) = self.peek_kind(ahead) else {
             return false;
         };
-        Direction::ALL.iter().any(|direction| {
-            let phrase = direction_phrase(*direction);
-            phrase.first().is_some_and(|first| first.is(word))
-                && (matches!(phrase.first(), Some(Part::Key(_)))
-                    || self.keyword_at(ahead + 1) == Some(Keyword::To))
-        })
+        let next = match self.peek_kind(ahead + 1) {
+            Some(TokenKind::Word(next)) => Some(next.as_str()),
+            _ => None,
+        };
+        starts_direction(word, next)
     }
 
     /// The words of a direction that are typed and fit the start of one of the directions.

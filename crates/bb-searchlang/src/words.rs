@@ -130,8 +130,6 @@ impl Keyword {
 /// (`and`, `or`, `not`) or starts `sort by` or a direction ends the name.
 #[must_use]
 pub(crate) fn continues_field(word: &str, next: Option<&str>) -> bool {
-    let is_next =
-        |keyword: Keyword| next.is_some_and(|next| keyword.text().eq_ignore_ascii_case(next));
     match Keyword::of(word) {
         Some(
             Keyword::And
@@ -142,20 +140,25 @@ pub(crate) fn continues_field(word: &str, next: Option<&str>) -> bool {
             | Keyword::Empty
             | Keyword::Member
             | Keyword::Within
-            | Keyword::Sort
-            | Keyword::Highest
-            | Keyword::Lowest
-            | Keyword::Newest
-            | Keyword::Oldest,
+            | Keyword::Sort,
         ) => false,
-        Some(Keyword::In) => !is_next(Keyword::Last),
-        _ => {
-            !(["a", "z"]
-                .iter()
-                .any(|letter| letter.eq_ignore_ascii_case(word))
-                && is_next(Keyword::To))
-        }
+        Some(Keyword::In) => !next.is_some_and(|next| Part::Key(Keyword::Last).is(next)),
+        _ => !starts_direction(word, next),
     }
+}
+
+/// Whether `word`, followed by `next`, begins a direction of `sort by`: the first word of one
+/// (`highest`), and for a letter (`A to Z`) also `to` after it. The one rule that the parser reads
+/// a direction after a key by, that ends the name of a field, and that the printer quotes a key of
+/// `sort by` by (ADR-0005 amendment M5, decision 11).
+#[must_use]
+pub(crate) fn starts_direction(word: &str, next: Option<&str>) -> bool {
+    Direction::ALL.iter().any(|direction| {
+        let phrase = direction_phrase(*direction);
+        phrase.first().is_some_and(|first| first.is(word))
+            && (matches!(phrase.first(), Some(Part::Key(_)))
+                || next.is_some_and(|next| Part::Key(Keyword::To).is(next)))
+    })
 }
 
 /// One word of a phrase of the language.

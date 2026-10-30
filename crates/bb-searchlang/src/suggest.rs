@@ -8,7 +8,7 @@ use serde::Serialize;
 
 use crate::fields::{Field, FieldKind, ReadableFields};
 use crate::lexer::{Token, TokenKind, tokens};
-use crate::literal::{field_or_quoted, value_or_quoted};
+use crate::literal::{field_or_quoted, key_or_quoted, value_or_quoted};
 use crate::parser::{excess, parse};
 use crate::situation::Situation;
 use crate::span::Span;
@@ -152,16 +152,19 @@ fn longer_field(
         .iter()
         .filter(|token| token.span.end <= start)
         .collect();
-    let words = match situation? {
-        Situation::Operator { field } => field.split(' ').count(),
-        Situation::SortAfterField => before
-            .iter()
-            .rev()
-            .take_while(|token| match &token.kind {
-                TokenKind::Word(word) => Keyword::of(word) != Some(Keyword::By),
-                _ => false,
-            })
-            .count(),
+    let (words, written): (usize, fn(&str) -> String) = match situation? {
+        Situation::Operator { field } => (field.split(' ').count(), field_or_quoted),
+        Situation::SortAfterField => (
+            before
+                .iter()
+                .rev()
+                .take_while(|token| match &token.kind {
+                    TokenKind::Word(word) => Keyword::of(word) != Some(Keyword::By),
+                    _ => false,
+                })
+                .count(),
+            key_or_quoted,
+        ),
         _ => return None,
     };
     let first = before
@@ -180,7 +183,7 @@ fn longer_field(
         .fields
         .iter()
         .filter(|field| starts_with(&field.word, &begun))
-        .map(|field| word(field_or_quoted(&field.word), WordKind::Field))
+        .map(|field| word(written(&field.word), WordKind::Field))
         .collect();
     (!items.is_empty()).then_some((first.span.start, items))
 }
@@ -213,11 +216,12 @@ fn items(
     };
     let keyword = |keyword: Keyword, kind| word(keyword.text().to_owned(), kind);
     let sign = |text: &str| word(text.to_owned(), WordKind::Sign);
-    let fields = || {
+    // A field as its place writes it: in a filter, or as a key of `sort by`.
+    let fields = |written: fn(&str) -> String| {
         readable
             .fields
             .iter()
-            .map(|field| word(field_or_quoted(&field.word), WordKind::Field))
+            .map(move |field| word(written(&field.word), WordKind::Field))
     };
     let helpers = || {
         // A `contains` on its own is offered to a person who has such a search.
@@ -241,12 +245,12 @@ fn items(
         )
     };
     let offered: Vec<Suggestion> = match situation {
-        Situation::Start => fields()
+        Situation::Start => fields(field_or_quoted)
             .chain([keyword(Keyword::Not, WordKind::Keyword), sign("(")])
             .chain(helpers())
             .chain([sort()])
             .collect(),
-        Situation::Filter => fields()
+        Situation::Filter => fields(field_or_quoted)
             .chain([keyword(Keyword::Not, WordKind::Keyword), sign("(")])
             .chain(helpers())
             .collect(),
@@ -289,7 +293,7 @@ fn items(
             next.push(if closing { sign(")") } else { sort() });
             next
         }
-        Situation::SortField => fields().collect(),
+        Situation::SortField => fields(key_or_quoted).collect(),
         Situation::SortAfterField => Direction::ALL
             .map(|direction| word(direction.text(), WordKind::Direction))
             .into_iter()
