@@ -14,7 +14,7 @@ use anyhow::{Context as _, bail};
 use super::Generated;
 use super::theme_file::{
     AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
-    TokenKind, Variant, references, substitute,
+    Variant, references, substitute,
 };
 use super::theme_selector;
 use crate::repo::Repo;
@@ -322,26 +322,17 @@ fn css_header(file: &ThemeFile) -> String {
         .iter()
         .map(|theme| title_case(&theme.name))
         .collect();
-    let fonts: Vec<&str> = file
-        .tokens
-        .iter()
-        .filter(|token| token.kind == TokenKind::Font)
-        .filter_map(|token| token.same.as_deref())
-        .filter_map(|stack| stack.split(',').next())
-        .map(|name| name.trim().trim_matches('"'))
-        .collect();
     format!(
         "/* {GENERATED_BY}
    {count} built-in themes: {names}. Pages set <html {look}=\"…\">;
    without it, \"Match my device\" falls back to {light} (light) / {dark} (dark).
-   Load fonts separately: {fonts}. */
+   Fonts are the system faces of each stack; no font file is loaded (ADR-0026). */
 ",
         look = file.frame.look,
         count = names.len(),
         names = names.join(", "),
         light = title_case(&file.default_light),
         dark = title_case(&file.default_dark),
-        fonts = fonts.join(" + "),
     )
 }
 

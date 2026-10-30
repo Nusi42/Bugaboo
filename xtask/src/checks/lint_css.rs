@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn good_example_in_the_theme_file() {
-        let good = "part \"zz\" {\n  margin 0\n  padding \"$space-2 $space-3\"\n  border \"$border-width solid $border\"\n  font-weight \"$weight-bold\"\n  line-height \"$lh-body\"\n  z-index \"$z-overlay\"\n  opacity 0\n  animation \"fade $motion-base $ease-out\"\n  font-family \"$font\"\n  forced {\n    color CanvasText\n  }\n}";
+        let good = "part \"zz\" {\n  margin 0\n  padding \"$space-2 $space-3\"\n  border \"$border-width solid $border\"\n  font-weight \"$weight-bold\"\n  line-height \"$lh-body\"\n  z-index \"$z-overlay\"\n  opacity 0\n  animation \"fade $motion-base $ease-out\"\n  font-family \"$font-ui\"\n  forced {\n    color CanvasText\n  }\n}";
         let found = theme_findings("good", good);
         assert!(found.is_empty(), "{}", messages(&found));
     }

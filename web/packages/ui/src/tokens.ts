@@ -111,8 +111,10 @@ export type ColorToken = (typeof colorTokens)[number];
 
 /** Every token of the theme file: the CSS variable is `--` and the name. */
 export const tokenNames = [
-  "font",
-  "mono",
+  "font-ui",
+  "font-display",
+  "font-reader",
+  "font-mono",
   "r-ctl",
   "r-card",
   "r-pill",

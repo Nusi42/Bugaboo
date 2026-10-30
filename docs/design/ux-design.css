@@ -41,7 +41,7 @@
   font-size: var(--doc-font-12);
   display: grid;
   place-items: center;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 
 .doc .tree {
@@ -560,7 +560,7 @@
 }
 
 .timer-card .clock {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-20);
   font-weight: var(--doc-weight-semibold);
   color: var(--accent-fg);
@@ -614,7 +614,7 @@
 }
 
 .adv-box {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-12-5);
   line-height: var(--lh-loose);
   border: var(--border-width) solid var(--border);
@@ -653,7 +653,7 @@
 .ask-res code {
   flex: 1;
   min-width: 0;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 
 .pop-demo {
@@ -719,7 +719,7 @@
   gap: var(--space-1);
   font-size: var(--doc-font-11);
   color: var(--fg-muted);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 
 .tbtn span {
@@ -931,7 +931,7 @@
 .bar {
   position: absolute;
   top: var(--space-1);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -1095,7 +1095,7 @@
   padding: var(--doc-space-3) var(--space-1);
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--doc-space-5);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   background: var(--bg-canvas);
 }
 
@@ -1325,7 +1325,7 @@
   place-items: center;
   font-weight: var(--weight-bold);
   font-size: var(--doc-font-12);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 
 .signin {
@@ -1607,7 +1607,7 @@
   stroke: var(--bg-surface);
   stroke-width: var(--space-1);
   stroke-linejoin: round;
-  font-family: var(--font);
+  font-family: var(--font-ui);
 }
 
 .node {
@@ -1638,7 +1638,7 @@
 }
 
 .nkey {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-11);
   fill: var(--fg-muted);
 }
@@ -1647,7 +1647,7 @@
   font-size: var(--doc-font-12);
   fill: var(--fg);
   font-weight: var(--doc-weight-semibold);
-  font-family: var(--font);
+  font-family: var(--font-ui);
 }
 
 .nd-ns {
@@ -1846,7 +1846,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--doc-space-6);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-11-5);
   white-space: nowrap;
 }
@@ -1871,13 +1871,14 @@
 }
 
 .specimen .big {
+  font-family: var(--font-display);
   font-size: var(--doc-font-30);
   font-weight: var(--weight-bold);
   line-height: var(--doc-lh-1-1);
 }
 
 .specimen .mono-s {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-15);
 }
 
