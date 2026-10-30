@@ -2353,12 +2353,14 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
     overflow-wrap anywhere
 }
 
-// The people of a row on a phone are written out on as many lines as they need, never cut with dots (M5 exit F-A3).
+// The people of a row on a phone are written out on as many lines as they need, never cut with dots (M5 exit F-A3); a line
+// breaks only between two names. The date beside them stands on the line of the last name.
 part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
     width auto
     white-space normal
     overflow-wrap anywhere
+    align-self "last baseline"
 }
 
 part "list-row[variant=phone] list-row.cell[variant=action]" {
@@ -2369,6 +2371,7 @@ part "list-row[variant=phone] list-row.cell[variant=action]" {
 part "list-row[variant=phone] list-row.cell[variant=changed]" {
     grid-area changed
     justify-self end
+    align-self "last baseline"
 }
 
 // A card without the box to tick (the Search page): the same lines without its column.

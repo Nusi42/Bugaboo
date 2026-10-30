@@ -1535,6 +1535,7 @@ optgroup {
   width: auto;
   white-space: normal;
   overflow-wrap: anywhere;
+  align-self: last baseline;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="action"] {
@@ -1545,6 +1546,7 @@ optgroup {
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="changed"] {
   grid-area: changed;
   justify-self: end;
+  align-self: last baseline;
 }
 
 [data-part="list-row"][data-variant~="phone"][data-variant~="plain"] {

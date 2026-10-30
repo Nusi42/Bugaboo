@@ -55,3 +55,18 @@ export function cutWords(cells: Locator): Promise<(string | null)[]> {
     return cut;
   });
 }
+
+/** How many lines each element takes, from the boxes of its lines (one box for each line it is drawn on). */
+export function linesOfEach(elements: Locator): Promise<number[]> {
+  return elements.evaluateAll((all: readonly HTMLElement[]) => {
+    const lines: number[] = [];
+    for (const element of all) {
+      const tops = new Set<number>();
+      for (const box of element.getClientRects()) {
+        tops.add(Math.round(box.top));
+      }
+      lines.push(tops.size);
+    }
+    return lines;
+  });
+}

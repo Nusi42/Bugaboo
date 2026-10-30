@@ -3,7 +3,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
-import { cutWords } from "./support/phone-list.ts";
+import { cutWords, linesOfEach } from "./support/phone-list.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
 import { boxOf } from "./support/windows.ts";
@@ -49,4 +49,15 @@ test("ux_4_2 the people of a row on a phone are written out on more lines, never
   const cut = await cutWords(people);
   expect(cut).toEqual([]);
   await expectNoOverlap(page);
+  // A line breaks only between two names, never inside one ("Niko / Eriksen"): each name is one piece on one line.
+  const two = people.filter({ hasText: /\sand\s/u }).first();
+  const names = partIn(two, "unbroken-word");
+  await expect(names).toHaveCount(2);
+  expect(await linesOfEach(names)).toEqual([1, 1]);
+  // The date stands on the line of the last name.
+  const [last, date] = await Promise.all([
+    boxOf(names.last()),
+    boxOf(partIn(two.locator(".."), "list-row.cell", "changed")),
+  ]);
+  expect(Math.abs(last.y + last.height - (date.y + date.height))).toBeLessThanOrEqual(3);
 });
