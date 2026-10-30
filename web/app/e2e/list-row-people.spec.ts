@@ -1,6 +1,7 @@
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
+import { listInFourThemes, screenshotFolder } from "./support/list-pictures.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
@@ -27,4 +28,17 @@ test("ux_4_2 on a computer a line of people too long for its column ends in dots
   expect(await two.evaluate((cell) => cell.scrollWidth > cell.clientWidth)).toBe(true);
   // The dots of a cell are drawn only in text: a name kept whole as a box of its own would be clipped without them.
   await expect(partIn(two, "unbroken-word").first()).toHaveCSS("display", "inline");
+});
+
+test("iss_01 pictures: a line of two people on a phone breaks only between the names", async ({
+  page,
+}) => {
+  test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
+  test.skip(layoutOf(page) !== "phone", "the line of people wraps on a phone");
+  await signIn(page, sampleAdministrator());
+  await page.goto(
+    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
+  );
+  await expect(page.getByText(/\sand\s/u).first()).toBeVisible();
+  await listInFourThemes(page, "people-two");
 });
