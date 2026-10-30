@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, shadowsOf } from "./support/windows.ts";
 
 // *Customize* (UX §4.2): the panel stands beside the list where there is room for both, and under
 // it where there is not.
@@ -63,4 +63,24 @@ test("ux_4_2 Customize under the list is as wide as the list, in more than one c
     .locator("[data-part='list-panel.items']")
     .evaluate((box) => getComputedStyle(box).gridTemplateColumns.split(" ").length);
   expect(columns).toBeGreaterThanOrEqual(2);
+});
+
+test("ux_4_2 Customize beside the list fits the room the list has: its columns scroll inside it (review of the full-height list)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has Customize beside the list");
+  await signIn(page, ada);
+  // A low window, so the columns of Customize do not all fit.
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto(projectIssuesAddress("WEB"));
+  await expect(rowOf(page, webIssues.login)).toBeVisible();
+  await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
+  const panel = page.getByRole("complementary", { name: t("issues.customize") });
+  const [side, rows] = await Promise.all([
+    boxOf(panel),
+    boxOf(page.locator("[data-part='list-scroll']")),
+  ]);
+  // The panel ends with the box of the rows, inside the card and the window; what does not fit scrolls under a shadow.
+  expect(Math.abs(side.y + side.height - (rows.y + rows.height))).toBeLessThanOrEqual(2);
+  await expect.poll(() => shadowsOf(panel)).toEqual({ start: 0, end: 1 });
 });
