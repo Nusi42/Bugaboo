@@ -106,8 +106,11 @@ export function CustomizePage() {
     .flatMap((kind) => [notificationSettings[kind].app, notificationSettings[kind].mail])
     .filter((key) => settings.some((each) => each.key === key && each.own && !each.locked));
   return (
-    <Card heading={t("nav.notification-settings")} level={1}>
-      <p {...partOf(part.text)}>{t("notifications.customize-intro")}</p>
+    <Card
+      heading={t("nav.notification-settings")}
+      level={1}
+      intro={t("notifications.customize-intro")}
+    >
       <SaveStatus state={progress.state} labels={saveLabels()} />
       {progress.problem === null ? null : <Alert tone={alertTone.danger}>{progress.problem}</Alert>}
       <ul {...partOf(part.list)} aria-label={t("notifications.kind")}>

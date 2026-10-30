@@ -932,7 +932,8 @@ optgroup {
   }
 }
 
-[data-part="muted"] {
+[data-part="muted"],
+[data-part="card.intro"] {
   margin: 0;
   color: var(--fg-muted);
   font-size: var(--fs-base);
@@ -5872,12 +5873,6 @@ optgroup {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-[data-part="shortcuts-page.intro"] {
-  margin: 0;
-  color: var(--fg);
-  line-height: var(--lh-body);
 }
 
 [data-part="shortcuts-page.keys"] {

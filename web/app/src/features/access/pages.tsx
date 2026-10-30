@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { CheckAccessView } from "./CheckAccessView.tsx";
@@ -9,8 +9,7 @@ import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
 export function FieldPermissionsPage() {
   usePageTitle(t("nav.field-permissions"));
   return (
-    <Card heading={t("nav.field-permissions")} level={1}>
-      <p {...partOf(part.muted)}>{t("field-permissions.intro")}</p>
+    <Card heading={t("nav.field-permissions")} level={1} intro={t("field-permissions.intro")}>
       <FieldPermissionsTable />
     </Card>
   );
@@ -20,8 +19,7 @@ export function FieldPermissionsPage() {
 export function PeopleVisibilityPage() {
   usePageTitle(t("nav.people-visibility"));
   return (
-    <Card heading={t("nav.people-visibility")} level={1}>
-      <p {...partOf(part.muted)}>{t("people-visibility.intro")}</p>
+    <Card heading={t("nav.people-visibility")} level={1} intro={t("people-visibility.intro")}>
       <PeopleVisibilityTable />
     </Card>
   );
@@ -31,8 +29,7 @@ export function PeopleVisibilityPage() {
 export function CheckAccessPage() {
   usePageTitle(t("nav.check-access"));
   return (
-    <Card heading={t("nav.check-access")} level={1}>
-      <p {...partOf(part.muted)}>{t("check-access.intro")}</p>
+    <Card heading={t("nav.check-access")} level={1} intro={t("check-access.intro")}>
       <CheckAccessView />
     </Card>
   );

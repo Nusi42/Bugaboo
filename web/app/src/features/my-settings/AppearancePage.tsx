@@ -59,8 +59,7 @@ export function AppearancePage() {
     ? form.settings.filter((setting) => setting.key !== settingKeys.appearanceIssueView)
     : form.settings;
   return (
-    <Card heading={t("appearance.title")} level={1}>
-      <p {...partOf(part.text)}>{t("appearance.device-help")}</p>
+    <Card heading={t("appearance.title")} level={1} intro={t("appearance.device-help")}>
       <SettingsForm
         {...form}
         settings={settings}

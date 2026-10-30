@@ -29,8 +29,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
   }));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.groups")} level={1}>
-        <p {...partOf(part.text)}>{t("groups.intro")}</p>
+      <Card heading={t("nav.groups")} level={1} intro={t("groups.intro")}>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         {list.isSuccess && rows.length === 0 ? (
           <p {...partOf(part.muted)}>{t("groups.none-yet")}</p>
@@ -46,8 +45,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
         )}
         <ShowMoreOf label={t("groups.more")} list={list} />
       </Card>
-      <Card heading={t("groups.create-title")}>
-        <p {...partOf(part.text)}>{t("groups.create-intro")}</p>
+      <Card heading={t("groups.create-title")} intro={t("groups.create-intro")}>
         <CreateGroupForm />
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { QueryGate } from "../shell/index.ts";
@@ -34,15 +34,12 @@ export function PlaceEditorCard<Editor>({
   children,
 }: PlaceEditorCardProps<Editor>) {
   return (
-    <Card heading={heading} level={1}>
-      <div {...partOf(part.stack)}>
-        <p {...partOf(part.text)}>{intro}</p>
-        {chooser}
-        {notes}
-        <QueryGate error={error} data={data}>
-          {children}
-        </QueryGate>
-      </div>
+    <Card heading={heading} level={1} intro={intro}>
+      {chooser}
+      {notes}
+      <QueryGate error={error} data={data}>
+        {children}
+      </QueryGate>
     </Card>
   );
 }

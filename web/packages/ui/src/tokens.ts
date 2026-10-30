@@ -320,6 +320,7 @@ export type TokenName = (typeof tokenNames)[number];
 /** The parts the theme file styles: what a component puts in `data-part`. */
 export const part = {
   muted: "muted",
+  cardIntro: "card.intro",
   visuallyHidden: "visually-hidden",
   button: "button",
   iconButtonHit: "icon-button.hit",
@@ -645,7 +646,6 @@ export const part = {
   shortcutListName: "shortcut-list.name",
   shortcutListKeys: "shortcut-list.keys",
   shortcutListAlternative: "shortcut-list.alternative",
-  shortcutsPageIntro: "shortcuts-page.intro",
   shortcutsPageKeys: "shortcuts-page.keys",
   markdown: "markdown",
   markdownEditor: "markdown.editor",
@@ -787,6 +787,7 @@ export type PartName = (typeof part)[keyof typeof part];
 /** The words of `data-variant` and `data-state` that the theme file styles, by part. */
 export const partWords = {
   muted: { variant: [], state: [] },
+  "card.intro": { variant: [], state: [] },
   "visually-hidden": { variant: [], state: [] },
   button: {
     variant: ["wide", "square", "primary", "quiet", "item", "danger"],
@@ -1171,7 +1172,6 @@ export const partWords = {
   "shortcut-list.name": { variant: [], state: [] },
   "shortcut-list.keys": { variant: [], state: [] },
   "shortcut-list.alternative": { variant: [], state: [] },
-  "shortcuts-page.intro": { variant: [], state: [] },
   "shortcuts-page.keys": { variant: [], state: [] },
   markdown: { variant: [], state: [] },
   "markdown.editor": { variant: [], state: [] },

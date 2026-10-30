@@ -1066,8 +1066,9 @@ base ":focus-visible" {
 
 // ───────────── Muted text ─────────────
 
-// Text that is less important than its neighbours: a hint, an empty list.
-part "muted" {
+// Text that is less important than its neighbours (a hint, an empty list), and the introduction of a card: the one
+// introduction of every settings page and its sections, small and muted at the full width of the card (UX §5, L3).
+part "muted" "card.intro" {
     margin 0
     color "$fg-muted"
     font-size "$fs-base"
@@ -5650,12 +5651,6 @@ part "shortcut-list.alternative" {
     display inline-flex
     align-items center
     gap "$space-2"
-}
-
-part "shortcuts-page.intro" {
-    margin 0
-    color "$fg"
-    line-height "$lh-body"
 }
 
 part "shortcuts-page.keys" {

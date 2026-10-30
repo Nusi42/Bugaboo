@@ -15,6 +15,11 @@ export interface CardProps {
   readonly look?: CardLook;
   /** What can be done with the whole card, at the end of its heading row: *Customize*. */
   readonly actions?: ReactNode;
+  /**
+   * What the card is for, in a sentence or two under the heading: the one introduction of every settings page and
+   * its sections, small and muted, as wide as the card (UX §5, L3).
+   */
+  readonly intro?: string;
   /** The link at the foot that goes back up (*All people*): not drawn on a phone, where the bar of the screen has Back. */
   readonly back?: { readonly href: string; readonly label: string };
   readonly children?: ReactNode;
@@ -30,7 +35,7 @@ function BackLink({ href, label }: { readonly href: string; readonly label: stri
 }
 
 /** A region of a page with a heading: a form, a list, a group of settings. */
-export function Card({ heading, level = 2, look, actions, back, children }: CardProps) {
+export function Card({ heading, level = 2, look, actions, intro, back, children }: CardProps) {
   const headingId = useId();
   const phone = useLayout() === "phone";
   const titleInBar = useTitleInBar();
@@ -41,7 +46,9 @@ export function Card({ heading, level = 2, look, actions, back, children }: Card
   // A card with nothing to show is not drawn: where its heading is for screen readers only and nothing is in it, only the heading stays.
   const backLink = back === undefined || phone ? null : <BackLink {...back} />;
   const nothing =
-    (children === null || children === undefined || children === false) && backLink === null;
+    (children === null || children === undefined || children === false) &&
+    backLink === null &&
+    intro === undefined;
   if (hidden && nothing && actions === undefined) {
     return (
       <Heading id={headingId} {...partOf(part.visuallyHidden)} tabIndex={-1}>
@@ -70,6 +77,7 @@ export function Card({ heading, level = 2, look, actions, back, children }: Card
         </div>
       )}
       <div {...partOf(part.stack)}>
+        {intro === undefined ? null : <p {...partOf(part.cardIntro)}>{intro}</p>}
         {children}
         {backLink}
       </div>

@@ -22,8 +22,7 @@ export function LabelsPage(props: LabelsPageProps) {
   const labels = useLabels();
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.labels")} level={1}>
-        <p {...partOf(part.text)}>{t("labels.intro")}</p>
+      <Card heading={t("nav.labels")} level={1} intro={t("labels.intro")}>
         {labels.isError ? <Alert tone={alertTone.danger}>{messageOf(labels.error)}</Alert> : null}
       </Card>
       <GroupsSection groups={labels.groups} {...props} />

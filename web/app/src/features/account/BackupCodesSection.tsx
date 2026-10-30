@@ -23,8 +23,7 @@ export function BackupCodesSection() {
     return null;
   }
   return (
-    <Card heading={t("backup.title")}>
-      <p {...partOf(part.text)}>{t("backup.intro")}</p>
+    <Card heading={t("backup.title")} intro={t("backup.intro")}>
       <p {...partOf(part.text)}>{t("backup.left", { count: twoStep.backup_codes_left })}</p>
       {renew.data === undefined ? null : (
         <BackupCodes codes={renew.data.codes} onSaved={renew.reset} />

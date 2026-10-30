@@ -50,8 +50,7 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
   const rows = issueTypeLinesOf(list.data?.pages).map((issueType) => rowOf(issueType));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.issue-types")} level={1}>
-        <p {...partOf(part.text)}>{t("issue-types.intro")}</p>
+      <Card heading={t("nav.issue-types")} level={1} intro={t("issue-types.intro")}>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         <ListEditor
           rows={rows}
@@ -63,8 +62,7 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
         />
         <ShowMoreOf label={t("issue-types.more")} list={list} />
       </Card>
-      <Card heading={t("issue-types.create-title")}>
-        <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>
+      <Card heading={t("issue-types.create-title")} intro={t("issue-types.create-intro")}>
         <CreateIssueTypeForm />
       </Card>
     </div>

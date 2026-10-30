@@ -31,8 +31,7 @@ export function RegionPage() {
   usePageTitle(t("nav.region"));
   const form = usePersonalForm(["region."]);
   return (
-    <Card heading={t("nav.region")} level={1}>
-      <p>{t("setting.page.region-intro")}</p>
+    <Card heading={t("nav.region")} level={1} intro={t("setting.page.region-intro")}>
       <Example />
       <SettingsForm {...form} searchable={false} />
     </Card>

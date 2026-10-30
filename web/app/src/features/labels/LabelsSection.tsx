@@ -42,7 +42,7 @@ export function LabelsSection(props: LabelsSectionProps) {
         onClose={props.onClose}
       />
       <h3 {...partOf(part.cardTopic)}>{t("labels.create-label-title")}</h3>
-      <p {...partOf(part.text)}>{t("labels.create-label-intro")}</p>
+      <p {...partOf(part.cardIntro)}>{t("labels.create-label-intro")}</p>
       <CreateLabelForm groups={props.groups} />
     </Card>
   );

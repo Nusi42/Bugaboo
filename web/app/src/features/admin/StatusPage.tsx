@@ -34,8 +34,7 @@ export function StatusPage() {
   usePageTitle(t("server-status.title"));
   const status = useQuery(api.query.queryOptions("get", "/api/v1/admin/status"));
   return (
-    <Card heading={t("server-status.title")} level={1}>
-      <p {...partOf(part.text)}>{t("server-status.intro")}</p>
+    <Card heading={t("server-status.title")} level={1} intro={t("server-status.intro")}>
       {status.isError ? <Alert tone={alertTone.danger}>{messageOf(status.error)}</Alert> : null}
       {status.data === undefined ? null : <Summary state={status.data} />}
       {status.data === undefined ? null : <StatusRows state={status.data} />}

@@ -86,8 +86,7 @@ export function HandlePage() {
   usePageTitle(t("handle.title"));
   const current = api.query.useQuery("get", "/api/v1/me/handle");
   return (
-    <Card heading={t("handle.title")} level={1}>
-      <p {...partOf(part.text)}>{t("handle.intro")}</p>
+    <Card heading={t("handle.title")} level={1} intro={t("handle.intro")}>
       {current.isError ? <Alert tone={alertTone.danger}>{messageOf(current.error)}</Alert> : null}
       {current.data === undefined ? null : <HandleForm handle={current.data.handle} />}
       <Rules />
