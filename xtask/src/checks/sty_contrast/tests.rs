@@ -535,3 +535,16 @@ fn bad_example() {
             .any(|f| f.message.contains("Theme daylight"))
     );
 }
+
+#[test]
+fn the_tint_of_not_started_is_a_neutral_grey_in_every_theme() {
+    // M5 exit F-A4: in Dusk the tint of Not started was a blue grey (47, 60, 80), close to In progress.
+    let findings = evaluate(&with_value("tint-ns", "dusk", "#2f3c50"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("Theme dusk")
+            && f.message.contains("`tint-ns`")
+            && f.message.contains("grey")),
+        "{:?}",
+        messages(&findings)
+    );
+}

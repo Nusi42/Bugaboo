@@ -381,6 +381,23 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
                 }
             }
         }
+        if let Some(max) = spec.max_chroma_of_states {
+            for state in spec.groups.iter().flat_map(|group| &group.states) {
+                let Some(value) = color(file, state, &theme.name) else {
+                    continue;
+                };
+                let chroma = chroma_of(value);
+                if chroma > max {
+                    findings.push(Finding::at(
+                        THEME_PATH,
+                        format!(
+                            "Theme {}: `{state}` has a hue of its own (chroma {chroma:.1}); it must be a neutral grey, at most {max:.1}.",
+                            theme.name
+                        ),
+                    ));
+                }
+            }
+        }
     }
     findings
 }
@@ -391,6 +408,12 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
 fn color_difference(first: &str, second: &str) -> f64 {
     let (a, b) = (lab(first), lab(second));
     ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
+}
+
+/// How much hue a `#RRGGBB` color has: its chroma in CIE L*a*b* (C*ab); a neutral grey is near 0.
+fn chroma_of(hex: &str) -> f64 {
+    let [_, a, b] = lab(hex);
+    a.hypot(b)
 }
 
 /// A `#RRGGBB` color in CIE L*a*b* (D65).

@@ -37,6 +37,8 @@ pub(crate) struct DistinctSpec {
     pub(crate) min_delta_e_against_surfaces: Option<f64>,
     /// Smallest difference in color (delta E) between two states.
     pub(crate) min_delta_e_between_states: Option<f64>,
+    /// Largest chroma (C*ab) of each state: the states are neutral greys, without a hue of their own.
+    pub(crate) max_chroma_of_states: Option<f64>,
 }
 
 /// A text color on a fill that is brightened while it is pointed at (`filter: brightness`): the
@@ -150,6 +152,7 @@ impl DistinctSpec {
             "min-between-states",
             "min-delta-e-against-surfaces",
             "min-delta-e-between-states",
+            "max-chroma-of-states",
         ];
         if !named
             .iter()
@@ -167,6 +170,7 @@ impl DistinctSpec {
             min_between_states: optional_number(node, "min-between-states")?.unwrap_or(0.0),
             min_delta_e_against_surfaces: optional_number(node, "min-delta-e-against-surfaces")?,
             min_delta_e_between_states: optional_number(node, "min-delta-e-between-states")?,
+            max_chroma_of_states: optional_number(node, "max-chroma-of-states")?,
         })
     }
 }

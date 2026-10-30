@@ -331,8 +331,8 @@ tokens {
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
-    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#2f3c50" midnight="#1f2531"
-    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#1f3b68" midnight="#0a2350"
+    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#3b3b3b" midnight="#252525"
+    color "tint-ip" daylight="#d2eefe" paper="#cce7f1" dusk="#1f3b68" midnight="#0a2350"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
     // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
     // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
@@ -499,6 +499,13 @@ contrast min=4.5 {
 distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="The tints of Not started, In progress and Done differ from each other by at least 11 (delta E) and from the plain card by at least 7.5, in every theme." {
     states "tint-ns" "tint-ip" "tint-done"
     surfaces "bg-canvas" "bg-raised"
+}
+
+// Not started is a neutral grey in every theme (UX §4.2): a tint with a hue of its own read as a second blue beside In
+// progress in Dusk and Midnight (M5 exit F-A4). Its chroma (C*ab) stays as low as the greys of Daylight and Paper.
+distinct max-chroma-of-states=3 reason="The tint of Not started is a neutral grey, not a pale blue next to In progress, in every theme (UX §4.2, M5 exit F-A4)." {
+    states "tint-ns"
+    surfaces "bg-raised"
 }
 
 // A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
