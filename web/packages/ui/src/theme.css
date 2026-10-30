@@ -3886,7 +3886,7 @@ optgroup {
     animation-timeline: scroll(nearest inline);
     animation-name: cue-in;
     animation-range: 0% var(--space-3);
-    inset-inline-start: 0;
+    inset-inline-start: var(--size-matrix-cell);
   }
 }
 

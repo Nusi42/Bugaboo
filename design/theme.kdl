@@ -3866,11 +3866,13 @@ part "access.matrix" {
 
 // The shadows at the sides of the table while columns are hidden at that side (the scroll position drives them); where the
 // browser has no scroll-driven animation there is none.
+// The start shadow falls beside the names of the rows, which stay at the start (sticky): the roles hide under the names,
+// not under the outer edge of the box.
 part "access.scroll::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-inline"
         use "edge-from-start"
-        inset-inline-start 0
+        inset-inline-start "$size-matrix-cell"
     }
 }
 
