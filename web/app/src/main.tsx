@@ -1,8 +1,4 @@
 import { applyInitialAppearance } from "@bugaboo/ui";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider } from "@tanstack/react-router";
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 
 import { installPersonalSources } from "./shared/personal-sources.ts";
 import { paths } from "./shared/paths.ts";
@@ -10,9 +6,9 @@ import {
   ignoreCancelledQuestion,
   onSecondStepRequired,
   onSessionLost,
-  queryClient,
 } from "./shared/query-client.ts";
 import { forgetPerson, leaveSession } from "./shared/session.ts";
+import { renderApp } from "./render-app.tsx";
 import { router } from "./routes/router.tsx";
 
 // The one style sheet, made from design/theme.kdl. It comes last, as the rules of the page frame
@@ -46,15 +42,4 @@ onSecondStepRequired(() => {
   }
 });
 
-const container = document.querySelector("#root");
-if (container === null) {
-  throw new Error("index.html must contain the element with id root");
-}
-
-createRoot(container).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+renderApp();
