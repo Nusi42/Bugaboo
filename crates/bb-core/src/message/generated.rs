@@ -7397,6 +7397,15 @@ pub fn issues_column_width(column: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.columns-hidden`.
+#[must_use]
+pub fn issues_columns_hidden(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.columns-hidden"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `issues.compare-keep`.
 #[must_use]
 pub fn issues_compare_keep(number: impl std::fmt::Display) -> Message {
@@ -12681,6 +12690,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.column-up", "Move {column} up"),
     ("issues.column-width", "Width of {column}"),
     ("issues.columns-head", "Columns of the list"),
+    (
+        "issues.columns-hidden",
+        "{count, plural, one {# column is hidden for lack of room. Customize or a wider window shows it.} other {# columns are hidden for lack of room. Customize or a wider window shows them.}}",
+    ),
     ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),

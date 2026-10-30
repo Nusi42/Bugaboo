@@ -244,6 +244,7 @@ export interface MessageArguments {
   "issues.column-down": { column: string | number };
   "issues.column-up": { column: string | number };
   "issues.column-width": { column: string | number };
+  "issues.columns-hidden": { count: number };
   "issues.compare-keep": { number: string | number };
   "issues.compare-paragraph": { number: string | number };
   "issues.copy-link-of": { key: string | number };
