@@ -35,7 +35,7 @@ export const messages = {
     "{changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
   "many-changes.progress-label": "How far the change is",
   "many-changes.progress":
-    "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
+    "{total, plural, one {{done, number} of # issue done} other {{done, number} of # issues done}}",
   "many-changes.stopped": "The change stopped. Some issues are changed and the rest are not.",
   "many-changes.skipped-list": "Issues that were skipped",
   "many-changes.skipped-line": "{issue}: {reason}",

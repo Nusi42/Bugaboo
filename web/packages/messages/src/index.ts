@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { IntlMessageFormat } from "intl-messageformat";
+import { type Formatters, IntlMessageFormat } from "intl-messageformat";
 
 import type { MessageArguments, MessageKey } from "./generated/types.ts";
 import { textOf } from "./registry.ts";
@@ -9,8 +9,51 @@ import "./generated/shared.ts";
 
 export type { MessageKey } from "./generated/types.ts";
 
-/** English is the only catalog for now; more languages come with UX-07. Dates and numbers follow it. */
+/** English is the only catalog for now; more languages come with UX-07. Dates and their words follow it. */
 export const locale = "en";
+
+/**
+ * The language tag that writes the numbers in the texts (`{count, number}`, the `#` of a plural): the
+ * person's number format, so a count in a sentence looks like the count beside it (M5 exit F-A5).
+ * `undefined` is the device's own. The plural keeps the rules of `locale`, whatever the numbers look like.
+ */
+let numbersLocale: string | undefined;
+
+/** The number formats made so far, by their options; they are made again when the numbers change. */
+const numberFormats = new Map<string, Intl.NumberFormat>();
+
+/** Writes the numbers of every text the way `next` does (the app's region says which). */
+export function setNumbersLocale(next: string | undefined): void {
+  if (next !== numbersLocale) {
+    numbersLocale = next;
+    numberFormats.clear();
+    formatters.clear();
+  }
+}
+
+/** The formats a message uses: the numbers of the person, the plural and the dates of the catalog. */
+const formatOf: Formatters = {
+  getNumberFormat: (
+    _locales?: string | readonly string[],
+    options?: Readonly<Intl.NumberFormatOptions>,
+  ) => {
+    const key = JSON.stringify(options ?? {});
+    let format = numberFormats.get(key);
+    if (format === undefined) {
+      format = new Intl.NumberFormat(numbersLocale, options);
+      numberFormats.set(key, format);
+    }
+    return format;
+  },
+  getDateTimeFormat: (
+    locales?: string | readonly string[],
+    options?: Readonly<Intl.DateTimeFormatOptions>,
+  ) => new Intl.DateTimeFormat(locales, options),
+  getPluralRules: (
+    locales?: string | readonly string[],
+    options?: Readonly<Intl.PluralRulesOptions>,
+  ) => new Intl.PluralRules(locales, options),
+};
 
 type ValuesOf<K extends MessageKey> = K extends keyof MessageArguments
   ? [values: MessageArguments[K]]
@@ -58,7 +101,7 @@ function formatterFor(key: MessageKey): IntlMessageFormat | undefined {
     if (text === undefined) {
       return undefined;
     }
-    formatter = new IntlMessageFormat(text, locale);
+    formatter = new IntlMessageFormat(text, locale, undefined, { formatters: formatOf });
     formatters.set(key, formatter);
   }
   return formatter;

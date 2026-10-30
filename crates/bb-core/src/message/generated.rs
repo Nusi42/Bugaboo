@@ -6113,10 +6113,10 @@ pub fn comments_version_saved(
 
 /// The message `common.show-all`.
 #[must_use]
-pub fn common_show_all(count: impl std::fmt::Display) -> Message {
+pub fn common_show_all(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("common.show-all"),
-        vec![("count", Value::Text(count.to_string()))],
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -8329,11 +8329,11 @@ pub fn many_changes_note_type_not_used(
 
 /// The message `many-changes.progress`.
 #[must_use]
-pub fn many_changes_progress(done: impl std::fmt::Display, total: i64) -> Message {
+pub fn many_changes_progress(done: i64, total: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.progress"),
         vec![
-            ("done", Value::Text(done.to_string())),
+            ("done", Value::Number(done)),
             ("total", Value::Number(total)),
         ],
     )
@@ -11547,7 +11547,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.off", "Off"),
     ("common.on", "On"),
     ("common.save", "Save"),
-    ("common.show-all", "Show all {count}"),
+    ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
@@ -13312,7 +13312,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes.progress",
-        "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
+        "{total, plural, one {{done, number} of # issue done} other {{done, number} of # issues done}}",
     ),
     ("many-changes.progress-label", "How far the change is"),
     ("many-changes.project-legend", "Move to"),

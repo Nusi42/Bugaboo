@@ -4,6 +4,7 @@ import {
   settingKeys,
   type SettingChoice,
 } from "@bugaboo/api-client";
+import { setNumbersLocale } from "@bugaboo/messages";
 import { useSyncExternalStore } from "react";
 
 import type { MySettings } from "./my-settings.ts";
@@ -75,6 +76,14 @@ export function regionOf(settings?: MySettings): Region {
   };
 }
 
+/** The language tag that writes numbers the way each choice does; the device uses its own. */
+export const numberLocales: Readonly<Record<NumberFormat, string | undefined>> = {
+  device: undefined,
+  point: "en-US",
+  comma: "de-DE",
+  space: "fr-FR",
+};
+
 const current = createStore<Region>(deviceRegion);
 
 /** The region the formats use now. */
@@ -91,6 +100,8 @@ export function setRegion(next: Region): void {
     next.numberFormat === now.numberFormat &&
     next.firstDay === now.firstDay;
   if (!same) {
+    // The numbers in the texts first, so every screen that shows the new region writes them alike.
+    setNumbersLocale(numberLocales[next.numberFormat]);
     current.replace(next);
   }
 }

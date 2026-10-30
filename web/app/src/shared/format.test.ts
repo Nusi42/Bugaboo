@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { t } from "@bugaboo/messages";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   clockPartsOf,
@@ -6,12 +7,13 @@ import {
   formatAgo,
   formatDate,
   formatDateTime,
+  formatNumber,
   formatSince,
   formatTime,
   isCalendarDay,
   splitUptime,
 } from "./format.ts";
-import { deviceRegion, type Region } from "./region.ts";
+import { deviceRegion, setRegion, type Region } from "./region.ts";
 
 describe("ops_08 formatting for the status page", () => {
   it("splits an uptime into days, hours and minutes", () => {
@@ -103,5 +105,28 @@ describe("the clock and the calendar of a region", () => {
     expect(isCalendarDay("2028-02-29")).toBe(true);
     expect(isCalendarDay("2027-02-29")).toBe(false);
     expect(isCalendarDay("2027-2-1")).toBe(false);
+  });
+});
+
+describe("cfg_04 every number on a page is written the person's way (M5 exit F-A5)", () => {
+  afterEach(() => {
+    setRegion(deviceRegion);
+  });
+
+  it.each(["point", "comma", "space"] as const)(
+    "writes the numbers of the texts like the group count beside them (%s)",
+    (numberFormat) => {
+      setRegion({ ...deviceRegion, numberFormat });
+      const line = t("issues.count-line", { total: 1069, scope: "Website", shown: 1007 });
+      expect(line).toContain(formatNumber(1069));
+      expect(line).toContain(formatNumber(1007));
+      expect(t("issues.count", { count: 1069 })).toContain(formatNumber(1069));
+    },
+  );
+
+  it("keeps the English plural whatever the numbers look like", () => {
+    setRegion({ ...deviceRegion, numberFormat: "space" });
+    expect(t("issues.count", { count: 0 })).toBe(`${formatNumber(0)} issues found`);
+    expect(t("issues.count", { count: 1 })).toBe(`${formatNumber(1)} issue found`);
   });
 });
