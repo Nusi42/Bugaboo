@@ -698,7 +698,7 @@ mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
     // A hint or a label is one to three lines: balanced, so its last line is never one word alone ("a good password."),
-    // which `pretty` still left at some widths. The one wrap of every hint and label.
+    // where the `pretty` of the page still left one at some widths. The one wrap of every hint and label.
     text-wrap balance
 }
 
@@ -723,6 +723,8 @@ mixin "input-box" {
 mixin "pick-row" {
     display flex
     flex-direction column
+    // A row of one line stands in the middle of its height, as a row of two lines does (M2 07).
+    justify-content center
     gap "$space-1"
     box-sizing border-box
     min-height "$size-control"
@@ -732,12 +734,25 @@ mixin "pick-row" {
     cursor pointer
 }
 
-// The words of a button, a menu item or a branch of the tree.
-mixin "menu-text" {
-    color "$fg"
+// What stands in a button: its icon and its words on one line, in the middle, at the gap of a button.
+mixin "button-content" {
+    display inline-flex
+    align-items center
+    justify-content center
+    gap "$space-2"
+}
+
+// The size and weight of the words of a button, whatever their color.
+mixin "button-words" {
     font-size "$fs-ui"
     font-weight "$weight-regular"
     text-decoration none
+}
+
+// The words of a button, a menu item or a branch of the tree.
+mixin "menu-text" {
+    color "$fg"
+    use "button-words"
 }
 
 // Facts under a name, at the start edge: the row of a list on a phone (a field, a label), whatever the facts say.
@@ -1060,18 +1075,26 @@ base "html, body, #root" {
     height "100%"
 }
 
+// No word alone on the last line of any text (M5 exit: titles, notifications, hints, intros): every element inherits it,
+// and a part that must stay on one line says so with its own `white-space`.
 base "body" {
     margin 0
     background "$bg-canvas"
     color "$fg"
     font-family "$font"
     font-size "$fs-md"
+    text-wrap pretty
 }
 
 // Headings and table heads come from the browser in bold; here they are regular, and the parts the
 // `bold` list names (UX §7.3, STY-BOLD) turn bold on again.
 base "h1" "h2" "h3" "h4" "h5" "h6" "th" "strong" "b" "optgroup" {
     font-weight "$weight-regular"
+}
+
+// What a person types wraps as typed: the wrapping of the page that keeps a last word company would move it while typing.
+base "textarea" "[contenteditable]" {
+    text-wrap wrap
 }
 
 // The rule React Aria would add itself: pressing a control does not wait for a double tap.
@@ -1094,14 +1117,9 @@ part "muted" "card.intro" {
     line-height "$lh-body"
 }
 
-// No single word alone on the last line of quiet words.
-part "muted" {
-    text-wrap pretty
-}
-
 // Short texts of one to three lines (an introduction, a line of a preview, the title of an answer, the words of a
-// switch) are balanced, so a last line is never one word alone ("in turn.", "description", "account", "back"), which
-// `pretty` still left at some widths. The help of a box is a hint and is balanced by `control-hint`.
+// switch) are balanced, so a last line is never one word alone ("in turn.", "description", "account", "back"), where
+// the `pretty` of the page still left one at some widths. The help of a box is a hint and is balanced by `control-hint`.
 part "card.intro" "access.preview-line" "access.subheading" "switch" {
     text-wrap balance
 }
@@ -1116,10 +1134,7 @@ part "visually-hidden" {
 // The variants come before the states, so that a hovered quiet button is hovered.
 
 part "button" {
-    display inline-flex
-    align-items center
-    justify-content center
-    gap "$space-2"
+    use "button-content"
     use "control-box"
     padding "$space-1" "$pad-control"
     use "menu-text"
@@ -1724,8 +1739,10 @@ part "overlay.modal[variant=bottom]" {
     border-radius "$r-card $r-card 0 0"
 }
 
+// The menu that slides in on a tablet is as wide as what it holds, the sidebar of a computer, so its items keep the room
+// they have there (*Quick search* beside its keys on one line, M2 15).
 part "overlay.modal[variant=start]" {
-    width "$size-sidebar"
+    width fit-content
     max-width "$size-sheet-share"
     height "100%"
     border-radius "0 $r-card $r-card 0"
@@ -3080,9 +3097,9 @@ part "window.control[variant=close]" {
 // *Back* stands at the start of the title bar, as on a page (R1, UX review of M4, A10).
 part "window.control[variant=back]" {
     order -1
+    use "button-content"
     width auto
     padding 0 "$pad-control"
-    gap "$space-1"
 }
 
 // On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
@@ -3098,8 +3115,11 @@ part "overlay.modal[variant=full] window.title" {
     line-height "$lh-tight"
 }
 
+// Back of the bar of a screen is Back of the top bar of a page: the words of a button (M5 exit, share on a phone: 14
+// against 16 px, the title further in).
 part "overlay.modal[variant=full] window.control[variant=back]" {
     use "hang-start"
+    use "button-words"
     color "$accent-fg"
 }
 
@@ -3360,7 +3380,6 @@ part "text" {
     margin 0
     font-size "$fs-md"
     line-height "$lh-text"
-    text-wrap pretty
 }
 
 part "row" {
@@ -3593,7 +3612,6 @@ part "card.heading" {
     line-height "$lh-snug"
     color "$fg"
     font-weight "$weight-bold"
-    text-wrap pretty
 }
 
 part "card.heading:focus" {
@@ -3650,9 +3668,14 @@ part "save-bar button[variant=primary]" {
 }
 
 // The main button of a form stands on a row of its own and is as wide as the screen on a phone, whether the form keeps it
-// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys).
-part "app-layout[variant=phone] stack > row > button[variant=primary]" {
+// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys),
+// and the one that stands at the end of its row (*Comment*, after *Upload files*; M5 exit, L1).
+part "app-layout[variant=phone] stack > row > button[variant=primary]" "app-layout[variant=phone] stack > row > row.end:has(button[variant=primary])" {
     flex "1 1 100%"
+}
+
+part "app-layout[variant=phone] stack > row > row.end > button[variant=primary]" {
+    width "100%"
 }
 
 part "skeleton.line" {
@@ -4103,7 +4126,6 @@ part "people" {
 part "people.person" {
     use "pick-row"
     position relative
-    justify-content center
     padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
     border-bottom "$border-width solid $divider"
 }
@@ -4557,16 +4579,20 @@ part "shell.title" {
     font-weight "$weight-bold"
 }
 
+// The pages before sign-in: the name, the narrow content and the choice of theme in one column, in the middle of the window
+// (M5 exit: it stood about 70 px left of the middle in a wider frame), each the same gap from the next.
 part "shell.page" {
-    box-sizing border-box
     display flex
     flex-direction column
     gap "$space-5"
-    min-height "100%"
-    width "100%"
-    max-width "$size-content"
+    max-width "$size-form"
     margin 0 auto
     padding "$space-4"
+}
+
+// The content does not grow to push the choice of theme to the foot of the window: it follows at the gap of the column.
+part "shell.page > shell.content" {
+    flex none
 }
 
 part "shell.header" {
@@ -4593,9 +4619,8 @@ part "shell.narrow" {
     max-width "$size-form"
 }
 
+// As wide as the column of the page, so no wider than the card above it: the choices of theme wrap there as they do on a phone.
 part "shell.footer" {
-    // No wider than the card above it: the choices of theme wrap there as they do on a phone.
-    max-width "$size-form"
     padding-top "$space-4"
     border-top "$border-width solid $divider"
 }
@@ -4639,6 +4664,13 @@ part "app-layout.main:focus" {
 // the strip covers no row of a list and no frame of a card at the end of the page (M5 exit, O7).
 part "app-layout:has(window-dock) app-layout.main" {
     padding-block-end "calc($size-page-gutter + $size-dock-strip)"
+}
+
+// The box of the rows of a list is as high as the window lets it be: with the strip there it gives the strip its room, so at
+// rest the box ends above the strip and the page grows no longer than the window (M5 exit, finding 53). A phone keeps its
+// own height of the box (the rule of a phone list, later).
+part "app-layout:has(window-dock) list-scroll" {
+    max-height "calc($size-list-scroll - $size-dock-strip)"
 }
 
 // The focus view takes the whole width, so the strip has the gutter only.
@@ -4722,7 +4754,6 @@ part "sidebar[variant=drawer]" {
     position static
     height auto
     overflow-y visible
-    width "100%"
     border-right 0
     background transparent
 }
@@ -4772,7 +4803,6 @@ part "sidebar.who" {
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
-    text-wrap pretty
 }
 
 part "nav-item" {
@@ -5439,17 +5469,31 @@ part "layout-field.limited link" {
     use "touch-link"
 }
 
-// On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app.
+// On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app. Its three buttons
+// share the width in equal parts, and it has the surface of the bars of the app, not the color of the page (M5 exit, L1).
 part "issue-bar" {
     display flex
     gap "$space-2"
     padding "$space-2"
     border-top "$border-width solid $divider"
-    background "$bg-raised"
+    background "$bg-surface"
 }
 
 part "issue-bar.item" {
-    flex 1
+    flex "1 1 0"
+    min-width 0
+}
+
+// The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it
+// (L6; the top of the page scrolls under the top bar and needs none). The line stands at the end of the scrolling
+// frame, so the padding of the frame is taken back.
+part "app-layout.column:has(issue-bar) app-layout.main::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-end"
+        bottom "calc(-1 * $size-page-gutter)"
+        margin-inline "calc(-1 * $size-page-gutter)"
+    }
 }
 
 part "key-capture-field.label" {

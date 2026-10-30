@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { chooseStatus, prepareWeb } from "./support/issues.ts";
-import { layoutOf } from "./support/layout.ts";
+import { issueBackOf, layoutOf } from "./support/layout.ts";
 import { serverWord } from "./support/server-words.ts";
 
 // The frames an issue opens in (UX §3.2, §3.3, §4.4, M3 WP-13): the side panel, the focus view and
@@ -42,13 +42,13 @@ test("ux_04 copying the address is announced", async ({ page, context }) => {
   );
 });
 
-test("ux_04 on a phone the panel says Back to list, and the bar goes to the status and the comment box", async ({
+test("ux_04 on a phone the issue has Back in the top bar, and the bar goes to the status and the comment box", async ({
   page,
 }) => {
   test.skip(layoutOf(page) !== "phone", "only a phone has the bar");
   await signIn(page, ada);
   await page.goto(panelAddress("WEB", "WEB-2"));
-  await expect(page.getByRole("button", { name: t("focus.back"), exact: true })).toBeVisible();
+  await expect(issueBackOf(page)).toBeVisible();
   await expect(page.getByRole("button", { name: t("panel.close"), exact: true })).toHaveCount(0);
   await page
     .getByRole("toolbar", { name: t("issues.bar"), exact: true })

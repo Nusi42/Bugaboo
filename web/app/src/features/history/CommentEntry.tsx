@@ -45,7 +45,10 @@ export function CommentEntry({ issue, entry, highlighted = false }: CommentEntry
           setEditing(false);
         }}
       />
-      {known ? <CommentFiles issue={issue} comment={id} mayAdd={entry.may_edit === true} /> : null}
+      {/* Files are added to an own comment while it is edited, not beside its other buttons. */}
+      {known ? (
+        <CommentFiles issue={issue} comment={id} mayAdd={entry.may_edit === true && editing} />
+      ) : null}
       <CommentActions
         comment={entry}
         editing={editing}

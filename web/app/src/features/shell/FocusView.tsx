@@ -22,7 +22,7 @@ export interface FocusViewProps {
  * The focus view (UX §3.4): the open item takes the main area; the sidebar shrinks to icons and a
  * slim list stays on the left, which *Hide list* gives up for even more room. `j` and `k` (and the
  * *Previous* and *Next* buttons) move through the list and Esc, or *Back to list*, returns to it.
- * Phones always show the item on a screen of its own.
+ * Phones always show the item on a screen of its own, with *Back* in the top bar of every screen.
  */
 export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
   const layout = useLayout();
@@ -46,7 +46,7 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
       <div ref={main} tabIndex={-1} {...partOf(part.shellContent)}>
         <div {...partOf(part.focusViewBar)}>
           <FocusBar
-            onBack={onBack}
+            onBack={phone ? undefined : onBack}
             onStep={onStep}
             list={listState}
             onToggleList={() => {

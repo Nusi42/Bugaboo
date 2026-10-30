@@ -124,8 +124,9 @@ function Controls({
 >) {
   if (state === windowState.full) {
     return (
+      // Back of a window shown as a screen is Back of the top bar of a page: the same icon (M5 exit, share on a phone).
       <Button {...partOf(part.windowControl, { variants: ["back"] })} onPress={onClose}>
-        <Icon name={iconName.back} size={iconSize.small} />
+        <Icon name={iconName.back} />
         {labels.back}
       </Button>
     );

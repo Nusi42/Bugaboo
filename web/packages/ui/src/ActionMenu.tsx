@@ -134,6 +134,8 @@ export interface ActionMenuProps {
   readonly trigger?: (props: ActionMenuTriggerProps) => ReactNode;
   /** The word of *Cancel* on the sheet of a phone. */
   readonly cancelLabel?: string;
+  /** The button fills the room it stands in, as its neighbours in a bar of equal parts do. */
+  readonly wide?: boolean;
 }
 
 /** A button that opens a short list of actions (UX §4.4: *More*), and gives the focus back to the button. */
@@ -143,6 +145,7 @@ export function ActionMenu({
   look = buttonLook.plain,
   trigger: Trigger,
   cancelLabel,
+  wide = false,
 }: ActionMenuProps) {
   return (
     <ActionOverlay
@@ -151,7 +154,7 @@ export function ActionMenu({
       {...(cancelLabel === undefined ? {} : { cancelLabel })}
       renderTrigger={(onOpen) =>
         Trigger === undefined ? (
-          <Button look={look} {...(onOpen === undefined ? {} : { onPress: onOpen })}>
+          <Button look={look} wide={wide} {...(onOpen === undefined ? {} : { onPress: onOpen })}>
             {label}
           </Button>
         ) : (

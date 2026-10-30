@@ -1,11 +1,11 @@
-import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
+import { paths, projectAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
+import { issueBackOf, layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
 import { ask, result } from "./support/quick-search.ts";
 
@@ -14,10 +14,18 @@ import { ask, result } from "./support/quick-search.ts";
 
 test.use({ preparation: { run: prepareLook } });
 
-/** Presses *Back to list* of the issue that is open, once it is read (the project it belongs to is known then). */
+/**
+ * Where *Back* goes from an issue opened by its address: the list of its project; on a phone, *Back* of the top bar goes
+ * to the screen the issue belongs under, the project, as on every screen.
+ */
+function aboveTheIssue(page: Page): string {
+  return layoutOf(page) === "phone" ? projectAddress("WEB") : projectIssuesAddress("WEB");
+}
+
+/** Presses *Back* of the issue that is open, once it is read (the project it belongs to is known then). */
 async function back(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: webIssues.login })).toBeVisible();
-  await page.getByRole("button", { name: t("focus.back"), exact: true }).click();
+  await issueBackOf(page).click();
 }
 
 test("ux_3_4 Back from an issue opened on the Search page returns to that search", async ({
@@ -45,11 +53,11 @@ test("ux_3_4 Back from an issue found by Quick search returns to the page it was
   await expect.poll(() => new URL(page.url()).pathname).toBe(paths.home);
 });
 
-test("ux_3_4 Back from an issue opened by its address returns to the list of its project", async ({
+test("ux_3_4 Back from an issue opened by its address returns to the list of its project, on a phone to the project", async ({
   page,
 }) => {
   await signIn(page, ada);
   await page.goto("/issues/WEB-1");
   await back(page);
-  await expect.poll(() => new URL(page.url()).pathname).toBe(projectIssuesAddress("WEB"));
+  await expect.poll(() => new URL(page.url()).pathname).toBe(aboveTheIssue(page));
 });

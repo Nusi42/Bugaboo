@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, Icon, iconName } from "@bugaboo/ui";
 
 export interface FocusBarProps {
-  readonly onBack: () => void;
+  /** *Back to list*; none on a phone, whose top bar has *Back* (UX §4.4, L1). */
+  readonly onBack: (() => void) | undefined;
   readonly onStep: (direction: 1 | -1) => void;
   /** Whether *Hide list* and *Show list* are offered, and what the list is doing. */
   readonly list: "none" | "shown" | "hidden";
@@ -13,10 +14,12 @@ export interface FocusBarProps {
 export function FocusBar({ onBack, onStep, list, onToggleList }: FocusBarProps) {
   return (
     <>
-      <Button look={buttonLook.quiet} onPress={onBack}>
-        <Icon name={iconName.back} />
-        {t("focus.back")}
-      </Button>
+      {onBack === undefined ? null : (
+        <Button look={buttonLook.quiet} onPress={onBack}>
+          <Icon name={iconName.back} />
+          {t("focus.back")}
+        </Button>
+      )}
       <Button
         onPress={() => {
           onStep(-1);

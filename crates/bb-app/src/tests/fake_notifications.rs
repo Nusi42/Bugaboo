@@ -74,17 +74,30 @@ impl NotificationStore for FakeStore {
         limit: u64,
     ) -> Result<Vec<Notification>, FakeError> {
         Ok(self.read(|state| {
+            // Newest first by the time of the event, then by the ID, as the store reads them.
+            let place = |row: &Notification| (row.at, row.id);
+            let cursor = before.and_then(|before| {
+                state
+                    .notifications
+                    .iter()
+                    .find(|row| row.recipient == recipient && row.id == before)
+                    .map(place)
+            });
             let mut found: Vec<Notification> = state
                 .notifications
                 .iter()
                 .filter(|row| {
                     row.recipient == recipient
                         && shown_under(row, filter)
-                        && before.is_none_or(|before| row.id < before)
+                        && match (before, cursor) {
+                            (None, _) => true,
+                            (Some(_), Some(cursor)) => place(row) < cursor,
+                            (Some(_), None) => false,
+                        }
                 })
                 .cloned()
                 .collect();
-            found.sort_by_key(|row| std::cmp::Reverse(row.id));
+            found.sort_by_key(|row| std::cmp::Reverse(place(row)));
             found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             found
         }))

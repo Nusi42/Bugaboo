@@ -1,3 +1,4 @@
+import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { layoutForWidth, type LayoutMode } from "../../../packages/ui/src/layout.ts";
@@ -8,6 +9,24 @@ export { nothing } from "./sequence.ts";
 /** Which layout the window of this page has. */
 export function layoutOf(page: Page): LayoutMode {
   return layoutForWidth(page.viewportSize()?.width ?? viewports.computer.width);
+}
+
+/** *Back* from an open issue: *Back to list* of the focus view, or *Back* of the top bar on a phone (UX §4.4, L1). */
+export function issueBackOf(page: Page): Locator {
+  return layoutOf(page) === "phone"
+    ? page.getByRole("banner").getByRole("button", { name: t("shell.back"), exact: true })
+    : page.getByRole("button", { name: t("focus.back"), exact: true });
+}
+
+/**
+ * *More* of an open issue: the one in its header, or on a phone the one of the bar of actions under
+ * the page, the only one a phone has (UX §4.4, L1); not the *More* of the main menu.
+ */
+export function issueMoreOf(page: Page): Locator {
+  const more = { name: t("issues.more"), exact: true } as const;
+  return layoutOf(page) === "phone"
+    ? page.getByRole("toolbar", { name: t("issues.bar"), exact: true }).getByRole("button", more)
+    : page.locator("article").getByRole("button", more).first();
 }
 
 /** What to do on a screen of each size: the test runs once per size and does what fits it. */

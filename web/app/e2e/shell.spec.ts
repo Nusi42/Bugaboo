@@ -7,6 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { boxOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -62,6 +63,11 @@ async function tabletFrame(page: Page): Promise<void> {
   await expect(menu.getByRole("link", { name: t("nav.home"), exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: t("nav.organization-settings") })).toBeVisible();
   await expectNoLaterScreens(menu);
+  // As wide inside as the sidebar of a computer: Quick search stays on one line beside its keys (M2 15).
+  const item = menu.getByRole("button", { name: /^Quick search/u });
+  const icon = await boxOf(item.locator("[data-part='icon']").first());
+  const words = await boxOf(item.getByText(t("shell.quick-search"), { exact: true }));
+  expect(words.height).toBeLessThan(icon.height * 1.5);
   // Esc closes the menu and the focus goes back to the button that opened it.
   await page.keyboard.press("Escape");
   await expect(mainMenu(page)).toHaveCount(0);
