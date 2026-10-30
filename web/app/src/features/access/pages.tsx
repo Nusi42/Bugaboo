@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { CheckAccessView } from "./CheckAccessView.tsx";
@@ -15,11 +15,21 @@ export function FieldPermissionsPage() {
   );
 }
 
+/** The introduction of *Who sees people*: its example of a role stays on one line. */
+function PeopleVisibilityIntro() {
+  const example = t("people-visibility.intro-example");
+  return (
+    <SentenceWithValue sentence={t("people-visibility.intro", { example })} value={example}>
+      {(value) => <span {...partOf(part.keptTogether)}>{value}</span>}
+    </SentenceWithValue>
+  );
+}
+
 /** *Organization settings › People › Who sees people* (PRIV-12, UX §5.2). */
 export function PeopleVisibilityPage() {
   usePageTitle(t("nav.people-visibility"));
   return (
-    <Card heading={t("nav.people-visibility")} level={1} intro={t("people-visibility.intro")}>
+    <Card heading={t("nav.people-visibility")} level={1} intro={<PeopleVisibilityIntro />}>
       <PeopleVisibilityTable />
     </Card>
   );

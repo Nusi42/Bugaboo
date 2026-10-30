@@ -5969,6 +5969,11 @@ part "unbroken-word" {
     word-break break-all
 }
 
+// A few words that stay on one line in a sentence: an example in brackets ("(a Team member)").
+part "kept-together" {
+    white-space nowrap
+}
+
 part "files.name" {
     font-weight "$weight-regular"
     font-size "$fs-md"

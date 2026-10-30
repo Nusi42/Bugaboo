@@ -6258,6 +6258,10 @@ optgroup {
   word-break: break-all;
 }
 
+[data-part="kept-together"] {
+  white-space: nowrap;
+}
+
 [data-part="files.name"] {
   font-weight: var(--weight-regular);
   font-size: var(--fs-md);

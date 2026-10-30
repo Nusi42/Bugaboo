@@ -115,3 +115,23 @@ describe("ux_5 the one wording of Show more", () => {
     expect(wrong).toEqual([]);
   });
 });
+
+/** The keys of the texts that hide a no-break space: words kept together are a part of the screen, not a byte. */
+function withHiddenSpaces(parts: readonly Readonly<Record<string, string>>[]): readonly string[] {
+  const hidden: string[] = [];
+  for (const messages of parts) {
+    for (const [key, text] of Object.entries(messages)) {
+      if (text.includes("\u00A0")) {
+        hidden.push(key);
+      }
+    }
+  }
+  return hidden;
+}
+
+describe("ux_07 no hidden spaces in the catalog", () => {
+  it("keeps words together on the screen, never with a no-break space in a text", async () => {
+    const parts = await import("./generated/all.ts");
+    expect(withHiddenSpaces(Object.values(parts))).toEqual([]);
+  });
+});

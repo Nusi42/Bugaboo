@@ -3059,8 +3059,9 @@ pub const PEOPLE_LEVEL_NAMES: MessageKey = MessageKey::new("people-level.names")
 /// The message `people-level.role-only`.
 pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.role-only");
 
-/// The message `people-visibility.intro`.
-pub const PEOPLE_VISIBILITY_INTRO: MessageKey = MessageKey::new("people-visibility.intro");
+/// The message `people-visibility.intro-example`.
+pub const PEOPLE_VISIBILITY_INTRO_EXAMPLE: MessageKey =
+    MessageKey::new("people-visibility.intro-example");
 
 /// The message `people-visibility.table-name`.
 pub const PEOPLE_VISIBILITY_TABLE_NAME: MessageKey =
@@ -8599,6 +8600,15 @@ pub fn people_visibility_example_editing(who: impl std::fmt::Display) -> Message
     )
 }
 
+/// The message `people-visibility.intro`.
+#[must_use]
+pub fn people_visibility_intro(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people-visibility.intro"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
 /// The message `people-visibility.intro-project`.
 #[must_use]
 pub fn people_visibility_intro_project(project: impl std::fmt::Display) -> Message {
@@ -13589,8 +13599,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "people-visibility.intro",
-        "For each role and each kind of people information, choose whether people are shown by name, by their role only (a\u{a0}Team\u{a0}member) or not at all (Someone).",
+        "For each role and each kind of people information, choose whether people are shown by name, by their role only ({example}) or not at all (Someone).",
     ),
+    ("people-visibility.intro-example", "a Team member"),
     (
         "people-visibility.intro-project",
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",

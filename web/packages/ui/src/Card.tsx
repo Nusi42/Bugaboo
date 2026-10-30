@@ -19,7 +19,7 @@ export interface CardProps {
    * What the card is for, in a sentence or two under the heading: the one introduction of every settings page and
    * its sections, small and muted, as wide as the card (UX §5, L3).
    */
-  readonly intro?: string;
+  readonly intro?: ReactNode;
   /** The link at the foot that goes back up (*All people*): not drawn on a phone, where the bar of the screen has Back. */
   readonly back?: { readonly href: string; readonly label: string };
   readonly children?: ReactNode;
