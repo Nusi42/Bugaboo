@@ -1715,9 +1715,9 @@ part "overlay.modal[variant=top]" {
 // The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
 // screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
 // of a window or of a question, the list of people, the help of the search, the body of a sheet of a phone and the offers
-// of Advanced search (L6). The scroll position drives them, where the browser has scroll timelines.
+// of Advanced search and the body of the side panel (L6, L7). The scroll position drives them, where the browser has scroll timelines.
 // A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
-part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" {
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -1725,7 +1725,7 @@ part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scrol
     }
 }
 
-part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" {
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
@@ -4044,7 +4044,7 @@ part "people" {
 
 // Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
 // boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
-part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" "search-panel" "bottom-sheet search-bar" "search-suggestions" {
+part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" "search-panel" "bottom-sheet search-bar" "search-suggestions" "side-panel.body" {
     supports "not (animation-timeline: scroll())" {
         use "scroll-cue"
     }
@@ -4909,8 +4909,38 @@ part "side-panel" {
 
 part "side-panel.head" {
     display flex
+    flex none
     align-items center
     gap "$space-3"
+}
+
+// What the panel holds scrolls under its head, with room for the rings of what is inside it (L7).
+part "side-panel.body" {
+    flex "1 1 auto"
+    min-height 0
+    overflow-y auto
+    use "ring-room"
+    use "ring-room-flush"
+}
+
+part "side-panel.body::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+    }
+}
+
+part "side-panel.body::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+    }
+}
+
+// Beside a list the panel is a box of its own as high as the window at most: it keeps its place under the top bar while
+// the page scrolls, and what does not fit scrolls in its body (L7, UX §3.2).
+part "list-editor side-panel" {
+    position sticky
+    top "calc($size-bar + $size-page-gutter)"
+    max-height "calc($size-viewport - $size-bar - 2 * $size-page-gutter)"
 }
 
 part "side-panel.title" {
