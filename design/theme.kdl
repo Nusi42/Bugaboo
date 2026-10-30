@@ -1094,6 +1094,12 @@ part "muted" "card.intro" {
     text-wrap pretty
 }
 
+// An introduction is one to three lines: balanced, so its last line is never one word alone ("in turn.", "hide it."),
+// which `pretty` still left at some widths.
+part "card.intro" {
+    text-wrap balance
+}
+
 // Words for screen readers only: the name of a column that holds only an icon.
 part "visually-hidden" {
     use "hidden-text"

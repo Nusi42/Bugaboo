@@ -101,6 +101,10 @@ optgroup {
   text-wrap: pretty;
 }
 
+[data-part="card.intro"] {
+  text-wrap: balance;
+}
+
 [data-part="visually-hidden"] {
   position: absolute;
   width: var(--border-width);
