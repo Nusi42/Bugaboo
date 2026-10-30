@@ -10,7 +10,8 @@ const colorChoices = choiceColorWords.map((word) => ({
 export interface ColorChoiceProps {
   /** What the choice is called for people who read it with a screen reader: "Color of login". */
   readonly legend: string;
-  readonly value: ChoiceColorName;
+  /** The chosen color; none while nothing is chosen (a new label gets the next color in turn). */
+  readonly value: ChoiceColorName | undefined;
   readonly onChange: (color: ChoiceColorName) => void;
 }
 

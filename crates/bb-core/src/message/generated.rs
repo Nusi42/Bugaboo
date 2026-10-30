@@ -2243,6 +2243,9 @@ pub const LABELS_FIELD_LABEL_NAME: MessageKey = MessageKey::new("labels.field-la
 /// The message `labels.field-name`.
 pub const LABELS_FIELD_NAME: MessageKey = MessageKey::new("labels.field-name");
 
+/// The message `labels.field-new-color`.
+pub const LABELS_FIELD_NEW_COLOR: MessageKey = MessageKey::new("labels.field-new-color");
+
 /// The message `labels.field-pick-one`.
 pub const LABELS_FIELD_PICK_ONE: MessageKey = MessageKey::new("labels.field-pick-one");
 
@@ -12908,12 +12911,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.create-label-group", "Create the label group"),
     (
         "labels.create-label-group-intro",
-        "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the label group.",
+        "A label group keeps labels that belong together. If an issue may have only one label of the label group, switch that on below.",
     ),
     ("labels.create-label-group-title", "Create a label group"),
     (
         "labels.create-label-intro",
-        "A label has a name, a color and, if you like, a label group.",
+        "A label has a name, a color and, if you like, a label group. Without a color chosen, it gets the next one in turn.",
     ),
     ("labels.create-label-title", "Create a label"),
     ("labels.field-color", "Color of {name}"),
@@ -12921,6 +12924,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.field-label-group", "Label group"),
     ("labels.field-label-name", "Name of the label"),
     ("labels.field-name", "Name"),
+    ("labels.field-new-color", "Color"),
     (
         "labels.field-pick-one",
         "An issue gets at most one label of this label group",
