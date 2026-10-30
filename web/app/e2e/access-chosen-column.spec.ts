@@ -38,7 +38,7 @@ async function expectChosenInView(page: Page, role: string): Promise<void> {
   const head = columnHead(page, role);
   await expect(head).toHaveAttribute("data-state", /chosen/u);
   // Screen readers hear it too, not only see its fill.
-  await expect(head).toHaveAttribute("aria-current", ariaCurrent.item);
+  await expect(head).toHaveAttribute("aria-current", ariaCurrent.chosen);
   const region = await boxOf(partIn(page, "access.scroll"));
   const names = await boxOf(partIn(page, "access.matrix-cell", "head").first());
   await expect
@@ -75,6 +75,6 @@ test("priv_12 the chosen role's column of Who sees people is in view and marked 
   await expect(columnHead(page, roleName.guest)).not.toHaveAttribute("data-state", /chosen/u);
   await expect(columnHead(page, roleName.guest)).not.toHaveAttribute(
     "aria-current",
-    ariaCurrent.item,
+    ariaCurrent.chosen,
   );
 });

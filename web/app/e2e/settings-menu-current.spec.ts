@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { ariaCurrent } from "@bugaboo/ui";
 import { expect, type Page } from "@playwright/test";
 
 import { personAddress, projectSettingsMenuAddress, roleAddress } from "../src/shared/paths.ts";
 import { ownId, signInThroughApi } from "./support/accounts.ts";
 import { roleId, roleName } from "./support/access.ts";
 import { test } from "./support/fixtures.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";

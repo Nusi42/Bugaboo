@@ -160,7 +160,7 @@ function MatrixHead<Subject extends string, Level extends string>({
               variants: ["head"],
               states: [role.id === chosen && "chosen"],
             })}
-            {...(role.id === chosen ? { "aria-current": ariaCurrent.item } : {})}
+            {...(role.id === chosen ? { "aria-current": ariaCurrent.chosen } : {})}
           >
             {role.name}
           </th>

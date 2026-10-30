@@ -60,7 +60,7 @@ export function Button({
       // A button that waits for an answer must not send the form a second time.
       type={type === buttonType.submit && !isPending ? buttonType.submit : buttonType.button}
       aria-busy={isPending}
-      {...(current ? { "aria-current": ariaCurrent.item } : {})}
+      {...(current ? { "aria-current": ariaCurrent.chosen } : {})}
       {...partOf(part.button, {
         variants: [look !== buttonLook.plain && look, wide && buttonShape.wide],
         states: [isPending && busyState.busy, current && "current"],

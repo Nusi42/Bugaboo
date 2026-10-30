@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { ariaCurrent } from "@bugaboo/ui";
 import { type Locator, type Page } from "@playwright/test";
 
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
