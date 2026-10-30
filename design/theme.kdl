@@ -332,7 +332,7 @@ tokens {
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
     color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#3b3b3b" midnight="#252525"
-    color "tint-ip" daylight="#d2eefe" paper="#cce7f1" dusk="#1f3b68" midnight="#0a2350"
+    color "tint-ip" daylight="#d2eefe" paper="#c4e9ef" dusk="#1f3b68" midnight="#0a2350"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
     // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
     // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
