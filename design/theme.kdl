@@ -1299,9 +1299,15 @@ part "field.label" {
     use "control-label"
 }
 
-part "field.description" {
+// The hint under a control: of a box, and of a setting that is a switch or a group of choices, the same size, colour
+// and wrap (control-hint) everywhere.
+part "field.description" "settings.help" {
     use "control-hint"
     line-height "$lh-body"
+}
+
+part "settings.help" {
+    margin 0
 }
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
@@ -3879,6 +3885,11 @@ part "account.qr" {
 }
 
 // ───────────── Settings ─────────────
+
+// A control of a setting and its hint stand as close as a box and its hint (a field is column-tight too).
+part "settings.control" {
+    use "column-tight"
+}
 
 part "settings.source" {
     use "control-hint"

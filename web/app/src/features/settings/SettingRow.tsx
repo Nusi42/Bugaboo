@@ -43,6 +43,68 @@ function Locked({ setting }: { readonly setting: Setting }) {
 }
 
 /**
+ * A control that is not a box typed in (a switch, choices, a page's own control, a locked value) with the explanation
+ * of its setting as a hint under it, as a box has its hint, and where the value comes from at the same distance as
+ * under a box: one look for the hints of every setting.
+ */
+function WithHint({
+  setting,
+  children,
+}: {
+  readonly setting: Setting;
+  readonly children: ReactNode;
+}) {
+  return (
+    <div {...partOf(part.stack)}>
+      <div {...partOf(part.settingsControl)}>
+        {children}
+        <p {...partOf(part.settingsHelp)}>{wordsOf(setting.help_key)}</p>
+      </div>
+      <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>
+    </div>
+  );
+}
+
+/** *Reset to default* where this level has its own value, and the lock of the organization's value. */
+function RowActions({
+  setting,
+  actions,
+  lockedBelow,
+}: {
+  readonly setting: Setting;
+  readonly actions: SettingActions;
+  readonly lockedBelow: boolean;
+}) {
+  return (
+    <div {...partOf(part.row)}>
+      {setting.own && !lockedBelow ? (
+        <Button
+          look={buttonLook.quiet}
+          aria-label={t("setting.ui.reset-name", { name: wordsOf(setting.name_key) })}
+          onPress={() => {
+            actions.onReset(setting.key);
+          }}
+        >
+          {t("setting.ui.reset")}
+        </Button>
+      ) : null}
+      {actions.onLock !== undefined && setting.lockable ? (
+        <div>
+          <Switch
+            label={t("setting.ui.lock")}
+            isSelected={setting.locked}
+            onChange={(locked) => {
+              actions.onLock?.(setting.key, locked);
+            }}
+          />
+          <p {...partOf(part.muted)}>{t("setting.ui.lock-help")}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * One setting: its control with its name, the one-line explanation under it, where the value
  * comes from, *Reset to default* when this level has a value of its own, and, for an
  * administrator on the organization's level, the lock. A setting the organization locked is
@@ -56,45 +118,25 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
   // A box that is typed in has its explanation inside, with its field; every other control, and a setting that is
   // locked (no box), has it under it.
   const helpWithField = !lockedBelow && control === undefined && controlKindOf(setting) === "typed";
-  const withField = helpWithField
-    ? { help: wordsOf(setting.help_key), source: sourceInWords(setting) }
-    : {};
   return (
     <li {...partOf(part.box)}>
-      {lockedBelow ? (
-        <Locked setting={setting} />
+      {helpWithField ? (
+        <SettingControl
+          setting={setting}
+          onChange={change}
+          help={wordsOf(setting.help_key)}
+          source={sourceInWords(setting)}
+        />
       ) : (
-        (control?.(setting, change) ?? (
-          <SettingControl setting={setting} onChange={change} {...withField} />
-        ))
+        <WithHint setting={setting}>
+          {lockedBelow ? (
+            <Locked setting={setting} />
+          ) : (
+            (control?.(setting, change) ?? <SettingControl setting={setting} onChange={change} />)
+          )}
+        </WithHint>
       )}
-      {helpWithField ? null : <p {...partOf(part.muted)}>{wordsOf(setting.help_key)}</p>}
-      {helpWithField ? null : <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>}
-      <div {...partOf(part.row)}>
-        {setting.own && !lockedBelow ? (
-          <Button
-            look={buttonLook.quiet}
-            aria-label={t("setting.ui.reset-name", { name: wordsOf(setting.name_key) })}
-            onPress={() => {
-              actions.onReset(setting.key);
-            }}
-          >
-            {t("setting.ui.reset")}
-          </Button>
-        ) : null}
-        {actions.onLock !== undefined && setting.lockable ? (
-          <div>
-            <Switch
-              label={t("setting.ui.lock")}
-              isSelected={setting.locked}
-              onChange={(locked) => {
-                actions.onLock?.(setting.key, locked);
-              }}
-            />
-            <p {...partOf(part.muted)}>{t("setting.ui.lock-help")}</p>
-          </div>
-        ) : null}
-      </div>
+      <RowActions setting={setting} actions={actions} lockedBelow={lockedBelow} />
     </li>
   );
 }

@@ -1223,11 +1223,16 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="field.description"] {
+[data-part="field.description"],
+[data-part="settings.help"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
   text-wrap: balance;
   line-height: var(--lh-body);
+}
+
+[data-part="settings.help"] {
+  margin: 0;
 }
 
 [data-part="field.input"] {
@@ -3928,6 +3933,13 @@ textarea,
   border: var(--border-width) solid var(--border);
   background: var(--bg-raised);
   image-rendering: pixelated;
+}
+
+[data-part="settings.control"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 [data-part="settings.source"] {
