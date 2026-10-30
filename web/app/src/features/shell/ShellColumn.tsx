@@ -25,7 +25,7 @@ export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
         {/* Every screen has the top bar, the issue page of a phone too: Back and where you are (L1). */}
         <TopBar layout={layout} />
         <main id={CONTENT_ID} {...partOf(part.appLayoutMain)} tabIndex={-1} {...scrollRestoration}>
-          <TitleCarriedByBar carried>
+          <TitleCarriedByBar>
             <PageColumn phone={phone} signOutProblem={signOutProblem} />
           </TitleCarriedByBar>
         </main>
