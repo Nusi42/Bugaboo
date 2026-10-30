@@ -7,6 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { setBox } from "./support/list-keys.ts";
+import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
 // The end of a long list (UX §4.2; M5 exit R2): room under the last row.
@@ -60,5 +61,24 @@ test.describe("the end of a long list", () => {
     // The list takes the rest of the window, so the bar under it is in the window whole, and the rows end above it.
     expect(box.y + box.height).toBeLessThanOrEqual(height);
     expect(rows.y + rows.height).toBeLessThanOrEqual(box.y + 0.5);
+  });
+});
+
+test.describe("the end of a short list", () => {
+  test.use({ preparation: { run: (server) => prepareManyWeb(server, 3) } });
+
+  test("ux_4_2 a short list ends under its last row: the box of the rows is no higher than its rows, with no line of its own", async ({
+    page,
+  }) => {
+    test.skip(layoutOf(page) !== "computer", "a phone draws cards");
+    await signIn(page, ada);
+    await page.goto(projectIssuesAddress("WEB"));
+    const scroll = partIn(page, "list-scroll");
+    const last = partIn(scroll, "list-row").last();
+    await expect(last).toBeVisible();
+    const [box, row] = await Promise.all([boxOf(scroll), boxOf(last)]);
+    // Only the room at the end of the list (R2) under the last row, and no second bar under the line of that row.
+    expect(box.y + box.height - (row.y + row.height)).toBeLessThanOrEqual(16);
+    await expect(scroll).toHaveCSS("border-bottom-width", "0px");
   });
 });

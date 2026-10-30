@@ -110,9 +110,9 @@ tokens {
     size "size-row-compact" "28px" touch="44px"
     // The sentence of an empty list stands in from the list's edge on a computer and on the edge itself on a phone (R1).
     size "pad-nothing" "$pad-box" phone="0px"
-    // How tall the rows of a long list may be before the list scrolls inside the page.
+    // How tall the list of people may be before it scrolls inside the page (the issue lists take the rest of the window).
     size "size-list-scroll" "70dvh"
-    // The least the list of a phone is high, where the page above it takes most of the screen.
+    // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
@@ -2515,12 +2515,12 @@ part "list-frame[variant=compact] checkbox.box" {
 
 
 // The rows scroll inside this box; the head stays above them.
+// The last row ends the list with its own line; the box adds none, so a list whose rows just fit has no double bar.
 part "list-scroll" {
     box-sizing border-box
     min-width "$list-width"
     padding-block-end "$space-3"
     overflow auto
-    border-bottom "$border-width solid $divider"
 }
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
@@ -13968,7 +13968,8 @@ part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=
     flex-wrap nowrap
 }
 
+// The box of the rows is as high as its rows, and no higher than the rest of the window: min(its rows, the rest).
 part "list-main list-scroll" {
-    flex "1 1 0"
+    flex "0 1 auto"
     min-height "$size-list-scroll-least"
 }

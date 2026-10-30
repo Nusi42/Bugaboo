@@ -1676,7 +1676,6 @@ optgroup {
   min-width: var(--list-width);
   padding-block-end: var(--space-3);
   overflow: auto;
-  border-bottom: var(--border-width) solid var(--divider);
 }
 
 [data-part="list-head"] {
@@ -6944,6 +6943,6 @@ optgroup {
 }
 
 [data-part="list-main"] [data-part="list-scroll"] {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: var(--size-list-scroll-least);
 }
