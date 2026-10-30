@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -29,12 +30,16 @@ export interface CreateLabelFormProps {
   readonly inGroupsOnly?: boolean;
 }
 
-/** What *Create the label* sends: the name, and the color and the group where they are chosen. */
-function bodyOf(name: string, color: ChoiceColorName | undefined, group: string) {
+/** What *Create the label* sends: the name, and the color and the label group where they are chosen. */
+function bodyOf(
+  name: string,
+  color: ChoiceColorName | undefined,
+  group: string,
+): Schema<"NewLabelBody"> {
   return {
     name: name.trim(),
-    ...(color === undefined ? {} : { color }),
-    ...(group === NO_GROUP ? {} : { group }),
+    color: color ?? null,
+    label_group: group === NO_GROUP ? null : group,
   };
 }
 
