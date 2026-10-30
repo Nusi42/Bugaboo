@@ -15419,7 +15419,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.start.page.name", "Start page"),
     (
         "setting.ui.between",
-        "A whole number between {least} and {most}.",
+        "It is a whole number between {least} and {most}.",
     ),
     ("setting.ui.device-zone", "Match my device ({zone})"),
     (
