@@ -84,17 +84,13 @@ async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreE
     }
 }
 
-/// How many rows of a table `PRAGMA optimize` looks at when a connection closes (SQLite advises 400):
-/// a short look, so a close never holds the write lock long on a table of a million rows.
-const OPTIMIZE_ANALYSIS_LIMIT: u32 = 400;
-
 async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, sqlx::Error> {
     let options = options
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
-        // What SQLite knows of the tables for its plans stays fresh as the data grows: a connection
-        // that closes looks at what changed (`PRAGMA optimize`).
-        .optimize_on_close(true, Some(OPTIMIZE_ANALYSIS_LIMIT))
+        // A connection that closes does not run `PRAGMA optimize`: its statistics come from a short
+        // look at each index and misled SQLite on 1 M issues (`Database::refresh_statistics`).
+        .optimize_on_close(false, None)
         // FULL: a committed change survives a power cut (security first). It costs one
         // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
         .synchronous(SqliteSynchronous::Full)
@@ -299,6 +295,35 @@ impl Database {
             Pool::Sqlite(pool) => pool.close().await,
             Pool::Postgres(pool) => pool.close().await,
         }
+    }
+
+    /// Makes the statistics SQLite chooses its indexes by (`sqlite_stat1`) again from every row,
+    /// when a table has none yet or grew or shrank tenfold since: a few times in the life of a
+    /// database. Returns whether it made them; `false` on PostgreSQL, which keeps its own. Reading
+    /// every index takes seconds on 1 M issues, while writers wait. They must be exact: `PRAGMA
+    /// optimize` reads at most 2,000 rows of an index, saw one project, wrote that a project has
+    /// about 400 issues where it has 2,000, and every search over 1 M issues then took 2 s instead
+    /// of 30 ms (the nightly runs of 2026-10-29 and 30).
+    ///
+    /// # Errors
+    /// Fails when the database cannot be read or the statistics cannot be written.
+    pub async fn refresh_statistics(&self) -> Result<bool, StoreError> {
+        let Pool::Sqlite(pool) = &self.pool else {
+            return Ok(false);
+        };
+        let mut connection = pool.acquire().await?;
+        // What `PRAGMA optimize` would analyse, only reported (0x01), for every table (0x10000).
+        let out_of_date = sqlx::query("PRAGMA optimize(0x10003)")
+            .fetch_all(&mut *connection)
+            .await?;
+        if out_of_date.is_empty() {
+            return Ok(false);
+        }
+        sqlx::query("PRAGMA analysis_limit = 0")
+            .execute(&mut *connection)
+            .await?;
+        sqlx::query("ANALYZE").execute(&mut *connection).await?;
+        Ok(true)
     }
 
     /// Renames a table. For tests only: they break one table on purpose, to see how a use case
@@ -729,67 +754,35 @@ impl Database {
             .await?;
         Ok((mode, keys, sync))
     }
+
+    /// Runs fixed statements on one SQLite connection, for the tests of the statistics.
+    pub(crate) async fn sqlite_run(&self, texts: &[&'static str]) -> Result<(), StoreError> {
+        let Pool::Sqlite(pool) = &self.pool else {
+            return Err(StoreError::UnsupportedDatabase);
+        };
+        let mut connection = pool.acquire().await?;
+        for text in texts {
+            sqlx::query(*text).execute(&mut *connection).await?;
+        }
+        Ok(())
+    }
+
+    /// The statistics SQLite keeps of an index, if any.
+    pub(crate) async fn sqlite_statistics_of(
+        &self,
+        index: &str,
+    ) -> Result<Option<String>, StoreError> {
+        let Pool::Sqlite(pool) = &self.pool else {
+            return Err(StoreError::UnsupportedDatabase);
+        };
+        Ok(
+            sqlx::query_scalar("SELECT stat FROM sqlite_stat1 WHERE idx = ?")
+                .bind(index)
+                .fetch_optional(pool)
+                .await?,
+        )
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Many programs that start at the same moment on a brand-new SQLite file all get a working
-    /// database; none of them fails with "database is locked" (M1-F24).
-    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-    async fn m1_f24_programs_that_start_together_on_a_new_file_all_get_the_database()
-    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        for round in 0..5 {
-            let folder = tempfile::tempdir()?;
-            let file = folder.path().join(format!("round-{round}.db"));
-            let mut starts = Vec::new();
-            for _ in 0..12 {
-                let file = file.clone();
-                starts.push(tokio::spawn(async move {
-                    let database = Database::connect_file(&file).await?;
-                    database.ping().await?;
-                    Ok::<_, StoreError>(())
-                }));
-            }
-            for start in starts {
-                start.await??;
-            }
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn m1_f24_only_a_busy_or_locked_database_is_tried_again() {
-        assert!(!is_locked(&sqlx::Error::RowNotFound));
-        assert!(!is_locked(&sqlx::Error::PoolTimedOut));
-    }
-    /// The built-in database and the files SQLite keeps next to it are for the owner only, also
-    /// under the usual umask (SEC-16, M1-F65).
-    #[cfg(unix)]
-    #[tokio::test]
-    async fn sec_16_the_database_file_and_its_companions_are_private()
-    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        use std::os::unix::fs::PermissionsExt as _;
-        let folder = tempfile::tempdir()?;
-        let file = folder.path().join("bugaboo.db");
-        let database = Database::connect_file(&file).await?;
-        database.ping().await?;
-        database.migrate(jiff::Timestamp::now()).await?;
-        for suffix in ["", "-wal", "-shm"] {
-            let mut name = file.clone().into_os_string();
-            name.push(suffix);
-            let mode = std::fs::metadata(&name)?.permissions().mode() & 0o777;
-            assert_eq!(mode & 0o077, 0, "{suffix}: {mode:o}");
-        }
-        // A file that exists keeps the rights it has.
-        database.close().await;
-        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o640))?;
-        Database::connect_file(&file).await?;
-        assert_eq!(
-            std::fs::metadata(&file)?.permissions().mode() & 0o777,
-            0o640
-        );
-        Ok(())
-    }
-}
+mod tests;

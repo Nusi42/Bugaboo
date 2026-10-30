@@ -106,6 +106,7 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         sample.people().len(),
         args.seed,
     );
+    sample.refresh_statistics().await?;
     sample.close().await;
     Ok(done.render())
 }
