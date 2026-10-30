@@ -116,12 +116,18 @@ describe("ux_5 the one wording of Show more", () => {
   });
 });
 
-/** The keys of the texts that hide a no-break space: words kept together are a part of the screen, not a byte. */
+/**
+ * The spaces and joiners that keep words together without being seen: the no-break space, the narrow no-break
+ * space, the figure space and the word joiner. Words kept together are a part of the screen, not a byte.
+ */
+const hiddenSpaces = /[\u00A0\u2007\u202F\u2060]/u;
+
+/** The keys of the texts that hide such a space. */
 function withHiddenSpaces(parts: readonly Readonly<Record<string, string>>[]): readonly string[] {
   const hidden: string[] = [];
   for (const messages of parts) {
     for (const [key, text] of Object.entries(messages)) {
-      if (text.includes("\u00A0")) {
+      if (hiddenSpaces.test(text)) {
         hidden.push(key);
       }
     }
