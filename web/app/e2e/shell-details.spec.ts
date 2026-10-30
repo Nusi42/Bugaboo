@@ -5,6 +5,7 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { partIn } from "./support/parts.ts";
 import { paths } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -21,17 +22,31 @@ function mainMenu(page: Page): Locator {
   return page.getByRole("navigation", { name: t("shell.menu"), exact: true });
 }
 
+/** Where the sidebar of a computer starts, in pixels from the top of the window. */
+function topOf(page: Page): Promise<number> {
+  return partIn(page, "sidebar").evaluate((node) => node.getBoundingClientRect().top);
+}
+
 async function stayingPut(page: Page): Promise<void> {
-  // A short window and a long page: the sidebar stays in the window, Sign out among it.
+  // A short window and a long page: the page scrolls and the sidebar stays in the window, Sign out within its reach.
   await page.setViewportSize({ width: viewports.computer.width, height: 600 });
   await page.goto(paths.appearance);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  // The wheel over the page, not over the sidebar: the page scrolls, the sidebar stays at the top of the window.
+  await page.mouse.move(viewports.computer.width - 100, 300);
   await page.mouse.wheel(0, 3000);
-  await expect(page.getByRole("button", { name: t("nav.sign-out"), exact: true })).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  const menu = mainMenu(page);
+  await expect(menu).toBeInViewport();
+  expect(Math.abs(await topOf(page))).toBeLessThanOrEqual(1);
+  // Taller than the window (the sections of the menu say so where they are empty), it scrolls itself to Sign out.
+  const leave = page.getByRole("button", { name: t("nav.sign-out"), exact: true });
+  await leave.scrollIntoViewIfNeeded();
+  await expect(leave).toBeInViewport();
   // A window so short that the sidebar does not fit scrolls the sidebar itself, not the page.
   await page.setViewportSize({ width: viewports.computer.width, height: 360 });
-  const signOut = page.getByRole("button", { name: t("nav.sign-out"), exact: true });
-  await signOut.scrollIntoViewIfNeeded();
-  await expect(signOut).toBeInViewport();
+  await leave.scrollIntoViewIfNeeded();
+  await expect(leave).toBeInViewport();
 }
 
 async function nothingToKeep(page: Page): Promise<void> {
