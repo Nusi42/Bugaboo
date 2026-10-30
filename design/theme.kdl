@@ -1117,10 +1117,12 @@ part "muted" "card.intro" {
     line-height "$lh-body"
 }
 
-// Short texts of one to three lines (an introduction, a line of a preview, the title of an answer, the words of a
-// switch) are balanced, so a last line is never one word alone ("in turn.", "description", "account", "back"), where
-// the `pretty` of the page still left one at some widths. The help of a box is a hint and is balanced by `control-hint`.
-part "card.intro" "access.preview-line" "access.subheading" "switch" {
+// Short texts of one to three lines (an introduction, a line of a preview, the title of an answer) are balanced, so a
+// last line is never one word alone ("in turn.", "description", "back"), where the `pretty` of the page still left one
+// at some widths. The help of a box is a hint and is balanced by `control-hint`. The words of a switch keep the
+// `pretty` of the page: balanced, a label that nearly fits one line ("Two-step sign-in for everybody") was cut in two
+// at the hyphen of "sign-in".
+part "card.intro" "access.preview-line" "access.subheading" {
     text-wrap balance
 }
 

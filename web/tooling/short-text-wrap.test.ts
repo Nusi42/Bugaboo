@@ -13,7 +13,6 @@ const balanced = [
   "card.intro",
   "access.preview-line",
   "access.subheading",
-  "switch",
   "field.description",
 ] as const;
 

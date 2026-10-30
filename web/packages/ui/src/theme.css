@@ -1018,8 +1018,7 @@ textarea,
 
 [data-part="card.intro"],
 [data-part="access.preview-line"],
-[data-part="access.subheading"],
-[data-part="switch"] {
+[data-part="access.subheading"] {
   text-wrap: balance;
 }
 
