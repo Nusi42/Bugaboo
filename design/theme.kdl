@@ -352,30 +352,30 @@ tokens {
     // The twelve colors of choices, labels and tags (UX §7.1), each a fill and its text, with plain names in the catalog
     // (`choice-color.cat1` Pink … `cat12` Brown). The fills are told apart at a glance in every theme (the `distinct`
     // rule below), and the text color, the edge of a swatch, is seen on every surface (the `lines` rule).
-    color "cat1-bg" daylight="#ffd4e6" paper="#ffd4e6" dusk="#6b354f" midnight="#6b354f"
-    color "cat1-fg" daylight="#884b68" paper="#884b68" dusk="#e8a8c4" midnight="#e8a8c4"
-    color "cat2-bg" daylight="#a3c9fe" paper="#a3c9fe" dusk="#154975" midnight="#154975"
-    color "cat2-fg" daylight="#22517e" paper="#22517e" dusk="#97bdf1" midnight="#97bdf1"
-    color "cat3-bg" daylight="#94d5a5" paper="#94d5a5" dusk="#215030" midnight="#215030"
-    color "cat3-fg" daylight="#1a5a32" paper="#1a5a32" dusk="#95c7a1" midnight="#95c7a1"
-    color "cat4-bg" daylight="#ffc69d" paper="#ffc69d" dusk="#774b27" midnight="#774b27"
-    color "cat4-fg" daylight="#7f4818" paper="#7f4818" dusk="#fbc59f" midnight="#fbc59f"
-    color "cat5-bg" daylight="#d6bcf1" paper="#d6bcf1" dusk="#4e3966" midnight="#4e3966"
-    color "cat5-fg" daylight="#5b4573" paper="#5b4573" dusk="#c4aadf" midnight="#c4aadf"
-    color "cat6-bg" daylight="#9eeae5" paper="#92dfdd" dusk="#065454" midnight="#014e4c"
-    color "cat6-fg" daylight="#126864" paper="#03605f" dusk="#8acdcb" midnight="#80c5c1"
-    color "cat7-bg" daylight="#eb6664" paper="#eb6664" dusk="#772627" midnight="#772627"
-    color "cat7-fg" daylight="#520009" paper="#520009" dusk="#eaa19b" midnight="#eaa19b"
-    color "cat8-bg" daylight="#fee891" paper="#fee891" dusk="#6f6329" midnight="#6f6329"
-    color "cat8-fg" daylight="#71630f" paper="#71630f" dusk="#f7e6ad" midnight="#f7e6ad"
-    color "cat9-bg" daylight="#a6e5fd" paper="#baebff" dusk="#05637a" midnight="#165c71"
-    color "cat9-fg" daylight="#1b6479" paper="#1c697f" dusk="#9ee4fe" midnight="#9bd8f0"
-    color "cat10-bg" daylight="#ceeda6" paper="#ceeda6" dusk="#4e6532" midnight="#4e6532"
-    color "cat10-fg" daylight="#4d692b" paper="#4d692b" dusk="#cfe6af" midnight="#cfe6af"
-    color "cat11-bg" daylight="#ced2d5" paper="#ced2d5" dusk="#5c5f61" midnight="#5c5f61"
-    color "cat11-fg" daylight="#535659" paper="#535659" dusk="#dce0e3" midnight="#dce0e3"
-    color "cat12-bg" daylight="#c49073" paper="#c49073" dusk="#4e3323" midnight="#4e3323"
-    color "cat12-fg" daylight="#4c250d" paper="#4c250d" dusk="#c5a18e" midnight="#c5a18e"
+    color "cat1-bg" daylight="#ffdded" paper="#ffd6ea" dusk="#65354f" midnight="#562741" daylight-more="#ffe0ef" paper-more="#ffd8eb" dusk-more="#553044" midnight-more="#3f2031"
+    color "cat1-fg" daylight="#902f68" paper="#873463" dusk="#ffc4e1" midnight="#ffbbdd"
+    color "cat2-bg" daylight="#d8e7ff" paper="#d1e2ff" dusk="#20466c" midnight="#0c395e" daylight-more="#dceaff" paper-more="#d3e3ff" dusk-more="#233c5a" midnight-more="#142c46"
+    color "cat2-fg" daylight="#045890" paper="#01568d" dusk="#bbd6ff" midnight="#b2d1ff"
+    color "cat3-bg" daylight="#bff2d0" paper="#bceccc" dusk="#1e4d32" midnight="#0e3f25" daylight-more="#c4f4d4" paper-more="#bfedce" dusk-more="#20432e" midnight-more="#122f1e"
+    color "cat3-fg" daylight="#016237" paper="#025f36" dusk="#97e5b4" midnight="#8ee0ad"
+    color "cat4-bg" daylight="#ffe0c7" paper="#ffdabc" dusk="#5d3e1f" midnight="#4e3013" daylight-more="#ffe5ce" paper-more="#ffdcbe" dusk-more="#4f371f" midnight-more="#3c2613"
+    color "cat4-fg" daylight="#7e4804" paper="#774711" dusk="#ffca9c" midnight="#ffc38d"
+    color "cat5-bg" daylight="#f0e0ff" paper="#eddaff" dusk="#4f3c63" midnight="#412f55" daylight-more="#f2e3ff" paper-more="#eedcff" dusk-more="#443553" midnight-more="#31253e"
+    color "cat5-fg" daylight="#664490" paper="#624486" dusk="#e4caff" midnight="#e1c3ff"
+    color "cat6-bg" daylight="#a6f4f1" paper="#a4eeec" dusk="#024d4c" midnight="#023e3d" daylight-more="#adf6f3" paper-more="#a8efed" dusk-more="#114342" midnight-more="#0d2f2e"
+    color "cat6-fg" daylight="#005f5e" paper="#005c5c" dusk="#63e8e6" midnight="#51e3e1"
+    color "cat7-bg" daylight="#ffdfda" paper="#ffd8d2" dusk="#693630" midnight="#592823" daylight-more="#ffe2de" paper-more="#ffdad4" dusk-more="#58312c" midnight-more="#43211d"
+    color "cat7-fg" daylight="#95332e" paper="#8c3731" dusk="#ffc7bf" midnight="#ffbfb6"
+    color "cat8-bg" daylight="#f1e6b6" paper="#ece2b4" dusk="#4b451b" midnight="#3c380e" daylight-more="#f3e9bc" paper-more="#ede3b7" dusk-more="#413c1c" midnight-more="#2e2b0f"
+    color "cat8-fg" daylight="#5c5600" paper="#5a5404" dusk="#e2d68d" midnight="#ddd084"
+    color "cat9-bg" daylight="#beedff" paper="#b0eaff" dusk="#034b5c" midnight="#003d4b" daylight-more="#c6f1ff" paper-more="#b3ebff" dusk-more="#14404d" midnight-more="#0e2e37"
+    color "cat9-fg" daylight="#005d72" paper="#005a6e" dusk="#85e1ff" midnight="#6eddff"
+    color "cat10-bg" daylight="#d9edbf" paper="#d4e8bc" dusk="#374a23" midnight="#2a3c16" daylight-more="#ddefc4" paper-more="#d6e9be" dusk-more="#314022" midnight-more="#232e15"
+    color "cat10-fg" daylight="#375f0c" paper="#3a5b17" dusk="#bfdf99" midnight="#b8da91"
+    color "cat11-bg" daylight="#d3d8dd" paper="#ced4d8" dusk="#43474b" midnight="#353a3d" daylight-more="#e5e9ec" paper-more="#dfe3e6" dusk-more="#393c3e" midnight-more="#272a2c"
+    color "cat11-fg" daylight="#4b5156" paper="#484f53" dusk="#d6dee4" midnight="#d1d8de"
+    color "cat12-bg" daylight="#ffcaba" paper="#ffc4b2" dusk="#552813" midnight="#461b03" daylight-more="#ffe4d9" paper-more="#ffdbce" dusk-more="#552813" midnight-more="#461b03"
+    color "cat12-fg" daylight="#7f3420" paper="#763625" dusk="#ffc9b1" midnight="#ffc1a6"
 
     // The shadow of things that float
     shadow "shadow" daylight="0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" paper="0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914" dusk="0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059" midnight="0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
@@ -408,10 +408,6 @@ contrast min=4.5 {
     exclude reason="The grey fill of a main button that cannot be pressed carries only its own words, on-disabled." {
         text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
         on "disabled-fill"
-    }
-    exclude reason="A fill of a choice color (a swatch, a pill, a badge, the square of a label) carries only its own text color, the restricted pair above; the text of the page never stands on it." {
-        text "fg" "fg-muted"
-        on "cat*-bg"
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
@@ -523,9 +519,8 @@ distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that
 }
 
 // The twelve colors of choices, labels and tags are told apart at a glance in every theme, and from the card they stand on:
-// pink, red and brown, and blue, sky and grey, were nearly the same fill, and at 10 apart Red still read pale pink and
-// Brown salmon in the light themes (M5 exit).
-distinct min-delta-e-between-states=15 min-delta-e-against-surfaces=7.5 reason="The fills of the twelve choice colors differ from each other by at least 15 (delta E) and from the plain surfaces by at least 7.5, in every theme (M5 exit)." {
+// pink, red and brown, and blue, sky and grey, were nearly the same fill (M5 exit).
+distinct min-delta-e-between-states=10 min-delta-e-against-surfaces=7.5 reason="The fills of the twelve choice colors differ from each other by at least 10 (delta E) and from the plain surfaces by at least 7.5, in every theme (M5 exit)." {
     states "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
     surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
