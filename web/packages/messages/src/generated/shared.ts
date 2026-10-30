@@ -73,7 +73,7 @@ export const messages = {
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
   "setting.ui.reset": "Reset to default",
-  "setting.ui.between": "It is a whole number between {least} and {most}.",
+  "setting.ui.between": "Whole numbers from {least} to {most}.",
   "setting.ui.whole-number": "Enter a whole number.",
   "nav.region": "Region",
   "nav.start-page": "Start page",
