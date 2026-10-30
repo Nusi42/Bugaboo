@@ -371,9 +371,10 @@ fn the_three_status_tints_are_told_apart_from_each_other_and_from_the_card() {
 
 #[test]
 fn the_twelve_choice_fills_are_told_apart_from_each_other_and_from_the_card() {
-    // M5 exit: in Daylight the fill of Coral (then Red) was about 10 from Pink (delta E); a Coral next to the Pink of now
-    // (#ffc8da), and a Gray close to the raised card of Dusk, are rejected: 15 between fills, 7.5 from the surfaces.
-    let findings = evaluate(&with_value("cat7-bg", "daylight", "#ffd2e0"));
+    // M5 exit: in Daylight the fill of Coral (then Red) was about 10 from Pink (delta E). The bad examples stand just
+    // under each limit, so a weaker rule would let them pass: a Coral 13.5 from the Pink of now (#ffc8da) against the 15
+    // between fills, and a Dusk Gray 6.75 from the raised card (#2d323c) against the 7.5 from the surfaces.
+    let findings = evaluate(&with_value("cat7-bg", "daylight", "#d8a3b5"));
     assert!(
         findings
             .iter()
@@ -381,8 +382,7 @@ fn the_twelve_choice_fills_are_told_apart_from_each_other_and_from_the_card() {
         "{:?}",
         messages(&findings)
     );
-    // A gray a little lighter than the raised card of Dusk (#2d323c).
-    let findings = evaluate(&with_value("cat11-bg", "dusk", "#33363d"));
+    let findings = evaluate(&with_value("cat11-bg", "dusk", "#3c414b"));
     assert!(
         findings
             .iter()
