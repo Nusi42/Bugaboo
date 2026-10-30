@@ -365,24 +365,28 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            JobKind::RefreshStatistics => {
-                Box::pin(self.run_daily(JobKind::RefreshStatistics, async {
-                    self.refresh_statistics().await.map(|refreshed| {
-                        tracing::info!(refreshed, "the statistics of the database were looked at");
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "the statistics could not be refreshed");
-                    JobFailure::of(&error, FAILED, job)
-                })
-            }
+            JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
             | JobKind::MailSend
             | JobKind::PreviewFile => Err(misrouted(job, kind)),
         }
+    }
+
+    /// The daily round of `statistics.refresh` (in a function of its own, so `do_daily_job` stays
+    /// short).
+    async fn refresh_statistics_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::RefreshStatistics, async {
+            self.refresh_statistics().await.map(|refreshed| {
+                tracing::info!(refreshed, "the statistics of the database were looked at");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the statistics could not be refreshed");
+            JobFailure::of(&error, FAILED, job)
+        })
     }
 
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
