@@ -18,6 +18,17 @@ export function issueBackOf(page: Page): Locator {
     : page.getByRole("button", { name: t("focus.back"), exact: true });
 }
 
+/**
+ * *More* of an open issue: the one in its header, or on a phone the one of the bar of actions under
+ * the page, the only one a phone has (UX §4.4, L1); not the *More* of the main menu.
+ */
+export function issueMoreOf(page: Page): Locator {
+  const more = { name: t("issues.more"), exact: true } as const;
+  return layoutOf(page) === "phone"
+    ? page.getByRole("toolbar", { name: t("issues.bar"), exact: true }).getByRole("button", more)
+    : page.locator("article").getByRole("button", more).first();
+}
+
 /** What to do on a screen of each size: the test runs once per size and does what fits it. */
 export type PerLayout = Readonly<Record<LayoutMode, (page: Page) => Promise<void>>>;
 
