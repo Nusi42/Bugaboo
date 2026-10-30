@@ -1,3 +1,4 @@
+import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths } from "../src/shared/paths.ts";
@@ -102,4 +103,11 @@ test("ux_5 every settings page opens with the one introduction, muted, small and
     new Set([JSON.stringify({ ...looks[0], narrower: 0 })]),
   );
   expect(looks[0]?.color).toBe(muted);
+});
+
+test("ux_5 the card that moves a project opens with the introduction too", async ({ page }) => {
+  await signIn(page, sampleAdministrator());
+  await page.goto(addressInProject(paths.projectSettings, "APP"));
+  const move = page.getByRole("region", { name: t("projects.move-title"), exact: true });
+  await expect(partIn(move, "card.intro")).toBeVisible();
 });

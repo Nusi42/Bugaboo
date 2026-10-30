@@ -52,7 +52,7 @@ export function ProjectSettings({
         </Card>
       ) : null}
       {mayMove ? (
-        <Card heading={t("projects.move-title")}>
+        <Card heading={t("projects.move-title")} intro={t("projects.move-text", { name })}>
           <MoveProject project={project} />
         </Card>
       ) : null}
