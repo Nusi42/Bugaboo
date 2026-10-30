@@ -575,8 +575,6 @@ export const messages = {
   "conflict.field-only": "{field}",
   "common.done": "Done",
   "issues.new": "New issue",
-  "issues.columns-hidden":
-    "{count, plural, one {# column is hidden for lack of room. Customize or a wider window shows it.} other {# columns are hidden for lack of room. Customize or a wider window shows them.}}",
   "issues.description.edit": "Edit the description",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":

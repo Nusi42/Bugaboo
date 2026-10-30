@@ -42,6 +42,8 @@ export const messages = {
   "issues.column-down": "Move {column} down",
   "issues.columns-reset": "Back to the project's columns",
   "issues.count-line": "{total, number} in {scope} · {shown, number} shown",
+  "issues.columns-hidden":
+    "{count, plural, one {# column is hidden for lack of room. Customize or a wider window shows it.} other {# columns are hidden for lack of room. Customize or a wider window shows them.}}",
   "issues.count-line-loading": "{total, number} in {scope}",
   "issues.everywhere": "all projects",
   "issues.count": "{count, plural, one {# issue found} other {# issues found}}",
