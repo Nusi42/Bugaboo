@@ -17,7 +17,7 @@ use bb_core::notification::{
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, OnConflict, Order, Query, SubQueryStatement};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
@@ -79,6 +79,28 @@ fn read_notification(row: &Row) -> Result<Notification, StoreError> {
             .ok_or(StoreError::Corrupt("where an e-mail is"))?,
         read_at: row.optional_time(NotificationRow::ReadAt)?,
     })
+}
+
+/// The time of the event of the row `before` of the person, as a part of a statement.
+fn time_of(recipient: UserId, before: NotificationId) -> Expr {
+    let mut time = Query::select();
+    time.column(NotificationRow::At)
+        .from(NotificationRow::Table)
+        .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
+        .and_where(Expr::col(NotificationRow::Id).eq(before.stored()));
+    Expr::SubQuery(None, Box::new(SubQueryStatement::SelectStatement(time)))
+}
+
+/// The rows that come after `before` in the list, newest first by the time of the event and then
+/// by the ID: an earlier event, or one of the same moment with a smaller ID.
+fn after_in_the_list(recipient: UserId, before: NotificationId) -> Cond {
+    Cond::any()
+        .add(Expr::col(NotificationRow::At).lt(time_of(recipient, before)))
+        .add(
+            Cond::all()
+                .add(Expr::col(NotificationRow::At).eq(time_of(recipient, before)))
+                .add(Expr::col(NotificationRow::Id).lt(before.stored())),
+        )
 }
 
 fn ids_of(ids: &[NotificationId]) -> Vec<Vec<u8>> {
@@ -175,10 +197,13 @@ impl NotificationStore for AuthStorage {
         before: Option<NotificationId>,
         limit: u64,
     ) -> Result<Vec<Notification>, StoreError> {
+        // Newest first by when the event happened; the ID, the time the row was made, breaks a tie,
+        // so rows of one moment keep one order (M5-F107) and a page goes on where the last ended.
         let mut select = select();
         select
             .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
             .and_where(Expr::col(NotificationRow::InApp).eq(true))
+            .order_by(NotificationRow::At, Order::Desc)
             .order_by(NotificationRow::Id, Order::Desc)
             .limit(limit);
         match filter {
@@ -193,7 +218,7 @@ impl NotificationStore for AuthStorage {
             }
         }
         if let Some(before) = before {
-            select.and_where(Expr::col(NotificationRow::Id).lt(before.stored()));
+            select.cond_where(after_in_the_list(recipient, before));
         }
         self.database()
             .fetch_all(&select)

@@ -677,9 +677,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !in_app && !by_mail {
             return Ok(false);
         }
-        // The ID carries the time of the event, so the list (newest first by ID) follows when it
-        // happened, however late the reader came to it (UX §4.11).
-        let id = NotificationId::generate_at(subject.event.time, &mut self.ids())
+        let id = NotificationId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         round.rows.push(Notification {
             id,

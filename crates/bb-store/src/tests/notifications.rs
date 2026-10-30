@@ -113,6 +113,59 @@ async fn ntf_01_a_notification_is_kept_once_for_a_person_and_key_and_the_reader_
 }
 
 #[tokio::test]
+async fn ntf_01_the_store_lists_by_the_time_of_the_event_then_the_id_and_a_page_goes_on_there()
+-> TestResult {
+    each_database("ntf_01_by_time", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let ana = stored_person(&storage, &mut source, "ana@example.test").await?;
+        // Made in this order, of events that happened in another: the reader came late to `early`.
+        let late = row(&mut source, ana, None, 30)?;
+        let early = row(&mut source, ana, None, 10)?;
+        let same_moment_first = row(&mut source, ana, None, 20)?;
+        let same_moment_second = row(&mut source, ana, None, 20)?;
+        storage
+            .store_notifications(
+                &[
+                    late.clone(),
+                    early.clone(),
+                    same_moment_first.clone(),
+                    same_moment_second.clone(),
+                ],
+                &[],
+                0,
+                at(31),
+            )
+            .await?;
+        let all = storage
+            .notifications_of(ana, NotificationFilter::All, None, 10)
+            .await?;
+        assert_eq!(
+            all,
+            [
+                late.clone(),
+                same_moment_second.clone(),
+                same_moment_first.clone(),
+                early.clone()
+            ],
+            "newest first by the time of the event; the later made first within a moment"
+        );
+        let next = storage
+            .notifications_of(
+                ana,
+                NotificationFilter::All,
+                Some(same_moment_second.id),
+                10,
+            )
+            .await?;
+        assert_eq!(next, [same_moment_first, early]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ntf_01_the_store_lists_newest_first_by_filter_and_marks_as_read() -> TestResult {
     each_database("ntf_01_list", async |db| {
         let fixture = fixture(db).await?;

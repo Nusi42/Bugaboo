@@ -44,7 +44,7 @@ Since M3, Bugaboo stores who follows an issue, who is mentioned, and the notes o
 ### 4. In the app
 
 - *Notifications* is a page and a menu entry with the number of unread ones (UX §4.11).
-  - Entries are grouped by issue, newest first.
+  - Entries are grouped by issue, newest first by when the event happened; the ID (the time the row was made) breaks a tie and is what *Mark all as read* counts up to (M5 exit).
   - Each entry has *Open*, which goes to the exact comment or change, and *Mark as read*.
 - *Notifications* replaces the *Mentions* block on the start page. *Mentions* becomes a filter, and the start page shows the newest unread ones (M4-Q7).
 
