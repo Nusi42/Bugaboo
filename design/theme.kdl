@@ -4241,13 +4241,16 @@ part "chip" {
 
 // The bar of the issues ticked (UX §4.2): under the list, where ticking moves nothing above it, and stuck to the
 // bottom of the window while there is more list than window. With nothing ticked it has no look and no room.
+// While nothing is ticked the bar holds only what a screen reader is told: it stands out of the flow, so the column of the
+// list has no gap for it and the box of the rows ends where the column ends.
 part "selected-bar" {
+    position absolute
     display flex
     flex-direction column
     gap "$space-2"
 }
 
-// Pinned to the bottom edge of the window with no gap under it: a gap would show a cut half row of the list below the bar.
+// At the foot of the list (the box of the rows takes the rest of the window), sticky to the bottom where the page scrolls.
 part "selected-bar[state=active]" {
     use "floating-box"
     position sticky
@@ -4942,6 +4945,13 @@ part "list-editor side-panel" {
     position sticky
     top "calc($size-bar + $size-page-gutter)"
     max-height "calc($size-viewport - $size-bar - 2 * $size-page-gutter)"
+}
+
+// On the page of a list the page itself does not scroll (its main box does, under the top bar): the panel is as high as
+// the line it shares with the list, and keeps a gutter from the top of that box when it does scroll.
+part "list-editor:has(list-main) side-panel" {
+    top "$size-page-gutter"
+    max-height none
 }
 
 part "side-panel.title" {

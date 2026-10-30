@@ -3458,6 +3458,7 @@ optgroup {
 }
 
 [data-part="selected-bar"] {
+  position: absolute;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -4242,6 +4243,11 @@ optgroup {
   position: sticky;
   top: calc(var(--size-bar) + var(--size-page-gutter));
   max-height: calc(var(--size-viewport) - var(--size-bar) - 2 * var(--size-page-gutter));
+}
+
+[data-part="list-editor"]:has([data-part="list-main"]) [data-part="side-panel"] {
+  top: var(--size-page-gutter);
+  max-height: none;
 }
 
 [data-part="side-panel.title"] {

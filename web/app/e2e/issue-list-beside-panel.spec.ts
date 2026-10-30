@@ -40,17 +40,21 @@ test("ux_3_2 beside the list the open issue scrolls in a box of its own, as high
   page,
 }) => {
   test.skip(layoutOf(page) !== "computer", "only a computer has the panel beside the list");
+  // A low window: the page of the list does not scroll, the panel ends with the box of the rows, under the top bar.
+  await page.setViewportSize({ width: 1280, height: 600 });
   await signIn(page, ada);
   await page.goto(`${projectIssuesAddress("WEB")}?open=WEB-1`);
   await expect(rowOf(page, webIssues.login)).toBeVisible();
   const panel = page.getByRole("complementary").first();
-  // Scrolled to the end of the page, the panel stands whole in the window: what does not fit scrolls inside it.
-  await page.evaluate(() => {
-    window.scrollTo(0, document.documentElement.scrollHeight);
-  });
-  const [box, height] = await Promise.all([boxOf(panel), page.evaluate(() => window.innerHeight)]);
-  expect(box.y).toBeGreaterThanOrEqual(0);
+  const [box, rows, bar, height] = await Promise.all([
+    boxOf(panel),
+    boxOf(partIn(page, "list-scroll").first()),
+    boxOf(partIn(page, "top-bar").first()),
+    page.evaluate(() => window.innerHeight),
+  ]);
+  expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height);
   expect(box.y + box.height).toBeLessThanOrEqual(height);
+  expect(Math.abs(box.y + box.height - (rows.y + rows.height))).toBeLessThanOrEqual(2);
   const body = partIn(panel, "side-panel.body");
   await expect
     .poll(() => body.evaluate((node) => node.scrollHeight > node.clientHeight + 1))
