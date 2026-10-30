@@ -11146,10 +11146,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
     ),
-    (
-        "access.scrolls",
-        "There are more roles to the right. Scroll sideways to see them.",
-    ),
+    ("access.scrolls", "Scroll sideways to see the other roles."),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
     (

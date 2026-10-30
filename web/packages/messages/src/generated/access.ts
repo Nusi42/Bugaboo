@@ -6,7 +6,7 @@ export const messages = {
   "access.field": "Field",
   "access.kind": "Kind of people information",
   "access.cell-label": "{subject} for {role}",
-  "access.scrolls": "There are more roles to the right. Scroll sideways to see them.",
+  "access.scrolls": "Scroll sideways to see the other roles.",
   "access.origin-here": "Set for this project",
   "access.origin-from": "From {project}",
   "access.origin-unset": "Nothing set, so it is hidden",
