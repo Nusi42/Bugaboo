@@ -6926,6 +6926,15 @@ optgroup {
   flex-wrap: nowrap;
   align-items: stretch;
   flex: 1 1 0;
+}
+
+[data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="card"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="list-main"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
   min-height: 0;
 }
 
@@ -6933,6 +6942,10 @@ optgroup {
 [data-part="list-body"]:has([data-part="list-scroll"]) {
   flex: 1 1 0;
   align-items: stretch;
+}
+
+[data-part="list-editor"]:has([data-part="list-scroll"]),
+[data-part="list-body"]:has([data-part="list-scroll"]) {
   min-height: 0;
 }
 

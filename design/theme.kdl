@@ -13956,6 +13956,11 @@ part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main
     flex-wrap nowrap
     align-items stretch
     flex "1 1 0"
+}
+
+// Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
+// a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
+part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     min-height 0
 }
 
@@ -13964,6 +13969,9 @@ part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main
 part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
     flex "1 1 0"
     align-items stretch
+}
+
+part "list-editor:has(list-scroll)" "list-body:has(list-scroll)" {
     min-height 0
 }
 
