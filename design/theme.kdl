@@ -2351,9 +2351,12 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
     overflow-wrap anywhere
 }
 
+// The people of a row on a phone are written out on as many lines as they need, never cut with dots (M5 exit F-A3).
 part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
     width auto
+    white-space normal
+    overflow-wrap anywhere
 }
 
 part "list-row[variant=phone] list-row.cell[variant=action]" {

@@ -2361,6 +2361,8 @@ optgroup {
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"] {
   grid-area: person;
   width: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="action"] {
