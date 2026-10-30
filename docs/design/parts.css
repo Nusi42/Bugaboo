@@ -5457,7 +5457,7 @@ optgroup {
   min-width: var(--size-control);
   min-height: var(--size-control);
   padding: 0 var(--space-2);
-  border: var(--border-width) solid var(--border);
+  border: var(--border-width) solid currentColor;
   border-radius: var(--r-ctl);
   background: var(--bg-sunken);
   color: var(--fg);
