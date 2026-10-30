@@ -23,13 +23,19 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
     .getByRole("group", { name: t("labels.field-new-color"), exact: true })
     .getByRole("radio", { name: picked, exact: true })
     .check();
+  const fill = await partIn(page, "field-swatch", "cat7").evaluate(
+    (node) => getComputedStyle(node).backgroundColor,
+  );
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();
   await expect(page.getByText(t("labels.label-created", { name: "backend" }))).toBeVisible();
   const row = page
     .getByRole("list", { name: t("labels.labels-search"), exact: true })
     .getByRole("button", { name: "backend" });
   // The list shows the label with a small square in its color before its name (UX §7.5).
-  await expect(partIn(row, "label-mark", "cat7")).toBeVisible();
+  const mark = partIn(row, "label-mark", "cat7");
+  await expect(mark).toBeVisible();
+  // The square is the fill of its color, as the swatch it was chosen from, not its text color.
+  await expect(mark).toHaveCSS("background-color", fill);
   await row.click();
   await expect(
     page

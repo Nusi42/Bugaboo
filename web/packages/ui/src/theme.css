@@ -6332,6 +6332,7 @@ optgroup {
   box-sizing: border-box;
   width: var(--space-3);
   height: var(--space-3);
+  border: var(--border-width) solid currentColor;
 }
 
 [data-part="field-text"] {
@@ -6552,21 +6553,6 @@ optgroup {
 [data-part="label-mark"][data-variant~="cat12"] {
   background: var(--cat12-bg);
   color: var(--cat12-fg);
-}
-
-[data-part="label-mark"][data-variant~="cat1"],
-[data-part="label-mark"][data-variant~="cat2"],
-[data-part="label-mark"][data-variant~="cat3"],
-[data-part="label-mark"][data-variant~="cat4"],
-[data-part="label-mark"][data-variant~="cat5"],
-[data-part="label-mark"][data-variant~="cat6"],
-[data-part="label-mark"][data-variant~="cat7"],
-[data-part="label-mark"][data-variant~="cat8"],
-[data-part="label-mark"][data-variant~="cat9"],
-[data-part="label-mark"][data-variant~="cat10"],
-[data-part="label-mark"][data-variant~="cat11"],
-[data-part="label-mark"][data-variant~="cat12"] {
-  background: currentColor;
 }
 
 [data-part="layout-editor"] {

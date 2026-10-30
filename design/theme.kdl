@@ -6050,11 +6050,15 @@ part "label-chip" {
     white-space nowrap
 }
 
+// The square of a label (UX §7.5) is drawn like a swatch of its color: the fill, told apart from the other fills at a
+// glance (the `distinct` rule), and an edge in the text color, seen on every surface. The text colors of two choice
+// colors can look alike at this size; the fills cannot.
 part "label-mark" {
     flex none
     box-sizing border-box
     width "$space-3"
     height "$space-3"
+    border "$border-width solid currentColor"
 }
 
 part "field-text" {
@@ -6226,11 +6230,6 @@ part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[vari
 part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" "label-mark[variant=cat12]" {
     background "$cat12-bg"
     color "$cat12-fg"
-}
-
-// A label in a list is a small filled square in its color (§7.5): the swatch is the color itself, not the pale ground of a pill.
-part "label-mark[variant=cat1]" "label-mark[variant=cat2]" "label-mark[variant=cat3]" "label-mark[variant=cat4]" "label-mark[variant=cat5]" "label-mark[variant=cat6]" "label-mark[variant=cat7]" "label-mark[variant=cat8]" "label-mark[variant=cat9]" "label-mark[variant=cat10]" "label-mark[variant=cat11]" "label-mark[variant=cat12]" {
-    background currentColor
 }
 
 // ───────────── The design pages (docs/design) ─────────────
