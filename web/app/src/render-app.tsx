@@ -3,16 +3,26 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { isLeavingPage, watchLeavingPage } from "./shared/leaving-page.ts";
+import { isLeavingPage, shouldReport, watchLeavingPage } from "./shared/leaving-page.ts";
 import { queryClient } from "./shared/query-client.ts";
 import { router } from "./routes/router.tsx";
 
 /**
- * A part of the app that is still being fetched when the page is reloaded or left is cancelled by the
- * browser: the error that follows is no defect and is not reported. Any other error is reported as before.
+ * What React does with an error that an error boundary caught, as it did before (with the stack of
+ * components for the developer), and with one that nothing caught. Only a failed load of a part of the app
+ * while the page is being left is left out (see `shouldReport`).
  */
-function reportUnlessLeaving(error: unknown): void {
-  if (!isLeavingPage()) {
+function reportCaught(
+  error: unknown,
+  info: Readonly<{ componentStack?: string | undefined }>,
+): void {
+  if (shouldReport(error, isLeavingPage())) {
+    console.error(error, info.componentStack);
+  }
+}
+
+function reportUncaught(error: unknown): void {
+  if (shouldReport(error, isLeavingPage())) {
     reportError(error);
   }
 }
@@ -23,12 +33,15 @@ export function renderApp(): void {
   if (container === null) {
     throw new Error("index.html must contain the element with id root");
   }
-  watchLeavingPage(window, (restore, after) => {
-    window.setTimeout(restore, after);
+  watchLeavingPage(window, {
+    after: (run, ms) => window.setTimeout(run, ms),
+    cancel: (timer) => {
+      window.clearTimeout(timer);
+    },
   });
   createRoot(container, {
-    onCaughtError: reportUnlessLeaving,
-    onUncaughtError: reportUnlessLeaving,
+    onCaughtError: reportCaught,
+    onUncaughtError: reportUncaught,
   }).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
