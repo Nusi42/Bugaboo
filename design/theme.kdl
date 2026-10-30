@@ -2155,9 +2155,6 @@ part "list-row" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
-    forced {
-        border-inline-start-color Canvas
-    }
 }
 
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
@@ -2407,6 +2404,14 @@ part "list-group" {
     background "$bg-surface"
     font-size "$fs-md"
     font-weight "$weight-regular"
+}
+
+// Under forced colors the transparent start edge of a row, of the head of a group and of a bar of the timeline is drawn
+// in the color of the canvas: only Critical and High carry a bar (R5; a group head had High's bar, M5 exit F-A8).
+part "list-row" "list-group" "timeline-bar" {
+    forced {
+        border-inline-start-color Canvas
+    }
 }
 
 part "list-group.count" {
@@ -2738,9 +2743,6 @@ part "timeline-bar" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
-    forced {
-        border-inline-start-color Canvas
-    }
 }
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────

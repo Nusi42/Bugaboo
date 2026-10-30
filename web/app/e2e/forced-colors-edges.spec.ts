@@ -32,7 +32,7 @@ function edgeOf(element: Locator): Promise<Edge> {
   });
 }
 
-test("ux_7_2 under forced colors Critical has a double bar, High a single bar, the others and the head none", async ({
+test("ux_7_2 under forced colors Critical has a double bar, High a single bar, the others, the head and a group head none", async ({
   page,
 }) => {
   test.skip(layoutOf(page) === "phone", "the slim rows of a phone are drawn by the same rules");
@@ -53,6 +53,9 @@ test("ux_7_2 under forced colors Critical has a double bar, High a single bar, t
   expect(plain.color).toBe(canvas);
   expect(head.width).toBe(high.width);
   expect(head.color).toBe(canvas);
+  // The head of a group is no row of a priority: no bar like High's (M5 exit F-A8).
+  const group = await edgeOf(page.locator("[data-part='list-group']").first());
+  expect(group.color).toBe(canvas);
 });
 
 test("ux_7_2 under forced colors the Legend draws the same two bars", async ({ page }) => {

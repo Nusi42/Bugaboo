@@ -2149,12 +2149,6 @@ optgroup {
   font-size: var(--fs-ui);
 }
 
-@media (forced-colors: active) {
-  [data-part="list-row"] {
-    border-inline-start-color: Canvas;
-  }
-}
-
 [data-part="list-row"]:hover {
   box-shadow: inset 0 0 0 var(--border-width) var(--hover-line);
 }
@@ -2408,6 +2402,14 @@ optgroup {
   background: var(--bg-surface);
   font-size: var(--fs-md);
   font-weight: var(--weight-regular);
+}
+
+@media (forced-colors: active) {
+  [data-part="list-row"],
+  [data-part="list-group"],
+  [data-part="timeline-bar"] {
+    border-inline-start-color: Canvas;
+  }
 }
 
 [data-part="list-group.count"] {
@@ -2743,12 +2745,6 @@ optgroup {
   background: var(--bg-raised);
   color: var(--fg);
   font-size: var(--fs-sm);
-}
-
-@media (forced-colors: active) {
-  [data-part="timeline-bar"] {
-    border-inline-start-color: Canvas;
-  }
 }
 
 [data-part="name-values"] {
