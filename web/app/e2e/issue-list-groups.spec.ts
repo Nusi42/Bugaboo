@@ -90,7 +90,7 @@ test("ux_4_2 a list with nothing in it keeps the padding of its card under its l
   page,
 }) => {
   test.skip(layoutOf(page) !== "computer", "a computer has the room of the window to lose");
-  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.setViewportSize({ width: 1280, height: 420 });
   await signIn(page, ada);
   await page.goto(`${projectIssuesAddress("WEB")}?s=title+contains+zzzzqq`);
   const remove = page.getByRole("button", { name: t("issues.remove-filters"), exact: true });

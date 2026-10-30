@@ -77,4 +77,6 @@ test("ux_4_2 on a computer a line of people too long for its column ends in dots
   // The line runs on past the column (so the cell draws its dots) instead of wrapping inside pieces that are clipped.
   await expect(two).toHaveCSS("text-overflow", "ellipsis");
   expect(await two.evaluate((cell) => cell.scrollWidth > cell.clientWidth)).toBe(true);
+  // The dots of a cell are drawn only in text: a name kept whole as a box of its own would be clipped without them.
+  await expect(partIn(two, "unbroken-word").first()).toHaveCSS("display", "inline");
 });
