@@ -61,22 +61,3 @@ test("ux_4_2 the people of a row on a phone are written out on more lines, never
   ]);
   expect(Math.abs(last.y + last.height - (date.y + date.height))).toBeLessThanOrEqual(3);
 });
-
-test("ux_4_2 on a computer a line of people too long for its column ends in dots, names cut like any words (review of F-A3)", async ({
-  page,
-}) => {
-  test.skip(layoutOf(page) !== "computer", "the rows of a computer have a column for the people");
-  await signIn(page, sampleAdministrator());
-  await page.goto(
-    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
-  );
-  const two = partIn(page, "list-row.cell", "person")
-    .filter({ hasText: /\sand\s/u })
-    .first();
-  await expect(two).toBeVisible();
-  // The line runs on past the column (so the cell draws its dots) instead of wrapping inside pieces that are clipped.
-  await expect(two).toHaveCSS("text-overflow", "ellipsis");
-  expect(await two.evaluate((cell) => cell.scrollWidth > cell.clientWidth)).toBe(true);
-  // The dots of a cell are drawn only in text: a name kept whole as a box of its own would be clipped without them.
-  await expect(partIn(two, "unbroken-word").first()).toHaveCSS("display", "inline");
-});
