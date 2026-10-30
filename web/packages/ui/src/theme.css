@@ -4319,10 +4319,13 @@ optgroup {
 }
 
 [data-part="selected-bar"] {
-  position: absolute;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+[data-part="selected-bar"]:empty {
+  display: none;
 }
 
 [data-part="selected-bar"][data-state~="active"] {

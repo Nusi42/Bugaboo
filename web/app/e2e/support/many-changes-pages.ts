@@ -99,3 +99,17 @@ export async function applyAndExpectSkipped(
     ),
   ).toBeVisible();
 }
+
+/** How far the bar under the list (the ticked issues, the outcome of a change) starts below the last row; negative where it covers a row. */
+export function roomAboveBar(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const bar = document.querySelector("[data-part='selected-bar']");
+    let end = Number.NEGATIVE_INFINITY;
+    for (const row of document.querySelectorAll(
+      "[data-part='list-scroll'] [data-part='list-row']",
+    )) {
+      end = Math.max(end, row.getBoundingClientRect().bottom);
+    }
+    return bar === null ? Number.NEGATIVE_INFINITY : bar.getBoundingClientRect().top - end;
+  });
+}

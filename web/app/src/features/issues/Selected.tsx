@@ -37,8 +37,6 @@ export function Selected({ selection, project, search, shown }: SelectedProps) {
       {...partOf(part.selectedBar, { states: [count > 0 && "active"] })}
       aria-label={count > 0 ? t("issues.selected-bar") : undefined}
     >
-      {/* The count is told as it changes (UX §8); the visible words are left out of the reading. */}
-      <Announce>{count === 0 ? "" : t("issues.selected", { count })}</Announce>
       {count === 0 ? null : (
         <div {...partOf(part.row)}>
           <span aria-hidden>{t("issues.selected", { count })}</span>
@@ -51,5 +49,13 @@ export function Selected({ selection, project, search, shown }: SelectedProps) {
       <SelectionBars selection={selection} project={project} />
     </section>
   );
-  return phone && slot !== null ? createPortal(bar, slot) : bar;
+  // The count is told as it changes (UX §8); the visible words are left out of the reading. It stands beside the bar, so
+  // a bar with nothing to show is empty and takes no room.
+  const told = <Announce>{count === 0 ? "" : t("issues.selected", { count })}</Announce>;
+  return (
+    <>
+      {told}
+      {phone && slot !== null ? createPortal(bar, slot) : bar}
+    </>
+  );
 }
