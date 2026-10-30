@@ -247,8 +247,13 @@ pub const ASSIGNMENTS_PICK_GROUP: MessageKey = MessageKey::new("assignments.pick
 /// The message `assignments.pick-list`.
 pub const ASSIGNMENTS_PICK_LIST: MessageKey = MessageKey::new("assignments.pick-list");
 
-/// The message `assignments.pick-more`.
-pub const ASSIGNMENTS_PICK_MORE: MessageKey = MessageKey::new("assignments.pick-more");
+/// The message `assignments.pick-more-groups`.
+pub const ASSIGNMENTS_PICK_MORE_GROUPS: MessageKey =
+    MessageKey::new("assignments.pick-more-groups");
+
+/// The message `assignments.pick-more-people`.
+pub const ASSIGNMENTS_PICK_MORE_PEOPLE: MessageKey =
+    MessageKey::new("assignments.pick-more-people");
 
 /// The message `assignments.pick-nothing`.
 pub const ASSIGNMENTS_PICK_NOTHING: MessageKey = MessageKey::new("assignments.pick-nothing");
@@ -1295,8 +1300,11 @@ pub const FIELDS_PICK_CHOSEN: MessageKey = MessageKey::new("fields.pick-chosen")
 /// The message `fields.pick-groups-list`.
 pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-groups-list");
 
-/// The message `fields.pick-more`.
-pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
+/// The message `fields.pick-more-groups`.
+pub const FIELDS_PICK_MORE_GROUPS: MessageKey = MessageKey::new("fields.pick-more-groups");
+
+/// The message `fields.pick-more-people`.
+pub const FIELDS_PICK_MORE_PEOPLE: MessageKey = MessageKey::new("fields.pick-more-people");
 
 /// The message `fields.pick-no-groups`.
 pub const FIELDS_PICK_NO_GROUPS: MessageKey = MessageKey::new("fields.pick-no-groups");
@@ -4333,8 +4341,11 @@ pub const SEARCH_SHARE_DONE: MessageKey = MessageKey::new("search.share-done");
 /// The message `search.share-groups`.
 pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups");
 
-/// The message `search.share-more`.
-pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
+/// The message `search.share-more-groups`.
+pub const SEARCH_SHARE_MORE_GROUPS: MessageKey = MessageKey::new("search.share-more-groups");
+
+/// The message `search.share-more-projects`.
+pub const SEARCH_SHARE_MORE_PROJECTS: MessageKey = MessageKey::new("search.share-more-projects");
 
 /// The message `search.share-none-groups`.
 pub const SEARCH_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("search.share-none-groups");
@@ -11178,7 +11189,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.kind-group", "A group"),
     ("assignments.kind-person", "A person"),
     ("assignments.list", "Who has which role"),
-    ("assignments.more", "Show more rows"),
+    ("assignments.more", "Show more people and groups"),
     (
         "assignments.no-access-help",
         "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
@@ -11186,7 +11197,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.none", "Nobody has a role here yet."),
     ("assignments.pick-group", "Choose the group"),
     ("assignments.pick-list", "To choose from"),
-    ("assignments.pick-more", "Show more"),
+    ("assignments.pick-more-groups", "Show more groups"),
+    ("assignments.pick-more-people", "Show more people"),
     (
         "assignments.pick-nothing",
         "Nothing found. Try another word.",
@@ -12186,7 +12198,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-choose-name", "Choose {name}"),
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
-    ("fields.pick-more", "Show more"),
+    ("fields.pick-more-groups", "Show more groups"),
+    ("fields.pick-more-people", "Show more people"),
     (
         "fields.pick-no-groups",
         "There are no groups you can choose.",
@@ -14722,7 +14735,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.share", "Share"),
     ("search.share-done", "Done"),
     ("search.share-groups", "Groups"),
-    ("search.share-more", "Show more"),
+    ("search.share-more-groups", "Show more groups"),
+    ("search.share-more-projects", "Show more projects"),
     (
         "search.share-none-groups",
         "You can't share with any group.",

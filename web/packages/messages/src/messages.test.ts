@@ -91,3 +91,27 @@ describe("perf_04 a text that is missing in production", () => {
     expect(() => fresh("people.search")).toThrow(/people\.search.*not loaded/u);
   });
 });
+
+/** What the wording rule of *Show more* allows after its two words: the plural of what the list holds, never its rows. */
+const showMore = /^Show more (?!rows$)\p{Ll}[\p{Ll} -]*$/u;
+
+/** The keys of the texts that start with *Show more* and do not keep its rule. */
+function badlyWorded(parts: readonly Readonly<Record<string, string>>[]): readonly string[] {
+  const wrong: string[] = [];
+  for (const messages of parts) {
+    for (const [key, text] of Object.entries(messages)) {
+      if (text.startsWith("Show more") && !showMore.test(text)) {
+        wrong.push(key);
+      }
+    }
+  }
+  return wrong;
+}
+
+describe("ux_5 the one wording of Show more", () => {
+  it("names the plural of what the list holds, never rows and never nothing", async () => {
+    const parts = await import("./generated/all.ts");
+    const wrong = badlyWorded(Object.values(parts));
+    expect(wrong).toEqual([]);
+  });
+});

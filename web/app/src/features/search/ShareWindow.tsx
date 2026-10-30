@@ -70,11 +70,14 @@ function Choices({
   kind,
   legend,
   none,
+  more,
 }: {
   readonly search: SavedSearch;
   readonly kind: Schema<"ShareKind">;
   readonly legend: string;
   readonly none: string;
+  /** The words of *Show more*, which name what the list holds. */
+  readonly more: string;
 }) {
   const choices = useShareChoices(kind);
   const change = useChangeShare(search.id);
@@ -99,7 +102,7 @@ function Choices({
           />
         ))}
       </ul>
-      <ShowMoreOf label={t("search.share-more")} list={choices} />
+      <ShowMoreOf label={more} list={choices} />
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </fieldset>
   );
@@ -135,12 +138,14 @@ export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
           kind={shareKind.group}
           legend={t("search.share-groups")}
           none={t("search.share-none-groups")}
+          more={t("search.share-more-groups")}
         />
         <Choices
           search={search}
           kind={shareKind.project}
           legend={t("search.share-projects")}
           none={t("search.share-none-projects")}
+          more={t("search.share-more-projects")}
         />
         <p {...partOf(part.muted)}>{t("search.share-note")}</p>
       </div>
