@@ -4,13 +4,20 @@ use anyhow::bail;
 
 use super::kdl_reader::Node;
 
+/// The bold of the title of an issue.
+const ISSUE_TITLE: &str = "issue-title";
+/// The bold of the title of a page, a window or a card.
+const TITLE: &str = "title";
+/// The bold of the heading of a section.
+const SECTION: &str = "section";
+
 /// What a bold says. A new role needs UX §7.3 first; the words are written here once, and the
 /// theme file and the check read them from here.
-pub(crate) const BOLD_ROLES: [&str; 5] = ["issue-title", "title", "section", "priority", "own"];
+pub(crate) const BOLD_ROLES: [&str; 5] = [ISSUE_TITLE, TITLE, SECTION, "priority", "own"];
 
 /// The roles of a title or a heading: their rules draw them in the display face of the theme
 /// (`$font-display`, the face the sister project gives its titles), not only in bold.
-pub(crate) const HEADING_ROLES: [&str; 3] = ["issue-title", "title", "section"];
+pub(crate) const HEADING_ROLES: [&str; 3] = [ISSUE_TITLE, TITLE, SECTION];
 
 /// One selector of a rule of the app that may set the bold weight, with the role that allows it.
 pub(crate) struct BoldSelector {
