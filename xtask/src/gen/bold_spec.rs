@@ -8,6 +8,10 @@ use super::kdl_reader::Node;
 /// theme file and the check read them from here.
 pub(crate) const BOLD_ROLES: [&str; 5] = ["issue-title", "title", "section", "priority", "own"];
 
+/// The roles of a title or a heading: their rules draw them in the display face of the theme
+/// (`$font-display`, the face the sister project gives its titles), not only in bold.
+pub(crate) const HEADING_ROLES: [&str; 3] = ["issue-title", "title", "section"];
+
 /// One selector of a rule of the app that may set the bold weight, with the role that allows it.
 pub(crate) struct BoldSelector {
     pub(crate) selector: String,

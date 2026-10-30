@@ -227,7 +227,7 @@ select.look {
   border: var(--border-width) solid var(--border);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--fs-sm);
   line-height: var(--doc-lh-code);
 }
@@ -275,7 +275,7 @@ select.look {
 }
 
 .ask-result code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--fs-sm);
   flex: 1;
   min-width: 0;
@@ -1048,7 +1048,7 @@ select.look {
 }
 
 .timer-big .clock {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-28);
   font-weight: var(--doc-weight-semibold);
   color: var(--accent-fg);
@@ -1201,7 +1201,7 @@ select.look {
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-canvas);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 
 .ts input:focus {
@@ -1644,7 +1644,7 @@ select.look {
   stroke: var(--bg-surface);
   stroke-width: var(--doc-space-5);
   stroke-linejoin: round;
-  font-family: var(--font);
+  font-family: var(--font-ui);
   transition: opacity var(--motion-fast);
 }
 
@@ -1676,13 +1676,13 @@ select.look {
 }
 
 .nkey {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-12);
   fill: var(--fg-muted);
 }
 
 .ntitle {
-  font-family: var(--font);
+  font-family: var(--font-ui);
   font-size: var(--doc-font-13);
   font-weight: var(--doc-weight-semibold);
   fill: var(--fg);

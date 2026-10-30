@@ -1,6 +1,7 @@
 //! The tests of theme.
 
 use super::*;
+use crate::generate::theme_file::TokenKind;
 
 fn file() -> ThemeFile {
     ThemeFile::load(&Repo::discover().unwrap()).unwrap()
@@ -310,4 +311,28 @@ fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
             "{scroller} has no old cue"
         );
     }
+}
+
+#[test]
+fn the_fonts_are_system_stacks_one_for_each_role_and_none_is_shipped() {
+    // Decision (ADR-0026): the system font stacks of the sister project, no font files.
+    let file = file();
+    for role in ["font-ui", "font-display", "font-reader", "font-mono"] {
+        let token = file
+            .token(role)
+            .unwrap_or_else(|| panic!("the theme has the font `{role}`"));
+        assert_eq!(token.kind, TokenKind::Font, "`{role}` is a font");
+        let stack = token.same.as_deref().unwrap_or_default();
+        let last = stack.rsplit(',').next().unwrap_or_default().trim();
+        assert!(
+            matches!(last, "sans-serif" | "monospace"),
+            "`{role}` ends in a family every computer has: {stack}"
+        );
+    }
+    let css = css(&file).unwrap();
+    assert!(!css.contains("@font-face"), "no font is shipped");
+    assert!(
+        !css.contains("Load fonts"),
+        "the sheet asks nobody to load a font"
+    );
 }

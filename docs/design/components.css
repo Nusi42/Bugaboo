@@ -20,7 +20,7 @@ body {
   margin: 0;
   background: var(--bg-canvas);
   color: var(--fg);
-  font-family: var(--font);
+  font-family: var(--font-ui);
   font-size: var(--fs-base);
   line-height: var(--doc-lh-page);
   -webkit-font-smoothing: antialiased;
@@ -71,7 +71,7 @@ button {
 }
 
 .mono {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -97,7 +97,7 @@ button {
 }
 
 kbd {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-11);
   padding: var(--doc-space-1) var(--doc-space-5);
   border: var(--border-width) solid var(--border);
@@ -231,7 +231,7 @@ kbd {
 }
 
 .chip.raw {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   background: var(--bg-sunken);
   border-style: dashed;
 }
@@ -244,7 +244,7 @@ kbd {
 }
 
 .key {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--fs-sm);
   color: var(--fg-muted);
   white-space: nowrap;

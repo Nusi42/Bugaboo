@@ -1,7 +1,4 @@
 <title>Bugaboo UX Design</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="parts.css">
 <link rel="stylesheet" href="components.css">
@@ -984,12 +981,12 @@ sort by priority, highest first</div>
     <h3 id="s7-3"><button type="button" class="sec" data-sec>§7.3</button>Text</h3>
     <div class="specimen">
       <span class="big">Login fails after reset</span>
-      <span>Atkinson Hyperlegible Next: designed by the Braille Institute so that similar letters are easy to tell apart. <b>Il1 O0 rn m</b></span>
+      <span>Segoe UI Variable, the face of Windows 11, or the system face of the computer: text people read every day, with nothing to download. <b>Il1 O0 rn m</b></span>
       <span class="mono-s">WEB-142 · status is not Done · 1:30 · Il1 O0</span>
-      <span class="muted u-font-size-12px">Atkinson Hyperlegible Mono: issue IDs, Advanced search, time values and code.</span>
+      <span class="muted u-font-size-12px">Cascadia Mono, or the monospace face of the computer: issue IDs, Advanced search, time values and code.</span>
     </div>
     <ul>
-      <li><b>Font:</b> <i>Atkinson Hyperlegible Next</i>, shipped with Bugaboo; no requests to outside font services. <b>Monospace:</b> <i>Atkinson Hyperlegible Mono</i>. Both use the SIL Open Font License. (This design page loads them from Google Fonts only because it is a preview.)</li>
+      <li><b>Fonts:</b> the system font stacks of the sister project the sister project, word for word; Bugaboo ships no font file and asks no font service. <b>Text</b> (<code>font-ui</code>): <i>Segoe UI Variable Text</i>, <i>Segoe UI</i>, the system face. <b>Titles and section headings</b> (<code>font-display</code>, the parts the <code>bold</code> list names as titles and headings): <i>Segoe UI Variable Display</i>, <i>Segoe UI</i>, the system face. <b>Reading text</b> (<code>font-reader</code>: descriptions, comments, the help): the same faces as the text. <b>Code and IDs</b> (<code>font-mono</code>): <i>Cascadia Mono</i>, <i>Consolas</i>, the system monospace face. Cascadia Mono's regular weight draws a little heavier than the text; the maintainer accepted that (2026-10-30). A computer without these faces takes its own system face, so the look differs a little between systems.</li>
       <li><b>Sizes</b> and what they are for: 24 the title of an issue; 20 the title of a page or dialog; 16 bold a section (<i>Sub-issues</i>, <i>History</i>); 16 reading text (descriptions and comments, at most 68 characters wide); 14 everything else on a computer (rows, fields, buttons); 13 field names, times, counts, hints; 12 group names in panels. IDs and times use the mono face. On a phone the default is 16. <i>Larger text</i> in My settings scales everything.</li>
       <li><b>Group headers</b> in lists are 16, regular weight, with a line above.</li>
       <li><b>Bold</b> is for exactly these: the title of an issue, the title of a page, a window or a card, the heading of a section, the word of a Critical or High priority, and what a person wrote in bold in a text. Everything else is regular weight, so bold still means something: no bold labels, buttons, tabs, menu items, column heads, group names, links or pills. One list in <code>design/theme.kdl</code> (<code>bold</code>) names the parts that may be bold, and STY-BOLD fails any other.</li>
@@ -1054,7 +1051,7 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>Calendar</b> is in 1.0 (PLAN-09, §4.16).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Relation map</b> is in 1.0 (ISS-16, §4.15). Relations can be added on every issue (ISS-04, §4.4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Highlight color:</b> violet.</div></div>
-    <div class="decision"><span class="okmark">✓</span><div><b>Fonts:</b> Atkinson Hyperlegible Next for text, Atkinson Hyperlegible Mono for numbers and code.</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Fonts:</b> the system font stacks of the sister project, no font files: Segoe UI Variable for text, its Display cut for titles, Cascadia Mono for numbers and code (2026-10-30).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Working hours</b> (start, end, breaks per day) are recorded separately from time on issues, with German working-time rules as a preset (§4.9, TIME-08…12).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Activity</b> and <b>cost center</b> on every time entry, fully customizable, with defaults from the issue and project (§4.9, TIME-13).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>GDPR</b> is built into every feature (§5.7, PRIV).</div></div>

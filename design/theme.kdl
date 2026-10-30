@@ -47,9 +47,13 @@ variants {
 // theme, `<theme>-more=` replaces it when the device asks for more contrast, `forced=`
 // replaces it while forced colors are on, and `<variant>=` is the value while that choice is on.
 tokens {
-    // Fonts
-    font "font" "Atkinson Hyperlegible Next" "system-ui" "-apple-system" "Segoe UI" "Roboto" "sans-serif"
-    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Consolas" "monospace"
+    // Fonts: the system font stacks of the sister project, word for word; no font file is shipped (ADR-0026).
+    // `font-ui` is the text of the app, `font-display` its titles and headings, `font-reader` what a person reads at
+    // length (a description, a comment, the help), `font-mono` code and issue IDs.
+    font "font-ui" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif"
+    font "font-display" "Segoe UI Variable Display" "Segoe UI" "system-ui" "sans-serif"
+    font "font-reader" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif"
+    font "font-mono" "Cascadia Mono" "Consolas" "ui-monospace" "monospace"
 
     // Corners
     size "r-ctl" "6px"
@@ -722,7 +726,7 @@ mixin "input-box" {
     width "100%"
     padding "$space-2 $pad-control"
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-ui"
 }
 
@@ -949,7 +953,7 @@ mixin "tab-label" {
 mixin "bare-button" {
     border 0
     background transparent
-    font-family "$font"
+    font-family "$font-ui"
     cursor pointer
 }
 
@@ -1088,7 +1092,7 @@ base "body" {
     margin 0
     background "$bg-canvas"
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-md"
     text-wrap pretty
 }
@@ -1159,7 +1163,7 @@ part "button" {
     use "control-box"
     padding "$space-1" "$pad-control"
     use "menu-text"
-    font-family "$font"
+    font-family "$font-ui"
     line-height "$lh-tight"
     text-align center
     cursor pointer
@@ -1993,7 +1997,7 @@ part "picker.choice" {
 
 part "picker.id" {
     margin-inline-end "$space-2"
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-base"
 }
 
@@ -2087,7 +2091,7 @@ part "status-button" {
     use "control-box"
     padding 0 "$pad-control"
     border-color currentColor
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-ui"
     font-weight "$weight-regular"
     line-height "$lh-tight"
@@ -2290,7 +2294,7 @@ part "list-row.cell[variant=type]" {
 part "list-row.cell[variant=key]" {
     flex none
     color "$fg-muted"
-    font-family "$mono"
+    font-family "$font-mono"
 }
 
 part "list-row.cell[variant=title]" {
@@ -2299,7 +2303,7 @@ part "list-row.cell[variant=title]" {
 
 // Only the IDs are in the code font; the name of the column is in the font of the interface.
 part "list-row[variant=head] list-row.cell[variant=key]" {
-    font-family "$font"
+    font-family "$font-ui"
 }
 
 part "list-row.cell[variant=labels]" {
@@ -2553,7 +2557,7 @@ part "list-char-probe" {
     overflow hidden
     visibility hidden
     white-space pre
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-ui"
 }
 
@@ -2793,6 +2797,7 @@ part "list-panel.head" {
 part "list-panel.title" {
     margin 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -3124,6 +3129,7 @@ part "window.title" {
     line-height "$size-control"
     text-overflow ellipsis
     white-space nowrap
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -3359,7 +3365,7 @@ part "window-dock" {
     background "$bg-raised"
     box-shadow "$shadow"
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-ui"
     cursor pointer
 }
@@ -3573,7 +3579,7 @@ part "key-box" {
     display block
     padding "$space-3"
     use "sunken-box"
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-md"
     // A key has no spaces: it breaks anywhere, in lines of one length, so that a few letters never stand
     // alone on the last one.
@@ -3675,6 +3681,7 @@ part "card.heading" {
     font-size "$fs-lg"
     line-height "$lh-snug"
     color "$fg"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -3781,7 +3788,7 @@ part "search-field.input" {
     border 0
     background transparent
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-md"
 }
 
@@ -3856,6 +3863,7 @@ part "confirm.title" {
     margin 0
     font-size "$fs-lg"
     line-height "$lh-snug"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -3937,7 +3945,7 @@ part "account.codes" {
     margin 0
     padding "$space-3"
     use "sunken-box"
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-md"
     list-style none
 }
@@ -4150,6 +4158,7 @@ part "access.reasons" {
 part "access.topic" "card.topic" {
     margin 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
     color "$fg"
 }
@@ -4575,7 +4584,7 @@ part "access-keys.item-text" {
 }
 
 part "access-keys.prefix" {
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-base"
 }
 
@@ -4666,6 +4675,7 @@ part "shell.sheet-head" {
 part "shell.title" {
     margin 0
     font-size "$fs-lg"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -4899,7 +4909,7 @@ part "nav-item" {
     border-radius "$r-ctl"
     background transparent
     use "menu-text"
-    font-family "$font"
+    font-family "$font-ui"
     text-align start
 }
 
@@ -5043,6 +5053,7 @@ part "top-bar.title" {
     min-width 0
     overflow hidden
     font-size "$fs-lg"
+    font-family "$font-display"
     font-weight "$weight-bold"
     text-overflow ellipsis
     white-space nowrap
@@ -5109,6 +5120,7 @@ part "side-panel.title" {
     margin 0
     font-size "$fs-lg"
     overflow-wrap anywhere
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -5414,6 +5426,7 @@ part "issue-title" {
     margin 0
     font-size "$fs-xl"
     line-height "$lh-snug"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -5488,6 +5501,7 @@ part "issue-details[variant=stacked]" {
 part "issue-details.heading" {
     margin 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -5509,6 +5523,7 @@ part "issue-section.head" {
 part "issue-section.title" {
     margin 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -5659,7 +5674,7 @@ part "keys.key" {
     border-radius "$r-ctl"
     background "$bg-surface"
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-base"
     line-height "$lh-loose"
     text-align center
@@ -5693,7 +5708,7 @@ part "list-editor.open" {
     min-height "$size-row"
     padding 0 "$pad-box"
     color "$fg"
-    font-family "$font"
+    font-family "$font-ui"
     font-size "$fs-md"
     text-align start
     cursor pointer
@@ -5753,7 +5768,7 @@ part "list-editor.open[variant=columns] projects.short" {
     grid-column 2
     grid-row 1
     color "$fg-muted"
-    font-family "$mono"
+    font-family "$font-mono"
 }
 
 part "list-editor.open[variant=columns] projects.place" {
@@ -5883,6 +5898,7 @@ part "shortcuts-page.keys" {
 // below style what the renderer writes inside it, with tokens only.
 
 part "markdown" {
+    font-family "$font-reader"
     min-width 0
     color "$fg"
     font-size "$fs-md"
@@ -5928,7 +5944,7 @@ base "[data-part=markdown] a" {
 }
 
 base "[data-part=markdown] code" {
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-base"
     padding 0 "$space-1"
     border-radius "$r-ctl"
@@ -6458,7 +6474,7 @@ docs "components" description="Bugaboo shared components: base elements, buttons
         margin 0
         background "$bg-canvas"
         color "$fg"
-        font-family "$font"
+        font-family "$font-ui"
         font-size "$fs-base"
         line-height "$doc-lh-page"
         -webkit-font-smoothing antialiased
@@ -6498,7 +6514,7 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule ".mono" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-variant-numeric tabular-nums
     }
 
@@ -6524,7 +6540,7 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule "kbd" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-11"
         padding "$doc-space-1 $doc-space-5"
         border "$border-width solid $border"
@@ -6664,7 +6680,7 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule ".chip.raw" {
-        font-family "$mono"
+        font-family "$font-mono"
         background "$bg-sunken"
         border-style dashed
     }
@@ -6677,7 +6693,7 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule ".key" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$fs-sm"
         color "$fg-muted"
         white-space nowrap
@@ -7052,7 +7068,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
     }
 
     rule ".toc a .n" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-11"
         min-width "$doc-space-30"
         color "$fg-subtle"
@@ -7146,7 +7162,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
     }
 
     rule ".doc code" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-inline-code"
         background "$bg-sunken"
         padding "$doc-space-1 $doc-space-5"
@@ -7169,7 +7185,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
     }
 
     rule ".sec" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-12"
         font-weight "$doc-weight-semibold"
         color "$accent-fg"
@@ -7189,7 +7205,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
     }
 
     rule ".ids" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-11"
         color "$fg-subtle"
         font-weight "$weight-regular"
@@ -7282,7 +7298,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
         border-radius "$r-card"
         padding "$space-3 $doc-space-14"
         overflow-x auto
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-12-5"
         line-height "$doc-lh-code"
     }
@@ -7295,7 +7311,7 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
     rule ".doc pre.mermaid" {
         background "$bg-raised"
         text-align center
-        font-family "$font"
+        font-family "$font-ui"
     }
 
     rule ".doc blockquote" {
@@ -7446,7 +7462,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         font-size "$doc-font-12"
         display grid
         place-items center
-        font-family "$mono"
+        font-family "$font-mono"
     }
 
     rule ".doc .tree" {
@@ -7968,7 +7984,7 @@ docs "ux-design" description="The design page of the user experience: its readin
     }
 
     rule ".timer-card .clock" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-20"
         font-weight "$doc-weight-semibold"
         color "$accent-fg"
@@ -8022,7 +8038,7 @@ docs "ux-design" description="The design page of the user experience: its readin
     }
 
     rule ".adv-box" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-12-5"
         line-height "$lh-loose"
         border "$border-width solid $border"
@@ -8061,7 +8077,7 @@ docs "ux-design" description="The design page of the user experience: its readin
     rule ".ask-res code" {
         flex 1
         min-width 0
-        font-family "$mono"
+        font-family "$font-mono"
     }
 
     rule ".pop-demo" {
@@ -8127,7 +8143,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         gap "$space-1"
         font-size "$doc-font-11"
         color "$fg-muted"
-        font-family "$mono"
+        font-family "$font-mono"
     }
 
     rule ".tbtn span" {
@@ -8332,7 +8348,7 @@ docs "ux-design" description="The design page of the user experience: its readin
     rule ".bar" {
         position absolute
         top "$space-1"
-        font-family "$mono"
+        font-family "$font-mono"
         white-space nowrap
         overflow hidden
     }
@@ -8494,7 +8510,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         padding "$doc-space-3 $space-1"
         border "$border-width solid $border-subtle"
         border-radius "$doc-space-5"
-        font-family "$mono"
+        font-family "$font-mono"
         background "$bg-canvas"
     }
 
@@ -8724,7 +8740,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         place-items center
         font-weight "$weight-bold"
         font-size "$doc-font-12"
-        font-family "$mono"
+        font-family "$font-mono"
     }
 
     rule ".signin" {
@@ -9004,7 +9020,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         stroke "$bg-surface"
         stroke-width "$space-1"
         stroke-linejoin round
-        font-family "$font"
+        font-family "$font-ui"
     }
 
     rule ".node" {
@@ -9034,7 +9050,7 @@ docs "ux-design" description="The design page of the user experience: its readin
     }
 
     rule ".nkey" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-11"
         fill "$fg-muted"
     }
@@ -9043,7 +9059,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         font-size "$doc-font-12"
         fill "$fg"
         font-weight "$doc-weight-semibold"
-        font-family "$font"
+        font-family "$font-ui"
     }
 
     rule ".nd-ns" {
@@ -9231,7 +9247,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         display inline-flex
         align-items center
         gap "$doc-space-6"
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-11-5"
         white-space nowrap
     }
@@ -9256,13 +9272,14 @@ docs "ux-design" description="The design page of the user experience: its readin
     }
 
     rule ".specimen .big" {
+        font-family "$font-display"
         font-size "$doc-font-30"
         font-weight "$weight-bold"
         line-height "$doc-lh-1-1"
     }
 
     rule ".specimen .mono-s" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-15"
     }
 
@@ -10150,7 +10167,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         border "$border-width solid $border"
         border-radius "$r-ctl"
         background "$bg-raised"
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$fs-sm"
         line-height "$doc-lh-code"
     }
@@ -10198,7 +10215,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
     }
 
     rule ".ask-result code" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$fs-sm"
         flex 1
         min-width 0
@@ -10962,7 +10979,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
     }
 
     rule ".timer-big .clock" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-28"
         font-weight "$doc-weight-semibold"
         color "$accent-fg"
@@ -11114,7 +11131,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         border "$border-width solid $border-subtle"
         border-radius "$r-ctl"
         background "$bg-canvas"
-        font-family "$mono"
+        font-family "$font-mono"
     }
 
     rule ".ts input:focus" {
@@ -11554,7 +11571,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         stroke "$bg-surface"
         stroke-width "$doc-space-5"
         stroke-linejoin round
-        font-family "$font"
+        font-family "$font-ui"
         transition "opacity $motion-fast"
     }
 
@@ -11585,13 +11602,13 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
     }
 
     rule ".nkey" {
-        font-family "$mono"
+        font-family "$font-mono"
         font-size "$doc-font-12"
         fill "$fg-muted"
     }
 
     rule ".ntitle" {
-        font-family "$font"
+        font-family "$font-ui"
         font-size "$doc-font-13"
         font-weight "$doc-weight-semibold"
         fill "$fg"
@@ -13027,6 +13044,7 @@ part "form-section.title" {
     margin 0
     color "$fg"
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -13053,6 +13071,7 @@ part "notification-group.head" {
     gap "$space-1 $space-3"
     margin 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
     min-width 0
     overflow-wrap anywhere
@@ -13669,6 +13688,7 @@ part "bottom-sheet.title" {
     font-size "$fs-lg"
     line-height "$lh-snug"
     color "$fg"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -13784,7 +13804,7 @@ part "search-text.marks" "search-text.input" {
     margin 0
     padding 0
     border 0
-    font-family "$mono"
+    font-family "$font-mono"
     font-size inherit
     letter-spacing inherit
     line-height inherit
@@ -13860,7 +13880,7 @@ part "search-suggestion[state=active]" {
 
 // The words that are offered are words of the language: in the same font as the box they go into (S8).
 part "search-suggestion.name" {
-    font-family "$mono"
+    font-family "$font-mono"
 }
 
 part "search-suggestion.kind" {
@@ -14002,6 +14022,7 @@ part "search-help.title" {
     margin-block-end "$space-2"
     padding 0
     font-size "$fs-md"
+    font-family "$font-display"
     font-weight "$weight-bold"
 }
 
@@ -14032,12 +14053,13 @@ part "search-example" {
     justify-content space-between
     gap "$space-2" "$space-3"
     padding "$space-2" "$space-3"
-    font-family "$mono"
+    font-family "$font-mono"
     font-size "$fs-base"
     overflow-wrap anywhere
 }
 
 part "search-help" {
+    font-family "$font-reader"
     display flex
     flex-direction column
     gap "$space-5"

@@ -111,7 +111,7 @@ a {
 }
 
 .toc a .n {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-11);
   min-width: var(--doc-space-30);
   color: var(--fg-subtle);
@@ -207,7 +207,7 @@ a {
 }
 
 .doc code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-inline-code);
   background: var(--bg-sunken);
   padding: var(--doc-space-1) var(--doc-space-5);
@@ -230,7 +230,7 @@ a {
 }
 
 .sec {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-12);
   font-weight: var(--doc-weight-semibold);
   color: var(--accent-fg);
@@ -250,7 +250,7 @@ a {
 }
 
 .ids {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-11);
   color: var(--fg-subtle);
   font-weight: var(--weight-regular);
@@ -344,7 +344,7 @@ a {
   border-radius: var(--r-card);
   padding: var(--space-3) var(--doc-space-14);
   overflow-x: auto;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: var(--doc-font-12-5);
   line-height: var(--doc-lh-code);
 }
@@ -357,7 +357,7 @@ a {
 .doc pre.mermaid {
   background: var(--bg-raised);
   text-align: center;
-  font-family: var(--font);
+  font-family: var(--font-ui);
 }
 
 .doc blockquote {

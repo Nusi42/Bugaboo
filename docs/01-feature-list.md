@@ -508,7 +508,7 @@ the start. See [compliance.md](compliance.md) for what each model means legally.
 | Engineering  | SSOT, DRY, ODR mandatory; enforced by hooks ([coding-standards.md](coding-standards.md)) |
 | Calendar     | In 1.0 (PLAN-09)                                                         |
 | Relations    | Relations editable on every issue (ISS-04); relation map in 1.0 (ISS-16) |
-| Look         | Violet highlight color. Fonts: Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono |
+| Look         | Violet highlight color. Fonts: the system font stacks of the sister project (Segoe UI Variable, Cascadia Mono), no font files shipped |
 | Working hours | Daily start, end and breaks recorded (German working-time recording), first release (TIME-08…12) |
 | Accounting   | Activity and cost center on every time entry, fully customizable (TIME-13, CF-08) |
 | GDPR         | Required everywhere, first release (PRIV section)                        |
