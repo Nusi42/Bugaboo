@@ -46,7 +46,12 @@ export function ListMain({
         onView={onView}
         onCustomize={onCustomize}
       />
-      <ListInfo scopeName={props.scopeName} shown={shown} stale={props.stale} />
+      <ListInfo
+        scopeName={props.scopeName}
+        shown={shown}
+        stale={props.stale}
+        customizing={customizing}
+      />
       <div {...partOf(part.listBody)}>
         <ListColumn
           props={props}

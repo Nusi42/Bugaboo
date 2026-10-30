@@ -13,13 +13,15 @@ export interface ListInfoProps {
   readonly shown: readonly string[];
   /** The text of the search has a mistake: the list below is the last one without. */
   readonly stale: boolean;
+  /** Customize is open, so the line about hidden columns does not send the person there. */
+  readonly customizing: boolean;
 }
 
 /**
  * The count line above the list, *302 in Website · 13 shown* (UX §4.2), and the line that says how
  * many chosen columns gave way for lack of room (a phone draws its own few and says nothing).
  */
-export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
+export function ListInfo({ scopeName, shown, stale, customizing }: ListInfoProps) {
   const { search, failure, phone, hidden } = useListContext();
   const count = useFoundCount(search);
   // With no earlier list (the address itself has the mistake) the error says it all.
@@ -28,7 +30,9 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
     return null;
   }
   const scope = scopeName ?? t("issues.everywhere");
-  const hiddenLine = t("issues.columns-hidden", { count: hidden });
+  const hiddenLine = customizing
+    ? t("issues.columns-hidden-customizing", { count: hidden })
+    : t("issues.columns-hidden", { count: hidden });
   return (
     <>
       {note ? (

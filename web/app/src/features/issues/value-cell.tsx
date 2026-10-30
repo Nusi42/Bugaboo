@@ -35,7 +35,6 @@ export function valueOf(word: string, line: FoundLine, own: OwnColumns): string 
   }
 }
 
-/** The people an issue is assigned to, as the viewer may see them. */
 /** The people an issue is assigned to, as a cell draws them: a line breaks only between two names (UX §4.2). */
 export function assignedPeople(line: FoundLine): ReactNode {
   const names = line.assignedTo.map((person) => personName(person));
