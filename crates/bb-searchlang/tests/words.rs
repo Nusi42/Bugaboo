@@ -10,7 +10,9 @@ use serde_json as _;
 
 use bb_searchlang::messages;
 use bb_searchlang::vectors::sample_fields;
-use bb_searchlang::{Field, FieldKind, ReadableFields, check, parse_with, print};
+use bb_searchlang::{
+    Field, FieldKind, ReadableFields, Suggestion, check, parse_with, print, suggest,
+};
 
 /// A text parsed and checked against the sample fields, printed.
 fn checked(text: &str) -> Option<String> {
@@ -114,4 +116,41 @@ fn qry_05_two_choices_of_an_own_field_that_differ_in_spaces_or_case_are_never_me
         Some("status group is \"In progress\"")
     );
     assert_eq!(shown("kind is taskk"), None);
+}
+
+/// A name that begins with the words of a direction is quoted as a key of `sort by`, where the
+/// words would be read as the direction of the key before it, and offered so (ADR-0005 amendment
+/// M5, decision 11); in a filter it stands bare.
+#[test]
+fn qry_03_a_field_that_begins_like_a_direction_is_a_quoted_key_of_sort_by() {
+    let fields = ReadableFields {
+        fields: vec![
+            Field::new("status", FieldKind::Choice).with_choices(&["Open"]),
+            Field::new("newest release", FieldKind::Date),
+        ],
+    };
+    let canonical = |text: &str| {
+        let search = parse_with(text, &fields).map_err(|mistake| vec![mistake])?;
+        check(search, &fields).map(|search| print(search.search()))
+    };
+    let text = r#"newest release is today sort by status, "newest release""#;
+    assert_eq!(canonical(text).as_deref(), Ok(text));
+    assert_eq!(
+        canonical("sort by newest release, status").as_deref(),
+        Ok(r#"sort by "newest release", status"#)
+    );
+    // Bare after a key, the words are the direction of the key.
+    assert!(canonical("sort by status, newest release").is_err());
+    let offered = |text: &str| -> Vec<String> {
+        suggest(text, text.len(), &fields)
+            .items
+            .into_iter()
+            .filter_map(|item| match item {
+                Suggestion::Word { text, .. } => Some(text),
+                Suggestion::Ask { .. } => None,
+            })
+            .collect()
+    };
+    assert!(offered("sort by status, ").contains(&r#""newest release""#.to_owned()));
+    assert!(offered("").contains(&"newest release".to_owned()));
 }

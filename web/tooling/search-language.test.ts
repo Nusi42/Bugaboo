@@ -147,6 +147,16 @@ describe("qry_03 the module gives the browser what the server has", () => {
     };
     expect(language.print(edited)).toBe("status is Open and priority is high");
   });
+
+  it("quotes a sort key that Simple search added when its name begins like a direction", () => {
+    const tree = treeOf(language.parse('sort by status, "z to"'));
+    const [, added] = tree.sort;
+    expect(added?.field.word).toBe("z to");
+    expect(language.print(tree)).toBe('sort by status, "z to"');
+    expect(language.print({ ...tree, sort: tree.sort.toReversed() })).toBe(
+      'sort by "z to", status',
+    );
+  });
 });
 
 describe("qry_03 the places of the module are the places of the string", () => {

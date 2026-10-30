@@ -583,3 +583,60 @@ fn qry_03_a_tree_whose_text_is_too_long_has_no_text() {
     assert!(print(&search_from_json(&json).unwrap()).len() > MAX_TEXT_BYTES);
     assert!(print_from_json(&json).is_err());
 }
+
+/// A search with only these keys of `sort by`.
+fn sorted_by(keys: &[(&str, Option<Direction>)]) -> Search {
+    Search {
+        filter: None,
+        sort: keys
+            .iter()
+            .map(|(word, direction)| SortKey {
+                field: FieldRef {
+                    word: (*word).to_owned(),
+                    span: span(),
+                },
+                direction: *direction,
+                span: span(),
+            })
+            .collect(),
+        span: span(),
+    }
+}
+
+#[test]
+fn qry_02_a_key_whose_name_begins_like_a_direction_reads_back_as_a_key() {
+    // Found by the property test: `sort by status, z to` read `z to` as the start of `Z to A`.
+    // Since D3 a name may have spaces, so a name that begins with the words of a direction is
+    // written in quotes as a key of `sort by` (ADR-0005 amendment M5, decision 11).
+    let names = [
+        "z to",
+        "Z to A",
+        "a to",
+        "a to z",
+        "highest",
+        "Highest first",
+        "lowest",
+        "newest",
+        "oldest first",
+        "me",
+        "today",
+    ];
+    let mut wrong = Vec::new();
+    for name in names {
+        for before in [None, Some(Direction::AToZ)] {
+            for keys in [
+                vec![("status", before), (name, None)],
+                vec![("status", before), (name, Some(Direction::ZToA))],
+                vec![(name, None), ("status", before)],
+                vec![(name, None)],
+            ] {
+                let tree = sorted_by(&keys);
+                let text = print(&tree);
+                if !parse(&text).is_ok_and(|back| back.same_words(&tree)) {
+                    wrong.push(text);
+                }
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{wrong:#?}");
+}

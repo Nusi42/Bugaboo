@@ -4740,6 +4740,26 @@
       }
     },
     {
+      "text": "sort by priority, z to",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 18,
+              "end": 19
+            },
+            "key": "search.mistake.expected-direction",
+            "args": {
+              "directions": "highest first, lowest first, newest first, oldest first, A to Z, Z to A"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
       "text": "sort by nothing",
       "answer": {
         "search": {

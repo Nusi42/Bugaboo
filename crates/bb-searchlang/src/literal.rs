@@ -6,7 +6,7 @@ use bb_core::project::ShortName;
 use bb_core::readable_id::ReadableId;
 
 use crate::syntax::{Date, Decimal};
-use crate::words::{Keyword, continues_field};
+use crate::words::{Keyword, continues_field, starts_direction};
 
 /// The dash of a day (`2026-10-25`) and the sign of a negative number. The dash of an Issue ID is
 /// `bb_core::readable_id::KEY_SEPARATOR`.
@@ -170,6 +170,22 @@ pub(crate) fn field_or_quoted(text: &str) -> String {
     if plain { text.to_owned() } else { quoted(text) }
 }
 
+/// The word of a field as a key of `sort by`: as [`field_or_quoted`], and quoted also when its first
+/// words begin a direction (`highest`, `z to`), which the parser reads after a key as its direction
+/// (ADR-0005 amendment M5, decision 11).
+#[must_use]
+pub(crate) fn key_or_quoted(text: &str) -> String {
+    let mut words = text.split(' ');
+    if words
+        .next()
+        .is_some_and(|first| starts_direction(first, words.next()))
+    {
+        quoted(text)
+    } else {
+        field_or_quoted(text)
+    }
+}
+
 /// A value: bare when it is one plain word that the language does not read as itself, quoted
 /// otherwise.
 #[must_use]
@@ -247,6 +263,20 @@ mod tests {
         assert_eq!(field_or_quoted("x a to"), "\"x a to\"");
         assert_eq!(field_or_quoted("two  spaces"), "\"two  spaces\"");
         assert_eq!(field_or_quoted("not x"), "\"not x\"");
+    }
+
+    #[test]
+    fn a_key_of_sort_by_that_begins_like_a_direction_is_quoted() {
+        assert_eq!(key_or_quoted("status group"), "status group");
+        assert_eq!(key_or_quoted("a"), "a");
+        assert_eq!(key_or_quoted("to do"), "to do");
+        assert_eq!(key_or_quoted("highest"), "\"highest\"");
+        assert_eq!(key_or_quoted("Newest items"), "\"Newest items\"");
+        assert_eq!(key_or_quoted("z to"), "\"z to\"");
+        assert_eq!(key_or_quoted("A to Z"), "\"A to Z\"");
+        assert_eq!(key_or_quoted("and"), "\"and\"");
+        // As the name of a field in a filter, such a name reads back bare.
+        assert_eq!(field_or_quoted("highest"), "highest");
     }
 
     #[test]
