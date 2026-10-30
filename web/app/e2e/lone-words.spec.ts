@@ -6,9 +6,11 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
+import { pageWrap, wrapOfPart } from "../../tooling/text-wraps.ts";
 
-// No word alone on the last line (M5 exit): the title of an issue, the intro of a page and every other text wrap so
-// that the last line keeps more than one word; the page sets it once and every text inherits it.
+// No word alone on the last line (M5 exit): the title of an issue and every other text wrap so that the last line keeps
+// more than one word; the page sets it once and every text inherits it, and the short texts (the intro of a page) are
+// balanced (tooling/text-wraps.ts says which).
 
 test.use({ preparation: { run: prepareWeb } });
 
@@ -24,9 +26,11 @@ test("ux_7_3 the title of an issue and the intro of a page leave no word alone o
   await page.goto(issueAddress("WEB-1"));
   const title = page.getByRole("heading", { level: 1, name: webIssues.login });
   await expect(title).toBeVisible();
-  expect(await wrapOf(title)).toBe("pretty");
+  expect(await wrapOf(title)).toBe(pageWrap);
   await page.goto(paths.region);
   const intro = page.getByText(t("setting.page.region-intro"), { exact: true });
   await expect(intro).toBeVisible();
-  expect(await wrapOf(intro)).toBe("pretty");
+  // The intro is a card introduction, a short text: balanced (UX §5.1, L3), as the theme says once.
+  await expect(intro).toHaveAttribute("data-part", "card.intro");
+  expect(await wrapOf(intro)).toBe(wrapOfPart("card.intro"));
 });

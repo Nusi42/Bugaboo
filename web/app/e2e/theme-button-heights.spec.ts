@@ -86,12 +86,24 @@ test("ux_7_4 a button with long words grows and never has a fixed height", async
   expect(Number(fixed.min.replace("px", ""))).toBeGreaterThanOrEqual(least - 0.5);
 });
 
-test("ux_7_3 the intro of Layouts is body text like the intro of Fields, not a hint", async ({
+/** The look that one kind of text has wherever it stands: its size, colour and line height (UX §5.1, L3). */
+function lookOf(text: Locator) {
+  return text.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { size: style.fontSize, color: style.color, lineHeight: style.lineHeight };
+  });
+}
+
+test("ux_7_3 the intro of Layouts is the card introduction, like the intro of Fields", async ({
   page,
 }) => {
   await signIn(page, sampleAdministrator());
+  await page.goto(paths.fields);
+  const fields = page.getByText(t("fields.intro"), { exact: true });
+  await expect(fields).toHaveAttribute("data-part", "card.intro");
+  const look = await lookOf(fields);
   await page.goto(paths.layouts);
-  const intro = page.getByText(t("layouts.intro"), { exact: true });
-  await expect(intro).toHaveCSS("font-size", await resolved(page, "font-size", "var(--fs-md)"));
-  await expect(intro).toHaveCSS("color", await resolved(page, "color", "var(--fg)"));
+  const layouts = page.getByText(t("layouts.intro"), { exact: true });
+  await expect(layouts).toHaveAttribute("data-part", "card.intro");
+  expect(await lookOf(layouts)).toEqual(look);
 });

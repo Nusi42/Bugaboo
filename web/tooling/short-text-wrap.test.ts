@@ -4,21 +4,13 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { repoRoot } from "./ports.ts";
+import { balancedParts } from "./text-wraps.ts";
 
 /** The style sheet the theme file makes, as the browser gets it. */
 const sheet = readFileSync(resolve(repoRoot, "web/packages/ui/src/theme.css"), "utf8");
 
 /** The fewest selectors with a wrap the sheet has (the page, the short texts, the hints): fewer means it was not read. */
 const FEWEST_WRAPPED_SELECTORS = 5;
-
-/** The parts whose short texts are balanced (UX §7.3): the introduction, the preview, the answer titles, the hints. */
-const balancedParts = [
-  "card.intro",
-  "access.preview-line",
-  "access.subheading",
-  "field.description",
-  "settings.help",
-] as const;
 
 /** One rule of the sheet: where it stands (the @media and @supports around it), its selectors and its declarations. */
 interface Rule {
