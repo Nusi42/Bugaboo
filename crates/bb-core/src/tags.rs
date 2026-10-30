@@ -2,7 +2,7 @@
 //! the organization's own list of labels, which may be kept in groups.
 //!
 //! A tag is found by its name without regard to capitals, so *Login* and *login* are one tag. It
-//! has a color of the category colors (the same twelve as a choice of an own field) and may be
+//! has one of the choice colors (the same twelve as a choice of an own field) and may be
 //! limited to some projects. A label is made by people with *Manage labels and tags*; a group of
 //! labels may be a *Pick one* group, in which an issue has at most one label.
 
