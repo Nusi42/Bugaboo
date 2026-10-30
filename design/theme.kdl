@@ -5853,7 +5853,8 @@ part "files.drop" {
     align-items center
     gap "$space-2 $space-3"
     padding "$space-3"
-    border "$border-width dashed $border"
+    // The place takes a press like a control, so its edge is the edge of a control (3:1, F-A11).
+    border "$border-width dashed $border-control"
     border-radius "$r-card"
     color "$fg-muted"
     font-size "$fs-md"

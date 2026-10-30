@@ -6059,7 +6059,7 @@ optgroup {
   align-items: center;
   gap: var(--space-2) var(--space-3);
   padding: var(--space-3);
-  border: var(--border-width) dashed var(--border);
+  border: var(--border-width) dashed var(--border-control);
   border-radius: var(--r-card);
   color: var(--fg-muted);
   font-size: var(--fs-md);
