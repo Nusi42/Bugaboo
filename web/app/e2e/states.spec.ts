@@ -135,6 +135,10 @@ test("thm_21 a chosen choice and a switch that is on show it in every look", asy
   const sample = partOn(page, part.switch).first();
   await sample.click();
   await expect(sample).toHaveAttribute("data-selected", "true");
+  // Both choices are settings of the person: their answers from the server apply the person's look again, so the looks
+  // are walked only once both are saved (under load an answer came back in the middle of the walk, M5 exit ci).
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: t("save.saving") })).toHaveCount(0);
   await inEveryLook(page, async () => {
     await expectCss(page, labelOf(choice), "border-top-color", "var(--accent)");
     await expectCss(page, labelOf(choice), "background-color", "var(--bg-selected)");
