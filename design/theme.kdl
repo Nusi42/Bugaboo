@@ -1091,13 +1091,17 @@ part "muted" "card.intro" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
-    // No single word alone on the last line.
+}
+
+// No single word alone on the last line of quiet words.
+part "muted" {
     text-wrap pretty
 }
 
-// An introduction is one to three lines: balanced, so its last line is never one word alone ("in turn.", "hide it."),
-// which `pretty` still left at some widths.
-part "card.intro" {
+// Short texts of one to three lines (an introduction, a line of a preview, the title of an answer, the words of a
+// switch, the help of a box) are balanced, so a last line is never one word alone ("in turn.", "description",
+// "account", "back", "a good password."), which `pretty` still left at some widths.
+part "card.intro" "access.preview-line" "access.subheading" "switch" "field.description" {
     text-wrap balance
 }
 
@@ -4002,7 +4006,6 @@ part "access.cell > field" {
 part "access.preview-line" {
     font-size "$fs-md"
     color "$fg"
-    text-wrap pretty
 }
 
 part "access.answer" {

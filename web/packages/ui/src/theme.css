@@ -1008,10 +1008,17 @@ optgroup {
   color: var(--fg-muted);
   font-size: var(--fs-base);
   line-height: var(--lh-body);
+}
+
+[data-part="muted"] {
   text-wrap: pretty;
 }
 
-[data-part="card.intro"] {
+[data-part="card.intro"],
+[data-part="access.preview-line"],
+[data-part="access.subheading"],
+[data-part="switch"],
+[data-part="field.description"] {
   text-wrap: balance;
 }
 
@@ -4092,7 +4099,6 @@ optgroup {
 [data-part="access.preview-line"] {
   font-size: var(--fs-md);
   color: var(--fg);
-  text-wrap: pretty;
 }
 
 [data-part="access.answer"] {

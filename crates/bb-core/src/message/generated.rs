@@ -13589,7 +13589,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "people-visibility.intro",
-        "For each role and each kind of people information, choose whether people are shown by name, by their role only (a Team member) or not at all (Someone).",
+        "For each role and each kind of people information, choose whether people are shown by name, by their role only (a\u{a0}Team\u{a0}member) or not at all (Someone).",
     ),
     (
         "people-visibility.intro-project",
