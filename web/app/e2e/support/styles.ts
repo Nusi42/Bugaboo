@@ -61,3 +61,38 @@ export function inEveryLook(
     }),
   );
 }
+
+/**
+ * The ink of one line of text in the font an element is drawn in, against the same line in the font of the page, both
+ * in the regular weight: about 1 for a face as light as the text font, about 1.3 for one whose regular weight reads bold.
+ */
+export function inkAgainstText(element: Locator): Promise<number> {
+  return element.evaluate((node) => {
+    const line = "priority is WEB-4QR2G";
+    const width = 400;
+    const height = 40;
+    const inkOf = (family: string): number => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const draw = canvas.getContext("2d");
+      if (draw === null) {
+        return Number.NaN;
+      }
+      draw.fillStyle = "#fff";
+      draw.fillRect(0, 0, width, height);
+      draw.fillStyle = "#000";
+      draw.font = `400 14px ${family}`;
+      draw.fillText(line, 2, 28);
+      const pixels = draw.getImageData(0, 0, width, height).data;
+      let ink = 0;
+      for (let at = 0; at < pixels.length; at += 4) {
+        ink += 255 - (pixels[at] ?? 255);
+      }
+      return ink;
+    };
+    return (
+      inkOf(getComputedStyle(node).fontFamily) / inkOf(getComputedStyle(document.body).fontFamily)
+    );
+  });
+}

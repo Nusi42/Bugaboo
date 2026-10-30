@@ -4,7 +4,7 @@
    Load fonts separately: Atkinson Hyperlegible Next + Atkinson Hyperlegible Mono. */
 :root {
   --font: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace;
   --r-ctl: 6px;
   --r-card: 10px;
   --r-pill: 999px;

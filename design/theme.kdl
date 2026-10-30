@@ -49,7 +49,7 @@ variants {
 tokens {
     // Fonts
     font "font" "Atkinson Hyperlegible Next" "system-ui" "-apple-system" "Segoe UI" "Roboto" "sans-serif"
-    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Cascadia Mono" "Consolas" "monospace"
+    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Consolas" "monospace"
 
     // Corners
     size "r-ctl" "6px"

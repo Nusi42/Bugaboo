@@ -4,7 +4,8 @@
 //! a section and the word of a Critical or High priority. The theme file names the selectors that
 //! may set the bold weight in one list (`bold { … }`), each with its role. A rule of the app, or a
 //! mixin, that sets the bold weight anywhere else fails, so bold cannot creep back; a selector in
-//! the list that no rule makes bold fails too, so the list stays true. The pages of `docs/` are
+//! the list that no rule makes bold fails too, so the list stays true. A font stack that names a face whose regular
+//! weight is drawn as heavy as a bold one fails as well: its text reads bold with no bold rule. The pages of `docs/` are
 //! documents with their own reading type and are not part of the rule.
 
 use std::collections::BTreeSet;
@@ -31,6 +32,37 @@ impl Check for StyBold {
 const BOLD_BY_BROWSER: [&str; 10] = [
     "h1", "h2", "h3", "h4", "h5", "h6", "th", "strong", "b", "optgroup",
 ];
+
+/// Faces whose regular weight is drawn as heavy as a bold one, so text in them reads bold although no rule sets a bold
+/// weight. Measured in Chromium on Windows (M5 exit F-A1): one line of 14 px has 491 units of ink in Cascadia Mono 400,
+/// 486 in Consolas 700 and 385 in Consolas 400; the text font has 367. A font stack of the theme names none of them,
+/// not even as a fallback, because the browser takes the first face the computer has.
+const HEAVY_REGULAR_FACES: [&str; 2] = ["Cascadia Mono", "Cascadia Code"];
+
+/// A finding for each font stack of the theme that names a face whose regular weight reads bold.
+fn heavy_faces(file: &ThemeFile) -> Vec<Finding> {
+    file.tokens
+        .iter()
+        .filter(|token| token.kind == TokenKind::Font)
+        .flat_map(|token| {
+            let stack = token.same.as_deref().unwrap_or_default();
+            stack
+                .split(',')
+                .map(|face| face.trim().trim_matches('"'))
+                .filter(|face| HEAVY_REGULAR_FACES.contains(face))
+                .map(|face| {
+                    Finding::at(
+                        THEME_PATH,
+                        format!(
+                            "The font `{}` names `{face}`, whose regular weight is drawn as heavy as a bold face, so its text reads bold although no rule makes it bold (UX §7.3). Name a face with a regular weight instead.",
+                            token.name
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
 
 /// Whether a word is a bold weight: a keyword, a number from 600, or a weight token with such a number.
 fn word_is_bold(file: &ThemeFile, word: &str) -> bool {
@@ -96,6 +128,7 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
         .iter()
         .map(|entry| entry.selector.as_str())
         .collect();
+    findings.extend(heavy_faces(file));
     let mut made_bold: BTreeSet<&str> = BTreeSet::new();
     for mixin in &file.mixins {
         if let Some(line) = bold_line(file, &mixin.items) {
@@ -275,6 +308,24 @@ mod tests {
         let findings = evaluate(&file);
         assert!(
             findings.iter().any(|f| f.message.contains("`strong`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn bad_example_a_font_whose_regular_weight_draws_bold() {
+        // M5 exit F-A1: the search box, the offered words and the ID of the issue finder were drawn in
+        // Cascadia Mono, whose regular weight has as much ink as a bold face; no rule set a bold weight.
+        let file = changed(
+            "font \"mono\" \"Atkinson Hyperlegible Mono\" \"ui-monospace\"",
+            "font \"mono\" \"Atkinson Hyperlegible Mono\" \"ui-monospace\" \"Cascadia Mono\"",
+        );
+        let findings = evaluate(&file);
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("`Cascadia Mono`") && f.message.contains("`mono`")),
             "{:?}",
             messages(&findings)
         );
