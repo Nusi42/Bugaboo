@@ -1,6 +1,6 @@
 import { Alert, alertTone, useLayout, partOf, part } from "@bugaboo/ui";
 
-import { SidePanel, useFocusViewOpen } from "../shell/index.ts";
+import { SidePanel } from "../shell/index.ts";
 import { useMoreActions } from "./issue-actions.ts";
 import { IssueContent } from "./IssueContent.tsx";
 import { IssueHeader } from "./IssueHeader.tsx";
@@ -25,8 +25,6 @@ export interface IssueFrameProps extends IssuePageState {
 export function IssueFrame(props: IssueFrameProps) {
   const { detail, address, show, onClose, onSwitch, changes, blocks } = props;
   const layout = useLayout();
-  // An issue that is read, in the focus view, has the bar of its own: a phone has no top bar over it.
-  useFocusViewOpen(show === "focus");
   const closeLabel = useCloseLabel();
   const { issue } = detail;
   const { actions, refusal } = useMoreActions(issue, detail.may_delete, onClose);

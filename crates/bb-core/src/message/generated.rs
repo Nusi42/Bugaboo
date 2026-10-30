@@ -603,11 +603,17 @@ pub const COMMENTS_DELETE: MessageKey = MessageKey::new("comments.delete");
 /// The message `comments.delete-other`.
 pub const COMMENTS_DELETE_OTHER: MessageKey = MessageKey::new("comments.delete-other");
 
+/// The message `comments.delete-short`.
+pub const COMMENTS_DELETE_SHORT: MessageKey = MessageKey::new("comments.delete-short");
+
 /// The message `comments.deleted`.
 pub const COMMENTS_DELETED: MessageKey = MessageKey::new("comments.deleted");
 
 /// The message `comments.edit`.
 pub const COMMENTS_EDIT: MessageKey = MessageKey::new("comments.edit");
+
+/// The message `comments.edit-short`.
+pub const COMMENTS_EDIT_SHORT: MessageKey = MessageKey::new("comments.edit-short");
 
 /// The message `comments.edited`.
 pub const COMMENTS_EDITED: MessageKey = MessageKey::new("comments.edited");
@@ -11523,8 +11529,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("comments.add", "Comment"),
     ("comments.delete", "Delete your comment"),
     ("comments.delete-other", "Delete the comment"),
+    ("comments.delete-short", "Delete"),
     ("comments.deleted", "The comment is deleted."),
     ("comments.edit", "Edit your comment"),
+    ("comments.edit-short", "Edit"),
     ("comments.edited", "edited"),
     ("comments.editing", "Edit the comment"),
     ("comments.mention-choices", "Who you can mention"),

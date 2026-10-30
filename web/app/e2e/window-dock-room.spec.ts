@@ -15,6 +15,9 @@ import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 test.use({ sample: true });
 
+/** A window of a computer tall enough that the list page fits in it without scrolling. */
+const TALL_WINDOW = 1500;
+
 /** Scrolls the page to its end, whichever of the page and its frame scrolls. */
 async function scrollToEnd(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -46,4 +49,37 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   // (a few pixels of rounding of the centered column are allowed)
   expect(Math.abs(title.x - content.x)).toBeLessThanOrEqual(3);
   expect(note.x + note.width).toBeLessThanOrEqual(content.x + content.width + 0.5);
+});
+
+test("ux_8 at rest the list box ends above the strip of a minimized window and the shell fills the window", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "the strip of a phone stands above the bar of the app");
+  // A window tall enough for the whole list page: the box of the rows is as high as the window lets it be.
+  const width = await page.evaluate(() => window.innerWidth);
+  await page.setViewportSize({ width, height: TALL_WINDOW });
+  await signIn(page, sampleAdministrator());
+  await page.goto(projectIssuesAddress("WEB"));
+  await expect(page.getByRole("grid").first()).toBeVisible();
+  const heightOfPage = (): Promise<number> =>
+    page.evaluate(() => document.documentElement.scrollHeight);
+  const without = await heightOfPage();
+  await openNewIssueDialog(page);
+  await titleBox(page).fill("A draft");
+  await windowButton(page, t("window.minimize")).click();
+  await expect(windowDock(page)).toBeVisible();
+  // The strip takes its room from the box of the rows, not from below the page.
+  expect(await heightOfPage()).toBeLessThanOrEqual(without + 0.5);
+  // Not scrolled: the box of the rows stands above the strip, not under it.
+  const dock = await boxOf(windowDock(page));
+  const rows = await boxOf(partIn(page, "list-scroll").first());
+  expect(rows.y + rows.height).toBeLessThanOrEqual(dock.y + 0.5);
+  // The page is no taller than the window, so no band of nothing stands under the strip and the sidebar.
+  const heights = await page.evaluate(() => ({
+    page: document.documentElement.scrollHeight,
+    window: window.innerHeight,
+  }));
+  expect(heights.page).toBeLessThanOrEqual(heights.window);
+  const sidebar = await boxOf(page.getByRole("navigation", { name: t("shell.menu"), exact: true }));
+  expect(sidebar.y + sidebar.height).toBeGreaterThanOrEqual(heights.window - 0.5);
 });

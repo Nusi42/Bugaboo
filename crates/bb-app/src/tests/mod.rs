@@ -46,6 +46,7 @@ mod moving;
 mod names_stored;
 mod notifications;
 mod notifications_files;
+mod notifications_order;
 mod notifications_projects;
 mod offers;
 mod offers_known_uses;

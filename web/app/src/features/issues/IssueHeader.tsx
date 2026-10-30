@@ -71,7 +71,14 @@ export function IssueHeader(props: IssueHeaderProps) {
         />
         <div {...partOf(part.issueHeadActions)}>
           {phone ? null : <SwitchButton show={show} onSwitch={onSwitch} />}
-          <ActionMenu label={t("issues.more")} actions={actions} cancelLabel={t("common.cancel")} />
+          {/* A phone has *More* in the bar of actions under the page: one is enough. */}
+          {phone ? null : (
+            <ActionMenu
+              label={t("issues.more")}
+              actions={actions}
+              cancelLabel={t("common.cancel")}
+            />
+          )}
         </div>
       </div>
       <Heading {...partOf(part.issueTitle)}>
