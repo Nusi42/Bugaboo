@@ -768,6 +768,11 @@ impl AuthStore for FakeStore {
         Ok(u64::try_from(kept - shared.log.len()).unwrap_or(u64::MAX))
     }
 
+    /// The fake keeps no statistics.
+    async fn refresh_statistics(&self) -> Result<bool, FakeError> {
+        Ok(false)
+    }
+
     async fn sign_up_policy_version(&self) -> Result<i64, FakeError> {
         Ok(self.read(|state| state.sign_up_version))
     }

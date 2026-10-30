@@ -169,6 +169,10 @@ impl AuthStore for AuthStorage {
             .await
     }
 
+    async fn refresh_statistics(&self) -> Result<bool, StoreError> {
+        self.database.refresh_statistics().await
+    }
+
     async fn sign_up_policy_version(&self) -> Result<i64, StoreError> {
         policy_version(&self.database, SIGN_UP_POLICY).await
     }
