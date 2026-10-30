@@ -48,6 +48,7 @@
   "setting.auth.sign-up-domains.help": "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
   "setting.ui.search": "Search settings",
   "setting.ui.nothing": "No setting matches your search.",
+  "setting.ui.saved-at-once": "A switch or a choice is saved at once. What you type in a box is saved with the Save button under it.",
   "setting.ui.reset": "Reset to default",
   "setting.ui.reset-name": "Reset to default: {name}",
   "setting.ui.locked": "Set by your organization",

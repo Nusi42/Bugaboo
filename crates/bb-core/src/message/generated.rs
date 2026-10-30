@@ -5018,6 +5018,9 @@ pub const SETTING_UI_NOTHING: MessageKey = MessageKey::new("setting.ui.nothing")
 /// The message `setting.ui.reset`.
 pub const SETTING_UI_RESET: MessageKey = MessageKey::new("setting.ui.reset");
 
+/// The message `setting.ui.saved-at-once`.
+pub const SETTING_UI_SAVED_AT_ONCE: MessageKey = MessageKey::new("setting.ui.saved-at-once");
+
 /// The message `setting.ui.search`.
 pub const SETTING_UI_SEARCH: MessageKey = MessageKey::new("setting.ui.search");
 
@@ -15424,6 +15427,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.nothing", "No setting matches your search."),
     ("setting.ui.reset", "Reset to default"),
     ("setting.ui.reset-name", "Reset to default: {name}"),
+    (
+        "setting.ui.saved-at-once",
+        "A switch or a choice is saved at once. What you type in a box is saved with the Save button under it.",
+    ),
     ("setting.ui.search", "Search settings"),
     ("setting.ui.source-default", "Default value"),
     (

@@ -13,7 +13,7 @@ import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
 import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
-import { hasNoGenericControl, wordsOf } from "./texts.ts";
+import { controlKindOf, hasNoGenericControl, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
@@ -36,6 +36,12 @@ function isDrawn(setting: Setting, controls: SettingsFormProps["controls"]): boo
   return ownControl || !hasNoGenericControl(setting);
 }
 
+/** Whether a setting waits for its own Save button: a box typed in, not a switch, a choice or a page's own control. */
+function savesWithButton(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
+  const ownControl = controls !== undefined && Object.hasOwn(controls, setting.key);
+  return !ownControl && controlKindOf(setting) === "typed";
+}
+
 /** Whether every word the person typed is in the name or the explanation of the setting. */
 function matches(setting: Setting, query: string): boolean {
   return containsEveryWord(`${wordsOf(setting.name_key)} ${wordsOf(setting.help_key)}`, query);
@@ -56,7 +62,12 @@ export function SettingsForm({
   controls,
 }: SettingsFormProps) {
   const [query, setQuery] = useState("");
-  const shown = settings.filter((setting) => isDrawn(setting, controls) && matches(setting, query));
+  const drawn = settings.filter((setting) => isDrawn(setting, controls));
+  const shown = drawn.filter((setting) => matches(setting, query));
+  // Where a switch stands beside a box with its own Save, the page says which is saved when (R7).
+  const twoWays =
+    drawn.some((setting) => savesWithButton(setting, controls)) &&
+    drawn.some((setting) => !savesWithButton(setting, controls));
   return (
     <div {...partOf(part.stack)}>
       {searchable ? (
@@ -67,6 +78,7 @@ export function SettingsForm({
           onChange={setQuery}
         />
       ) : null}
+      {twoWays ? <p {...partOf(part.muted)}>{t("setting.ui.saved-at-once")}</p> : null}
       <SaveStatus state={saveState} labels={saveLabels()} />
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {shown.length === 0 ? (
