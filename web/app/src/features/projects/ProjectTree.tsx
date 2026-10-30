@@ -4,7 +4,7 @@ import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
 import { messageOf } from "../../shared/errors.ts";
-import { projectAddress } from "../../shared/paths.ts";
+import { isAtOrUnder, projectAddress } from "../../shared/paths.ts";
 import { NavLink } from "../shell/index.ts";
 import { toggleOpened, useOpened } from "./tree-state.ts";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
@@ -14,8 +14,7 @@ const currentPage = "page";
 
 /** Whether the project is the one that is open, or one of its pages. */
 function isOpen(project: ProjectLine, pathname: string): boolean {
-  const address = projectAddress(project.shortName);
-  return pathname === address || pathname.startsWith(`${address}/`);
+  return isAtOrUnder(projectAddress(project.shortName), pathname);
 }
 
 interface NodeProps {

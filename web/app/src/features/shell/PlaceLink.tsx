@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { useLocation } from "@tanstack/react-router";
 
-import { paths } from "../../shared/paths.ts";
+import { isAtOrUnder, paths } from "../../shared/paths.ts";
 import { NavLink } from "./NavItem.tsx";
 import { placeAt, type Place } from "../../shared/places.ts";
 
@@ -10,7 +10,7 @@ function isCurrent(path: string, pathname: string): boolean {
   if (path === paths.home) {
     return pathname === path;
   }
-  return pathname === path || pathname.startsWith(`${path}/`);
+  return isAtOrUnder(path, pathname);
 }
 
 export interface PlaceLinkProps {
