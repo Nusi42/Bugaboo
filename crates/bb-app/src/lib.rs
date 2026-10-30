@@ -34,6 +34,7 @@ pub mod saved_searches;
 pub mod search;
 pub mod server_log;
 pub mod settings;
+mod statistics;
 pub mod status;
 mod store_macros;
 pub mod tags;

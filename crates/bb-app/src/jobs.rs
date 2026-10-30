@@ -56,8 +56,8 @@ bb_core::words! {
         /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
         /// (`files::jobs`).
         CleanUpFiles => "files.clean-up",
-        /// Making the statistics the database chooses its indexes by again, from every row, when a
-        /// table grew or shrank tenfold (SQLite; PostgreSQL keeps its own).
+        /// Making the statistics the database chooses its indexes by again, from every row, for each
+        /// table that is out of date (SQLite; PostgreSQL keeps its own): `statistics`.
         RefreshStatistics => "statistics.refresh",
     }
 }
