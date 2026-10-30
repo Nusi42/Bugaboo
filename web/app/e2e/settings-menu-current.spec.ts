@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { ariaCurrent } from "@bugaboo/ui";
 import { expect, type Page } from "@playwright/test";
 
 import { personAddress, projectSettingsMenuAddress, roleAddress } from "../src/shared/paths.ts";
@@ -15,14 +16,11 @@ import { sampleAdministrator } from "./support/sample.ts";
 
 test.use({ sample: true });
 
-/** Words of the ARIA standard, not text for people. */
-const currentPage = "page";
-
 /** The links of the menu of the organization settings that are marked as the open page. */
 function marked(page: Page) {
   return page
     .getByRole("navigation", { name: t("nav.organization-settings") })
-    .locator(`[aria-current="${currentPage}"]`);
+    .locator(`[aria-current="${ariaCurrent.page}"]`);
 }
 
 test("ux_5 the page of a person and of a role keep their topic marked in the menu", async ({
@@ -49,5 +47,5 @@ test("ux_5 the menu screen of the settings of a project marks no page on a phone
   await page.goto(projectSettingsMenuAddress("APP"));
   const menu = page.getByRole("navigation", { name: t("projects.tabs") });
   await expect(menu.getByRole("link").first()).toBeVisible();
-  await expect(menu.locator(`[aria-current="${currentPage}"]`)).toHaveCount(0);
+  await expect(menu.locator(`[aria-current="${ariaCurrent.page}"]`)).toHaveCount(0);
 });

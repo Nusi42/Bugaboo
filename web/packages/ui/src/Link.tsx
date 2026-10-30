@@ -1,11 +1,9 @@
 import type { ReactNode } from "react";
 import { Link as AriaLink } from "react-aria-components";
 
+import { ariaCurrent } from "./aria-current.ts";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
-
-/** The value of `aria-current` for the page that is open: a word of the ARIA standard. */
-const currentPage = "page";
 
 export interface LinkProps {
   /** Where the link goes. An address of the app does not reload the page. */
@@ -23,7 +21,7 @@ export function Link({ href, children, current = false, row = false }: LinkProps
     <AriaLink
       href={href}
       {...partOf(part.link, { variants: [row && "row"] })}
-      {...(current ? { "aria-current": currentPage } : {})}
+      {...(current ? { "aria-current": ariaCurrent.page } : {})}
     >
       {children}
     </AriaLink>

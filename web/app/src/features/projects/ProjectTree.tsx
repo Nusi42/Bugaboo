@@ -1,5 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Icon, iconName, iconSize, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Icon,
+  iconName,
+  iconSize,
+  partOf,
+  part,
+  ShowMoreOf,
+  ariaCurrent,
+} from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
@@ -8,9 +18,6 @@ import { isAtOrUnder, projectAddress } from "../../shared/paths.ts";
 import { NavLink } from "../shell/index.ts";
 import { toggleOpened, useOpened } from "./tree-state.ts";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const currentPage = "page";
 
 /** Whether the project is the one that is open, or one of its pages. */
 function isOpen(project: ProjectLine, pathname: string): boolean {
@@ -47,7 +54,7 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
         <Link
           {...partOf(part.projectTreeLink)}
           href={projectAddress(project.shortName)}
-          {...(current ? { "aria-current": currentPage } : {})}
+          {...(current ? { "aria-current": ariaCurrent.page } : {})}
           {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
         >
           <span {...partOf(part.wrap)}>{project.name}</span>

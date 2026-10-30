@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { ariaCurrent } from "@bugaboo/ui";
 import { type Page } from "@playwright/test";
 
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
@@ -130,5 +131,5 @@ test("cfg_08 the sidebar says Quick search for the overlay, and the Search page 
   await expect(quick).not.toHaveAttribute("aria-current", /.+/u);
   await expect(
     page.getByRole("link", { name: t("search.page.title"), exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  ).toHaveAttribute("aria-current", ariaCurrent.page);
 });

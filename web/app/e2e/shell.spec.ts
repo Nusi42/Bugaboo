@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { ariaCurrent } from "@bugaboo/ui";
 import { type Locator, type Page } from "@playwright/test";
 
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
@@ -108,7 +109,10 @@ test("ux_01 the frame of each size shows the screens that exist and nothing else
 async function trailOnLargeScreens(page: Page): Promise<void> {
   const trail = page.getByRole("navigation", { name: t("shell.trail") });
   await expect(trail.getByRole("link", { name: t("nav.my-settings") })).toBeVisible();
-  await expect(trail.getByText(t("nav.security"))).toHaveAttribute("aria-current", "page");
+  await expect(trail.getByText(t("nav.security"))).toHaveAttribute(
+    "aria-current",
+    ariaCurrent.page,
+  );
   await trail.getByRole("link", { name: t("nav.my-settings") }).click();
   await expect(page).toHaveURL(addressEndingAt(paths.appearance));
 }
