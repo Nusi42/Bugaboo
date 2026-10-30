@@ -3,7 +3,7 @@ import { iconName } from "@bugaboo/ui/icons";
 
 import { organizationPlaces } from "./organization-places.ts";
 import { ownPlaces } from "./own-places.ts";
-import { hasFormOf, isAtOrUnder, paths, type Path } from "./paths.ts";
+import { isAtOrUnder, partsOfAddress, paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
@@ -54,7 +54,7 @@ export function isCurrentPlace(path: string, pathname: string): boolean {
   if (path === paths.home) {
     return pathname === path;
   }
-  const open = places.find((place) => hasFormOf(place.path, pathname));
+  const open = places.find((place) => partsOfAddress(place.path, pathname) !== undefined);
   return (
     isAtOrUnder(path, pathname) ||
     (open !== undefined && trailTo(open.path).some((place) => place.path === path))
