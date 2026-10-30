@@ -16,8 +16,8 @@ interface ItemProps {
   readonly count?: string | undefined;
   /** Who it is by, on a second line under the label (a saved search that somebody shared). */
   readonly by?: string | undefined;
-  /** What a screen reader says after the label for it ("Questions, Ada Brandt"), the separator included. */
-  readonly bySpoken?: string | undefined;
+  /** What a screen reader says between the label and who it is by ("Questions, Ada Brandt"): the separator, read once, not seen. */
+  readonly bySeparator?: string | undefined;
   /** The item opens a page of its own (a menu that is the page): the chevron at its end says so. */
   readonly opens?: boolean;
 }
@@ -29,7 +29,7 @@ function Content({
   narrow,
   count,
   by,
-  bySpoken,
+  bySeparator,
   opens = false,
   hint,
 }: ItemProps & { readonly hint?: ReactNode }) {
@@ -42,12 +42,10 @@ function Content({
         <span {...partOf(part.navItemLabel)}>
           {label}
           {by === undefined ? null : (
-            <>
-              <span aria-hidden {...partOf(part.navItemBy)}>
-                {by}
-              </span>
-              <span {...partOf(part.visuallyHidden)}>{bySpoken}</span>
-            </>
+            <span {...partOf(part.navItemBy)}>
+              <span {...partOf(part.visuallyHidden)}>{bySeparator}</span>
+              {by}
+            </span>
           )}
         </span>
       )}
@@ -101,7 +99,7 @@ export function NavLink({
   current = false,
   count,
   by,
-  bySpoken,
+  bySeparator,
   opens = false,
   onNavigate,
 }: NavLinkProps) {
@@ -119,7 +117,7 @@ export function NavLink({
           narrow={narrow}
           count={count}
           by={by}
-          bySpoken={bySpoken}
+          bySeparator={bySeparator}
           opens={opens}
         />
       </Link>

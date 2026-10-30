@@ -44,7 +44,7 @@ function SavedList({
               {...(which === savedSet.shared
                 ? {
                     by: personName(saved.maker),
-                    bySpoken: t("search.saved-by-spoken", { person: personName(saved.maker) }),
+                    bySeparator: t("search.saved-by-separator"),
                   }
                 : {})}
               href={savedSearchAddress(saved.id)}

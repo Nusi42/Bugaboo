@@ -648,7 +648,7 @@
   "search.saved-heading": "Saved searches",
   "search.saved-mine": "Mine",
   "search.saved-shared": "Shared with me",
-  "search.saved-by-spoken": ", {person}",
+  "search.saved-by-separator": ", ",
   "search.help": "Help",
   "search.help-title": "The words of the search",
   "search.help-use": "Use {example} in the search",
