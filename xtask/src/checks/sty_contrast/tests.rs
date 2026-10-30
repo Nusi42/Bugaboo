@@ -370,6 +370,29 @@ fn the_three_status_tints_are_told_apart_from_each_other_and_from_the_card() {
 }
 
 #[test]
+fn the_twelve_choice_fills_are_told_apart_from_each_other_and_from_the_card() {
+    // M5 exit: in Daylight the fill of Coral (then Red) was about 10 from Pink (delta E); a Coral next to the Pink of now
+    // (#ffc8da), and a Gray close to the raised card of Dusk, are rejected: 15 between fills, 7.5 from the surfaces.
+    let findings = evaluate(&with_value("cat7-bg", "daylight", "#ffd2e0"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`cat1-bg`") && f.message.contains("`cat7-bg`")),
+        "{:?}",
+        messages(&findings)
+    );
+    // A gray a little lighter than the raised card of Dusk (#2d323c).
+    let findings = evaluate(&with_value("cat11-bg", "dusk", "#33363d"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`cat11-bg`") && f.message.contains("`bg-raised`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
 fn the_shadow_at_the_end_of_a_scrolling_box_is_far_from_the_surfaces() {
     // M5 exit, round 8: in Dusk and Midnight the shadow was 5 to 7 levels from the box and was not seen.
     // A shade of Dusk that is close to its surfaces is rejected.
