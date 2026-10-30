@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { longestNameIn } from "./names-in-sentence.ts";
+import { longestNameIn, wholeNamePlaces } from "./names-in-sentence.ts";
 import { SentenceWithName, SentenceWithNames, SentenceWithValue } from "./UnbrokenWords.tsx";
 
 /** Words of the tests, not text for people. */
@@ -83,5 +83,12 @@ describe("ux_4_2 a line of names breaks only between two names", () => {
     expect(html).toBe(
       '<span><span data-part="unbroken-word">Niko Eriksen</span> and <span data-part="unbroken-word">Tomas Petrov</span></span>',
     );
+  });
+});
+
+describe("ux_4_2 an empty name stands nowhere in a sentence", () => {
+  it("finds no place for it, and ends", () => {
+    expect(wholeNamePlaces(words.people, "")).toEqual([]);
+    expect(longestNameIn(words.people, [""])).toBeUndefined();
   });
 });
