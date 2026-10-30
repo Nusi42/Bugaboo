@@ -679,8 +679,6 @@ mixin "control-box" {
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
-    // No single word alone on the last line of a hint or a label.
-    text-wrap pretty
 }
 
 // The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
@@ -1041,12 +1039,15 @@ base "html, body, #root" {
     height "100%"
 }
 
+// No word alone on the last line of any text (M5 exit: titles, notifications, hints, intros): every element inherits it,
+// and a part that must stay on one line says so with its own `white-space`.
 base "body" {
     margin 0
     background "$bg-canvas"
     color "$fg"
     font-family "$font"
     font-size "$fs-md"
+    text-wrap pretty
 }
 
 // Headings and table heads come from the browser in bold; here they are regular, and the parts the
@@ -1072,8 +1073,6 @@ part "muted" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
-    // No single word alone on the last line.
-    text-wrap pretty
 }
 
 // Words for screen readers only: the name of a column that holds only an icon.
@@ -3320,7 +3319,6 @@ part "text" {
     margin 0
     font-size "$fs-md"
     line-height "$lh-text"
-    text-wrap pretty
 }
 
 part "row" {
@@ -3547,7 +3545,6 @@ part "card.heading" {
     line-height "$lh-snug"
     color "$fg"
     font-weight "$weight-bold"
-    text-wrap pretty
 }
 
 part "card.heading:focus" {
@@ -3954,7 +3951,6 @@ part "access.cell > field" {
 part "access.preview-line" {
     font-size "$fs-md"
     color "$fg"
-    text-wrap pretty
 }
 
 part "access.answer" {
@@ -4720,7 +4716,6 @@ part "sidebar.who" {
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
-    text-wrap pretty
 }
 
 part "nav-item" {

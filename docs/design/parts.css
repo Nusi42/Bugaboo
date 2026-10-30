@@ -61,6 +61,7 @@ body {
   color: var(--fg);
   font-family: var(--font);
   font-size: var(--fs-md);
+  text-wrap: pretty;
 }
 
 h1,
@@ -97,7 +98,6 @@ optgroup {
   color: var(--fg-muted);
   font-size: var(--fs-base);
   line-height: var(--lh-body);
-  text-wrap: pretty;
 }
 
 [data-part="visually-hidden"] {
@@ -297,14 +297,12 @@ optgroup {
 [data-part="field.label"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
 }
 
 [data-part="field.description"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   line-height: var(--lh-body);
 }
 
@@ -599,7 +597,6 @@ optgroup {
 [data-part="choice-group.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
@@ -923,7 +920,6 @@ optgroup {
 [data-part="picker.legend"][data-variant~="list"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   margin-block-end: var(--space-3);
   padding: 0;
@@ -932,7 +928,6 @@ optgroup {
 [data-part="picker.legend"][data-variant~="boxed"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   padding: 0;
 }
@@ -1094,7 +1089,6 @@ optgroup {
 [data-part="picker.hint"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
 }
 
 [data-part="status-icon"] {
@@ -1930,7 +1924,6 @@ optgroup {
 [data-part="name-value.name"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   display: flex;
   align-items: center;
@@ -2466,7 +2459,6 @@ optgroup {
   margin: 0;
   font-size: var(--fs-md);
   line-height: var(--lh-text);
-  text-wrap: pretty;
 }
 
 [data-part="row"] {
@@ -2700,7 +2692,6 @@ optgroup {
   line-height: var(--lh-snug);
   color: var(--fg);
   font-weight: var(--weight-bold);
-  text-wrap: pretty;
 }
 
 [data-part="card.heading"]:focus {
@@ -2990,7 +2981,6 @@ optgroup {
 [data-part="settings.source"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   margin: 0;
 }
 
@@ -3157,7 +3147,6 @@ optgroup {
 [data-part="access.preview-line"] {
   font-size: var(--fs-md);
   color: var(--fg);
-  text-wrap: pretty;
 }
 
 [data-part="access.answer"] {
@@ -3339,7 +3328,6 @@ optgroup {
 [data-part="roles.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   margin-block-end: var(--space-2);
   padding: 0;
@@ -3348,7 +3336,6 @@ optgroup {
 [data-part="roles.note"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   padding-inline-start: calc(var(--space-5) + var(--space-3));
 }
 
@@ -3710,7 +3697,6 @@ optgroup {
 [data-part="access-keys.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
@@ -3979,7 +3965,6 @@ optgroup {
   color: var(--fg-muted);
   font-size: var(--fs-base);
   overflow-wrap: anywhere;
-  text-wrap: pretty;
 }
 
 [data-part="nav-item"] {
@@ -4773,7 +4758,6 @@ optgroup {
 [data-part="key-capture-field.label"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
 }
 
@@ -6188,7 +6172,6 @@ optgroup {
 [data-part="workflow-rules.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
   font-weight: var(--weight-regular);
   padding: 0;
 }
