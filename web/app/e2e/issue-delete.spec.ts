@@ -6,6 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
+import { issueMoreOf } from "./support/layout.ts";
 import { grid } from "./support/list-look.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 
@@ -15,13 +16,9 @@ import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
 
-/** *More* of the issue (the header of the page), not the *More* of the main menu. */
+/** *More* of the issue, wherever the layout has it, not the *More* of the main menu. */
 async function openMore(page: Page): Promise<void> {
-  await page
-    .locator("article")
-    .getByRole("button", { name: t("issues.more"), exact: true })
-    .first()
-    .click();
+  await issueMoreOf(page).click();
 }
 
 test("iss_01 deleting an issue goes back to the list and Undo brings it back", async ({ page }) => {
