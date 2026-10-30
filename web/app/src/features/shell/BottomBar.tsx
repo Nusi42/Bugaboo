@@ -6,7 +6,7 @@ import { Button, Link } from "react-aria-components";
 import { paths, type Path } from "../../shared/paths.ts";
 import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
-import { placeAt } from "../../shared/places.ts";
+import { isCurrentPlace, placeAt } from "../../shared/places.ts";
 
 /** Words of the ARIA standard, not text for people. */
 const currentPage = "page";
@@ -44,7 +44,7 @@ function PlaceTab({ path, count }: { readonly path: Path; readonly count?: strin
       <Link
         {...partOf(part.bottomBarItem)}
         href={place.path}
-        {...(pathname === place.path ? { "aria-current": currentPage } : {})}
+        {...(isCurrentPlace(place.path, pathname) ? { "aria-current": currentPage } : {})}
       >
         <Tab icon={place.icon} label={t(place.name)} count={count} />
       </Link>

@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { paths } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
-import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "../../shared/places.ts";
+import {
+  isCurrentPlace,
+  mayOpen,
+  placeAt,
+  places,
+  placesFor,
+  topicGroups,
+  trailTo,
+} from "../../shared/places.ts";
 import { pagesSource } from "./quick-search-pages.ts";
 import { askerFor } from "../../shared/quick-search-testing.ts";
 
@@ -133,5 +141,14 @@ describe("cfg_08 quick search finds the pages of the app", () => {
     expect(await found("roles", administrator)).toEqual([paths.roles]);
     expect((await found("", [])).length).toBeGreaterThan(3);
     expect(await found("", [])).not.toContain(paths.issue);
+  });
+});
+
+describe("ux_5 the screen that is open, for the sidebar and the bar of a phone alike", () => {
+  it("is a screen or a page under it, and Home only at its own address", () => {
+    expect(isCurrentPlace(paths.mySettings, paths.appearance)).toBe(true);
+    expect(isCurrentPlace(paths.notifications, paths.notifications)).toBe(true);
+    expect(isCurrentPlace(paths.home, paths.home)).toBe(true);
+    expect(isCurrentPlace(paths.home, paths.notifications)).toBe(false);
   });
 });
