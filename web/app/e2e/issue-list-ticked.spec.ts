@@ -4,7 +4,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { tickIssues } from "./support/many-changes-pages.ts";
-import { openList, prepareLook, rowOf } from "./support/list-look.ts";
+import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
@@ -20,9 +20,12 @@ test("ux_4_2 ticking two issues moves nothing above the list and the bar says ho
 }) => {
   test.skip(layoutOf(page) === "phone", "a phone ticks one card at a time");
   await openList(page);
-  const before = await boxOf(rowOf(page, webIssues.login));
+  // The head of the list stands where it stood: the bar takes its room from the box of the rows, which takes the rest
+  // of the window and scrolls inside (the rows in it may scroll to the ticked one).
+  const listHead = partIn(page, "list-head").first();
+  const before = await boxOf(listHead);
   await tickIssues(page, ["WEB-1", "WEB-2"]);
-  const after = await boxOf(rowOf(page, webIssues.login));
+  const after = await boxOf(listHead);
   expect(after.y).toBe(before.y);
   const bar = page.getByRole("region", { name: t("issues.selected-bar"), exact: true });
   await expect(

@@ -2513,7 +2513,6 @@ optgroup {
   box-sizing: border-box;
   min-width: var(--list-width);
   padding-block-end: var(--space-3);
-  max-height: var(--size-list-scroll);
   overflow: auto;
   border-bottom: var(--border-width) solid var(--divider);
 }
@@ -7701,31 +7700,32 @@ optgroup {
   margin-block-start: var(--space-1);
 }
 
+[data-part="app-layout"]:has([data-part="list-main"]) {
+  height: 100%;
+  min-height: 0;
+}
+
+[data-part="app-layout"]:has([data-part="list-main"]) [data-part="app-layout.column"] {
+  height: 100%;
+}
+
+[data-part="app-layout"]:has([data-part="list-main"]) [data-part="app-layout.main"] {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 [data-part="app-layout"][data-variant~="phone"]
   [data-part="app-layout.main"]:has([data-part="list-scroll"]) {
   overflow-y: hidden;
 }
 
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"] [data-part="card"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="card"]
-  > [data-part="stack"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-editor"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-editor.list"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-main"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-body"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-column"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="list-frame"]:has([data-part="list-scroll"]),
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="search-results"]:has([data-part="list-scroll"]) {
+[data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-main"]),
+[data-part="app-layout"] [data-part="card"]:has([data-part="list-main"]),
+[data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-main"]),
+[data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-main"]),
+[data-part="app-layout"] [data-part="list-main"],
+[data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
+[data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -7734,8 +7734,30 @@ optgroup {
   min-height: 0;
 }
 
-[data-part="app-layout"][data-variant~="phone"] [data-part="list-scroll"] {
+[data-part="list-editor"]:has([data-part="list-main"]),
+[data-part="list-body"]:has([data-part="list-scroll"]) {
+  flex: 1 1 0;
+  align-items: stretch;
+  min-height: 0;
+}
+
+[data-part="list-editor"]:has([data-part="list-main"]) {
+  flex-wrap: nowrap;
+}
+
+[data-part="list-column"]:has([data-part="list-scroll"]) {
+  min-height: 0;
+}
+
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-editor"]:has([data-part="list-main"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-body"]:has([data-part="list-scroll"]) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+[data-part="list-main"] [data-part="list-scroll"] {
   flex: 1 1 0;
   min-height: var(--size-list-scroll-least);
-  max-height: none;
 }

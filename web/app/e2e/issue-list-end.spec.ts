@@ -44,19 +44,21 @@ test.describe("the end of a long list", () => {
     expect(box.y + box.height - (last.y + last.height)).toBeGreaterThanOrEqual(8);
   });
 
-  test("ux_4_2 the bar of many ticked issues is pinned to the bottom of the window, whole, with no row under it", async ({
+  test("ux_4_2 the bar of many ticked issues stands whole at the foot of the list in the window, with no row under it", async ({
     page,
   }) => {
-    test.skip(layoutOf(page) !== "computer", "only a computer has the bar stuck to the window");
+    test.skip(layoutOf(page) !== "computer", "only a computer has the bar under the list");
     await signIn(page, ada);
     await page.goto(projectIssuesAddress("WEB"));
-    await expect(page.locator("[data-part='list-scroll']")).toBeVisible();
+    const scroll = page.locator("[data-part='list-scroll']");
+    await expect(scroll).toBeVisible();
     await setBox(page.getByRole("checkbox", { name: t("issues.select-shown"), exact: true }), true);
     const bar = page.getByRole("region", { name: t("issues.selected-bar"), exact: true });
     await expect(bar).toBeVisible();
-    const box = await boxOf(bar);
+    const [box, rows] = await Promise.all([boxOf(bar), boxOf(scroll)]);
     const height = await page.evaluate(() => window.innerHeight);
-    // The bar ends at the bottom edge of the window: nothing of the list shows under it.
-    expect(Math.abs(box.y + box.height - height)).toBeLessThanOrEqual(1);
+    // The list takes the rest of the window, so the bar under it is in the window whole, and the rows end above it.
+    expect(box.y + box.height).toBeLessThanOrEqual(height);
+    expect(rows.y + rows.height).toBeLessThanOrEqual(box.y + 0.5);
   });
 });

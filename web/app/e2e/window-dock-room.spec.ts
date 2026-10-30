@@ -5,10 +5,10 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { openNewIssueDialog } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
-import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { boxOf, titleBox, windowButton, windowDock } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
+import { viewports } from "../../tooling/viewports.ts";
 
 // M5 exit, package O (O7): the bar of a minimized window stands at the bottom of the page, and the page has
 // room for it at its end, so the last row of a list is not covered by it.
@@ -41,9 +41,55 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   expect(content.y + content.height).toBeLessThanOrEqual(dock.y + 0.5);
   expect(card.y + card.height).toBeLessThanOrEqual(dock.y + 0.5);
   // Its bar starts where the page column starts and stays inside the column, so it sits under the cards, not across them.
-  const title = await boxOf(partIn(windowDock(page), "window-dock.title"));
-  const note = await boxOf(partIn(windowDock(page), "window-dock.note"));
+  const title = await boxOf(windowDock(page).locator("[data-part='window-dock.title']"));
+  const note = await boxOf(windowDock(page).locator("[data-part='window-dock.note']"));
   // (a few pixels of rounding of the centered column are allowed)
   expect(Math.abs(title.x - content.x)).toBeLessThanOrEqual(3);
   expect(note.x + note.width).toBeLessThanOrEqual(content.x + content.width + 0.5);
+});
+
+/** A tall window of a computer, beside the standard one of 800 px. */
+const tallWindow = { width: viewports.computer.width, height: 1100 } as const;
+
+/** The card of the list and its box of rows, at rest (the page not scrolled), in the window as it is now. */
+async function listAtRest(page: Page) {
+  const rows = page.locator("[data-part='list-scroll']").first();
+  await expect(rows).toBeVisible();
+  const card = page.locator("[data-part='app-layout.inner'] > *").last();
+  return { card: await boxOf(card), rows: await boxOf(rows) };
+}
+
+/** Without the strip the card ends at most a gutter above the end of the window: the box of rows took the rest of it. */
+async function expectListTakesTheRest(page: Page, size: typeof tallWindow): Promise<void> {
+  await page.setViewportSize(size);
+  await page.goto(projectIssuesAddress("WEB"));
+  const { card } = await listAtRest(page);
+  const under = size.height - (card.y + card.height);
+  expect(under, `${size.height}: room under the card`).toBeGreaterThanOrEqual(0);
+  expect(under, `${size.height}: room under the card`).toBeLessThanOrEqual(24);
+}
+
+/** With the strip, its room is taken off once: the card and the rows end above it, both edges. The window is changed in
+ * place, because a new page would forget the minimized window. */
+async function expectListAboveStrip(page: Page, size: typeof tallWindow): Promise<void> {
+  await page.setViewportSize(size);
+  const { card, rows } = await listAtRest(page);
+  const dock = await boxOf(windowDock(page));
+  expect(card.y + card.height, `${size.height}: the card`).toBeLessThanOrEqual(dock.y + 0.5);
+  expect(rows.y + rows.height, `${size.height}: the rows`).toBeLessThanOrEqual(dock.y + 0.5);
+}
+
+test("ux_8 a list takes the rest of the window, and at rest its card and its rows end above the strip of a minimized window", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "the phone list has its own room above the bars");
+  await signIn(page, sampleAdministrator());
+  await expectListTakesTheRest(page, viewports.computer);
+  await expectListTakesTheRest(page, tallWindow);
+  await openNewIssueDialog(page);
+  await titleBox(page).fill("A draft");
+  await windowButton(page, t("window.minimize")).click();
+  await expect(windowDock(page)).toBeVisible();
+  await expectListAboveStrip(page, viewports.computer);
+  await expectListAboveStrip(page, tallWindow);
 });

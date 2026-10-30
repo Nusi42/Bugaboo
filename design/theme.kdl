@@ -2519,7 +2519,6 @@ part "list-scroll" {
     box-sizing border-box
     min-width "$list-width"
     padding-block-end "$space-3"
-    max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $divider"
 }
@@ -13886,13 +13885,31 @@ part "search-panel search-suggestions" {
     margin-block-start "$space-1"
 }
 
-// A phone has one scroller where the list is: the list. The page does not scroll, and every box between the page and the
-// list gives it the room that is left, so the list ends above the bar of the ticked issues and the navigation.
+// A page of a list gives the box of its rows the rest of the window, on a computer as on a phone: the page column is a
+// full-height column, and every box between it and the list gives the list the room that is left. So the list ends above
+// the bar of the ticked issues and the navigation of a phone, and above the strip of a minimized window, whose room the
+// page takes off once (app-layout.main above). Where the boxes above the list leave it less than its least height, the
+// page scrolls. Only the page of a list (list-main): the slim list of the focus view stays in its page.
+part "app-layout:has(list-main)" {
+    height "100%"
+    min-height 0
+}
+
+part "app-layout:has(list-main) app-layout.column" {
+    height "100%"
+}
+
+part "app-layout:has(list-main) app-layout.main" {
+    min-height 0
+    overflow-y auto
+}
+
+// A phone has one scroller where the list is: the list. The page does not scroll.
 part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
     overflow-y hidden
 }
 
-part "app-layout[variant=phone] app-layout.inner:has(list-scroll)" "app-layout[variant=phone] card:has(list-scroll)" "app-layout[variant=phone] card > stack:has(list-scroll)" "app-layout[variant=phone] list-editor:has(list-scroll)" "app-layout[variant=phone] list-editor.list:has(list-scroll)" "app-layout[variant=phone] list-main:has(list-scroll)" "app-layout[variant=phone] list-body:has(list-scroll)" "app-layout[variant=phone] list-column:has(list-scroll)" "app-layout[variant=phone] list-frame:has(list-scroll)" "app-layout[variant=phone] search-results:has(list-scroll)" {
+part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     display flex
     flex-direction column
     flex-wrap nowrap
@@ -13901,8 +13918,29 @@ part "app-layout[variant=phone] app-layout.inner:has(list-scroll)" "app-layout[v
     min-height 0
 }
 
-part "app-layout[variant=phone] list-scroll" {
+// On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
+// too, or Customize under the list where the room is narrow (each line as high as the room it is given).
+part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
+    flex "1 1 0"
+    align-items stretch
+    min-height 0
+}
+
+part "list-editor:has(list-main)" {
+    flex-wrap nowrap
+}
+
+// The list column fills the line it stands in, and its frame the column.
+part "list-column:has(list-scroll)" {
+    min-height 0
+}
+
+part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {
+    flex-direction column
+    flex-wrap nowrap
+}
+
+part "list-main list-scroll" {
     flex "1 1 0"
     min-height "$size-list-scroll-least"
-    max-height none
 }
