@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { paths, savedSearchAddress } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
 import {
-  isCurrentPlace,
+  howCurrent,
   mayOpen,
   placeAt,
+  placeCurrent,
   places,
   placesFor,
   topicGroups,
@@ -146,15 +147,17 @@ describe("cfg_08 quick search finds the pages of the app", () => {
 
 describe("ux_5 the screen that is open, for the sidebar and the bar of a phone alike", () => {
   it("is a screen or a page under it, and Home only at its own address", () => {
-    expect(isCurrentPlace(paths.mySettings, paths.appearance)).toBe(true);
-    expect(isCurrentPlace(paths.notifications, paths.notifications)).toBe(true);
-    expect(isCurrentPlace(paths.home, paths.home)).toBe(true);
-    expect(isCurrentPlace(paths.home, paths.notifications)).toBe(false);
+    expect(howCurrent(paths.mySettings, paths.appearance)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.notifications, paths.notifications)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.home, paths.home)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.home, paths.notifications)).toBeUndefined();
   });
 
-  it("is Search on the Search page and on a saved search, which belongs under it (M5 exit F-A2)", () => {
-    expect(isCurrentPlace(paths.search, paths.search)).toBe(true);
-    expect(isCurrentPlace(paths.search, savedSearchAddress("s1"))).toBe(true);
-    expect(isCurrentPlace(paths.search, paths.notifications)).toBe(false);
+  it("is Search on the Search page, and by the trail on a saved search, whose own link is the page (M5 exit F-A2)", () => {
+    const saved = savedSearchAddress("s1");
+    expect(howCurrent(paths.search, paths.search)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.search, saved)).toBe(placeCurrent.trail);
+    expect(howCurrent(saved, saved)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.search, paths.notifications)).toBeUndefined();
   });
 });

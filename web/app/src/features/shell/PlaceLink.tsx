@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useLocation } from "@tanstack/react-router";
 
 import { NavLink } from "./NavItem.tsx";
-import { isCurrentPlace, placeAt, type Place } from "../../shared/places.ts";
+import { howCurrent, placeAt, placeCurrent, type Place } from "../../shared/places.ts";
 
 export interface PlaceLinkProps {
   readonly path: Place["path"];
@@ -27,7 +27,7 @@ export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
         label={t(place.name)}
         narrow={narrow}
         count={count}
-        current={isCurrentPlace(place.path, pathname)}
+        current={howCurrent(place.path, pathname) === placeCurrent.page}
         {...(onNavigate === undefined ? {} : { onNavigate })}
       />
     </li>

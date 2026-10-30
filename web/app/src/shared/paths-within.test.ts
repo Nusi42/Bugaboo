@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { deepestAround, isAtOrUnder } from "./paths.ts";
+import {
+  deepestAround,
+  isAtOrUnder,
+  partOfAddress,
+  partsOfAddress,
+  paths,
+  routeParam,
+} from "./paths.ts";
 
 /** Addresses of the tests, not text for people. */
 const at = {
@@ -26,5 +33,28 @@ describe("ux_5 the open page of a menu", () => {
     );
     expect(deepestAround([at.people], "/settings")).toBeUndefined();
     expect(deepestAround([at.people])).toBeUndefined();
+  });
+});
+
+describe("ux_5 an address against the form of a route, the one matcher", () => {
+  it("reads the changing parts of an address of the same form", () => {
+    expect(partsOfAddress("/s/$search", "/s/abc")).toEqual({ search: "abc" });
+    expect(partsOfAddress("/p/$project/x/$issue", "/p/WEB/x/WEB-1")).toEqual({
+      project: "WEB",
+      issue: "WEB-1",
+    });
+    expect(partOfAddress(paths.savedSearch, routeParam.search, "/s/a%20b")).toBe("a b");
+  });
+
+  it("takes an address with a slash at its end like the one without", () => {
+    expect(partsOfAddress("/s/$search", "/s/abc/")).toEqual({ search: "abc" });
+    expect(partsOfAddress(paths.search, "/search/")).toEqual({});
+  });
+
+  it("refuses an address of another length, an empty changing part and other fixed words", () => {
+    expect(partsOfAddress("/s/$search", "/s/abc/more")).toBeUndefined();
+    expect(partsOfAddress("/s/$search", "/s")).toBeUndefined();
+    expect(partsOfAddress("/s/$search", "/s//")).toBeUndefined();
+    expect(partsOfAddress("/p/$project/issues", "/p/WEB/settings")).toBeUndefined();
   });
 });

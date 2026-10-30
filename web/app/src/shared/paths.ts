@@ -84,17 +84,38 @@ function filled(path: Path, param: RouteParam, value: string): string {
 }
 
 /**
- * The word of a changing part in an address that has the form of `path`, or none when the address
- * is of another form: `/p/WEB/issues` against `/p/$project/issues` and `project` is `WEB`.
+ * The changing parts of an address that has the form of the address of a route, by their names, or none when the
+ * address is of another form: `/p/WEB/issues` against `/p/$project/issues` gives `{ project: "WEB" }`. The one matcher
+ * of addresses: a slash at the end of the address does not count, and a changing part is never empty.
  */
-export function partOfAddress(path: Path, param: RouteParam, address: string): string | undefined {
-  const [before = "", after = ""] = path.split(`$${param}`);
-  const whole = address.endsWith("/") ? address.slice(0, -1) : address;
-  if (!whole.startsWith(before) || !whole.endsWith(after)) {
+export function partsOfAddress(
+  path: string,
+  address: string,
+): Readonly<Record<string, string>> | undefined {
+  const whole = address.length > 1 && address.endsWith("/") ? address.slice(0, -1) : address;
+  const want = path.split("/");
+  const have = whole.split("/");
+  if (want.length !== have.length) {
     return undefined;
   }
-  const word = whole.slice(before.length, whole.length - after.length);
-  return word === "" || word.includes("/") ? undefined : decodeURIComponent(word);
+  const parts: Record<string, string> = {};
+  for (const [at, word] of want.entries()) {
+    const given = have[at] ?? "";
+    if (word.startsWith("$")) {
+      if (given === "") {
+        return undefined;
+      }
+      parts[word.slice(1)] = decodeURIComponent(given);
+    } else if (word !== given) {
+      return undefined;
+    }
+  }
+  return parts;
+}
+
+/** The word of one changing part of an address of the form of `path`: `project` of `/p/WEB/issues` is `WEB`. */
+export function partOfAddress(path: Path, param: RouteParam, address: string): string | undefined {
+  return partsOfAddress(path, address)?.[param];
 }
 
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
@@ -105,16 +126,6 @@ export function projectAddress(shortName: string): string {
 /** The address of a page below a project, like `/p/WEB/settings/fields`, with the short name filled in. */
 export function addressInProject(path: Extract<Path, `/p/${string}`>, shortName: string): string {
   return filled(path, routeParam.project, shortName);
-}
-
-/** Whether an address has the form of the address of a route: `/s/abc` has the form of `/s/$search`. */
-export function hasFormOf(path: string, address: string): boolean {
-  const want = path.split("/");
-  const have = address.split("/");
-  return (
-    want.length === have.length &&
-    want.every((part, at) => (part.startsWith("$") ? (have[at] ?? "") !== "" : part === have[at]))
-  );
 }
 
 /** Whether an address is the page at `path` or a page under it (`/settings/people/<ID>` under `/settings/people`). */

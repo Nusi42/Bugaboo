@@ -151,3 +151,13 @@ test("qry_01 the help puts an example into the search", async ({ page }) => {
   // The panel closes when the example is taken into the search.
   await expect(help).toHaveCount(0);
 });
+
+test("qry_06 on a saved search one place of the menu is current: the saved search in the sidebar, Search in the bar of a phone", async ({
+  page,
+}) => {
+  await signIn(page, ana);
+  await page.goto(savedSearchAddress(adasSearch));
+  const menu = page.getByRole("navigation", { name: t("shell.menu"), exact: true });
+  await expect(menu).toBeVisible();
+  await expect(menu.locator("[aria-current]")).toHaveCount(1);
+});

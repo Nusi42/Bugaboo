@@ -5,6 +5,7 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -44,7 +45,7 @@ test("cfg_08 on a phone the Search tab of the bar is current on the Search page"
   await page.goto(paths.search);
   const bar = page.getByRole("navigation", { name: t("shell.menu"), exact: true });
   const search = bar.getByRole("button", { name: t("shell.search"), exact: true });
-  await expect(search).toHaveAttribute("aria-current", "page");
+  await expect(search).toHaveAttribute("aria-current", ariaCurrent.page);
   const home = bar.getByRole("link", { name: t("nav.home"), exact: true });
   const fills = await Promise.all(
     [search, home].map((tab) => tab.evaluate((node) => getComputedStyle(node).backgroundColor)),

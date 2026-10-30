@@ -6,7 +6,7 @@ import { Button, Link } from "react-aria-components";
 import { paths, type Path } from "../../shared/paths.ts";
 import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
-import { isCurrentPlace, placeAt } from "../../shared/places.ts";
+import { howCurrent, placeAt } from "../../shared/places.ts";
 
 interface TabProps {
   readonly icon: IconName;
@@ -36,7 +36,7 @@ function PlaceTab({ path, count }: { readonly path: Path; readonly count?: strin
   if (place === undefined) {
     return null;
   }
-  const current = isCurrentPlace(place.path, pathname);
+  const current = howCurrent(place.path, pathname) !== undefined;
   return (
     <li {...partOf(part.bottomBarTab)}>
       <Link
@@ -62,7 +62,7 @@ interface OverlayTabProps extends TabProps {
 /** A button of the bar that opens a layer over the page. */
 function OverlayTab({ icon, label, opens, expanded, place }: OverlayTabProps) {
   const { pathname } = useLocation();
-  const current = place !== undefined && isCurrentPlace(place, pathname);
+  const current = place !== undefined && howCurrent(place, pathname) !== undefined;
   return (
     <li {...partOf(part.bottomBarTab)}>
       <Button
