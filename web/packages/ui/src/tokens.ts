@@ -980,7 +980,7 @@ export const partWords = {
   hint: { variant: [], state: [] },
   column: { variant: ["snug"], state: [] },
   wrap: { variant: [], state: [] },
-  card: { variant: ["open-on-phone"], state: [] },
+  card: { variant: ["open-on-phone", "page-head"], state: [] },
   "card.header": { variant: [], state: [] },
   "card.actions": { variant: [], state: [] },
   "card.heading": { variant: [], state: [] },

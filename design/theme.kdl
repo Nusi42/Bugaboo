@@ -3528,6 +3528,12 @@ part "app-layout[variant=phone] card[variant=open-on-phone]" {
     use "frameless"
 }
 
+// The head of a page whose sections are cards of their own (Sign-in and security, Labels and tags): its heading and
+// introduction stand on the page above the sections, not in a card that holds nothing else (UX §5.1, L3).
+part "card[variant=page-head]" {
+    use "frameless"
+}
+
 // The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
 part "card.header" {
     display flex
