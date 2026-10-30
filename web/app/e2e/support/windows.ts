@@ -33,6 +33,10 @@ export async function windowSize(page: Page): Promise<{ width: number; height: n
 export async function openWindowReady(page: Page): Promise<void> {
   await openNewIssueDialog(page);
   await expect(newIssueDialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
+  // The fields of the layout arrive after the title and make the window taller (a few pixels under load): measure after them.
+  await expect(
+    newIssueDialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
+  ).toBeVisible();
 }
 
 /** The title box of the window. */
