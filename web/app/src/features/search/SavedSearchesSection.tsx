@@ -5,6 +5,7 @@ import { useLocation } from "@tanstack/react-router";
 import { itemsOf } from "../../shared/paged.ts";
 import { savedSearchAddress } from "../../shared/paths.ts";
 import { personName } from "../../shared/person.ts";
+import { howCurrent, placeCurrent } from "../../shared/places.ts";
 import { NavLink } from "../shell/index.ts";
 import { useSavedList, savedSet, type SavedSearch, type SavedSet } from "./saved-searches.ts";
 
@@ -48,7 +49,7 @@ function SavedList({
                   }
                 : {})}
               href={savedSearchAddress(saved.id)}
-              current={pathname === savedSearchAddress(saved.id)}
+              current={howCurrent(savedSearchAddress(saved.id), pathname) === placeCurrent.page}
               {...(onNavigate === undefined ? {} : { onNavigate })}
             />
           </li>
