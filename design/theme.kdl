@@ -4501,16 +4501,22 @@ part "shell.title" {
     font-weight "$weight-bold"
 }
 
+// The pages before sign-in: the name, the narrow content and the choice of theme in one column, in the middle of the window
+// (M5 exit: it stood about 70 px left of the middle in a wider frame), each the same gap from the next.
 part "shell.page" {
     box-sizing border-box
     display flex
     flex-direction column
     gap "$space-5"
-    min-height "100%"
     width "100%"
-    max-width "$size-content"
+    max-width "calc($size-form + 2 * $space-4)"
     margin 0 auto
     padding "$space-4"
+}
+
+// The content does not grow to push the choice of theme to the foot of the window: it follows at the gap of the column.
+part "shell.page > shell.content" {
+    flex none
 }
 
 part "shell.header" {
