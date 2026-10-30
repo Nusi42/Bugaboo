@@ -1,19 +1,6 @@
-//! The statistics SQLite chooses its indexes by (`sqlite_stat1`): how many rows a table has and how
-//! many share a value of the first columns of each index. A search over 1 M issues is fast only
-//! when they are exact: with the index of the creation the newest page comes at once, with an index
-//! of the project SQLite reads every project and sorts (2 s against 30 ms).
-//!
-//! They used to come from `PRAGMA optimize` with an analysis limit of 400 rows, run by every
-//! connection that closed. Its look at an index of 1 M issues saw one project and wrote that a
-//! project has about 400 issues where it has 2,000, and every search over 1 M issues took the 2 s
-//! of its limit (the nightly runs of 2026-10-29 and 30). `Database::refresh_statistics` instead
-//! asks SQLite which tables are out of date (they have rows and no statistics, or grew or shrank
-//! tenfold since) and runs SQLite's own `ANALYZE` of each of them, one table at a time, so the
-//! write lock is held for one table (about 1.3 s for the issues of 1 M, the longest).
-//!
-//! An empty table gets no statistics from `ANALYZE`, and SQLite reports a table without an index
-//! and without statistics as out of date for ever. Such a table is written down as empty (a row of
-//! `0`), which SQLite takes as up to date until it grows: a second refresh then finds nothing.
+//! The statistics SQLite chooses its indexes by (`sqlite_stat1`), made again one table at a time
+//! by `Database::refresh_statistics`: why they must be exact, and how long a round holds the write
+//! lock, cold and warm, are in architecture §7 (*Performance*, the SQLite paragraph).
 
 /// Reads the statistics into the connection again: a connection keeps those it read when it
 /// opened, and does not see what another one wrote since (`ANALYZE sqlite_schema` only reloads).
@@ -24,8 +11,10 @@ pub(super) const RELOAD: &str = "ANALYZE sqlite_schema";
 /// `ANALYZE "main"."<table>"` for each table that is out of date.
 pub(super) const OUT_OF_DATE: &str = "PRAGMA optimize(0x10003)";
 
-/// Writes a table that `ANALYZE` left without statistics, because it is empty, down as empty.
-/// The name is bound twice: the row and the test that it has none yet.
+/// Writes a table that `ANALYZE` left without statistics, because it is empty, down as empty:
+/// SQLite reports a table without an index and without statistics as out of date for ever, and
+/// takes a row of `0` as up to date until the table grows. The name is bound twice: the row and
+/// the test that it has none yet.
 pub(super) const EMPTY_IS_UP_TO_DATE: &str = "INSERT INTO sqlite_stat1 (tbl, idx, stat) \
      SELECT ?, NULL, '0' WHERE NOT EXISTS (SELECT 1 FROM sqlite_stat1 WHERE tbl = ?)";
 
