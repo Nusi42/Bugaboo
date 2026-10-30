@@ -50,20 +50,22 @@ export function IssueFrame(props: IssueFrameProps) {
       />
     </div>
   );
-  return (
+  const article = (
     <article>
-      {show === "panel" ? (
-        <SidePanel
-          title={blocks.readableId}
-          onClose={onClose}
-          {...(closeLabel === undefined ? {} : { closeLabel })}
-        >
-          {inside}
-        </SidePanel>
-      ) : (
-        inside
-      )}
+      {inside}
       {layout === "phone" ? <PhoneBar actions={actions} /> : null}
     </article>
+  );
+  // In the panel the panel is what stands beside the list, so it can keep its place while the page scrolls (L7).
+  return show === "panel" ? (
+    <SidePanel
+      title={blocks.readableId}
+      onClose={onClose}
+      {...(closeLabel === undefined ? {} : { closeLabel })}
+    >
+      {article}
+    </SidePanel>
+  ) : (
+    article
   );
 }

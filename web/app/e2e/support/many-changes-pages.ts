@@ -99,3 +99,18 @@ export async function applyAndExpectSkipped(
     ),
   ).toBeVisible();
 }
+
+/**
+ * How far the bar under the list (the ticked issues, the outcome of a change) starts below the box of the rows; negative
+ * where it covers the box, and minus infinity where there is no bar or no row to stand under (so a test of it fails).
+ */
+export function roomAboveBar(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const bar = document.querySelector("[data-part='selected-bar']");
+    const rows = document.querySelector("[data-part='list-scroll']");
+    const hasRow = rows?.querySelector("[data-part='list-row']") !== null;
+    return bar === null || rows === null || !hasRow
+      ? Number.NEGATIVE_INFINITY
+      : bar.getBoundingClientRect().top - rows.getBoundingClientRect().bottom;
+  });
+}

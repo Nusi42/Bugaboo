@@ -20,7 +20,7 @@ function PeopleVisibilityIntro() {
   const example = t("people-visibility.intro-example");
   return (
     <SentenceWithValue sentence={t("people-visibility.intro", { example })} value={example}>
-      {(value) => <span {...partOf(part.keptTogether)}>{value}</span>}
+      {(value) => <span {...partOf(part.unbrokenWord)}>{value}</span>}
     </SentenceWithValue>
   );
 }

@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { longestNameIn } from "./names-in-sentence.ts";
-import { SentenceWithName, SentenceWithValue } from "./UnbrokenWords.tsx";
+import { longestNameIn, wholeNamePlaces } from "./names-in-sentence.ts";
+import { SentenceWithName, SentenceWithNames, SentenceWithValue } from "./UnbrokenWords.tsx";
 
 /** Words of the tests, not text for people. */
 const words = {
@@ -14,6 +14,9 @@ const words = {
   name: "quarter-report.pdf",
   another: "Added data.txt and a.txt",
   short: "a.txt",
+  people: "Niko Eriksen and Tomas Petrov",
+  niko: "Niko Eriksen",
+  tomas: "Tomas Petrov",
 } as const;
 
 describe("ux_4_4 a sentence with a value in it is one element", () => {
@@ -69,5 +72,23 @@ describe("ux_4_4 a name is marked only where it stands as a whole name", () => {
     expect(longestNameIn("Added data.txt and a.txt", ["a.txt", "data.txt"])).toBe("data.txt");
     expect(longestNameIn("Added data.txt", ["a.txt", "data.txt"])).toBe("data.txt");
     expect(longestNameIn("Added data.txt", ["a.txt"])).toBeUndefined();
+  });
+});
+
+describe("ux_4_2 a line of names breaks only between two names", () => {
+  it("draws each whole name as one piece and the words between them as text", () => {
+    const html = renderToStaticMarkup(
+      <SentenceWithNames sentence={words.people} names={[words.niko, words.tomas]} />,
+    );
+    expect(html).toBe(
+      '<span><span data-part="unbroken-word">Niko Eriksen</span> and <span data-part="unbroken-word">Tomas Petrov</span></span>',
+    );
+  });
+});
+
+describe("ux_4_2 an empty name stands nowhere in a sentence", () => {
+  it("finds no place for it, and ends", () => {
+    expect(wholeNamePlaces(words.people, "")).toEqual([]);
+    expect(longestNameIn(words.people, [""])).toBeUndefined();
   });
 });

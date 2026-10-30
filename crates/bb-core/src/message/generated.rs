@@ -4339,6 +4339,9 @@ pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-headi
 /// The message `search.saved-mine`.
 pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
 
+/// The message `search.saved-none`.
+pub const SEARCH_SAVED_NONE: MessageKey = MessageKey::new("search.saved-none");
+
 /// The message `search.saved-shared`.
 pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
 
@@ -6137,10 +6140,10 @@ pub fn comments_version_saved(
 
 /// The message `common.show-all`.
 #[must_use]
-pub fn common_show_all(count: impl std::fmt::Display) -> Message {
+pub fn common_show_all(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("common.show-all"),
-        vec![("count", Value::Text(count.to_string()))],
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -7418,6 +7421,24 @@ pub fn issues_column_width(column: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.columns-hidden`.
+#[must_use]
+pub fn issues_columns_hidden(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.columns-hidden"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.columns-hidden-customizing`.
+#[must_use]
+pub fn issues_columns_hidden_customizing(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.columns-hidden-customizing"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `issues.compare-keep`.
 #[must_use]
 pub fn issues_compare_keep(number: impl std::fmt::Display) -> Message {
@@ -8353,11 +8374,11 @@ pub fn many_changes_note_type_not_used(
 
 /// The message `many-changes.progress`.
 #[must_use]
-pub fn many_changes_progress(done: impl std::fmt::Display, total: i64) -> Message {
+pub fn many_changes_progress(done: i64, total: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.progress"),
         vec![
-            ("done", Value::Text(done.to_string())),
+            ("done", Value::Number(done)),
             ("total", Value::Number(total)),
         ],
     )
@@ -11583,7 +11604,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.off", "Off"),
     ("common.on", "On"),
     ("common.save", "Save"),
-    ("common.show-all", "Show all {count}"),
+    ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
@@ -12715,6 +12736,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.column-up", "Move {column} up"),
     ("issues.column-width", "Width of {column}"),
     ("issues.columns-head", "Columns of the list"),
+    (
+        "issues.columns-hidden",
+        "{count, plural, one {# column is hidden for lack of room. Open Customize, or give the list more room, to see it.} other {# columns are hidden for lack of room. Open Customize, or give the list more room, to see them.}}",
+    ),
+    (
+        "issues.columns-hidden-customizing",
+        "{count, plural, one {# column is hidden for lack of room.} other {# columns are hidden for lack of room.}}",
+    ),
     ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
@@ -13350,7 +13379,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes.progress",
-        "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
+        "{total, plural, one {{done, number} of # issue done} other {{done, number} of # issues done}}",
     ),
     ("many-changes.progress-label", "How far the change is"),
     ("many-changes.project-legend", "Move to"),
@@ -14754,6 +14783,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.saved-by-separator", ", "),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
+    ("search.saved-none", "You have no saved searches yet."),
     ("search.saved-shared", "Shared with me"),
     ("search.share", "Share"),
     ("search.share-done", "Done"),

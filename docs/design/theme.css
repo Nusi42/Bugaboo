@@ -4,7 +4,7 @@
    Load fonts separately: Atkinson Hyperlegible Next + Atkinson Hyperlegible Mono. */
 :root {
   --font: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace;
   --r-ctl: 6px;
   --r-card: 10px;
   --r-pill: 999px;
@@ -74,6 +74,7 @@
   --list-gutter: 0px;
   --list-width: 0px;
   --bp-window-side: 880px;
+  --bp-list-beside: 876px;
   --bp-window-wide: 1200px;
   --size-day-week: 16px;
   --ring-width: 2px;
@@ -248,7 +249,7 @@
     --st-ip-soft: #24365a;
     --st-done: #6fd39a;
     --st-done-soft: #213d31;
-    --tint-ns: #2f3c50;
+    --tint-ns: #3b3b3b;
     --tint-ip: #1f3b68;
     --tint-done: #17442d;
     --edge-high: #f5b65b;
@@ -316,7 +317,7 @@
   --st-ip-soft: #24365a;
   --st-done: #6fd39a;
   --st-done-soft: #213d31;
-  --tint-ns: #2f3c50;
+  --tint-ns: #3b3b3b;
   --tint-ip: #1f3b68;
   --tint-done: #17442d;
   --edge-high: #f5b65b;
@@ -437,7 +438,7 @@
   --accent: #2f5d8a;
   --accent-soft: #e4ecf4;
   --accent-fg: #284f75;
-  --disabled-fill: #d9d0c2;
+  --disabled-fill: #d3d1ce;
   --on-disabled: #564e45;
   --on-accent: #ffffff;
   --danger: #b23a2e;
@@ -453,7 +454,7 @@
   --st-done: #3f6e3a;
   --st-done-soft: #e5eedf;
   --tint-ns: #e3e1dd;
-  --tint-ip: #cde6f6;
+  --tint-ip: #c4e9ef;
   --tint-done: #cdeabf;
   --edge-high: #cb6300;
   --hover-line: #7a7366;
@@ -520,7 +521,7 @@
   --st-ip-soft: #24365a;
   --st-done: #6fd39a;
   --st-done-soft: #213d31;
-  --tint-ns: #2f3c50;
+  --tint-ns: #3b3b3b;
   --tint-ip: #1f3b68;
   --tint-done: #17442d;
   --edge-high: #f5b65b;
@@ -573,7 +574,7 @@
   --accent: #9483ff;
   --accent-soft: #221d47;
   --accent-fg: #b7abff;
-  --disabled-fill: #272a31;
+  --disabled-fill: #30333a;
   --on-disabled: #9ca3af;
   --on-accent: #0b0820;
   --danger: #ff7a70;
@@ -588,7 +589,7 @@
   --st-ip-soft: #10244a;
   --st-done: #5fd38f;
   --st-done-soft: #0f2e1e;
-  --tint-ns: #1f2531;
+  --tint-ns: #252525;
   --tint-ip: #0a2350;
   --tint-done: #082b1a;
   --edge-high: #ffb547;

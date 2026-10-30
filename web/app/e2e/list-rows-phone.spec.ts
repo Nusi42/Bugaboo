@@ -1,13 +1,13 @@
-import { expect } from "@playwright/test";
-
-import { test } from "./support/fixtures.ts";
+import { expectNoOverlap } from "./support/checks.ts";
+import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
+import { cutWords, linesOfEach } from "./support/phone-list.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
 import { boxOf } from "./support/windows.ts";
-import { paths } from "../src/shared/paths.ts";
+import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // M5 exit, package O: a row of a list on a phone that has only its name (a group, an issue type with its icon before the
 // name, a kind of relation) is one line, and the line is in the middle of the row.
@@ -29,4 +29,35 @@ test("ux_5 a row with only its name is one line in the middle of the row", async
       ).toBeLessThanOrEqual(2);
     }),
   );
+});
+
+test("ux_4_2 the people of a row on a phone are written out on more lines, never cut with dots (M5 exit F-A3)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "the rows of a computer have a column of their own");
+  await page.setViewportSize({ width: 360, height: 740 });
+  await signIn(page, sampleAdministrator());
+  // The rows of a project have the box to tick, so the least room; Niko Eriksen shares some issues with a second person.
+  await page.goto(
+    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
+  );
+  const rows = page.locator("[data-part='list-row'][data-variant~='phone']");
+  await expect(rows.first()).toBeVisible();
+  const people = rows.locator("[data-part='list-row.cell'][data-variant~='person']");
+  // Every line of people that is drawn shows all of its words, and the rows still stand one under the other.
+  await expect(people.filter({ hasText: /\sand\s/u }).first()).toBeVisible();
+  const cut = await cutWords(people);
+  expect(cut).toEqual([]);
+  await expectNoOverlap(page);
+  // A line breaks only between two names, never inside one ("Niko / Eriksen"): each name is one piece on one line.
+  const two = people.filter({ hasText: /\sand\s/u }).first();
+  const names = partIn(two, "unbroken-word");
+  await expect(names).toHaveCount(2);
+  expect(await linesOfEach(names)).toEqual([1, 1]);
+  // The date stands on the line of the last name.
+  const [last, date] = await Promise.all([
+    boxOf(names.last()),
+    boxOf(partIn(two.locator(".."), "list-row.cell", "changed")),
+  ]);
+  expect(Math.abs(last.y + last.height - (date.y + date.height))).toBeLessThanOrEqual(3);
 });

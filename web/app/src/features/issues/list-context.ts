@@ -14,6 +14,8 @@ export interface ListContextValue {
   readonly listId: string;
   /** The search words of the columns, in order. */
   readonly words: readonly string[];
+  /** How many chosen columns give way for lack of room. */
+  readonly hidden: number;
   /** A phone draws a card for each issue and has no columns of its own. */
   readonly phone: boolean;
   /** The rows have a box to tick (the list of a project; the changes of many issues are made in one project). */

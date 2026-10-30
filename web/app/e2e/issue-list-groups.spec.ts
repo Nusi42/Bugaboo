@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { projectIssuesAddress } from "../src/shared/paths.ts";
+import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -58,4 +58,48 @@ test("ux_4_2 the type column has a name in the head and shows the type's name be
   await expect(
     partIn(page, "list-row.cell", "type").filter({ hasText: "Task" }).first(),
   ).toBeVisible();
+});
+
+test("ux_4_2 every list has one group head: the chevron at the start, then the icon, the name, and the count at the end (L5)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "tablet", "the computer and the phone show both lists");
+  await signIn(page, ada);
+  const expectOneHead = async (address: string): Promise<void> => {
+    await page.goto(`${address}?group=statusGroup`);
+    await expect(rowOf(page, webIssues.login)).toBeVisible();
+    const head = (part: string) => boxOf(partIn(page, part).first());
+    const [toggle, chevron, kind, name, count] = await Promise.all([
+      head("list-group.toggle"),
+      head("list-group.chevron"),
+      head("list-group.kind"),
+      head("list-group.name"),
+      head("list-group.count"),
+    ]);
+    expect(chevron.x, address).toBeLessThan(kind.x);
+    expect(kind.x, address).toBeLessThan(name.x);
+    expect(name.x, address).toBeLessThan(count.x);
+    expect(toggle.x + toggle.width - (count.x + count.width), address).toBeLessThanOrEqual(2);
+  };
+  // A list with the box to tick, and one without it.
+  await expectOneHead(projectIssuesAddress("WEB"));
+  await expectOneHead(paths.search);
+});
+
+test("ux_4_2 a list with nothing in it keeps the padding of its card under its last button, in a low window (review of package A)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "a computer has the room of the window to lose");
+  await page.setViewportSize({ width: 1280, height: 420 });
+  await signIn(page, ada);
+  await page.goto(`${projectIssuesAddress("WEB")}?s=title+contains+zzzzqq`);
+  const remove = page.getByRole("button", { name: t("issues.remove-filters"), exact: true });
+  await expect(remove).toBeVisible();
+  const card = partIn(page, "card").filter({ has: remove });
+  const [button, frame, padding] = await Promise.all([
+    boxOf(remove),
+    boxOf(card),
+    card.evaluate((node) => Number(getComputedStyle(node).paddingBottom.replace("px", ""))),
+  ]);
+  expect(frame.y + frame.height - (button.y + button.height)).toBeGreaterThanOrEqual(padding - 1);
 });

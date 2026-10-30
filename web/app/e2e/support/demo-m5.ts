@@ -4,7 +4,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { projectIssuesAddress, savedSearchAddress } from "../../src/shared/paths.ts";
 import { signInThroughApi } from "./accounts.ts";
-import { goodInFourThemes } from "./demo.ts";
+import { goodWindowInFourThemes } from "./demo.ts";
 import { addressText, box, closeBar, openBar, openSearch } from "./search-bar.ts";
 import { sampleNamed, sampleTeamMember, type SamplePerson } from "./sample.ts";
 import { sampleInGroup } from "./sample-groups.ts";
@@ -28,9 +28,9 @@ const CUSTOMER_SEARCH_NAME = "Questions of customers";
 /** The saved search the project WEB shows as its list. */
 export const PROJECT_LIST_NAME = "High priority, not done";
 
-/** The screen is good in the four themes and is in the pictures of this demo. */
+/** The screen is good in the four themes and is in the pictures of this demo, as the window shows it (pages of lists). */
 export function good(page: Page, step: string): Promise<void> {
-  return goodInFourThemes(page, step, DEMO_M5);
+  return goodWindowInFourThemes(page, step, DEMO_M5);
 }
 
 /** Ana Moreno, a Contributor in Website through the group External, who may not read *Customer*. */

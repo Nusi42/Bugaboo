@@ -42,3 +42,31 @@ export async function lastWholeCard(cards: Locator, list: Locator): Promise<numb
   }
   return found;
 }
+
+/** The texts of the cells that do not show all of their words (cut at the edge, with dots or without); none when every word shows. */
+export function cutWords(cells: Locator): Promise<(string | null)[]> {
+  return cells.evaluateAll((all: readonly HTMLElement[]) => {
+    const cut: (string | null)[] = [];
+    for (const cell of all) {
+      if (cell.scrollWidth > cell.clientWidth + 1) {
+        cut.push(cell.textContent);
+      }
+    }
+    return cut;
+  });
+}
+
+/** How many lines each element takes, from the boxes of its lines (one box for each line it is drawn on). */
+export function linesOfEach(elements: Locator): Promise<number[]> {
+  return elements.evaluateAll((all: readonly HTMLElement[]) => {
+    const lines: number[] = [];
+    for (const element of all) {
+      const tops = new Set<number>();
+      for (const box of element.getClientRects()) {
+        tops.add(Math.round(box.top));
+      }
+      lines.push(tops.size);
+    }
+    return lines;
+  });
+}

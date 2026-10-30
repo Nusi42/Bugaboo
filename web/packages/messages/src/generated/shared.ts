@@ -625,7 +625,7 @@ export const messages = {
     "This project does not offer the label group of that label. Choose another label, or ask who looks after labels.",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
-  "common.show-all": "Show all {count}",
+  "common.show-all": "Show all {count, number}",
   "common.show-fewer": "Show fewer",
   "nav.labels": "Labels and tags",
   "labels.pick-label": "Choose a label",

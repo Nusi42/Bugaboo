@@ -199,7 +199,7 @@ test("qry_01 the person picker keeps Me while the typed words start your name, a
   await expect(list.getByRole("button")).toHaveCount(0);
 });
 
-test("qry_01 a row of the issue finder is the mono ID, the title and the status on one line, and its field keeps its ring", async ({
+test("qry_01 a row of the issue finder is the mono ID on the first line of the title and the status, and its field keeps its ring", async ({
   page,
 }) => {
   await openSearch(page, "priority is high");
@@ -214,12 +214,16 @@ test("qry_01 a row of the issue finder is the mono ID, the title and the status 
     .getByRole("button")
     .first();
   await expect(row).toBeVisible();
-  // The ID is in the mono font; the status is a pill with its word; the row is one line high.
+  // The ID is in the mono font; the status is a pill with its word; the ID stands on the first line of the title, which is
+  // written out on more lines where it is long (M5 exit F-A7).
   const id = row.locator('[data-part="picker.id"]');
   await expect(id).toHaveCSS("font-family", /mono/iu);
   await expect(row.getByText("Open", { exact: true })).toBeVisible();
-  const nameHeight = (await boxOf(row.locator('[data-part="picker.name"]'))).height;
-  expect(nameHeight).toBeLessThan((await boxOf(id)).height * 1.6);
+  const [idBox, nameBox] = await Promise.all([
+    boxOf(id),
+    boxOf(row.locator('[data-part="picker.name"]')),
+  ]);
+  expect(Math.abs(idBox.y - nameBox.y)).toBeLessThanOrEqual(4);
   // The ring of the focused box is not cut off by the box that holds it, on a phone too.
   await expectRingsWhole(page);
 });

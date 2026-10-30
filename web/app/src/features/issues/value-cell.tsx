@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { LabelChip } from "@bugaboo/ui";
+import { LabelChip, SentenceWithNames } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
@@ -35,9 +35,10 @@ export function valueOf(word: string, line: FoundLine, own: OwnColumns): string 
   }
 }
 
-/** The people an issue is assigned to, as the viewer may see them. */
-export function assignedText(line: FoundLine): string {
-  return listText(line.assignedTo.map((person) => personName(person)));
+/** The people an issue is assigned to, as a cell draws them: a line breaks only between two names (UX §4.2). */
+export function assignedPeople(line: FoundLine): ReactNode {
+  const names = line.assignedTo.map((person) => personName(person));
+  return <SentenceWithNames sentence={listText(names)} names={names} />;
 }
 
 /** The labels on an issue: each a small square in its color and its name (UX §7.5). */

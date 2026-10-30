@@ -37,6 +37,8 @@ pub(crate) struct DistinctSpec {
     pub(crate) min_delta_e_against_surfaces: Option<f64>,
     /// Smallest difference in color (delta E) between two states.
     pub(crate) min_delta_e_between_states: Option<f64>,
+    /// Largest chroma (C*ab) of each state: the states are neutral greys, without a hue of their own.
+    pub(crate) max_chroma_of_states: Option<f64>,
 }
 
 /// A text color on a fill that is brightened while it is pointed at (`filter: brightness`): the
@@ -150,6 +152,7 @@ impl DistinctSpec {
             "min-between-states",
             "min-delta-e-against-surfaces",
             "min-delta-e-between-states",
+            "max-chroma-of-states",
         ];
         if !named
             .iter()
@@ -167,6 +170,7 @@ impl DistinctSpec {
             min_between_states: optional_number(node, "min-between-states")?.unwrap_or(0.0),
             min_delta_e_against_surfaces: optional_number(node, "min-delta-e-against-surfaces")?,
             min_delta_e_between_states: optional_number(node, "min-delta-e-between-states")?,
+            max_chroma_of_states: optional_number(node, "max-chroma-of-states")?,
         })
     }
 }
@@ -402,6 +406,26 @@ fn glob(pattern: &str, name: &str) -> bool {
             (0..=tail.len()).any(|skip| tail.get(skip..).is_some_and(|rest_of| glob(rest, rest_of)))
         }),
     }
+}
+
+/// A group of lines faded by the opacity of a disabled control, for the tests of `faded-by`: the theme file has none
+/// since a button that cannot be pressed is a grey chip (M5 exit F-A9). Written before the `more` rule of the file.
+#[cfg(test)]
+pub(crate) const FADED_LINES_EXAMPLE: &str =
+    "    lines min=2 faded-by=\"opacity-disabled\" reason=\"A faded edge.\" {
+        colors \"fg-muted\"
+        on \"bg-canvas\" \"bg-raised\"
+    }
+    // With the device setting for more contrast.";
+
+/// The theme text with [`FADED_LINES_EXAMPLE`] in it.
+#[cfg(test)]
+pub(crate) fn with_faded_lines(text: &str) -> String {
+    text.replacen(
+        "    // With the device setting for more contrast.",
+        FADED_LINES_EXAMPLE,
+        1,
+    )
 }
 
 #[cfg(test)]

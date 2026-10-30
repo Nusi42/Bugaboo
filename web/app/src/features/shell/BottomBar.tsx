@@ -36,12 +36,13 @@ function PlaceTab({ path, count }: { readonly path: Path; readonly count?: strin
   if (place === undefined) {
     return null;
   }
+  const current = isCurrentPlace(place.path, pathname);
   return (
     <li {...partOf(part.bottomBarTab)}>
       <Link
-        {...partOf(part.bottomBarItem)}
+        {...partOf(part.bottomBarItem, { states: [current && "current"] })}
         href={place.path}
-        {...(isCurrentPlace(place.path, pathname) ? { "aria-current": ariaCurrent.page } : {})}
+        {...(current ? { "aria-current": ariaCurrent.page } : {})}
       >
         <Tab icon={place.icon} label={t(place.name)} count={count} />
       </Link>
@@ -54,14 +55,19 @@ interface OverlayTabProps extends TabProps {
   readonly opens: OverlayName;
   /** The layer is open now (for screen readers). */
   readonly expanded?: boolean;
+  /** The place the tab stands for (*Search*): the tab is current there, as the link of a place is. */
+  readonly place?: Path;
 }
 
 /** A button of the bar that opens a layer over the page. */
-function OverlayTab({ icon, label, opens, expanded }: OverlayTabProps) {
+function OverlayTab({ icon, label, opens, expanded, place }: OverlayTabProps) {
+  const { pathname } = useLocation();
+  const current = place !== undefined && isCurrentPlace(place, pathname);
   return (
     <li {...partOf(part.bottomBarTab)}>
       <Button
-        {...partOf(part.bottomBarItem)}
+        {...partOf(part.bottomBarItem, { states: [current && "current"] })}
+        {...(current ? { "aria-current": ariaCurrent.page } : {})}
         {...(expanded === undefined ? {} : { "aria-expanded": expanded })}
         onPress={() => {
           openOverlay(opens);
@@ -84,7 +90,12 @@ export function BottomBar() {
     <nav {...partOf(part.bottomBar)} aria-label={t("shell.menu")}>
       <ul {...partOf(part.bottomBarTabs)}>
         <PlaceTab path={paths.home} />
-        <OverlayTab icon={iconName.search} label={t("shell.search")} opens={overlays.search} />
+        <OverlayTab
+          icon={iconName.search}
+          label={t("shell.search")}
+          opens={overlays.search}
+          place={paths.search}
+        />
         <OverlayTab icon={iconName.plus} label={t("issues.new")} opens={overlays.newIssue} />
         <PlaceTab path={paths.notifications} count={unread} />
         <OverlayTab

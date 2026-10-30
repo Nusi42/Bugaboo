@@ -7,7 +7,8 @@ import { signIn } from "./support/flows.ts";
 import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { setBox } from "./support/list-keys.ts";
-import { boxOf } from "./support/windows.ts";
+import { partIn } from "./support/parts.ts";
+import { boxOf, roomUnderLastRow } from "./support/windows.ts";
 
 // The end of a long list (UX §4.2; M5 exit R2): room under the last row.
 
@@ -34,29 +35,44 @@ test.describe("the end of a long list", () => {
         }),
       )
       .toBeLessThanOrEqual(1);
-    await page.waitForTimeout(500);
-    await scroll.evaluate((box) => {
-      box.scrollTop = box.scrollHeight;
-    });
-    const rows = page.locator("[data-part='list-scroll'] [data-part='list-row']");
-    const last = await boxOf(rows.last());
-    const box = await boxOf(scroll);
-    expect(box.y + box.height - (last.y + last.height)).toBeGreaterThanOrEqual(8);
+    // The last page of rows may still be drawn: at the end again, until the last row stands whole above the room.
+    await expect.poll(() => roomUnderLastRow(scroll)).toBeGreaterThanOrEqual(8);
   });
 
-  test("ux_4_2 the bar of many ticked issues is pinned to the bottom of the window, whole, with no row under it", async ({
+  test("ux_4_2 the bar of many ticked issues stands whole at the foot of the list in the window, with no row under it", async ({
     page,
   }) => {
-    test.skip(layoutOf(page) !== "computer", "only a computer has the bar stuck to the window");
+    test.skip(layoutOf(page) !== "computer", "only a computer has the bar under the list");
     await signIn(page, ada);
     await page.goto(projectIssuesAddress("WEB"));
-    await expect(page.locator("[data-part='list-scroll']")).toBeVisible();
+    const scroll = page.locator("[data-part='list-scroll']");
+    await expect(scroll).toBeVisible();
     await setBox(page.getByRole("checkbox", { name: t("issues.select-shown"), exact: true }), true);
     const bar = page.getByRole("region", { name: t("issues.selected-bar"), exact: true });
     await expect(bar).toBeVisible();
-    const box = await boxOf(bar);
+    const [box, rows] = await Promise.all([boxOf(bar), boxOf(scroll)]);
     const height = await page.evaluate(() => window.innerHeight);
-    // The bar ends at the bottom edge of the window: nothing of the list shows under it.
-    expect(Math.abs(box.y + box.height - height)).toBeLessThanOrEqual(1);
+    // The list takes the rest of the window, so the bar under it is in the window whole, and the rows end above it.
+    expect(box.y + box.height).toBeLessThanOrEqual(height);
+    expect(rows.y + rows.height).toBeLessThanOrEqual(box.y + 0.5);
+  });
+});
+
+test.describe("the end of a short list", () => {
+  test.use({ preparation: { run: (server) => prepareManyWeb(server, 3) } });
+
+  test("ux_4_2 a short list ends under its last row: the box of the rows is no higher than its rows, with no line of its own", async ({
+    page,
+  }) => {
+    test.skip(layoutOf(page) !== "computer", "a phone draws cards");
+    await signIn(page, ada);
+    await page.goto(projectIssuesAddress("WEB"));
+    const scroll = partIn(page, "list-scroll");
+    const last = partIn(scroll, "list-row").last();
+    await expect(last).toBeVisible();
+    const [box, row] = await Promise.all([boxOf(scroll), boxOf(last)]);
+    // Only the room at the end of the list (R2) under the last row, and no second bar under the line of that row.
+    expect(box.y + box.height - (row.y + row.height)).toBeLessThanOrEqual(16);
+    await expect(scroll).toHaveCSS("border-bottom-width", "0px");
   });
 });

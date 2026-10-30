@@ -7,7 +7,7 @@ import {
 } from "@bugaboo/api-client";
 import { locale } from "@bugaboo/messages";
 
-import { currentRegion, type NumberFormat, type Region } from "./region.ts";
+import { currentRegion, numberLocales, type Region } from "./region.ts";
 
 /** The time zone option of `Intl`: left out for `device`, which is the zone of this device. */
 export function zoneOf(region: Region): { readonly timeZone?: string } {
@@ -153,14 +153,6 @@ export function formatDate(moment: string, region: Region = currentRegion()): st
   }
   return unbroken(numeric(date, region));
 }
-
-/** The language tag that writes numbers the way each choice does; the device uses its own. */
-const numberLocales: Readonly<Record<NumberFormat, string | undefined>> = {
-  device: undefined,
-  point: "en-US",
-  comma: "de-DE",
-  space: "fr-FR",
-};
 
 /** A number as people write it: "1,234.5", "1.234,5" or "1 234,5". */
 export function formatNumber(value: number, region: Region = currentRegion()): string {

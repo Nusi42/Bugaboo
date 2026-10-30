@@ -104,3 +104,47 @@ export function SentenceWithName({
     </SentenceWithValue>
   );
 }
+
+/** The places of the names in a sentence, in order, none inside another (a longer name wins where two start alike). */
+function namePlaces(sentence: string, names: readonly string[]): readonly Placed[] {
+  const found = names
+    .flatMap((name) => wholeNamePlaces(sentence, name).map((start) => ({ start, text: name })))
+    .toSorted(
+      (one: Readonly<Placed>, other: Readonly<Placed>) =>
+        one.start - other.start || other.text.length - one.text.length,
+    );
+  const kept: Placed[] = [];
+  for (const place of found) {
+    const previous = kept.at(-1);
+    if (previous === undefined || place.start >= previous.start + previous.text.length) {
+      kept.push(place);
+    }
+  }
+  return kept;
+}
+
+/**
+ * A sentence that lists names (*Niko Eriksen and Tomas Petrov*): a line breaks only between two names, never inside
+ * one; each name goes to the next line as a whole, and is cut only where it is longer than a line.
+ */
+export function SentenceWithNames({
+  sentence,
+  names,
+}: {
+  readonly sentence: string;
+  readonly names: readonly string[];
+}) {
+  const pieces: ReactNode[] = [];
+  let at = 0;
+  for (const { start, text } of namePlaces(sentence, names)) {
+    pieces.push(
+      sentence.slice(at, start),
+      <span key={start} {...partOf(part.unbrokenWord)}>
+        {text}
+      </span>,
+    );
+    at = start + text.length;
+  }
+  pieces.push(sentence.slice(at));
+  return <span>{pieces}</span>;
+}

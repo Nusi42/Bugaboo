@@ -7,7 +7,7 @@ import { layoutOf } from "./support/layout.ts";
 import { grid, rowOf } from "./support/list-look.ts";
 import { preparePanel } from "./support/list-panel.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, shadowsOf } from "./support/windows.ts";
 
 // The list beside the side panel has the room that is left (UX §4.2, M5 exit finding L1/A2): it
 // keeps the status, the ID, the title and the priority, nothing of it runs under the panel and
@@ -34,4 +34,31 @@ test("ux_4_2 beside the open issue the list ends 16 px before the panel and does
   // The title keeps room to be read.
   const title = await boxOf(grid(page).getByRole("link", { name: webIssues.login }));
   expect(title.width).toBeGreaterThanOrEqual(100);
+});
+
+test("ux_3_2 beside the list the open issue scrolls in a box of its own, as high as the window, with the shadow where more follows (L7)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has the panel beside the list");
+  // A low window, where the rows fill the rest of it: the page does not scroll, and the panel, as high as its line, ends
+  // with the box of the rows, under the top bar.
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await signIn(page, ada);
+  await page.goto(`${projectIssuesAddress("WEB")}?open=WEB-1`);
+  await expect(rowOf(page, webIssues.login)).toBeVisible();
+  const panel = page.getByRole("complementary").first();
+  const [box, rows, bar, height] = await Promise.all([
+    boxOf(panel),
+    boxOf(partIn(page, "list-scroll").first()),
+    boxOf(partIn(page, "top-bar").first()),
+    page.evaluate(() => window.innerHeight),
+  ]);
+  expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+  expect(box.y + box.height).toBeLessThanOrEqual(height);
+  expect(Math.abs(box.y + box.height - (rows.y + rows.height))).toBeLessThanOrEqual(2);
+  const body = partIn(panel, "side-panel.body");
+  await expect
+    .poll(() => body.evaluate((node) => node.scrollHeight > node.clientHeight + 1))
+    .toBe(true);
+  await expect.poll(() => shadowsOf(body)).toEqual({ start: 0, end: 1 });
 });

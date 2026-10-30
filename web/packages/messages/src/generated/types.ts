@@ -122,7 +122,7 @@ export interface MessageArguments {
   };
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
-  "common.show-all": { count: string | number };
+  "common.show-all": { count: number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
   "conflict.sentence": {
@@ -244,6 +244,8 @@ export interface MessageArguments {
   "issues.column-down": { column: string | number };
   "issues.column-up": { column: string | number };
   "issues.column-width": { column: string | number };
+  "issues.columns-hidden": { count: number };
+  "issues.columns-hidden-customizing": { count: number };
   "issues.compare-keep": { number: string | number };
   "issues.compare-paragraph": { number: string | number };
   "issues.copy-link-of": { key: string | number };
@@ -314,7 +316,7 @@ export interface MessageArguments {
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.note-type-not-used": { project: string | number; type: string | number };
-  "many-changes.progress": { done: string | number; total: number };
+  "many-changes.progress": { done: number; total: number };
   "many-changes.project-picked": { name: string | number };
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };

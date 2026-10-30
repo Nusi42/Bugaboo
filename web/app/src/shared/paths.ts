@@ -107,6 +107,16 @@ export function addressInProject(path: Extract<Path, `/p/${string}`>, shortName:
   return filled(path, routeParam.project, shortName);
 }
 
+/** Whether an address has the form of the address of a route: `/s/abc` has the form of `/s/$search`. */
+export function hasFormOf(path: string, address: string): boolean {
+  const want = path.split("/");
+  const have = address.split("/");
+  return (
+    want.length === have.length &&
+    want.every((part, at) => (part.startsWith("$") ? (have[at] ?? "") !== "" : part === have[at]))
+  );
+}
+
 /** Whether an address is the page at `path` or a page under it (`/settings/people/<ID>` under `/settings/people`). */
 export function isAtOrUnder(path: string, pathname: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);

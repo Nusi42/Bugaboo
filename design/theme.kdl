@@ -49,7 +49,7 @@ variants {
 tokens {
     // Fonts
     font "font" "Atkinson Hyperlegible Next" "system-ui" "-apple-system" "Segoe UI" "Roboto" "sans-serif"
-    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Cascadia Mono" "Consolas" "monospace"
+    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Consolas" "monospace"
 
     // Corners
     size "r-ctl" "6px"
@@ -110,9 +110,9 @@ tokens {
     size "size-row-compact" "28px" touch="44px"
     // The sentence of an empty list stands in from the list's edge on a computer and on the edge itself on a phone (R1).
     size "pad-nothing" "$pad-box" phone="0px"
-    // How tall the rows of a long list may be before the list scrolls inside the page.
+    // How tall the list of people may be before it scrolls inside the page (the issue lists take the rest of the window).
     size "size-list-scroll" "70dvh"
-    // The least the list of a phone is high, where the page above it takes most of the screen.
+    // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
@@ -163,6 +163,10 @@ tokens {
     // The width of the head of the list as the browser measured it (its columns at their least, at least the frame): the code gives it to the virtualized rows, which have no width of their own, so a list wider than its box scrolls sideways, head and rows together; none where there is no head.
     size "list-width" "0px" run-time="true"
     size "bp-window-side" "880px"
+    // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
+    // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
+    // because a container query cannot read tokens; a test of the theme file (theme_file/tests.rs) holds them together.
+    size "bp-list-beside" "876px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
     size "size-day-week" "16px"
@@ -312,7 +316,7 @@ tokens {
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
     // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
     // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
-    color "disabled-fill" daylight="#d7dbe1" paper="#d9d0c2" dusk="#434955" midnight="#272a31" forced="ButtonFace"
+    color "disabled-fill" daylight="#d7dbe1" paper="#d3d1ce" dusk="#434955" midnight="#30333a" forced="ButtonFace"
     color "on-disabled" daylight="#4d5461" paper="#564e45" dusk="#c0c6d1" midnight="#9ca3af" daylight-more="#333843" paper-more="#3d3731" dusk-more="#e6e9ef" midnight-more="#c4c9d2" forced="GrayText"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
     color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
@@ -333,8 +337,8 @@ tokens {
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
-    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#2f3c50" midnight="#1f2531"
-    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#1f3b68" midnight="#0a2350"
+    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#3b3b3b" midnight="#252525"
+    color "tint-ip" daylight="#d2eefe" paper="#c4e9ef" dusk="#1f3b68" midnight="#0a2350"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
     // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
     // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
@@ -484,11 +488,6 @@ contrast min=4.5 {
 
     dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)."
 
-    lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
-        colors "fg-muted"
-        on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
-    }
-
     lines min=3 reason="The edge of a swatch of a choice color is drawn in its text color: it is seen at 3:1 on every surface it stands on, in every theme, so a pale fill is never lost on the card (M5 exit)." {
         colors "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
         on "bg-canvas" "bg-surface" "bg-raised"
@@ -511,11 +510,19 @@ distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="
     surfaces "bg-canvas" "bg-raised"
 }
 
-// A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
-// the fills of a chosen thing (a selected segment, the soft accent) by a clear difference of color, in every theme.
-distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that cannot be pressed differs from the raised and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit)." {
+// Not started is a neutral grey in every theme (UX §4.2): a tint with a hue of its own read as a second blue beside In
+// progress in Dusk and Midnight (M5 exit F-A4). Its chroma (C*ab) stays as low as the greys of Daylight and Paper.
+distinct max-chroma-of-states=3 reason="The tint of Not started is a neutral grey, not a pale blue next to In progress, in every theme (UX §4.2, M5 exit F-A4)." {
+    states "tint-ns"
+    surfaces "bg-raised"
+}
+
+// A button with a box that cannot be pressed is a grey chip that is told from every surface it stands on (the page, the
+// panel, the card, the sunken boxes) and from the fills of a chosen thing (a selected segment, the soft accent) by a clear
+// difference of color, in every theme. It is the grey of its theme (Paper's tan chip read as a button to press).
+distinct min-delta-e-against-surfaces=7.5 reason="The fill of a button with a box that cannot be pressed differs from the page, the panel, the card and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit, F-A9)." {
     states "disabled-fill"
-    surfaces "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
+    surfaces "bg-canvas" "bg-surface" "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
 }
 
 // The twelve colors of choices, labels and tags are told apart at a glance in every theme, and from the card they stand on:
@@ -1131,6 +1138,18 @@ part "visually-hidden" {
     use "hidden-text"
 }
 
+// A button with a box that cannot be pressed: a flat grey chip with quiet words, its edge its fill (F-A9). Forced colors
+// draw its edge in the colour of words that cannot be used.
+mixin "disabled-chip" {
+    border-color "$disabled-fill"
+    background "$disabled-fill"
+    color "$on-disabled"
+    cursor default
+    forced {
+        border-color GrayText
+    }
+}
+
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
 //
 // The variants come before the states, so that a hovered quiet button is hovered.
@@ -1146,16 +1165,12 @@ part "button" {
     cursor pointer
 }
 
-// The edge of a button that cannot be pressed is drawn in the color of quiet words, so that it can be
-// seen on every page in every theme, even after the fading (STY-CONTRAST holds the ratio). It comes
-// before the looks and has no more weight than they: a look without an edge (quiet, item) keeps none.
+// A button with a box that cannot be pressed is the flat grey chip of the main one below (its fill and quiet words), so
+// it never reads as an outlined button that only fades (M5 exit F-A9: Save search looked active while it waited for a
+// mistake to be fixed). It comes before the looks and has no more weight than they: a look without a box (quiet, item)
+// keeps none and fades instead (the rule after the looks).
 part "button[disabled]" {
-    opacity "$opacity-disabled"
-    border-color "$fg-muted"
-    cursor default
-    forced {
-        border-color GrayText
-    }
+    use "disabled-chip"
 }
 
 part "button[variant=wide]" {
@@ -1255,21 +1270,19 @@ part "button[state=current]" {
     use "marked"
 }
 
+// A text button or an entry of a list that cannot be pressed has no box: it fades, its words stay its own color.
+part "button[variant=quiet][disabled]" "button[variant=item][disabled]" {
+    opacity "$opacity-disabled"
+}
+
 // A main button that cannot be pressed yet is a flat grey chip (the color of the dividers) with quiet words and no
 // fading: in the dark themes the sunken fill read like an enabled outlined button, and a faded fill like the card. Not a pale copy of the
 // filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
 // words (the review of M5, S20), and not the soft accent fill either, which a selected segment or menu item
 // has and which reads as "chosen". It has no edge of its own (its edge is its fill). The dashed edge
 // belongs to the places to drop things on and to *Not started*.
-part "button[variant=primary][disabled]" {
-    opacity 1
-    border-color "$disabled-fill"
-    background "$disabled-fill"
-    color "$on-disabled"
-    // Forced colors draw the edge of a button that cannot be pressed in the colour of words that cannot be used.
-    forced {
-        border-color GrayText
-    }
+part "button[variant=primary][disabled]" "button[variant=danger][disabled]" {
+    use "disabled-chip"
 }
 
 part "button[state=busy]" {
@@ -1772,9 +1785,10 @@ part "overlay.modal[variant=top]" {
 
 // The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
 // screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
-// of a window or of a question, the list of people. The scroll position drives them, where the browser has scroll timelines.
+// of a window or of a question, the list of people, the help of the search, the body of a sheet of a phone and the offers
+// of Advanced search and the body of the side panel (L6, L7). The scroll position drives them, where the browser has scroll timelines.
 // A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
-part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" {
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -1782,7 +1796,7 @@ part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scrol
     }
 }
 
-part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" {
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
@@ -1975,13 +1989,6 @@ part "picker.choice" {
     font-size inherit
     text-align start
     cursor pointer
-}
-
-part "picker.choice picker.name" {
-    overflow hidden
-    overflow-wrap normal
-    text-overflow ellipsis
-    white-space nowrap
 }
 
 part "picker.id" {
@@ -2213,9 +2220,6 @@ part "list-row" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
-    forced {
-        border-inline-start-color Canvas
-    }
 }
 
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
@@ -2418,9 +2422,14 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
     overflow-wrap anywhere
 }
 
+// The people of a row on a phone are written out on as many lines as they need, never cut with dots (M5 exit F-A3); a line
+// breaks only between two names. The date beside them stands on the line of the last name.
 part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
     width auto
+    white-space normal
+    overflow-wrap anywhere
+    align-self "last baseline"
 }
 
 part "list-row[variant=phone] list-row.cell[variant=action]" {
@@ -2431,6 +2440,7 @@ part "list-row[variant=phone] list-row.cell[variant=action]" {
 part "list-row[variant=phone] list-row.cell[variant=changed]" {
     grid-area changed
     justify-self end
+    align-self "last baseline"
 }
 
 // A card without the box to tick (the Search page): the same lines without its column.
@@ -2467,6 +2477,22 @@ part "list-group" {
     font-weight "$weight-regular"
 }
 
+// Under forced colors the transparent start edge of a row, of the head of a group and of a bar of the timeline is drawn
+// in the color of the canvas: only Critical and High carry a bar (R5; a group head had High's bar, M5 exit F-A8).
+part "list-row" "list-group" "timeline-bar" {
+    forced {
+        border-inline-start-color Canvas
+    }
+}
+
+// Under forced colors every border is drawn: the line above a group head would stand right under the line of the row
+// before it. The head keeps the room of its line and draws it in the color of the canvas.
+part "list-group" {
+    forced {
+        border-top-color Canvas
+    }
+}
+
 part "list-group.count" {
     color "$fg-muted"
     font-weight "$weight-regular"
@@ -2486,15 +2512,21 @@ part "list-main" {
     flex-direction column
     gap "$space-3"
     min-width 0
+    container-type inline-size
 }
 
-// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the list.
+// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the
+// list, where the list has no room for it beside (bp-list-beside).
 part "list-body" {
     display flex
-    flex-wrap wrap
+    flex-wrap nowrap
     align-items flex-start
     gap "$space-4"
     min-width 0
+    container "(max-width: $bp-list-beside)" {
+        flex-direction column
+        align-items stretch
+    }
 }
 
 part "list-column" {
@@ -2568,14 +2600,20 @@ part "list-frame[variant=compact] checkbox.box" {
 }
 
 
-// The rows scroll inside this box; the head stays above them.
+// The shadow at the end of the rows stands on the edge of the box, over its padding at the end.
+part "list-scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-3)"
+    }
+}
+
+// The rows scroll inside this box; the head stays above them. The last row ends the list with its own line; the box
+// adds none, so a list whose rows just fit has no double bar.
 part "list-scroll" {
     box-sizing border-box
     min-width "$list-width"
     padding-block-end "$space-3"
-    max-height "$size-list-scroll"
     overflow auto
-    border-bottom "$border-width solid $divider"
 }
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
@@ -2651,7 +2689,8 @@ part "list-row[variant=head] list-row.cell[variant=key]:has(list-handle)" {
 
 // A group of rows can be folded: the whole header is the button.
 // The header of a group stands on the columns of the rows (R1): the arrow in the column of the tick box, the icon of
-// the group on the status icon, the name on the ID. A list without tick boxes has its arrow at the end.
+// the group on the status icon, the name on the ID. A list without tick boxes keeps the chevron at the start too (L5),
+// in a narrow column of its own, so there the icon and the name stand one column in.
 part "list-group.toggle" {
     use "bare-button"
     display grid
@@ -2668,17 +2707,15 @@ part "list-group.toggle" {
     text-align start
 }
 
+// One group head in every list (L5): the chevron at the start, then the icon, the name, and the count at the end. A list
+// without the box to tick has a narrow first column for the chevron instead of the column of the boxes.
 part "list-group.toggle[variant=no-select]" {
-    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
+    grid-template-columns "$size-col-icon $size-col-icon minmax(0, 1fr) auto"
 }
 
 part "list-group.chevron" {
     display flex
     justify-content center
-}
-
-part "list-group.toggle[variant=no-select] list-group.chevron" {
-    order 9
 }
 
 part "list-group.kind" {
@@ -2722,6 +2759,28 @@ part "list-panel" {
     box-sizing border-box
     flex "1 1 $size-list"
     padding "$pad-box"
+    // No higher than the line it shares with the list: its columns scroll inside it, under the edge shadow.
+    max-height "100%"
+    min-height 0
+    overflow-y auto
+    // Under the list it is as high as its columns.
+    container "(max-width: $bp-list-beside)" {
+        flex none
+    }
+}
+
+part "list-panel::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $pad-box)"
+        margin-block-end "calc(-1 * $space-3)"
+    }
+}
+
+part "list-panel::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $pad-box)"
+        margin-block-start "calc(-1 * $space-3)"
+    }
 }
 
 part "list-panel.head" {
@@ -2796,9 +2855,6 @@ part "timeline-bar" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
-    forced {
-        border-inline-start-color Canvas
-    }
 }
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────
@@ -3729,6 +3785,15 @@ part "search-field.input" {
     font-size "$fs-md"
 }
 
+// The clear mark has its place at the end of the box whether there is text or not: the box keeps its width as the first
+// letter is typed, so the browser's scroll to the end of the text holds (M5 exit F-A7).
+part "search-field.clear" {
+    display flex
+    flex none
+    min-width "$size-control"
+    justify-content center
+}
+
 part "search-field.input:focus" {
     outline none
 }
@@ -3828,10 +3893,13 @@ part "overlay.modal[variant=full] confirm.dialog" {
     min-height 0
 }
 
-// The foot of a sheet stays at the foot of it, whatever its content adds.
+// The foot of a sheet stays at the foot of it, whatever its content adds, and is told from what scrolls above it by
+// the divider of the foot of a window (M5 exit F-A6).
 part "bottom-sheet.actions" {
     flex none
     margin-block-start auto
+    padding-block-start "$space-4"
+    border-top "$border-width solid $divider"
 }
 
 part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" "overlay[variant=bottom] bottom-sheet.actions" {
@@ -4121,14 +4189,14 @@ part "people" {
 
 // Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
 // boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
-part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" {
+part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" "search-panel" "bottom-sheet search-bar" "search-suggestions" "side-panel.body" "list-panel" {
     supports "not (animation-timeline: scroll())" {
         use "scroll-cue"
     }
 }
 
-// The covers of the old cue in the list of people are the color of its box, the plain surface.
-part "people" {
+// The covers of the old cue in the list of people and in Customize are the color of their box, the plain surface.
+part "people" "list-panel" {
     supports "not (animation-timeline: scroll())" {
         --cue-cover "$bg-surface"
     }
@@ -4314,15 +4382,22 @@ part "chip" {
     gap "$space-1"
 }
 
-// The bar of the issues ticked (UX §4.2): under the list, where ticking moves nothing above it, and stuck to the
-// bottom of the window while there is more list than window. With nothing ticked it has no look and no room.
+// The bar of the issues ticked (UX §4.2): under the list, where ticking moves nothing above it; the box of the rows takes
+// the rest of the window, so the bar is always in view. With nothing ticked it has no look.
 part "selected-bar" {
     display flex
     flex-direction column
     gap "$space-2"
 }
 
-// Pinned to the bottom edge of the window with no gap under it: a gap would show a cut half row of the list below the bar.
+// A bar with nothing in it (nothing ticked, no outcome of a change to show) takes no room, so the column of the list has
+// no gap for it and the box of the rows ends where the column ends. Whatever it shows (the outcome of a change of many
+// issues after the ticks are cleared) stands in the flow, under the last row.
+part "selected-bar:empty" {
+    display none
+}
+
+// At the foot of the list (the box of the rows takes the rest of the window), sticky to the bottom where the page scrolls.
 part "selected-bar[state=active]" {
     use "floating-box"
     position sticky
@@ -4434,7 +4509,9 @@ part "project-tree.link[current] project-tree.short" {
     color "$accent-fg"
 }
 
-part "project-tree.note" {
+// The one line of a section of the sidebar (or of the sheet More) with nothing in it yet: the projects and the saved
+// searches alike, under their heading (UX §3.1).
+part "sidebar.note" {
     margin 0
     padding "0 $space-3"
     color "$fg-muted"
@@ -4674,16 +4751,10 @@ part "app-layout.main:focus" {
 }
 
 // While a window is minimized to its strip at the bottom of the page, the page has room for the strip under its end, so
-// the strip covers no row of a list and no frame of a card at the end of the page (M5 exit, O7).
+// the strip covers no row of a list and no frame of a card at the end of the page (M5 exit, O7). On the page of a list the
+// box of the rows takes the rest of the window, so this is the one place the strip's room is taken off.
 part "app-layout:has(window-dock) app-layout.main" {
     padding-block-end "calc($size-page-gutter + $size-dock-strip)"
-}
-
-// The box of the rows of a list is as high as the window lets it be: with the strip there it gives the strip its room, so at
-// rest the box ends above the strip and the page grows no longer than the window (M5 exit, finding 53). A phone keeps its
-// own height of the box (the rule of a phone list, later).
-part "app-layout:has(window-dock) list-scroll" {
-    max-height "calc($size-list-scroll - $size-dock-strip)"
 }
 
 // The focus view takes the whole width, so the strip has the gutter only.
@@ -4914,7 +4985,9 @@ part "bottom-bar.item[hovered]" {
     background "$bg-hover"
 }
 
-part "bottom-bar.item[current]" {
+// A tab of the bar is current where its place is open (isCurrentPlace): a link on its page, the Search tab, a button that
+// opens quick search, on the Search page and a saved search, so a phone shows where one is like the sidebar does.
+part "bottom-bar.item[state=current]" {
     use "current-item"
 }
 
@@ -4989,8 +5062,45 @@ part "side-panel" {
 
 part "side-panel.head" {
     display flex
+    flex none
     align-items center
     gap "$space-3"
+}
+
+// What the panel holds scrolls under its head, with room for the rings of what is inside it (L7).
+part "side-panel.body" {
+    flex "1 1 auto"
+    min-height 0
+    overflow-y auto
+    use "ring-room"
+    use "ring-room-flush"
+}
+
+part "side-panel.body::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+    }
+}
+
+part "side-panel.body::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+    }
+}
+
+// Beside a list the panel is a box of its own as high as the window at most: it keeps its place under the top bar while
+// the page scrolls, and what does not fit scrolls in its body (L7, UX §3.2).
+part "list-editor side-panel" {
+    position sticky
+    top "calc($size-bar + $size-page-gutter)"
+    max-height "calc($size-viewport - $size-bar - 2 * $size-page-gutter)"
+}
+
+// On the page of a list the page itself does not scroll (its main box does, under the top bar): the panel is as high as
+// the line it shares with the list, and keeps a gutter from the top of that box when it does scroll.
+part "list-editor:has(list-main) side-panel" {
+    top "$size-page-gutter"
+    max-height none
 }
 
 part "side-panel.title" {
@@ -5948,7 +6058,8 @@ part "files.drop" {
     align-items center
     gap "$space-2 $space-3"
     padding "$space-3"
-    border "$border-width dashed $border"
+    // The place takes a press like a control, so its edge is the edge of a control (3:1, F-A11).
+    border "$border-width dashed $border-control"
     border-radius "$r-card"
     color "$fg-muted"
     font-size "$fs-md"
@@ -6018,17 +6129,19 @@ part "files.info" {
     overflow-wrap anywhere
 }
 
-// A word that never breaks at a hyphen: it goes to the next line as a whole, and is cut anywhere only
-// where it is longer than the line itself (file names, like an issue ID).
+// Words that stay one piece in a sentence: a file name that never breaks at a hyphen, a name in a line of people, an
+// example in brackets ("(a Team member)"). The piece goes to the next line as a whole, and is cut anywhere only where it
+// is longer than the line itself (like an issue ID).
 part "unbroken-word" {
     display inline-block
     max-width "100%"
     word-break break-all
 }
 
-// A few words that stay on one line in a sentence: an example in brackets ("(a Team member)").
-part "kept-together" {
-    white-space nowrap
+// In a cell of the grid of a computer a line does not wrap: the pieces are plain words there, so a line too long for its
+// column ends in the dots of the cell instead of a name clipped whole (the people of a row).
+part "list-row[variant=grid] unbroken-word" {
+    display inline
 }
 
 part "files.name" {
@@ -13498,6 +13611,51 @@ part "bottom-sheet search-bar" {
     flex "1 1 auto"
     min-height 0
     overflow-y auto
+    // It clips what is outside it: room for the ring of the box and the buttons at every side (F-A6).
+    use "ring-room"
+    use "ring-room-flush"
+}
+
+// The shadows of the boxes of the search that scroll stand at the edge of the box, over its padding, and take no gap
+// of the column they stand in.
+part "bottom-sheet search-bar::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $space-3)"
+    }
+}
+
+part "bottom-sheet search-bar::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $space-3)"
+    }
+}
+
+part "search-panel::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $space-5)"
+        margin-block-end "calc(-1 * $space-4)"
+    }
+}
+
+part "search-panel::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-5)"
+        margin-block-start "calc(-1 * $space-4)"
+    }
+}
+
+part "search-suggestions::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $space-1)"
+    }
+}
+
+part "search-suggestions::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $space-1)"
+    }
 }
 
 // The sheet of the filters has a fixed height (see size-bar-sheet), so it does not jump as the filters change.
@@ -13916,23 +14074,75 @@ part "search-panel search-suggestions" {
     margin-block-start "$space-1"
 }
 
-// A phone has one scroller where the list is: the list. The page does not scroll, and every box between the page and the
-// list gives it the room that is left, so the list ends above the bar of the ticked issues and the navigation.
+// A page of a list gives the box of its rows the rest of the window, on a computer as on a phone: the page column is a
+// full-height column, and every box between it and the list gives the list the room that is left. So the list ends above
+// the bar of the ticked issues and the navigation of a phone, and above the strip of a minimized window, whose room the
+// page takes off once (app-layout.main above). Where the boxes above the list leave it less than its least height, the
+// page scrolls. Only the page of a list (list-main): the slim list of the focus view stays in its page.
+part "app-layout:has(list-main)" {
+    height "100%"
+    min-height 0
+}
+
+part "app-layout:has(list-main) app-layout.column" {
+    height "100%"
+}
+
+part "app-layout:has(list-main) app-layout.main" {
+    min-height 0
+    overflow-y auto
+}
+
+// A phone has one scroller where the list is: the list. The page does not scroll.
 part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
     overflow-y hidden
 }
 
-part "app-layout[variant=phone] app-layout.inner:has(list-scroll)" "app-layout[variant=phone] card:has(list-scroll)" "app-layout[variant=phone] card > stack:has(list-scroll)" "app-layout[variant=phone] list-editor:has(list-scroll)" "app-layout[variant=phone] list-editor.list:has(list-scroll)" "app-layout[variant=phone] list-main:has(list-scroll)" "app-layout[variant=phone] list-body:has(list-scroll)" "app-layout[variant=phone] list-column:has(list-scroll)" "app-layout[variant=phone] list-frame:has(list-scroll)" "app-layout[variant=phone] search-results:has(list-scroll)" {
+part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     display flex
     flex-direction column
     flex-wrap nowrap
     align-items stretch
     flex "1 1 0"
+}
+
+// Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
+// a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
+part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     min-height 0
 }
 
-part "app-layout[variant=phone] list-scroll" {
+// On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
+// too, or Customize under the list where the room is narrow (each line as high as the room it is given).
+part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
     flex "1 1 0"
+    align-items stretch
+}
+
+part "list-editor:has(list-scroll)" "list-body:has(list-scroll)" {
+    min-height 0
+}
+
+part "list-editor:has(list-main)" {
+    flex-wrap nowrap
+}
+
+// The list column fills the line it stands in, and its frame the column. With Customize under it the list takes the
+// room the panel's columns leave.
+part "list-column:has(list-scroll)" {
+    min-height 0
+    container "(max-width: $bp-list-beside)" {
+        flex "1 1 0"
+    }
+}
+
+part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {
+    flex-direction column
+    flex-wrap nowrap
+}
+
+// The box of the rows is as high as its rows, and no higher than the rest of the window: min(its rows, the rest).
+part "list-main list-scroll" {
+    flex "0 1 auto"
     min-height "$size-list-scroll-least"
-    max-height none
 }

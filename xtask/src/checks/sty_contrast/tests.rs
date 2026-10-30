@@ -7,7 +7,11 @@ fn text() -> String {
 
 /// The theme file with one value of a color token replaced: `key` is `dusk` or `dusk-more`.
 fn with_value(token: &str, key: &str, value: &str) -> ThemeFile {
-    let text = text();
+    ThemeFile::parse(&text_with_value(&text(), token, key, value)).unwrap()
+}
+
+/// `text` with the value of a color token in one theme (or mode) written as `value`.
+fn text_with_value(text: &str, token: &str, key: &str, value: &str) -> String {
     let start = text
         .find(&format!("color \"{token}\""))
         .expect("the token is in the file");
@@ -23,7 +27,7 @@ fn with_value(token: &str, key: &str, value: &str) -> ThemeFile {
         &line[value_end..],
         &text[line_end..]
     );
-    ThemeFile::parse(&changed).unwrap()
+    changed
 }
 
 fn messages(findings: &[Finding]) -> Vec<String> {
@@ -125,14 +129,20 @@ fn a_color_without_a_classification_is_rejected() {
 }
 
 #[test]
-fn the_edge_of_a_disabled_button_is_checked_as_it_is_seen() {
-    // The edge is the color of quiet words faded by the opacity of a disabled control: this
-    // color reaches 2:1 on the raised surface of Dusk as it is (2.56:1) and no longer once it is
-    // faded (1.76:1), so only the fade makes the check find it.
+fn a_faded_line_is_checked_as_it_is_seen() {
+    // A line in the color of quiet words faded by the opacity of a disabled control (the example
+    // group): this color reaches 2:1 on the raised surface of Dusk as it is (2.56:1) and no longer
+    // once it is faded (1.76:1), so only the fade makes the check find it.
     let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
     let raised = color(&file, "bg-raised", "dusk").expect("the token has a color");
     assert!(contrast_ratio("#686f80", raised) >= 2.0);
-    let findings = evaluate(&with_value("fg-muted", "dusk", "#686f80"));
+    let faded = crate::generate::contrast_spec::with_faded_lines(&text_with_value(
+        &text(),
+        "fg-muted",
+        "dusk",
+        "#686f80",
+    ));
+    let findings = evaluate(&ThemeFile::parse(&faded).unwrap());
     assert!(
         findings
             .iter()
@@ -144,7 +154,8 @@ fn the_edge_of_a_disabled_button_is_checked_as_it_is_seen() {
 
 #[test]
 fn a_line_faded_by_something_that_is_no_opacity_is_a_finding_not_a_skip() {
-    let mut file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    let mut file =
+        ThemeFile::parse(&crate::generate::contrast_spec::with_faded_lines(&text())).unwrap();
     let lines = file
         .contrast
         .plain_lines
@@ -556,5 +567,18 @@ fn bad_example() {
         findings
             .iter()
             .any(|f| f.message.contains("Theme daylight"))
+    );
+}
+
+#[test]
+fn the_tint_of_not_started_is_a_neutral_grey_in_every_theme() {
+    // M5 exit F-A4: in Dusk the tint of Not started was a blue grey (47, 60, 80), close to In progress.
+    let findings = evaluate(&with_value("tint-ns", "dusk", "#2f3c50"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("Theme dusk")
+            && f.message.contains("`tint-ns`")
+            && f.message.contains("grey")),
+        "{:?}",
+        messages(&findings)
     );
 }

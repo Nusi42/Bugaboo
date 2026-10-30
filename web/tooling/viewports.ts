@@ -16,3 +16,9 @@ export const viewports = {
   /** The phone of the pictures for the review. */
   phoneForPictures: { width: 400, height: 860 },
 } as const;
+
+/**
+ * The language of the browser of the tests, and so how it writes numbers for a person who chose none: the
+ * test runner writes the numbers of its texts (`t()`) the same way, whatever the computer it runs on says.
+ */
+export const browserLocale = "en-US";

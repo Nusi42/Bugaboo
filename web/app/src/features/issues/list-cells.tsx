@@ -7,7 +7,7 @@ import { cellOf, type ColumnCell } from "../../shared/list-columns.ts";
 import type { FoundLine } from "./found-issues.ts";
 import { issueCells } from "./issue-cells.tsx";
 import type { OwnColumns } from "./own-columns.ts";
-import { assignedText, labelsOf, valueOf } from "./value-cell.tsx";
+import { assignedPeople, labelsOf, valueOf } from "./value-cell.tsx";
 
 /** What a cell needs besides the issue. */
 export interface CellContext {
@@ -51,7 +51,7 @@ const contentOf: Readonly<Record<ColumnCell, (input: CellInput) => ReactNode>> =
       showWord={listShowsWord(line.priority)}
     />
   ),
-  person: ({ line }) => assignedText(line),
+  person: ({ line }) => (line.assignedTo.length === 0 ? undefined : assignedPeople(line)),
   changed: ({ line, context }) =>
     line.changedAt === undefined ? undefined : formatAgo(line.changedAt, context.now),
   project: ({ line }) => line.project?.name,

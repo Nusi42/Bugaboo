@@ -13,11 +13,16 @@ export interface ListInfoProps {
   readonly shown: readonly string[];
   /** The text of the search has a mistake: the list below is the last one without. */
   readonly stale: boolean;
+  /** Customize is open, so the line about hidden columns does not send the person there. */
+  readonly customizing: boolean;
 }
 
-/** The count line above the list, *302 in Website · 13 shown* (UX §4.2). */
-export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
-  const { search, failure, phone } = useListContext();
+/**
+ * The count line above the list, *302 in Website · 13 shown* (UX §4.2), and the line that says how
+ * many chosen columns gave way for lack of room (a phone draws its own few and says nothing).
+ */
+export function ListInfo({ scopeName, shown, stale, customizing }: ListInfoProps) {
+  const { search, failure, phone, hidden } = useListContext();
   const count = useFoundCount(search);
   // With no earlier list (the address itself has the mistake) the error says it all.
   const note = stale && failure === null;
@@ -25,6 +30,9 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
     return null;
   }
   const scope = scopeName ?? t("issues.everywhere");
+  const hiddenLine = customizing
+    ? t("issues.columns-hidden-customizing", { count: hidden })
+    : t("issues.columns-hidden", { count: hidden });
   return (
     <>
       {note ? (
@@ -40,7 +48,11 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
         </Alert>
       ) : null}
       <p {...partOf(part.muted)}>{countLine(count.data, scope, shown.length)}</p>
-      <Announce>{t("issues.count", { count: count.data })}</Announce>
+      {hidden > 0 ? <p {...partOf(part.muted)}>{hiddenLine}</p> : null}
+      <Announce>
+        {t("issues.count", { count: count.data })}
+        {hidden > 0 ? ` ${hiddenLine}` : null}
+      </Announce>
     </>
   );
 }

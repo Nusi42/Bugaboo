@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { defineConfig } from "@playwright/test";
 
 import { readPorts, repoRoot } from "./ports.ts";
-import { viewports } from "./viewports.ts";
+import { browserLocale, viewports } from "./viewports.ts";
 
 // Every worker starts its own Bugaboo server with its own data on a port of its own (ADR-0023),
 // so there are never more workers than ports.
@@ -45,7 +45,7 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 10_000 },
   // The servers use the certificate they made themselves.
-  use: { ignoreHTTPSErrors: true, trace: "retain-on-failure" },
+  use: { ignoreHTTPSErrors: true, trace: "retain-on-failure", locale: browserLocale },
   projects: [
     // A tablet: the sidebar is a menu that slides in. Only the tests of the shell look at it.
     {

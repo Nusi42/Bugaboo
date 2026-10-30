@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme, expectStaleNote } from "./support/checks.ts";
+import { expectGoodInEveryTheme, expectGreyChip, expectStaleNote } from "./support/checks.ts";
 import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -121,7 +121,8 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   // The offers are closed first, so the note can be seen; it is good in every theme.
   await box(page).press("Escape");
   await expectGoodInEveryTheme(page);
-  await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeDisabled();
+  // Save search looks like a button that cannot be pressed (M5 exit F-A9).
+  await expectGreyChip(page, page.getByRole("button", { name: t("search.save"), exact: true }));
   await box(page).fill("priority is High");
   await expect(page.getByText(t("search.found-stale"))).toHaveCount(0);
   await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeEnabled();

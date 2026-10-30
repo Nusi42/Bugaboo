@@ -19,6 +19,25 @@ export function windowDock(page: Page): Locator {
   return partIn(page, part.windowDock);
 }
 
+/** A part of the strip of the minimized windows. */
+export function inDock(page: Page, name: string): Locator {
+  return partIn(windowDock(page), name);
+}
+
+/** The column of the page, the last card in it and the box of the rows of a list in it. */
+export function pageColumn(page: Page): {
+  readonly column: Locator;
+  readonly card: Locator;
+  readonly rows: Locator;
+} {
+  const column = partIn(page, part.appLayoutInner);
+  return {
+    column,
+    card: column.locator(":scope > *").last(),
+    rows: partIn(column, part.listScroll).first(),
+  };
+}
+
 /** The button of the title bar of the open window. */
 export function windowButton(page: Page, name: string): Locator {
   return newIssueDialog(page).getByRole("button", { name, exact: true });
@@ -207,4 +226,34 @@ export function shadowsOf(box: Locator): Promise<{ readonly start: number; reado
     start: Math.round(Number(getComputedStyle(node, "::before").opacity)),
     end: Math.round(Number(getComputedStyle(node, "::after").opacity)),
   }));
+}
+
+/** Starts a new issue and minimizes its window, so its strip stands at the bottom of the page. */
+export async function minimizeADraft(page: Page): Promise<void> {
+  await openNewIssueDialog(page);
+  await titleBox(page).fill("A draft");
+  await windowButton(page, t("window.minimize")).click();
+  await expect(windowDock(page)).toBeVisible();
+}
+
+/** The empty room in a box under its last child, past its own padding: none where the box is as high as its content. */
+export function roomUnderContent(box: Locator): Promise<number> {
+  return box.evaluate((node) => {
+    const end = node.getBoundingClientRect().bottom;
+    const last = node.lastElementChild;
+    const contentEnd = last === null ? end : last.getBoundingClientRect().bottom;
+    return end - contentEnd - Number(getComputedStyle(node).paddingBottom.replace("px", ""));
+  });
+}
+
+/** Scrolls a box of rows of a list to its end and says how much room is under its last row. */
+export async function roomUnderLastRow(scroll: Locator): Promise<number> {
+  await scroll.evaluate((box) => {
+    box.scrollTop = box.scrollHeight;
+  });
+  const [last, box] = await Promise.all([
+    boxOf(partIn(scroll, part.listRow).last()),
+    boxOf(scroll),
+  ]);
+  return box.y + box.height - (last.y + last.height);
 }

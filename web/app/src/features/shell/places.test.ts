@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { paths } from "../../shared/paths.ts";
+import { paths, savedSearchAddress } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
 import {
   isCurrentPlace,
@@ -150,5 +150,11 @@ describe("ux_5 the screen that is open, for the sidebar and the bar of a phone a
     expect(isCurrentPlace(paths.notifications, paths.notifications)).toBe(true);
     expect(isCurrentPlace(paths.home, paths.home)).toBe(true);
     expect(isCurrentPlace(paths.home, paths.notifications)).toBe(false);
+  });
+
+  it("is Search on the Search page and on a saved search, which belongs under it (M5 exit F-A2)", () => {
+    expect(isCurrentPlace(paths.search, paths.search)).toBe(true);
+    expect(isCurrentPlace(paths.search, savedSearchAddress("s1"))).toBe(true);
+    expect(isCurrentPlace(paths.search, paths.notifications)).toBe(false);
   });
 });

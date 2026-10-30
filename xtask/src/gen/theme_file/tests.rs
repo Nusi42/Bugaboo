@@ -139,7 +139,10 @@ fn a_bad_file_names_the_line() {
 /// The theme file of the repository with one piece of text replaced: the error, or nothing.
 fn problem_replacing(from: &str, to: &str) -> Option<String> {
     let repo = Repo::discover().unwrap();
-    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    // The file has no faded lines of its own; the example group stands in for them.
+    let text = crate::generate::contrast_spec::with_faded_lines(
+        &crate::source::read_text(&repo, THEME_PATH).unwrap(),
+    );
     assert!(text.contains(from), "{from} is not in the theme file");
     ThemeFile::parse(&text.replacen(from, to, 1))
         .err()
@@ -180,4 +183,43 @@ fn an_opacity_outside_zero_to_one_is_rejected() {
             "{value}"
         );
     }
+}
+
+/// The pixels of a size token at the density of 1: `560px`, or `calc(16px * $density)`.
+fn token_pixels(file: &ThemeFile, name: &str) -> f64 {
+    let value = file
+        .token(name)
+        .and_then(|token| token.same.as_deref())
+        .unwrap_or_else(|| panic!("{name} is a size of the theme file"));
+    pixels(
+        value
+            .trim_start_matches("calc(")
+            .trim_end_matches(')')
+            .trim_end_matches(" * $density"),
+    )
+}
+
+/// Whether the breakpoint under which Customize stands under the list is the room the two need side by side: the least
+/// width of the list, the gap of `list-body` and the panel of Customize. A container query cannot read the three
+/// tokens, so the breakpoint is written as their sum and held to it here.
+fn list_beside_is_the_sum(file: &ThemeFile) -> bool {
+    let sum = token_pixels(file, "size-list-main")
+        + token_pixels(file, "space-4")
+        + token_pixels(file, "size-list");
+    (token_pixels(file, "bp-list-beside") - sum).abs() < 0.5
+}
+
+#[test]
+fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need_at_density_1() {
+    let repo = Repo::discover().unwrap();
+    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    assert!(list_beside_is_the_sum(&ThemeFile::parse(&text).unwrap()));
+    // A list made wider without the breakpoint is refused.
+    let wider = text.replacen(
+        "size \"size-list-main\" \"560px\"",
+        "size \"size-list-main\" \"600px\"",
+        1,
+    );
+    assert_ne!(wider, text, "the least width of the list is in the file");
+    assert!(!list_beside_is_the_sum(&ThemeFile::parse(&wider).unwrap()));
 }
