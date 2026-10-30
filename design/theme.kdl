@@ -163,8 +163,9 @@ tokens {
     // The width of the head of the list as the browser measured it (its columns at their least, at least the frame): the code gives it to the virtualized rows, which have no width of their own, so a list wider than its box scrolls sideways, head and rows together; none where there is no head.
     size "list-width" "0px" run-time="true"
     size "bp-window-side" "880px"
-    // Narrower than this the list has no room for Customize beside it (its least width, the gap and the panel's): the
-    // panel stands under the list, as high as its columns, and the list takes the rest.
+    // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
+    // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
+    // because a container query cannot read tokens; a test of the theme file (theme_file/tests.rs) holds them together.
     size "bp-list-beside" "876px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
