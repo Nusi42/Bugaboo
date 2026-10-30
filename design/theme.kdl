@@ -3057,10 +3057,15 @@ part "overlay.modal[variant=full] window.title" {
     line-height "$lh-tight"
 }
 
+// Back of the bar of a screen is Back of the top bar of a page: the size of a button's words and its gap (M5 exit, share on
+// a phone: 14 against 16 px, the title further in).
 part "overlay.modal[variant=full] window.control[variant=back]" {
     use "hang-start"
+    gap "$space-2"
     color "$accent-fg"
+    font-size "$fs-ui"
 }
+
 
 part "window.control[focus-visible]" {
     use "ring-inside"
