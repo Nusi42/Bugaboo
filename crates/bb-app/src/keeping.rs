@@ -5,8 +5,6 @@
 //! - `security-log.prune`: the oldest whole blocks of the security log past its keep setting.
 //! - `sessions.purge`: the sessions nobody can use any more, and the links of finished sign-ups.
 //! - `server-log.rotate`: a new file of the log of a server that runs as a service.
-//! - `statistics.refresh`: the statistics the database plans with, from every row, when a table
-//!   grew or shrank tenfold (keeping them, not deleting anything).
 
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, SECURITY_LOG_KEEP_DAYS};
@@ -53,15 +51,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| AppError::Internal(error.to_string()))?;
         self.store()
             .prune_security_log(before, now)
-            .await
-            .map_err(|error| internal::<S>(&error))
-    }
-
-    /// Makes the statistics the database chooses its indexes by again when they are out of date.
-    /// Returns whether it did. A technical upkeep of the database, not a change: no event.
-    pub(crate) async fn refresh_statistics(&self) -> Result<bool, AppError> {
-        self.store()
-            .refresh_statistics()
             .await
             .map_err(|error| internal::<S>(&error))
     }

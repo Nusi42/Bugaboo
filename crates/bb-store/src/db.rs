@@ -26,6 +26,7 @@ use crate::locks::{Held, LockClass, Mode};
 mod fixed;
 mod statement;
 mod statements;
+mod statistics;
 
 pub(crate) use fixed::FixedSql;
 pub(crate) use statement::Statement;
@@ -297,13 +298,9 @@ impl Database {
         }
     }
 
-    /// Makes the statistics SQLite chooses its indexes by (`sqlite_stat1`) again from every row,
-    /// when a table has none yet or grew or shrank tenfold since: a few times in the life of a
-    /// database. Returns whether it made them; `false` on PostgreSQL, which keeps its own. Reading
-    /// every index takes seconds on 1 M issues, while writers wait. They must be exact: `PRAGMA
-    /// optimize` reads at most 2,000 rows of an index, saw one project, wrote that a project has
-    /// about 400 issues where it has 2,000, and every search over 1 M issues then took 2 s instead
-    /// of 30 ms (the nightly runs of 2026-10-29 and 30).
+    /// Makes the statistics SQLite chooses its indexes by again from every row, for each table
+    /// SQLite reports out of date, one table at a time (`db/statistics.rs`). Returns whether it
+    /// analysed a table; `false` on PostgreSQL, which keeps its own.
     ///
     /// # Errors
     /// Fails when the database cannot be read or the statistics cannot be written.
@@ -312,18 +309,26 @@ impl Database {
             return Ok(false);
         };
         let mut connection = pool.acquire().await?;
-        // What `PRAGMA optimize` would analyse, only reported (0x01), for every table (0x10000).
-        let out_of_date = sqlx::query("PRAGMA optimize(0x10003)")
-            .fetch_all(&mut *connection)
-            .await?;
-        if out_of_date.is_empty() {
-            return Ok(false);
-        }
-        sqlx::query("PRAGMA analysis_limit = 0")
+        sqlx::query(statistics::RELOAD)
             .execute(&mut *connection)
             .await?;
-        sqlx::query("ANALYZE").execute(&mut *connection).await?;
-        Ok(true)
+        let reported = sqlx::query_scalar(statistics::OUT_OF_DATE)
+            .fetch_all(&mut *connection)
+            .await?;
+        let mut analysed = false;
+        for (statement, table) in statistics::tables_to_analyse(reported) {
+            // SQLite's own text for one table, alone: the write lock is held for that table only.
+            sqlx::query(AssertSqlSafe(statement))
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query(statistics::EMPTY_IS_UP_TO_DATE)
+                .bind(&table)
+                .bind(&table)
+                .execute(&mut *connection)
+                .await?;
+            analysed = true;
+        }
+        Ok(analysed)
     }
 
     /// Renames a table. For tests only: they break one table on purpose, to see how a use case

@@ -119,3 +119,25 @@ async fn perf_01_refreshed_statistics_are_exact_and_made_only_when_out_of_date()
     );
     Ok(())
 }
+
+/// A database the migrations made, with its empty tables, settles after one refresh: the daily
+/// job and every start of a server do no work on it afterwards. PostgreSQL keeps its own
+/// statistics, so both refreshes do nothing there.
+#[tokio::test]
+async fn perf_01_a_migrated_database_has_nothing_left_to_refresh_after_one_refresh()
+-> bb_testing::TestResult {
+    bb_testing::each_database("perf_01_statistics_settle", async |db| {
+        let database = crate::test_support::open(db).await?;
+        let first = database.refresh_statistics().await?;
+        assert!(
+            database.dialect() == Dialect::Sqlite || !first,
+            "PostgreSQL keeps its own"
+        );
+        assert!(
+            !database.refresh_statistics().await?,
+            "a second refresh found a table out of date"
+        );
+        Ok(())
+    })
+    .await
+}
