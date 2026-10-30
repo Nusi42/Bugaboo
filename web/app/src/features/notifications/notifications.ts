@@ -69,6 +69,18 @@ export function lastMadeOf(rows: readonly NotificationRow[]): string | undefined
   return last;
 }
 
+/**
+ * What *Mark all as read* goes up to: the notification made last on the first page that was read.
+ * The later pages were read at other times, and one made after the first page was read can stand
+ * below a row of a later page without ever having been shown (M5 exit gate).
+ */
+export function markAllUpTo(
+  pages: readonly { readonly items: readonly NotificationItem[] }[] | undefined,
+): string | undefined {
+  // A list read again starts with its first page, so the first page is the one read last.
+  return lastMadeOf(rowsOf(pages?.[0]?.items ?? []));
+}
+
 /** The notifications about one issue (or about none), newest first. */
 export interface IssueGroup {
   /** The readable ID of the issue; the ID of the first notification for one that has no issue. */

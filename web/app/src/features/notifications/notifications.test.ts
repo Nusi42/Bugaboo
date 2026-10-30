@@ -9,6 +9,7 @@ import {
   fileNamesOf,
   groupsOf,
   lastMadeOf,
+  markAllUpTo,
   rowsOf,
   sentencesOf,
   targetOf,
@@ -217,5 +218,25 @@ describe("ntf_01 Mark all as read goes up to the notification made last, not the
 
   it("has nothing to go up to in an empty list", () => {
     expect(lastMadeOf([])).toBeUndefined();
+  });
+});
+
+describe("ntf_01 Mark all as read goes up to the first page only", () => {
+  it("leaves a row of a later page out, which was read at another time", () => {
+    const first = {
+      items: [
+        entry({ id: "019a0000-0000-7000-8000-000000000003", at: "2027-01-15T08:00:03Z" }),
+        entry({ id: "019a0000-0000-7000-8000-000000000002", at: "2027-01-15T08:00:02Z" }),
+      ],
+    };
+    // Read later: a row made after the first page was read, for an earlier event.
+    const later = {
+      items: [entry({ id: "019a0000-0000-7000-8000-000000000009", at: "2027-01-15T08:00:01Z" })],
+    };
+    expect(markAllUpTo([first, later])).toBe("019a0000-0000-7000-8000-000000000003");
+  });
+
+  it("has nothing to go up to before a page is read", () => {
+    expect(markAllUpTo([])).toBeUndefined();
   });
 });

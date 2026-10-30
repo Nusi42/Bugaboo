@@ -1,9 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "../../shared/api.ts";
-import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
+import { pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys, refreshNotifications } from "../../shared/query-keys.ts";
-import { lastMadeOf, rowsOf } from "./notifications.ts";
+import { markAllUpTo } from "./notifications.ts";
 
 /**
  * The notifications of the person, newest first, a page at a time. The key starts with the route,
@@ -35,9 +35,9 @@ export function useReadNotifications() {
 }
 
 /**
- * The ID of the notification made last that the page of notifications shows: *Mark all as read*
- * goes up to it, and one made after it stays unread.
+ * What *Mark all as read* on the page of notifications goes up to (`markAllUpTo`): one made after
+ * it stays unread.
  */
 export function useNewestNotification(): string | undefined {
-  return lastMadeOf(rowsOf(itemsOf(useNotificationList("all").data?.pages)));
+  return markAllUpTo(useNotificationList("all").data?.pages);
 }
