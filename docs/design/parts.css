@@ -1768,16 +1768,12 @@ optgroup {
 }
 
 [data-part="list-group.toggle"][data-variant~="no-select"] {
-  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto;
+  grid-template-columns: var(--size-col-icon) var(--size-col-icon) minmax(0, 1fr) auto;
 }
 
 [data-part="list-group.chevron"] {
   display: flex;
   justify-content: center;
-}
-
-[data-part="list-group.toggle"][data-variant~="no-select"] [data-part="list-group.chevron"] {
-  order: 9;
 }
 
 [data-part="list-group.kind"] {

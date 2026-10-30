@@ -2612,17 +2612,15 @@ part "list-group.toggle" {
     text-align start
 }
 
+// One group head in every list (L5): the chevron at the start, then the icon, the name, and the count at the end. A list
+// without the box to tick has a narrow first column for the chevron instead of the column of the boxes.
 part "list-group.toggle[variant=no-select]" {
-    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
+    grid-template-columns "$size-col-icon $size-col-icon minmax(0, 1fr) auto"
 }
 
 part "list-group.chevron" {
     display flex
     justify-content center
-}
-
-part "list-group.toggle[variant=no-select] list-group.chevron" {
-    order 9
 }
 
 part "list-group.kind" {

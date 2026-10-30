@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { projectIssuesAddress } from "../src/shared/paths.ts";
+import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -58,4 +58,31 @@ test("ux_4_2 the type column has a name in the head and shows the type's name be
   await expect(
     partIn(page, "list-row.cell", "type").filter({ hasText: "Task" }).first(),
   ).toBeVisible();
+});
+
+test("ux_4_2 every list has one group head: the chevron at the start, then the icon, the name, and the count at the end (L5)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "tablet", "the computer and the phone show both lists");
+  await signIn(page, ada);
+  const expectOneHead = async (address: string): Promise<void> => {
+    await page.goto(`${address}?group=statusGroup`);
+    await expect(rowOf(page, webIssues.login)).toBeVisible();
+    const [toggle, chevron, kind, name, count] = await Promise.all(
+      [
+        "list-group.toggle",
+        "list-group.chevron",
+        "list-group.kind",
+        "list-group.name",
+        "list-group.count",
+      ].map((part) => boxOf(partIn(page, part).first())),
+    );
+    expect(chevron.x, address).toBeLessThan(kind.x);
+    expect(kind.x, address).toBeLessThan(name.x);
+    expect(name.x, address).toBeLessThan(count.x);
+    expect(toggle.x + toggle.width - (count.x + count.width), address).toBeLessThanOrEqual(2);
+  };
+  // A list with the box to tick, and one without it.
+  await expectOneHead(projectIssuesAddress("WEB"));
+  await expectOneHead(paths.search);
 });
