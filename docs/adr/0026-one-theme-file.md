@@ -43,6 +43,13 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 - **The pictures use the parts.** `cargo xtask gen theme` also writes `docs/design/parts.css`, the rules of the parts without the tokens, so the pictures of the UX design are drawn with the same `data-part` markup as the app and cannot differ from it.
 - **Several `distinct` rules.** The hovered and the selected row must differ from the tint of a status group as well as from the plain surfaces, so the file has one `distinct` rule for the plain surfaces and one for each tint.
 
+## Update (fonts like the sister project)
+
+- **System font stacks, no font files.** Decision: Bugaboo handles fonts like its sister project: the theme file has the sister project's four stacks word for word, and Bugaboo ships no font file, has no `@font-face` and asks no font service. The reasons: one look across the sister projects; nothing to download before the first page draws; no font licence to carry in the dependency register. A computer without the named faces takes its own system face (the last word of each stack), so text may look a little different between systems.
+- **One token per role, the sister project's roles.** `font-ui` is the text of the app (rows, fields, buttons, menus); `font-display` the titles and section headings, that is the parts the `bold` list names with the roles `issue-title`, `title` and `section` (STY-BOLD finds a rule of such a part that makes it bold without the display face); `font-reader` what a person reads at length (a description, a comment, the help of the search); `font-mono` code, issue IDs, the search language and time values. Every rule that sets a family names one of the four.
+- **Cascadia Mono is first for code.** Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. This was accepted to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the `bold` list does not name.
+- **Measured, not assumed.** The width of the ID column still comes from `size-code-char`, a probe drawn in the code font of the computer, so it is right for Cascadia Mono, Consolas or the system monospace face alike.
+
 ## Consequences
 
 - A change of look is a change in one file, and the generated sheet shows it in the diff. A rule exists once: the focus ring, the muted text, the field label.
@@ -61,4 +68,4 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 
 ## Enforced by
 
-THEME-ONLY (no `style=`, no `className`, no CSS file but the generated one), STY-TOKENS (no color written out), STY-PARTS (every part a rule names is a part some component has), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), STY-BOLD (bold only for the parts the `bold` list of the file names, UX §7.3), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).
+THEME-ONLY (no `style=`, no `className`, no CSS file but the generated one), STY-TOKENS (no color written out), STY-PARTS (every part a rule names is a part some component has), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), STY-BOLD (bold only for the parts the `bold` list of the file names, UX §7.3; titles and headings in the display face), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).
