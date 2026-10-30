@@ -61,7 +61,7 @@ Rules:
 | **Labels**               | A fixed list of words managed by admins                            | components                         |
 | **Fields**               | The pieces of information on an issue. *Own fields* are those an organization adds | custom field (UI), attribute |
 | **Choice**               | One of the values a *Pick one* or *Pick several* field offers (*Critical*, *Major*), with its color and icon | enum value, list item (in UI) |
-| **Choice colors**        | The twelve colors a choice, a label or a tag can have, by their plain names: *Pink, Blue, Green, Orange, Purple, Teal, Red, Yellow, Sky blue, Lime, Grey, Brown*. Each reads well in every theme and is told apart from the others at a glance | category color, color 1 (in UI) |
+| **Choice colors**        | The twelve colors a choice, a label or a tag can have, by their plain names: *Pink, Blue, Green, Orange, Purple, Teal, Coral, Yellow, Sky blue, Lime, Gray, Sand*. Each reads well in every theme and is told apart from the others at a glance | category color, color 1 (in UI) |
 | **Combine with another choice** | Move every issue from one choice, tag or label to another, then retire the first one | merge (in UI) |
 | **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
 | **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
