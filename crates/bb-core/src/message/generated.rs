@@ -11092,7 +11092,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "access-keys.never",
-        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
+        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you're signed in.",
     ),
     (
         "access-keys.pick-one",
@@ -15036,10 +15036,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.everywhere-title", "Sign out everywhere?"),
     (
         "sessions.intro",
-        "Each line is a place where you are signed in, like a browser. Sign out of the ones you do not know.",
+        "Each line is a place where you're signed in, like a browser. Sign out of the ones you do not know.",
     ),
     ("sessions.last-seen", "Last used {when}"),
-    ("sessions.list", "Places where you are signed in"),
+    ("sessions.list", "Places where you're signed in"),
     ("sessions.network", "Network {network}"),
     ("sessions.started", "Signed in {when}"),
     ("sessions.this", "This browser"),
