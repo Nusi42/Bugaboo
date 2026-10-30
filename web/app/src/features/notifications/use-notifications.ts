@@ -3,7 +3,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { api } from "../../shared/api.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys, refreshNotifications } from "../../shared/query-keys.ts";
-import { rowsOf } from "./notifications.ts";
+import { lastMadeOf, rowsOf } from "./notifications.ts";
 
 /**
  * The notifications of the person, newest first, a page at a time. The key starts with the route,
@@ -34,7 +34,10 @@ export function useReadNotifications() {
   return { ...reading, readingId };
 }
 
-/** The ID of the newest notification the page of notifications shows; nothing before it is read. */
+/**
+ * The ID of the notification made last that the page of notifications shows: *Mark all as read*
+ * goes up to it, and one made after it stays unread.
+ */
 export function useNewestNotification(): string | undefined {
-  return rowsOf(itemsOf(useNotificationList("all").data?.pages))[0]?.id;
+  return lastMadeOf(rowsOf(itemsOf(useNotificationList("all").data?.pages)));
 }

@@ -8,6 +8,7 @@ import {
   failedRenewalProjectOf,
   fileNamesOf,
   groupsOf,
+  lastMadeOf,
   rowsOf,
   sentencesOf,
   targetOf,
@@ -200,5 +201,21 @@ describe("ntf_02 the files a notification is about", () => {
       entry({ id: "n1", kind: "followed-activity", file_event: "added" }),
     );
     expect(fileNamesOf(row)).toEqual(["jam.txt", "quarter-report.pdf"]);
+  });
+});
+
+describe("ntf_01 Mark all as read goes up to the notification made last, not the first in the list", () => {
+  it("takes the greatest ID among the rows, whatever their order", () => {
+    // The list is newest first by when it happened; the second row was made later, for an earlier event.
+    const rows = rowsOf([
+      entry({ id: "019a0000-0000-7000-8000-000000000001", at: "2027-01-15T08:00:02Z" }),
+      entry({ id: "019a0000-0000-7000-8000-000000000009", at: "2027-01-15T08:00:01Z" }),
+      entry({ id: "019a0000-0000-7000-8000-000000000005", at: "2027-01-15T08:00:00Z" }),
+    ]);
+    expect(lastMadeOf(rows)).toBe("019a0000-0000-7000-8000-000000000009");
+  });
+
+  it("has nothing to go up to in an empty list", () => {
+    expect(lastMadeOf([])).toBeUndefined();
   });
 });

@@ -53,6 +53,22 @@ export function rowsOf(items: readonly NotificationItem[]): readonly Notificatio
   return rows;
 }
 
+/**
+ * The notification made last among the rows, which *Mark all as read* goes up to: the list is in the
+ * order of when the events happened, and the IDs grow with the time a row is made, so the first row
+ * is not always the one made last (M5 exit gate).
+ */
+export function lastMadeOf(rows: readonly NotificationRow[]): string | undefined {
+  // The IDs are written alike (UUID version 7), so their text sorts as their time.
+  let last: string | undefined;
+  for (const row of rows) {
+    if (last === undefined || row.id > last) {
+      last = row.id;
+    }
+  }
+  return last;
+}
+
 /** The notifications about one issue (or about none), newest first. */
 export interface IssueGroup {
   /** The readable ID of the issue; the ID of the first notification for one that has no issue. */
