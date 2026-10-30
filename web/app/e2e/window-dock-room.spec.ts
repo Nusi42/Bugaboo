@@ -48,8 +48,14 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   expect(note.x + note.width).toBeLessThanOrEqual(content.x + content.width + 0.5);
 });
 
+/** The size of a window of the browser. */
+interface WindowSize {
+  readonly width: number;
+  readonly height: number;
+}
+
 /** A tall window of a computer, beside the standard one of 800 px. */
-const tallWindow = { width: viewports.computer.width, height: 1100 } as const;
+const tallWindow: WindowSize = { width: viewports.computer.width, height: 1100 };
 
 /** The card of the list and its box of rows, at rest (the page not scrolled), in the window as it is now. */
 async function listAtRest(page: Page) {
@@ -60,7 +66,7 @@ async function listAtRest(page: Page) {
 }
 
 /** Without the strip the card ends at most a gutter above the end of the window: the box of rows took the rest of it. */
-async function expectListTakesTheRest(page: Page, size: typeof tallWindow): Promise<void> {
+async function expectListTakesTheRest(page: Page, size: WindowSize): Promise<void> {
   await page.setViewportSize(size);
   await page.goto(projectIssuesAddress("WEB"));
   const { card } = await listAtRest(page);
@@ -71,7 +77,7 @@ async function expectListTakesTheRest(page: Page, size: typeof tallWindow): Prom
 
 /** With the strip, its room is taken off once: the card and the rows end above it, both edges. The window is changed in
  * place, because a new page would forget the minimized window. */
-async function expectListAboveStrip(page: Page, size: typeof tallWindow): Promise<void> {
+async function expectListAboveStrip(page: Page, size: WindowSize): Promise<void> {
   await page.setViewportSize(size);
   const { card, rows } = await listAtRest(page);
   const dock = await boxOf(windowDock(page));

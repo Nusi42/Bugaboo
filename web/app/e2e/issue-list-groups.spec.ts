@@ -68,15 +68,14 @@ test("ux_4_2 every list has one group head: the chevron at the start, then the i
   const expectOneHead = async (address: string): Promise<void> => {
     await page.goto(`${address}?group=statusGroup`);
     await expect(rowOf(page, webIssues.login)).toBeVisible();
-    const [toggle, chevron, kind, name, count] = await Promise.all(
-      [
-        "list-group.toggle",
-        "list-group.chevron",
-        "list-group.kind",
-        "list-group.name",
-        "list-group.count",
-      ].map((part) => boxOf(partIn(page, part).first())),
-    );
+    const head = (part: string) => boxOf(partIn(page, part).first());
+    const [toggle, chevron, kind, name, count] = await Promise.all([
+      head("list-group.toggle"),
+      head("list-group.chevron"),
+      head("list-group.kind"),
+      head("list-group.name"),
+      head("list-group.count"),
+    ]);
     expect(chevron.x, address).toBeLessThan(kind.x);
     expect(kind.x, address).toBeLessThan(name.x);
     expect(name.x, address).toBeLessThan(count.x);
