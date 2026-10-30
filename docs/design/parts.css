@@ -2815,6 +2815,13 @@ optgroup {
   font-size: var(--fs-md);
 }
 
+[data-part="search-field.clear"] {
+  display: flex;
+  flex: none;
+  min-width: var(--size-control);
+  justify-content: center;
+}
+
 [data-part="search-field.input"]:focus {
   outline: none;
 }

@@ -38,14 +38,18 @@ export function SearchField({
           {...partOf(part.searchFieldInput)}
           {...(placeholder === undefined ? {} : { placeholder })}
         />
-        {value === "" ? null : (
-          <ClearButton
-            label={clearLabel}
-            onPress={() => {
-              onChange("");
-            }}
-          />
-        )}
+        {/* The place of the clear mark is kept while the box is empty, so the box does not narrow under
+            the text when the first letter brings the mark (M5 exit F-A7: the end of the text hid). */}
+        <span {...partOf(part.searchFieldClear)}>
+          {value === "" ? null : (
+            <ClearButton
+              label={clearLabel}
+              onPress={() => {
+                onChange("");
+              }}
+            />
+          )}
+        </span>
       </div>
     </AriaSearchField>
   );
