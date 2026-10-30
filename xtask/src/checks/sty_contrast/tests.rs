@@ -370,6 +370,18 @@ fn the_three_status_tints_are_told_apart_from_each_other_and_from_the_card() {
 }
 
 #[test]
+fn the_shadow_at_the_end_of_a_scrolling_box_is_far_from_the_surfaces() {
+    // M5 exit, round 8: in Dusk and Midnight the shadow was 5 to 7 levels from the box and was not seen.
+    // A shade of Dusk that is close to its surfaces is rejected.
+    let findings = evaluate(&with_value("cue", "dusk", "#3a3f4a"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("`cue`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
 fn the_quiet_words_of_a_tinted_row_have_room_to_spare() {
     // M5 exit L23: the ID and the hint words of a row were 4.5:1 and a little over on the tints,
     // which a small thin text shows as hard to read. The old muted colors of Paper are rejected.
@@ -477,6 +489,37 @@ fn the_knob_of_a_switch_is_seen_on_its_track_in_every_theme() {
         findings
             .iter()
             .any(|f| f.message.contains("the line `fg-muted`") && f.message.contains("bg-sunken")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn a_main_button_that_cannot_be_pressed_is_told_from_the_surface_and_stays_readable() {
+    // M5 exit: in Dusk and Midnight it read like an enabled outlined button. Its fill put back next to the raised
+    // surface is rejected, and so are words that sink into the fill, plain and with more contrast.
+    let findings = evaluate(&with_value("disabled-fill", "dusk", "#30363f"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`disabled-fill`") && f.message.contains("`bg-raised`")),
+        "{:?}",
+        messages(&findings)
+    );
+    let findings = evaluate(&with_value("on-disabled", "dusk", "#6c727e"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`on-disabled` on `disabled-fill`")),
+        "{:?}",
+        messages(&findings)
+    );
+    // With more contrast the words need 7:1 on the fill (the divider colors gave 1.7:1, M5 exit B1).
+    let findings = evaluate(&with_value("on-disabled", "daylight-more", "#565d6b"));
+    assert!(
+        findings.iter().any(
+            |f| f.message.contains("with more contrast") && f.message.contains("`on-disabled`")
+        ),
         "{:?}",
         messages(&findings)
     );

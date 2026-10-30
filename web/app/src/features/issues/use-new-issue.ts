@@ -16,7 +16,7 @@ export interface NewIssue extends NewIssueValuesState {
   readonly create: (another: boolean, onMade: (key: string, project: string) => void) => void;
   readonly pending: boolean;
   readonly error: unknown;
-  /** The issue ID of the last issue made with *Create and start another*. */
+  /** The issue ID of the last issue made with *Create the issue and start another*. */
   readonly lastKey: string | null;
 }
 

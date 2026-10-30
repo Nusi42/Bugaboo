@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, partOf, part } from "@bugaboo/ui";
+import { Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -19,7 +19,12 @@ export function Groups({ line }: { readonly line: PersonLine }) {
         <ul {...partOf(part.list)} aria-label={t("person.groups")}>
           {line.groups.map((group) => (
             <li key={group.id} {...partOf(part.item)}>
-              <Link href={groupAddress(group.id)}>{group.name}</Link>
+              <span {...partOf(part.rowMain)}>
+                <Link row href={groupAddress(group.id)}>
+                  {group.name}
+                </Link>
+              </span>
+              <RowChevron />
             </li>
           ))}
         </ul>
@@ -51,7 +56,7 @@ export function Roles({ line }: { readonly line: PersonLine }) {
 /** The address and the day the account was made. */
 export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
   return (
-    <Card heading={line.name} level={1}>
+    <Card heading={line.name} level={1} back={{ href: paths.people, label: t("person.back") }}>
       <dl {...partOf(part.facts)}>
         <div {...partOf(part.fact)}>
           <dt {...partOf(part.term)}>{t("person.email")}</dt>
@@ -62,9 +67,6 @@ export function Facts({ line, since }: { readonly line: PersonLine; readonly sin
           <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
         </div>
       </dl>
-      <div {...partOf(part.row)}>
-        <Link href={paths.people}>{t("person.back")}</Link>
-      </div>
     </Card>
   );
 }

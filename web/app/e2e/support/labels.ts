@@ -2,9 +2,11 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { tickBox } from "./issues.ts";
 import { layoutOf } from "./layout.ts";
+import { type Instance } from "./server.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
 /** Makes a label through the API and returns its ID. */
@@ -56,4 +58,14 @@ export async function addTag(within: Page | Locator, name: string): Promise<void
   await add.click();
   await within.getByLabel(t("labels.add-tag"), { exact: true }).fill(name);
   await add.click();
+}
+
+/** Puts a label that exists on an issue, as an administrator does through the API. */
+export async function putLabelOn(server: Instance, issue: string, label: string): Promise<void> {
+  const admin = await signedInAdmin(server);
+  await admin.client.POST("/api/v1/issues/{issue}/labels", {
+    params: { path: { issue } },
+    body: { label: await labelIdOf(admin, label) },
+  });
+  await admin.dispose();
 }

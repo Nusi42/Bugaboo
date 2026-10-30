@@ -1,7 +1,8 @@
+import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../packages/ui/src/tokens.ts";
-import { paths } from "../src/shared/paths.ts";
+import { paths, projectAddress } from "../src/shared/paths.ts";
 import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -75,23 +76,31 @@ async function openAppearance(page: Page): Promise<void> {
   await expect(partOn(page, part.choiceGroupInput).first()).toBeAttached();
 }
 
+/** A page with a plain link on every size (the link up of a role is not drawn on a phone): the page of a project that is not there. */
+async function openPlainLink(page: Page): Promise<Locator> {
+  await page.goto(projectAddress("NOWHERE"));
+  const link = page.getByRole("link", { name: t("page.not-found.home") });
+  await expect(link).toBeVisible();
+  return link;
+}
+
 test("thm_21 a link, a box and a button that are pointed at change as the theme file says", async ({
   page,
 }) => {
   await openRoleWithTickedBox(page, "Reviewer hover");
-  const link = partOn(page, part.link).first();
   const box = partWhere(page, part.checkbox, ":not([data-selected]):not([data-disabled])").first();
   const button = partWhere(page, part.button, ":not([data-variant]):not([data-disabled])").first();
-  await link.hover();
-  await inEveryLook(page, () =>
-    expectCss(page, link, "text-decoration-thickness", "var(--ring-width)"),
-  );
   await box.hover();
   await inEveryLook(page, () =>
     expectCss(page, partOn(box, part.checkboxBox), "background-color", "var(--bg-hover)"),
   );
   await button.hover();
   await inEveryLook(page, () => expectCss(page, button, "background-color", "var(--bg-hover)"));
+  const link = await openPlainLink(page);
+  await link.hover();
+  await inEveryLook(page, () =>
+    expectCss(page, link, "text-decoration-thickness", "var(--ring-width)"),
+  );
 });
 
 test("thm_21 a part that has the keyboard focus shows the ring in every look", async ({ page }) => {
@@ -110,11 +119,11 @@ test("thm_21 a checkbox, a button and a link that have the keyboard focus show t
   await openRoleWithTickedBox(page, "Reviewer focus");
   const box = partOn(page, part.checkbox).first();
   const button = partWhere(page, part.button, ":not([data-disabled])").first();
-  const link = partOn(page, part.link).first();
   await focusByKeyboard(page, box.locator("input"));
   await inEveryLook(page, () => expectRing(page, partOn(box, part.checkboxBox)));
   await focusByKeyboard(page, button);
   await inEveryLook(page, () => expectRing(page, button));
+  const link = await openPlainLink(page);
   await focusByKeyboard(page, link);
   await inEveryLook(page, () => expectRing(page, link));
 });

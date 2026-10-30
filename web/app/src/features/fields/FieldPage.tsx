@@ -35,9 +35,8 @@ function Page({ field }: { readonly field: OwnField }) {
   usePageTitle(field.name);
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={field.name} level={1}>
+      <Card heading={field.name} level={1} back={{ href: paths.fields, label: t("fields.back") }}>
         <p {...partOf(part.muted)}>{detailsOf(field)}</p>
-        <Link href={paths.fields}>{t("fields.back")}</Link>
       </Card>
       <FieldSections field={field} />
       <Card heading={t("fields.see-title")}>

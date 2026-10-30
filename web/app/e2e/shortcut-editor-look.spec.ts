@@ -5,6 +5,7 @@ import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin, forgetChoices } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
@@ -28,7 +29,7 @@ async function openRows(page: Page) {
   await signIn(page, ada);
   await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
+  const panel = itemArea(page, t("shortcut.go-home"));
   const rows = partIn(panel, "shortcut-editor.row");
   return {
     labels: partIn(panel, "shortcut-editor.label"),

@@ -31,7 +31,7 @@ function useRoleChoices(project: string | null) {
   // Every role the person may give, not the first page.
   useAllPages(roles);
   return [
-    { value: NOTHING, label: t("assignments.choose-role") },
+    { value: NOTHING, label: t("common.choose-role") },
     ...choicesOf(roles.data?.pages).map((role) => ({ value: role.id, label: role.name })),
     ...(project === null ? [] : [{ value: NO_ACCESS, label: t("roles.no-access") }]),
   ];

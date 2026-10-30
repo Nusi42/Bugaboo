@@ -138,7 +138,7 @@ pub(crate) enum Item {
         mixin: String,
         line: usize,
     },
-    /// `forced { … }`, `more-contrast { … }`, `media "…" { … }` or `container "…" { … }`.
+    /// `forced { … }`, `more-contrast { … }`, `media "…" { … }`, `container "…" { … }` or `supports "…" { … }`.
     Media {
         at: AtRule,
         query: String,
@@ -153,6 +153,8 @@ pub(crate) enum AtRule {
     Media,
     /// The box the element is in (`@container`), so a window follows its own width.
     Container,
+    /// What the browser knows (`@supports`): the lines are only read by a browser that knows the feature.
+    Supports,
 }
 
 impl AtRule {
@@ -160,6 +162,7 @@ impl AtRule {
         match self {
             Self::Media => "@media",
             Self::Container => "@container",
+            Self::Supports => "@supports",
         }
     }
 }
@@ -250,6 +253,7 @@ const FORCED: &str = "forced";
 const MORE_CONTRAST: &str = "more-contrast";
 const MEDIA: &str = "media";
 const CONTAINER: &str = "container";
+const SUPPORTS: &str = "supports";
 const USE: &str = "use";
 /// The media queries of the two short names.
 pub(crate) const FORCED_QUERY: &str = "(forced-colors: active)";
@@ -634,6 +638,7 @@ fn items(node: Node<'_>) -> anyhow::Result<Vec<Item>> {
             MORE_CONTRAST => media(child, AtRule::Media, MORE_CONTRAST_QUERY.to_owned()),
             MEDIA => media(child, AtRule::Media, child.only_arg()?),
             CONTAINER => media(child, AtRule::Container, child.only_arg()?),
+            SUPPORTS => media(child, AtRule::Supports, child.only_arg()?),
             _ => Ok(Item::Declaration(declaration(child)?)),
         })
         .collect()

@@ -7,20 +7,30 @@ import { projectPageAddress, projectPages, type ProjectPage } from "../../shared
 import { usePageTitle } from "../../shared/use-page.ts";
 import type { TrailStep } from "../shell/index.ts";
 import { useProjectTrail } from "./project-trail.ts";
+import { settingsStartAddress, useSettingsMenu } from "./use-settings-menu.ts";
 import { useProject } from "./use-projects.ts";
 
 /** The trail steps of a page of the settings, after the project itself: the tab, below *Project settings*. */
-function stepsOf(page: ProjectPage, shortName: string): readonly TrailStep[] | undefined {
+function stepsOf(
+  page: ProjectPage,
+  shortName: string,
+  hasMenu: boolean,
+  onMenu: boolean,
+): readonly TrailStep[] | undefined {
   if (page.tab === null) {
     return undefined;
   }
   const settings = {
     label: t(projectPages.settings.name),
-    href: projectPageAddress(projectPages.settings, shortName),
+    // On a phone *Project settings* is the menu, a screen of its own, where there is a menu.
+    href: settingsStartAddress(shortName, hasMenu),
   };
-  return page === projectPages.settings
-    ? [settings]
-    : [settings, { label: t(page.tab), href: projectPageAddress(page, shortName) }];
+  const section = { label: t(page.tab), href: projectPageAddress(page, shortName) };
+  // On a phone every section, the first too, is a step of its own below the menu, so the bar names it.
+  if (page === projectPages.settings) {
+    return hasMenu && !onMenu ? [settings, section] : [settings];
+  }
+  return [settings, section];
 }
 
 /**
@@ -36,7 +46,11 @@ export function useProjectPage(address: string, page: ProjectPage) {
   const current = project.isPlaceholderData ? undefined : found?.project.short_name;
   const name = found?.project.name ?? "";
   usePageTitle(page.title(name));
-  const last = useMemo(() => stepsOf(page, current ?? address), [page, current, address]);
+  const { hasMenu, onMenu } = useSettingsMenu(found);
+  const last = useMemo(
+    () => stepsOf(page, current ?? address, hasMenu, onMenu),
+    [page, current, address, hasMenu, onMenu],
+  );
   useProjectTrail(found, last);
   useEffect(() => {
     if (current !== undefined && current !== address) {

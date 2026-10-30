@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -44,16 +44,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
             onClose={onClose}
           />
         )}
-        {list.hasNextPage ? (
-          <Button
-            isPending={list.isFetchingNextPage}
-            onPress={() => {
-              void list.fetchNextPage();
-            }}
-          >
-            {t("groups.more")}
-          </Button>
-        ) : null}
+        <ShowMoreOf label={t("groups.more")} list={list} />
       </Card>
       <Card heading={t("groups.create-title")}>
         <p {...partOf(part.text)}>{t("groups.create-intro")}</p>

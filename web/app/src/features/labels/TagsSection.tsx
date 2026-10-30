@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Card, partOf, part } from "@bugaboo/ui";
+import { Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditTag } from "./EditTag.tsx";
@@ -37,16 +37,7 @@ export function TagsSection({ open, onOpen, onClose }: OpenProps) {
         onOpen={onOpen}
         onClose={onClose}
       />
-      {tags.hasNextPage ? (
-        <Button
-          isPending={tags.isFetchingNextPage}
-          onPress={() => {
-            void tags.fetchNextPage();
-          }}
-        >
-          {t("labels.tags-more")}
-        </Button>
-      ) : null}
+      <ShowMoreOf label={t("labels.tags-more")} list={tags} />
     </Card>
   );
 }

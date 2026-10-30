@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect, type Page, type Response } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
-import { layoutOf } from "./layout.ts";
+import { itemArea, layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 import { issueAddress, paths } from "../../src/shared/paths.ts";
@@ -269,7 +269,7 @@ export async function keepOnDevice(
 export async function chooseGoHomeKeys(page: Page): Promise<void> {
   await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
+  const panel = itemArea(page, t("shortcut.go-home"));
   await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
   await page.keyboard.press("g");
   await page.keyboard.press("i");

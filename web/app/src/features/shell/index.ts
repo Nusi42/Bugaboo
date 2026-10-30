@@ -14,9 +14,15 @@ export {
 export { addQuickAction, type QuickAction } from "./quick-search-actions.ts";
 export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
-export { SettingsFrame, TopicList, type TopicListProps } from "./SettingsFrame.tsx";
+export {
+  SettingsFrame,
+  SettingsScreens,
+  TopicList,
+  type SettingsScreensProps,
+  type TopicListProps,
+} from "./SettingsFrame.tsx";
 export { NavLink, type NavLinkProps } from "./NavItem.tsx";
-export { usePageTrail, type TrailStep } from "./page-trail.ts";
+export { useItemTrail, usePageTrail, type TrailStep } from "./page-trail.ts";
 export {
   addSidebarSection,
   type SidebarSection,

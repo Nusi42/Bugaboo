@@ -1,16 +1,13 @@
 import { t } from "@bugaboo/messages";
-import type { SearchPickerProps } from "@bugaboo/ui";
+import type { PagedList, SearchPickerProps } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "./errors.ts";
 
 /** What a picker needs to know about the list it reads a page at a time. */
-interface PagedChoices {
+interface PagedChoices extends PagedList {
   readonly error: unknown;
   readonly isSuccess: boolean;
-  readonly hasNextPage: boolean;
-  readonly isFetchingNextPage: boolean;
-  readonly fetchNextPage: () => Promise<unknown>;
 }
 
 /** The words a picker says when nothing was found and on the button for the next page. */

@@ -8,8 +8,6 @@ import {
   Form,
   SubmitButton,
   TextField,
-  partOf,
-  part,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -67,9 +65,7 @@ export function PasswordSection() {
           problem={change.isError && !tooWeak ? messageOf(change.error) : null}
           done={change.isSuccess}
         />
-        <div {...partOf(part.row, { variants: ["stretch"] })}>
-          <SubmitButton isPending={change.isPending}>{t("security.password.submit")}</SubmitButton>
-        </div>
+        <SubmitButton isPending={change.isPending}>{t("security.password.submit")}</SubmitButton>
       </Form>
     </Card>
   );

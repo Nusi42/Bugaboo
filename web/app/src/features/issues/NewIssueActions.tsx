@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, SubmitButton, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, SubmitButton, partOf, part, useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useId } from "react";
 
 import { layoutsAddress } from "../../shared/paths.ts";
 import { closeOverlay } from "../shell/index.ts";
@@ -14,6 +13,8 @@ export interface NewIssueActionsProps {
   readonly formId: string;
   readonly onMade: (key: string, project: string) => void;
   readonly onClose: () => void;
+  /** The ID of the sentence that says what is missing: the buttons it holds back are described by it. */
+  readonly whyId: string;
 }
 
 /** *Customize this form*, for people who may change the layout of the project: opens its editor for this type. */
@@ -60,36 +61,86 @@ function missingForCreate(form: NewIssue) {
  * person types, so the buttons stay where a finger is on its way to them. The footer stays in place
  * while the form scrolls.
  */
-export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
-  const why = useId();
+export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIssueActionsProps) {
   const missing = missingForCreate(form);
+  const phone = useLayout() === "phone";
   return (
     <>
-      <p id={why} {...partOf(part.muted)}>
+      <p id={whyId} {...partOf(part.muted)}>
         {t(missing ?? "issues.ready-to-create")}
       </p>
       <div {...partOf(part.windowFooterActions)}>
-        <Button look={buttonLook.quiet} onPress={onClose}>
-          {t("common.cancel")}
-        </Button>
-        <Button
-          isDisabled={missing !== undefined}
-          {...(missing === undefined ? {} : { "aria-describedby": why })}
-          isPending={form.pending}
-          onPress={() => {
-            form.create(true, onMade);
-          }}
-        >
-          {t("issues.create-another")}
-        </Button>
+        {phone ? null : (
+          <>
+            <Button look={buttonLook.quiet} onPress={onClose}>
+              {t("common.cancel")}
+            </Button>
+            <CreateAnother form={form} missing={missing} why={whyId} onMade={onMade} />
+          </>
+        )}
         <SubmitButton form={formId} isPending={form.pending} isDisabled={missing !== undefined}>
           {t("issues.create")}
         </SubmitButton>
       </div>
-      <div {...partOf(part.windowFooterNote)}>
-        <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
-        <CustomizeThisForm form={form} />
-      </div>
+      {phone ? null : <DraftNote form={form} />}
     </>
+  );
+}
+
+/** *Create the issue and start another*, which keeps the project and the type. */
+function CreateAnother({
+  form,
+  missing,
+  why,
+  onMade,
+}: {
+  readonly form: NewIssue;
+  readonly missing: string | undefined;
+  readonly why: string;
+  readonly onMade: NewIssueActionsProps["onMade"];
+}) {
+  return (
+    <Button
+      isDisabled={missing !== undefined}
+      {...(missing === undefined ? {} : { "aria-describedby": why })}
+      isPending={form.pending}
+      onPress={() => {
+        form.create(true, onMade);
+      }}
+    >
+      {t("issues.create-another")}
+    </Button>
+  );
+}
+
+/** That the draft is kept, and *Customize this form*. */
+function DraftNote({ form }: { readonly form: NewIssue }) {
+  return (
+    <div {...partOf(part.windowFooterNote)}>
+      <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+      <CustomizeThisForm form={form} />
+    </div>
+  );
+}
+
+/**
+ * What a phone keeps out of the fixed footer, which holds the hint and the main button only: the other
+ * answers and the note stand at the end of the form, in the part that scrolls (M5 exit, O13).
+ */
+export function NewIssueMoreActions({
+  form,
+  onMade,
+  onClose,
+  whyId,
+}: Omit<NewIssueActionsProps, "formId">) {
+  const missing = missingForCreate(form);
+  return (
+    <div {...partOf(part.stack)}>
+      <CreateAnother form={form} missing={missing} why={whyId} onMade={onMade} />
+      <Button look={buttonLook.quiet} onPress={onClose}>
+        {t("common.cancel")}
+      </Button>
+      <DraftNote form={form} />
+    </div>
   );
 }

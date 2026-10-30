@@ -151,7 +151,7 @@ export const messages = {
   "search.project-list-use": "Use this as the {name} project's list",
   "search.project-list-stop": "Stop using this as the {name} project's list",
   "search.saved-mine": "Mine",
-  "search.saved-by": "{name} · {person}",
+  "search.saved-by-spoken": ", {person}",
   "search.help": "Help",
   "search.help-title": "The words of the search",
   "search.help-use": "Use {example} in the search",

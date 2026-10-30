@@ -3,6 +3,7 @@ import { Link, partOf, part } from "@bugaboo/ui";
 
 import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
 import { tabsOf } from "./settings-tabs.ts";
+import { settingsStartAddress, useSettingsMenu } from "./use-settings-menu.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /** The facts of a project: its short name, and where it sits when the person sees that. */
@@ -29,10 +30,13 @@ function ProjectLinks({ project }: { readonly project: OneProject }) {
   const tabs = tabsOf(project);
   const [first] = tabs;
   const shortName = project.project.short_name;
+  const { hasMenu } = useSettingsMenu(project);
   return (
     <div {...partOf(part.row)}>
       {first === undefined ? null : (
-        <Link href={projectPageAddress(first, shortName)}>{t("projects.settings-link")}</Link>
+        <Link href={settingsStartAddress(shortName, hasMenu, first)}>
+          {t("projects.settings-link")}
+        </Link>
       )}
       {first !== projectPages.roles && tabs.includes(projectPages.roles) ? (
         <Link href={projectPageAddress(projectPages.roles, shortName)}>

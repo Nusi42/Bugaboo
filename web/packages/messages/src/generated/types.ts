@@ -249,6 +249,7 @@ export interface MessageArguments {
   "issues.copy-link-of": { key: string | number };
   "issues.count": { count: number };
   "issues.count-line": { scope: string | number; shown: number; total: number };
+  "issues.count-line-loading": { scope: string | number; total: number };
   "issues.created": { key: string | number };
   "issues.deleted": { key: string | number };
   "issues.draft-found-form": { when: string | number };
@@ -352,45 +353,31 @@ export interface MessageArguments {
   "preview.summary": { changed: number; skipped: number };
   "projects.created": { name: string | number };
   "projects.inside": { name: string | number };
-  "projects.line-can-no-more": {
-    person: string | number;
-    project: string | number;
-    things: string | number;
-  };
-  "projects.line-can-now": {
-    person: string | number;
-    project: string | number;
-    things: string | number;
-  };
+  "projects.line-can-no-more": { things: string | number };
+  "projects.line-can-now": { things: string | number };
   "projects.line-field": {
     after: string | number;
     before: string | number;
     field: string | number;
-    person: string | number;
-    project: string | number;
   };
-  "projects.line-gains": {
-    person: string | number;
-    project: string | number;
-    roles: string | number;
+  "projects.line-fields-many": {
+    after: string | number;
+    before: string | number;
+    fields: string | number;
   };
-  "projects.line-held-back-ends": { person: string | number; project: string | number };
-  "projects.line-held-back-starts": { person: string | number; project: string | number };
+  "projects.line-gains": { roles: string | number };
   "projects.line-lift": { person: string | number; project: string | number };
-  "projects.line-loses": { person: string | number; project: string | number };
   "projects.line-people": {
     after: string | number;
     before: string | number;
     kind: string | number;
-    person: string | number;
-    project: string | number;
   };
-  "projects.line-roles": {
+  "projects.line-people-many": {
     after: string | number;
     before: string | number;
-    person: string | number;
-    project: string | number;
+    kinds: string | number;
   };
+  "projects.line-roles": { after: string | number; before: string | number };
   "projects.move-dialog-title": { name: string | number };
   "projects.move-text": { name: string | number };
   "projects.moved": { name: string | number };
@@ -514,7 +501,7 @@ export interface MessageArguments {
   "search.mistake.wrong-text": { field: string | number };
   "search.project-list-stop": { name: string | number };
   "search.project-list-use": { name: string | number };
-  "search.saved-by": { name: string | number; person: string | number };
+  "search.saved-by-spoken": { person: string | number };
   "search.share-title": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };

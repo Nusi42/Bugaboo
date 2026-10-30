@@ -36,90 +36,110 @@ function permissionsOf(keys: readonly string[]): string {
 }
 
 /** A line of the preview about access: gaining it, losing it, changing role. */
-function accessLine(who: string, change: Change): string | undefined {
-  const project = change.project.name;
+function accessLine(change: Change): string | undefined {
   const { now, after } = change;
   if (!now.sees && after.sees) {
-    return t("projects.line-gains", { person: who, project, roles: rolesOf(after.roles) });
+    return t("projects.line-gains", { roles: rolesOf(after.roles) });
   }
   if (now.sees && !after.sees) {
-    return t("projects.line-loses", { person: who, project });
+    return t("projects.line-loses");
   }
-  if (now.roles.join() !== after.roles.join()) {
-    return t("projects.line-roles", {
-      person: who,
-      project,
-      before: rolesOf(now.roles),
-      after: rolesOf(after.roles),
-    });
+  if (JSON.stringify(now.roles) !== JSON.stringify(after.roles)) {
+    return t("projects.line-roles", { before: rolesOf(now.roles), after: rolesOf(after.roles) });
   }
   return undefined;
 }
 
 /** The lines about a No access that starts or stops holding the person back. */
-function heldBackLine(who: string, change: Change): string | undefined {
-  const project = change.project.name;
+function heldBackLine(change: Change): string | undefined {
   if (change.now.held_back && !change.after.held_back) {
-    return t("projects.line-held-back-ends", { person: who, project });
+    return t("projects.line-held-back-ends");
   }
   if (!change.now.held_back && change.after.held_back) {
-    return t("projects.line-held-back-starts", { person: who, project });
+    return t("projects.line-held-back-starts");
   }
   return undefined;
 }
 
 /** What a person can do now or no more, for a person who sees the project before and after. */
-function abilityLines(who: string, change: Change): string[] {
+function abilityLines(change: Change): string[] {
   if (!change.now.sees || !change.after.sees) {
     return [];
   }
-  const project = change.project.name;
   const lines: string[] = [];
   if (change.gains.length > 0) {
-    lines.push(
-      t("projects.line-can-now", { person: who, project, things: permissionsOf(change.gains) }),
-    );
+    lines.push(t("projects.line-can-now", { things: permissionsOf(change.gains) }));
   }
   if (change.loses.length > 0) {
-    lines.push(
-      t("projects.line-can-no-more", { person: who, project, things: permissionsOf(change.loses) }),
-    );
+    lines.push(t("projects.line-can-no-more", { things: permissionsOf(change.loses) }));
   }
   return lines;
 }
 
-/** The lines about levels of fields and of people information. */
-function levelLines(who: string, change: Change): string[] {
-  const project = change.project.name;
-  return [
-    ...change.fields.map((level) =>
-      t("projects.line-field", {
-        person: who,
-        project,
-        field: fieldNameOf(level.field),
-        before: wordOf(level.before),
-        after: wordOf(level.after),
-      }),
-    ),
-    ...change.people.map((level) =>
-      t("projects.line-people", {
-        person: who,
-        project,
-        kind: wordOf(level.kind),
-        before: wordOf(level.before),
-        after: wordOf(level.after),
-      }),
-    ),
-  ];
+/** The things that go from the same level to the same level, with the words of that change: one sentence for them. */
+interface Move {
+  readonly before: string;
+  readonly after: string;
+  readonly names: readonly string[];
+}
+
+/** A change of one thing: its name and the words of the level it leaves and the level it reaches. */
+interface Level {
+  readonly name: string;
+  readonly before: string;
+  readonly after: string;
+}
+
+/** Puts together what changes in the same way, in the order it first appears, so a person reads each change once. */
+function movesOf(levels: readonly Level[]): readonly Move[] {
+  const moves = new Map<string, { before: string; after: string; names: string[] }>();
+  for (const level of levels) {
+    const kind = JSON.stringify([level.before, level.after]);
+    const move = moves.get(kind) ?? { before: level.before, after: level.after, names: [] };
+    move.names.push(level.name);
+    moves.set(kind, move);
+  }
+  return [...moves.values()];
+}
+
+/** One sentence for each kind of change of level of a list of things: a field, or a kind of people information. */
+function moveLines(levels: readonly Level[], messages: "fields" | "kinds"): string[] {
+  return movesOf(levels).map((move) => {
+    const [name] = move.names;
+    const words = { before: move.before, after: move.after };
+    if (messages === "fields") {
+      return move.names.length === 1 && name !== undefined
+        ? t("projects.line-field", { field: name, ...words })
+        : t("projects.line-fields-many", { fields: listText(move.names), ...words });
+    }
+    return move.names.length === 1 && name !== undefined
+      ? t("projects.line-people", { kind: name, ...words })
+      : t("projects.line-people-many", { kinds: listText(move.names), ...words });
+  });
+}
+
+/** The lines about levels of fields and of people information: one for each kind of change, not one for each field. */
+function levelLines(change: Change): string[] {
+  const fields = change.fields.map((level) => ({
+    name: fieldNameOf(level.field),
+    before: wordOf(level.before),
+    after: wordOf(level.after),
+  }));
+  const kinds = change.people.map((level) => ({
+    name: wordOf(level.kind),
+    before: wordOf(level.before),
+    after: wordOf(level.after),
+  }));
+  return [...moveLines(fields, "fields"), ...moveLines(kinds, "kinds")];
 }
 
 /** Every sentence a change makes, in plain words. */
-function sentencesOf(who: string, change: Change): string[] {
+function sentencesOf(change: Change): string[] {
   return [
-    accessLine(who, change),
-    heldBackLine(who, change),
-    ...abilityLines(who, change),
-    ...levelLines(who, change),
+    accessLine(change),
+    heldBackLine(change),
+    ...abilityLines(change),
+    ...levelLines(change),
   ].filter((line): line is string => line !== undefined);
 }
 
@@ -129,28 +149,36 @@ export interface Sentence {
   readonly text: string;
 }
 
-/** The sentences about one person, in all the projects the person sees. */
+/** What changes for one person in one project: only the change, the person and the project are named above it. */
+export interface ProjectSentences {
+  readonly key: string;
+  readonly project: string;
+  readonly lines: readonly Sentence[];
+}
+
+/** The sentences about one person, project by project. */
 export interface PersonSentences {
   readonly key: string;
   /** Who the sentences are about. */
   readonly person: string;
-  readonly lines: readonly Sentence[];
+  readonly projects: readonly ProjectSentences[];
 }
 
-/** The sentences of the preview grouped by person, for the long preview; a person with none is left out. */
+/** The sentences of the preview grouped by person, then by project, for the long preview; a person with none is left out. */
 export function personSentencesOfPreview(preview: Preview): readonly PersonSentences[] {
   return preview.people
     .map((entry, person): PersonSentences => ({
       key: String(person),
       person: personName(entry.person),
-      lines: entry.projects.flatMap((change) =>
-        sentencesOf(personName(entry.person), change).map((text, line) => ({
-          key: `${change.project.id}:${String(line)}`,
-          text,
-        })),
-      ),
+      projects: entry.projects
+        .map((change): ProjectSentences => ({
+          key: change.project.id,
+          project: change.project.name,
+          lines: sentencesOf(change).map((text, line) => ({ key: String(line), text })),
+        }))
+        .filter((project) => project.lines.length > 0),
     }))
-    .filter((group) => group.lines.length > 0);
+    .filter((group) => group.projects.length > 0);
 }
 
 /** The sentences about people who could take away a No access that applies to them, with keys. */

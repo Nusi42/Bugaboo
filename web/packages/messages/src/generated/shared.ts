@@ -56,15 +56,15 @@ export const messages = {
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
   "setting.security.session-idle-minutes.help":
-    "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
+    "How many minutes without activity pass before people are signed out automatically.",
   "setting.security.two-step-required.help":
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
-    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again.",
   "setting.auth.access-key-default-days.help":
-    "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+    "How many days a new access key lives when the person picks no other date.",
   "setting.auth.access-key-longest-days.help":
-    "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
+    "The most days an access key can live, whatever date the person picks.",
   "setting.auth.sign-up-enabled.help":
     "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
@@ -160,6 +160,7 @@ export const messages = {
   "setup.next":
     "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to create the first administrator in your browser.",
   "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
+  "common.choose-role": "Choose a role",
   "common.cancel": "Cancel",
   "common.loading": "Loading…",
   "common.try-again": "Try again",
@@ -175,7 +176,7 @@ export const messages = {
   "field.confirm-password": "Your password",
   "field.confirm-password-help": "Type your password again to confirm it is you.",
   "nav.home": "Home",
-  "nav.security": "Sign-in & security",
+  "nav.security": "Sign-in and security",
   "nav.sessions": "Where you're signed in",
   "nav.status": "Server status",
   "nav.sign-out": "Sign out",
@@ -196,7 +197,7 @@ export const messages = {
   "window.taller": "Taller",
   "window.shorter": "Shorter",
   "common.nothing": "nothing",
-  "common.issue-id": "Issue ID, for example WEB‑142",
+  "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",
   "shell.narrow": "Narrow the menu",
   "shell.back": "Back",
@@ -384,7 +385,7 @@ export const messages = {
     "Someone has this role. Choose the role that takes its place before you delete it.",
   "nav.people": "People",
   "nav.groups": "Groups",
-  "nav.roles": "Roles & permissions",
+  "nav.roles": "Roles and permissions",
   "roles.place.organization": "the whole organization",
   "roles.place.hidden": "a project you cannot see",
   "roles.held": "{role} in {place}",
@@ -469,7 +470,7 @@ export const messages = {
     "This project does not offer that issue type. Choose another type, or ask the project lead.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
-    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
   "setting.files.blocked-types.name": "Types of file that are never accepted",
   "setting.files.blocked-types.help":
     "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
@@ -478,7 +479,7 @@ export const messages = {
     "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
   "setting.issues.id-length.name": "Length of random issue IDs",
   "setting.issues.id-length.help":
-    "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
+    "How many letters and digits a random issue ID has after the dash. It grows by itself when the short ones run out.",
   "nav.issue-types": "Issue types",
   "issue-icon.bug": "Bug",
   "issue-icon.square-check": "Box with a tick",
@@ -593,7 +594,7 @@ export const messages = {
   "editing.lost-changed": "Not saved yet: {name} changed {thing} after you. Your text is kept.",
   "editing.draft-continue": "Continue your draft from {when}",
   "editing.draft-drop": "Throw the draft away",
-  "shortcut.new-issue": "Create a new issue",
+  "shortcut.new-issue": "Create an issue",
   "shortcut.change-status": "Change the status of the open issue",
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
@@ -734,7 +735,7 @@ export const messages = {
   "nav.notifications": "Notifications",
   "nav.notification-settings": "Notification settings",
   "nav.handle": "Handle",
-  "nav.mail-server": "E-mail & notifications",
+  "nav.mail-server": "E-mail and notifications",
   "nav.group.hearing": "Notifications and mentions",
   "nav.group.connections": "Connections",
   "shortcut.go-notifications": "Go to Notifications",

@@ -12,7 +12,7 @@ Open *My settings* from the menu. It has these pages:
 
 ## Reset to default
 
-Every choice that is yours has a button **Reset to default**. It takes away your choice, so the value from above counts again: the one your organization chose, or Bugaboo's standard value. Under each setting a line says where the value you see comes from: *Bugaboo's standard value*, *Your organization's choice* or *Your own choice*.
+Every choice that is yours has a button **Reset to default**. It takes away your choice, so the value from above counts again: the one your organization chose, or the default value. Under each setting a line says where the value you see comes from: *Default value*, *Your organization's choice* or *Your own choice*.
 
 ## Set by your organization
 

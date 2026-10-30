@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+
+import { stepsOfScreens } from "./steps-of-screens.ts";
 
 import { createRegistry } from "./registry.ts";
 
@@ -35,4 +37,19 @@ export function usePageTrail(steps: readonly TrailStep[] | undefined): void {
       remove?.();
     };
   }, [steps]);
+}
+
+/**
+ * The trail of an item of a list (a person, a role, a group, an issue type): where the list is, then the item, which is
+ * the title in the bar of a phone. Back leads to the list.
+ */
+export function useItemTrail(listPath: string, name: string | undefined): void {
+  const steps = useMemo((): readonly TrailStep[] | undefined => {
+    const base = stepsOfScreens(listPath);
+    const list = base.at(-1);
+    return name === undefined || list === undefined
+      ? undefined
+      : [...base, { label: name, href: list.href }];
+  }, [listPath, name]);
+  usePageTrail(steps);
 }

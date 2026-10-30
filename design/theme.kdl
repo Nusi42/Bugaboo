@@ -145,9 +145,9 @@ tokens {
     size "size-col-step" "16px"
     size "size-col-value" "96px"
     size "size-col-changed" "80px"
-    // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
+    // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
-    size "size-window-width-min" "480px"
+    size "size-window-width-min" "560px"
     size "size-window-height-min" "360px"
     size "size-window-button" "46px"
     // The places to drag at the edges of a window.
@@ -209,6 +209,18 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
+    // The gap between the rows of a list in a picker: the box, its height and the lines at its ends use it.
+    size "size-option-gap" "$space-1"
+    // The gap between the things in the body of the question Move: the shadow lines at its ends take it back.
+    size "size-body-gap" "$space-4"
+    // The room between the edge of the screen or of a column and what stands in the page: the same for the page, and for
+    // the strip of a minimized window, so the strip starts where the page column starts.
+    size "size-page-gutter" "$space-4"
+    // The room above and below the bar of a minimized window inside its strip, and the strip: bar and room.
+    size "size-dock-gap" "$space-3"
+    size "size-dock-strip" "calc($size-control + 2 * $size-dock-gap)"
+    // A row of the people list as tall as a name and three lines of small text need: the box of the list is five of them.
+    size "size-person-row" "calc(2 * $space-2 + 2 * $space-1 + $fs-md * $lh-body + 3 * $fs-base * $lh-body + $border-width)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"
@@ -285,13 +297,21 @@ tokens {
     // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
     // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    // The shadow at the end of a scrolling box that has more behind it: it must be seen in every theme (the `distinct` rule
+    // below keeps it so), a dark shade on the light themes and a light one on the dark themes, where the shade of a dark box has nothing to darken.
+    color "cue" daylight="#4b5160" paper="#4f4638" dusk="#aab3c5" midnight="#9aa2b3"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
+    color "divider" daylight="#a9b0bc" paper="#b2a795" dusk="#5a6272" midnight="#454b57" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
     color "fg-subtle" daylight="#5c6172" paper="#645b51" dusk="#a9afbb" midnight="#9198a4" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
     color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#4a30b8" paper-more="#244b78" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
+    // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
+    // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
+    color "disabled-fill" daylight="#d7dbe1" paper="#d9d0c2" dusk="#434955" midnight="#272a31" forced="ButtonFace"
+    color "on-disabled" daylight="#4d5461" paper="#564e45" dusk="#c0c6d1" midnight="#9ca3af" daylight-more="#333843" paper-more="#3d3731" dusk-more="#e6e9ef" midnight-more="#c4c9d2" forced="GrayText"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
     color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
     color "danger-soft" daylight="#fdecec" paper="#f8e6e1" dusk="#4a2a2c" midnight="#3a1414"
@@ -359,8 +379,9 @@ tokens {
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
-    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "on-disabled" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "disabled-fill" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    restricted "on-disabled" on="disabled-fill" reason="The words of a main button that cannot be pressed are only ever drawn on its grey fill."
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -378,6 +399,10 @@ contrast min=4.5 {
     exclude reason="The accent fill carries only on-accent text." {
         text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
         on "accent"
+    }
+    exclude reason="The grey fill of a main button that cannot be pressed carries only its own words, on-disabled." {
+        text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
+        on "disabled-fill"
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
@@ -412,18 +437,24 @@ contrast min=4.5 {
         on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "cat*-bg"
     }
 
-    non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border" "border-subtle" "divider" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
     non-text "border-control" reason="The edge of a control is a line, not text; it is kept at 3:1 by the `lines` rule below."
     lines min=3 reason="The edge of a box to tick and of the track of a switch is a line a person has to see: WCAG 1.4.11 asks 3:1 against every surface in every theme." {
         colors "border-control"
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
+    non-text "cue" reason="The shadow at the end of a scrolling box is a shade, not text; it is kept clear by the `distinct` rule below and measured in the browser (edge-cue-strength.spec.ts)."
     non-text "edge-high" "hover-line" "scrim" reason="The edge of High, the line of a hovered row and the dimmed page behind a sheet are lines and fills, not text; the lines are kept at 3:1 by the `lines` rules below, the dimmed page by the `dimmed` rule below."
 
     lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
         colors "accent" "border-control" "hover-line" "edge-high" "danger"
         on "tint-ns" "tint-ip" "tint-done"
+    }
+
+    lines min=1.5 reason="The line under the title of a question and above its answers ends what scrolls between them: it is seen in every theme on the plain surfaces (a line of 1.1:1 was lost in Dusk and Midnight, M5 exit), without being as strong as the edge of a control." {
+        colors "divider"
+        on "bg-canvas" "bg-surface" "bg-raised" "tint-ns" "tint-ip" "tint-done"
     }
 
     lines min=3 reason="The edge of High and the line of a hovered row stand on the raised and plain surfaces too (a row of no group, a card of the phone): WCAG 1.4.11 asks 3:1 against every surface." {
@@ -455,7 +486,7 @@ contrast min=4.5 {
 
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
-        text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
+        text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent" "on-disabled"
         lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
@@ -470,10 +501,23 @@ distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="
     surfaces "bg-canvas" "bg-raised"
 }
 
+// A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
+// the fills of a chosen thing (a selected segment, the soft accent) by a clear difference of color, in every theme.
+distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that cannot be pressed differs from the raised and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit)." {
+    states "disabled-fill"
+    surfaces "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
+}
+
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
 distinct min-delta-e-between-states=31 min-delta-e-against-surfaces=30 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E), and each differs from the plain page by at least 30, in every theme (M5 exit, L24)." {
     states "danger" "edge-high"
     surfaces "bg-canvas"
+}
+
+// The shadow at the end of a scrolling box (the color it is cast in) is far from the plain surfaces it falls on, in every theme.
+distinct min-delta-e-against-surfaces=25 reason="The color of the shadow at the end of a scrolling box differs from the plain surfaces it falls on by at least 25 (delta E), in every theme, so it cannot fade to nothing in Dusk and Midnight again (M5 exit, round 8)." {
+    states "cue"
+    surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
 // Hovered and selected rows must stay visible.
@@ -499,7 +543,6 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
     selector "list-panel.title" role="section"
-    selector "access.subheading" role="section"
     selector "access.topic" role="section"
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
@@ -636,6 +679,8 @@ mixin "control-box" {
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
+    // No single word alone on the last line of a hint or a label.
+    text-wrap pretty
 }
 
 // The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
@@ -676,12 +721,83 @@ mixin "menu-text" {
     text-decoration none
 }
 
+// Facts under a name, at the start edge: the row of a list on a phone (a field, a label), whatever the facts say.
+mixin "stacked-facts" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+}
+
+// The shadow at an end of a scrolling box: a line of no size that stays at the edge and casts a soft shadow over what scrolls
+// under it, there only while the box is scrolled away from that end (the scroll position drives it, `cue-in` and `cue-out`).
+// A part says the axis it scrolls along (`edge-block`, `edge-inline`) and the end it is at (`edge-from-start`, `edge-from-end`).
+// Where the browser has no scroll-driven animation the box keeps the old cue (`scroll-cue`, under).
+mixin "edge-shadow" {
+    content "\"\""
+    position sticky
+    z-index "$z-raised"
+    display block
+    flex none
+    opacity 0
+    pointer-events none
+    box-shadow "0 0 $space-3 $border-width $cue"
+    animation-fill-mode both
+    animation-timing-function linear
+}
+
+// The box scrolls down: the line is as wide as the box and has no height.
+mixin "edge-block" {
+    use "edge-shadow"
+    height 0
+    animation-timeline "scroll(nearest block)"
+}
+
+// The box scrolls sideways: the line is as high as the box and has no width.
+mixin "edge-inline" {
+    use "edge-shadow"
+    width 0
+    align-self stretch
+    animation-timeline "scroll(nearest inline)"
+}
+
+// The line at the start of the box: there while the box is scrolled away from its start.
+mixin "edge-from-start" {
+    animation-name "cue-in"
+    animation-range "0% $space-3"
+}
+
+// The line at the end of the box: there while the box is scrolled away from its end.
+mixin "edge-from-end" {
+    animation-name "cue-out"
+    animation-range "calc(100% - $space-3) 100%"
+}
+
+// A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
+// where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows). A box
+// of another color than the raised surface sets `--cue-cover` to its own.
+mixin "scroll-cue" {
+    --cue-cover "$bg-raised"
+    background-image "linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(color-mix(in srgb, $cue 50%, transparent), transparent), linear-gradient(to top, color-mix(in srgb, $cue 50%, transparent), transparent)"
+    background-position "top, bottom, top, bottom"
+    background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
+    background-repeat no-repeat
+    background-attachment "local, local, scroll, scroll"
+}
+
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
 mixin "page-column" {
     width "100%"
     max-width "$size-page"
     min-width 0
     margin 0 auto
+}
+
+// What the page is drawn in: the centered column, its things under each other with the page gutter between them.
+mixin "page-body" {
+    use "page-column"
+    display flex
+    flex-direction column
+    gap "$size-page-gutter"
 }
 
 // The focus view takes the whole width that the narrowed sidebar leaves.
@@ -714,6 +830,15 @@ mixin "floating-box" {
     border "$border-width solid $border"
     background "$bg-raised"
     box-shadow "$shadow"
+}
+
+// A box with no frame, no padding and no fill: what is inside it stands directly on the page (a card or a group on a phone).
+mixin "frameless" {
+    padding 0
+    border-width 0
+    border-radius 0
+    background transparent
+    box-shadow none
 }
 
 // A quiet box on a surface: an item of a list.
@@ -813,6 +938,18 @@ mixin "quiet-column" {
     line-height "$lh-body"
 }
 
+// The bar at the top of a phone screen, the same for a page and for a window that is a screen (M5 exit, O13): the height
+// of the bar, the room for the notch above it, the canvas behind it, its parts level.
+mixin "phone-bar" {
+    display flex
+    align-items center
+    gap "$space-3"
+    box-sizing border-box
+    min-height "$size-bar"
+    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    background "$bg-canvas"
+}
+
 // A button that holds text hangs back by its own padding, so its text stands on the start edge of
 // the text around it (R1). Every such button has the padding `pad-control`.
 mixin "hang-start" {
@@ -846,6 +983,26 @@ mixin "hidden-text" {
 
 keyframes "fade" {
     from {
+        opacity 0
+    }
+}
+
+// The shadows at the ends of a scrolling box that has boxes of its own inside (the question Move): they follow the
+// scroll position, so a shadow is there only where more is behind it.
+keyframes "cue-in" {
+    from {
+        opacity 0
+    }
+    to {
+        opacity 1
+    }
+}
+
+keyframes "cue-out" {
+    from {
+        opacity 1
+    }
+    to {
         opacity 0
     }
 }
@@ -915,6 +1072,8 @@ part "muted" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
+    // No single word alone on the last line.
+    text-wrap pretty
 }
 
 // Words for screen readers only: the name of a column that holds only an icon.
@@ -1049,15 +1208,21 @@ part "button[state=current]" {
     use "marked"
 }
 
-// A main button that cannot be pressed yet is a sunken, flat button with quiet words: not a pale copy of the
+// A main button that cannot be pressed yet is a flat grey chip (the color of the dividers) with quiet words and no
+// fading: in the dark themes the sunken fill read like an enabled outlined button, and a faded fill like the card. Not a pale copy of the
 // filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
 // words (the review of M5, S20), and not the soft accent fill either, which a selected segment or menu item
-// has and which reads as "chosen". It has the edge of every button that cannot be pressed. The dashed edge
+// has and which reads as "chosen". It has no edge of its own (its edge is its fill). The dashed edge
 // belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
-    border-color "$fg-muted"
-    background "$bg-sunken"
-    color "$fg-muted"
+    opacity 1
+    border-color "$disabled-fill"
+    background "$disabled-fill"
+    color "$on-disabled"
+    // Forced colors draw the edge of a button that cannot be pressed in the colour of words that cannot be used.
+    forced {
+        border-color GrayText
+    }
 }
 
 part "button[state=busy]" {
@@ -1146,7 +1311,9 @@ part "alert" {
     color "$fg"
     font-size "$fs-md"
     line-height "$lh-text"
-    overflow-wrap anywhere
+    // A long word (an address) moves to the next line whole and is cut only when it is longer than a line, not
+    // before its last letter (M5 exit, O8).
+    overflow-wrap break-word
 }
 
 // An error has a full border and its icon, not the thick red edge of Critical on a row (R5).
@@ -1195,6 +1362,27 @@ part "link[focus-visible]" {
 part "link[current]" {
     color "$fg"
     text-decoration none
+}
+
+// The name of a row that opens a page: plain words like every other row, and the whole row is the link (its box
+// is the room of the row, which is the first thing above it that is placed).
+part "link[variant=row]" {
+    color "$fg"
+    text-decoration none
+}
+
+part "link[variant=row]::after" {
+    content "\"\""
+    position absolute
+    inset 0
+}
+
+part "link[variant=row][focus-visible]" {
+    outline none
+}
+
+part "link[variant=row][focus-visible]::after" {
+    use "ring-inside"
 }
 
 // ───────────── Switch ─────────────
@@ -1354,7 +1542,7 @@ part "choice-group.label" {
     align-items center
     box-sizing border-box
     min-height "$size-control"
-    padding 0 "$space-4"
+    padding 0 "$pad-control"
     border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
@@ -1391,14 +1579,14 @@ part "choice-group.input:focus-visible + choice-group.label" "choice-group.input
     use "ring"
 }
 
-// Long words (how a connection is protected) stand under each other on a phone, as wide as the screen,
-// and not as ragged buttons side by side.
-part "app-layout[variant=phone] choice-group.choices[variant=stacked]" {
+// The choices stand side by side while they all fit on one line; when they do not (the component measures it) they stand
+// under each other, as wide as the room, and never as ragged buttons on two lines: one rule for every group.
+part "choice-group.choices[variant=stacked]" {
     flex-direction column
     align-items stretch
 }
 
-part "app-layout[variant=phone] choice-group.choices[variant=stacked] choice-group.label" {
+part "choice-group.choices[variant=stacked] choice-group.label" {
     flex 1
 }
 
@@ -1479,6 +1667,7 @@ part "overlay.modal[variant=center]" {
 part "overlay.modal[variant=question]" {
     width "100%"
     max-width "$size-dialog"
+    max-height "100%"
     border-radius "$r-card"
 }
 
@@ -1514,6 +1703,26 @@ part "overlay.modal[variant=top]" {
     width "100%"
     max-height "100%"
     border-radius "0 0 $r-card $r-card"
+}
+
+// The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
+// screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
+// of a window or of a question, the list of people. The scroll position drives them, where the browser has scroll timelines.
+// A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-start"
+        top 0
+    }
+}
+
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-end"
+        bottom 0
+    }
 }
 
 part "overlay.dialog" {
@@ -1593,19 +1802,28 @@ part "picker.legend[variant=boxed]" {
 part "picker.options[variant=list]" {
     display flex
     flex-direction column
-    gap "$space-1"
-    max-height "calc($size-control * 7 + $space-1 * 6)"
+    gap "$size-option-gap"
+    // The seven rows are the room inside; the padding for the ring is around them, so the last row has room below it.
+    box-sizing content-box
+    max-height "calc($size-control * 7 + $size-option-gap * 6)"
     use "ring-room"
     list-style none
     overflow-y auto
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
-    background-position "bottom, bottom"
-    background-size "100% $space-3, 100% $space-2"
-    background-repeat no-repeat
-    // The cue stays inside the edges of the field above the list, not in the padding for the ring.
-    background-origin content-box
-    background-clip content-box
-    background-attachment "local, scroll"
+}
+
+// The gap of the rows is taken back, so the lines at the ends take no room.
+part "picker.options[variant=list]::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $size-option-gap)"
+    }
+}
+
+part "picker.options[variant=list]::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $size-option-gap)"
+    }
 }
 
 // Rows that are one button each reach out by the ring room, so their text stands on the edge of the
@@ -1926,7 +2144,7 @@ part "list-row" {
     min-height "$size-row"
     padding 0 "$pad-box"
     border-inline-start "$size-edge solid transparent"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
@@ -2177,8 +2395,8 @@ part "list-group" {
     margin-block-start "$space-2"
     padding 0 "$pad-box"
     border-inline-start "$size-edge solid transparent"
-    border-top "$border-width solid $border"
-    border-bottom "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
+    border-bottom "$border-width solid $divider"
     background "$bg-surface"
     font-size "$fs-md"
     font-weight "$weight-regular"
@@ -2292,7 +2510,7 @@ part "list-scroll" {
     padding-block-end "$space-3"
     max-height "$size-list-scroll"
     overflow auto
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
 }
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
@@ -2770,7 +2988,7 @@ part "window.title-bar" {
     flex none
     align-items stretch
     min-height "$size-control"
-    border-bottom "$border-width solid $border"
+    border-bottom "$border-width solid $divider"
     border-radius "$r-card $r-card 0 0"
     background "$bg-surface"
 }
@@ -2827,6 +3045,24 @@ part "window.control[variant=back]" {
     gap "$space-1"
 }
 
+// On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
+// surface of the bar of a window (M5 exit, O13).
+part "overlay.modal[variant=full] window.title-bar" {
+    use "phone-bar"
+    border-radius 0
+}
+
+// The same bar as every page of a phone: Back in the color of a quiet button, the title at its side, one line (M5 exit, O13).
+part "overlay.modal[variant=full] window.title" {
+    padding 0
+    line-height "$lh-tight"
+}
+
+part "overlay.modal[variant=full] window.control[variant=back]" {
+    use "hang-start"
+    color "$accent-fg"
+}
+
 part "window.control[focus-visible]" {
     use "ring-inside"
 }
@@ -2839,6 +3075,18 @@ part "window.body" {
     overflow-y auto
 }
 
+part "window.body::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $pad-dialog)"
+    }
+}
+
+part "window.body::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $pad-dialog)"
+    }
+}
+
 // Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
 // (R6), then the note below them (that the draft is kept, and what belongs to the form; UX §4.5).
 part "window.footer" {
@@ -2847,7 +3095,7 @@ part "window.footer" {
     flex-direction column
     gap "$space-3"
     padding "$pad-box $pad-dialog"
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 part "window.footer-note" {
@@ -2967,21 +3215,23 @@ part "window-layout.fields" {
 }
 
 // A window that is minimized is a bar at the bottom of the page with its title and what it keeps.
+// A minimized window is a strip at the bottom of the page: the page has room for it at its end (below), so the strip
+// covers no row and crosses no frame of a card; its bar starts where the page column starts and ends before the
+// column does (the wide view of the focus has the gutter only). The strip is a surface of its own with a shadow.
 part "window-dock" {
     position fixed
-    inset-inline-start "$space-4"
+    inset-inline-start 0
+    inset-inline-end 0
     bottom 0
     z-index "$z-panel"
     box-sizing border-box
     display flex
     align-items center
+    justify-content flex-start
     gap "$space-3"
-    min-height "$size-control"
-    max-width "calc(100% - $space-4 * 2)"
-    padding 0 "$pad-box"
-    border "$border-width solid $border"
-    border-bottom 0
-    border-radius "$r-card $r-card 0 0"
+    min-height "$size-dock-strip"
+    padding "$size-dock-gap $size-page-gutter"
+    border-top "$border-width solid $border-control"
     background "$bg-raised"
     box-shadow "$shadow"
     color "$fg"
@@ -2990,15 +3240,18 @@ part "window-dock" {
     cursor pointer
 }
 
-// On a computer the dock stands in the main area, after the menu, so it never covers it.
-part "app-layout[variant=side] window-dock" {
-    inset-inline-start "calc($size-sidebar + $space-4)"
-    max-width "calc(100% - $size-sidebar - $space-4 * 2)"
+part "app-layout[variant=side]" {
+    --sidebar-width "$size-sidebar"
 }
 
-part "app-layout[variant=side-narrow] window-dock" {
-    inset-inline-start "calc($size-sidebar-narrow + $space-4)"
-    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 2)"
+part "app-layout[variant=side-narrow]" {
+    --sidebar-width "$size-sidebar-narrow"
+}
+
+// The strip starts after the menu and its bar starts where the page column starts (centered where the room is wider).
+part "app-layout[variant=side] window-dock" "app-layout[variant=side-narrow] window-dock" {
+    inset-inline-start "var(--sidebar-width)"
+    padding-inline "max($size-page-gutter, (100% - var(--sidebar-width) - $size-page) / 2)"
 }
 
 part "window-dock[hovered]" {
@@ -3016,8 +3269,12 @@ part "window-dock.title" {
     white-space nowrap
 }
 
+// A line between the title and its note, so they read as two things in one bar.
 part "window-dock.note" {
-    use "quiet-text"
+    padding-inline-start "$space-3"
+    border-inline-start "$border-width solid $divider"
+    color "$fg"
+    font-size "$fs-base"
     white-space nowrap
 }
 
@@ -3031,6 +3288,14 @@ part "stack" {
     flex-direction column
     gap "$space-4"
     min-width 0
+}
+
+// A button that stands in a column on a computer is as wide as its words, not as wide as the column (M5 exit, O6);
+// on a phone a form's button is as wide as the screen.
+part "stack > button" {
+    media "(width >= $bp-tablet)" {
+        align-self flex-start
+    }
 }
 
 // Things under each other on the start edge, with text buttons among them: a button that stands
@@ -3055,6 +3320,7 @@ part "text" {
     margin 0
     font-size "$fs-md"
     line-height "$lh-text"
+    text-wrap pretty
 }
 
 part "row" {
@@ -3100,6 +3366,7 @@ part "list[variant=loose]" {
 // What several screens share: an item of a list, facts, a heading, a hint.
 
 part "item" {
+    position relative
     display flex
     flex-wrap wrap
     align-items center
@@ -3159,7 +3426,13 @@ part "facts" {
 part "fact" {
     use "column-wrap"
     padding-bottom "$space-3"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
+}
+
+// The last of the facts has no line under it: nothing follows it.
+part "fact:last-child" {
+    padding-bottom 0
+    border-bottom none
 }
 
 part "term" {
@@ -3249,11 +3522,7 @@ part "card" {
 
 // On a phone a list goes with one gutter: a card of this look has no frame and no padding there.
 part "app-layout[variant=phone] card[variant=open-on-phone]" {
-    padding 0
-    border-width 0
-    border-radius 0
-    background transparent
-    box-shadow none
+    use "frameless"
 }
 
 // The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
@@ -3278,6 +3547,7 @@ part "card.heading" {
     line-height "$lh-snug"
     color "$fg"
     font-weight "$weight-bold"
+    text-wrap pretty
 }
 
 part "card.heading:focus" {
@@ -3306,7 +3576,7 @@ part "or-divider" {
 part "or-divider::before" "or-divider::after" {
     content "\"\""
     flex 1
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 // The words that say whether the last change reached the server. Its own part: a change of the
@@ -3331,6 +3601,12 @@ part "save-bar" {
 
 part "save-bar button[variant=primary]" {
     margin-inline-start auto
+}
+
+// The main button of a form stands on a row of its own and is as wide as the screen on a phone, whether the form keeps it
+// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys).
+part "app-layout[variant=phone] stack > row > button[variant=primary]" {
+    flex "1 1 100%"
 }
 
 part "skeleton.line" {
@@ -3397,8 +3673,10 @@ part "search-field.input::-webkit-search-cancel-button" {
 
 part "confirm.dialog" {
     display flex
+    flex 1
     flex-direction column
     gap "$space-4"
+    min-height 0
     padding "$space-5"
     outline none
 }
@@ -3409,18 +3687,29 @@ part "confirm.body" {
     display flex
     flex-direction column
     flex 1
-    gap "$space-4"
+    gap "$size-body-gap"
     min-height 0
-}
-
-// The body scrolls, so it clips: the ring of a field at its edge gets its room as padding, and the
-// negative margin keeps the text where it was.
-part "overlay.modal[variant=full] confirm.body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
 }
 
+// The gap of the body is taken back, so the lines at its ends take no room.
+part "confirm.body::before" {
+    supports "(animation-timeline: scroll())" {
+        top "calc(-1 * $ring-room)"
+        margin-block-end "calc(-1 * $size-body-gap)"
+    }
+}
+
+part "confirm.body::after" {
+    supports "(animation-timeline: scroll())" {
+        bottom "calc(-1 * $ring-room)"
+        margin-block-start "calc(-1 * $size-body-gap)"
+    }
+}
+
+// The title of a question or of a sheet (the fields, the help): bold, at the top, with no line of its own.
 part "confirm.title" {
     margin 0
     font-size "$fs-lg"
@@ -3428,8 +3717,20 @@ part "confirm.title" {
     font-weight "$weight-bold"
 }
 
+// Only the title of the question itself has the line under it; the same title in the head of a sheet (the fields, the
+// help) has its Close beside it and no line.
+part "confirm.dialog > confirm.title" {
+    flex none
+    padding-block-end "$space-2"
+    border-bottom "$border-width solid $divider"
+}
+
+// A line above the answers, so what scrolls above them ends at a line and not at the buttons.
 part "confirm.actions" {
     use "answer-row"
+    margin-top "calc(-1 * $space-2)"
+    padding-top "$space-3"
+    border-top "$border-width solid $divider"
 }
 
 // The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end;
@@ -3444,14 +3745,10 @@ part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions 
 }
 
 // On a phone the question starts at the top and its answers are at the bottom, one under the
-// other and as wide as the screen, the main one first (the thumb reaches it).
+// other and as wide as the screen, the main one first (the thumb reaches it); the body takes the room between.
 part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
     min-height 0
-}
-
-part "overlay.modal[variant=full] confirm.actions" {
-    margin-top auto
 }
 
 // The foot of a sheet stays at the foot of it, whatever its content adds.
@@ -3528,10 +3825,11 @@ part "settings.locked-value" {
 
 // ───────────── Access ─────────────
 
+// The title of an answer of *Check access* (a permission, a field): the name of a row, regular weight (UX §7.3:
+// bold is for the heading of a section, not for the title of every line).
 part "access.subheading" {
     margin 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
     color "$fg"
 }
 
@@ -3539,7 +3837,13 @@ part "access.subheading" {
 part "access.scroll" {
     // The names of the lists that only screen readers read are positioned boxes: this keeps them in the region.
     position relative
+    // The table and the two lines of the edge shadows (below) are side by side, so a line is as high as the table.
+    display flex
     overflow-x auto
+    container-type inline-size
+    // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
+    scroll-snap-type "x proximity"
+    scroll-padding-inline-start "$size-matrix-cell"
     border "$border-width solid $border-subtle"
     border-radius "$r-ctl"
     background "$bg-surface"
@@ -3551,14 +3855,44 @@ part "access.scroll:focus-visible" {
 }
 
 part "access.matrix" {
+    flex none
     border-collapse separate
     border-spacing 0
     width "100%"
 }
 
+// The shadows at the sides of the table while columns are hidden at that side (the scroll position drives them); where the
+// browser has no scroll-driven animation there is none.
+part "access.scroll::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-start"
+        inset-inline-start 0
+    }
+}
+
+part "access.scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-end"
+        inset-inline-end 0
+    }
+}
+
+// A column is as wide as the room allows for a whole number of them beside the names: the box shows 2, 3 or 4
+// columns at their least width or more, never a column cut at its edge (M5 exit, O2).
 part "access.matrix-cell" {
+    box-sizing border-box
+    min-width "$size-matrix-cell"
+    // Where the browser does not know round() with typed arithmetic, the block below is not read and the column keeps
+    // its least width above (then a column may be cut at the edge): a variable in a line that such a browser cannot
+    // compute would drop the line to nothing, not to the line before, so the browser is asked first, with plain numbers.
+    supports "(width: calc(1px * round(down, 5px / 2px, 1)))" {
+        min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
+    }
     padding "$space-2 $space-3"
-    border-bottom "$border-width solid $border-subtle"
+    scroll-snap-align start
+    border-bottom "$border-width solid $divider"
     text-align start
     vertical-align top
 }
@@ -3570,19 +3904,23 @@ part "access.matrix-cell[variant=head]" {
     background "$bg-sunken"
     color "$fg"
     font-weight "$weight-regular"
-    min-width "$size-matrix-cell"
 }
 
 part "access.matrix-cell[variant=row]" {
     position sticky
     inset-inline-start 0
+    // The words stand level with the control of the row: the middle of their line is the middle of a control.
+    padding-block-start "calc($space-2 + ($size-control - $fs-ui * $lh-body) / 2)"
     background "$bg-surface"
     color "$fg"
+    font-size "$fs-ui"
+    line-height "$lh-body"
     font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
 
 part "access.matrix-cell[variant=head]:first-child" {
+    min-width "$size-matrix-cell"
     inset-inline-start 0
     z-index "$z-raised"
 }
@@ -3596,13 +3934,22 @@ part "access.cell" {
     align-items flex-start
 }
 
+// In a matrix a cell is one line: the list of levels and, beside it, the button that takes a level set here away.
+part "access.cell[variant=inline]" {
+    flex-direction row
+    align-items center
+    gap "$space-1"
+}
+
 part "access.cell > field" {
     width "100%"
+    min-width 0
 }
 
 part "access.preview-line" {
     font-size "$fs-md"
     color "$fg"
+    text-wrap pretty
 }
 
 part "access.answer" {
@@ -3646,20 +3993,77 @@ part "access.topic" "card.topic" {
     color "$fg"
 }
 
+// The name and what is said about it stand in one box, and the sign that the row opens at the end of the row, in
+// every layout (M5 exit, O16). On a phone the facts stand under the name, in the left column.
+part "row-main" {
+    display flex
+    flex 1
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    min-width 0
+}
+
+// The sign that a row opens something: at the end of the row, in the middle of its height, never on a line of its own.
+part "row-chevron" {
+    display inline-flex
+    flex none
+    align-self center
+    color "$fg-muted"
+}
+
 // ───────────── People ─────────────
 
 part "people" {
     display block
-    max-block-size "$size-list-tall"
+    // About five rows high, never more than most of the screen: a row is as tall as its words need (nothing is
+    // cut with an ellipsis), the list draws only the rows on screen.
+    max-block-size "min($size-list-scroll, calc(5 * $size-person-row))"
     margin 0
-    padding "$ring-width"
+    padding-block 0
+    padding-inline "$ring-width"
     overflow-y auto
     use "surface-box"
 }
 
+// Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
+// boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
+part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" {
+    supports "not (animation-timeline: scroll())" {
+        use "scroll-cue"
+    }
+}
+
+// The covers of the old cue in the list of people are the color of its box, the plain surface.
+part "people" {
+    supports "not (animation-timeline: scroll())" {
+        --cue-cover "$bg-surface"
+    }
+}
+
+// A row of the list is as tall as its words: the name, the address and the groups and roles under it, each one
+// wrapping where the line ends, and the chevron at the end.
 part "people.person" {
     use "pick-row"
-    border-bottom "$border-width solid $border-subtle"
+    position relative
+    justify-content center
+    padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
+    border-bottom "$border-width solid $divider"
+}
+
+part "people.person-text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+// The chevron stands at the end of the row, in the middle of its height.
+part "people.person row-chevron" {
+    position absolute
+    inset-inline-end "$space-3"
+    top "50%"
+    transform "translateY(-50%)"
 }
 
 part "people.person[hovered]" {
@@ -3671,16 +4075,17 @@ part "people.person[focus-visible]" {
 }
 
 part "people.person-name" {
+    font-size "$fs-md"
     font-weight "$weight-regular"
-    color "$accent-fg"
-    text-decoration underline
-    text-underline-offset "$space-1"
+    line-height "$lh-body"
+    color "$fg"
     overflow-wrap anywhere
 }
 
 part "people.person-facts" {
     color "$fg-muted"
     font-size "$fs-base"
+    line-height "$lh-body"
     overflow-wrap anywhere
 }
 
@@ -4132,8 +4537,10 @@ part "shell.narrow" {
 }
 
 part "shell.footer" {
+    // No wider than the card above it: the choices of theme wrap there as they do on a phone.
+    max-width "$size-form"
     padding-top "$space-4"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "app-layout" {
@@ -4157,7 +4564,7 @@ part "app-layout.main" {
     flex 1
     flex-direction column
     min-width 0
-    padding "$space-4"
+    padding "$size-page-gutter"
 }
 
 // What a phone shows under the page and above the bar of the app: the bar of the open issue. It is
@@ -4171,16 +4578,33 @@ part "app-layout.main:focus" {
     outline none
 }
 
+// While a window is minimized to its strip at the bottom of the page, the page has room for the strip under its end, so
+// the strip covers no row of a list and no frame of a card at the end of the page (M5 exit, O7).
+part "app-layout:has(window-dock) app-layout.main" {
+    padding-block-end "calc($size-page-gutter + $size-dock-strip)"
+}
+
+// The focus view takes the whole width, so the strip has the gutter only.
+part "app-layout:has(app-layout.inner[variant=wide]) window-dock" {
+    padding-inline "$size-page-gutter"
+}
+
 part "app-layout.inner" {
-    use "page-column"
-    display flex
-    flex-direction column
-    gap "$space-4"
+    use "page-body"
 }
 
 // The focus view (M2C-F81) takes the whole width that the narrowed sidebar leaves.
 part "app-layout.inner[variant=wide]" {
     use "page-column-wide"
+}
+
+// An item of a list on a phone is a screen of its own: the page column and what else the content holds give way to it.
+part "item-screen" {
+    use "page-body"
+}
+
+part "app-layout.main:has(item-screen) app-layout.inner" {
+    display none
 }
 
 // The link that jumps to the content, in the app and before sign-in: out of sight until it has the focus.
@@ -4228,7 +4652,7 @@ part "sidebar" {
     height "$size-viewport"
     overflow-y auto
     padding "$space-3"
-    border-right "$border-width solid $border"
+    border-right "$border-width solid $divider"
     background "$bg-surface"
 }
 
@@ -4283,7 +4707,7 @@ part "sidebar.person" {
     gap "$space-1"
     width "100%"
     padding-top "$space-3"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "sidebar.who" {
@@ -4291,6 +4715,7 @@ part "sidebar.who" {
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
+    text-wrap pretty
 }
 
 part "nav-item" {
@@ -4333,6 +4758,13 @@ part "nav-item.label" {
     overflow-wrap anywhere
 }
 
+// Who a shared saved search is by: a second, quiet line under its name.
+part "nav-item.by" {
+    display block
+    font-size "$fs-xs"
+    color "$fg-muted"
+}
+
 part "nav-item.tooltip" {
     padding "$space-1 $space-3"
     border "$border-width solid $border"
@@ -4345,7 +4777,7 @@ part "nav-item.tooltip" {
 }
 
 part "bottom-bar" {
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
     background "$bg-surface"
     padding-bottom "env(safe-area-inset-bottom)"
 }
@@ -4403,14 +4835,8 @@ part "top-bar" {
     position sticky
     top 0
     z-index "$z-sticky"
-    display flex
-    align-items center
-    gap "$space-3"
-    box-sizing border-box
-    min-height "$size-bar"
-    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
-    border-bottom "$border-width solid $border"
-    background "$bg-canvas"
+    use "phone-bar"
+    border-bottom "$border-width solid $divider"
 }
 
 part "top-bar.crumbs" {
@@ -4961,7 +5387,7 @@ part "issue-bar" {
     display flex
     gap "$space-2"
     padding "$space-2"
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
     background "$bg-raised"
 }
 
@@ -5062,8 +5488,22 @@ part "list-editor.open[variant=columns]" {
     padding-block "$space-2"
 }
 
+part "app-layout[variant=phone] list-editor.open" {
+    padding-block "$space-2"
+}
+
+part "app-layout[variant=phone] row-main" {
+    use "stacked-facts"
+}
+
+part "list-editor.open[variant=columns] row-main" {
+    display contents
+}
 
 part "list-editor.name" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
     min-width 0
     font-weight "$weight-regular"
     overflow-wrap break-word
@@ -5073,6 +5513,11 @@ part "list-editor.details" {
     display inline-flex
     align-items center
     gap "$space-2"
+}
+
+// A row with no details (a group) is only its name: nothing is left under it, so the name stands in the middle of the row.
+part "list-editor.details:empty" {
+    display none
 }
 
 // The name and the short name stand on one line; where the project sits stands muted under them; a chevron says the row opens (A13).
@@ -5092,11 +5537,9 @@ part "list-editor.open[variant=columns] projects.place" {
     grid-row 2
 }
 
-part "list-editor.chevron" {
+part "list-editor.open[variant=columns] row-chevron" {
     grid-column 3
     grid-row "1 / span 2"
-    align-self center
-    color "$fg-muted"
 }
 
 part "list-editor.open[hovered]" {
@@ -5304,7 +5747,7 @@ base "[data-part=markdown] th" "[data-part=markdown] td" {
 
 base "[data-part=markdown] hr" {
     border 0
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 base "[data-part=markdown] img" {
@@ -5315,13 +5758,16 @@ base "[data-part=markdown] img" {
 // An issue ID or a mention. The server resolves it with the viewer's rights and the page shows it
 // as a chip; until then, and where it cannot be resolved, it is marked text.
 base "[data-part=markdown] [data-token]" {
-    padding 0 "$space-1"
-    border "$border-width solid $border-subtle"
+    // No room inside at the ends: a comma or a full stop after a mention stands against it, as in the text it was written in.
+    padding 0
     border-radius "$r-ctl"
     background "$accent-soft"
     color "$accent-fg"
     font-weight "$weight-regular"
     white-space nowrap
+    forced {
+        text-decoration underline
+    }
 }
 
 part "markdown.editor" {
@@ -12300,7 +12746,7 @@ part "tabs" {
     display flex
     flex-wrap wrap
     gap "$space-1"
-    border-bottom "$border-width solid $border"
+    border-bottom "$border-width solid $divider"
 }
 
 part "tab" {
@@ -12368,6 +12814,12 @@ part "notification-group.head" {
     font-weight "$weight-bold"
     min-width 0
     overflow-wrap anywhere
+}
+
+// On a phone the group of notifications of an issue has no frame of its own inside the card: card, group and notification
+// were three boxes inside each other and left the words little of the width.
+part "app-layout[variant=phone] notification-group" {
+    use "frameless"
 }
 
 part "notification" {
@@ -12596,7 +13048,7 @@ part "workflow-change" {
     align-items end
     gap "$space-2" "$space-3"
     padding "$space-3 0"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "app-layout[variant=phone] workflow-change" {
@@ -12865,7 +13317,8 @@ part "search-filters" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    flex 1
+    // As wide as its chips want: the buttons beside it move to the next line before a chip is cut short.
+    flex "1 1 auto"
     min-width 0
 }
 
@@ -12875,15 +13328,22 @@ part "search-filter" {
     font-size "$fs-ui"
     display inline-flex
     align-items center
+    flex none
     max-width "100%"
     white-space nowrap
 }
 
 // The text of the button of a filter starts a little in from the edge of its outline (R3).
 part "search-filter > button" {
-    padding-inline-start "$space-3"
+    min-width 0
+    overflow hidden
+    // The same room before and after the words, inside the outline: a button does not hang back over the edge here.
+    padding-inline "$space-3"
+    margin-inline 0
+    justify-content flex-start
     border-color transparent
     min-height "calc($size-control - $border-width * 2)"
+    text-overflow ellipsis
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
@@ -12964,6 +13424,13 @@ part "search-filters.action" {
 
 part "search-filters.action > button" {
     width "100%"
+}
+
+// The button that takes the filter away stays whole inside the border; the words before it give way, with an ellipsis (the
+// sign was outside the border and touched Advanced search, M5 exit).
+part "search-filter > button:last-child" {
+    flex none
+    margin-inline-end 0
 }
 
 // In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
@@ -13263,7 +13730,7 @@ part "nav-subgroup" {
 part "nav-subheading" {
     margin 0
     padding "$space-3 $space-3 $space-1"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
     color "$fg-muted"
     font-size "$fs-sm"
     font-weight "$weight-regular"

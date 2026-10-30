@@ -34,7 +34,7 @@ function Refused({
  * The form of a new issue in its window (ISS-11, UX §4.5): the title and the description on the
  * left, and the project, the type and the other fields at the side once the window is 880 wide.
  * What is written is kept as a draft, in the browser and on the server, until the issue is made;
- * *Create and start another* keeps the project and the type. The buttons are in the footer of the
+ * *Create the issue and start another* keeps the project and the type. The buttons are in the footer of the
  * window (`NewIssueActions`).
  */
 export function NewIssueForm({ form, formId, onMade }: NewIssueFormProps) {

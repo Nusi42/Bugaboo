@@ -4,7 +4,7 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "search.issues": "Issues",
-  "search.create-issue": "Create issue",
+  "search.create-issue": "Create an issue",
   "search.found-stale":
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",
@@ -18,11 +18,13 @@ export const messages = {
   "issues.project": "Project",
   "issues.type": "Type",
   "issues.no-issue-type": "This project offers no issue type. Ask who looks after the project.",
-  "issues.create": "Create",
-  "issues.create-another": "Create and start another",
-  "issues.missing-title": "Write a title first, then you can create and start another.",
-  "issues.missing-type": "Choose an issue type first, then you can create and start another.",
-  "issues.missing-project": "Choose a project first, then you can create and start another.",
+  "issues.create": "Create the issue",
+  "issues.create-another": "Create the issue and start another",
+  "issues.missing-title": "Write a title first, then you can create the issue and start another.",
+  "issues.missing-type":
+    "Choose an issue type first, then you can create the issue and start another.",
+  "issues.missing-project":
+    "Choose a project first, then you can create the issue and start another.",
   "issues.ready-to-create": "Nothing is missing: you can create the issue.",
   "issues.refused-at-field": "{field}: {reason}",
   "issues.created": "{key} was created.",
@@ -40,6 +42,7 @@ export const messages = {
   "issues.column-down": "Move {column} down",
   "issues.columns-reset": "Back to the project's columns",
   "issues.count-line": "{total, number} in {scope} · {shown, number} shown",
+  "issues.count-line-loading": "{total, number} in {scope}",
   "issues.everywhere": "all projects",
   "issues.count": "{count, plural, one {# issue found} other {# issues found}}",
   "issues.remove-filters": "Remove all filters",

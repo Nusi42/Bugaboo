@@ -1,7 +1,7 @@
 import { t, type MessageKey } from "@bugaboo/messages";
 import { Card, useLayout, partOf, part, type IconName } from "@bugaboo/ui";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -39,6 +39,8 @@ export interface TopicListProps {
 
 /** A list of topics as links with their icons: the one menu of every settings screen. */
 export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
+  // On a phone the menu is a page of its own, and each topic opens one: the chevron says so.
+  const phone = useLayout() === "phone";
   return (
     <ul
       {...partOf(part.settingsFrameTopics)}
@@ -51,6 +53,7 @@ export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
             icon={topic.icon}
             label={t(topic.name)}
             current={pathname === topic.path}
+            opens={phone}
           />
         </li>
       ))}
@@ -79,21 +82,57 @@ function Topics({ groups, pathname }: TopicsProps) {
   );
 }
 
-/** The page of the settings on a phone: the topics. Only this page names the tab; a topic names its own. */
-function TopicPage({
+/** The screen of the menu: only it names the tab; a topic names its own. */
+function MenuScreen({
   heading,
-  groups,
+  label,
+  menu,
 }: {
   readonly heading: string;
-  readonly groups: readonly TopicGroup[];
+  readonly label: string;
+  readonly menu: ReactNode;
 }) {
   usePageTitle(heading);
   return (
     <Card heading={heading} level={1}>
-      <nav aria-label={heading}>
-        <Topics groups={groups} />
-      </nav>
+      <nav aria-label={label}>{menu}</nav>
     </Card>
+  );
+}
+
+export interface SettingsScreensProps {
+  /** What the settings are called: the heading of the menu screen and the name of the menu. */
+  readonly heading: string;
+  /** What names the menu for screen readers, where it is another than the heading. */
+  readonly label?: string;
+  /** The menu of the topics; none where there is only one topic, and no menu is drawn. */
+  readonly menu?: ReactNode;
+  /** This is the screen of the menu itself (a phone shows the menu and a topic one at a time). */
+  readonly onMenu: boolean;
+  /** The open topic. */
+  readonly children: ReactNode;
+}
+
+/**
+ * The one rule of every settings screen: the menu is a screen of its own (`onMenu`), or a topic is
+ * shown, with the menu at its side on a computer and with *Back* on a phone, where one screen shows
+ * at a time.
+ */
+export function SettingsScreens({ heading, label, menu, onMenu, children }: SettingsScreensProps) {
+  const phone = useLayout() === "phone";
+  if (onMenu) {
+    return <MenuScreen heading={heading} label={label ?? heading} menu={menu} />;
+  }
+  if (phone || menu === undefined) {
+    return children;
+  }
+  return (
+    <div {...partOf(part.settingsFrame)}>
+      <nav aria-label={label ?? heading} {...partOf(part.settingsFrameMenu)}>
+        {menu}
+      </nav>
+      <div {...partOf(part.shellContent)}>{children}</div>
+    </div>
   );
 }
 
@@ -110,22 +149,16 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
   const here = placeAt(parent);
   const heading = here === undefined ? t("app.name") : t(here.name);
   const first = groups[0]?.topics[0];
-  if (pathname === parent) {
-    if (!phone && first !== undefined) {
-      return <Navigate to={first.path} replace />;
-    }
-    return <TopicPage heading={heading} groups={groups} />;
+  if (pathname === parent && !phone && first !== undefined) {
+    return <Navigate to={first.path} replace />;
   }
-  return phone ? (
-    <Outlet />
-  ) : (
-    <div {...partOf(part.settingsFrame)}>
-      <nav aria-label={heading} {...partOf(part.settingsFrameMenu)}>
-        <Topics groups={groups} pathname={pathname} />
-      </nav>
-      <div {...partOf(part.shellContent)}>
-        <Outlet />
-      </div>
-    </div>
+  return (
+    <SettingsScreens
+      heading={heading}
+      menu={<Topics groups={groups} pathname={pathname} />}
+      onMenu={pathname === parent}
+    >
+      <Outlet />
+    </SettingsScreens>
   );
 }

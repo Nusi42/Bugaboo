@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Announce, Button, buttonLook, part, partOf } from "@bugaboo/ui";
 
 import { showSearchSheet } from "../../shared/search-sheet.ts";
+import { countLine } from "./count-line.ts";
 import { useFoundCount } from "./found-issues.ts";
 import { useListContext } from "./list-context.ts";
 
@@ -23,6 +24,7 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
   if (count.data === undefined) {
     return null;
   }
+  const scope = scopeName ?? t("issues.everywhere");
   return (
     <>
       {note ? (
@@ -37,13 +39,7 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
           ) : null}
         </Alert>
       ) : null}
-      <p {...partOf(part.muted)}>
-        {t("issues.count-line", {
-          total: count.data,
-          scope: scopeName ?? t("issues.everywhere"),
-          shown: shown.length,
-        })}
-      </p>
+      <p {...partOf(part.muted)}>{countLine(count.data, scope, shown.length)}</p>
       <Announce>{t("issues.count", { count: count.data })}</Announce>
     </>
   );

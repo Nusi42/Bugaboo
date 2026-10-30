@@ -14,7 +14,7 @@ import { pickTheme, type Theme, expectLook } from "./checks.ts";
 import { sampleStartMs } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
-import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
+import { screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { viewports } from "../../../tooling/viewports.ts";
 
 /**
@@ -95,6 +95,78 @@ export interface Shot {
   readonly mask?: readonly Locator[];
 }
 
+/**
+ * The tall screens whose whole page is too small to read in a contact sheet: a computer also gets the two
+ * windows' worth from the top of the page, at the size they have (M5 exit, O11).
+ */
+const withCrops: ReadonlySet<string> = new Set([
+  "project-roles",
+  "issue",
+  "issue-panel",
+  "issue-team-member",
+]);
+
+/** The tall screens a phone also gets the two windows' worth for: the page of an issue and its details (M5 exit, round 8). */
+const withPhoneCrops: ReadonlySet<string> = new Set(["issue", "issue-details"]);
+
+/** Waits until the browser has drawn what was just scrolled to, so a picture is never of an empty page. */
+function painted(page: Page): Promise<unknown> {
+  return page.evaluate(
+    () =>
+      new Promise((done) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(done);
+        });
+      }),
+  );
+}
+
+/** Scrolls the page to this height: the window on a computer, the main area of the page on a phone, where that is the box that scrolls. */
+async function scrollPageTo(page: Page, top: number): Promise<void> {
+  await page.evaluate((to) => {
+    window.scrollTo(0, to);
+    document.querySelector("[data-part='app-layout.main']")?.scrollTo(0, to);
+  }, top);
+  await painted(page);
+}
+
+/** The pictures of the top and of the next part of a tall page, at the size of the window. */
+async function takeCrops(page: Page, shot: Shot): Promise<void> {
+  if (shot.screen === "project-move") {
+    // The question with its body scrolled to the end, so the last words of what changes are seen whole.
+    await page.locator("[data-part='confirm.body']").evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await shootWindowAs(
+      page,
+      `${numbered(shot.order)}-${shot.screen}-${shot.device}-scrolled`,
+      SHOWCASE,
+      shot.theme.id,
+    );
+    return;
+  }
+  if (shot.screen === "new-issue-minimized" && shot.device === "computer") {
+    // The bar of the minimized window, at the size it has, clear of the card behind it.
+    await shootWindowAs(
+      page,
+      `${numbered(shot.order)}-${shot.screen}-${shot.device}-crop-bar`,
+      SHOWCASE,
+      shot.theme.id,
+    );
+    return;
+  }
+  const crops = shot.device === "computer" ? withCrops : withPhoneCrops;
+  if (!crops.has(shot.screen)) {
+    return;
+  }
+  const base = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;
+  await scrollPageTo(page, 0);
+  await shootWindowAs(page, `${base}-crop-top`, SHOWCASE, shot.theme.id);
+  await scrollPageTo(page, page.viewportSize()?.height ?? 0);
+  await shootWindowAs(page, `${base}-crop-next`, SHOWCASE, shot.theme.id);
+  await scrollPageTo(page, 0);
+}
+
 /** Takes the whole open screen in the theme it shows, and remembers it for the gallery. */
 export async function takePicture(page: Page, shot: Shot): Promise<void> {
   const name = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;
@@ -107,6 +179,7 @@ export async function takePicture(page: Page, shot: Shot): Promise<void> {
     theme: shot.theme.id,
     device: shot.device,
   });
+  await takeCrops(page, shot);
 }
 
 /**

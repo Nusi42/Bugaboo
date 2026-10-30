@@ -1,4 +1,4 @@
-import { type LayoutMode, partOf, part } from "@bugaboo/ui";
+import { type LayoutMode, partOf, part, TitleCarriedByBar } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { usePageFocus } from "../../shared/focus.ts";
@@ -27,7 +27,9 @@ export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
       <div {...partOf(part.appLayoutColumn)}>
         {phone && focus ? null : <TopBar layout={layout} />}
         <main id={CONTENT_ID} {...partOf(part.appLayoutMain)} tabIndex={-1} {...scrollRestoration}>
-          <PageColumn phone={phone} signOutProblem={signOutProblem} />
+          <TitleCarriedByBar carried={!(phone && focus)}>
+            <PageColumn phone={phone} signOutProblem={signOutProblem} />
+          </TitleCarriedByBar>
         </main>
         {phone ? <PhoneBars onSlot={setSlot} /> : null}
       </div>

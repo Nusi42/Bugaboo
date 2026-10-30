@@ -12,7 +12,7 @@ You cannot change a person's roles on their page: change them where the rows are
 
 ## Invitations
 
-An invitation is a link that lets one person create their account. It works once and runs out after 7 days. Type the person's e-mail address under "Invitations", press "Create an invitation" and send them the link yourself: Bugaboo does not send invitations by e-mail. The link is shown only once.
+An invitation is a link that lets one person create their account. It works once and runs out after 7 days. Type the person's e-mail address under "Invitations", press "Create the invitation" and send them the link yourself: Bugaboo does not send invitations by e-mail. The link is shown only once.
 
 The invitations that nobody has used yet are listed below, each with "Take back".
 

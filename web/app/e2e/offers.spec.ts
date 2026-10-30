@@ -6,6 +6,7 @@ import { ada, bob, cleo } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn, signOut } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { previewMoveToLab } from "./support/offers-look.ts";
 import { offerSwitch, prepareOffers, switchOff, typesOffered } from "./support/offers.ts";
 
@@ -51,7 +52,7 @@ test("iss_02 an administrator limits Bug to Website, and New issue in Lab does n
   await signIn(page, ada);
   await openFromMenu(page, t("nav.issue-types"));
   await page.getByRole("button", { name: "Bug", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Bug" });
+  const panel = itemArea(page, "Bug");
   const offered = panel.getByRole("region", { name: t("projects.offered-in-title") });
   await expect(offered.getByText(t("projects.offered-in-everywhere"))).toBeVisible();
   // The whole organization does not offer Bug; Website does.

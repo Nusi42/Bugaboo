@@ -255,7 +255,7 @@ async fn cfg_06_unlocking_drops_a_row_that_only_held_the_lock_and_keeps_a_real_v
         lock(storage, &mut source, NOTE, false).await?;
         let layers = database.setting_layers(&Scopes::default()).await?;
         assert!(layers.organization.is_empty());
-        // A lock that held the standard value leaves no row behind when it goes.
+        // A lock that held the default value leaves no row behind when it goes.
         lock(storage, &mut source, NOTE, true).await?;
         lock(storage, &mut source, NOTE, false).await?;
         let layers = database.setting_layers(&Scopes::default()).await?;

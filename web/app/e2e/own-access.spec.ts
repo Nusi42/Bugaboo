@@ -5,6 +5,7 @@ import { type Page } from "@playwright/test";
 import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { itemArea } from "./support/layout.ts";
 import { createProject } from "./support/projects.ts";
 import { rowOfPerson } from "./support/rows.ts";
 import { addToGroup, giveGroupRole, giveRole, createGroup, roleName } from "./support/access.ts";
@@ -99,7 +100,7 @@ test("sec_08 taking yourself out of the group that gives you the way asks first"
   await signIn(page, ada);
   await page.goto(paths.groups);
   await page.getByRole("button", { name: "Admins", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Admins" });
+  const panel = itemArea(page, "Admins");
   await panel.getByRole("button", { name: t("groups.remove-name", { name: ada.name }) }).click();
   const dialog = await question(page, "own.lost-decide-roles");
   await dialog.getByRole("button", { name: t("own.ask-keep"), exact: true }).click();

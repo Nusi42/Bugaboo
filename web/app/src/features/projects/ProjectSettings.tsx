@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
@@ -24,11 +24,11 @@ export function ProjectSettings({
   const { id, name, short_name: shortName } = project.project;
   return (
     <ProjectSettingsFrame project={project}>
-      <Card heading={t("projects.settings-title", { name })} level={1}>
-        <div {...partOf(part.row)}>
-          <Link href={projectAddress(shortName)}>{t("projects.settings-back")}</Link>
-        </div>
-      </Card>
+      <Card
+        heading={t("projects.settings-title", { name })}
+        level={1}
+        back={{ href: projectAddress(shortName), label: t("projects.settings-back") }}
+      />
       {mayChange ? (
         <Card heading={t("projects.edit-title")}>
           <ChangeProjectForm

@@ -2,10 +2,10 @@ import { createContext, useContext, type ReactNode } from "react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { Alert } from "./Alert.tsx";
-import { Button } from "./Button.tsx";
 import { partOf } from "./parts.ts";
-import { alertTone, buttonLook, pickerLook, type PickerLook } from "./props.ts";
+import { alertTone, pickerLook, type PickerLook } from "./props.ts";
 import { SearchField } from "./SearchField.tsx";
+import { ShowMore } from "./ShowMore.tsx";
 import { part } from "./tokens.ts";
 
 const LookContext = createContext<PickerLook>(pickerLook.list);
@@ -80,9 +80,7 @@ export function SearchPicker({
       {failed === undefined ? null : <Alert tone={alertTone.danger}>{failed}</Alert>}
       {nothing === undefined ? null : <p {...partOf(part.muted)}>{nothing}</p>}
       {more === undefined ? null : (
-        <Button look={buttonLook.quiet} isPending={more.pending} onPress={more.press}>
-          {more.label}
-        </Button>
+        <ShowMore label={more.label} pending={more.pending} onPress={more.press} />
       )}
     </fieldset>
   );

@@ -6,7 +6,7 @@ export const messages = {
   "invitations.title": "Invitations",
   "invitations.intro":
     "An invitation is a link that lets one person create their account. It works once and runs out after 7 days.",
-  "invitations.create": "Create an invitation",
+  "invitations.create": "Create the invitation",
   "invitations.created": "Invitation for {email}",
   "invitations.link": "Link to send",
   "invitations.link-help":
@@ -22,7 +22,7 @@ export const messages = {
   "invitations.take-back-title": "Take back the invitation for {email}?",
   "invitations.take-back-text": "The link stops working.",
   "invitations.taken-back": "The invitation is taken back.",
-  "invitations.more": "Show more",
+  "invitations.more": "Show more invitations",
   "sign-up-policy.title": "Signing up without an invitation",
   "sign-up-policy.intro":
     "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
@@ -55,7 +55,7 @@ export const messages = {
   "person.roles": "Roles",
   "person.roles-none": "{name} has no role in the places you decide about.",
   "person.roles-where":
-    "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
+    "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles and permissions and in the settings of a project.",
   "groups.intro":
     "A group is a set of people. Give a role to a group, and everybody in it has that role.",
   "groups.search": "Search groups",

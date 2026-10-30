@@ -18,13 +18,17 @@ function word(code: string) {
 
 /** Every sentence of the preview, in order, as the long preview shows them. */
 function sentencesOfPreview(of: Preview): readonly string[] {
-  return personSentencesOfPreview(of).flatMap((group) => group.lines.map((line) => line.text));
+  return personSentencesOfPreview(of).flatMap((group) =>
+    group.projects.flatMap((project) => project.lines.map((line) => line.text)),
+  );
 }
 
 /** The keys of the sentences of the preview, each made of its person's key and its own. */
 function keysOfPreview(of: Preview): readonly string[] {
   return personSentencesOfPreview(of).flatMap((group) =>
-    group.lines.map((line) => `${group.key}:${line.key}`),
+    group.projects.flatMap((project) =>
+      project.lines.map((line) => `${group.key}:${project.key}:${line.key}`),
+    ),
   );
 }
 
@@ -48,9 +52,7 @@ describe("prj_03 the preview in plain sentences", () => {
     const gained = preview([
       { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
     ]);
-    expect(sentencesOfPreview(gained)).toEqual([
-      t("projects.line-gains", { person: "Cleo", project: "Website", roles: "Viewer" }),
-    ]);
+    expect(sentencesOfPreview(gained)).toEqual([t("projects.line-gains", { roles: "Viewer" })]);
   });
 
   it("says who loses access and who changes role", () => {
@@ -69,10 +71,8 @@ describe("prj_03 the preview in plain sentences", () => {
       },
     ]);
     expect(sentencesOfPreview(changed)).toEqual([
-      t("projects.line-loses", { person: "Cleo", project: "Website" }),
+      t("projects.line-loses"),
       t("projects.line-roles", {
-        person: t("person.role", { role: "Team member" }),
-        project: "Website",
         before: "Viewer",
         after: "Viewer and Guest",
       }),
@@ -92,9 +92,10 @@ describe("prj_03 how people are named in the preview", () => {
         projects: [{ project: web, now: viewer, after: nobody, ...none }],
       },
     ]);
-    const [first, second] = sentencesOfPreview(hidden);
-    expect(first).toContain(t("person.someone"));
-    expect(second).toContain(t("person.former", { label: "K7Q2" }));
+    expect(personSentencesOfPreview(hidden).map((group) => group.person)).toEqual([
+      t("person.someone"),
+      t("person.former", { label: "K7Q2" }),
+    ]);
   });
 
   it("says nothing for a change that changes nothing a person can read", () => {
@@ -132,11 +133,46 @@ describe("prj_03 the preview of a refused move and of what this version cannot s
     ]);
     expect(sentencesOfPreview(odd)).toEqual([
       t("projects.line-field", {
-        person: "Cleo",
-        project: "Website",
         field: "a-field",
         before: "hidden",
         after: "can-see",
+      }),
+    ]);
+  });
+});
+
+describe("prj_03 what changes in the same way is said once", () => {
+  it("puts the fields that go from one level to another into one sentence, and keeps the others apart", () => {
+    const many = preview([
+      {
+        person: cleo,
+        projects: [
+          {
+            project: web,
+            now: viewer,
+            after: viewer,
+            gains: [],
+            loses: [],
+            fields: [
+              { field: word("title"), before: word("can-change"), after: word("hidden") },
+              { field: word("status"), before: word("can-change"), after: word("hidden") },
+              { field: word("labels"), before: word("can-see"), after: word("hidden") },
+            ],
+            people: [],
+          },
+        ],
+      },
+    ]);
+    expect(sentencesOfPreview(many)).toEqual([
+      t("projects.line-fields-many", {
+        before: "can-change",
+        after: "hidden",
+        fields: "title and status",
+      }),
+      t("projects.line-field", {
+        field: "labels",
+        before: "can-see",
+        after: "hidden",
       }),
     ]);
   });
@@ -184,8 +220,9 @@ describe("m2c_f80 the preview grouped by person for the long preview", () => {
       ]),
     );
     expect(groups.map((group) => group.person)).toEqual(["Cleo"]);
-    expect(groups[0]?.lines.map((line) => line.text)).toEqual([
-      t("projects.line-gains", { person: "Cleo", project: "Website", roles: "Viewer" }),
+    expect(groups[0]?.projects.map((project) => project.project)).toEqual(["Website"]);
+    expect(groups[0]?.projects[0]?.lines.map((line) => line.text)).toEqual([
+      t("projects.line-gains", { roles: "Viewer" }),
     ]);
   });
 });

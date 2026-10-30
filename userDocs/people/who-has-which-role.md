@@ -2,7 +2,7 @@
 
 *Who has which role* is the list of the people and groups with a role, and where it counts. There is one for the whole organization, and one for each project.
 
-- **The whole organization**: *Organization settings › Roles & permissions*, below the roles. A role given here counts in every project.
+- **The whole organization**: *Organization settings › Roles and permissions*, below the roles. A role given here counts in every project.
 - **A project**: *Project settings › Who has which role*, at `/p/WEB/settings/roles`. A project lead sees it for their own projects.
 
 ## Where it counts

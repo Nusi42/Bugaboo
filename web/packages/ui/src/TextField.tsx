@@ -19,11 +19,22 @@ const inputModes = { text: "text", email: "email" } as const;
 /** The name of the slot of the help text, in the words of React Aria Components. */
 const descriptionSlot = "description";
 
+/** The hint of a field: its explanation or an example, read with the field. */
+function Hint({ text }: { readonly text: string | undefined }) {
+  return text === undefined ? null : (
+    <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
+      {text}
+    </Text>
+  );
+}
+
 export interface TextFieldProps {
   /** The visible name of the field, already in the person's language. */
   readonly label: string;
   /** Help under the name, for example what the field is for. */
   readonly description?: string;
+  /** The hint stands under the label and above the box (an example of what to type), not under the box. */
+  readonly hintAbove?: boolean;
   /** What to say when the field is empty. Without it the field may be empty. */
   readonly requiredMessage?: string;
   /** What to say when an e-mail address has no `@`. Only for an `email` field. */
@@ -88,6 +99,7 @@ function problemOf(
 export function TextField({
   label,
   description,
+  hintAbove = false,
   requiredMessage,
   emailMessage,
   errorMessage,
@@ -113,6 +125,7 @@ export function TextField({
       validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
       <Label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)}>{label}</Label>
+      {hintAbove ? <Hint text={description} /> : null}
       {kind === fieldKind.multiline ? (
         <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
@@ -122,11 +135,7 @@ export function TextField({
         />
       )}
       {/* The help stands under the box, so the boxes of a row start on one line however long the help is. */}
-      {description === undefined ? null : (
-        <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
-          {description}
-        </Text>
-      )}
+      {hintAbove ? null : <Hint text={description} />}
       <FieldError {...partOf(part.fieldError)}>{errorMessage}</FieldError>
     </AriaTextField>
   );

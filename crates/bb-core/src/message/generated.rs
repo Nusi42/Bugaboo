@@ -146,9 +146,6 @@ pub const ACCESS_ORIGIN_UNSET: MessageKey = MessageKey::new("access.origin-unset
 /// The message `access.reset`.
 pub const ACCESS_RESET: MessageKey = MessageKey::new("access.reset");
 
-/// The message `access.role-chooser`.
-pub const ACCESS_ROLE_CHOOSER: MessageKey = MessageKey::new("access.role-chooser");
-
 /// The message `access.roles-cut`.
 pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 
@@ -203,9 +200,6 @@ pub const APPEARANCE_TITLE: MessageKey = MessageKey::new("appearance.title");
 
 /// The message `assignments.change-here`.
 pub const ASSIGNMENTS_CHANGE_HERE: MessageKey = MessageKey::new("assignments.change-here");
-
-/// The message `assignments.choose-role`.
-pub const ASSIGNMENTS_CHOOSE_ROLE: MessageKey = MessageKey::new("assignments.choose-role");
 
 /// The message `assignments.give`.
 pub const ASSIGNMENTS_GIVE: MessageKey = MessageKey::new("assignments.give");
@@ -638,6 +632,9 @@ pub const COMMENTS_WRITE_HELP: MessageKey = MessageKey::new("comments.write-help
 
 /// The message `common.cancel`.
 pub const COMMON_CANCEL: MessageKey = MessageKey::new("common.cancel");
+
+/// The message `common.choose-role`.
+pub const COMMON_CHOOSE_ROLE: MessageKey = MessageKey::new("common.choose-role");
 
 /// The message `common.close`.
 pub const COMMON_CLOSE: MessageKey = MessageKey::new("common.close");
@@ -3054,10 +3051,6 @@ pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.rol
 /// The message `people-visibility.intro`.
 pub const PEOPLE_VISIBILITY_INTRO: MessageKey = MessageKey::new("people-visibility.intro");
 
-/// The message `people-visibility.preview-role`.
-pub const PEOPLE_VISIBILITY_PREVIEW_ROLE: MessageKey =
-    MessageKey::new("people-visibility.preview-role");
-
 /// The message `people-visibility.table-name`.
 pub const PEOPLE_VISIBILITY_TABLE_NAME: MessageKey =
     MessageKey::new("people-visibility.table-name");
@@ -3271,6 +3264,17 @@ pub const PROJECTS_INTRO: MessageKey = MessageKey::new("projects.intro");
 
 /// The message `projects.issue-ids-title`.
 pub const PROJECTS_ISSUE_IDS_TITLE: MessageKey = MessageKey::new("projects.issue-ids-title");
+
+/// The message `projects.line-held-back-ends`.
+pub const PROJECTS_LINE_HELD_BACK_ENDS: MessageKey =
+    MessageKey::new("projects.line-held-back-ends");
+
+/// The message `projects.line-held-back-starts`.
+pub const PROJECTS_LINE_HELD_BACK_STARTS: MessageKey =
+    MessageKey::new("projects.line-held-back-starts");
+
+/// The message `projects.line-loses`.
+pub const PROJECTS_LINE_LOSES: MessageKey = MessageKey::new("projects.line-loses");
 
 /// The message `projects.more`.
 pub const PROJECTS_MORE: MessageKey = MessageKey::new("projects.more");
@@ -7436,6 +7440,18 @@ pub fn issues_count_line(scope: impl std::fmt::Display, shown: i64, total: i64) 
     )
 }
 
+/// The message `issues.count-line-loading`.
+#[must_use]
+pub fn issues_count_line_loading(scope: impl std::fmt::Display, total: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.count-line-loading"),
+        vec![
+            ("scope", Value::Text(scope.to_string())),
+            ("total", Value::Number(total)),
+        ],
+    )
+}
+
 /// The message `issues.created`.
 #[must_use]
 pub fn issues_created(key: impl std::fmt::Display) -> Message {
@@ -8685,35 +8701,19 @@ pub fn projects_inside(name: impl std::fmt::Display) -> Message {
 
 /// The message `projects.line-can-no-more`.
 #[must_use]
-pub fn projects_line_can_no_more(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    things: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_can_no_more(things: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-can-no-more"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("things", Value::Text(things.to_string())),
-        ],
+        vec![("things", Value::Text(things.to_string()))],
     )
 }
 
 /// The message `projects.line-can-now`.
 #[must_use]
-pub fn projects_line_can_now(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    things: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_can_now(things: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-can-now"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("things", Value::Text(things.to_string())),
-        ],
+        vec![("things", Value::Text(things.to_string()))],
     )
 }
 
@@ -8723,8 +8723,6 @@ pub fn projects_line_field(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     field: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-field"),
@@ -8732,56 +8730,33 @@ pub fn projects_line_field(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("field", Value::Text(field.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-fields-many`.
+#[must_use]
+pub fn projects_line_fields_many(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    fields: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-fields-many"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("fields", Value::Text(fields.to_string())),
         ],
     )
 }
 
 /// The message `projects.line-gains`.
 #[must_use]
-pub fn projects_line_gains(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    roles: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_gains(roles: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-gains"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("roles", Value::Text(roles.to_string())),
-        ],
-    )
-}
-
-/// The message `projects.line-held-back-ends`.
-#[must_use]
-pub fn projects_line_held_back_ends(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-held-back-ends"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
-    )
-}
-
-/// The message `projects.line-held-back-starts`.
-#[must_use]
-pub fn projects_line_held_back_starts(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-held-back-starts"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
+        vec![("roles", Value::Text(roles.to_string()))],
     )
 }
 
@@ -8800,29 +8775,12 @@ pub fn projects_line_lift(
     )
 }
 
-/// The message `projects.line-loses`.
-#[must_use]
-pub fn projects_line_loses(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-loses"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
-    )
-}
-
 /// The message `projects.line-people`.
 #[must_use]
 pub fn projects_line_people(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     kind: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-people"),
@@ -8830,8 +8788,23 @@ pub fn projects_line_people(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("kind", Value::Text(kind.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-people-many`.
+#[must_use]
+pub fn projects_line_people_many(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    kinds: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-people-many"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("kinds", Value::Text(kinds.to_string())),
         ],
     )
 }
@@ -8841,16 +8814,12 @@ pub fn projects_line_people(
 pub fn projects_line_roles(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-roles"),
         vec![
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
@@ -10061,15 +10030,12 @@ pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `search.saved-by`.
+/// The message `search.saved-by-spoken`.
 #[must_use]
-pub fn search_saved_by(name: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+pub fn search_saved_by_spoken(person: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("search.saved-by"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("person", Value::Text(person.to_string())),
-        ],
+        MessageKey::new("search.saved-by-spoken"),
+        vec![("person", Value::Text(person.to_string()))],
     )
 }
 
@@ -11162,7 +11128,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-unset", "Nothing set, so it is hidden"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
-    ("access.role-chooser", "Show the levels of the role"),
     (
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
@@ -11197,7 +11162,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "assignments.change-here-name",
         "Change for this project: {who}",
     ),
-    ("assignments.choose-role", "Choose a role"),
     ("assignments.give", "Give the role"),
     ("assignments.give-no-access", "Set No access"),
     ("assignments.give-title", "Give a role"),
@@ -11579,10 +11543,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Type @ and a name to mention someone.",
     ),
     ("common.cancel", "Cancel"),
+    ("common.choose-role", "Choose a role"),
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
-    ("common.issue-id", "Issue ID, for example WEB‑142"),
+    ("common.issue-id", "Issue ID, for example WEB-142"),
     ("common.loading", "Loading…"),
     ("common.nothing", "nothing"),
     ("common.off", "Off"),
@@ -12375,7 +12340,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.safer.finish", "Finish"),
     (
         "first-run.safer.intro",
-        "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in & security.",
+        "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in and security.",
     ),
     ("first-run.safer.title", "Keep your account safe"),
     ("first-run.step-of", "Step {step} of {total}: {name}"),
@@ -12549,7 +12514,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("invitation.title", "Join Bugaboo"),
     ("invitations.copied", "Link copied"),
     ("invitations.copy", "Copy the link"),
-    ("invitations.create", "Create an invitation"),
+    ("invitations.create", "Create the invitation"),
     ("invitations.created", "Invitation for {email}"),
     ("invitations.created-at", "Created {when}"),
     ("invitations.expires", "Runs out {when}"),
@@ -12562,7 +12527,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "invitations.link-help",
         "Bugaboo cannot send e-mail yet. Copy this link and send it to the person. It is shown only now.",
     ),
-    ("invitations.more", "Show more"),
+    ("invitations.more", "Show more invitations"),
     ("invitations.none", "There are no open invitations."),
     ("invitations.open", "Open invitations"),
     ("invitations.take-back", "Take back"),
@@ -12745,8 +12710,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.count-line",
         "{total, number} in {scope} · {shown, number} shown",
     ),
-    ("issues.create", "Create"),
-    ("issues.create-another", "Create and start another"),
+    ("issues.count-line-loading", "{total, number} in {scope}"),
+    ("issues.create", "Create the issue"),
+    (
+        "issues.create-another",
+        "Create the issue and start another",
+    ),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
@@ -12795,15 +12764,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.list", "Issues"),
     (
         "issues.missing-project",
-        "Choose a project first, then you can create and start another.",
+        "Choose a project first, then you can create the issue and start another.",
     ),
     (
         "issues.missing-title",
-        "Write a title first, then you can create and start another.",
+        "Write a title first, then you can create the issue and start another.",
     ),
     (
         "issues.missing-type",
-        "Choose an issue type first, then you can create and start another.",
+        "Choose an issue type first, then you can create the issue and start another.",
     ),
     ("issues.more", "More"),
     ("issues.new", "New issue"),
@@ -12925,8 +12894,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.combine-pick", "Choose one"),
     ("labels.combine-title", "Combine with another one"),
     ("labels.combined", "Combined."),
-    ("labels.create-label", "Create label"),
-    ("labels.create-label-group", "Create label group"),
+    ("labels.create-label", "Create the label"),
+    ("labels.create-label-group", "Create the label group"),
     (
         "labels.create-label-group-intro",
         "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the label group.",
@@ -13194,7 +13163,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail-server.test-wait",
         "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
     ),
-    ("mail-server.title", "E-mail & notifications"),
+    ("mail-server.title", "E-mail and notifications"),
     ("mail.date-time", "{moment} ({zone})"),
     (
         "mail.footer",
@@ -13410,7 +13379,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.home", "Home"),
     ("nav.issue-types", "Issue types"),
     ("nav.labels", "Labels and tags"),
-    ("nav.mail-server", "E-mail & notifications"),
+    ("nav.mail-server", "E-mail and notifications"),
     ("nav.my-settings", "My settings"),
     ("nav.notification-settings", "Notification settings"),
     ("nav.notifications", "Notifications"),
@@ -13421,8 +13390,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.projects", "Projects"),
     ("nav.region", "Region"),
     ("nav.relation-kinds", "Kinds of relation"),
-    ("nav.roles", "Roles & permissions"),
-    ("nav.security", "Sign-in & security"),
+    ("nav.roles", "Roles and permissions"),
+    ("nav.security", "Sign-in and security"),
     ("nav.sessions", "Where you're signed in"),
     ("nav.sign-in-rules", "Sign-in rules"),
     ("nav.sign-out", "Sign out"),
@@ -13613,7 +13582,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("people-visibility.preview-heading", "What {role} sees"),
-    ("people-visibility.preview-role", "See what this role sees"),
     (
         "people-visibility.project-title",
         "Who sees people in {project}",
@@ -13754,7 +13722,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "person.roles-where",
-        "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
+        "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles and permissions and in the settings of a project.",
     ),
     ("person.since", "Account created"),
     ("person.someone", "Someone"),
@@ -13792,42 +13760,41 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
     ),
     ("projects.issue-ids-title", "Settings of this project"),
-    (
-        "projects.line-can-no-more",
-        "In {project}, {person} can no longer: {things}.",
-    ),
-    (
-        "projects.line-can-now",
-        "In {project}, {person} can now: {things}.",
-    ),
+    ("projects.line-can-no-more", "Can no longer: {things}."),
+    ("projects.line-can-now", "Can now: {things}."),
     (
         "projects.line-field",
-        "In {project}, for {person}, {field} goes from {before} to {after}.",
+        "{field} goes from {before} to {after}.",
     ),
     (
-        "projects.line-gains",
-        "{person} gets access to {project}, as {roles}.",
+        "projects.line-fields-many",
+        "These fields go from {before} to {after}: {fields}.",
     ),
+    ("projects.line-gains", "Gets access, as {roles}."),
     (
         "projects.line-held-back-ends",
-        "In {project}, a No access no longer holds {person} back.",
+        "A No access no longer holds them back.",
     ),
     (
         "projects.line-held-back-starts",
-        "In {project}, a No access now holds {person} back.",
+        "A No access now holds them back.",
     ),
     (
         "projects.line-lift",
         "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
     ),
-    ("projects.line-loses", "{person} loses access to {project}."),
+    ("projects.line-loses", "Loses access."),
     (
         "projects.line-people",
-        "In {project}, for {person}, {kind} goes from {before} to {after}.",
+        "{kind} goes from {before} to {after}.",
+    ),
+    (
+        "projects.line-people-many",
+        "These kinds of people information go from {before} to {after}: {kinds}.",
     ),
     (
         "projects.line-roles",
-        "{person} in {project}: {before} becomes {after}.",
+        "The role goes from {before} to {after}.",
     ),
     ("projects.more", "Show more projects"),
     ("projects.move-button", "Move"),
@@ -14497,7 +14464,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.count",
         "{count, plural, one {# result} other {# results}}",
     ),
-    ("search.create-issue", "Create issue"),
+    ("search.create-issue", "Create an issue"),
     ("search.found-issue", "{id} · {title}"),
     ("search.found-none", "No issues match this search."),
     ("search.found-project", "{short} · {name}"),
@@ -14748,7 +14715,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
     ),
-    ("search.saved-by", "{name} · {person}"),
+    ("search.saved-by-spoken", ", {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
     ("search.saved-shared", "Shared with me"),
@@ -14850,7 +14817,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("security.password.new", "New password"),
     ("security.password.submit", "Change password"),
     ("security.password.title", "Password"),
-    ("security.title", "Sign-in & security"),
+    ("security.title", "Sign-in and security"),
     ("server-status.certificate", "HTTPS certificate"),
     (
         "server-status.certificate.expired",
@@ -15099,7 +15066,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.access-key-default-days.help",
-        "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+        "How many days a new access key lives when the person picks no other date.",
     ),
     (
         "setting.auth.access-key-default-days.name",
@@ -15107,7 +15074,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.access-key-longest-days.help",
-        "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
+        "The most days an access key can live, whatever date the person picks.",
     ),
     (
         "setting.auth.access-key-longest-days.name",
@@ -15147,12 +15114,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.files.max-megabytes.help",
-        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
     ),
     ("setting.files.max-megabytes.name", "Biggest file"),
     (
         "setting.issues.id-length.help",
-        "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
+        "How many letters and digits a random issue ID has after the dash. It grows by itself when the short ones run out.",
     ),
     (
         "setting.issues.id-length.name",
@@ -15381,7 +15348,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.security.session-absolute-hours.help",
-        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again.",
     ),
     (
         "setting.security.session-absolute-hours.name",
@@ -15389,7 +15356,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.security.session-idle-minutes.help",
-        "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
+        "How many minutes without activity pass before people are signed out automatically.",
     ),
     (
         "setting.security.session-idle-minutes.name",
@@ -15440,7 +15407,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.reset", "Reset to default"),
     ("setting.ui.reset-name", "Reset to default: {name}"),
     ("setting.ui.search", "Search settings"),
-    ("setting.ui.source-default", "Bugaboo's standard value"),
+    ("setting.ui.source-default", "Default value"),
     (
         "setting.ui.source-hidden-project",
         "From a project you cannot see",
@@ -15557,7 +15524,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "shortcut.list-previous",
         "Open the previous item in the list",
     ),
-    ("shortcut.new-issue", "Create a new issue"),
+    ("shortcut.new-issue", "Create an issue"),
     ("shortcut.on-issue", "On an open issue"),
     ("shortcut.or", "or"),
     ("shortcut.quick-search", "Open quick search"),
@@ -15770,9 +15737,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Create a status change from {from}",
     ),
     ("workflows.create-change-button", "Button text"),
-    ("workflows.create-change-do", "Create status change"),
+    ("workflows.create-change-do", "Create the status change"),
     ("workflows.create-change-to", "Go to"),
-    ("workflows.create-status", "Create status"),
+    ("workflows.create-status", "Create the status"),
     (
         "workflows.customize-organization",
         "Customize for the whole organization",

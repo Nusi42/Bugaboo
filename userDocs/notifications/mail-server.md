@@ -1,6 +1,6 @@
 # The mail server
 
-Bugaboo sends e-mail through your organization's mail server. E-mail is **off** until an administrator has entered the mail server, tried it and switched it on. It is *Organization settings › Connections › E-mail & notifications* (the permission "Change organization settings"). The first start offers the same step, which you can skip.
+Bugaboo sends e-mail through your organization's mail server. E-mail is **off** until an administrator has entered the mail server, tried it and switched it on. It is *Organization settings › Connections › E-mail and notifications* (the permission "Change organization settings"). The first start offers the same step, which you can skip.
 
 ## Entering the mail server
 

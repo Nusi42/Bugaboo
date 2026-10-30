@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { sourceInWords, wordsOf } from "./texts.ts";
+import { controlKindOf, sourceInWords, wordsOf } from "./texts.ts";
 
 /** What a row can do with its setting. */
 export interface SettingActions {
@@ -62,15 +62,23 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
   };
+  // A box that is typed in has its explanation inside, with its field; every other control, and a setting that is
+  // locked (no box), has it under it.
+  const helpWithField = !lockedBelow && control === undefined && controlKindOf(setting) === "typed";
+  const withField = helpWithField
+    ? { help: wordsOf(setting.help_key), source: sourceInWords(setting) }
+    : {};
   return (
     <li {...partOf(part.box)}>
       {lockedBelow ? (
         <Locked setting={setting} />
       ) : (
-        (control?.(setting, change) ?? <SettingControl setting={setting} onChange={change} />)
+        (control?.(setting, change) ?? (
+          <SettingControl setting={setting} onChange={change} {...withField} />
+        ))
       )}
-      <p {...partOf(part.muted)}>{wordsOf(setting.help_key)}</p>
-      <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>
+      {helpWithField ? null : <p {...partOf(part.muted)}>{wordsOf(setting.help_key)}</p>}
+      {helpWithField ? null : <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>}
       <div {...partOf(part.row)}>
         {setting.own && !lockedBelow ? (
           <Button

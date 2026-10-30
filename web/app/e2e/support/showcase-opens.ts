@@ -3,6 +3,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { check } from "./access.ts";
 import { addressWith, sendPassword } from "./flows.ts";
+import { layoutOf } from "./layout.ts";
 import { openMove, tree } from "./projects.ts";
 import { sampleWithCodeApp } from "./sample.ts";
 import { PROJECT, showcaseNames, SUB_PROJECT, type ShowcaseIds } from "./showcase-sample.ts";
@@ -31,6 +32,26 @@ export function atList(address: string): Screen["open"] {
   };
 }
 
+/** The end of the count line of a list ("... 150 shown"), taken from the catalog, as a pattern. */
+function shownWord(): RegExp {
+  const line = t("issues.count-line", { total: 1, scope: "x", shown: 1 });
+  // What follows the last number, with its space: " shown".
+  const tail = line.slice(line.lastIndexOf("1") + 1);
+  const escaped = tail.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
+  return new RegExp(escaped + "$", "u");
+}
+
+/** The list with an issue open in the side panel: the picture waits for the count line of the list; a phone has no list beside the issue. */
+export function atPanel(address: string): Screen["open"] {
+  return async ({ page }) => {
+    await page.goto(address);
+    await expectPage(page);
+    if (layoutOf(page) !== "phone") {
+      await expect(page.getByText(shownWord()).first()).toBeVisible();
+    }
+  };
+}
+
 /** Signs in as a person with a code app: the second step of signing in then asks for its code. */
 export async function secondStep({ page }: Needs): Promise<void> {
   await sendPassword(page, sampleWithCodeApp().person);
@@ -48,6 +69,14 @@ export async function openTree({ page }: Needs): Promise<void> {
     await region.getByRole("button", { name: /Mobile app/u }).click();
   }
   await expect(sub).toBeVisible();
+  // Where the tree is a sheet (a phone) it is the sheet More, which the picture shows from its top.
+  await page
+    .getByRole("dialog", { name: t("shell.more") })
+    .evaluateAll((nodes: readonly HTMLElement[]) => {
+      for (const node of nodes) {
+        node.scrollTop = 0;
+      }
+    });
 }
 
 /** Opens quick search with a word typed, and waits for what it found. */
@@ -75,11 +104,44 @@ export async function openMovePreview({ page }: Needs): Promise<void> {
 /** The address the invitation of the picture is for: always the same, so the picture is. */
 const NEW_COLLEAGUE = "new.colleague@bugaboo.example";
 
+/** Takes back every open invitation for this address, one after the other, until none is left. */
+async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
+  // Only the rows of the list of open invitations (a list inside a card inside a list would count the card too),
+  // counted once the list has been read.
+  const open = page.getByRole("list", { name: t("invitations.open") });
+  await expect(open.or(page.getByText(t("invitations.none")))).toBeVisible();
+  const rows = open.getByRole("listitem").filter({ hasText: email });
+  const before = await rows.count();
+  if (before === 0) {
+    return;
+  }
+  await rows
+    .first()
+    .getByRole("button", { name: new RegExp(`^${t("invitations.take-back")}`, "u") })
+    .click();
+  // The question that follows is answered with the same words.
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("invitations.take-back"), exact: true })
+    .click();
+  await expect(rows).toHaveCount(before - 1);
+  await takeBackInvitationsOf(page, email);
+}
+
+/** The people of the organization, after the invitation of an earlier theme was taken back: every theme shows the same. */
+export async function openPeople({ page }: Needs): Promise<void> {
+  await page.goto(paths.people);
+  await expectPage(page);
+  await takeBackInvitationsOf(page, NEW_COLLEAGUE);
+}
+
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
 export async function openInvitation({ page }: Needs): Promise<void> {
   await page.goto(paths.people);
   await expectPage(page);
   const email = NEW_COLLEAGUE;
+  // An invitation of an earlier theme is taken back first, so every theme shows the same list (M5 exit, O11).
+  await takeBackInvitationsOf(page, email);
   await page.getByRole("textbox", { name: t("field.email"), exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create"), exact: true }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();

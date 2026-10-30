@@ -32,7 +32,7 @@ describe("ops_08 formatting for the status page", () => {
   });
 
   it("writes a day the way people say it", () => {
-    expect(formatDate("2026-10-05T12:00:00Z")).toBe("October 5, 2026");
+    expect(formatDate("2026-10-05T12:00:00Z")).toBe("October\u00A05,\u00A02026");
   });
 });
 
@@ -76,7 +76,7 @@ describe("ux_a4 a date or a time never wraps", () => {
 
   it("keeps the numbers as they were", () => {
     expect(formatDateTime("2026-10-18T01:16:00Z", region("year-month-day"))).toBe(
-      "2026‑10‑18, 1:16 AM",
+      "2026\u201110\u201118,\u00A01:16\u00A0AM",
     );
   });
 });

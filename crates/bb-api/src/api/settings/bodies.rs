@@ -133,7 +133,7 @@ pub(super) struct ListLimitsBody {
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub(super) enum SettingSourceKind {
-    /// Nobody set it: the standard value.
+    /// Nobody set it: the default value.
     Default,
     /// The organization set it.
     Organization,
@@ -202,7 +202,7 @@ pub(crate) struct SettingBody {
     pub(super) levels: Vec<SettingLevel>,
     /// Whether administrators can lock it.
     pub(super) lockable: bool,
-    /// The standard value.
+    /// The default value.
     pub(super) default: ValueBody,
     /// The value that counts here.
     pub(super) value: ValueBody,

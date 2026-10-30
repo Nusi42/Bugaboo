@@ -1,4 +1,4 @@
-import { Icon, type IconName, partOf, part } from "@bugaboo/ui";
+import { Icon, type IconName, RowChevron, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
@@ -14,20 +14,46 @@ interface ItemProps {
   readonly narrow?: boolean;
   /** A number after the words, such as the notifications not read yet. Nothing for none. */
   readonly count?: string | undefined;
+  /** Who it is by, on a second line under the label (a saved search that somebody shared). */
+  readonly by?: string | undefined;
+  /** What a screen reader says after the label for it ("Questions, Ada Brandt"), the separator included. */
+  readonly bySpoken?: string | undefined;
+  /** The item opens a page of its own (a menu that is the page): the chevron at its end says so. */
+  readonly opens?: boolean;
 }
 
 /** The icon and the words; with icons only the words are for screen readers and the tooltip. */
-function Content({ icon, label, narrow, count, hint }: ItemProps & { readonly hint?: ReactNode }) {
+function Content({
+  icon,
+  label,
+  narrow,
+  count,
+  by,
+  bySpoken,
+  opens = false,
+  hint,
+}: ItemProps & { readonly hint?: ReactNode }) {
   return (
     <>
       <Icon name={icon} />
       {narrow === true ? (
         <span {...partOf(part.visuallyHidden)}>{label}</span>
       ) : (
-        <span {...partOf(part.navItemLabel)}>{label}</span>
+        <span {...partOf(part.navItemLabel)}>
+          {label}
+          {by === undefined ? null : (
+            <>
+              <span aria-hidden {...partOf(part.navItemBy)}>
+                {by}
+              </span>
+              <span {...partOf(part.visuallyHidden)}>{bySpoken}</span>
+            </>
+          )}
+        </span>
       )}
       {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
       {narrow === true ? null : hint}
+      {opens ? <RowChevron /> : null}
     </>
   );
 }
@@ -74,6 +100,9 @@ export function NavLink({
   href,
   current = false,
   count,
+  by,
+  bySpoken,
+  opens = false,
   onNavigate,
 }: NavLinkProps) {
   return (
@@ -84,7 +113,15 @@ export function NavLink({
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
-        <Content icon={icon} label={label} narrow={narrow} count={count} />
+        <Content
+          icon={icon}
+          label={label}
+          narrow={narrow}
+          count={count}
+          by={by}
+          bySpoken={bySpoken}
+          opens={opens}
+        />
       </Link>
     </WithTooltip>
   );

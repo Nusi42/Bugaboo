@@ -748,7 +748,7 @@ impl SettingsStore for AuthStorage {
         let standard = definition.default().to_value();
         if !locked {
             // Unlocking leaves a value of the organization alone, but a row that only held the
-            // lock at the standard value has nothing left to hold: it goes away, and a setting
+            // lock at the default value has nothing left to hold: it goes away, and a setting
             // that has no row stays as it is.
             let Some(row) = row else {
                 return Ok(());

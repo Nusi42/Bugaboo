@@ -232,6 +232,8 @@ test("qry_01 the titles are the dialog title and the rows start on the edge of t
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   const title = page.getByRole("heading", { name: t("search.bar.add-filter") });
   await expect(title).toHaveAttribute("data-part", "confirm.title");
+  // The head of a sheet has no line under its title, as the question has.
+  await expect(title).toHaveCSS("border-bottom-width", "0px");
   const field = page.locator('[data-part="search-field.box"]').first();
   const row = page
     .getByRole("list", { name: t("search.bar.fields-list") })
@@ -244,6 +246,8 @@ test("qry_01 the titles are the dialog title and the rows start on the edge of t
   await page.getByRole("button", { name: t("search.help") }).click();
   const help = page.getByRole("heading", { name: t("search.help-title") });
   await expect(help).toHaveAttribute("data-part", "confirm.title");
+  // The head of a sheet has no line under its title, as the question has.
+  await expect(help).toHaveCSS("border-bottom-width", "0px");
   await expect(page.getByRole("heading", { name: t("search.help-your-fields") })).toHaveAttribute(
     "data-part",
     "search-help.title",

@@ -123,7 +123,7 @@ export async function levelList(page: Page, subject: string, role: string): Prom
   if (layoutOf(page) === "computer") {
     return page.getByLabel(t("access.cell-label", { subject, role }), { exact: true });
   }
-  await page.getByLabel(t("access.role-chooser"), { exact: true }).selectOption({ label: role });
+  await page.getByLabel(t("common.choose-role"), { exact: true }).selectOption({ label: role });
   return page.getByLabel(subject, { exact: true });
 }
 

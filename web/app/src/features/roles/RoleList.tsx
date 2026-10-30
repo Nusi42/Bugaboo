@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Link, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Link, RowChevron, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { detailsText } from "../../shared/list-text.ts";
@@ -16,30 +16,24 @@ export function RoleList() {
       <ul {...partOf(part.list)} aria-label={t("roles.list")}>
         {lines.map((role) => (
           <li key={role.id} {...partOf(part.item)}>
-            <Link href={roleAddress(role.id)}>{role.name}</Link>
-            <span {...partOf(part.muted)}>
-              {detailsText(
-                [
-                  role.starting === null ? t("roles.own") : t("roles.starting-badge"),
-                  role.twoStep ? t("roles.two-step-badge") : null,
-                ].filter((word) => word !== null),
-              )}
+            <span {...partOf(part.rowMain)}>
+              <Link row href={roleAddress(role.id)}>
+                {role.name}
+              </Link>
+              <span {...partOf(part.muted)}>
+                {detailsText(
+                  [
+                    role.starting === null ? t("roles.own") : t("roles.starting-badge"),
+                    role.twoStep ? t("roles.two-step-badge") : null,
+                  ].filter((word) => word !== null),
+                )}
+              </span>
             </span>
+            <RowChevron />
           </li>
         ))}
       </ul>
-      {roles.hasNextPage ? (
-        <div {...partOf(part.row)}>
-          <Button
-            isPending={roles.isFetchingNextPage}
-            onPress={() => {
-              void roles.fetchNextPage();
-            }}
-          >
-            {t("roles.more")}
-          </Button>
-        </div>
-      ) : null}
+      <ShowMoreOf label={t("roles.more")} list={roles} />
     </div>
   );
 }

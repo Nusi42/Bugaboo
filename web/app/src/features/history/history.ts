@@ -1,3 +1,4 @@
+import type { PagedList } from "@bugaboo/ui";
 import { historyTabWords, type Schema } from "@bugaboo/api-client";
 import { useEffect, useRef, type RefObject } from "react";
 import { t } from "@bugaboo/messages";
@@ -71,13 +72,11 @@ function tabCanHold(tab: HistoryTabName, target: IssueTarget): boolean {
 }
 
 /** What decides whether *Open* of a notification reads one more page. */
-export interface OpenedSearch {
+export interface OpenedSearch extends Pick<PagedList, "hasNextPage" | "isFetchingNextPage"> {
   readonly target?: IssueTarget | undefined;
   readonly tab: HistoryTabName;
   readonly found: boolean;
   readonly pagesRead: number;
-  readonly hasNextPage: boolean;
-  readonly isFetchingNextPage: boolean;
 }
 
 /**
@@ -105,12 +104,7 @@ export function readsEarlierForTarget(search: OpenedSearch): boolean {
 export function useOpenedEntry(
   groups: readonly (readonly HistoryEntry[])[],
   tab: HistoryTabName,
-  list: Readonly<{
-    pagesRead: number;
-    hasNextPage: boolean;
-    isFetchingNextPage: boolean;
-    fetchNextPage: () => Promise<unknown>;
-  }>,
+  list: Readonly<PagedList & { pagesRead: number }>,
 ): number {
   const target = useIssueTarget();
   const found = groups.findIndex((group) => isTarget(group, target));

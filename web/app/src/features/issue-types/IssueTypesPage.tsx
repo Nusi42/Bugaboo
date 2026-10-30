@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, IssueTypeIcon, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, IssueTypeIcon, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -17,17 +17,15 @@ export interface IssueTypesPageProps {
   readonly onClose: () => void;
 }
 
-/** The row of an issue type: its icon and, while it is retired, a word that says so. */
+/** The row of an issue type: its icon before the name and, while it is retired, a word that says so. */
 function rowOf(issueType: IssueTypeLine): ListRow {
   return {
     key: issueType.id,
     name: issueType.name,
-    details: (
-      <>
-        <IssueTypeIcon name={issueType.icon} />
-        {issueType.retired ? <span {...partOf(part.muted)}>{t("issue-types.retired")}</span> : null}
-      </>
-    ),
+    lead: <IssueTypeIcon name={issueType.icon} />,
+    details: issueType.retired ? (
+      <span {...partOf(part.muted)}>{t("issue-types.retired")}</span>
+    ) : null,
     editor: (
       <div {...partOf(part.stack)}>
         {issueType.mayManage ? (
@@ -63,16 +61,7 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
           onOpen={onOpen}
           onClose={onClose}
         />
-        {list.hasNextPage ? (
-          <Button
-            isPending={list.isFetchingNextPage}
-            onPress={() => {
-              void list.fetchNextPage();
-            }}
-          >
-            {t("issue-types.more")}
-          </Button>
-        ) : null}
+        <ShowMoreOf label={t("issue-types.more")} list={list} />
       </Card>
       <Card heading={t("issue-types.create-title")}>
         <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>

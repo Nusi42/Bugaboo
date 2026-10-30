@@ -16,7 +16,6 @@ export const messages = {
   "access.ceiling": "You can set a level only up to your own. Levels above it cannot be picked.",
   "access.roles-cut": "There are more roles than fit in this table. The first ones are shown.",
   "access.no-roles": "There is no role yet.",
-  "access.role-chooser": "Show the levels of the role",
   "field-permissions.intro":
     "For each role, choose whether a field is hidden, can be seen or can be changed. Hidden means the field does not exist for that role: not in issues, searches, e-mails, maps or the assistant.",
   "field-permissions.intro-project":
@@ -27,7 +26,6 @@ export const messages = {
   "people-visibility.intro-project":
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "people-visibility.table-name": "How each role sees each kind of people information",
-  "people-visibility.preview-role": "See what this role sees",
   "people-visibility.preview-heading": "What {role} sees",
   "people-visibility.who-names": "Ana",
   "people-visibility.example-assigned": "Assigned to {who}",

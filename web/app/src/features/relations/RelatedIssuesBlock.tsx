@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, ListGrid, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, ListGrid, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -59,16 +59,7 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
           ))}
         </ListGrid>
       )}
-      {list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("related-issues.more")}
-        </Button>
-      ) : null}
+      <ShowMoreOf label={t("related-issues.more")} list={list} />
       {mayChange ? <Adding readableId={readableId} /> : null}
     </section>
   );

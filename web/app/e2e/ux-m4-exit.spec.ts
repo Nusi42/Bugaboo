@@ -42,11 +42,13 @@ test("ux_a1 the new-issue window stays inside the screen, with its main button a
   await onThisLayout(page, {
     computer: together(atTheEnd),
     tablet: together(atTheEnd),
-    // On a phone the buttons are under each other, the filled one first and as wide as the others.
+    // On a phone the filled button stands alone in the fixed footer; the other two are at the end of the form above it,
+    // under each other, ending on the same edge (the plain one hangs back by its padding).
     phone: () => {
-      expect(create.y).toBeLessThan(another.y);
       expect(another.y).toBeLessThan(cancel.y);
-      expect(Math.abs(create.width - cancel.width)).toBeLessThanOrEqual(1);
+      expect(Math.abs(another.x + another.width - (cancel.x + cancel.width))).toBeLessThanOrEqual(
+        1,
+      );
       return nothing();
     },
   });

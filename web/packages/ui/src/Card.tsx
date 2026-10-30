@@ -1,7 +1,9 @@
 import { useId, type ReactNode } from "react";
+import { Link } from "./Link.tsx";
 import { useLayout } from "./layout.ts";
 import { partOf } from "./parts.ts";
 import type { CardLook } from "./props.ts";
+import { useTitleInBar } from "./title-bar.ts";
 import { part } from "./tokens.ts";
 
 export interface CardProps {
@@ -13,18 +15,33 @@ export interface CardProps {
   readonly look?: CardLook;
   /** What can be done with the whole card, at the end of its heading row: *Customize*. */
   readonly actions?: ReactNode;
-  readonly children: ReactNode;
+  /** The link at the foot that goes back up (*All people*): not drawn on a phone, where the bar of the screen has Back. */
+  readonly back?: { readonly href: string; readonly label: string };
+  readonly children?: ReactNode;
+}
+
+/** The link at the foot of a page that goes back up, on a row of its own. */
+function BackLink({ href, label }: { readonly href: string; readonly label: string }) {
+  return (
+    <div {...partOf(part.row)}>
+      <Link href={href}>{label}</Link>
+    </div>
+  );
 }
 
 /** A region of a page with a heading: a form, a list, a group of settings. */
-export function Card({ heading, level = 2, look, actions, children }: CardProps) {
+export function Card({ heading, level = 2, look, actions, back, children }: CardProps) {
   const headingId = useId();
   const phone = useLayout() === "phone";
-  // The one card that is the whole page (level 1) has its heading for screen readers only on a phone: the top bar is its title, and a screen has one title (UX §7.3).
-  const hidden = level === 1 && phone;
+  const titleInBar = useTitleInBar();
+  // The one card that is the whole page (level 1) has its heading for screen readers only on a phone where a top bar
+  // carries the title, and a screen has one title (UX §7.3); a page without a top bar (the sign-in) shows its heading.
+  const hidden = level === 1 && phone && titleInBar;
   const Heading = level === 1 ? "h1" : "h2";
   // A card with nothing to show is not drawn: where its heading is for screen readers only and nothing is in it, only the heading stays.
-  const nothing = children === null || children === undefined || children === false;
+  const backLink = back === undefined || phone ? null : <BackLink {...back} />;
+  const nothing =
+    (children === null || children === undefined || children === false) && backLink === null;
   if (hidden && nothing && actions === undefined) {
     return (
       <Heading id={headingId} {...partOf(part.visuallyHidden)} tabIndex={-1}>
@@ -52,7 +69,10 @@ export function Card({ heading, level = 2, look, actions, children }: CardProps)
           {actions === undefined ? null : <div {...partOf(part.cardActions)}>{actions}</div>}
         </div>
       )}
-      <div {...partOf(part.stack)}>{children}</div>
+      <div {...partOf(part.stack)}>
+        {children}
+        {backLink}
+      </div>
     </section>
   );
 }

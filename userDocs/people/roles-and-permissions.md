@@ -2,7 +2,7 @@
 
 A role is a named set of permissions, given to people or groups for the whole organization or in a project. Every organization starts with six: **Administrator**, **Project lead**, **Team member**, **Contributor**, **Viewer** and **Guest**. They are copies: you can rename, change and delete them like your own roles.
 
-*Organization settings › Roles & permissions* lists the roles, in the order of roles. Press a role to open its page.
+*Organization settings › Roles and permissions* lists the roles, in the order of roles. Press a role to open its page.
 
 ## Creating a role
 

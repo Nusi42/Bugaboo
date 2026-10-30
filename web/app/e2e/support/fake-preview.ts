@@ -75,25 +75,13 @@ export async function answerPreviewsWithEverything(page: Page): Promise<void> {
 
 /** The sentences the preview above is told in, as people read them. */
 export function everySentence(): readonly string[] {
-  const someone = t("person.someone");
   return [
-    t("projects.line-gains", { person: "Cleo Coder", project: "Documents", roles: "Viewer" }),
-    t("projects.line-loses", { person: "Cleo Coder", project: "Interface" }),
-    t("projects.line-held-back-ends", { person: "Cleo Coder", project: "Documents" }),
-    t("projects.line-roles", {
-      person: someone,
-      project: "Documents",
-      before: "Viewer",
-      after: "Team member",
-    }),
-    t("projects.line-can-now", {
-      person: someone,
-      project: "Documents",
-      things: t("permission.create-sub-projects"),
-    }),
+    t("projects.line-gains", { roles: "Viewer" }),
+    t("projects.line-loses"),
+    t("projects.line-held-back-ends"),
+    t("projects.line-roles", { before: "Viewer", after: "Team member" }),
+    t("projects.line-can-now", { things: t("permission.create-sub-projects") }),
     t("projects.line-field", {
-      person: someone,
-      project: "Documents",
       field: t("issue-field.cost-center"),
       before: t("field-level.hidden"),
       after: t("field-level.can-see"),
@@ -110,5 +98,7 @@ export async function expectEverySentence(dialog: Locator): Promise<void> {
       await expect(dialog.getByText(sentence)).toBeVisible();
     }),
   );
+  // Under a person each project is named, then what changes in it.
+  await expect(dialog.getByText(documents.name, { exact: true }).first()).toBeVisible();
   await expect(dialog.getByRole("button", { name: t("projects.move-confirm") })).toBeDisabled();
 }

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { addressInProject, paths } from "../src/shared/paths.ts";
+import { addressInProject, paths, projectSettingsMenuAddress } from "../src/shared/paths.ts";
 import { ada, bob, cleo, createAdmin } from "./support/accounts.ts";
 import {
   ana,
@@ -102,6 +102,10 @@ async function changeBelow(page: Page): Promise<void> {
   await expect(around(inWeb)).toContainText(
     t("access.origin-from", { project: "Acme Corporation" }),
   );
+  // The list says where its level comes from to a screen reader too, whether the words are on the screen or not.
+  await expect(inWeb).toHaveAccessibleDescription(
+    t("access.origin-from", { project: "Acme Corporation" }),
+  );
 
   // WEB sets its own level; *Reset* takes it back and the level from ACME counts again.
   await pickLevel(inWeb, page, t("field-level.can-see"));
@@ -119,7 +123,9 @@ async function changeBelow(page: Page): Promise<void> {
 
 test("sec_04 the settings of a project lead to what roles see there", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto(addressInProject(paths.projectSettings, "ACME"));
+  // The menu of the settings: beside the section on a computer, a screen of its own on a phone (`?menu`).
+  const menu = projectSettingsMenuAddress("ACME");
+  await page.goto(menu);
   await page.getByRole("link", { name: t("nav.field-permissions"), exact: true }).click();
   await expect(
     page.getByRole("heading", {
@@ -127,6 +133,7 @@ test("sec_04 the settings of a project lead to what roles see there", async ({ p
       name: t("field-permissions.project-title", { project: "Acme Corporation" }),
     }),
   ).toBeVisible();
+  await page.goto(menu);
   await page.getByRole("link", { name: t("nav.people-visibility"), exact: true }).click();
   await expect(
     page.getByRole("heading", {

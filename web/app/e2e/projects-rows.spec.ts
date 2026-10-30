@@ -34,6 +34,6 @@ test("ux_5_1 a project row has its name and short name on one line, the place un
   const place = await boxOf(partIn(row, "projects.place"));
   expect(Math.abs(name.y + name.height / 2 - (short.y + short.height / 2))).toBeLessThanOrEqual(4);
   expect(place.y).toBeGreaterThanOrEqual(name.y + name.height - 1);
-  await expect(partIn(row, "list-editor.chevron")).toBeVisible();
+  await expect(partIn(row, "row-chevron")).toBeVisible();
   await expect(partIn(row, "projects.place")).toContainText(t("projects.at-the-top"));
 });

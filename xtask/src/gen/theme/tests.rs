@@ -223,6 +223,27 @@ fn a_container_block_is_written_under_container_with_the_token_resolved() {
 }
 
 #[test]
+fn a_supports_block_is_written_under_supports_and_may_use_tokens_in_its_lines() {
+    let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+    let extra = "
+part \"zz\" {
+  supports \"(width: calc(1px * (2px / 1px)))\" {
+    min-width \"$bp-tablet\"
+  }
+}
+";
+    let css = css(&ThemeFile::parse(&format!("{text}{extra}")).unwrap()).unwrap();
+    assert!(
+        css.contains(
+            "@supports (width: calc(1px * (2px / 1px))) {
+  [data-part=\"zz\"] {
+    min-width: var(--bp-tablet);"
+        ),
+        "{css}"
+    );
+}
+
+#[test]
 fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     for extra in [
@@ -246,6 +267,47 @@ fn an_unknown_token_or_mixin_is_refused() {
         assert!(
             ThemeFile::parse(&format!("{text}{extra}")).is_err(),
             "{extra}"
+        );
+    }
+}
+
+#[test]
+fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
+    // No browser test can see the old cue (Chromium draws the new one), so the sheet is read: in every block that
+    // falls back to it the covers stay with the content (`local`), have their size, and the shadows stay (`scroll`);
+    // and each of the six boxes that scroll their own content is in such a block.
+    let sheet = css(&file()).unwrap();
+    let blocks: Vec<&str> = sheet
+        .split("@supports not (animation-timeline: scroll())")
+        .skip(1)
+        .map(|rest| rest.split("\n}\n").next().unwrap_or(rest))
+        .filter(|block| block.contains("background-image"))
+        .collect();
+    assert!(!blocks.is_empty(), "no block draws the old cue");
+    for block in &blocks {
+        for part in [
+            "background-size:",
+            "background-repeat: no-repeat;",
+            "background-attachment: local, local, scroll, scroll;",
+        ] {
+            assert!(
+                block.contains(part),
+                "`{part}` is missing in the old cue: {block}"
+            );
+        }
+    }
+    for scroller in [
+        "overlay.dialog",
+        "picker.options",
+        "list-scroll",
+        "window.body",
+        "confirm.body",
+        "people",
+    ] {
+        let selector = format!("[data-part=\"{scroller}\"]");
+        assert!(
+            blocks.iter().any(|block| block.contains(&selector)),
+            "{scroller} has no old cue"
         );
     }
 }

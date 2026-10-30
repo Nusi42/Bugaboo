@@ -2,7 +2,7 @@ import { maskOf, settle } from "./showcase-masks.ts";
 import { type Browser, type Page } from "@playwright/test";
 
 import { chooseTheme, type Theme } from "./checks.ts";
-import { signIn } from "./flows.ts";
+import { signIn, signOut } from "./flows.ts";
 import { type Instance } from "./server.ts";
 import { inOrder, nothing } from "./sequence.ts";
 import { personOf, showcaseIds, type ShowcaseIds, type Who } from "./showcase-sample.ts";
@@ -87,6 +87,13 @@ async function tourOf(
       });
     }),
   );
+  // Each theme starts from the same state: the places a person is signed in are the ones of this run only
+  // (the page of the sessions would show one more with every theme), so the person signs out at its end.
+  if (who !== "nobody") {
+    // From the start page, which has one *More* on a phone (a page of an issue has more than one).
+    await page.goto(paths.home);
+    await signOut(page);
+  }
   await context.close();
 }
 

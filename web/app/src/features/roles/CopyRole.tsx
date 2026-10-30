@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -39,9 +39,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
       />
       {copy.isError ? <Alert tone={alertTone.danger}>{messageOf(copy.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <Button type={buttonType.submit} isPending={copy.isPending}>
-          {t("roles.copy")}
-        </Button>
+        <SubmitButton isPending={copy.isPending}>{t("roles.copy")}</SubmitButton>
       </div>
     </Form>
   );

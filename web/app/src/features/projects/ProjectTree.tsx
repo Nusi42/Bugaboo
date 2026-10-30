@@ -1,15 +1,5 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  Icon,
-  iconName,
-  iconSize,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Icon, iconName, iconSize, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
@@ -97,17 +87,7 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
           <Node key={project.id} project={project} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </ul>
-      {list.hasNextPage ? (
-        <Button
-          look={buttonLook.quiet}
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("projects.tree-more")}
-        </Button>
-      ) : null}
+      <ShowMoreOf label={t("projects.tree-more")} list={list} />
     </>
   );
 }

@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Icon, iconName, iconSize, SearchField, useLayout, partOf, part } from "@bugaboo/ui";
+import { RowChevron, SearchField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
+import { ItemScreen } from "./item-screen.tsx";
 import { SidePanel } from "./SidePanel.tsx";
 
 /** One row of the list. */
@@ -11,6 +12,8 @@ export interface ListRow {
   readonly key: string;
   /** What the person calls the item: the list is searched by it, and the panel is named after it. */
   readonly name: string;
+  /** What stands before the name on the same line (an icon). */
+  readonly lead?: ReactNode;
   /** The rest of the row, after the name. */
   readonly details?: ReactNode;
   /** What the side panel shows when this item is open: the editor of a simple item. */
@@ -60,17 +63,16 @@ function Rows({ rows, label, openKey, onOpen, columns = false }: RowsProps) {
               onOpen(row.key);
             }}
           >
-            <span id={nameId(row.key)} {...partOf(part.listEditorName)}>
-              {row.name}
-            </span>
-            <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>
-              {row.details}
-            </span>
-            {columns ? (
-              <span {...partOf(part.listEditorChevron)}>
-                <Icon name={iconName.next} size={iconSize.small} />
+            <span {...partOf(part.rowMain)}>
+              <span id={nameId(row.key)} {...partOf(part.listEditorName)}>
+                {row.lead}
+                {row.name}
               </span>
-            ) : null}
+              <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>
+                {row.details}
+              </span>
+            </span>
+            <RowChevron />
           </Button>
         </li>
       ))}
@@ -96,8 +98,8 @@ export function ListEditor({
   const [query, setQuery] = useState("");
   const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
   const open = rows.find((row) => row.key === openKey);
-  // A phone shows one thing at a time: the open item takes the screen, and Back closes it. The
-  // list stays in the page, hidden, so the focus can go back to the row that was opened.
+  // A phone shows one thing at a time: the open item is a screen of its own (the page hides the rest), and Back closes it.
+  // The list stays in the page, hidden, so the focus can go back to the row that was opened.
   const alone = useLayout() === "phone" && open !== undefined;
   if (rows.length === 0 && none !== undefined) {
     return <p {...partOf(part.muted)}>{none}</p>;
@@ -120,7 +122,11 @@ export function ListEditor({
           columns={columns}
         />
       </div>
-      {open === undefined ? null : (
+      {open === undefined ? null : alone ? (
+        <ItemScreen name={open.name} onClose={onClose}>
+          {open.editor}
+        </ItemScreen>
+      ) : (
         <SidePanel title={open.name} onClose={onClose}>
           {open.editor}
         </SidePanel>
