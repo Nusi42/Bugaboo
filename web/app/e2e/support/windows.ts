@@ -3,6 +3,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
+import { descriptionBox } from "./description.ts";
 import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
@@ -34,9 +35,7 @@ export async function openWindowReady(page: Page): Promise<void> {
   await openNewIssueDialog(page);
   await expect(newIssueDialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
   // The fields of the layout arrive after the title and make the window taller (a few pixels under load): measure after them.
-  await expect(
-    newIssueDialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
-  ).toBeVisible();
+  await expect(descriptionBox(newIssueDialog(page))).toBeVisible();
 }
 
 /** The title box of the window. */

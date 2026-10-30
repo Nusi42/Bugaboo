@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
+import { descriptionBox } from "./support/description.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
@@ -68,9 +69,7 @@ test("iss_11 typing the title does not move the buttons under the form", async (
   // The note about what is missing comes and goes with the title; a finger that is on its way to
   // Cancel must not find another button there.
   // Measured when the form has its fields; before that the layout is still on its way.
-  await expect(
-    dialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
-  ).toBeVisible();
+  await expect(descriptionBox(dialog(page))).toBeVisible();
   const cancel = dialog(page).getByRole("button", { name: t("common.cancel"), exact: true });
   const before = await cancel.boundingBox();
   await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
@@ -88,9 +87,7 @@ test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after C
   await openDialog(page);
   // The fields of the layout arrive after the dialog opens and push the buttons down; press Cancel
   // when they are there.
-  await expect(
-    dialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
-  ).toBeVisible();
+  await expect(descriptionBox(dialog(page))).toBeVisible();
   await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
   await expect(dialog(page).getByText(t("issues.draft-kept"))).toBeVisible();
   await dialog(page)

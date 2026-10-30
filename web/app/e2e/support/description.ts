@@ -1,12 +1,12 @@
 import { descriptionEditPart } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { issueAddress } from "../../src/shared/paths.ts";
 
 /** The box the description is written in. */
-export function descriptionBox(page: Page) {
-  return page.getByRole("textbox", { name: t("issue-field.description"), exact: true });
+export function descriptionBox(within: Locator | Page) {
+  return within.getByRole("textbox", { name: t("issue-field.description"), exact: true });
 }
 
 /** The button that saves what is being edited. */

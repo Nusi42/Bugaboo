@@ -12,6 +12,7 @@ import {
   MEMBER_BUG,
   theTwo,
 } from "./demo-m3-state.ts";
+import { descriptionBox } from "./description.ts";
 import { signIn } from "./flows.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 import { sampleGuestIn, type SamplePerson } from "./sample.ts";
@@ -41,9 +42,7 @@ async function create(page: Page, title: string): Promise<void> {
 
 /** Writes the description in the form that is open. */
 async function describe(page: Page, text: string): Promise<void> {
-  await newIssueDialog(page)
-    .getByRole("textbox", { name: t("issue-field.description"), exact: true })
-    .fill(text);
+  await descriptionBox(newIssueDialog(page)).fill(text);
 }
 
 /** Step 1: a Guest makes a bug with the short form. */
