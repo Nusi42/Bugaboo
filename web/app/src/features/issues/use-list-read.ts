@@ -13,6 +13,8 @@ import { useOwnColumns, type OwnColumns } from "./own-columns.ts";
 export interface ListRead {
   /** The search words of the columns, in order (a phone draws its own few). */
   readonly words: readonly string[];
+  /** How many of the columns the person chose give way for lack of room (none on a phone, which draws its own). */
+  readonly hidden: number;
   /** The own fields a column or the grouping is. */
   readonly own: OwnColumns;
   /**
@@ -54,21 +56,18 @@ export function useListRead(input: ReadInput): ListRead {
   const phone = useLayout() === "phone";
   const columns = view.columns.join(",");
   const widths = useSameWidths({ ...view.widths, ...dragged });
-  const words = useMemo(() => {
+  const { words, hidden } = useMemo(() => {
     if (phone) {
-      return phoneColumns;
+      return { words: phoneColumns, hidden: 0 };
     }
-    return columnsThatFit(columns.split(","), {
-      room,
-      ticks,
-      widths,
-      keyChars,
-    });
+    const chosen = columns.split(",");
+    const fit = columnsThatFit(chosen, { room, ticks, widths, keyChars });
+    return { words: fit, hidden: chosen.length - fit.length };
   }, [phone, room, ticks, columns, widths, keyChars]);
 
   const own = useOwnColumns(language, needsOwn(view));
   const rows = useFoundIssues(search, words, view.groupBy === null);
   const groups = useFoundGroups(search, view.groupBy);
   const read = view.groupBy === null ? rows : groups;
-  return { words, own, failure: read.isError ? read.error : null };
+  return { words, hidden, own, failure: read.isError ? read.error : null };
 }

@@ -16,19 +16,22 @@ export interface ContextInput extends ReadInput {
   readonly report: ListContextValue["report"];
 }
 
-/** What every row and group of the list shares: the columns it draws, the search, and who may tick. */
+/**
+ * What every row and group of the list shares: the columns it draws, the search, and who may tick. It is the same
+ * value while nothing it holds changed: every row and group reads it.
+ */
 export function useListContextValue(input: ContextInput): ListContextValue {
   const phone = useLayout() === "phone";
   const listId = useId();
   const now = useNow();
-  const { view, text, within, project, language, openIn, state, open, selection } = input;
-  const { onClear, report } = input;
-  const { words, failure, own } = useListRead(input);
-  // The same value while nothing it holds changed: every row and group reads it.
+  const { view, text, within, project, language, openIn, state, open, selection, onClear, report } =
+    input;
+  const { words, hidden, failure, own } = useListRead(input);
   return useMemo(
     () => ({
       listId,
       words,
+      hidden,
       phone,
       ticks: project !== undefined,
       openIn,
@@ -49,6 +52,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
       listId,
       phone,
       words,
+      hidden,
       failure,
       view.groupBy,
       project,

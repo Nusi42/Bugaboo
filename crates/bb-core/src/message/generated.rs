@@ -12692,7 +12692,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.columns-head", "Columns of the list"),
     (
         "issues.columns-hidden",
-        "{count, plural, one {# column is hidden for lack of room. Customize or a wider window shows it.} other {# columns are hidden for lack of room. Customize or a wider window shows them.}}",
+        "{count, plural, one {# column is hidden for lack of room. Open Customize, or give the list more room, to see it.} other {# columns are hidden for lack of room. Open Customize, or give the list more room, to see them.}}",
     ),
     ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
