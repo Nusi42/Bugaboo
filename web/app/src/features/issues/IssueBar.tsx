@@ -25,7 +25,12 @@ export function IssueBar({ onStatus, onComment, actions }: IssueBarProps) {
         </Button>
       </div>
       <div {...partOf(part.issueBarItem)}>
-        <ActionMenu label={t("issues.more")} actions={actions} cancelLabel={t("common.cancel")} />
+        <ActionMenu
+          label={t("issues.more")}
+          actions={actions}
+          cancelLabel={t("common.cancel")}
+          wide
+        />
       </div>
     </Toolbar>
   );

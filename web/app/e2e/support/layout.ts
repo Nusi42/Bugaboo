@@ -1,3 +1,4 @@
+import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { layoutForWidth, type LayoutMode } from "../../../packages/ui/src/layout.ts";
@@ -8,6 +9,13 @@ export { nothing } from "./sequence.ts";
 /** Which layout the window of this page has. */
 export function layoutOf(page: Page): LayoutMode {
   return layoutForWidth(page.viewportSize()?.width ?? viewports.computer.width);
+}
+
+/** *Back* from an open issue: *Back to list* of the focus view, or *Back* of the top bar on a phone (UX §4.4, L1). */
+export function issueBackOf(page: Page): Locator {
+  return layoutOf(page) === "phone"
+    ? page.getByRole("banner").getByRole("button", { name: t("shell.back"), exact: true })
+    : page.getByRole("button", { name: t("focus.back"), exact: true });
 }
 
 /** What to do on a screen of each size: the test runs once per size and does what fits it. */

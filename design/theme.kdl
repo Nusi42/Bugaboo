@@ -3604,9 +3604,14 @@ part "save-bar button[variant=primary]" {
 }
 
 // The main button of a form stands on a row of its own and is as wide as the screen on a phone, whether the form keeps it
-// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys).
-part "app-layout[variant=phone] stack > row > button[variant=primary]" {
+// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys),
+// and the one that stands at the end of its row (*Comment*, after *Upload files*; M5 exit, L1).
+part "app-layout[variant=phone] stack > row > button[variant=primary]" "app-layout[variant=phone] stack > row > row.end:has(button[variant=primary])" {
     flex "1 1 100%"
+}
+
+part "app-layout[variant=phone] stack > row > row.end > button[variant=primary]" {
+    width "100%"
 }
 
 part "skeleton.line" {
@@ -5382,17 +5387,31 @@ part "layout-field.limited link" {
     use "touch-link"
 }
 
-// On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app.
+// On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app. Its three buttons
+// share the width in equal parts, and it has the surface of the bars of the app, not the color of the page (M5 exit, L1).
 part "issue-bar" {
     display flex
     gap "$space-2"
     padding "$space-2"
     border-top "$border-width solid $divider"
-    background "$bg-raised"
+    background "$bg-surface"
 }
 
 part "issue-bar.item" {
-    flex 1
+    flex "1 1 0"
+    min-width 0
+}
+
+// The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it
+// (L6; the top of the page scrolls under the top bar and needs none). The line stands at the end of the scrolling
+// frame, so the padding of the frame is taken back.
+part "app-layout.column:has(issue-bar) app-layout.main::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-end"
+        bottom "calc(-1 * $size-page-gutter)"
+        margin-inline "calc(-1 * $size-page-gutter)"
+    }
 }
 
 part "key-capture-field.label" {

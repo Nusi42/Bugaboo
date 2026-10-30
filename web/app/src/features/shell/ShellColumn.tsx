@@ -4,7 +4,6 @@ import { useState } from "react";
 import { usePageFocus } from "../../shared/focus.ts";
 import { BarSlot } from "./bar-slot.ts";
 import { CONTENT_ID, scrollRestoration } from "./content-id.ts";
-import { useSidebarNarrow } from "./sidebar-state.ts";
 import { TopBar } from "./TopBar.tsx";
 import { PageColumn } from "./PageColumn.tsx";
 import { PhoneBars } from "./PhoneBars.tsx";
@@ -19,15 +18,14 @@ export interface ShellColumnProps {
 export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
   usePageFocus(CONTENT_ID);
   const phone = layout === "phone";
-  // The focus view on a phone has bars of its own (Back, Previous, Next): one top bar, not two.
-  const { focus } = useSidebarNarrow();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   return (
     <BarSlot value={slot}>
       <div {...partOf(part.appLayoutColumn)}>
-        {phone && focus ? null : <TopBar layout={layout} />}
+        {/* Every screen has the top bar, the issue page of a phone too: Back and where you are (L1). */}
+        <TopBar layout={layout} />
         <main id={CONTENT_ID} {...partOf(part.appLayoutMain)} tabIndex={-1} {...scrollRestoration}>
-          <TitleCarriedByBar carried={!(phone && focus)}>
+          <TitleCarriedByBar carried>
             <PageColumn phone={phone} signOutProblem={signOutProblem} />
           </TitleCarriedByBar>
         </main>
