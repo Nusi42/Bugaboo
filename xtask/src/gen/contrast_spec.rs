@@ -408,6 +408,26 @@ fn glob(pattern: &str, name: &str) -> bool {
     }
 }
 
+/// A group of lines faded by the opacity of a disabled control, for the tests of `faded-by`: the theme file has none
+/// since a button that cannot be pressed is a grey chip (M5 exit F-A9). Written before the `more` rule of the file.
+#[cfg(test)]
+pub(crate) const FADED_LINES_EXAMPLE: &str =
+    "    lines min=2 faded-by=\"opacity-disabled\" reason=\"A faded edge.\" {
+        colors \"fg-muted\"
+        on \"bg-canvas\" \"bg-raised\"
+    }
+    // With the device setting for more contrast.";
+
+/// The theme text with [`FADED_LINES_EXAMPLE`] in it.
+#[cfg(test)]
+pub(crate) fn with_faded_lines(text: &str) -> String {
+    text.replacen(
+        "    // With the device setting for more contrast.",
+        FADED_LINES_EXAMPLE,
+        1,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::glob;

@@ -5,6 +5,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { pageAttributes } from "../../../packages/ui/src/tokens.ts";
 import { expectRingsWhole } from "./rings.ts";
 import { inOrder } from "./sequence.ts";
+import { resolved } from "./styles.ts";
 import { type SettingChoice, settingChoices } from "@bugaboo/api-client";
 
 /** One of the built-in themes: the id on the page and the name people read. */
@@ -219,4 +220,13 @@ export async function expectStaleNote(page: Page, note: Locator): Promise<void> 
   await expect(
     page.locator("[data-part='alert'][data-variant='info']").filter({ has: note }),
   ).toHaveCount(1);
+}
+
+/** A button with a box that cannot be pressed looks so: the grey chip of the theme file, not an outlined button that only fades. */
+export async function expectGreyChip(page: Page, button: Locator): Promise<void> {
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveCSS(
+    "background-color",
+    await resolved(page, "background-color", "var(--disabled-fill)"),
+  );
 }

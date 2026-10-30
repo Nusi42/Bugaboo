@@ -134,8 +134,9 @@ optgroup {
 }
 
 [data-part="button"][data-disabled] {
-  opacity: var(--opacity-disabled);
-  border-color: var(--fg-muted);
+  border-color: var(--disabled-fill);
+  background: var(--disabled-fill);
+  color: var(--on-disabled);
   cursor: default;
 }
 
@@ -246,7 +247,13 @@ optgroup {
   }
 }
 
-[data-part="button"][data-variant~="primary"][data-disabled] {
+[data-part="button"][data-variant~="quiet"][data-disabled],
+[data-part="button"][data-variant~="item"][data-disabled] {
+  opacity: var(--opacity-disabled);
+}
+
+[data-part="button"][data-variant~="primary"][data-disabled],
+[data-part="button"][data-variant~="danger"][data-disabled] {
   opacity: 1;
   border-color: var(--disabled-fill);
   background: var(--disabled-fill);
@@ -254,7 +261,8 @@ optgroup {
 }
 
 @media (forced-colors: active) {
-  [data-part="button"][data-variant~="primary"][data-disabled] {
+  [data-part="button"][data-variant~="primary"][data-disabled],
+  [data-part="button"][data-variant~="danger"][data-disabled] {
     border-color: GrayText;
   }
 }

@@ -139,7 +139,10 @@ fn a_bad_file_names_the_line() {
 /// The theme file of the repository with one piece of text replaced: the error, or nothing.
 fn problem_replacing(from: &str, to: &str) -> Option<String> {
     let repo = Repo::discover().unwrap();
-    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    // The file has no faded lines of its own; the example group stands in for them.
+    let text = crate::generate::contrast_spec::with_faded_lines(
+        &crate::source::read_text(&repo, THEME_PATH).unwrap(),
+    );
     assert!(text.contains(from), "{from} is not in the theme file");
     ThemeFile::parse(&text.replacen(from, to, 1))
         .err()
