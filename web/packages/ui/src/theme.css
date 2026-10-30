@@ -1017,8 +1017,7 @@ optgroup {
 [data-part="card.intro"],
 [data-part="access.preview-line"],
 [data-part="access.subheading"],
-[data-part="switch"],
-[data-part="field.description"] {
+[data-part="switch"] {
   text-wrap: balance;
 }
 
@@ -1219,14 +1218,14 @@ optgroup {
 [data-part="field.label"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
 }
 
 [data-part="field.description"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   line-height: var(--lh-body);
 }
 
@@ -1521,7 +1520,7 @@ optgroup {
 [data-part="choice-group.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
@@ -1854,7 +1853,7 @@ optgroup {
 [data-part="picker.legend"][data-variant~="list"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   margin-block-end: var(--space-3);
   padding: 0;
@@ -1863,7 +1862,7 @@ optgroup {
 [data-part="picker.legend"][data-variant~="boxed"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   padding: 0;
 }
@@ -2025,7 +2024,7 @@ optgroup {
 [data-part="picker.hint"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 [data-part="status-icon"] {
@@ -2861,7 +2860,7 @@ optgroup {
 [data-part="name-value.name"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   display: flex;
   align-items: center;
@@ -3917,7 +3916,7 @@ optgroup {
 [data-part="settings.source"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   margin: 0;
 }
 
@@ -4280,7 +4279,7 @@ optgroup {
 [data-part="roles.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   margin-block-end: var(--space-2);
   padding: 0;
@@ -4289,7 +4288,7 @@ optgroup {
 [data-part="roles.note"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   padding-inline-start: calc(var(--space-5) + var(--space-3));
 }
 
@@ -4651,7 +4650,7 @@ optgroup {
 [data-part="access-keys.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
@@ -5691,7 +5690,7 @@ optgroup {
 [data-part="key-capture-field.label"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
 }
 
@@ -7106,7 +7105,7 @@ optgroup {
 [data-part="workflow-rules.legend"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
-  text-wrap: pretty;
+  text-wrap: balance;
   font-weight: var(--weight-regular);
   padding: 0;
 }

@@ -697,8 +697,9 @@ mixin "control-box" {
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
-    // No single word alone on the last line of a hint or a label.
-    text-wrap pretty
+    // A hint or a label is one to three lines: balanced, so its last line is never one word alone ("a good password."),
+    // which `pretty` still left at some widths. The one wrap of every hint and label.
+    text-wrap balance
 }
 
 // The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
@@ -1099,9 +1100,9 @@ part "muted" {
 }
 
 // Short texts of one to three lines (an introduction, a line of a preview, the title of an answer, the words of a
-// switch, the help of a box) are balanced, so a last line is never one word alone ("in turn.", "description",
-// "account", "back", "a good password."), which `pretty` still left at some widths.
-part "card.intro" "access.preview-line" "access.subheading" "switch" "field.description" {
+// switch) are balanced, so a last line is never one word alone ("in turn.", "description", "account", "back"), which
+// `pretty` still left at some widths. The help of a box is a hint and is balanced by `control-hint`.
+part "card.intro" "access.preview-line" "access.subheading" "switch" {
     text-wrap balance
 }
 
