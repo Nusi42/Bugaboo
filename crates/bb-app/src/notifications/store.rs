@@ -83,7 +83,7 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
             at: Timestamp
         ) -> u64;
         /// Marks every unread notification of a person as read, up to and including this one (the
-        /// IDs grow with time, so the later ones are left alone). Returns how many.
+        /// IDs grow with the time the row is made, so the later ones are left alone). Returns how many.
         fn mark_notifications_read_up_to(
             recipient: UserId,
             up_to: NotificationId,

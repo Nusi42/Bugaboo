@@ -742,12 +742,12 @@ async fn ntf_01_mark_all_as_read_leaves_what_came_after_the_newest_shown_unread(
     let mut crew = Crew::new().await?;
     let bob = crew.bob.session_token.clone();
     crew.change(&bob, Change::Status(Status::Done)).await?;
+    // The person saw the list with the older one; the newer one came after.
+    let shown_newest = page_of(&crew).await?.items[0].id;
     crew.change(&bob, Change::Status(Status::InProgress))
         .await?;
-    // The person saw the list with the older one; the newer one came after.
     let page = page_of(&crew).await?;
     assert_eq!(page.items.len(), 2);
-    let shown_newest = page.items[1].id;
     read_notifications(
         &crew.world.ctx(),
         ReadNotifications {

@@ -3,7 +3,7 @@ import { type Locator, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
 import { openIssuesIn } from "./issues.ts";
-import { layoutOf } from "./layout.ts";
+import { issueBackOf, layoutOf } from "./layout.ts";
 import { prepareLook } from "./list-look.ts";
 import { type Instance } from "./server.ts";
 
@@ -15,9 +15,9 @@ export async function preparePanel(server: Instance): Promise<void> {
   await admin.dispose();
 }
 
-/** The button that closes the issue open next to the list: the panel's own, or Back to list on a phone. */
+/** The button that closes the issue open next to the list: the panel's own, or *Back* on a phone. */
 export function panelCloseOf(page: Page): Locator {
   return layoutOf(page) === "phone"
-    ? page.getByRole("button", { name: t("focus.back"), exact: true })
+    ? issueBackOf(page)
     : page.getByRole("complementary").getByRole("button", { name: t("panel.close"), exact: true });
 }

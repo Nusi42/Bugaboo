@@ -8,7 +8,7 @@ import { useAddFiles, useTransfers } from "./transfers.ts";
 
 /**
  * The files of a comment, in the same rows as the *Files* block, under the text of the comment.
- * The person who wrote the comment (`mayAdd`) can add more with *Add files*.
+ * The person who wrote the comment can add more with *Upload files* while editing it (`mayAdd`).
  */
 export function CommentFiles({
   issue,

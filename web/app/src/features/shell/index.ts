@@ -42,4 +42,3 @@ export {
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
 export { BarSlot } from "./bar-slot.ts";
-export { useFocusViewOpen } from "./sidebar-state.ts";

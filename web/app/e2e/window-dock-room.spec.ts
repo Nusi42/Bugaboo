@@ -1,3 +1,4 @@
+import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
@@ -8,8 +9,9 @@ import { boxOf, inDock, minimizeADraft, pageColumn, windowDock } from "./support
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
-// M5 exit, package O (O7): the bar of a minimized window stands at the bottom of the page, and the page has
-// room for it at its end, so the last row of a list is not covered by it.
+// M5 exit, package O (O7) and the final pass (packages A and B): the bar of a minimized window stands at the bottom of
+// the page; the box of the rows takes the rest of the window and the strip's room is taken off once, so no row and no
+// edge of a card is under the strip, and the shell fills the window.
 
 test.use({ sample: true });
 
@@ -77,6 +79,16 @@ async function expectListAboveStrip(page: Page, size: WindowSize): Promise<void>
   const dock = await boxOf(windowDock(page));
   expect(card.y + card.height, `${size.height}: the card`).toBeLessThanOrEqual(dock.y + 0.5);
   expect(rows.y + rows.height, `${size.height}: the rows`).toBeLessThanOrEqual(dock.y + 0.5);
+  // The page is no taller than the window and the shell fills it: no band of nothing under the strip and the sidebar.
+  const heights = await page.evaluate(() => ({
+    page: document.documentElement.scrollHeight,
+    window: window.innerHeight,
+  }));
+  expect(heights.page, `${size.height}: the page`).toBeLessThanOrEqual(heights.window);
+  const sidebar = await boxOf(page.getByRole("navigation", { name: t("shell.menu"), exact: true }));
+  expect(sidebar.y + sidebar.height, `${size.height}: the sidebar`).toBeGreaterThanOrEqual(
+    heights.window - 0.5,
+  );
 }
 
 test("ux_8 a list takes the rest of the window, and at rest its card and its rows end above the strip of a minimized window", async ({

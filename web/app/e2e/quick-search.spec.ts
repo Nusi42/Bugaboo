@@ -154,3 +154,34 @@ test("cfg_08 on a phone a long text in quick search keeps its end in view, besid
     )
     .toBe(true);
 });
+
+test("cfg_08 a result of one line stands in the middle of its row, as every row of quick search (M2 07)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.home);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.keyboard.press("Control+k");
+  await box(page).fill("a");
+  await expect(dialog(page).getByRole("option").first()).toBeVisible();
+  // Every result: the room above its words is the room below them (a row of one line and of two lines alike).
+  const rooms = await dialog(page)
+    .getByRole("option")
+    .evaluateAll((options: readonly HTMLElement[]) => {
+      const found: number[] = [];
+      for (const option of options) {
+        const row = option.getBoundingClientRect();
+        let top = row.bottom;
+        let bottom = row.top;
+        for (const child of option.children) {
+          const words = child.getBoundingClientRect();
+          top = Math.min(top, words.top);
+          bottom = Math.max(bottom, words.bottom);
+        }
+        found.push(Math.abs(top - row.top - (row.bottom - bottom)));
+      }
+      return found;
+    });
+  expect(rooms.length).toBeGreaterThan(1);
+  expect(Math.max(...rooms)).toBeLessThanOrEqual(1);
+});

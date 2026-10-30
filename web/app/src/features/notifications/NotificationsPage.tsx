@@ -28,7 +28,7 @@ export function NotificationsPage() {
   const [filter, setFilter] = useState<Schema<"NotificationTab">>("all");
   const unread = useUnreadNotifications() ?? 0;
   const readAll = useReadNotifications();
-  // *Mark all as read* goes up to the newest one on the screen: a later one stays unread.
+  // *Mark all as read* goes up to the one made last on the screen: one made after it stays unread.
   const newest = useNewestNotification();
   return (
     <Card

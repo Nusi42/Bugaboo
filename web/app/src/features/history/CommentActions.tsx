@@ -19,14 +19,17 @@ function DeleteComment({ comment, mine }: { readonly comment: string; readonly m
   const params = { params: { path: { comment } } } as const;
   return (
     <>
+      {/* On an own comment the short word stands on the button and its name says whose comment it is (WCAG 2.5.3):
+          Edit and Delete then fit on one row on the smallest phone. */}
       <Button
         look={buttonLook.quiet}
         isPending={remove.isPending}
+        aria-label={mine ? t("comments.delete") : t("comments.delete-other")}
         onPress={() => {
           remove.mutate(params);
         }}
       >
-        {mine ? t("comments.delete") : t("comments.delete-other")}
+        {mine ? t("comments.delete-short") : t("comments.delete-other")}
       </Button>
       {remove.isSuccess ? (
         <Alert tone={alertTone.info}>
@@ -72,8 +75,8 @@ export function CommentActions({
   return (
     <div {...partOf(part.row)}>
       {comment.may_edit === true && !editing ? (
-        <Button look={buttonLook.quiet} onPress={onEdit}>
-          {t("comments.edit")}
+        <Button look={buttonLook.quiet} aria-label={t("comments.edit")} onPress={onEdit}>
+          {t("comments.edit-short")}
         </Button>
       ) : null}
       {comment.may_delete === true && id !== undefined && id !== null ? (
