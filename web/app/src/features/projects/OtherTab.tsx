@@ -9,7 +9,7 @@ import type { OneProject } from "./use-projects.ts";
 
 /**
  * For a person who may do neither of the two: the first other tab they may open, else nothing. On a phone
- * that asks for the menu of the settings, the menu is shown whatever the person may open, as for anybody.
+ * that asks for the menu of the settings, the menu is shown whatever the person may open, where there are two pages or more.
  */
 export function OtherTab({ project }: { readonly project: OneProject }) {
   const showsMenu = useShowsSettingsMenu(project);

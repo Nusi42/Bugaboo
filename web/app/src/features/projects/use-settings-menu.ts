@@ -1,7 +1,8 @@
 import { useLayout } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
-import { asksForSettingsMenu } from "../../shared/paths.ts";
+import { asksForSettingsMenu, projectSettingsMenuAddress } from "../../shared/paths.ts";
+import { projectPageAddress, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
@@ -16,6 +17,18 @@ export function hasSettingsMenu(tabCount: number): boolean {
  */
 export function showsSettingsMenu(phone: boolean, tabCount: number, searchStr: string): boolean {
   return phone && hasSettingsMenu(tabCount) && asksForSettingsMenu(searchStr);
+}
+
+/**
+ * Where the settings of a project start: the menu where a phone has one, else the first page the person may
+ * open (the settings page itself where none is named). The one place that says so, for the links and the trail.
+ */
+export function settingsStartAddress(
+  shortName: string,
+  hasMenu: boolean,
+  first: ProjectPage = projectPages.settings,
+): string {
+  return hasMenu ? projectSettingsMenuAddress(shortName) : projectPageAddress(first, shortName);
 }
 
 /**
