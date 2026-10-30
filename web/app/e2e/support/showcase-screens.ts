@@ -2,7 +2,7 @@ import {
   at,
   atList,
   atPanel,
-  openCheckAccess,
+  checkAccessAt,
   openInvitation,
   openPeople,
   openMovePreview,
@@ -91,10 +91,11 @@ export const screens: readonly Screen[] = [
   projectTab("project-roles", "who has which role in this project", paths.projectRoles),
   projectTab("project-fields", "which fields each role sees in this project", paths.projectFields),
   projectTab("project-people", "which people each role sees in this project", paths.projectPeople),
-  projectTab(
+  screen(
     "project-check-access",
-    "check what a person can do in this project",
-    paths.projectCheckAccess,
+    "administrator",
+    "Project settings: check what a person can do in this project, with the answer for one",
+    checkAccessAt(addressInProject(paths.projectCheckAccess, PROJECT)),
   ),
   screen(
     "project-move",
@@ -134,7 +135,11 @@ export const screens: readonly Screen[] = [
   ),
   organization("field-permissions", "which fields each role sees", at(paths.fieldPermissions)),
   organization("people-visibility", "which people each role sees", at(paths.peopleVisibility)),
-  organization("check-access", "what one person can do, project by project", openCheckAccess),
+  organization(
+    "check-access",
+    "what one person can do, project by project",
+    checkAccessAt(paths.checkAccess),
+  ),
   organization("sign-in-rules", "the rules for signing in", at(paths.signInRules)),
   organization("themes", "the look of the whole organization", at(paths.themes)),
   organization("server-status", "how the server is doing", at(paths.status)),
