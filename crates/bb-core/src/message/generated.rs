@@ -4312,6 +4312,9 @@ pub const SEARCH_SAVE_NEED: MessageKey = MessageKey::new("search.save-need");
 /// The message `search.save-text`.
 pub const SEARCH_SAVE_TEXT: MessageKey = MessageKey::new("search.save-text");
 
+/// The message `search.saved-by-separator`.
+pub const SEARCH_SAVED_BY_SEPARATOR: MessageKey = MessageKey::new("search.saved-by-separator");
+
 /// The message `search.saved-heading`.
 pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-heading");
 
@@ -10030,15 +10033,6 @@ pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `search.saved-by-spoken`.
-#[must_use]
-pub fn search_saved_by_spoken(person: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.saved-by-spoken"),
-        vec![("person", Value::Text(person.to_string()))],
-    )
-}
-
 /// The message `search.share-title`.
 #[must_use]
 pub fn search_share_title(name: impl std::fmt::Display) -> Message {
@@ -14715,7 +14709,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
     ),
-    ("search.saved-by-spoken", ", {person}"),
+    ("search.saved-by-separator", ", "),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
     ("search.saved-shared", "Shared with me"),
