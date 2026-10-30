@@ -4094,13 +4094,15 @@ optgroup {
   background: var(--bg-hover);
 }
 
-[data-part="bottom-bar.item"][data-current] {
+[data-part="bottom-bar.item"][data-current],
+[data-part="bottom-bar.item"][data-state~="current"] {
   background: var(--bg-selected);
   color: var(--accent-fg);
 }
 
 @media (forced-colors: active) {
-  [data-part="bottom-bar.item"][data-current] {
+  [data-part="bottom-bar.item"][data-current],
+  [data-part="bottom-bar.item"][data-state~="current"] {
     outline: var(--ring-width) solid var(--accent);
   }
 }

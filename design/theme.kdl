@@ -4821,7 +4821,9 @@ part "bottom-bar.item[hovered]" {
     background "$bg-hover"
 }
 
-part "bottom-bar.item[current]" {
+// A link of the bar is current on its page; the Search tab, a button that opens quick search, on the Search page and a
+// saved search (its state), so a phone shows where one is like the sidebar does (M5 exit F-A2).
+part "bottom-bar.item[current]" "bottom-bar.item[state=current]" {
     use "current-item"
 }
 

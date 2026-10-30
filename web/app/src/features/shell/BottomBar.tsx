@@ -3,7 +3,7 @@ import { Icon, iconName, type IconName, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button, Link } from "react-aria-components";
 
-import { paths, type Path } from "../../shared/paths.ts";
+import { partOfAddress, paths, routeParam, type Path } from "../../shared/paths.ts";
 import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
 import { placeAt } from "../../shared/places.ts";
@@ -57,14 +57,17 @@ interface OverlayTabProps extends TabProps {
   readonly opens: OverlayName;
   /** The layer is open now (for screen readers). */
   readonly expanded?: boolean;
+  /** The page open now is the tab's own place (*Search* on the Search page and a saved search). */
+  readonly current?: boolean;
 }
 
 /** A button of the bar that opens a layer over the page. */
-function OverlayTab({ icon, label, opens, expanded }: OverlayTabProps) {
+function OverlayTab({ icon, label, opens, expanded, current = false }: OverlayTabProps) {
   return (
     <li {...partOf(part.bottomBarTab)}>
       <Button
-        {...partOf(part.bottomBarItem)}
+        {...partOf(part.bottomBarItem, { states: [current && "current"] })}
+        {...(current ? { "aria-current": currentPage } : {})}
         {...(expanded === undefined ? {} : { "aria-expanded": expanded })}
         onPress={() => {
           openOverlay(opens);
@@ -76,6 +79,14 @@ function OverlayTab({ icon, label, opens, expanded }: OverlayTabProps) {
   );
 }
 
+/** Whether the page open now is a search: the Search page or a saved search (UX §3.3). */
+function isSearchPage(pathname: string): boolean {
+  return (
+    pathname === paths.search ||
+    partOfAddress(paths.savedSearch, routeParam.search, pathname) !== undefined
+  );
+}
+
 /**
  * The bar at the bottom of a phone, with words under the icons (UX §3.3): *Home*, *Search*, *New*
  * and *More*. *Notifications* with the number not read yet; *More* holds the rest.
@@ -83,11 +94,17 @@ function OverlayTab({ icon, label, opens, expanded }: OverlayTabProps) {
 export function BottomBar() {
   const moreOpen = useOverlayOpen("more");
   const unread = useUnreadCountText();
+  const { pathname } = useLocation();
   return (
     <nav {...partOf(part.bottomBar)} aria-label={t("shell.menu")}>
       <ul {...partOf(part.bottomBarTabs)}>
         <PlaceTab path={paths.home} />
-        <OverlayTab icon={iconName.search} label={t("shell.search")} opens={overlays.search} />
+        <OverlayTab
+          icon={iconName.search}
+          label={t("shell.search")}
+          opens={overlays.search}
+          current={isSearchPage(pathname)}
+        />
         <OverlayTab icon={iconName.plus} label={t("issues.new")} opens={overlays.newIssue} />
         <PlaceTab path={paths.notifications} count={unread} />
         <OverlayTab

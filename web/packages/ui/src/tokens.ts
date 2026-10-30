@@ -1085,7 +1085,7 @@ export const partWords = {
   "bottom-bar": { variant: [], state: [] },
   "bottom-bar.tabs": { variant: [], state: [] },
   "bottom-bar.tab": { variant: [], state: [] },
-  "bottom-bar.item": { variant: [], state: [] },
+  "bottom-bar.item": { variant: [], state: ["current"] },
   "bottom-bar.label": { variant: [], state: [] },
   "top-bar": { variant: [], state: [] },
   "top-bar.crumbs": { variant: [], state: [] },
