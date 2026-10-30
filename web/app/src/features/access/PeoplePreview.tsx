@@ -12,7 +12,7 @@ function who(level: PeopleLevelCode, position: Position): string {
   if (level === "role-only") {
     return roleName(position, t("starting-role.team-member"));
   }
-  return someoneName("start");
+  return someoneName(position);
 }
 
 /** The level a role has for a kind of people information in the table. */

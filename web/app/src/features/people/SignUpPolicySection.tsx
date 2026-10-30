@@ -92,8 +92,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
 export function SignUpPolicySection() {
   const policy = useQuery(policyOptions());
   return (
-    <Card heading={t("sign-up-policy.title")}>
-      <p {...partOf(part.text)}>{t("sign-up-policy.intro")}</p>
+    <Card heading={t("sign-up-policy.title")} intro={t("sign-up-policy.intro")}>
       {policy.isError ? <Alert tone={alertTone.danger}>{messageOf(policy.error)}</Alert> : null}
       {policy.data === undefined ? null : <PolicyForm policy={policy.data} />}
     </Card>

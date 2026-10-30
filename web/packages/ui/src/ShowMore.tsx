@@ -3,7 +3,11 @@ import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 
 export interface ShowMoreProps {
-  /** The words of the button, like *Show more people*: a screen with two of them keeps them apart. */
+  /**
+   * The words of the button: *Show more* and the plural of what the list holds (*Show more people*, *Show more
+   * roles*), never *rows* and never the two words alone (UX §6; the catalog test of `@bugaboo/messages` holds every
+   * text to it). A screen with two of them keeps them apart.
+   */
   readonly label: string;
   /** The next page is on its way. */
   readonly pending: boolean;

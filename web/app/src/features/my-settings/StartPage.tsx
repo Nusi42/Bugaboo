@@ -35,8 +35,7 @@ export function StartPage({ pages }: StartPageProps) {
   usePageTitle(t("nav.start-page"));
   const form = usePersonalForm([settingKeys.startPage]);
   return (
-    <Card heading={t("nav.start-page")} level={1}>
-      <p>{t("setting.page.start-page-intro")}</p>
+    <Card heading={t("nav.start-page")} level={1} intro={t("setting.page.start-page-intro")}>
       <SettingsForm
         {...form}
         searchable={false}

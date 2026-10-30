@@ -15,8 +15,7 @@ export function SessionsPage() {
   const { sessions, shapes } = useSessionsView();
   const end = useEndSession();
   return (
-    <Card heading={t("sessions.title")} level={1}>
-      <p {...partOf(part.text)}>{t("sessions.intro")}</p>
+    <Card heading={t("sessions.title")} level={1} intro={t("sessions.intro")}>
       {sessions.isError ? <Alert tone={alertTone.danger}>{messageOf(sessions.error)}</Alert> : null}
       <div aria-busy={sessions.isPending}>
         <ul {...partOf(part.list)} aria-label={t("sessions.list")}>

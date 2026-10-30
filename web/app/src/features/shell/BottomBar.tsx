@@ -1,15 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { Icon, iconName, type IconName, partOf, part } from "@bugaboo/ui";
+import { Icon, iconName, type IconName, partOf, part, ariaCurrent } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button, Link } from "react-aria-components";
 
 import { paths, type Path } from "../../shared/paths.ts";
 import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
-import { placeAt } from "../../shared/places.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const currentPage = "page";
+import { isCurrentPlace, placeAt } from "../../shared/places.ts";
 
 interface TabProps {
   readonly icon: IconName;
@@ -44,7 +41,7 @@ function PlaceTab({ path, count }: { readonly path: Path; readonly count?: strin
       <Link
         {...partOf(part.bottomBarItem)}
         href={place.path}
-        {...(pathname === place.path ? { "aria-current": currentPage } : {})}
+        {...(isCurrentPlace(place.path, pathname) ? { "aria-current": ariaCurrent.page } : {})}
       >
         <Tab icon={place.icon} label={t(place.name)} count={count} />
       </Link>

@@ -28,7 +28,7 @@ export function GroupChoice({ field, onCommit }: OtherChoiceProps) {
           {...frame}
           {...pickerStatus(found, groups.length, {
             nothing: t("fields.pick-no-groups"),
-            more: t("fields.pick-more"),
+            more: t("fields.pick-more-groups"),
           })}
         >
           {groups

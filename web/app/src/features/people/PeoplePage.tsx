@@ -12,8 +12,7 @@ import { SignUpPolicySection } from "./SignUpPolicySection.tsx";
 function Invitations() {
   return (
     <>
-      <Card heading={t("invitations.title")}>
-        <p {...partOf(part.text)}>{t("invitations.intro")}</p>
+      <Card heading={t("invitations.title")} intro={t("invitations.intro")}>
         <CreateInvitation />
       </Card>
       <Card heading={t("invitations.open")}>
@@ -34,8 +33,7 @@ export function PeoplePage() {
   const mayList = permissions.includes("manage-people");
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.people")} level={1}>
-        <p {...partOf(part.text)}>{t("people.intro")}</p>
+      <Card heading={t("nav.people")} level={1} intro={t("people.intro")}>
         {mayList ? <PeopleList /> : <p {...partOf(part.muted)}>{t("people.list-ask")}</p>}
       </Card>
       {permissions.includes("manage-invitations") ? <Invitations /> : null}

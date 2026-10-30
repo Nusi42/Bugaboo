@@ -8,6 +8,7 @@ import {
   type LayoutMode,
   partOf,
   part,
+  ariaCurrent,
 } from "@bugaboo/ui";
 import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { Link } from "react-aria-components";
@@ -18,9 +19,6 @@ import { pageTrails, type TrailStep } from "./page-trail.ts";
 import { placeAt } from "../../shared/places.ts";
 import { stepsOfScreens } from "./steps-of-screens.ts";
 import { useRegistry } from "./registry.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const currentPage = "page";
 
 /**
  * *Back* on a phone: where the person came from, or else the screen this one belongs under (for a
@@ -52,7 +50,7 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
           return (
             <li key={step.href} {...partOf(part.topBarCrumb)}>
               {last ? (
-                <span aria-current={currentPage} {...partOf(part.strong)}>
+                <span aria-current={ariaCurrent.page} {...partOf(part.strong)}>
                   {step.label}
                 </span>
               ) : (

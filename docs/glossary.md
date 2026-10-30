@@ -61,6 +61,7 @@ Rules:
 | **Labels**               | A fixed list of words managed by admins                            | components                         |
 | **Fields**               | The pieces of information on an issue. *Own fields* are those an organization adds | custom field (UI), attribute |
 | **Choice**               | One of the values a *Pick one* or *Pick several* field offers (*Critical*, *Major*), with its color and icon | enum value, list item (in UI) |
+| **Choice colors**        | The twelve colors a choice, a label or a tag can have, by their plain names: *Pink, Blue, Green, Orange, Purple, Teal, Coral, Yellow, Sky blue, Lime, Gray, Sand*. Each reads well in every theme and is told apart from the others at a glance | category color, color 1 (in UI) |
 | **Combine with another choice** | Move every issue from one choice, tag or label to another, then retire the first one | merge (in UI) |
 | **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
 | **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
@@ -192,7 +193,7 @@ Rules:
 | **Connected apps**       | Apps you allowed to use your account, including AI apps            | OAuth clients                      |
 | **Sign in / Sign out**   | Open or end your use of Bugaboo with your password or a passkey    | log in, log out, login, logout     |
 | **Sign out everywhere**  | End all your sessions at once, this one included                   | revoke all tokens, global logout   |
-| **Session**              | One place where you are signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
+| **Session**              | One place where you're signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
 | **Where you're signed in** | The list of your sessions, with the browser, the system and when each was last used | active sessions, devices, logins |
 | **Sign up**              | Ask for your own account without an invitation, when an administrator allows it and e-mail is on: an e-mail with a link goes to your address, and opening it lets you choose your name and password | register, registration, self-service signup |
 | **Invitation**           | A link an administrator creates so that one person can create their account; it works once and runs out after 7 days | invite code, signup token |

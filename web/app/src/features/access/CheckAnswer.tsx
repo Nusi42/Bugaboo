@@ -1,5 +1,5 @@
 import { isMessageKey, t } from "@bugaboo/messages";
-import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, Card, cardLook, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
@@ -73,7 +73,7 @@ function Permissions({
   readonly heading: string;
 }) {
   return (
-    <Card heading={heading}>
+    <Card heading={heading} look={cardLook.openOnPhone}>
       {byTopic(answer.permissions).map(([topic, permissions]) => (
         <section key={topic} {...partOf(part.stack)}>
           <h3 {...partOf(part.accessTopic)}>{t(`permission-topic.${topic}`)}</h3>
@@ -165,7 +165,7 @@ function LevelSection({ answer, heading, entries, levelName, words, note }: Leve
   }));
   const groups = groupLevels(told);
   return (
-    <Card heading={heading}>
+    <Card heading={heading} look={cardLook.openOnPhone}>
       {note}
       <div {...partOf(part.row)}>
         <Button

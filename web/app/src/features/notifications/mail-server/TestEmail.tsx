@@ -44,7 +44,7 @@ export function TestEmail() {
   const cooldown = useCooldown(testEmailEverySeconds);
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.text)}>{t("mail-server.test-intro", { email })}</p>
+      <p {...partOf(part.cardIntro)}>{t("mail-server.test-intro", { email })}</p>
       <div {...partOf(part.row)}>
         <Button
           look={buttonLook.plain}

@@ -30,7 +30,7 @@ Use the arrow keys to pick a result and press Enter. "Esc" closes quick search a
 
 ## Settings
 
-*My settings* is for you: how Bugaboo looks, your keyboard shortcuts, your sign-in and security, and the places where you are signed in. *Organization settings* is for the whole Bugaboo server and is only there for administrators. Both have a menu by topic, in plain words. On a phone the topics are a page of their own and each topic opens on its own page.
+*My settings* is for you: how Bugaboo looks, your keyboard shortcuts, your sign-in and security, and the places where you're signed in. *Organization settings* is for the whole Bugaboo server and is only there for administrators. Both have a menu by topic, in plain words. On a phone the topics are a page of their own and each topic opens on its own page.
 
 ## Opening one item next to a list
 

@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { nothingFound } from "./support/quick-search.ts";
@@ -130,7 +131,7 @@ test("cfg_08 the sidebar says Quick search for the overlay, and the Search page 
   await expect(quick).not.toHaveAttribute("aria-current", /.+/u);
   await expect(
     page.getByRole("link", { name: t("search.page.title"), exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  ).toHaveAttribute("aria-current", ariaCurrent.page);
 });
 
 test("cfg_08 a result of one line stands in the middle of its row, as every row of quick search (M2 07)", async ({

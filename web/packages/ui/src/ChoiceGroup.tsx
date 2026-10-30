@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { partOf } from "./parts.ts";
+import { choiceGroupLook, type ChoiceGroupLook } from "./props.ts";
 import { part } from "./tokens.ts";
 
 /** Words of the HTML standard, not text for people. */
@@ -16,10 +17,16 @@ export interface ChoiceGroupProps<Value extends string> {
   /** The visible name of the group, already in the person's language. */
   readonly legend: string;
   readonly choices: readonly Choice<Value>[];
-  readonly value: Value;
+  /** The chosen one; none while nothing is chosen yet (a form where the server picks when nobody does). */
+  readonly value: Value | undefined;
   readonly onChange: (value: Value) => void;
   /** How a choice shows its name, next to the input; the usual label by default. */
   readonly renderLabel?: (choice: Choice<Value>) => ReactNode;
+  /**
+   * How the choices are laid out besides the usual (side by side while they fit on one line, else under each other):
+   * a grid that wraps, several in a row, for many small choices such as the colors.
+   */
+  readonly look?: ChoiceGroupLook;
 }
 
 /** Follows the width of the row (and the fonts arriving): true while its choices, side by side, do not fit on one line. */
@@ -57,43 +64,74 @@ function useStackedWhenWrapped() {
   return { row, stacked };
 }
 
-/**
- * One choice out of a few, shown as buttons that sit side by side while they all fit on one line, and under each
- * other, as wide as the screen, when they do not: themes, spacing and the like.
- */
-export function ChoiceGroup<Value extends string>({
-  legend,
+type OptionsProps<Value extends string> = Pick<
+  ChoiceGroupProps<Value>,
+  "choices" | "value" | "onChange" | "renderLabel"
+> & {
+  /** The name that makes the radios one group. */
+  readonly group: string;
+};
+
+/** The choices as radios, each with its label. */
+function Options<Value extends string>({
   choices,
   value,
   onChange,
   renderLabel,
+  group,
+}: OptionsProps<Value>) {
+  return choices.map((choice) => (
+    <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
+      <input
+        {...partOf(part.choiceGroupInput)}
+        type={radio}
+        name={group}
+        value={choice.value}
+        checked={value === choice.value}
+        onChange={() => {
+          onChange(choice.value);
+        }}
+      />
+      {renderLabel === undefined ? (
+        <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
+      ) : (
+        renderLabel(choice)
+      )}
+    </label>
+  ));
+}
+
+/** The usual layout: side by side while they fit on one line, measured, else under each other. */
+function MeasuredChoices<Value extends string>(props: OptionsProps<Value>) {
+  const { row, stacked } = useStackedWhenWrapped();
+  return (
+    <div ref={row} {...partOf(part.choiceGroupChoices, { variants: [stacked && "stacked"] })}>
+      <Options {...props} />
+    </div>
+  );
+}
+
+/**
+ * One choice out of a few, shown as buttons that sit side by side while they all fit on one line, and under each
+ * other, as wide as the screen, when they do not: themes, spacing and the like. With the grid look the choices stand
+ * in a grid that wraps instead (the colors), and nothing is measured.
+ */
+export function ChoiceGroup<Value extends string>({
+  legend,
+  look,
+  ...options
 }: ChoiceGroupProps<Value>) {
   const group = useId();
-  const { row, stacked } = useStackedWhenWrapped();
   return (
     <fieldset {...partOf(part.choiceGroup)}>
       <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
-      <div ref={row} {...partOf(part.choiceGroupChoices, { variants: [stacked && "stacked"] })}>
-        {choices.map((choice) => (
-          <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
-            <input
-              {...partOf(part.choiceGroupInput)}
-              type={radio}
-              name={group}
-              value={choice.value}
-              checked={value === choice.value}
-              onChange={() => {
-                onChange(choice.value);
-              }}
-            />
-            {renderLabel === undefined ? (
-              <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
-            ) : (
-              renderLabel(choice)
-            )}
-          </label>
-        ))}
-      </div>
+      {look === choiceGroupLook.grid ? (
+        <div {...partOf(part.choiceGroupChoices, { variants: [look] })}>
+          <Options {...options} group={group} />
+        </div>
+      ) : (
+        <MeasuredChoices {...options} group={group} />
+      )}
     </fieldset>
   );
 }

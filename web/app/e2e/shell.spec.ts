@@ -4,6 +4,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { boxOf } from "./support/windows.ts";
@@ -114,7 +115,10 @@ test("ux_01 the frame of each size shows the screens that exist and nothing else
 async function trailOnLargeScreens(page: Page): Promise<void> {
   const trail = page.getByRole("navigation", { name: t("shell.trail") });
   await expect(trail.getByRole("link", { name: t("nav.my-settings") })).toBeVisible();
-  await expect(trail.getByText(t("nav.security"))).toHaveAttribute("aria-current", "page");
+  await expect(trail.getByText(t("nav.security"))).toHaveAttribute(
+    "aria-current",
+    ariaCurrent.page,
+  );
   await trail.getByRole("link", { name: t("nav.my-settings") }).click();
   await expect(page).toHaveURL(addressEndingAt(paths.appearance));
 }

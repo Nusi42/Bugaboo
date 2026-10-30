@@ -23,7 +23,10 @@ function factsOf(person: PersonLine): string {
     parts.push(
       person.groups.length === 0
         ? t("people.no-groups")
-        : t("people.in-groups", { groups: listText(person.groups.map((group) => group.name)) }),
+        : t("people.in-groups", {
+            count: person.groups.length,
+            groups: listText(person.groups.map((group) => group.name)),
+          }),
     );
   }
   if (person.roles.length > 0) {

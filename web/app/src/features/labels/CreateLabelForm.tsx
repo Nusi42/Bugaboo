@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -8,10 +9,12 @@ import {
   TextField,
   partOf,
   part,
+  type ChoiceColorName,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
+import { ColorChoice } from "../../shared/ColorChoice.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import {
   NO_GROUP,
@@ -27,10 +30,24 @@ export interface CreateLabelFormProps {
   readonly inGroupsOnly?: boolean;
 }
 
-/** *Create a label*: a name and a group; its color is the next in turn, and it can be changed after. */
+/** What *Create the label* sends: the name, and the color and the label group where they are chosen. */
+function bodyOf(
+  name: string,
+  color: ChoiceColorName | undefined,
+  group: string,
+): Schema<"NewLabelBody"> {
+  return {
+    name: name.trim(),
+    color: color ?? null,
+    label_group: group === NO_GROUP ? null : group,
+  };
+}
+
+/** *Create a label*: a name, a color and a group; without a color chosen it gets the next in turn, and it can be changed after. */
 export function CreateLabelForm({ groups, inGroupsOnly = false }: CreateLabelFormProps) {
   const choices = inGroupsOnly ? managedGroupChoices(groups) : groupChoices(groups);
   const [name, setName] = useState("");
+  const [color, setColor] = useState<ChoiceColorName>();
   const [picked, setGroup] = useState(NO_GROUP);
   const group = choices.some((choice) => choice.value === picked)
     ? picked
@@ -41,13 +58,14 @@ export function CreateLabelForm({ groups, inGroupsOnly = false }: CreateLabelFor
       refreshLabels();
       setMade(label.name);
       setName("");
+      setColor(undefined);
     },
   });
   return (
     <Form
       onSubmit={() => {
         setMade(null);
-        create.mutate({ body: { name: name.trim(), ...(group === NO_GROUP ? {} : { group }) } });
+        create.mutate({ body: bodyOf(name, color, group) });
       }}
     >
       <TextField
@@ -56,6 +74,7 @@ export function CreateLabelForm({ groups, inGroupsOnly = false }: CreateLabelFor
         value={name}
         onChange={setName}
       />
+      <ColorChoice legend={t("labels.field-new-color")} value={color} onChange={setColor} />
       <SelectField
         label={t("labels.field-label-group")}
         choices={choices}

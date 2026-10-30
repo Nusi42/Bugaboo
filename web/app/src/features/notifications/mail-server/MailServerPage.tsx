@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../../shared/use-page.ts";
 import { MailServerPanel } from "./MailServerPanel.tsx";
@@ -11,8 +11,7 @@ import { MailServerPanel } from "./MailServerPanel.tsx";
 export function MailServerPage() {
   usePageTitle(t("mail-server.title"));
   return (
-    <Card heading={t("mail-server.title")} level={1}>
-      <p {...partOf(part.text)}>{t("mail-server.intro")}</p>
+    <Card heading={t("mail-server.title")} level={1} intro={t("mail-server.intro")}>
       <MailServerPanel />
     </Card>
   );

@@ -247,8 +247,13 @@ pub const ASSIGNMENTS_PICK_GROUP: MessageKey = MessageKey::new("assignments.pick
 /// The message `assignments.pick-list`.
 pub const ASSIGNMENTS_PICK_LIST: MessageKey = MessageKey::new("assignments.pick-list");
 
-/// The message `assignments.pick-more`.
-pub const ASSIGNMENTS_PICK_MORE: MessageKey = MessageKey::new("assignments.pick-more");
+/// The message `assignments.pick-more-groups`.
+pub const ASSIGNMENTS_PICK_MORE_GROUPS: MessageKey =
+    MessageKey::new("assignments.pick-more-groups");
+
+/// The message `assignments.pick-more-people`.
+pub const ASSIGNMENTS_PICK_MORE_PEOPLE: MessageKey =
+    MessageKey::new("assignments.pick-more-people");
 
 /// The message `assignments.pick-nothing`.
 pub const ASSIGNMENTS_PICK_NOTHING: MessageKey = MessageKey::new("assignments.pick-nothing");
@@ -1301,8 +1306,11 @@ pub const FIELDS_PICK_CHOSEN: MessageKey = MessageKey::new("fields.pick-chosen")
 /// The message `fields.pick-groups-list`.
 pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-groups-list");
 
-/// The message `fields.pick-more`.
-pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
+/// The message `fields.pick-more-groups`.
+pub const FIELDS_PICK_MORE_GROUPS: MessageKey = MessageKey::new("fields.pick-more-groups");
+
+/// The message `fields.pick-more-people`.
+pub const FIELDS_PICK_MORE_PEOPLE: MessageKey = MessageKey::new("fields.pick-more-people");
 
 /// The message `fields.pick-no-groups`.
 pub const FIELDS_PICK_NO_GROUPS: MessageKey = MessageKey::new("fields.pick-no-groups");
@@ -2241,6 +2249,9 @@ pub const LABELS_FIELD_LABEL_NAME: MessageKey = MessageKey::new("labels.field-la
 /// The message `labels.field-name`.
 pub const LABELS_FIELD_NAME: MessageKey = MessageKey::new("labels.field-name");
 
+/// The message `labels.field-new-color`.
+pub const LABELS_FIELD_NEW_COLOR: MessageKey = MessageKey::new("labels.field-new-color");
+
 /// The message `labels.field-pick-one`.
 pub const LABELS_FIELD_PICK_ONE: MessageKey = MessageKey::new("labels.field-pick-one");
 
@@ -3054,8 +3065,9 @@ pub const PEOPLE_LEVEL_NAMES: MessageKey = MessageKey::new("people-level.names")
 /// The message `people-level.role-only`.
 pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.role-only");
 
-/// The message `people-visibility.intro`.
-pub const PEOPLE_VISIBILITY_INTRO: MessageKey = MessageKey::new("people-visibility.intro");
+/// The message `people-visibility.intro-example`.
+pub const PEOPLE_VISIBILITY_INTRO_EXAMPLE: MessageKey =
+    MessageKey::new("people-visibility.intro-example");
 
 /// The message `people-visibility.table-name`.
 pub const PEOPLE_VISIBILITY_TABLE_NAME: MessageKey =
@@ -4339,8 +4351,11 @@ pub const SEARCH_SHARE_DONE: MessageKey = MessageKey::new("search.share-done");
 /// The message `search.share-groups`.
 pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups");
 
-/// The message `search.share-more`.
-pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
+/// The message `search.share-more-groups`.
+pub const SEARCH_SHARE_MORE_GROUPS: MessageKey = MessageKey::new("search.share-more-groups");
+
+/// The message `search.share-more-projects`.
+pub const SEARCH_SHARE_MORE_PROJECTS: MessageKey = MessageKey::new("search.share-more-projects");
 
 /// The message `search.share-none-groups`.
 pub const SEARCH_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("search.share-none-groups");
@@ -5009,6 +5024,9 @@ pub const SETTING_UI_NOTHING: MessageKey = MessageKey::new("setting.ui.nothing")
 
 /// The message `setting.ui.reset`.
 pub const SETTING_UI_RESET: MessageKey = MessageKey::new("setting.ui.reset");
+
+/// The message `setting.ui.saved-at-once`.
+pub const SETTING_UI_SAVED_AT_ONCE: MessageKey = MessageKey::new("setting.ui.saved-at-once");
 
 /// The message `setting.ui.search`.
 pub const SETTING_UI_SEARCH: MessageKey = MessageKey::new("setting.ui.search");
@@ -8588,6 +8606,15 @@ pub fn people_visibility_example_editing(who: impl std::fmt::Display) -> Message
     )
 }
 
+/// The message `people-visibility.intro`.
+#[must_use]
+pub fn people_visibility_intro(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people-visibility.intro"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
 /// The message `people-visibility.intro-project`.
 #[must_use]
 pub fn people_visibility_intro_project(project: impl std::fmt::Display) -> Message {
@@ -8617,10 +8644,13 @@ pub fn people_visibility_project_title(project: impl std::fmt::Display) -> Messa
 
 /// The message `people.in-groups`.
 #[must_use]
-pub fn people_in_groups(groups: impl std::fmt::Display) -> Message {
+pub fn people_in_groups(count: i64, groups: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("people.in-groups"),
-        vec![("groups", Value::Text(groups.to_string()))],
+        vec![
+            ("count", Value::Number(count)),
+            ("groups", Value::Text(groups.to_string())),
+        ],
     )
 }
 
@@ -11078,7 +11108,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "access-keys.never",
-        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
+        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you're signed in.",
     ),
     (
         "access-keys.pick-one",
@@ -11132,10 +11162,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
     ),
-    (
-        "access.scrolls",
-        "There are more roles to the right. Scroll sideways to see them.",
-    ),
+    ("access.scrolls", "Scroll sideways to see the other roles."),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
     (
@@ -11181,7 +11208,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.kind-group", "A group"),
     ("assignments.kind-person", "A person"),
     ("assignments.list", "Who has which role"),
-    ("assignments.more", "Show more rows"),
+    ("assignments.more", "Show more people and groups"),
     (
         "assignments.no-access-help",
         "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
@@ -11189,7 +11216,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.none", "Nobody has a role here yet."),
     ("assignments.pick-group", "Choose the group"),
     ("assignments.pick-list", "To choose from"),
-    ("assignments.pick-more", "Show more"),
+    ("assignments.pick-more-groups", "Show more groups"),
+    ("assignments.pick-more-people", "Show more people"),
     (
         "assignments.pick-nothing",
         "Nothing found. Try another word.",
@@ -11353,18 +11381,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("check-access.show-every-field", "Show every field"),
     ("check-access.show-every-kind", "Show every kind"),
     ("check-access.yes", "Yes."),
-    ("choice-color.cat1", "Color 1"),
-    ("choice-color.cat10", "Color 10"),
-    ("choice-color.cat11", "Color 11"),
-    ("choice-color.cat12", "Color 12"),
-    ("choice-color.cat2", "Color 2"),
-    ("choice-color.cat3", "Color 3"),
-    ("choice-color.cat4", "Color 4"),
-    ("choice-color.cat5", "Color 5"),
-    ("choice-color.cat6", "Color 6"),
-    ("choice-color.cat7", "Color 7"),
-    ("choice-color.cat8", "Color 8"),
-    ("choice-color.cat9", "Color 9"),
+    ("choice-color.cat1", "Pink"),
+    ("choice-color.cat10", "Lime"),
+    ("choice-color.cat11", "Gray"),
+    ("choice-color.cat12", "Sand"),
+    ("choice-color.cat2", "Blue"),
+    ("choice-color.cat3", "Green"),
+    ("choice-color.cat4", "Orange"),
+    ("choice-color.cat5", "Purple"),
+    ("choice-color.cat6", "Teal"),
+    ("choice-color.cat7", "Coral"),
+    ("choice-color.cat8", "Yellow"),
+    ("choice-color.cat9", "Sky blue"),
     ("cli.about.keys", "Look after the key files"),
     (
         "cli.about.keys-export",
@@ -12191,7 +12219,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-choose-name", "Choose {name}"),
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
-    ("fields.pick-more", "Show more"),
+    ("fields.pick-more-groups", "Show more groups"),
+    ("fields.pick-more-people", "Show more people"),
     (
         "fields.pick-no-groups",
         "There are no groups you can choose.",
@@ -12328,7 +12357,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.done.go", "Open Bugaboo"),
     (
         "first-run.done.text",
-        "Your account is ready and you are signed in.",
+        "Your account is ready and you're signed in.",
     ),
     ("first-run.done.title", "You are all set"),
     (
@@ -12900,12 +12929,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.create-label-group", "Create the label group"),
     (
         "labels.create-label-group-intro",
-        "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the label group.",
+        "A label group keeps labels that belong together. If an issue may have only one label of the label group, switch that on below.",
     ),
     ("labels.create-label-group-title", "Create a label group"),
     (
         "labels.create-label-intro",
-        "A label has a name, a color and, if you like, a label group.",
+        "A label has a name, a color and, if you like, a label group. Without a color chosen, it gets the next one in turn.",
     ),
     ("labels.create-label-title", "Create a label"),
     ("labels.field-color", "Color of {name}"),
@@ -12913,6 +12942,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.field-label-group", "Label group"),
     ("labels.field-label-name", "Name of the label"),
     ("labels.field-name", "Name"),
+    ("labels.field-new-color", "Color"),
     (
         "labels.field-pick-one",
         "An issue gets at most one label of this label group",
@@ -13577,8 +13607,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "people-visibility.intro",
-        "For each role and each kind of people information, choose whether people are shown by name, by their role only (a Team member) or not at all (Someone).",
+        "For each role and each kind of people information, choose whether people are shown by name, by their role only ({example}) or not at all (Someone).",
     ),
+    ("people-visibility.intro-example", "a Team member"),
     (
         "people-visibility.intro-project",
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
@@ -13593,7 +13624,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "How each role sees each kind of people information",
     ),
     ("people-visibility.who-names", "Ana"),
-    ("people.in-groups", "In the groups {groups}"),
+    (
+        "people.in-groups",
+        "{count, plural, one {In the group {groups}} other {In the groups {groups}}}",
+    ),
     (
         "people.intro",
         "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",
@@ -14724,7 +14758,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.share", "Share"),
     ("search.share-done", "Done"),
     ("search.share-groups", "Groups"),
-    ("search.share-more", "Show more"),
+    ("search.share-more-groups", "Show more groups"),
+    ("search.share-more-projects", "Show more projects"),
     (
         "search.share-none-groups",
         "You can't share with any group.",
@@ -15017,10 +15052,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.everywhere-title", "Sign out everywhere?"),
     (
         "sessions.intro",
-        "Each line is a place where you are signed in, like a browser. Sign out of the ones you do not know.",
+        "Each line is a place where you're signed in, like a browser. Sign out of the ones you do not know.",
     ),
     ("sessions.last-seen", "Last used {when}"),
-    ("sessions.list", "Places where you are signed in"),
+    ("sessions.list", "Places where you're signed in"),
     ("sessions.network", "Network {network}"),
     ("sessions.started", "Signed in {when}"),
     ("sessions.this", "This browser"),
@@ -15384,7 +15419,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.start.page.name", "Start page"),
     (
         "setting.ui.between",
-        "A whole number between {least} and {most}.",
+        "Whole numbers from {least} to {most}.",
     ),
     ("setting.ui.device-zone", "Match my device ({zone})"),
     (
@@ -15408,6 +15443,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.nothing", "No setting matches your search."),
     ("setting.ui.reset", "Reset to default"),
     ("setting.ui.reset-name", "Reset to default: {name}"),
+    (
+        "setting.ui.saved-at-once",
+        "A switch or a choice is saved at once. What you type in a box is saved with the Save button under it.",
+    ),
     ("setting.ui.search", "Search settings"),
     ("setting.ui.source-default", "Default value"),
     (

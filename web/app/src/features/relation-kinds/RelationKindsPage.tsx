@@ -37,8 +37,7 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
   const rows = relationKindLinesOf(list.data?.pages).map((kind) => rowOf(kind));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.relation-kinds")} level={1}>
-        <p {...partOf(part.text)}>{t("relation-kinds.intro")}</p>
+      <Card heading={t("nav.relation-kinds")} level={1} intro={t("relation-kinds.intro")}>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         <ListEditor
           rows={rows}
@@ -50,8 +49,7 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
         />
         <ShowMoreOf label={t("relation-kinds.more")} list={list} />
       </Card>
-      <Card heading={t("relation-kinds.create-title")}>
-        <p {...partOf(part.text)}>{t("relation-kinds.create-intro")}</p>
+      <Card heading={t("relation-kinds.create-title")} intro={t("relation-kinds.create-intro")}>
         <CreateRelationKindForm />
       </Card>
     </div>

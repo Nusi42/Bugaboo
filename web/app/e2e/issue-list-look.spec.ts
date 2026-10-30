@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { tickBox, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { idsCut } from "./support/list-ids.ts";
-import { partIn } from "./support/parts.ts";
+import { ariaCurrent, partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 import {
   grid,
@@ -176,7 +176,7 @@ test("ux_3_4 the slim list beside an issue is left-aligned, with the open issue 
   const row = partIn(slim, "list-row").filter({ hasText: webIssues.login });
   await expect(row.getByRole("link", { name: webIssues.login })).toHaveAttribute(
     "aria-current",
-    "page",
+    ariaCurrent.page,
   );
   await expect(row).not.toHaveAttribute("aria-current", /./u);
   await expect(row).toHaveAttribute("data-state", /group-in-progress/u);

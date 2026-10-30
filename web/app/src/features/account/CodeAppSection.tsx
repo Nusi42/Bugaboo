@@ -14,8 +14,7 @@ export function CodeAppSection() {
   const [codes, setCodes] = useState<readonly string[] | null>(null);
   const [turnedOff, setTurnedOff] = useState(false);
   return (
-    <Card heading={t("code-app.title")}>
-      <p {...partOf(part.text)}>{t("code-app.intro")}</p>
+    <Card heading={t("code-app.title")} intro={t("code-app.intro")}>
       {codes === null ? null : (
         <>
           <Alert tone={alertTone.success}>{t("code-app.switched-on")}</Alert>

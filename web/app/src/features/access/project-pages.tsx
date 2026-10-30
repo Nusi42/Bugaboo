@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { mayOpenProjectPage, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
@@ -24,11 +24,8 @@ function ProjectFrame({ project, page, heading, intro, children }: ProjectFrameP
   }
   return (
     <ProjectSettingsFrame project={project}>
-      <Card heading={heading} level={1}>
-        <div {...partOf(part.stack)}>
-          <p {...partOf(part.muted)}>{intro}</p>
-          {children}
-        </div>
+      <Card heading={heading} level={1} intro={intro}>
+        {children}
       </Card>
     </ProjectSettingsFrame>
   );

@@ -91,3 +91,62 @@ describe("perf_04 a text that is missing in production", () => {
     expect(() => fresh("people.search")).toThrow(/people\.search.*not loaded/u);
   });
 });
+
+/** What the wording rule of *Show more* allows after its two words: the plural of what the list holds, never its rows. */
+const showMore = /^Show more (?!rows$)\p{Ll}[\p{Ll} -]*$/u;
+
+/** The keys of the texts that start with *Show more* and do not keep its rule. */
+function badlyWorded(parts: readonly Readonly<Record<string, string>>[]): readonly string[] {
+  const wrong: string[] = [];
+  for (const messages of parts) {
+    for (const [key, text] of Object.entries(messages)) {
+      if (text.startsWith("Show more") && !showMore.test(text)) {
+        wrong.push(key);
+      }
+    }
+  }
+  return wrong;
+}
+
+describe("ux_5 the one wording of Show more", () => {
+  it("names the plural of what the list holds, never rows and never nothing", async () => {
+    const parts = await import("./generated/all.ts");
+    const wrong = badlyWorded(Object.values(parts));
+    expect(wrong).toEqual([]);
+  });
+});
+
+/**
+ * The spaces and joiners that are not seen or not the plain space: the no-break spaces, the spaces of other widths
+ * (en to hair, the ideographic space), the zero-width space and joiners, the word joiner and the byte-order mark. Words
+ * kept together are a part of the screen, not a byte.
+ */
+const hiddenSpaces = /[\u00A0\u2002-\u200D\u202F\u2060\u3000\uFEFF]/u;
+
+/** The keys of the texts that hide such a space. */
+function withHiddenSpaces(parts: readonly Readonly<Record<string, string>>[]): readonly string[] {
+  const hidden: string[] = [];
+  for (const messages of parts) {
+    for (const [key, text] of Object.entries(messages)) {
+      if (hiddenSpaces.test(text)) {
+        hidden.push(key);
+      }
+    }
+  }
+  return hidden;
+}
+
+describe("ux_07 no hidden spaces in the catalog", () => {
+  it("keeps words together on the screen, never with a no-break space in a text", async () => {
+    const parts = await import("./generated/all.ts");
+    expect(withHiddenSpaces(Object.values(parts))).toEqual([]);
+  });
+
+  it("finds every kind of hidden space, and not the plain one", () => {
+    const hidden = ["\u00A0", "\u2009", "\u200B", "\u200D", "\u3000", "\uFEFF"].map(
+      (space, index) => [`k${String(index)}`, `a${space}b`] as const,
+    );
+    const texts = Object.fromEntries([...hidden, ["plain", "a b"]]);
+    expect(withHiddenSpaces([texts])).toEqual(hidden.map(([key]) => key));
+  });
+});

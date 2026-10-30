@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card } from "@bugaboo/ui";
 import { useEffect, useRef, useState } from "react";
 
 import { AssignmentList } from "./AssignmentList.tsx";
@@ -46,10 +46,8 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
             : t("assignments.title-project", { name: project.name })
         }
         level={level}
+        intro={t(project === null ? "assignments.intro-organization" : "assignments.intro-project")}
       >
-        <p {...partOf(part.text)}>
-          {t(project === null ? "assignments.intro-organization" : "assignments.intro-project")}
-        </p>
         {changes.problem === null ? null : <Alert tone={alertTone.danger}>{changes.problem}</Alert>}
         <AssignmentList project={id} onRemove={changes.remove} onChangeHere={here} />
       </Card>

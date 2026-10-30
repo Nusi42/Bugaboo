@@ -5,7 +5,8 @@ export {
   ProjectSettingsSection,
   type ProjectSettingsSectionProps,
 } from "./ProjectSettingsSection.tsx";
-export { type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
+export { type SettingActions } from "./setting-actions.ts";
+export { type ControlRenderer } from "./SettingRow.tsx";
 export { SettingsForm, type SettingsFormProps } from "./SettingsForm.tsx";
 export { SecurityPage } from "./SecurityPage.tsx";
 export { SignInRulesPage } from "./SignInRulesPage.tsx";

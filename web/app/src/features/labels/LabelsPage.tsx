@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, cardLook, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -22,8 +22,7 @@ export function LabelsPage(props: LabelsPageProps) {
   const labels = useLabels();
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.labels")} level={1}>
-        <p {...partOf(part.text)}>{t("labels.intro")}</p>
+      <Card heading={t("nav.labels")} level={1} look={cardLook.pageHead} intro={t("labels.intro")}>
         {labels.isError ? <Alert tone={alertTone.danger}>{messageOf(labels.error)}</Alert> : null}
       </Card>
       <GroupsSection groups={labels.groups} {...props} />

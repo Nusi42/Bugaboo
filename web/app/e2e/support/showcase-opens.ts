@@ -88,12 +88,14 @@ export async function openQuickSearch({ page }: Needs): Promise<void> {
   await expect(page.getByRole("option").first()).toBeVisible();
 }
 
-/** Checks what a person can do in the whole organization, and waits for the answer. */
-export async function openCheckAccess({ page }: Needs): Promise<void> {
-  await page.goto(paths.checkAccess);
-  await expectPage(page);
-  await check(page, null, { name: showcaseNames.person });
-  await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
+/** *Check access* at an address (the whole organization, or a project) with the answer for the person of the pictures. */
+export function checkAccessAt(address: string): Screen["open"] {
+  return async ({ page }: Needs) => {
+    await page.goto(address);
+    await expectPage(page);
+    await check(page, null, { name: showcaseNames.person });
+    await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
+  };
 }
 
 /** Moves a sub-project to the top level in the dialog, up to the preview of what changes. */

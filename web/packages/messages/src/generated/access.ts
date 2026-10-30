@@ -6,7 +6,7 @@ export const messages = {
   "access.field": "Field",
   "access.kind": "Kind of people information",
   "access.cell-label": "{subject} for {role}",
-  "access.scrolls": "There are more roles to the right. Scroll sideways to see them.",
+  "access.scrolls": "Scroll sideways to see the other roles.",
   "access.origin-here": "Set for this project",
   "access.origin-from": "From {project}",
   "access.origin-unset": "Nothing set, so it is hidden",
@@ -22,7 +22,8 @@ export const messages = {
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "field-permissions.table-name": "Which level each role has for each field",
   "people-visibility.intro":
-    "For each role and each kind of people information, choose whether people are shown by name, by their role only (a Team member) or not at all (Someone).",
+    "For each role and each kind of people information, choose whether people are shown by name, by their role only ({example}) or not at all (Someone).",
+  "people-visibility.intro-example": "a Team member",
   "people-visibility.intro-project":
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "people-visibility.table-name": "How each role sees each kind of people information",

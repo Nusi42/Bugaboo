@@ -26,7 +26,7 @@ export const messages = {
     "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in and security.",
   "first-run.safer.finish": "Finish",
   "first-run.done.title": "You are all set",
-  "first-run.done.text": "Your account is ready and you are signed in.",
+  "first-run.done.text": "Your account is ready and you're signed in.",
   "first-run.done.go": "Open Bugaboo",
   "first-run.step.mail": "E-mail",
   "first-run.mail.title": "Set up e-mail (you can do this later)",

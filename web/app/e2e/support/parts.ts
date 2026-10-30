@@ -1,5 +1,8 @@
 import { type Locator, type Page } from "@playwright/test";
 
+/** The values of `aria-current`, from their one home in the app, for the tests that read the marks of parts. */
+export { ariaCurrent } from "@bugaboo/ui";
+
 /** An element of the app by the part it draws, as the theme file names it, and by its variant if it has one. */
 export function partIn(scope: Locator | Page, name: string, variant?: string): Locator {
   const variantSelector = variant === undefined ? "" : `[data-variant="${variant}"]`;

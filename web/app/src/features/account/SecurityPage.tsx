@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card, cardLook, partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { BackupCodesSection } from "./BackupCodesSection.tsx";
@@ -12,9 +12,12 @@ export function SecurityPage() {
   usePageTitle(t("security.title"));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("security.title")} level={1}>
-        <p {...partOf(part.text)}>{t("security.intro")}</p>
-      </Card>
+      <Card
+        heading={t("security.title")}
+        level={1}
+        look={cardLook.pageHead}
+        intro={t("security.intro")}
+      />
       <PasswordSection />
       <PasskeysSection />
       <CodeAppSection />

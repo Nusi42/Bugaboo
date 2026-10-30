@@ -86,11 +86,18 @@ export const legendLook = {
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;
 
+/** How a group of choices is laid out besides the usual: a grid that wraps, several in a row (the colors). */
+export const choiceGroupLook = { grid: "grid" } as const;
+export type ChoiceGroupLook = (typeof choiceGroupLook)[keyof typeof choiceGroupLook];
+
 /** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */
 export const appLayoutLook = { phone: "phone", side: "side", sideNarrow: "side-narrow" } as const;
 
-/** How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width. */
-export const cardLook = { openOnPhone: "open-on-phone" } as const;
+/**
+ * How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width; or the
+ * head of a page whose sections are cards of their own, with its heading and introduction on the page, never a frame.
+ */
+export const cardLook = { openOnPhone: "open-on-phone", pageHead: "page-head" } as const;
 export type CardLook = (typeof cardLook)[keyof typeof cardLook];
 
 /** How a row of the issue list is drawn besides the usual: the two lines of a phone, or of the slim list beside an open issue. */

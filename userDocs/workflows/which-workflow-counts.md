@@ -8,7 +8,7 @@ A place can also use a workflow that exists already, for example the workflow *B
 
 ## Who may change workflows
 
-The permission **Manage workflows** is needed. Administrators have it everywhere and Project leads have it in their projects. An access key never holds it: workflows stay in the app, where you are signed in.
+The permission **Manage workflows** is needed. Administrators have it everywhere and Project leads have it in their projects. An access key never holds it: workflows stay in the app, where you're signed in.
 
 A workflow that is used in several places is changed by somebody who holds the permission at all of them: for a workflow used in one project, a Project lead of that project; for a workflow used for the whole organization, an administrator.
 
