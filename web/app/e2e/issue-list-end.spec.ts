@@ -8,7 +8,7 @@ import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { setBox } from "./support/list-keys.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, roomUnderLastRow } from "./support/windows.ts";
 
 // The end of a long list (UX §4.2; M5 exit R2): room under the last row.
 
@@ -35,14 +35,8 @@ test.describe("the end of a long list", () => {
         }),
       )
       .toBeLessThanOrEqual(1);
-    await page.waitForTimeout(500);
-    await scroll.evaluate((box) => {
-      box.scrollTop = box.scrollHeight;
-    });
-    const rows = page.locator("[data-part='list-scroll'] [data-part='list-row']");
-    const last = await boxOf(rows.last());
-    const box = await boxOf(scroll);
-    expect(box.y + box.height - (last.y + last.height)).toBeGreaterThanOrEqual(8);
+    // The last page of rows may still be drawn: at the end again, until the last row stands whole above the room.
+    await expect.poll(() => roomUnderLastRow(scroll)).toBeGreaterThanOrEqual(8);
   });
 
   test("ux_4_2 the bar of many ticked issues stands whole at the foot of the list in the window, with no row under it", async ({

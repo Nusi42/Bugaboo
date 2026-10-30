@@ -245,3 +245,15 @@ export function roomUnderContent(box: Locator): Promise<number> {
     return end - contentEnd - Number(getComputedStyle(node).paddingBottom.replace("px", ""));
   });
 }
+
+/** Scrolls a box of rows of a list to its end and says how much room is under its last row. */
+export async function roomUnderLastRow(scroll: Locator): Promise<number> {
+  await scroll.evaluate((box) => {
+    box.scrollTop = box.scrollHeight;
+  });
+  const [last, box] = await Promise.all([
+    boxOf(partIn(scroll, part.listRow).last()),
+    boxOf(scroll),
+  ]);
+  return box.y + box.height - (last.y + last.height);
+}
