@@ -12,8 +12,9 @@ import {
 import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
-import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
-import { controlKindOf, hasNoGenericControl, isLockedBelow, wordsOf } from "./texts.ts";
+import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
+import { SettingRow, type ControlRenderer } from "./SettingRow.tsx";
+import { controlKindOf, hasNoGenericControl, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {

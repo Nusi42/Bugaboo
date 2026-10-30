@@ -3,18 +3,9 @@ import { Button, buttonLook, Switch, partOf, part } from "@bugaboo/ui";
 import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
+import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { controlKindOf, isLockedBelow, sourceInWords, wordsOf } from "./texts.ts";
-
-/** What a row can do with its setting. */
-export interface SettingActions {
-  /** A new value, to be shown at once and sent. */
-  readonly onChange: (key: string, value: SettingValue) => void;
-  /** *Reset to default*: takes the value of this level away. */
-  readonly onReset: (key: string) => void;
-  /** Locks or unlocks the organization's value; only given on the organization's own level. */
-  readonly onLock?: (key: string, locked: boolean) => void;
-}
+import { controlKindOf, sourceInWords, wordsOf } from "./texts.ts";
 
 /** A control a page draws for one setting instead of the generic one (a theme with its sample). */
 export type ControlRenderer = (
