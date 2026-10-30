@@ -13,7 +13,7 @@ import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
 import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
-import { controlKindOf, hasNoGenericControl, wordsOf } from "./texts.ts";
+import { controlKindOf, hasNoGenericControl, isLockedBelow, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
@@ -30,16 +30,28 @@ export interface SettingsFormProps {
   readonly controls?: Readonly<Record<string, ControlRenderer>>;
 }
 
-/** Whether a setting is drawn: by the generic controls, or by one the page brings. */
-function isDrawn(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
-  const ownControl = controls !== undefined && Object.hasOwn(controls, setting.key);
-  return ownControl || !hasNoGenericControl(setting);
+/** Whether the page draws the control of a setting itself (a theme with its sample). */
+function hasOwnControl(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
+  return controls !== undefined && Object.hasOwn(controls, setting.key);
 }
 
-/** Whether a setting waits for its own Save button: a box typed in, not a switch, a choice or a page's own control. */
-function savesWithButton(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
-  const ownControl = controls !== undefined && Object.hasOwn(controls, setting.key);
-  return !ownControl && controlKindOf(setting) === "typed";
+/** Whether a setting is drawn: by the generic controls, or by one the page brings. */
+function isDrawn(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
+  return hasOwnControl(setting, controls) || !hasNoGenericControl(setting);
+}
+
+/** How a change of a setting is saved: at once, with its own Save button, or not at all (locked above this level). */
+function howSaved(
+  setting: Setting,
+  actions: SettingActions,
+  controls: SettingsFormProps["controls"],
+): "at-once" | "with-save" | "never" {
+  if (isLockedBelow(setting, actions)) {
+    return "never";
+  }
+  return !hasOwnControl(setting, controls) && controlKindOf(setting) === "typed"
+    ? "with-save"
+    : "at-once";
 }
 
 /** Whether every word the person typed is in the name or the explanation of the setting. */
@@ -65,9 +77,8 @@ export function SettingsForm({
   const drawn = settings.filter((setting) => isDrawn(setting, controls));
   const shown = drawn.filter((setting) => matches(setting, query));
   // Where a switch stands beside a box with its own Save, the page says which is saved when (R7).
-  const twoWays =
-    drawn.some((setting) => savesWithButton(setting, controls)) &&
-    drawn.some((setting) => !savesWithButton(setting, controls));
+  const ways = new Set(drawn.map((setting) => howSaved(setting, actions, controls)));
+  const twoWays = ways.has("at-once") && ways.has("with-save");
   return (
     <div {...partOf(part.stack)}>
       {searchable ? (

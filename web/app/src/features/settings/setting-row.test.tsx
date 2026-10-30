@@ -71,5 +71,7 @@ describe("cfg_06 a page whose settings save in two ways", () => {
     expect(formOf([typed, switched])).toContain(t("setting.ui.saved-at-once"));
     expect(formOf([typed])).not.toContain(t("setting.ui.saved-at-once"));
     expect(formOf([switched])).not.toContain(t("setting.ui.saved-at-once"));
+    // A box an administrator locked above this level is not saved at all, so it does not count.
+    expect(formOf([locked, switched])).not.toContain(t("setting.ui.saved-at-once"));
   });
 });

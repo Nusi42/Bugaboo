@@ -1,6 +1,7 @@
 import { isMessageKey, t } from "@bugaboo/messages";
 
 import { type Setting } from "../../shared/my-settings.ts";
+import type { SettingActions } from "./SettingRow.tsx";
 
 /**
  * The words for a key of the message catalog that the server named. A key this version of the
@@ -59,4 +60,9 @@ export function controlKindOf(setting: Setting): ControlKind {
     return "time-zone";
   }
   return hasNoGenericControl(setting) ? "none" : "typed";
+}
+
+/** Whether an administrator locked the setting above this level: it is shown read only and cannot be changed here. */
+export function isLockedBelow(setting: Setting, actions: Pick<SettingActions, "onLock">): boolean {
+  return setting.locked && actions.onLock === undefined;
 }

@@ -12,7 +12,7 @@ export function SecurityPage() {
   usePageTitle(t("security.title"));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("security.title")} level={1} intro={t("security.intro")}></Card>
+      <Card heading={t("security.title")} level={1} intro={t("security.intro")} />
       <PasswordSection />
       <PasskeysSection />
       <CodeAppSection />

@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { controlKindOf, sourceInWords, wordsOf } from "./texts.ts";
+import { controlKindOf, isLockedBelow, sourceInWords, wordsOf } from "./texts.ts";
 
 /** What a row can do with its setting. */
 export interface SettingActions {
@@ -58,7 +58,7 @@ function Locked({ setting }: { readonly setting: Setting }) {
  * shown read only and says so.
  */
 export function SettingRow({ setting, actions, control }: SettingRowProps) {
-  const lockedBelow = setting.locked && actions.onLock === undefined;
+  const lockedBelow = isLockedBelow(setting, actions);
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
   };
