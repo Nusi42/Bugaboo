@@ -143,6 +143,8 @@ pub const REFUSED: &[&str] = &[
     "sort priority",
     "sort by",
     "sort by priority, sideways first",
+    // After a key, the words of a direction are its direction: a field named so is quoted.
+    "sort by priority, z to",
     "sort by nothing",
     "status = Open",
     "status is Open, priority is high",
