@@ -702,6 +702,8 @@ mixin "input-box" {
 mixin "pick-row" {
     display flex
     flex-direction column
+    // A row of one line stands in the middle of its height, as a row of two lines does (M2 07).
+    justify-content center
     gap "$space-1"
     box-sizing border-box
     min-height "$size-control"
@@ -1683,8 +1685,10 @@ part "overlay.modal[variant=bottom]" {
     border-radius "$r-card $r-card 0 0"
 }
 
+// The menu that slides in on a tablet is the sidebar of a computer: as wide inside its own padding, so its items keep the
+// room they have there (*Quick search* beside its keys on one line, M2 15).
 part "overlay.modal[variant=start]" {
-    width "$size-sidebar"
+    width "calc($size-sidebar + 2 * $space-2)"
     max-width "$size-sheet-share"
     height "100%"
     border-radius "0 $r-card $r-card 0"
@@ -4052,7 +4056,6 @@ part "people" {
 part "people.person" {
     use "pick-row"
     position relative
-    justify-content center
     padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
     border-bottom "$border-width solid $divider"
 }
