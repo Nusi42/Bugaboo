@@ -187,6 +187,7 @@ export function shootWholeAs(
 /**
  * Takes the window as it is in the theme it shows, as `<name>-<theme>.png` in the folder of the
  * milestone, without growing it to the page: for a list that reads more rows when it is made taller.
+ * Does nothing when no folder is wanted, like every picture of a demo.
  */
 export async function shootWindowAs(
   page: Page,
@@ -194,6 +195,9 @@ export async function shootWindowAs(
   milestone: string,
   theme: string,
 ): Promise<void> {
+  if (screenshotFolder === undefined) {
+    return;
+  }
   await pointerAway(page);
   await expectLook(page, theme);
   await page.screenshot({ path: join(folderOf(milestone), `${name}-${theme}.png`) });
