@@ -74,6 +74,7 @@
   --list-gutter: 0px;
   --list-width: 0px;
   --bp-window-side: 880px;
+  --bp-list-beside: 876px;
   --bp-window-wide: 1200px;
   --size-day-week: 16px;
   --ring-width: 2px;
@@ -2438,14 +2439,22 @@ optgroup {
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
+  container-type: inline-size;
 }
 
 [data-part="list-body"] {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: var(--space-4);
   min-width: 0;
+}
+
+@container (max-width: 876px) {
+  [data-part="list-body"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 [data-part="list-column"] {
@@ -2687,6 +2696,12 @@ optgroup {
   max-height: 100%;
   min-height: 0;
   overflow-y: auto;
+}
+
+@container (max-width: 876px) {
+  [data-part="list-panel"] {
+    flex: none;
+  }
 }
 
 @supports (animation-timeline: scroll()) {
@@ -7795,6 +7810,12 @@ optgroup {
 
 [data-part="list-column"]:has([data-part="list-scroll"]) {
   min-height: 0;
+}
+
+@container (max-width: 876px) {
+  [data-part="list-column"]:has([data-part="list-scroll"]) {
+    flex: 1 1 0;
+  }
 }
 
 [data-part="app-layout"][data-variant~="phone"]

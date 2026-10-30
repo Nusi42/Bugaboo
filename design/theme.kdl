@@ -163,6 +163,9 @@ tokens {
     // The width of the head of the list as the browser measured it (its columns at their least, at least the frame): the code gives it to the virtualized rows, which have no width of their own, so a list wider than its box scrolls sideways, head and rows together; none where there is no head.
     size "list-width" "0px" run-time="true"
     size "bp-window-side" "880px"
+    // Narrower than this the list has no room for Customize beside it (its least width, the gap and the panel's): the
+    // panel stands under the list, as high as its columns, and the list takes the rest.
+    size "bp-list-beside" "876px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
     size "size-day-week" "16px"
@@ -2435,15 +2438,21 @@ part "list-main" {
     flex-direction column
     gap "$space-3"
     min-width 0
+    container-type inline-size
 }
 
-// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the list.
+// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the
+// list, where the list has no room for it beside (bp-list-beside).
 part "list-body" {
     display flex
-    flex-wrap wrap
+    flex-wrap nowrap
     align-items flex-start
     gap "$space-4"
     min-width 0
+    container "(max-width: $bp-list-beside)" {
+        flex-direction column
+        align-items stretch
+    }
 }
 
 part "list-column" {
@@ -2673,6 +2682,10 @@ part "list-panel" {
     max-height "100%"
     min-height 0
     overflow-y auto
+    // Under the list it is as high as its columns.
+    container "(max-width: $bp-list-beside)" {
+        flex none
+    }
 }
 
 part "list-panel::before" {
@@ -13979,9 +13992,13 @@ part "list-editor:has(list-main)" {
     flex-wrap nowrap
 }
 
-// The list column fills the line it stands in, and its frame the column.
+// The list column fills the line it stands in, and its frame the column. With Customize under it the list takes the
+// room the panel's columns leave.
 part "list-column:has(list-scroll)" {
     min-height 0
+    container "(max-width: $bp-list-beside)" {
+        flex "1 1 0"
+    }
 }
 
 part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {

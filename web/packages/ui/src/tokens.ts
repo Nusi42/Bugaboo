@@ -19,6 +19,7 @@ export const pageAttributes = {
 /** Where the layout changes, in pixels (the `bp-*` tokens). */
 export const breakpoints = {
   windowSide: 880,
+  listBeside: 876,
   windowWide: 1200,
   tablet: 768,
   computer: 1280,
@@ -181,6 +182,7 @@ export const tokenNames = [
   "list-gutter",
   "list-width",
   "bp-window-side",
+  "bp-list-beside",
   "bp-window-wide",
   "size-day-week",
   "ring-width",

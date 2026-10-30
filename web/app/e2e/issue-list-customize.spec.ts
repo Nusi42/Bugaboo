@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
-import { boxOf, shadowsOf } from "./support/windows.ts";
+import { boxOf, roomUnderContent, shadowsOf } from "./support/windows.ts";
 
 // *Customize* (UX §4.2): the panel stands beside the list where there is room for both, and under
 // it where there is not.
@@ -63,6 +63,8 @@ test("ux_4_2 Customize under the list is as wide as the list, in more than one c
     .locator("[data-part='list-panel.items']")
     .evaluate((box) => getComputedStyle(box).gridTemplateColumns.split(" ").length);
   expect(columns).toBeGreaterThanOrEqual(2);
+  // The panel is as high as its columns, with no empty room under them; the list takes the rest (review of package A).
+  expect(await roomUnderContent(panel)).toBeLessThanOrEqual(1);
 });
 
 test("ux_4_2 Customize beside the list fits the room the list has: its columns scroll inside it (review of the full-height list)", async ({

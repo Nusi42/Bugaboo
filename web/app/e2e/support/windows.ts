@@ -235,3 +235,13 @@ export async function minimizeADraft(page: Page): Promise<void> {
   await windowButton(page, t("window.minimize")).click();
   await expect(windowDock(page)).toBeVisible();
 }
+
+/** The empty room in a box under its last child, past its own padding: none where the box is as high as its content. */
+export function roomUnderContent(box: Locator): Promise<number> {
+  return box.evaluate((node) => {
+    const end = node.getBoundingClientRect().bottom;
+    const last = node.lastElementChild;
+    const contentEnd = last === null ? end : last.getBoundingClientRect().bottom;
+    return end - contentEnd - Number(getComputedStyle(node).paddingBottom.replace("px", ""));
+  });
+}
