@@ -56,6 +56,9 @@ bb_core::words! {
         /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
         /// (`files::jobs`).
         CleanUpFiles => "files.clean-up",
+        /// Making the statistics the database chooses its indexes by again, from every row, for each
+        /// table that is out of date (SQLite; PostgreSQL keeps its own): `statistics`.
+        RefreshStatistics => "statistics.refresh",
     }
 }
 
@@ -67,6 +70,7 @@ impl JobKind {
         match self {
             Self::CatchUpHistory
             | Self::CleanUpFiles
+            | Self::RefreshStatistics
             | Self::PurgeDrafts
             | Self::PurgeNotifications
             | Self::PruneSecurityLog
@@ -268,13 +272,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::PruneSecurityLog
             | JobKind::PurgeSessions
             | JobKind::RotateServerLog
-            | JobKind::CleanUpFiles => Err(misrouted(job, kind)),
+            | JobKind::CleanUpFiles
+            | JobKind::RefreshStatistics => Err(misrouted(job, kind)),
         }
     }
 
     /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): old drafts, the history
-    /// catching up, old notifications, the security log, sessions, the server log and old files.
-    /// Each queues its next round first (`run_daily`).
+    /// catching up, old notifications, the security log, sessions, the server log, old files and
+    /// the statistics of the database. Each queues its next round first (`run_daily`).
     async fn do_daily_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
         match kind {
             JobKind::PurgeDrafts => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
@@ -360,12 +365,28 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
+            JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
             | JobKind::MailSend
             | JobKind::PreviewFile => Err(misrouted(job, kind)),
         }
+    }
+
+    /// The daily round of `statistics.refresh` (in a function of its own, so `do_daily_job` stays
+    /// short).
+    async fn refresh_statistics_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::RefreshStatistics, async {
+            self.refresh_statistics().await.map(|refreshed| {
+                tracing::info!(refreshed, "the statistics of the database were looked at");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the statistics could not be refreshed");
+            JobFailure::of(&error, FAILED, job)
+        })
     }
 
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
@@ -390,7 +411,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
                 | JobKind::RotateServerLog
-                | JobKind::CleanUpFiles),
+                | JobKind::CleanUpFiles
+                | JobKind::RefreshStatistics),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())

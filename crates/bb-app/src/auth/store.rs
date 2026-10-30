@@ -389,6 +389,9 @@ pub trait AuthStore:
         /// Deletes the oldest whole blocks of the security log whose entries are all older than
         /// `before`, and signs the checkpoint they leave (M1-F21). Returns how many entries went.
         fn prune_security_log(before: Timestamp, now: Timestamp) -> u64;
+        /// Makes the statistics the database chooses its indexes by again, from every row, for each
+        /// table that is out of date. Returns whether it analysed a table.
+        fn refresh_statistics() -> bool;
     }
 
     writes! {

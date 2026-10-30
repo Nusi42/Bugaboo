@@ -243,6 +243,17 @@ impl Sample {
         text
     }
 
+    /// Makes the statistics SQLite chooses its indexes by from every row
+    /// (`Database::refresh_statistics`): the tables were empty when the migrations analysed them,
+    /// and the first searches on the new data are then planned as on a database that grew slowly.
+    ///
+    /// # Errors
+    /// Fails when the database cannot make its statistics.
+    pub async fn refresh_statistics(&self) -> Result<(), SampleError> {
+        self.database.refresh_statistics().await?;
+        Ok(())
+    }
+
     /// Closes the database, so its file holds everything and can be copied.
     pub async fn close(self) {
         self.database.close().await;

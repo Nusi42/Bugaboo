@@ -37,3 +37,7 @@ review; every job type has an idempotency test (part of ARCH-EVENTS test harness
 ## Amendment (M4 WP-05)
 
 - **Kinds of files.** `files.preview` makes the preview of one attachment (the payload names the attachment, not the file): every attachment has a job of its own, also one of a file that is stored already, which takes an existing preview of the same content only when it runs. It is not daily. `files.clean-up` is a daily job: unfinished uploads a day after their last part, attachments after their 30 days in the trash, and files that nothing points to. Both are idempotent, and a preview job that failed for good ends the attachment (and the file, while nobody made a preview) as *without* a preview.
+
+## Amendment (M5, nightly speed runs)
+
+- **Statistics of the database.** `statistics.refresh` is a daily job, queued at every start like the others: on SQLite it runs SQLite's own `ANALYZE` of each table that SQLite reports out of date (it has rows and no statistics yet, or grew or shrank tenfold), one table at a time, and writes an empty table down as empty; otherwise it does nothing. PostgreSQL keeps its own statistics, and the job does nothing there. It writes no event: it changes no data. Idempotent: a second round finds nothing out of date (`adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_nothing`, both databases).
