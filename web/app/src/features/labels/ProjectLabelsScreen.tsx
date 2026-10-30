@@ -54,17 +54,21 @@ function ProjectLabels({ project, name }: { readonly project: string; readonly n
   const groups = labels.groups;
   return (
     <>
-      <Card heading={t("labels.project-title", { project: name })} level={1}>
-        <p {...partOf(part.text)}>{t("labels.project-intro")}</p>
+      <Card
+        heading={t("labels.project-title", { project: name })}
+        level={1}
+        intro={t("labels.project-intro")}
+      >
         {labels.isError ? <Alert tone={alertTone.danger}>{messageOf(labels.error)}</Alert> : null}
         <Groups project={project} groups={groups} />
       </Card>
-      <Card heading={t("labels.project-create-title")}>
-        <p {...partOf(part.text)}>{t("labels.project-create-intro")}</p>
+      <Card heading={t("labels.project-create-title")} intro={t("labels.project-create-intro")}>
         <CreateLabelGroupForm project={project} />
       </Card>
-      <Card heading={t("labels.project-create-label-title")}>
-        <p {...partOf(part.text)}>{t("labels.project-create-label-intro")}</p>
+      <Card
+        heading={t("labels.project-create-label-title")}
+        intro={t("labels.project-create-label-intro")}
+      >
         <CreateLabelForm groups={groups} inGroupsOnly />
       </Card>
     </>

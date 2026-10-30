@@ -34,7 +34,7 @@ export function ChoicePicker({ kind, project, value, onPick }: ChoicePickerProps
       {...frame}
       {...pickerStatus(found, shown.length, {
         nothing: t("assignments.pick-nothing"),
-        more: t("assignments.pick-more"),
+        more: t(people ? "assignments.pick-more-people" : "assignments.pick-more-groups"),
       })}
     >
       {shown.map((choice) => (

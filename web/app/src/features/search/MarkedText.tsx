@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { piecesOf, type MarkKind, type Piece } from "./marks.ts";
 
 /** A zero-width character after the text, so a text that ends in a new line keeps the room of its last line. */
-const roomForTheLastLine = "​";
+const roomForTheLastLine = "\u200B";
 
 export interface MarkedTextProps {
   readonly text: string;

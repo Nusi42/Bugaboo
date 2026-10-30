@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, ariaCurrent } from "@bugaboo/ui";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { useOnResize } from "../../shared/use-on-resize.ts";
 
@@ -23,11 +23,13 @@ export interface LevelsViewProps<Subject extends string, Level extends string> {
   /** What the table is, for the region that scrolls. */
   readonly tableName: string;
   readonly onChange: (change: Change<Subject, Level>) => void;
+  /** The role chosen beside the matrix (for its preview): its column is scrolled into view and marked. */
+  readonly chosen?: string | undefined;
 }
 
 interface MatrixRowProps<Subject extends string, Level extends string> extends Pick<
   LevelsViewProps<Subject, Level>,
-  "table" | "subjectName" | "levelName" | "onChange"
+  "table" | "subjectName" | "levelName" | "onChange" | "chosen"
 > {
   readonly row: Row<Subject, Level>;
 }
@@ -39,6 +41,7 @@ function MatrixRow<Subject extends string, Level extends string>({
   subjectName,
   levelName,
   onChange,
+  chosen,
 }: MatrixRowProps<Subject, Level>) {
   const inProject = table.project !== undefined && table.project !== null;
   const typed = table.issue_type !== undefined && table.issue_type !== null;
@@ -51,7 +54,10 @@ function MatrixRow<Subject extends string, Level extends string>({
       {row.cells.map((cell) => {
         const roleName = table.roles.find((known) => known.id === cell.role)?.name ?? "";
         return (
-          <td key={cell.role} {...partOf(part.accessMatrixCell)}>
+          <td
+            key={cell.role}
+            {...partOf(part.accessMatrixCell, { states: [cell.role === chosen && "chosen"] })}
+          >
             <CellControl
               label={t("access.cell-label", { subject, role: roleName })}
               subjectName={subject}
@@ -74,11 +80,35 @@ function MatrixRow<Subject extends string, Level extends string>({
   );
 }
 
+/** Where a region that scrolls sideways is, and where a column inside it is, in pixels. */
+interface Sideways {
+  readonly scrollLeft: number;
+  readonly clientWidth: number;
+  /** The width of the names, which stay at the start. */
+  readonly names: number;
+  readonly left: number;
+  readonly width: number;
+}
+
 /**
- * Whether the region has more to the side than it shows, kept up to date while the page is resized
- * and while the table grows or shrinks inside the region (a role is added).
+ * Where to scroll the region, as little as it takes, so that a column stands whole beside the names (UX §5.2); none
+ * when it already does.
  */
-function useScrollsSideways() {
+function scrollFor(at: Sideways): number | undefined {
+  const start = at.left - at.names;
+  const end = at.left + at.width - at.clientWidth;
+  if (at.scrollLeft > start) {
+    return start;
+  }
+  return at.scrollLeft < end ? end : undefined;
+}
+
+/**
+ * The region of the matrix: whether it has more to the side than it shows, kept up to date while the page is resized
+ * and while the table grows or shrinks inside the region (a role is added), and the column of the chosen role
+ * (its place in the table, 0 for none) scrolled into view whenever the choice changes.
+ */
+function useRegion(chosenAt: number) {
   const region = useRef<HTMLElement>(null);
   const table = useRef<HTMLTableElement>(null);
   const [scrolls, setScrolls] = useState(false);
@@ -87,7 +117,57 @@ function useScrollsSideways() {
   }, []);
   const watched = useCallback(() => [region.current, table.current], []);
   useOnResize(measure, watched);
+  useLayoutEffect(() => {
+    const box = region.current;
+    const cells = table.current?.rows[0]?.cells;
+    const names = cells?.[0];
+    const head = cells?.[chosenAt];
+    if (box === null || names === undefined || head === undefined || chosenAt < 1) {
+      return;
+    }
+    const left = scrollFor({
+      scrollLeft: box.scrollLeft,
+      clientWidth: box.clientWidth,
+      names: names.offsetWidth,
+      left: head.offsetLeft,
+      width: head.offsetWidth,
+    });
+    // Only the region moves; the page stays where it is.
+    if (left !== undefined) {
+      box.scrollTo({ left });
+    }
+  }, [chosenAt]);
   return { region, table, scrolls };
+}
+
+/** The heads of the columns: what the rows are, then every role, the chosen one marked. */
+function MatrixHead<Subject extends string, Level extends string>({
+  table,
+  subjectHeading,
+  chosen,
+}: Pick<LevelsViewProps<Subject, Level>, "table" | "subjectHeading" | "chosen">) {
+  return (
+    <thead>
+      <tr {...partOf(part.accessMatrixRow)}>
+        <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
+          {subjectHeading}
+        </th>
+        {table.roles.map((role) => (
+          <th
+            key={role.id}
+            scope={column}
+            {...partOf(part.accessMatrixCell, {
+              variants: ["head"],
+              states: [role.id === chosen && "chosen"],
+            })}
+            {...(role.id === chosen ? { "aria-current": ariaCurrent.chosen } : {})}
+          >
+            {role.name}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
 }
 
 /**
@@ -101,7 +181,12 @@ export function LevelsMatrix<Subject extends string, Level extends string>({
   tableName,
   ...rest
 }: LevelsViewProps<Subject, Level>) {
-  const { region, table: tableElement, scrolls } = useScrollsSideways();
+  // The first column holds the names, so the column of a role is one after its place in the list.
+  const {
+    region,
+    table: tableElement,
+    scrolls,
+  } = useRegion(table.roles.findIndex((role) => role.id === rest.chosen) + 1);
   const noteId = useId();
   return (
     <>
@@ -117,22 +202,7 @@ export function LevelsMatrix<Subject extends string, Level extends string>({
         {...(scrolls ? { "aria-describedby": noteId } : {})}
       >
         <table ref={tableElement} {...partOf(part.accessMatrix)}>
-          <thead>
-            <tr {...partOf(part.accessMatrixRow)}>
-              <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
-                {subjectHeading}
-              </th>
-              {table.roles.map((role) => (
-                <th
-                  key={role.id}
-                  scope={column}
-                  {...partOf(part.accessMatrixCell, { variants: ["head"] })}
-                >
-                  {role.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          <MatrixHead table={table} subjectHeading={subjectHeading} chosen={rest.chosen} />
           <tbody>
             {table.rows.map((row) => (
               <MatrixRow key={row.subject} table={table} row={row} {...rest} />

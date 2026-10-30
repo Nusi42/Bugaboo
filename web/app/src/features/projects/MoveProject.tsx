@@ -51,7 +51,6 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
   const ready = picked !== null && preview.isSuccess && !preview.data.blocked;
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.text)}>{t("projects.move-text", { name })}</p>
       <Outcome failed={move.isError ? messageOf(move.error) : null} moved={moved} name={name} />
       <div {...partOf(part.row)}>
         <ConfirmDialog

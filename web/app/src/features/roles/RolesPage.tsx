@@ -11,12 +11,10 @@ import { RoleList } from "./RoleList.tsx";
 function Roles() {
   return (
     <>
-      <Card heading={t("nav.roles")} level={1}>
-        <p {...partOf(part.text)}>{t("roles.intro")}</p>
+      <Card heading={t("nav.roles")} level={1} intro={t("roles.intro")}>
         <RoleList />
       </Card>
-      <Card heading={t("roles.create-title")}>
-        <p {...partOf(part.text)}>{t("roles.create-intro")}</p>
+      <Card heading={t("roles.create-title")} intro={t("roles.create-intro")}>
         <CreateRoleForm />
       </Card>
     </>

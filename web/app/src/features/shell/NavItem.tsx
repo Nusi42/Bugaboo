@@ -1,9 +1,8 @@
-import { Icon, type IconName, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Icon, type IconName, RowChevron, partOf, part, ariaCurrent } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
-/** Words of the ARIA standard and of React Aria Components, not text for people. */
-const currentPage = "page";
+/** Words of React Aria Components, not text for people. */
 const tooltipSide = { end: "end" } as const;
 
 interface ItemProps {
@@ -108,7 +107,7 @@ export function NavLink({
       <Link
         {...partOf(part.navItem)}
         href={href}
-        {...(current ? { "aria-current": currentPage } : {})}
+        {...(current ? { "aria-current": ariaCurrent.page } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
         <Content

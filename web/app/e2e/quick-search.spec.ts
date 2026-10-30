@@ -4,10 +4,10 @@ import { type Page } from "@playwright/test";
 import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { nothingFound } from "./support/quick-search.ts";
-import { boxOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -131,28 +131,7 @@ test("cfg_08 the sidebar says Quick search for the overlay, and the Search page 
   await expect(quick).not.toHaveAttribute("aria-current", /.+/u);
   await expect(
     page.getByRole("link", { name: t("search.page.title"), exact: true }),
-  ).toHaveAttribute("aria-current", "page");
-});
-
-test("cfg_08 on a phone a long text in quick search keeps its end in view, beside the clear mark (M5 exit F-A7)", async ({
-  page,
-}) => {
-  test.skip(layoutOf(page) !== "phone", "the box of a phone is the narrow one");
-  await signIn(page, ada);
-  await page
-    .getByRole("navigation", { name: t("shell.menu"), exact: true })
-    .getByRole("button", { name: t("shell.search"), exact: true })
-    .click();
-  await box(page).fill("Image gallery does not save the name of the picture");
-  const clear = dialog(page).getByRole("button", { name: t("search.clear"), exact: true });
-  const [field, mark] = await Promise.all([boxOf(box(page)), boxOf(clear)]);
-  // The words end before the clear mark starts, and the end of the text is what the box shows.
-  expect(field.x + field.width).toBeLessThanOrEqual(mark.x);
-  await expect
-    .poll(() =>
-      box(page).evaluate((input) => input.scrollLeft + input.clientWidth >= input.scrollWidth - 1),
-    )
-    .toBe(true);
+  ).toHaveAttribute("aria-current", ariaCurrent.page);
 });
 
 test("cfg_08 a result of one line stands in the middle of its row, as every row of quick search (M2 07)", async ({

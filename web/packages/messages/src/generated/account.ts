@@ -61,8 +61,8 @@ export const messages = {
   "backup.saved": "I have saved them",
   "sessions.title": "Where you're signed in",
   "sessions.intro":
-    "Each line is a place where you are signed in, like a browser. Sign out of the ones you do not know.",
-  "sessions.list": "Places where you are signed in",
+    "Each line is a place where you're signed in, like a browser. Sign out of the ones you do not know.",
+  "sessions.list": "Places where you're signed in",
   "sessions.this": "This browser",
   "sessions.device": "{browser} on {system}",
   "sessions.unknown-device": "A browser we do not know",

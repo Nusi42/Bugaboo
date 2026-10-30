@@ -47,8 +47,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
   }));
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("projects.title")} level={1}>
-        <p {...partOf(part.text)}>{t("projects.intro")}</p>
+      <Card heading={t("projects.title")} level={1} intro={t("projects.intro")}>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         {list.isSuccess && rows.length === 0 ? (
           <p {...partOf(part.muted)}>{t("projects.none-yet")}</p>
@@ -65,8 +64,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
         )}
         <ShowMoreOf label={t("projects.more")} list={list} />
       </Card>
-      <Card heading={t("projects.create-title")}>
-        <p {...partOf(part.text)}>{t("projects.create-intro")}</p>
+      <Card heading={t("projects.create-title")} intro={t("projects.create-intro")}>
         <CreateProjectForm />
       </Card>
     </div>

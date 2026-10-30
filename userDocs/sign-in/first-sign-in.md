@@ -10,7 +10,7 @@ You need the setup code. [Where to find it](../install/README.md#the-setup-code)
 4. **Keep it safe.** A password alone can be guessed or stolen. You can add a second check now, or later in "Sign-in and security":
    - A **passkey** lets you sign in with the fingerprint, face or screen lock of your device.
    - A **code app** on your phone shows a new six-digit code every 30 seconds. Scan the picture with the app and type the code it shows. Bugaboo then shows your **backup codes**. They are shown only once. Save them somewhere safe, then press "I have saved them".
-5. **Done.** Press "Open Bugaboo". You are signed in.
+5. **Done.** Press "Open Bugaboo". You're signed in.
 
 The setup closes for good after the first account. The address `/setup` then leads to the sign-in page.
 

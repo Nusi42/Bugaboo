@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -15,8 +15,7 @@ export function PasskeysSection() {
   const passkeys = useQuery(twoStepOptions()).data?.passkeys ?? [];
   const [removed, setRemoved] = useState(false);
   return (
-    <Card heading={t("passkeys.title")}>
-      <p {...partOf(part.text)}>{t("passkeys.intro")}</p>
+    <Card heading={t("passkeys.title")} intro={t("passkeys.intro")}>
       {available === false ? (
         <Alert tone={alertTone.warning}>{t("passkeys.unavailable")}</Alert>
       ) : null}

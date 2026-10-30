@@ -3,6 +3,7 @@ import { Card, useLayout, partOf, part, type IconName } from "@bugaboo/ui";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useId, type ReactNode } from "react";
 
+import { deepestAround } from "../../shared/paths.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
@@ -31,7 +32,7 @@ export interface TopicListProps {
     readonly name: MessageKey;
     readonly icon: IconName;
   }[];
-  /** The page that is open, whose topic is marked; none on the page that lists them. */
+  /** The page that is open, whose topic (the deepest that holds it) is marked; none on the screen of the menu. */
   readonly pathname?: string | undefined;
   /** The ID of what names the list, for screen readers. */
   readonly labelledBy?: string;
@@ -41,6 +42,10 @@ export interface TopicListProps {
 export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
   // On a phone the menu is a page of its own, and each topic opens one: the chevron says so.
   const phone = useLayout() === "phone";
+  const current = deepestAround(
+    topics.map((topic) => topic.path),
+    pathname,
+  );
   return (
     <ul
       {...partOf(part.settingsFrameTopics)}
@@ -52,7 +57,7 @@ export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
             href={topic.path}
             icon={topic.icon}
             label={t(topic.name)}
-            current={pathname === topic.path}
+            current={current === topic.path}
             opens={phone}
           />
         </li>
@@ -64,6 +69,11 @@ export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
 /** The topics grouped under their headings, as links. */
 function Topics({ groups, pathname }: TopicsProps) {
   const names = useId();
+  // One topic of all the groups is marked: the deepest that holds the open page.
+  const open = deepestAround(
+    groups.flatMap((group) => group.topics.map((topic) => topic.path)),
+    pathname,
+  );
   return (
     <ul {...partOf(part.settingsFrameGroups)}>
       {groups.map((group) => (
@@ -71,11 +81,7 @@ function Topics({ groups, pathname }: TopicsProps) {
           <span id={headingId(names, group)} {...partOf(part.settingsFrameHeading)}>
             {t(group.heading)}
           </span>
-          <TopicList
-            topics={group.topics}
-            pathname={pathname}
-            labelledBy={headingId(names, group)}
-          />
+          <TopicList topics={group.topics} pathname={open} labelledBy={headingId(names, group)} />
         </li>
       ))}
     </ul>

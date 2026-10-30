@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
@@ -11,8 +11,7 @@ const TOPICS = "appearance.";
 export function ThemesPage() {
   usePageTitle(t("nav.themes"));
   return (
-    <Card heading={t("nav.themes")} level={1}>
-      <p {...partOf(part.muted)}>{t("setting.page.themes-intro")}</p>
+    <Card heading={t("nav.themes")} level={1} intro={t("setting.page.themes-intro")}>
       <OrganizationTopic topics={TOPICS} />
     </Card>
   );

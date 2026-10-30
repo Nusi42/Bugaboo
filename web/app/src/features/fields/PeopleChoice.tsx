@@ -91,7 +91,7 @@ function PeopleList({
       {...frame}
       {...pickerStatus(found, people.length, {
         nothing: t("fields.pick-nothing"),
-        more: t("fields.pick-more"),
+        more: t("fields.pick-more-people"),
       })}
     >
       {people.map((person) => (

@@ -17,8 +17,7 @@ export function FieldsPage() {
   const fields = useFields({ retired: true });
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("nav.fields")} level={1}>
-        <p {...partOf(part.text)}>{t("fields.intro")}</p>
+      <Card heading={t("nav.fields")} level={1} intro={t("fields.intro")}>
         {fields.isError ? <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert> : null}
         <QueryGate error={fields.error} data={fields.data}>
           {(page) =>
@@ -42,8 +41,7 @@ export function FieldsPage() {
           }
         </QueryGate>
       </Card>
-      <Card heading={t("fields.create-title")}>
-        <p {...partOf(part.text)}>{t("fields.create-intro")}</p>
+      <Card heading={t("fields.create-title")} intro={t("fields.create-intro")}>
         <CreateFieldForm />
       </Card>
     </div>

@@ -3,7 +3,7 @@ import { iconName } from "@bugaboo/ui/icons";
 
 import { organizationPlaces } from "./organization-places.ts";
 import { ownPlaces } from "./own-places.ts";
-import { paths, type Path } from "./paths.ts";
+import { hasFormOf, isAtOrUnder, paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
@@ -43,6 +43,22 @@ export const places: readonly Place[] = [
 /** The screen at an address, if there is one. */
 export function placeAt(path: string): Place | undefined {
   return places.find((place) => place.path === path);
+}
+
+/**
+ * Whether the screen at `path` is the one that is open: the screen itself, a page under its address (*My settings*
+ * stays marked on its topics) or a screen that belongs under it (a saved search under *Search*, UX §3.3), but Home
+ * only at its own address, since every address is under it.
+ */
+export function isCurrentPlace(path: string, pathname: string): boolean {
+  if (path === paths.home) {
+    return pathname === path;
+  }
+  const open = places.find((place) => hasFormOf(place.path, pathname));
+  return (
+    isAtOrUnder(path, pathname) ||
+    (open !== undefined && trailTo(open.path).some((place) => place.path === path))
+  );
 }
 
 /** The screens a person may open: those that ask for a permission only for people who hold one. */

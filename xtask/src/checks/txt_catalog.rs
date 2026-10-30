@@ -163,15 +163,22 @@ fn starts_with_import(text: &str, module: &str) -> bool {
         && string_literals(first, Quotes::DoubleAndSingle) == [module]
 }
 
-/// Whether a text says "between 4 and 8": the words of a bound that the registry owns.
+/// Whether a text says "between 4 and 8" or "from 4 to 8": the words of a bound that the registry owns.
 fn writes_bounds(message: &str) -> bool {
     let lower = message.to_ascii_lowercase();
-    lower.match_indices("between ").any(|(at, word)| {
+    [("between ", " and "), ("from ", " to ")]
+        .iter()
+        .any(|(before, middle)| numbers_around(&lower, before, middle))
+}
+
+/// Whether a text has a number after `before`, then `middle`, then a number: "between 4 and 8".
+fn numbers_around(lower: &str, before: &str, middle: &str) -> bool {
+    lower.match_indices(before).any(|(at, word)| {
         let rest = &lower[at + word.len()..];
         let digits = rest.chars().take_while(char::is_ascii_digit).count();
         digits > 0
-            && rest[digits..].starts_with(" and ")
-            && rest[digits + 5..].starts_with(|next: char| next.is_ascii_digit())
+            && rest[digits..].starts_with(middle)
+            && rest[digits + middle.len()..].starts_with(|next: char| next.is_ascii_digit())
     })
 }
 
@@ -496,6 +503,15 @@ mod tests {
             r#"{"setting.a.help": "How many. Grows.", "setting.ui.between": "Between {least} and {most}."}"#,
         )];
         assert!(!messages(&evaluate(&plain, &code, &[])).contains("bounds"));
+        // The house wording of the bounds is "from 4 to 8": written into a help, it is found too.
+        let from = [locale(
+            r#"{"setting.a.help": "How many. Whole numbers from 4 to 8.", "setting.ui.between": "Whole numbers from {least} to {most}."}"#,
+        )];
+        let text = messages(&evaluate(&from, &code, &[]));
+        assert!(
+            text.contains("`setting.a.help`") && text.contains("bounds"),
+            "{text}"
+        );
     }
 
     #[test]

@@ -68,12 +68,14 @@ export function ProjectIssueTypesScreen({ address }: { readonly address: string 
           <Card
             heading={t("issue-types.project-title", { project: project.project.name })}
             level={1}
+            intro={t("issue-types.project-intro")}
           >
-            <p {...partOf(part.text)}>{t("issue-types.project-intro")}</p>
             <Types project={project.project.short_name} />
           </Card>
-          <Card heading={t("issue-types.project-create-title")}>
-            <p {...partOf(part.text)}>{t("issue-types.project-create-intro")}</p>
+          <Card
+            heading={t("issue-types.project-create-title")}
+            intro={t("issue-types.project-create-intro")}
+          >
             <CreateIssueTypeForm project={project.project.short_name} />
           </Card>
         </>

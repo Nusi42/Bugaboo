@@ -22,8 +22,7 @@ export function AccessKeysPage() {
   };
   return (
     <div {...partOf(part.stack)}>
-      <Card heading={t("access-keys.title")} level={1}>
-        <p {...partOf(part.text)}>{t("access-keys.intro")}</p>
+      <Card heading={t("access-keys.title")} level={1} intro={t("access-keys.intro")}>
         {making.step === "idle" ? (
           <div {...partOf(part.row, { variants: ["stretch"] })}>
             <Button

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
@@ -11,8 +11,7 @@ const TOPICS = "security.,auth.access-key-";
 export function SignInRulesPage() {
   usePageTitle(t("nav.sign-in-rules"));
   return (
-    <Card heading={t("nav.sign-in-rules")} level={1}>
-      <p {...partOf(part.muted)}>{t("setting.page.sign-in-rules-intro")}</p>
+    <Card heading={t("nav.sign-in-rules")} level={1} intro={t("setting.page.sign-in-rules-intro")}>
       <OrganizationTopic topics={TOPICS} />
     </Card>
   );

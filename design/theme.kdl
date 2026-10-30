@@ -189,6 +189,8 @@ tokens {
     size "size-palette" "560px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
+    // The least width of a swatch of a color with its name (the longest, "Sky blue") and the tick of the chosen one.
+    size "size-swatch" "calc(96px * $text-scale)"
     size "size-list" "300px"
     // The room the list asks for beside Customize: with this much left over, the panel stands beside the list (UX §4.2); with less it stands under it.
     size "size-list-main" "560px"
@@ -351,30 +353,33 @@ tokens {
     // The dimmed page behind a sheet, a menu or Quick search. Dark in every theme: in the light themes the old
     // fill (the sunken surface at 80%) left the text under the panel readable.
     color "scrim" daylight="#1c2029" paper="#2a2826" dusk="#101217" midnight="#000000" forced="Canvas"
-    color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
-    color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
-    color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
-    color "cat2-fg" daylight="#1556a8" paper="#2c5680" dusk="#8ec3ff" midnight="#86bdff"
-    color "cat3-bg" daylight="#e4f5ea" paper="#e3eddd" dusk="#1f4030" midnight="#0f3020"
-    color "cat3-fg" daylight="#1c6b3c" paper="#3d6534" dusk="#8fe0ae" midnight="#84dca6"
-    color "cat4-bg" daylight="#fff1dc" paper="#f5e6cf" dusk="#4a3519" midnight="#3a2608"
-    color "cat4-fg" daylight="#8a4b00" paper="#86501a" dusk="#ffc277" midnight="#ffbc6b"
-    color "cat5-bg" daylight="#efe9ff" paper="#ece3f1" dusk="#382d5e" midnight="#261c4f"
-    color "cat5-fg" daylight="#5532b8" paper="#674184" dusk="#c6b5ff" midnight="#bfaeff"
-    color "cat6-bg" daylight="#ddf5f3" paper="#dcede9" dusk="#173f3d" midnight="#0a302e"
-    color "cat6-fg" daylight="#0e6560" paper="#2d6559" dusk="#7dddd3" midnight="#72d8cd"
-    color "cat7-bg" daylight="#fbdbda" paper="#efd9d9" dusk="#4b2220" midnight="#3b1311" daylight-more="#fce2e1" paper-more="#f0dddd"
-    color "cat7-fg" daylight="#781511" paper="#682927" dusk="#f98e8b" midnight="#f88581"
-    color "cat8-bg" daylight="#fbf4da" paper="#eeead8" dusk="#473f1e" midnight="#3b3311" dusk-more="#443c1d" midnight-more="#322b0e"
-    color "cat8-fg" daylight="#786411" paper="#685b27" dusk="#f9e38b" midnight="#f8e181"
-    color "cat9-bg" daylight="#daf5fb" paper="#d8eaee" dusk="#20444b" midnight="#11343b" dusk-more="#1f4148" midnight-more="#0f2f36"
-    color "cat9-fg" daylight="#116778" paper="#275d68" dusk="#8be7f9" midnight="#81e4f8"
-    color "cat10-bg" daylight="#eefbda" paper="#e5eed8" dusk="#35441d" midnight="#2a3b11" dusk-more="#32411c" midnight-more="#222f0e"
-    color "cat10-fg" daylight="#4c7411" paper="#4e6827" dusk="#cdf98b" midnight="#c9f881"
-    color "cat11-bg" daylight="#e6eaf0" paper="#e0e2e6" dusk="#2e3642" midnight="#1d2735"
-    color "cat11-fg" daylight="#2e4360" paper="#3a475a" dusk="#a9beda" midnight="#9cb9e2"
-    color "cat12-bg" daylight="#fbe4da" paper="#eeded8" dusk="#4b2d20" midnight="#3b1e11"
-    color "cat12-fg" daylight="#783011" paper="#683b27" dusk="#f9ac8b" midnight="#f8a581"
+    // The twelve colors of choices, labels and tags (UX §7.1), each a fill and its text, with plain names in the catalog
+    // (`choice-color.cat1` Pink … `cat12` Sand). The fills are told apart at a glance in every theme (the `distinct`
+    // rule below), and the text color, the edge of a swatch, is seen on every surface (the `lines` rule).
+    color "cat1-bg" daylight="#ffc8da" paper="#ffe1ef" dusk="#5e2943" midnight="#4d1934" daylight-more="#ffe1ed" paper-more="#ffe1ef" dusk-more="#5e2943" midnight-more="#491831"
+    color "cat1-fg" daylight="#7b4a5c" paper="#83586e" dusk="#d798b3" midnight="#c487a2"
+    color "cat2-bg" daylight="#c0d9fe" paper="#bdd8ff" dusk="#033e67" midnight="#022e4f" daylight-more="#dbebff" paper-more="#d0e4ff" dusk-more="#033e67" midnight-more="#052c4b"
+    color "cat2-fg" daylight="#3e5c7e" paper="#375b81" dusk="#88aee1" midnight="#749bcd"
+    color "cat3-bg" daylight="#b5edc2" paper="#b5edc2" dusk="#034120" midnight="#002b15" daylight-more="#c5f4cf" paper-more="#bbefc7" dusk-more="#034120" midnight-more="#002b15"
+    color "cat3-fg" daylight="#366945" paper="#366945" dusk="#7bb28b" midnight="#6f9a7d"
+    color "cat4-bg" daylight="#ffccaa" paper="#ffc39d" dusk="#5d3818" midnight="#532a01" daylight-more="#ffe5cf" paper-more="#ffdbc2" dusk-more="#543419" midnight-more="#422305"
+    color "cat4-fg" daylight="#7f4c26" paper="#7b4722" dusk="#daa984" midnight="#c99873"
+    color "cat5-bg" daylight="#eed5ff" paper="#ecd2ff" dusk="#422e59" midnight="#311f49" daylight-more="#f6e2ff" paper-more="#f1daff" dusk-more="#422e59" midnight-more="#311f49"
+    color "cat5-fg" daylight="#6c557d" paper="#6a537d" dusk="#b59ccf" midnight="#a289bc"
+    color "cat6-bg" daylight="#b5ebe4" paper="#abe8e3" dusk="#124d49" midnight="#0a3e3a" daylight-more="#c5f2ec" paper-more="#b7ece8" dusk-more="#19423f" midnight-more="#102f2c"
+    color "cat6-fg" daylight="#366864" paper="#2b6663" dusk="#8ac3bd" midnight="#7daea8"
+    color "cat7-bg" daylight="#ffe2df" paper="#ffc5c0" dusk="#561f1a" midnight="#4a160f" daylight-more="#ffe2df" paper-more="#ffdad6" dusk-more="#561f1a" midnight-more="#4a160f"
+    color "cat7-fg" daylight="#905450" paper="#844541" dusk="#d18b81" midnight="#c58275"
+    color "cat8-bg" daylight="#f8e7a4" paper="#ffe99c" dusk="#433905" midnight="#403507" daylight-more="#faeaab" paper-more="#ffe99c" dusk-more="#433905" midnight-more="#332a0a"
+    color "cat8-fg" daylight="#6f6427" paper="#736518" dusk="#b7a771" midnight="#b4a270"
+    color "cat9-bg" daylight="#97e3fc" paper="#91e2fd" dusk="#003543" midnight="#012631" daylight-more="#bff1ff" paper-more="#b2ecff" dusk-more="#003543" midnight-more="#012631"
+    color "cat9-fg" daylight="#056277" paper="#016176" dusk="#74a3b5" midnight="#5297b1"
+    color "cat10-bg" daylight="#dcf7b6" paper="#e9febe" dusk="#364916" midnight="#2a3e0f" daylight-more="#dcf7b6" paper-more="#e9febe" dusk-more="#324118" midnight-more="#222e10"
+    color "cat10-fg" daylight="#556f35" paper="#60733c" dusk="#aabd86" midnight="#99ae78"
+    color "cat11-bg" daylight="#d0d7dd" paper="#cdd5db" dusk="#454647" midnight="#38393a" daylight-more="#e4e9ed" paper-more="#dde3e7" dusk-more="#3b3c3d" midnight-more="#2a2b2b"
+    color "cat11-fg" daylight="#53595e" paper="#51575c" dusk="#b8b9bb" midnight="#a7a8aa"
+    color "cat12-bg" daylight="#e5d7ba" paper="#e7d6bc" dusk="#3b2e19" midnight="#2c2009" daylight-more="#f3e8d4" paper-more="#eee0cb" dusk-more="#3b2e19" midnight-more="#2c2009"
+    color "cat12-fg" daylight="#655940" paper="#655741" dusk="#ac9a81" midnight="#9d8b73"
 
     // The shadow of things that float
     shadow "shadow" daylight="0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" paper="0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914" dusk="0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059" midnight="0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
@@ -483,6 +488,11 @@ contrast min=4.5 {
 
     dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)."
 
+    lines min=3 reason="The edge of a swatch of a choice color is drawn in its text color: it is seen at 3:1 on every surface it stands on, in every theme, so a pale fill is never lost on the card (M5 exit)." {
+        colors "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
+        on "bg-canvas" "bg-surface" "bg-raised"
+    }
+
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent" "on-disabled"
@@ -513,6 +523,14 @@ distinct max-chroma-of-states=3 reason="The tint of Not started is a neutral gre
 distinct min-delta-e-against-surfaces=7.5 reason="The fill of a button with a box that cannot be pressed differs from the page, the panel, the card and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit, F-A9)." {
     states "disabled-fill"
     surfaces "bg-canvas" "bg-surface" "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
+}
+
+// The twelve colors of choices, labels and tags are told apart at a glance in every theme, and from the card they stand on:
+// the pinks, reds and browns, and blue, sky and gray, were nearly the same fill (M5 exit). The muted text stays readable on
+// every fill (cf_04), so the light fills stay light: the warm ones are named for what they look like, Coral and Sand.
+distinct min-delta-e-between-states=15 min-delta-e-against-surfaces=7.5 reason="The fills of the twelve choice colors differ from each other by at least 15 (delta E) and from the plain surfaces by at least 7.5, in every theme (M5 exit)." {
+    states "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
@@ -686,6 +704,9 @@ mixin "control-box" {
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
+    // A hint or a label is one to three lines: balanced, so its last line is never one word alone ("a good password."),
+    // where the `pretty` of the page still left one at some widths. The one wrap of every hint and label.
+    text-wrap balance
 }
 
 // The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
@@ -1094,12 +1115,22 @@ base ":focus-visible" {
 
 // ───────────── Muted text ─────────────
 
-// Text that is less important than its neighbours: a hint, an empty list.
-part "muted" {
+// Text that is less important than its neighbours (a hint, an empty list), and the introduction of a card: the one
+// introduction of every settings page and its sections, small and muted at the full width of the card (UX §5, L3).
+part "muted" "card.intro" {
     margin 0
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
+}
+
+// Short texts of one to three lines (an introduction, a line of a preview, the title of an answer) are balanced, so a
+// last line is never one word alone ("in turn.", "description", "back"), where the `pretty` of the page still left one
+// at some widths. The help of a box is a hint and is balanced by `control-hint`. The words of a switch keep the
+// `pretty` of the page: balanced, a label that nearly fits one line ("Two-step sign-in for everybody") was cut in two
+// at the hyphen of "sign-in".
+part "card.intro" "access.preview-line" "access.subheading" {
+    text-wrap balance
 }
 
 // Words for screen readers only: the name of a column that holds only an icon.
@@ -1281,9 +1312,15 @@ part "field.label" {
     use "control-label"
 }
 
-part "field.description" {
+// The hint under a control: of a box, and of a setting that is a switch or a group of choices, the same size, colour
+// and wrap (control-hint) everywhere.
+part "field.description" "settings.help" {
     use "control-hint"
     line-height "$lh-body"
+}
+
+part "settings.help" {
+    margin 0
 }
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
@@ -1617,6 +1654,16 @@ part "choice-group.choices[variant=stacked]" {
 
 part "choice-group.choices[variant=stacked] choice-group.label" {
     flex 1
+}
+
+// Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
+part "choice-group.choices[variant=grid]" {
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax($size-swatch, 1fr))"
+}
+
+part "choice-group.choices[variant=grid] choice-group.choice" {
+    display flex
 }
 
 // ───────────── Overlay (sheets, menus, quick search) ─────────────
@@ -3601,6 +3648,12 @@ part "app-layout[variant=phone] card[variant=open-on-phone]" {
     use "frameless"
 }
 
+// The head of a page whose sections are cards of their own (Sign-in and security, Labels and tags): its heading and
+// introduction stand on the page above the sections, not in a card that holds nothing else (UX §5.1, L3).
+part "card[variant=page-head]" {
+    use "frameless"
+}
+
 // The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
 part "card.header" {
     display flex
@@ -3901,6 +3954,11 @@ part "account.qr" {
 
 // ───────────── Settings ─────────────
 
+// A control of a setting and its hint stand as close as a box and its hint (a field is column-tight too).
+part "settings.control" {
+    use "column-tight"
+}
+
 part "settings.source" {
     use "control-hint"
     margin 0
@@ -3955,11 +4013,13 @@ part "access.matrix" {
 
 // The shadows at the sides of the table while columns are hidden at that side (the scroll position drives them); where the
 // browser has no scroll-driven animation there is none.
+// The start shadow falls beside the names of the rows, which stay at the start (sticky): the roles hide under the names,
+// not under the outer edge of the box.
 part "access.scroll::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-inline"
         use "edge-from-start"
-        inset-inline-start 0
+        inset-inline-start "$size-matrix-cell"
     }
 }
 
@@ -4015,6 +4075,16 @@ part "access.matrix-cell[variant=head]:first-child" {
     min-width "$size-matrix-cell"
     inset-inline-start 0
     z-index "$z-raised"
+}
+
+// The column of the role chosen beside the matrix for its preview (UX §5.2): its head is marked like the open page of a
+// menu, and its cells carry the same fill, so the column is found at a glance once it is scrolled into view.
+part "access.matrix-cell[state=chosen]" {
+    background "$bg-selected"
+}
+
+part "access.matrix-cell[variant=head][state=chosen]" {
+    use "current-item"
 }
 
 part "access.matrix-row:last-child access.matrix-cell" {
@@ -4915,9 +4985,9 @@ part "bottom-bar.item[hovered]" {
     background "$bg-hover"
 }
 
-// A link of the bar is current on its page; the Search tab, a button that opens quick search, on the Search page and a
-// saved search (its state), so a phone shows where one is like the sidebar does (M5 exit F-A2).
-part "bottom-bar.item[current]" "bottom-bar.item[state=current]" {
+// A tab of the bar is current where its place is open (isCurrentPlace): a link on its page, the Search tab, a button that
+// opens quick search, on the Search page and a saved search, so a phone shows where one is like the sidebar does.
+part "bottom-bar.item[state=current]" {
     use "current-item"
 }
 
@@ -5796,12 +5866,6 @@ part "shortcut-list.alternative" {
     gap "$space-2"
 }
 
-part "shortcuts-page.intro" {
-    margin 0
-    color "$fg"
-    line-height "$lh-body"
-}
-
 part "shortcuts-page.keys" {
     display inline-flex
     flex none
@@ -6065,8 +6129,9 @@ part "files.info" {
     overflow-wrap anywhere
 }
 
-// A word that never breaks at a hyphen: it goes to the next line as a whole, and is cut anywhere only
-// where it is longer than the line itself (file names, like an issue ID).
+// Words that stay one piece in a sentence: a file name that never breaks at a hyphen, a name in a line of people, an
+// example in brackets ("(a Team member)"). The piece goes to the next line as a whole, and is cut anywhere only where it
+// is longer than the line itself (like an issue ID).
 part "unbroken-word" {
     display inline-block
     max-width "100%"
@@ -6164,11 +6229,15 @@ part "label-chip" {
     white-space nowrap
 }
 
+// The square of a label (UX §7.5) is drawn like a swatch of its color: the fill, told apart from the other fills at a
+// glance (the `distinct` rule), and an edge in the text color, seen on every surface. The text colors of two choice
+// colors can look alike at this size; the fills cannot.
 part "label-mark" {
     flex none
     box-sizing border-box
     width "$space-3"
     height "$space-3"
+    border "$border-width solid currentColor"
 }
 
 part "field-text" {
@@ -6217,17 +6286,34 @@ part "field-swatch" {
     min-width "$size-control"
     min-height "$size-control"
     padding 0 "$space-2"
-    border "$border-width solid $border"
+    // The edge is the text color of the swatch, seen at 3:1 on every surface (the `lines` rule of the choice colors).
+    border "$border-width solid currentColor"
     border-radius "$r-ctl"
     background "$bg-sunken"
     color "$fg"
     font-size "$fs-sm"
 }
 
+// The choice of a color (of a label, a tag, a choice of an own field) is a choice group of the grid look with a swatch
+// for each choice. The chosen swatch has a ring and a tick, so it is told by more than its color.
+part "choice-group.choice field-swatch" {
+    flex 1
+    gap "$space-1"
+}
+
+// The tick takes no room until its swatch is chosen.
+part "field-swatch.tick" {
+    display none
+}
+
+part "choice-group.input:checked + field-swatch field-swatch.tick" {
+    display inline-flex
+}
+
 part "choice-group.input:checked + field-swatch" {
     border "$border-width solid $accent"
     box-shadow "0 0 0 $border-width $accent"
-    font-weight "$weight-regular"
+    use "marked"
 }
 
 part "choice-group.input:focus-visible + field-swatch" {
@@ -6323,11 +6409,6 @@ part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[vari
 part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" "label-mark[variant=cat12]" {
     background "$cat12-bg"
     color "$cat12-fg"
-}
-
-// A label in a list is a small filled square in its color (§7.5): the swatch is the color itself, not the pale ground of a pill.
-part "label-mark[variant=cat1]" "label-mark[variant=cat2]" "label-mark[variant=cat3]" "label-mark[variant=cat4]" "label-mark[variant=cat5]" "label-mark[variant=cat6]" "label-mark[variant=cat7]" "label-mark[variant=cat8]" "label-mark[variant=cat9]" "label-mark[variant=cat10]" "label-mark[variant=cat11]" "label-mark[variant=cat12]" {
-    background currentColor
 }
 
 // ───────────── The design pages (docs/design) ─────────────

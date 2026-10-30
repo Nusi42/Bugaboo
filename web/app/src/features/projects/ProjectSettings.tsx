@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, cardLook } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
@@ -27,6 +27,7 @@ export function ProjectSettings({
       <Card
         heading={t("projects.settings-title", { name })}
         level={1}
+        look={cardLook.pageHead}
         back={{ href: projectAddress(shortName), label: t("projects.settings-back") }}
       />
       {mayChange ? (
@@ -52,7 +53,7 @@ export function ProjectSettings({
         </Card>
       ) : null}
       {mayMove ? (
-        <Card heading={t("projects.move-title")}>
+        <Card heading={t("projects.move-title")} intro={t("projects.move-text", { name })}>
           <MoveProject project={project} />
         </Card>
       ) : null}

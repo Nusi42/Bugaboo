@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card, LabelMark, partOf, part } from "@bugaboo/ui";
 
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditLabel } from "./EditLabel.tsx";
@@ -18,6 +18,7 @@ function rowOf(label: Label, props: LabelsSectionProps): ListRow {
   return {
     key: label.id,
     name: label.name,
+    lead: <LabelMark color={label.color} />,
     details: (
       <span {...partOf(part.muted)}>
         {group?.name ?? t("labels.no-label-group")}
@@ -42,7 +43,7 @@ export function LabelsSection(props: LabelsSectionProps) {
         onClose={props.onClose}
       />
       <h3 {...partOf(part.cardTopic)}>{t("labels.create-label-title")}</h3>
-      <p {...partOf(part.text)}>{t("labels.create-label-intro")}</p>
+      <p {...partOf(part.cardIntro)}>{t("labels.create-label-intro")}</p>
       <CreateLabelForm groups={props.groups} />
     </Card>
   );

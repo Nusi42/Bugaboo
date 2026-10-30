@@ -347,33 +347,33 @@ impl Look {
 }
 
 words! {
-    /// The color of a choice: one of the twelve category colors of the theme (UX §7.1). The word
+    /// The color of a choice: one of the twelve choice colors of the theme (UX §7.1). The word
     /// is the name of the pair of tokens in `design/theme.kdl` (`cat3-bg`, `cat3-fg`), so a color
     /// that can be stored is a color every theme has.
     pub enum ChoiceColor {
-        /// Category color 1.
+        /// Choice color 1.
         Cat1 => "cat1",
-        /// Category color 2.
+        /// Choice color 2.
         Cat2 => "cat2",
-        /// Category color 3.
+        /// Choice color 3.
         Cat3 => "cat3",
-        /// Category color 4.
+        /// Choice color 4.
         Cat4 => "cat4",
-        /// Category color 5.
+        /// Choice color 5.
         Cat5 => "cat5",
-        /// Category color 6.
+        /// Choice color 6.
         Cat6 => "cat6",
-        /// Category color 7.
+        /// Choice color 7.
         Cat7 => "cat7",
-        /// Category color 8.
+        /// Choice color 8.
         Cat8 => "cat8",
-        /// Category color 9.
+        /// Choice color 9.
         Cat9 => "cat9",
-        /// Category color 10.
+        /// Choice color 10.
         Cat10 => "cat10",
-        /// Category color 11.
+        /// Choice color 11.
         Cat11 => "cat11",
-        /// Category color 12.
+        /// Choice color 12.
         Cat12 => "cat12",
     }
     messages name = "choice-color."

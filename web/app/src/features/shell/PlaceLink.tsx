@@ -1,17 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { useLocation } from "@tanstack/react-router";
 
-import { paths } from "../../shared/paths.ts";
 import { NavLink } from "./NavItem.tsx";
-import { placeAt, type Place } from "../../shared/places.ts";
-
-/** Whether a page of the menu is the one that is open: *My settings* stays marked on its topics. */
-function isCurrent(path: string, pathname: string): boolean {
-  if (path === paths.home) {
-    return pathname === path;
-  }
-  return pathname === path || pathname.startsWith(`${path}/`);
-}
+import { isCurrentPlace, placeAt, type Place } from "../../shared/places.ts";
 
 export interface PlaceLinkProps {
   readonly path: Place["path"];
@@ -36,7 +27,7 @@ export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
         label={t(place.name)}
         narrow={narrow}
         count={count}
-        current={isCurrent(place.path, pathname)}
+        current={isCurrentPlace(place.path, pathname)}
         {...(onNavigate === undefined ? {} : { onNavigate })}
       />
     </li>

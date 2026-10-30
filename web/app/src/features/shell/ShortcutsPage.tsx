@@ -36,8 +36,7 @@ export function ShortcutsPage({ edit, onEdit, onClose }: ShortcutsPageProps) {
     editor: <ShortcutEditor id={definition.id} overrides={overrides} />,
   }));
   return (
-    <Card heading={t("shortcut.title")} level={1}>
-      <p {...partOf(part.shortcutsPageIntro)}>{t("shortcuts.intro")}</p>
+    <Card heading={t("shortcut.title")} level={1} intro={t("shortcuts.intro")}>
       <ListEditor
         rows={rows}
         searchLabel={t("shortcuts.search")}

@@ -31,7 +31,7 @@ export const messages = {
     "The key can also change what you may change, but it cannot manage people, roles or settings.",
   "access-keys.help.everything": "The key can do all that you can do, except what no key can do.",
   "access-keys.never":
-    "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
+    "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you're signed in.",
   "access-keys.help.permissions":
     "The key can do only what you tick below, and only what you can do yourself.",
   "access-keys.single": "Choose single permissions instead",

@@ -5,6 +5,8 @@ import { register } from "../registry.ts";
 export const messages = {
   "setting.ui.search": "Search settings",
   "setting.ui.nothing": "No setting matches your search.",
+  "setting.ui.saved-at-once":
+    "A switch or a choice is saved at once. What you type in a box is saved with the Save button under it.",
   "setting.ui.reset-name": "Reset to default: {name}",
   "setting.ui.locked": "Set by your organization",
   "setting.ui.locked-why":
