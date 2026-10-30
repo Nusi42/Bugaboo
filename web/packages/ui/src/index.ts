@@ -42,7 +42,7 @@ export { passPastedFiles, takePastedFiles, usePastedFiles, type Paste } from "./
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
 export { BottomSheet, type BottomSheetProps } from "./BottomSheet.tsx";
-export { LabelChip, type LabelChipProps } from "./LabelChip.tsx";
+export { LabelChip, LabelMark, type LabelChipProps } from "./LabelChip.tsx";
 export { iconName, type IconName } from "./icons.ts";
 export { IconButton, type IconButtonProps } from "./IconButton.tsx";
 export {

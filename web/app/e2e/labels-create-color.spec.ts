@@ -4,6 +4,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
+import { partIn } from "./support/parts.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, the final pass: *Create a label* says that a label has a name, a color and a label group, so the form
@@ -24,10 +25,12 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
     .check();
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();
   await expect(page.getByText(t("labels.label-created", { name: "backend" }))).toBeVisible();
-  await page
+  const row = page
     .getByRole("list", { name: t("labels.labels-search"), exact: true })
-    .getByRole("button", { name: "backend" })
-    .click();
+    .getByRole("button", { name: "backend" });
+  // The list shows the label with a small square in its color before its name (UX §7.5).
+  await expect(partIn(row, "label-mark", "cat7")).toBeVisible();
+  await row.click();
   await expect(
     page
       .getByRole("group", { name: t("labels.field-color", { name: "backend" }), exact: true })
