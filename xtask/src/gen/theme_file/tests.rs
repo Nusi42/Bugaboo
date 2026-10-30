@@ -210,7 +210,7 @@ fn list_beside_is_the_sum(file: &ThemeFile) -> bool {
 }
 
 #[test]
-fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need() {
+fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need_at_density_1() {
     let repo = Repo::discover().unwrap();
     let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
     assert!(list_beside_is_the_sum(&ThemeFile::parse(&text).unwrap()));
