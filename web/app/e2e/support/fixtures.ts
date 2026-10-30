@@ -1,9 +1,16 @@
 import { type Browser, type BrowserContext, expect, test as base } from "@playwright/test";
 
+import { setNumbersLocale } from "@bugaboo/messages";
+
 import { readPorts } from "../../../tooling/ports.ts";
+import { browserLocale } from "../../../tooling/viewports.ts";
 import { nothing } from "./layout.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
 import { Tolerances } from "./tolerance.ts";
+
+// The texts a test expects write their numbers as the browser of the test does (M5 exit F-A5: the texts take the
+// person's number format, and a person who chose none gets the one of the browser).
+setNumbersLocale(browserLocale);
 
 /** The two things of a console message that the fixture reads. */
 interface ConsoleLine {
