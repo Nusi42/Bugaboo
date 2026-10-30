@@ -2599,7 +2599,8 @@ part "list-row[variant=head] list-row.cell[variant=key]:has(list-handle)" {
 
 // A group of rows can be folded: the whole header is the button.
 // The header of a group stands on the columns of the rows (R1): the arrow in the column of the tick box, the icon of
-// the group on the status icon, the name on the ID. A list without tick boxes has its arrow at the end.
+// the group on the status icon, the name on the ID. A list without tick boxes keeps the chevron at the start too (L5),
+// in a narrow column of its own, so there the icon and the name stand one column in.
 part "list-group.toggle" {
     use "bare-button"
     display grid
@@ -13498,7 +13499,6 @@ part "search-suggestions::after" {
         bottom "calc(-1 * $space-1)"
     }
 }
-
 
 // The sheet of the filters has a fixed height (see size-bar-sheet), so it does not jump as the filters change.
 part "bottom-sheet[variant=tall]" {

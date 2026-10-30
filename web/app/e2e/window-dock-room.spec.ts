@@ -6,7 +6,14 @@ import { signIn } from "./support/flows.ts";
 import { openNewIssueDialog } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { boxOf, titleBox, windowButton, windowDock } from "./support/windows.ts";
+import {
+  boxOf,
+  inDock,
+  pageColumn,
+  titleBox,
+  windowButton,
+  windowDock,
+} from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -35,14 +42,14 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   await expect(windowDock(page)).toBeVisible();
   await scrollToEnd(page);
   const dock = await boxOf(windowDock(page));
-  const content = await boxOf(page.locator("[data-part='app-layout.inner']"));
-  const card = await boxOf(page.locator("[data-part='app-layout.inner'] > *").last());
+  const content = await boxOf(pageColumn(page).column);
+  const card = await boxOf(pageColumn(page).card);
   // At the end of the page the strip is under the content: no row and no frame of a card is covered.
   expect(content.y + content.height).toBeLessThanOrEqual(dock.y + 0.5);
   expect(card.y + card.height).toBeLessThanOrEqual(dock.y + 0.5);
   // Its bar starts where the page column starts and stays inside the column, so it sits under the cards, not across them.
-  const title = await boxOf(windowDock(page).locator("[data-part='window-dock.title']"));
-  const note = await boxOf(windowDock(page).locator("[data-part='window-dock.note']"));
+  const title = await boxOf(inDock(page, "window-dock.title"));
+  const note = await boxOf(inDock(page, "window-dock.note"));
   // (a few pixels of rounding of the centered column are allowed)
   expect(Math.abs(title.x - content.x)).toBeLessThanOrEqual(3);
   expect(note.x + note.width).toBeLessThanOrEqual(content.x + content.width + 0.5);
@@ -59,9 +66,8 @@ const tallWindow: WindowSize = { width: viewports.computer.width, height: 1100 }
 
 /** The card of the list and its box of rows, at rest (the page not scrolled), in the window as it is now. */
 async function listAtRest(page: Page) {
-  const rows = page.locator("[data-part='list-scroll']").first();
+  const { card, rows } = pageColumn(page);
   await expect(rows).toBeVisible();
-  const card = page.locator("[data-part='app-layout.inner'] > *").last();
   return { card: await boxOf(card), rows: await boxOf(rows) };
 }
 

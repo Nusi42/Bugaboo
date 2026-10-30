@@ -18,7 +18,8 @@ export interface SidePanelProps {
 
 /**
  * The panel at the side of a list (UX §3.4, §5.1): a simple item opens here and the list stays in
- * view. Beside a list it is as high as the window at most, and its body scrolls under its head (L7). It takes the focus when it opens, closes with Esc or its button, and gives the focus back
+ * view. Beside a list it is as high as the window at most, and its body scrolls under its head
+ * (L7). It takes the focus when it opens, closes with Esc or its button, and gives the focus back
  * to what had it before.
  */
 export function SidePanel({ title, heading, onClose, closeLabel, children }: SidePanelProps) {

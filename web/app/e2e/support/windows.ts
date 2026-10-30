@@ -19,6 +19,25 @@ export function windowDock(page: Page): Locator {
   return partIn(page, part.windowDock);
 }
 
+/** A part of the strip of the minimized windows. */
+export function inDock(page: Page, name: string): Locator {
+  return partIn(windowDock(page), name);
+}
+
+/** The column of the page, the last card in it and the box of the rows of a list in it. */
+export function pageColumn(page: Page): {
+  readonly column: Locator;
+  readonly card: Locator;
+  readonly rows: Locator;
+} {
+  const column = partIn(page, part.appLayoutInner);
+  return {
+    column,
+    card: column.locator(":scope > *").last(),
+    rows: partIn(column, part.listScroll).first(),
+  };
+}
+
 /** The button of the title bar of the open window. */
 export function windowButton(page: Page, name: string): Locator {
   return newIssueDialog(page).getByRole("button", { name, exact: true });
