@@ -236,6 +236,7 @@ web/app/src/
 │                        documents, time, dashboards, notifications, assistant
 ├── shared/              api client, session, errors, formatting (Intl), page title and focus,
 │                        the shortcut registry, the helpers for instant changes
+├── render-app.tsx       draws the app into the page: the providers, the router, and which errors are reported
 └── main.tsx
 ```
 
