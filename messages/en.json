@@ -1121,7 +1121,7 @@
   "people.list": "People",
   "people.nothing": "Nobody found. Try another word.",
   "people.more": "Show more people",
-  "people.in-groups": "In the groups {groups}",
+  "people.in-groups": "{count, plural, one {In the group {groups}} other {In the groups {groups}}}",
   "people.no-groups": "In no group",
   "person.email": "E-mail address",
   "person.since": "Account created",

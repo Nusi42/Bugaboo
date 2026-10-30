@@ -8611,10 +8611,13 @@ pub fn people_visibility_project_title(project: impl std::fmt::Display) -> Messa
 
 /// The message `people.in-groups`.
 #[must_use]
-pub fn people_in_groups(groups: impl std::fmt::Display) -> Message {
+pub fn people_in_groups(count: i64, groups: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("people.in-groups"),
-        vec![("groups", Value::Text(groups.to_string()))],
+        vec![
+            ("count", Value::Number(count)),
+            ("groups", Value::Text(groups.to_string())),
+        ],
     )
 }
 
@@ -13585,7 +13588,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "How each role sees each kind of people information",
     ),
     ("people-visibility.who-names", "Ana"),
-    ("people.in-groups", "In the groups {groups}"),
+    (
+        "people.in-groups",
+        "{count, plural, one {In the group {groups}} other {In the groups {groups}}}",
+    ),
     (
         "people.intro",
         "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",

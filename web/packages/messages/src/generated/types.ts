@@ -343,7 +343,7 @@ export interface MessageArguments {
   "people-visibility.intro-project": { project: string | number };
   "people-visibility.preview-heading": { role: string | number };
   "people-visibility.project-title": { project: string | number };
-  "people.in-groups": { groups: string | number };
+  "people.in-groups": { count: number; groups: string | number };
   "person.former": { label: string | number };
   "person.former-inside": { label: string | number };
   "person.groups-none": { name: string | number };
