@@ -37,6 +37,8 @@ function columnHead(page: Page, role: string): Locator {
 async function expectChosenInView(page: Page, role: string): Promise<void> {
   const head = columnHead(page, role);
   await expect(head).toHaveAttribute("data-state", /chosen/u);
+  // Screen readers hear it too, not only see its fill.
+  await expect(head).toHaveAttribute("aria-current", "true");
   const region = await boxOf(partIn(page, "access.scroll"));
   const names = await boxOf(partIn(page, "access.matrix-cell", "head").first());
   await expect
@@ -71,4 +73,5 @@ test("priv_12 the chosen role's column of Who sees people is in view and marked 
     .selectOption({ label: roleName.administrator });
   await expectChosenInView(page, roleName.administrator);
   await expect(columnHead(page, roleName.guest)).not.toHaveAttribute("data-state", /chosen/u);
+  await expect(columnHead(page, roleName.guest)).not.toHaveAttribute("aria-current", "true");
 });

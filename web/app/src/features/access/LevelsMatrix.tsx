@@ -11,6 +11,8 @@ import type { Change, LevelTable, Row } from "./levels.ts";
 /** Words of the HTML standard, not text for people. */
 const column = "col";
 const rowHeader = "row";
+/** The value of `aria-current` for the column of the chosen role: one of a set, not a page. */
+const chosenOfSet = "true";
 
 export interface LevelsViewProps<Subject extends string, Level extends string> {
   readonly table: LevelTable<Subject, Level>;
@@ -160,6 +162,7 @@ function MatrixHead<Subject extends string, Level extends string>({
               variants: ["head"],
               states: [role.id === chosen && "chosen"],
             })}
+            {...(role.id === chosen ? { "aria-current": chosenOfSet } : {})}
           >
             {role.name}
           </th>
