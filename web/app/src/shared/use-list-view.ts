@@ -1,6 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
 
-import { appearanceOf } from "./appearance-setting.ts";
 import {
   builtInView,
   viewFromPresentation,
@@ -10,7 +9,6 @@ import {
   type ListView,
 } from "./list-view.ts";
 import { historyStep, type HistoryStep, type SearchState } from "./search-address.ts";
-import { useMySettings } from "./use-my-settings.ts";
 
 /** What a page that shows the results of a search gives its list. */
 export interface ResultsInput {
@@ -35,14 +33,13 @@ export interface ViewSource {
   readonly word?: ((word: string) => string) | undefined;
 }
 
-/** The view a list has: the address where it says anything, then the saved search, then the built-in list and the person's spacing. */
+/** The view a list has: the address where it says anything, then the saved search, then the built-in list. */
 export function useListView(
   state: SearchState,
   onState: (state: SearchState, step: HistoryStep) => void,
   { everywhere, presentation, word }: ViewSource,
 ): Pick<ResultsInput, "view" | "defaults" | "onView"> {
-  const spacing = appearanceOf(useMySettings()).spacing;
-  const builtIn = builtInView({ everywhere, spacing });
+  const builtIn = builtInView({ everywhere });
   const saved = presentation === undefined ? builtIn : viewFromPresentation(presentation, builtIn);
   // The words are mapped once, in the defaults and in the view, so a view set back by hand is the
   // defaults again and nothing looks changed.
@@ -59,24 +56,11 @@ export function useListView(
 
 /** Whether the address changes any part of how the results are shown, so that it differs from the defaults. */
 export function viewIsChanged(state: SearchState): boolean {
-  return (
-    state.columns !== undefined ||
-    state.widths !== undefined ||
-    state.spacing !== undefined ||
-    state.groupBy !== undefined
-  );
+  return state.columns !== undefined || state.widths !== undefined || state.groupBy !== undefined;
 }
 
 /** The state with nothing unsaved: no text of its own and no change of the view (what a saved search has once it was saved). */
 export function withoutChanges(state: SearchState): SearchState {
-  const {
-    text: _t,
-    everything: _e,
-    columns: _c,
-    widths: _w,
-    spacing: _s,
-    groupBy: _g,
-    ...rest
-  } = state;
+  const { text: _t, everything: _e, columns: _c, widths: _w, groupBy: _g, ...rest } = state;
   return { ...rest, text: "" };
 }

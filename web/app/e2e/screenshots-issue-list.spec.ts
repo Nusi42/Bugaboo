@@ -6,7 +6,14 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
-import { grid, inViewChoices, openList, prepareLook, rowOf } from "./support/list-look.ts";
+import {
+  chooseSpacing,
+  grid,
+  inViewChoices,
+  openList,
+  prepareLook,
+  rowOf,
+} from "./support/list-look.ts";
 import {
   focusRowByKeys,
   listInFourThemes,
@@ -30,7 +37,7 @@ test("iss_01 pictures: the list grouped by status group", async ({ page }) => {
   await listInFourThemes(page, "grouped-status");
 });
 
-test("cfg_02 pictures: grouped by priority, compact, and not grouped", async ({ page }) => {
+test("cfg_02 pictures: grouped by priority, compact, and not grouped", async ({ page, server }) => {
   await openList(page);
   await inViewChoices(page, async (scope) => {
     await scope.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
@@ -39,10 +46,14 @@ test("cfg_02 pictures: grouped by priority, compact, and not grouped", async ({ 
   });
   await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
   await listInFourThemes(page, "grouped-priority");
-  await inViewChoices(page, async (scope) => {
-    await scope.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
-  });
+  // Compact is the person's Spacing (My settings › Appearance), which the list follows.
+  await chooseSpacing(server, "compact");
+  await page.reload();
+  await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
   await listInFourThemes(page, "compact");
+  await chooseSpacing(server, "comfortable");
+  await page.reload();
+  await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
   await inViewChoices(page, async (scope) => {
     await scope.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
       label: t("issues.group-by-none"),

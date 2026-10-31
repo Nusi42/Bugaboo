@@ -58,6 +58,7 @@ mod m0026_name_key;
 mod m0027_person_setting_version;
 mod m0028_person_setting_counter;
 mod m0029_notification_by_time;
+mod m0030_saved_search_spacing;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -298,6 +299,11 @@ const ALL: &[Definition] = &[
         version: 29,
         name: "notification_by_time",
         steps: || Ok(m0029_notification_by_time::steps()),
+    },
+    Definition {
+        version: 30,
+        name: "saved_search_spacing",
+        steps: || Ok(m0030_saved_search_spacing::steps()),
     },
 ];
 

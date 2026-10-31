@@ -39,11 +39,7 @@ export function ListResults({ view }: ListResultsProps) {
   }
   return (
     <div {...partOf(part.searchResults)}>
-      {view.groupBy === null ? (
-        <PlainList spacing={view.spacing} />
-      ) : (
-        <GroupedList spacing={view.spacing} />
-      )}
+      {view.groupBy === null ? <PlainList /> : <GroupedList />}
     </div>
   );
 }

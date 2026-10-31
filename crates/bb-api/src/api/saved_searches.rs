@@ -13,18 +13,14 @@ use bb_app::saved_searches::{
     SaveCopy, SaveSearch, SavedSearchQuery, SavedSearchView, SearchesQuery, SetProjectList,
     ShareChoice, ShareChoicesQuery, ShareSearch, ShareView, StopSharingSearch,
 };
-use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
-use bb_core::saved_search::{
-    Column, Presentation, SearchSet, ShareKind, ShareTarget, Spacing, ViewKind,
-};
+use bb_core::saved_search::{Column, Presentation, SearchSet, ShareKind, ShareTarget, ViewKind};
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 
 use super::auth::AuthHandle;
-use crate::errors::ApiError;
 use crate::lean::FieldSpec;
 
 mod project_list;
@@ -62,15 +58,15 @@ pub(crate) struct ColumnBody {
     width: Option<u32>,
 }
 
-/// How the results of a saved search are shown.
+/// How the results of a saved search are shown. How close together the rows are is not part of
+/// it: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a
+/// `spacing` an older client still sends is not read.
 #[derive(Clone, Serialize, Deserialize, ToSchema)]
 pub(crate) struct PresentationRef {
     /// The kind of view. M5 shows the kind `list`.
     view: ViewKind,
     /// The columns, in order. None at all means the columns of the project's list.
     columns: Vec<ColumnBody>,
-    /// How close together the rows are: a choice of the setting `appearance.spacing`.
-    spacing: String,
     /// The field the rows are grouped by, by its search word.
     #[schema(required = true)]
     group_by: Option<String>,
@@ -88,17 +84,14 @@ impl From<&Presentation> for PresentationRef {
                     width: column.width,
                 })
                 .collect(),
-            spacing: presentation.spacing.code().to_owned(),
             group_by: presentation.group_by.clone(),
         }
     }
 }
 
-impl TryFrom<PresentationRef> for Presentation {
-    type Error = ApiError;
-
-    fn try_from(body: PresentationRef) -> Result<Self, ApiError> {
-        Ok(Self {
+impl From<PresentationRef> for Presentation {
+    fn from(body: PresentationRef) -> Self {
+        Self {
             view: body.view,
             columns: body
                 .columns
@@ -108,10 +101,8 @@ impl TryFrom<PresentationRef> for Presentation {
                     width: column.width,
                 })
                 .collect(),
-            spacing: Spacing::of(&body.spacing)
-                .ok_or_else(|| ApiError::new(ErrorCode::InvalidRequest))?,
             group_by: body.group_by,
-        })
+        }
     }
 }
 

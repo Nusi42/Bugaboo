@@ -5,8 +5,7 @@ use bb_app::saved_searches::{Reach, SavedSearchStore};
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use bb_core::person::Person;
 use bb_core::saved_search::{
-    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget, Spacing,
-    ViewKind,
+    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget, ViewKind,
 };
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
@@ -29,7 +28,6 @@ fn search_select() -> SelectStatement {
             SavedSearchRow::Text,
             SavedSearchRow::Maker,
             SavedSearchRow::View,
-            SavedSearchRow::Spacing,
             SavedSearchRow::GroupBy,
             SavedSearchRow::CreatedAt,
             SavedSearchRow::UpdatedAt,
@@ -48,8 +46,6 @@ fn read_search(row: &Row) -> Result<SavedSearch, StoreError> {
         maker: row.id::<UserId>(SavedSearchRow::Maker)?,
         view: ViewKind::from_code(&row.get::<String>(SavedSearchRow::View)?)
             .ok_or(StoreError::Corrupt("a kind of view"))?,
-        spacing: Spacing::of(&row.get::<String>(SavedSearchRow::Spacing)?)
-            .ok_or(StoreError::Corrupt("a spacing"))?,
         group_by: row.get(SavedSearchRow::GroupBy)?,
         created_at: row.time(SavedSearchRow::CreatedAt)?,
         updated_at: row.time(SavedSearchRow::UpdatedAt)?,
@@ -406,7 +402,6 @@ impl SavedSearchStore for AuthStorage {
                 SavedSearchRow::Text,
                 SavedSearchRow::Maker,
                 SavedSearchRow::View,
-                SavedSearchRow::Spacing,
                 SavedSearchRow::GroupBy,
                 SavedSearchRow::CreatedAt,
                 SavedSearchRow::UpdatedAt,
@@ -419,7 +414,6 @@ impl SavedSearchStore for AuthStorage {
                 Expr::val(search.text.as_str()),
                 Expr::val(search.maker.stored()),
                 Expr::val(search.view.code()),
-                Expr::val(search.spacing.code()),
                 Expr::val(search.group_by.clone()),
                 Expr::val(to_micros(search.created_at)),
                 Expr::val(to_micros(search.updated_at)),
@@ -443,7 +437,6 @@ impl SavedSearchStore for AuthStorage {
             .value(SavedSearchRow::Name, search.name.as_str())
             .value(SavedSearchRow::Text, search.text.as_str())
             .value(SavedSearchRow::View, search.view.code())
-            .value(SavedSearchRow::Spacing, search.spacing.code())
             .value(SavedSearchRow::GroupBy, search.group_by.clone())
             .value(SavedSearchRow::UpdatedAt, to_micros(search.updated_at))
             .value(SavedSearchRow::Version, search.version)

@@ -12,7 +12,6 @@ pub(crate) enum SavedSearchRow {
     Text,
     Maker,
     View,
-    Spacing,
     GroupBy,
     CreatedAt,
     UpdatedAt,

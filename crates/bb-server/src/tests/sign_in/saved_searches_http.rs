@@ -28,6 +28,8 @@ const AT_MOST_FOR_A_GUEST: usize = 40;
 /// not grow with the page (measured: 58).
 const AT_MOST_WITH_NAMES: usize = 58;
 
+/// Saves a search the way a client written before the spacing was the person's alone does: with a
+/// `spacing` in the presentation, which the server does not read (ADR-0034, amendment).
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
         .send(
@@ -92,7 +94,9 @@ async fn qry_06_a_saved_search_is_private_and_found_by_its_address_only_where_it
         let made = save(&mut ada, "Open bugs").await?;
         let id = id_of(&made)?;
         assert_eq!(made.body["mine"], true);
-        assert_eq!(made.body["presentation"]["spacing"], "compact");
+        // The spacing the client sent is not kept: every list follows the person's *Spacing*.
+        assert_eq!(made.body["presentation"].get("spacing"), None);
+        assert_eq!(made.body["presentation"]["group_by"], "statusGroup");
         assert_eq!(made.body["presentation"]["columns"][0]["width"], 300);
         assert_eq!(made.body["shared_with"], json!([]));
         // Private: it is not found for Bob, in the same words as one that is not there.

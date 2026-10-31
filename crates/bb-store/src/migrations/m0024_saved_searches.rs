@@ -10,7 +10,7 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
 use crate::schema::{
-    ProjectDefaultListRow, ProjectRow, SavedSearchRow, SearchColumnRow, SearchShareRow,
+    ProjectDefaultListRow, ProjectRow, Retired, SavedSearchRow, SearchColumnRow, SearchShareRow,
 };
 
 pub(super) fn steps() -> Vec<Step> {
@@ -36,7 +36,7 @@ fn searches() -> Vec<Step> {
                 .col(ColumnDef::new(SavedSearchRow::Text).text().not_null())
                 .col(id_column(SavedSearchRow::Maker))
                 .col(ColumnDef::new(SavedSearchRow::View).text().not_null())
-                .col(ColumnDef::new(SavedSearchRow::Spacing).text().not_null())
+                .col(ColumnDef::new(Retired::Spacing).text().not_null())
                 .col(ColumnDef::new(SavedSearchRow::GroupBy).text())
                 .col(
                     ColumnDef::new(SavedSearchRow::CreatedAt)
@@ -164,37 +164,8 @@ mod tests {
     use sea_query::{Expr, Query};
 
     use super::super::Database;
-    use crate::schema::{SavedSearchRow, SearchColumnRow, SearchShareRow};
-    use crate::test_support::at;
-
-    fn search_row(id: u8) -> Result<sea_query::InsertStatement, sea_query::error::Error> {
-        let mut insert = Query::insert();
-        insert
-            .into_table(SavedSearchRow::Table)
-            .columns([
-                SavedSearchRow::Id,
-                SavedSearchRow::Name,
-                SavedSearchRow::Text,
-                SavedSearchRow::Maker,
-                SavedSearchRow::View,
-                SavedSearchRow::Spacing,
-                SavedSearchRow::CreatedAt,
-                SavedSearchRow::UpdatedAt,
-                SavedSearchRow::Version,
-            ])
-            .values([
-                Expr::val(vec![id; 16]),
-                Expr::val("Open bugs"),
-                Expr::val("status is open"),
-                Expr::val(vec![9_u8; 16]),
-                Expr::val("list"),
-                Expr::val("comfortable"),
-                Expr::val(1_i64),
-                Expr::val(1_i64),
-                Expr::val(1_i64),
-            ])?;
-        Ok(insert)
-    }
+    use crate::schema::{SearchColumnRow, SearchShareRow};
+    use crate::test_support::{at, insert_old_saved_search};
 
     // The tables come with migration 24 on an M4 database, hold a search with its columns and
     // shares, refuse a column or a share of a search that is not there, and refuse the same share
@@ -205,7 +176,7 @@ mod tests {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(21, at(0)).await?;
             assert_eq!(database.migrate_until(24, at(1)).await?, [22, 23, 24]);
-            database.execute(&search_row(1)?).await?;
+            insert_old_saved_search(&database, (vec![1; 16], vec![9; 16]), "comfortable").await?;
             let column = |search: u8, position: i64| {
                 let mut insert = Query::insert();
                 insert

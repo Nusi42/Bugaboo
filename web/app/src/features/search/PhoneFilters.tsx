@@ -34,8 +34,8 @@ function filtersWords(search: PhoneFiltersProps["search"], mistakes: number): st
 /**
  * The search bar of a phone: one button, *Filters*, with a count only where there is one (and the
  * mistakes of the text), and the sheet from the bottom it opens. The sheet has a title, holds the bar,
- * then *Group by* and *Spacing* (M5 exit decision D2), then what is done with the search and the
- * button that says it is done.
+ * then *Group by* (M5 exit decision D2), then what is done with the search and the button that
+ * says it is done. *Spacing* is the person's, in *My settings › Appearance* (ADR-0034, amendment).
  */
 export function PhoneFilters({
   search,

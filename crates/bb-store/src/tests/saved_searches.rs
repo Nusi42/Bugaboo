@@ -6,7 +6,6 @@ use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::{GroupId, IdSource, ProjectId, SavedSearchId, UserId};
 use bb_core::saved_search::{
     Column, Presentation, ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget,
-    Spacing,
 };
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
@@ -34,7 +33,6 @@ fn presentation() -> Presentation {
                 width: None,
             },
         ],
-        spacing: Spacing::of("compact").unwrap_or_default(),
         group_by: Some("statusGroup".to_owned()),
         ..Presentation::default()
     }
@@ -48,7 +46,6 @@ fn search(source: &mut impl IdSource, maker: UserId, name: &str, seconds: i64) -
         text: "status is open".to_owned(),
         maker,
         view: presentation.view,
-        spacing: presentation.spacing,
         group_by: presentation.group_by,
         created_at: at(seconds),
         updated_at: at(seconds),

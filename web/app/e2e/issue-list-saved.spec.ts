@@ -56,7 +56,6 @@ test("qry_06 a saved search opens at its address with its columns", async ({ pag
             { field: "id", width: null },
             { field: "title", width: 240 },
           ],
-          spacing: "compact",
           group_by: null,
         },
       },

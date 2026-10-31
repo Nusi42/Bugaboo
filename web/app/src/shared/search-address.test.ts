@@ -62,7 +62,6 @@ describe("qry_01 readSearch and searchLocation are inverse", () => {
         s: "status is Open",
         cols: "status,title",
         widths: "title:300",
-        spacing: "compact",
         group: "status",
         show: "list",
       },
@@ -72,7 +71,6 @@ describe("qry_01 readSearch and searchLocation are inverse", () => {
       project: "WEB",
       columns: ["status", "title"],
       widths: { title: 300 },
-      spacing: "compact",
       groupBy: "status",
       view: "list",
     });
@@ -89,17 +87,25 @@ describe("qry_01 the address of the other pages of a search", () => {
     expect(searchLocation(state).pathname).toBe("/s/abc123");
   });
 
+  it("drops the spacing of an old address: the list follows the person's Spacing", () => {
+    const raw = { s: "a is b", spacing: "compact", group: "status" };
+    expect(validateSearch(raw)).toEqual({ s: "a is b", group: "status" });
+    expect(readSearch({ pathname: "/search", search: raw })).toEqual({
+      text: "a is b",
+      groupBy: "status",
+    });
+  });
+
   it("writes the Search page without a project", () => {
     expect(searchLocation({ text: "" })).toEqual({ pathname: "/search", search: {} });
     expect(readSearch({ pathname: "/search", search: {} })).toEqual({ text: "" });
   });
 
-  it("keeps the columns, widths, spacing and group when the text or the page is changed", () => {
+  it("keeps the columns, widths and group when the text or the page is changed", () => {
     const raw = {
       s: "a is b",
       cols: "id,title",
       widths: "title:200",
-      spacing: "compact",
       group: "status",
     };
     // What the router keeps of the address is all of the search...
@@ -118,7 +124,6 @@ describe("the issue open in the side panel is part of the address", () => {
       project: "WEB",
       columns: ["status", "title"],
       widths: { title: 300 },
-      spacing: "compact",
       groupBy: "priority",
       view: "list",
     };

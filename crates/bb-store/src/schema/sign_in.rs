@@ -23,6 +23,9 @@ pub(crate) enum Retired {
     Administrator,
     /// `mention.read_at`, taken away by migration 20.
     ReadAt,
+    /// `saved_search.spacing`, taken away by migration 30: every list follows the person's
+    /// setting *Spacing* (ADR-0034, amendment).
+    Spacing,
 }
 
 #[derive(Clone, Copy, Iden)]

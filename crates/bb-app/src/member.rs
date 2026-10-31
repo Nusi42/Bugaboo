@@ -142,7 +142,6 @@ pub(crate) mod saved_search {
     pub(crate) const TEXT: &str = "text";
     pub(crate) const VIEW: &str = "view";
     pub(crate) const COLUMNS: &str = "columns";
-    pub(crate) const SPACING: &str = "spacing";
     pub(crate) const GROUP_BY: &str = "group_by";
     /// The group or project it is shared with.
     pub(crate) const SHARED_WITH: &str = "shared_with";

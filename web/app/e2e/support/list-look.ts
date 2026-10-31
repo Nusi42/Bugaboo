@@ -1,9 +1,10 @@
+import { settingKeys, type SettingChoice } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
-import { ada } from "./accounts.ts";
+import { ada, signInThroughApi, type Person } from "./accounts.ts";
 import { signIn } from "./flows.ts";
 import { issueOf, prepareWeb, setStatusAndPriority, versionOf, webIssues } from "./issues.ts";
 import { type Instance } from "./server.ts";
@@ -25,6 +26,29 @@ export async function prepareLook(server: Instance): Promise<void> {
     priority: "high",
   });
   await admin.dispose();
+}
+
+/**
+ * Sets a person's *Spacing* (*My settings › Appearance*) through the API. Every list follows it: a
+ * list and a saved search have no spacing of their own (ADR-0034, amendment).
+ */
+export async function chooseSpacing(
+  server: Instance,
+  spacing: SettingChoice<"appearanceSpacing">,
+  person: Person = ada,
+): Promise<void> {
+  const session = await signInThroughApi(server, person);
+  const answer = await session.client.PUT("/api/v1/me/settings/{key}", {
+    params: { path: { key: settingKeys.appearanceSpacing } },
+    body: { value: spacing },
+  });
+  await session.dispose();
+  expect(answer.response.ok).toBe(true);
+}
+
+/** The frame of the list, whose variant says whether the rows are *Compact*. */
+export function listFrame(page: Page): Locator {
+  return page.locator("[data-part='list-frame']");
 }
 
 /** The list of the issues of the project, as a grid whose rows are drawn only where they are on screen. */

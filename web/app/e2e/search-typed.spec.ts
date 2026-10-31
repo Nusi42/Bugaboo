@@ -135,7 +135,7 @@ test("qry_02 back and forward step through the searches, typing is not a step pe
   await expect.poll(() => addressText(page)).toBe("assigned to is me and priority is High");
 });
 
-test("qry_01 the columns, widths, spacing and grouping of the address stay when the search changes", async ({
+test("qry_01 the columns, widths and grouping of the address stay when the search changes, and an old spacing goes", async ({
   page,
 }) => {
   await openSearch(page, "");
@@ -150,7 +150,9 @@ test("qry_01 the columns, widths, spacing and grouping of the address stay when 
   const address = new URL(page.url()).searchParams;
   expect(address.get("cols")).toBe("id,title");
   expect(address.get("widths")).toBe("title:300");
-  expect(address.get("spacing")).toBe("compact");
+  // An old address may still say the spacing: it opens, and the spacing is not kept, for every list
+  // follows the person's Spacing (My settings › Appearance).
+  expect(address.get("spacing")).toBeNull();
   expect(address.get("group")).toBe("status");
 });
 

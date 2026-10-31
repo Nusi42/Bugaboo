@@ -32,7 +32,6 @@ async function saveWithColumns(
       presentation: {
         view: "list",
         columns: fields.map((field) => ({ field, width: null })),
-        spacing: "comfortable",
         group_by: null,
       },
     },

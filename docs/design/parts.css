@@ -2566,11 +2566,6 @@ textarea,
   align-items: flex-start;
 }
 
-[data-part="row"][data-variant~="nowrap"] {
-  flex-wrap: nowrap;
-  align-items: flex-end;
-}
-
 [data-part="row"][data-variant~="stretch"] {
   align-items: stretch;
 }

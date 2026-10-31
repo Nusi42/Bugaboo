@@ -51,7 +51,7 @@ test("ux_4_2 the comment box in the panel has quiet icon buttons and one footer 
   expect((await boxOf(bold)).width).toBeLessThanOrEqual(48);
 });
 
-test("ux_4_2 beside the panel a filter chip does not wrap inside itself, and Customize stays with Spacing (A3)", async ({
+test("ux_4_2 beside the panel a filter chip does not wrap inside itself, and Customize stays level with Group by (A3)", async ({
   page,
 }) => {
   test.skip(layoutOf(page) !== "computer", "only a computer has the panel beside the list");
@@ -66,8 +66,10 @@ test("ux_4_2 beside the panel a filter chip does not wrap inside itself, and Cus
   const cut = await words.evaluate((node) => node.scrollWidth > node.clientWidth);
   expect(cut, "the label of the chip is cut by an ellipsis").toBe(false);
   const customize = await boxOf(page.getByRole("button", { name: t("issues.customize") }));
-  const compact = await boxOf(
-    page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }),
-  );
-  expect(Math.abs(customize.y - compact.y)).toBeLessThanOrEqual(12);
+  const groupBy = await boxOf(page.getByLabel(t("issues.group-by"), { exact: true }));
+  expect(
+    Math.abs(customize.y + customize.height - (groupBy.y + groupBy.height)),
+  ).toBeLessThanOrEqual(12);
+  // Spacing is the person's own (My settings › Appearance): it is not above the list.
+  await expect(page.getByText(t("appearance.spacing.legend"), { exact: true })).toHaveCount(0);
 });

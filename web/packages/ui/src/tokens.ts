@@ -974,7 +974,7 @@ export const partWords = {
   "start-column": { variant: [], state: [] },
   "start-column.line": { variant: [], state: [] },
   text: { variant: [], state: [] },
-  row: { variant: ["inline", "nowrap", "stretch"], state: [] },
+  row: { variant: ["inline", "stretch"], state: [] },
   "row.end": { variant: [], state: [] },
   list: { variant: ["loose", "tight", "inset", "snug"], state: [] },
   item: { variant: ["spread", "slim", "wrap"], state: [] },

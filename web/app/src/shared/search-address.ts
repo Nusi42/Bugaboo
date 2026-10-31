@@ -1,14 +1,13 @@
 /**
  * The search in the address (UX design section 2.1, ADR-0005 amendment M5, decision 4): the
- * canonical text travels in `s`, and how the results are shown in `show`, `cols`, `widths`,
- * `spacing` and `group`. {@link readSearch} is the one reader and {@link searchLocation} the one
- * writer, so a list, a board, the *Search* page, a saved search and the search bar can never
- * disagree about the address (ODR). Every route that has a search bar takes its `validateSearch`
- * from here, and every change of the search is written through here, so no part of the address is
- * lost when another changes.
+ * canonical text travels in `s`, and how the results are shown in `show`, `cols`, `widths` and
+ * `group`. An old address that still says `spacing` opens fine: the part is not read, because
+ * every list follows the person's *Spacing* (ADR-0034, amendment). {@link readSearch} is the one
+ * reader and {@link searchLocation} the one writer, so a list, a board, the *Search* page, a saved
+ * search and the search bar can never disagree about the address (ODR). Every route that has a
+ * search bar takes its `validateSearch` from here, and every change of the search is written
+ * through here, so no part of the address is lost when another changes.
  */
-
-import { settingChoices, type SettingChoice } from "@bugaboo/api-client";
 
 import {
   partOfAddress,
@@ -26,15 +25,6 @@ import {
 export const historyStep = { push: "push", replace: "replace" } as const;
 export type HistoryStep = (typeof historyStep)[keyof typeof historyStep];
 
-/** How close together the rows are: the two words of the setting `appearance.spacing`. */
-export const searchSpacings = settingChoices.appearanceSpacing;
-export type SearchSpacing = SettingChoice<"appearanceSpacing">;
-
-/** The spacing a word names, or nothing for any other word (the one place that reads it). */
-export function spacingOf(word: string | undefined): SearchSpacing | undefined {
-  return searchSpacings.find((each) => each === word);
-}
-
 /** What an address says about a search and how its results are shown. */
 export interface SearchState {
   readonly text: string;
@@ -49,7 +39,6 @@ export interface SearchState {
   readonly saved?: string;
   readonly columns?: readonly string[];
   readonly widths?: Readonly<Record<string, number>>;
-  readonly spacing?: SearchSpacing;
   readonly groupBy?: string;
   /** How it is shown (`list`, `board` …). */
   readonly view?: string;
@@ -63,7 +52,6 @@ export interface SearchParts {
   readonly show?: string;
   readonly cols?: string;
   readonly widths?: string;
-  readonly spacing?: string;
   readonly group?: string;
   readonly open?: string;
 }
@@ -115,7 +103,6 @@ export function readSearch(location: {
     ?.split(",")
     .filter((each) => each !== "");
   const widths = widthsOf(textOf(raw, "widths"));
-  const spacing = spacingOf(textOf(raw, "spacing"));
   const groupBy = textOf(raw, "group");
   const view = textOf(raw, "show");
   const open = textOf(raw, "open");
@@ -126,7 +113,6 @@ export function readSearch(location: {
     ...(saved === undefined ? {} : { saved }),
     ...(columns === undefined || columns.length === 0 ? {} : { columns }),
     ...(widths === undefined ? {} : { widths }),
-    ...(spacing === undefined ? {} : { spacing }),
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
     ...(view === undefined ? {} : { view }),
     ...(open === undefined || open === "" ? {} : { open }),
@@ -153,9 +139,6 @@ export function searchLocation(state: SearchState): SearchLocation {
   }
   if (widths.length > 0) {
     search.widths = widths.join(",");
-  }
-  if (state.spacing !== undefined) {
-    search.spacing = state.spacing;
   }
   if (state.groupBy !== undefined) {
     search.group = state.groupBy;

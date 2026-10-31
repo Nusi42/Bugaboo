@@ -19914,8 +19914,8 @@
       },
       "PresentationRef": {
         "type": "object",
-        "description": "How the results of a saved search are shown.",
-        "required": ["view", "columns", "spacing", "group_by"],
+        "description": "How the results of a saved search are shown. How close together the rows are is not part of\nit: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a\n`spacing` an older client still sends is not read.",
+        "required": ["view", "columns", "group_by"],
         "properties": {
           "columns": {
             "type": "array",
@@ -19927,10 +19927,6 @@
           "group_by": {
             "type": ["string", "null"],
             "description": "The field the rows are grouped by, by its search word."
-          },
-          "spacing": {
-            "type": "string",
-            "description": "How close together the rows are: a choice of the setting `appearance.spacing`."
           },
           "view": {
             "$ref": "#/components/schemas/ViewKind",

@@ -14,8 +14,9 @@ export interface ListOptionsProps {
 
 /**
  * What a person sets above the list on a computer (UX section 4.2): *Group by* any field they may
- * read, *Spacing*, and *Customize* for the columns. A phone has none of it here: it shows a card for
- * each issue, and *Group by* and *Spacing* are in its *Filters* sheet (M5 exit decision D2).
+ * read, and *Customize* for the columns. A phone has none of it here: it shows a card for each
+ * issue, and *Group by* is in its *Filters* sheet (M5 exit decision D2). How close together the
+ * rows are is the person's *Spacing* in *My settings › Appearance* (ADR-0034, amendment).
  */
 export function ListOptions({ view, fields, customizing, onView, onCustomize }: ListOptionsProps) {
   if (useLayout() === "phone") {

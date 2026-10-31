@@ -1,16 +1,17 @@
 /**
- * How a list shows its results (UX design section 4.2): the columns, their widths, the spacing and
- * the field the rows are grouped by. The address holds only what a person changed, so a project's
- * default list (or a saved search) can change under an open page. The defaults come from the
- * built-in list, from the presentation of a saved search and from the person's own setting for the
- * spacing. Everything that turns an address into a view, or a view into an address or a saved
+ * How a list shows its results (UX design section 4.2): the columns, their widths and the field the
+ * rows are grouped by. How close together the rows are is no part of it: every screen follows the
+ * person's *Spacing* in *My settings › Appearance* (ADR-0034, amendment). The address holds only
+ * what a person changed, so a project's default list (or a saved search) can change under an open
+ * page. The defaults come from the built-in list and from the presentation of a saved search.
+ * Everything that turns an address into a view, or a view into an address or a saved
  * presentation, is here (ODR).
  */
 
-import { settingDefaults, type Schema } from "@bugaboo/api-client";
+import type { Schema } from "@bugaboo/api-client";
 
 import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
-import { spacingOf, type SearchSpacing, type SearchState } from "./search-address.ts";
+import type { SearchState } from "./search-address.ts";
 
 /**
  * What `group` says in the address when the person chose no grouping: the built-in list is grouped,
@@ -27,7 +28,6 @@ export interface ListView {
   readonly columns: readonly string[];
   /** The width of the columns a person dragged, by search word. */
   readonly widths: Readonly<Record<string, number>>;
-  readonly spacing: SearchSpacing;
   /** The search word of the field the rows are grouped by; none for no grouping. */
   readonly groupBy: string | null;
 }
@@ -36,16 +36,13 @@ export interface ListView {
 export interface BuiltInInput {
   /** The list is the *Search* page, over every project. */
   readonly everywhere: boolean;
-  /** The person's own setting `appearance.spacing`. */
-  readonly spacing: SearchSpacing;
 }
 
 /** The list a project or the *Search* page has before anybody changed anything. */
-export function builtInView({ everywhere, spacing }: BuiltInInput): ListView {
+export function builtInView({ everywhere }: BuiltInInput): ListView {
   return {
     columns: everywhere ? searchColumns : projectColumns,
     widths: {},
-    spacing,
     groupBy: builtInGroup,
   };
 }
@@ -56,7 +53,6 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
   return {
     columns: state.columns ?? defaults.columns,
     widths: state.widths ?? defaults.widths,
-    spacing: state.spacing ?? defaults.spacing,
     groupBy: groupBy === undefined ? defaults.groupBy : groupBy === noGrouping ? null : groupBy,
   };
 }
@@ -104,7 +100,6 @@ export function withView(state: SearchState, view: ListView, defaults: ListView)
     ...(kind === undefined ? {} : { view: kind }),
     ...(view.columns.join(",") === defaults.columns.join(",") ? {} : { columns: view.columns }),
     ...(sameWidths(view.widths, defaults.widths) ? {} : { widths: view.widths }),
-    ...(view.spacing === defaults.spacing ? {} : { spacing: view.spacing }),
     ...(view.groupBy === defaults.groupBy ? {} : { groupBy: view.groupBy ?? noGrouping }),
   };
 }
@@ -114,14 +109,14 @@ export function presentationOf(view: ListView): Schema<"PresentationRef"> {
   return {
     view: "list",
     columns: view.columns.map((field) => ({ field, width: view.widths[field] ?? null })),
-    spacing: view.spacing,
     group_by: view.groupBy,
   };
 }
 
 /**
  * The view a saved search keeps. A saved search without columns has the columns of the list it is
- * opened in (the project's), so `defaults` give them.
+ * opened in (the project's), so `defaults` give them. A spacing that an older server still sends
+ * is not read: the list follows the person's *Spacing*.
  */
 export function viewFromPresentation(
   presentation: Schema<"PresentationRef">,
@@ -139,7 +134,6 @@ export function viewFromPresentation(
         ? defaults.columns
         : presentation.columns.map((column) => column.field),
     widths,
-    spacing: spacingOf(presentation.spacing) ?? settingDefaults.appearanceSpacing,
     groupBy: presentation.group_by,
   };
 }

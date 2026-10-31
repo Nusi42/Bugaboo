@@ -450,7 +450,6 @@ stored_tables! {
         Text => text,
         Maker => maker,
         View => view,
-        Spacing => spacing,
         GroupBy => group_by,
         CreatedAt => created_at,
         UpdatedAt => updated_at,

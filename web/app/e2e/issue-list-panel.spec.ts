@@ -10,8 +10,7 @@ import { grid, rowOf } from "./support/list-look.ts";
 import { panelCloseOf, preparePanel } from "./support/list-panel.ts";
 
 // The issue open in the side panel is one more part of the address of the list (UX §4.2, §2.1):
-// opening it and closing it leave the search, the sort, the group, the columns and the spacing as
-// they were.
+// opening it and closing it leave the search, the sort, the group and the columns as they were.
 
 test.use({ preparation: { run: preparePanel } });
 test.describe.configure({ mode: "serial" });
@@ -19,7 +18,6 @@ test.describe.configure({ mode: "serial" });
 const kept = {
   s: "priority is not Low sort by title",
   group: "priority",
-  spacing: "compact",
   cols: "status,id,title,priority",
 } as const;
 
