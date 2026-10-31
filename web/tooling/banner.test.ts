@@ -26,10 +26,17 @@ describe("the banner of the front page", () => {
   it("shoos a bug away and says boo, and the bug and the word are still when motion is reduced", () => {
     expect(banner).toContain('class="bug"');
     expect(banner).toContain(">Boo!<");
-    // The tiles, the walk of the bug, the step to Done, the shoo and the boo all stand still.
+    // The tiles, the walk of the bug, the step to Done, the person and the agent who turn up on
+    // the workflow, the shoo and the boo all stand still.
     expect(banner).toMatch(
-      /\.tiles > g, \.walk, \.legs, \.here, \.done \.fill, \.bug, \.boo \{ animation: none/u,
+      /\.tiles > g, \.walk, \.legs, \.here, \.done \.fill, \.who, \.bug, \.boo \{ animation: none/u,
     );
+  });
+
+  it("shows a team of a person and an agent on the workflow, the agent with its agent mark", () => {
+    expect(banner.match(/<g class="who[ "]/gu)).toHaveLength(2);
+    expect(banner).toContain('class="who who-agent"');
+    expect(banner).toContain('class="agent-mark"');
   });
 
   it("plays one calm sequence once: nothing repeats, blinks or changes its color", () => {
@@ -61,5 +68,16 @@ describe("the words of the banner", () => {
     }
     expect(banner.match(/>Planned: /gu)).toHaveLength(2);
     expect(banner).toContain("Under development");
+  });
+
+  it("says in one line what Bugaboo is: issue tracking and project management for people and agents", () => {
+    const line = banner
+      .split('<text class="line"')
+      .slice(1)
+      .map((piece) => piece.slice(piece.indexOf(">") + 1, piece.indexOf("<")))
+      .join(" ");
+    expect(line).toBe(
+      "A self-hosted issue tracker and project management for teams of people and AI agents.",
+    );
   });
 });
