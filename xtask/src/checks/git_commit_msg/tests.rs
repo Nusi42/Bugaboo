@@ -37,6 +37,11 @@ fn expected(name: &str) -> &'static str {
         "too-long" => "characters",
         "upper-case-start" => "starts in lower case",
         "past-tense" | "gerund" => "imperative",
+        "determiner" => "which is not a verb",
+        "third-person" | "third-person-es" => "third person",
+        "no-blank-line" => "one blank line after the first line",
+        "long-body-line" => "72 characters",
+        "trailer-no-gap" => "blank line before the trailer",
         "full-stop" => "full stop",
         "empty-merge" => "Merge <what it brought>",
         "old-merge-form" => "`WIN3`",
@@ -44,8 +49,8 @@ fn expected(name: &str) -> &'static str {
         "page-link" => "claude.ai",
         "folder-name" => "`win3`",
         "work-folder" => "`work folder`",
-        "master" => "`master`",
-        "lead" => "`lead`",
+        "master" | "master-alone" => "`master`",
+        "lead" | "lead-alone" => "`lead`",
         "fast-forward" => "`fast forward`",
         "wave" => "`wave`",
         "work-package" => "`work package`",
@@ -85,17 +90,17 @@ fn bad_example_messages_are_told_what_is_wrong() {
 #[test]
 fn only_the_co_author_trailer_of_claude_is_allowed() {
     for good in [
-        "fix: a\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n",
-        "fix: a\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\n",
+        "fix: add a\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n",
+        "fix: add a\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\n",
         // A sentence with a colon is no trailer.
-        "fix: a\n\nNote: this is a sentence.\n",
+        "fix: add a\n\nNote: this is a sentence.\n",
     ] {
         assert!(problems(good).is_empty(), "{good:?}");
     }
     for bad in [
-        "fix: a\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n",
-        "fix: a\n\nCo-Authored-By: Claude Opus 5.5 <someone@example.test>\n",
-        "fix: a\n\nco-authored-by: someone\n",
+        "fix: add a\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n",
+        "fix: add a\n\nCo-Authored-By: Claude Opus 5.5 <someone@example.test>\n",
+        "fix: add a\n\nco-authored-by: someone\n",
     ] {
         assert!(!problems(bad).is_empty(), "{bad:?}");
     }
@@ -175,4 +180,86 @@ fn the_check_reads_every_commit_not_on_main_merges_included() {
         .filter(|(_, m)| !problems(m).is_empty())
         .collect();
     assert_eq!(bad.len(), 1, "{bad:?}");
+}
+
+#[test]
+fn the_first_word_is_a_verb_in_the_imperative() {
+    for good in [
+        "fix(a): add setup",
+        "fix(a): use one reader",
+        "fix(a): focus the field",
+        "fix(a): process the list",
+        "fix(a): pass the token",
+        "fix(a): embed the font",
+        "fix(a): SEC-PRIVATE reads the range",
+        "fix(a): README explains it",
+        "fix(a): TypeScript checks run",
+        "docs(a): news about the release",
+    ] {
+        assert!(problems(good).is_empty(), "{good}: {:?}", problems(good));
+    }
+    for bad in [
+        "fix(a): the list",
+        "fix(a): a button",
+        "fix(a): An item",
+        "fix(a): one reader",
+        "fix(a): no empty card",
+        "fix(a): every route",
+        "fix(a): each row",
+        "fix(a): all rows",
+        "fix(a): this page",
+        "fix(a): that page",
+        "fix(a): these pages",
+        "fix(a): those pages",
+        "fix(a): its name",
+        "fix(a): their names",
+        "fix(a): some names",
+        "fix(a): adds a field",
+        "fix(a): fixes a field",
+        "fix(a): makes a field",
+        "fix(a): uses a field",
+        "fix(a): removes a field",
+        "fix(a): keeps a field",
+        "fix(a): shows a field",
+        "fix(a): moves a field",
+        "fix(a): reads a field",
+        "fix(a): writes a field",
+        "fix(a): applies a field",
+        "fix(a): Add a field",
+        "fix(a): Readme explains it",
+    ] {
+        assert!(!problems(bad).is_empty(), "{bad}");
+    }
+}
+
+#[test]
+fn the_body_follows_the_common_layout() {
+    let long = "x".repeat(80);
+    let trailer = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>";
+    let has_72 = |message: &str| problems(message).iter().any(|p| p.contains("72"));
+    assert!(has_72(&format!("fix(a): b\n\n{long}\n")));
+    assert!(problems("fix(a): b\n\nshort\n").is_empty());
+    // A URL, an indented line and a fenced code block may be long.
+    assert!(!has_72(&format!(
+        "fix(a): b\n\nhttps://example.test/{long}\n"
+    )));
+    assert!(!has_72(&format!("fix(a): b\n\n  {long}\n")));
+    assert!(!has_72(&format!("fix(a): b\n\n```\n{long}\n```\n")));
+    assert!(!problems("fix(a): b\nbody\n").is_empty());
+    assert!(!problems(&format!("fix(a): b\nbody\n{trailer}\n")).is_empty());
+    assert!(!problems(&format!("fix(a): b\n\nbody\n{trailer}\n")).is_empty());
+    assert!(problems(&format!("fix(a): b\n\nbody\n\n{trailer}\n")).is_empty());
+    assert!(problems(&format!("fix(a): b\n\n{trailer}\n")).is_empty());
+    // A subject alone is fine.
+    assert!(problems("fix(a): b\n").is_empty());
+}
+
+#[test]
+fn product_words_pass_but_their_parts_do_not() {
+    assert!(problems("docs(a): ask the project lead").is_empty());
+    assert!(problems("docs(a): rotate the Master Key").is_empty());
+    assert!(!problems("docs(a): ask the lead").is_empty());
+    assert!(!problems("docs(a): ask the lead of the project").is_empty());
+    assert!(!problems("docs(a): rotate the master").is_empty());
+    assert!(!problems("docs(a): reset the master of keys").is_empty());
 }

@@ -1,0 +1,2 @@
+fix(web): reject empty names
+Empty names broke the list.

@@ -7,9 +7,13 @@
 //! The rules, for the whole message:
 //!
 //! - the first line is `type(scope): subject` with a type of [`TYPES`], at most [`MAX_SUBJECT`]
-//!   characters, a subject that starts in lower case with a verb in the imperative (a first word
-//!   that ends in `ed` or `ing` is refused, a few exceptions are known) and no full stop at the
-//!   end; a merge is `Merge <what it brought>`;
+//!   characters, a subject that starts in lower case (an identifier such as `README` or
+//!   `SEC-PRIVATE` keeps its case) with a verb in the imperative (no article or determiner, no
+//!   first word that ends in `ed` or `ing`, a few exceptions are known, and no third-person form
+//!   such as `adds`) and no full stop at the end; a merge is `Merge <what it brought>`;
+//! - one blank line between the first line and the body, body lines of at most
+//!   [`MAX_BODY_LINE`] characters (a URL, an indented line and a fenced code block may be longer)
+//!   and one blank line before the trailer;
 //! - the only trailer is `Co-Authored-By: Claude <model> <noreply@anthropic.com>`;
 //! - no link to claude.ai (the lines of a session are refused by SEC-PRIVATE as well);
 //! - no jargon of the working process (see [`jargon`]).
@@ -40,6 +44,9 @@ const MERGE: &str = "Merge ";
 /// The longest allowed subject line.
 const MAX_SUBJECT: usize = 72;
 
+/// The longest allowed line of the body, except a URL, an indented line or a fenced code block.
+const MAX_BODY_LINE: usize = 72;
+
 /// The one trailer a message may end with: the start of the line and the end of the address.
 const CO_AUTHOR_KEY: &str = "co-authored-by:";
 const CO_AUTHOR_FORM: &str = "Co-Authored-By: Claude <model> <noreply@anthropic.com>";
@@ -49,6 +56,25 @@ const CO_AUTHOR_ADDRESS: &str = "<noreply@anthropic.com>";
 const IMPERATIVE_EXCEPTIONS: [&str; 16] = [
     "embed", "speed", "need", "feed", "seed", "proceed", "exceed", "succeed", "bleed", "breed",
     "shred", "bring", "string", "spring", "swing", "cling",
+];
+
+/// First words that are no verb: an imperative never starts with one of these.
+const DETERMINERS: [&str; 15] = [
+    "the", "a", "an", "one", "no", "every", "each", "all", "this", "that", "these", "those", "its",
+    "their", "some",
+];
+
+/// Common verbs whose third-person form (`adds`, `fixes`, `applies`) is refused as a first word:
+/// a word that ends in `s` is refused when its stem (without `s`, `es`, or `ies` made `y`) is here.
+const VERBS: [&str; 77] = [
+    "add", "fix", "make", "use", "remove", "keep", "show", "move", "read", "write", "apply",
+    "allow", "change", "create", "delete", "update", "rename", "replace", "handle", "set", "get",
+    "run", "stop", "start", "check", "test", "build", "split", "merge", "drop", "give", "take",
+    "let", "refuse", "reject", "accept", "load", "save", "sort", "wait", "return", "report",
+    "print", "name", "document", "explain", "describe", "record", "count", "call", "pass", "send",
+    "open", "close", "clean", "format", "install", "enable", "disable", "ensure", "fail", "find",
+    "hide", "improve", "include", "join", "limit", "look", "match", "need", "prevent", "provide",
+    "require", "reuse", "skip", "store", "switch",
 ];
 
 pub(crate) struct GitCommitMsg;
@@ -142,6 +168,7 @@ pub(crate) fn problems(message: &str) -> Vec<String> {
     if message.to_lowercase().contains("claude.ai") {
         found.push("The message has a link to claude.ai. Remove it.".to_owned());
     }
+    found.extend(layout_problems(&lines));
     let text = lines.join("\n");
     found.extend(jargon::problems(&text));
     found
@@ -153,6 +180,35 @@ fn is_not_imperative(word: &str) -> bool {
     let long = lower.chars().count() >= 5;
     long && (lower.ends_with("ed") || lower.ends_with("ing"))
         && !IMPERATIVE_EXCEPTIONS.contains(&lower.as_str())
+}
+
+/// Whether a first word is a determiner, which no verb is.
+fn is_determiner(word: &str) -> bool {
+    DETERMINERS.contains(&word.to_lowercase().as_str())
+}
+
+/// Whether a first word is a verb in the third person (`adds`, `fixes`, `applies`).
+fn is_third_person(word: &str) -> bool {
+    let lower = word.to_lowercase();
+    if !lower.ends_with('s') || lower.ends_with("ss") {
+        return false;
+    }
+    let mut stems = vec![lower[..lower.len() - 1].to_owned()];
+    if let Some(base) = lower.strip_suffix("es") {
+        stems.push(base.to_owned());
+    }
+    if let Some(base) = lower.strip_suffix("ies") {
+        stems.push(format!("{base}y"));
+    }
+    stems.iter().any(|stem| VERBS.contains(&stem.as_str()))
+}
+
+/// Whether a first word may start with a capital letter: an identifier such as `README`,
+/// `TypeScript` or `SEC-PRIVATE` has another capital letter, a dash or an underscore.
+fn is_identifier(word: &str) -> bool {
+    word.chars()
+        .skip(1)
+        .any(|c| c.is_uppercase() || c == '-' || c == '_')
 }
 
 /// What is wrong with the first line.
@@ -214,12 +270,22 @@ fn subject_problems(subject: &str) -> Vec<String> {
 /// What is wrong with the text after `type(scope): `.
 fn subject_text_problems(text: &str) -> Vec<String> {
     let mut found = Vec::new();
-    if text.chars().next().is_some_and(char::is_uppercase) {
+    let word = text.split_whitespace().next().unwrap_or("");
+    if word.chars().next().is_some_and(char::is_uppercase) && !is_identifier(word) {
         found.push("The subject starts in lower case, like `add setup`.".to_owned());
     }
-    if let Some(word) = text.split_whitespace().next()
-        && is_not_imperative(word)
-    {
+    if is_determiner(word) {
+        found.push(format!(
+            "The subject starts with `{word}`, which is not a verb. Start with a verb in the \
+             imperative, like `add` or `fix`, so that \"If applied, this commit will ...\" reads \
+             right."
+        ));
+    } else if is_third_person(word) {
+        found.push(format!(
+            "The subject starts with `{word}`, a verb in the third person. Use the imperative: \
+             `add`, not `adds`."
+        ));
+    } else if is_not_imperative(word) {
         found.push(format!(
             "The subject starts with `{word}`. Start with a verb in the imperative, like `add` \
              or `fix`, not `added` or `adding`."
@@ -271,4 +337,46 @@ fn looks_like_trailer(line: &str) -> bool {
         && key
             .split('-')
             .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_alphanumeric()))
+}
+
+/// Whether a body line may be longer than [`MAX_BODY_LINE`]: an indented line, or a URL.
+fn may_be_long(line: &str) -> bool {
+    let words: Vec<&str> = line.split_whitespace().collect();
+    line.starts_with([' ', '\t']) || (words.len() <= 2 && words.iter().any(|w| w.contains("://")))
+}
+
+/// What is wrong with the layout: the blank line after the first line, the length of the lines of
+/// the body (code blocks aside) and the blank line before the trailer.
+fn layout_problems(lines: &[&str]) -> Vec<String> {
+    let Some(first) = lines.iter().position(|line| !line.trim().is_empty()) else {
+        return Vec::new();
+    };
+    let mut found = Vec::new();
+    if lines
+        .get(first + 1)
+        .is_some_and(|line| !line.trim().is_empty())
+    {
+        found.push("Put one blank line after the first line, then the body.".to_owned());
+    }
+    let mut in_code = false;
+    let mut too_long = 0;
+    for line in &lines[first + 1..] {
+        if line.trim_start().starts_with("```") {
+            in_code = !in_code;
+        } else if !in_code && !may_be_long(line) && line.chars().count() > MAX_BODY_LINE {
+            too_long += 1;
+        }
+    }
+    if too_long > 0 {
+        found.push(format!(
+            "{too_long} line(s) of the body have more than {MAX_BODY_LINE} characters. Wrap the \
+             body at {MAX_BODY_LINE} (a URL, an indented line or a code block may be longer)."
+        ));
+    }
+    for (at, line) in lines.iter().enumerate().skip(first + 2) {
+        if line.to_lowercase().starts_with(CO_AUTHOR_KEY) && !lines[at - 1].trim().is_empty() {
+            found.push("Put one blank line before the trailer.".to_owned());
+        }
+    }
+    found
 }

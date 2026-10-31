@@ -1,0 +1,12 @@
+docs(adr): record the decision on links
+
+See the details at
+https://example.test/a/very/long/address/that/does/not/fit/in/seventy-two/characters
+
+```text
+a code line that is far longer than seventy-two characters because it is code, not prose
+```
+
+    an indented line that is also far longer than seventy-two characters in total length
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

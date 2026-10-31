@@ -24,6 +24,10 @@ const PHRASES: [(&[&str], &str); 4] = [
     (&["fast", "forward*"], "branch logistics"),
 ];
 
+/// Phrases of the product that contain a refused word: a role and a kind of key. Their words are
+/// not jargon there; `lead` and `master` on their own still are.
+const PRODUCT_PHRASES: [[&str; 2]; 2] = [["project", "lead"], ["master", "key"]];
+
 /// Splits a text into words: runs of letters and digits.
 fn words_of(text: &str) -> Vec<&str> {
     text.split(|c: char| !c.is_alphanumeric())
@@ -74,8 +78,18 @@ fn phrase_matches(phrase: &[&str], lowered: &[String]) -> bool {
 pub(super) fn problems(text: &str) -> Vec<String> {
     let found = words_of(text);
     let lowered: Vec<String> = found.iter().map(|word| word.to_lowercase()).collect();
+    let mut product = vec![false; found.len()];
+    for (at, pair) in lowered.windows(2).enumerate() {
+        if PRODUCT_PHRASES.iter().any(|phrase| pair == phrase) {
+            product[at] = true;
+            product[at + 1] = true;
+        }
+    }
     let mut terms: Vec<(String, &str)> = Vec::new();
     for (at, (word, lower)) in found.iter().zip(&lowered).enumerate() {
+        if product[at] {
+            continue;
+        }
         let next = found.get(at + 1).copied();
         if is_folder_name(lower) {
             terms.push(((*word).to_owned(), "work-folder or branch logistics"));
