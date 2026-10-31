@@ -77,6 +77,8 @@ mod search;
 mod second_step_gap;
 mod settings;
 mod tags;
+mod time;
+mod time_entries;
 mod workflows;
 
 pub use admin::ProbeHandle;
@@ -187,6 +189,8 @@ where
         .merge(people_visibility::routes())
         .merge(check_access::routes())
         .merge(editing::routes())
+        .merge(time::routes())
+        .merge(time_entries::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

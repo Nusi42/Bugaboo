@@ -4,6 +4,7 @@
 //! caller gives the moment.
 
 pub mod day;
+pub mod entry;
 pub mod length;
 pub mod zone;
 

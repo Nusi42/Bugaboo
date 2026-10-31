@@ -21,7 +21,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, Re
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
     FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
-    RelationKindId, RoleId, SavedSearchId, TagId, UserId, WorkflowId,
+    RelationKindId, RoleId, SavedSearchId, TagId, TimeEntryId, UserId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -275,6 +275,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|search| search.maker == stale.viewer && search.deleted_at.is_none())
             .map(|search| search.version),
+            // A timer and a time entry are their person's own: nobody else is told their version.
+            RecordKind::Timer => found(UserId::from_bytes(bytes).ok(), |id| store.timer(id))
+                .await
+                .map_err(failed)?
+                .filter(|timer| timer.person == stale.viewer)
+                .map(|timer| timer.version),
+            RecordKind::TimeEntry => found(TimeEntryId::from_bytes(bytes).ok(), |id| {
+                store.time_entry(id)
+            })
+            .await
+            .map_err(failed)?
+            .filter(|entry| entry.person == stale.viewer)
+            .map(|entry| entry.version),
             _ => return self.version_by_kind(stale).await,
         };
         Ok(version)

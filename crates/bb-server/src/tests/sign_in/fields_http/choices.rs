@@ -140,7 +140,11 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         // A role that works with fields of the starting roles: a Team member sees and changes it.
         let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
         let list = tim
-            .send("GET", &format!("{FIELDS}?project=ACME"), None)
+            .send(
+                "GET",
+                &format!("{FIELDS}?project=ACME&applies_to=issues"),
+                None,
+            )
             .await?;
         assert_eq!(ok(&list)?["items"].as_array().map(Vec::len), Some(1));
         Ok(())

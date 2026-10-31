@@ -8,6 +8,8 @@
 //!   later events about the comment (a new text, the trash) change the comment itself, which the
 //!   history reads, and add no row.
 //! - An event about a **relation** is a row in the history of both issues.
+//! - An event about a **time entry** is a row in the history of its issue: time was booked, an
+//!   entry changed or was deleted (without the note).
 //! - An event about a **file** on an issue (an attachment) is a row in the history of that issue:
 //!   it was added, put into the trash or brought back. A file on a comment is part of the comment.
 //!
@@ -21,7 +23,7 @@ use bb_core::technical::TechnicalName;
 
 use crate::files::member as file_member;
 use crate::issues::member as issue_member;
-use crate::member::{comment, relation};
+use crate::member::{comment, relation, time_entry};
 
 /// The ID an event names in the member `field` (before or after), if it names an issue.
 pub(crate) fn issue_in(changes: &[FieldChange], field: &str, after: bool) -> Option<IssueId> {
@@ -137,6 +139,19 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
             .cloned()
             .collect();
         return issue_in(&event.changes, file_member::ISSUE, true)
+            .map(|issue| vec![row(issue, HistoryKind::Change, kept)])
+            .unwrap_or_default();
+    }
+    if kind_is(RecordKind::TimeEntry) {
+        // An entry booked, changed or deleted, in the history of its issue. The note stays out:
+        // it is the person's own words about their time and no reader of the history needs it.
+        let kept = event
+            .changes
+            .iter()
+            .filter(|change| change.field != time_entry::NOTE)
+            .cloned()
+            .collect();
+        return issue_in(&event.changes, time_entry::ISSUE, true)
             .map(|issue| vec![row(issue, HistoryKind::Change, kept)])
             .unwrap_or_default();
     }

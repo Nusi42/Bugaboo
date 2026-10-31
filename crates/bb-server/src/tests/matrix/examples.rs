@@ -539,6 +539,23 @@ pub(super) const EXAMPLES: &[Example] = &[
             Quirk::SessionOnly,
         ],
     ),
+    Example::with("getTimer", &[Quirk::KeysActAsThePerson]),
+    Example::with("startTimer", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("stopTimer", &[Quirk::KeysActAsThePerson]),
+    Example::with("switchTimer", &[Quirk::KeysActAsThePerson]),
+    Example::with("changeTimerStart", &[Quirk::KeysActAsThePerson]),
+    Example::with("throwAwayTimer", &[Quirk::KeysActAsThePerson]),
+    Example::with("listMyTimeEntries", &[Quirk::KeysActAsThePerson]),
+    Example::with("addTimeEntry", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "changeTimeEntry",
+        &[Quirk::AnIssueOfTheTarget, Quirk::TheirOwn],
+    ),
+    Example::with(
+        "deleteTimeEntry",
+        &[Quirk::AnIssueOfTheTarget, Quirk::TheirOwn],
+    ),
+    Example::with("listIssueTimeEntries", &[Quirk::AnIssueOfTheTarget]),
 ];
 
 /// The request of an example: the method, the address with its parts filled in, and a body that
@@ -598,6 +615,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_workflows::workflow_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_time::time_request(fixture, operation, browser).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

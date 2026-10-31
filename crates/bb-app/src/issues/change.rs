@@ -18,7 +18,7 @@ use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::fields::{Item, ItemValues, PlannedValues};
+use crate::fields::{Item, ItemValues, Making, PlannedValues};
 use crate::follow::started_following;
 use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
@@ -270,7 +270,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .load_values(RecordKind::Issue, &[current.id.into()])
             .await?;
         let own = self
-            .plan_values(actor, &held, &item, &input.fields, &stored, false)
+            .plan_values(actor, &held, &item, &input.fields, &stored, Making::Change)
             .await?;
         let entering = self
             .entering_group(

@@ -141,6 +141,9 @@ pub(crate) struct State {
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
     pub(crate) default_lists: Vec<bb_core::saved_search::ProjectDefaultList>,
+    pub(crate) timers: Vec<bb_core::time::entry::Timer>,
+    pub(crate) time_entries: Vec<bb_core::time::entry::TimeEntry>,
+    pub(crate) starter_fields: Vec<bb_core::time::entry::StarterFieldMark>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

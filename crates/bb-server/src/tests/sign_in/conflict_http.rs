@@ -13,12 +13,13 @@ use super::fields_http::FIELDS;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
+use super::time_http::{MY_ENTRIES, TIMER};
 
 /// How far past the current version a stale save is.
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 31] = [
+const VERSIONED: [&str; 37] = [
     "changeSignUpPolicy",
     "changeMySetting",
     "saveComment",
@@ -50,6 +51,12 @@ const VERSIONED: [&str; 31] = [
     "resetRole",
     "changeTag",
     "combineTags",
+    "stopTimer",
+    "switchTimer",
+    "changeTimerStart",
+    "throwAwayTimer",
+    "changeTimeEntry",
+    "deleteTimeEntry",
 ];
 
 /// A save that is about to be sent on a version that is not the current one.
@@ -125,6 +132,8 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
+        "stopTimer" | "switchTimer" | "changeTimerStart" | "throwAwayTimer" | "changeTimeEntry"
+        | "deleteTimeEntry" => prepare_time(id, site, ada).await,
         _ => prepare_settings(id, ada).await,
     }
 }
@@ -537,6 +546,40 @@ async fn prepare_workflow(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
         .under_lock(&json!({"kind": "workflow", "id": workflow}), "workflow")),
         other => Err(format!("no row for {other}").into()),
     }
+}
+
+/// The person's running timer (started on a new issue when it stands still), or one of their
+/// entries, and a change of it.
+async fn prepare_time(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
+    let issue = text_in(ok(&site.create(ada, "Timed").await?)?, "readable_id")?;
+    if let "changeTimeEntry" | "deleteTimeEntry" = id {
+        let entry = made(
+            ada,
+            MY_ENTRIES,
+            json!({"issue": issue, "date": "2027-01-14", "minutes": 30}),
+        )
+        .await?;
+        let path = format!("{MY_ENTRIES}/{}", text_in(&entry, "id")?);
+        return if id == "changeTimeEntry" {
+            Save::new("PATCH", path, json!({"minutes": 45}), &entry["version"])
+        } else {
+            Save::new("DELETE", path, json!({}), &entry["version"])
+        };
+    }
+    let mut timer = read(ada, TIMER).await?;
+    if timer.get("running").is_none() {
+        timer = made(ada, TIMER, json!({"issue": issue})).await?;
+    }
+    let (path, body) = match id {
+        "stopTimer" => ("stop", json!({})),
+        "switchTimer" => ("switch", json!({"issue": issue})),
+        "changeTimerStart" => (
+            "start-time",
+            json!({"started_at": timer["running"]["started_at"]}),
+        ),
+        _ => ("throw-away", json!({})),
+    };
+    Save::new("POST", format!("{TIMER}/{path}"), body, &timer["version"])
 }
 
 #[tokio::test]

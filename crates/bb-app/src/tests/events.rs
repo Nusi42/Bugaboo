@@ -20,6 +20,7 @@ use super::scenarios_notifications as sn;
 use super::scenarios_relations as sr;
 use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
+use super::scenarios_time as sti;
 use super::scenarios_workflows as sw;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
@@ -29,13 +30,14 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 6] = [
+const SYSTEM_USE_CASES: [&str; 7] = [
     "issue_setup_code",
     "create_starting_roles",
     "create_starting_issue_types",
     "create_starting_relation_kinds",
     "create_starting_workflows",
     "create_missing_handles",
+    "create_starter_time_fields",
 ];
 
 /// The table: the name of the use case and its scenario. One line per command use case.
@@ -160,6 +162,15 @@ table! {
     "restore_search" => ss::restore_search_scenario,
     "save_copy" => ss::save_copy_scenario,
     "set_project_list" => ss::set_project_list_scenario,
+    "create_starter_time_fields" => sti::create_starter_time_fields_scenario,
+    "start_timer" => sti::start_timer_scenario,
+    "stop_timer" => sti::stop_timer_scenario,
+    "switch_timer" => sti::switch_timer_scenario,
+    "change_start_time" => sti::change_start_time_scenario,
+    "throw_away_timer" => sti::throw_away_timer_scenario,
+    "add_time" => sti::add_time_scenario,
+    "change_time_entry" => sti::change_time_entry_scenario,
+    "delete_time_entry" => sti::delete_time_entry_scenario,
 }
 
 #[test]
@@ -193,6 +204,8 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
         match *name {
             "create_starting_roles" => {}
             "move_issue" => assert_eq!(added, 2, "{name} appended {added} events"),
+            // One change for each of the two starter fields of time entries.
+            "create_starter_time_fields" => assert_eq!(added, 2, "{name} appended {added} events"),
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }
     }

@@ -66,7 +66,7 @@ export const fieldTypeWords = [
 ] as const;
 
 /** Every word of `FieldFor`, in the order the server lists them. */
-export const fieldForWords = ["issues", "projects"] as const;
+export const fieldForWords = ["issues", "projects", "time-entries"] as const;
 
 /** Every word of `Look`, in the order the server lists them. */
 export const lookWords = ["badge", "pill", "plain-text", "progress-bar", "avatar"] as const;
@@ -101,6 +101,7 @@ export const notificationKindWords = [
   "followed-fields",
   "run-ended",
   "edit-notice",
+  "long-timer",
 ] as const;
 
 /** Every word of `NotificationTab`, in the order the server lists them. */

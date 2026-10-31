@@ -6501,6 +6501,81 @@
         "x-permission": "change-issues"
       }
     },
+    "/api/v1/issues/{issue}/time-entries": {
+      "get": {
+        "tags": ["time"],
+        "summary": "The time entries on an issue the reader sees, newest first: each person as *Who sees people*\nallows for the kind *Time entries*; the lengths and the notes only for a reader who may read\n*Time spent*.",
+        "operationId": "listIssueTimeEntries",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries, newest first.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IssueTimeEntryItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/issues/{issue}/uploads": {
       "post": {
         "tags": ["files"],
@@ -8205,6 +8280,581 @@
           }
         },
         "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/time-entries": {
+      "get": {
+        "tags": ["time"],
+        "summary": "The person's own time entries of some dates (a week of the timesheet), by date, then in the\norder they were made.",
+        "operationId": "listMyTimeEntries",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The first date (YYYY-MM-DD); with `to` left out, the person's week of today.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The last date, included (YYYY-MM-DD).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TimeEntryItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      },
+      "post": {
+        "tags": ["time"],
+        "summary": "Books time on an issue by hand (*Add time*): a date and a length; the own fields left out take\nthe defaults of the issue, then of its projects. Needs *Book time*.",
+        "operationId": "addTimeEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTimeEntryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "book-time"
+      }
+    },
+    "/api/v1/me/time-entries/{entry}": {
+      "delete": {
+        "tags": ["time"],
+        "summary": "Deletes one of the person's own entries. Only its person deletes an entry.",
+        "operationId": "deleteTimeEntry",
+        "parameters": [
+          {
+            "name": "entry",
+            "in": "path",
+            "description": "The ID of the entry.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTimeEntryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The entry is gone."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "book-time"
+      },
+      "patch": {
+        "tags": ["time"],
+        "summary": "Changes one of the person's own entries. Only its person changes an entry.",
+        "operationId": "changeTimeEntry",
+        "parameters": [
+          {
+            "name": "entry",
+            "in": "path",
+            "description": "The ID of the entry.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTimeEntryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The entry as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "book-time"
+      }
+    },
+    "/api/v1/me/timer": {
+      "get": {
+        "tags": ["time"],
+        "summary": "The person's own timer: what it runs on and since when.",
+        "operationId": "getTimer",
+        "responses": {
+          "200": {
+            "description": "The timer.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      },
+      "post": {
+        "tags": ["time"],
+        "summary": "Starts the person's timer on an issue they see. Needs *Book time*; a timer that runs already,\nalso on another device, is a conflict.",
+        "operationId": "startTimer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTimerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The running timer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "book-time"
+      }
+    },
+    "/api/v1/me/timer/start-time": {
+      "post": {
+        "tags": ["time"],
+        "summary": "Moves the start of the running timer.",
+        "operationId": "changeTimerStart",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTimeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The timer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/me/timer/stop": {
+      "post": {
+        "tags": ["time"],
+        "summary": "Stops the timer and saves the time as an entry, in whole minutes; under a minute nothing is\nsaved. A timer that ran longer than one entry can be is refused until its start time changes.",
+        "operationId": "stopTimer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopTimerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The timer and the entry that was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerSavedItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/me/timer/switch": {
+      "post": {
+        "tags": ["time"],
+        "summary": "Saves the time so far with the defaults of its issue and starts the timer on another issue.\nA required field without a default on the issue is refused at that field, so the screen asks\nfor it and switches again with the value.",
+        "operationId": "switchTimer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchTimerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The timer on the new issue and the entry that was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerSavedItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/me/timer/throw-away": {
+      "post": {
+        "tags": ["time"],
+        "summary": "Stops the timer and saves nothing.",
+        "operationId": "throwAwayTimer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimerVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The timer, standing still.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/notifications": {
@@ -14206,6 +14856,39 @@
           }
         }
       },
+      "ChangeTimeEntryBody": {
+        "type": "object",
+        "description": "A change of one of the person's own entries; what is left out stays.",
+        "required": ["version"],
+        "properties": {
+          "date": {
+            "type": ["string", "null"],
+            "description": "A new date (YYYY-MM-DD)."
+          },
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryDetailsBody",
+                "description": "A new note, *Billable* or values of own fields (`null` takes a value away)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A new length, in whole minutes.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the entry that was looked at."
+          }
+        }
+      },
       "ChangeValueBody": {
         "oneOf": [
           {
@@ -14876,6 +15559,18 @@
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
       },
+      "DeleteTimeEntryBody": {
+        "type": "object",
+        "description": "The deletion of one of the person's own entries.",
+        "required": ["version"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the entry that was looked at."
+          }
+        }
+      },
       "Direction": {
         "type": "string",
         "description": "Which end of a relation a person starts from: the forward name or the backward one.",
@@ -15096,6 +15791,28 @@
           }
         }
       },
+      "EntryDetailsBody": {
+        "type": "object",
+        "description": "What the person fills in for the entry that a stop or a switch saves; left out, the note is\nempty, *Billable* is off and the own fields take the defaults of the issue.",
+        "properties": {
+          "billable": {
+            "type": ["boolean", "null"],
+            "description": "Whether the time can be charged to a customer; taken only while the organization offers\nit."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The values of own fields of time entries, by the key (ID) of the field.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note, plain text, at most 2,000 characters."
+          }
+        }
+      },
       "ErrorCode": {
         "type": "string",
         "description": "What went wrong. Clients react to this text, which never changes.",
@@ -15137,6 +15854,16 @@
           "issue.parent-circle",
           "relation.exists",
           "limit.reached",
+          "timer.running",
+          "timer.not-running",
+          "timer.start-in-the-future",
+          "timer.start-before-last-entry",
+          "timer.too-long",
+          "timer.too-fast",
+          "time.too-many-entries",
+          "time.entry-too-short",
+          "time.entry-too-long",
+          "time.note-too-long",
           "tag.not-here",
           "label.pick-one-conflict",
           "field.required",
@@ -15356,7 +16083,7 @@
       "FieldFor": {
         "type": "string",
         "description": "What an own field is added to.",
-        "enum": ["issues", "projects"]
+        "enum": ["issues", "projects", "time-entries"]
       },
       "FieldInputBody": {
         "type": "object",
@@ -16085,6 +16812,12 @@
             "type": ["boolean", "null"],
             "description": "A comment: whether the reader may change its text."
           },
+          "minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "Time: the length in whole minutes; left out for a reader who may not read *Time spent*.",
+            "minimum": 0
+          },
           "relation_event": {
             "oneOf": [
               {
@@ -16104,6 +16837,24 @@
             "type": ["string", "null"],
             "description": "A comment: the text, in Markdown."
           },
+          "time_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeEntryEvent",
+                "description": "Time: what happened to the entry. Who booked it is `by`, as the reader may see people of\nthe kind *Time entries*."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_fields": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/FieldChangeBody"
+            },
+            "description": "Time: the own fields of the entry (*Activity*, *Cost center*) as they were set or changed,\nonly those the reader may see."
+          },
           "version": {
             "type": ["integer", "null"],
             "format": "int64",
@@ -16114,7 +16865,7 @@
       "HistoryEntryKind": {
         "type": "string",
         "description": "What an item of the history is.",
-        "enum": ["comment", "change", "relation", "file"]
+        "enum": ["comment", "change", "relation", "file", "time"]
       },
       "HistoryTab": {
         "type": "string",
@@ -16536,6 +17287,39 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the issue: what *Part of* is changed from."
+          }
+        }
+      },
+      "IssueTimeEntryItem": {
+        "type": "object",
+        "description": "A time entry on an issue, as the reader sees it.",
+        "required": ["id", "person", "date", "own_fields"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The date (YYYY-MM-DD)."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the entry."
+          },
+          "minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How long, in whole minutes; only for a reader who may read *Time spent*.",
+            "minimum": 0
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note, plain text; only for a reader who may read *Time spent*."
+          },
+          "own_fields": {
+            "$ref": "#/components/schemas/OwnValues",
+            "description": "The values of its own fields the reader may see, by the key (ID) of the field."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Whose time it is, as the reader may see people of the kind *Time entries*."
           }
         }
       },
@@ -18408,6 +19192,38 @@
           }
         }
       },
+      "NewTimeEntryBody": {
+        "type": "object",
+        "description": "Time booked by hand.",
+        "required": ["issue", "date", "minutes"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The date the time belongs to (YYYY-MM-DD)."
+          },
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryDetailsBody",
+                "description": "The note, *Billable* and the values of own fields; the defaults of the issue fill in the\nrest."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue": {
+            "type": "string",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue."
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long, in whole minutes: at least 1, at most 1,440.",
+            "minimum": 0
+          }
+        }
+      },
       "NewValueBody": {
         "type": "object",
         "description": "A new value for a setting.",
@@ -18579,14 +19395,15 @@
       },
       "NotificationKind": {
         "type": "string",
-        "description": "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.",
+        "description": "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long.",
         "enum": [
           "mentioned",
           "assigned",
           "followed-activity",
           "followed-fields",
           "run-ended",
-          "edit-notice"
+          "edit-notice",
+          "long-timer"
         ]
       },
       "NotificationTab": {
@@ -19019,6 +19836,24 @@
           }
         }
       },
+      "Page_IssueTimeEntryItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueTimeEntryItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_IssueTypeItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -19343,6 +20178,24 @@
           }
         }
       },
+      "Page_TimeEntryItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeEntryItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "ParentBody": {
         "type": "object",
         "description": "An issue to put under another one, or to take out.",
@@ -19639,7 +20492,8 @@
           "manage-groups",
           "manage-roles",
           "change-organization-settings",
-          "see-status"
+          "see-status",
+          "book-time"
         ]
       },
       "PermissionAnswerBody": {
@@ -20671,7 +21525,10 @@
           "setting",
           "setup-code",
           "starting-roles",
-          "tag"
+          "tag",
+          "time-entry",
+          "timer",
+          "starter-fields"
         ]
       },
       "RecordRefBody": {
@@ -21053,6 +21910,30 @@
           "required": {
             "type": "boolean",
             "description": "The value has to be there."
+          }
+        }
+      },
+      "RunningItem": {
+        "type": "object",
+        "description": "A timer that runs.",
+        "required": ["issue", "started_at", "runs_long"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The internal ID of the issue it runs on."
+          },
+          "readable_id": {
+            "type": ["string", "null"],
+            "description": "The readable ID of the issue (WEB-142) while the person sees it."
+          },
+          "runs_long": {
+            "type": "boolean",
+            "description": "Whether it runs longer than the longest work day of the working-time rules."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "When it started.",
+            "format": "date-time"
           }
         }
       },
@@ -22163,6 +23044,34 @@
           }
         }
       },
+      "StartTimeBody": {
+        "type": "object",
+        "description": "A new start of the running timer.",
+        "required": ["version", "started_at"],
+        "properties": {
+          "started_at": {
+            "type": "string",
+            "description": "The new start (RFC 3339): never in the future, never before the end of the last time entry\nthat has a start.",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the timer that was looked at."
+          }
+        }
+      },
+      "StartTimerBody": {
+        "type": "object",
+        "description": "The issue to start the timer on.",
+        "required": ["issue"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue."
+          }
+        }
+      },
       "StartUploadBody": {
         "type": "object",
         "description": "The file to upload.",
@@ -22300,6 +23209,56 @@
         "description": "The only value a status can have today.",
         "enum": ["ok"]
       },
+      "StopTimerBody": {
+        "type": "object",
+        "description": "A stop of the timer.",
+        "required": ["version"],
+        "properties": {
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryDetailsBody",
+                "description": "What the person filled in for the entry."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the timer that was looked at."
+          }
+        }
+      },
+      "SwitchTimerBody": {
+        "type": "object",
+        "description": "A switch of the timer to another issue.",
+        "required": ["version", "issue"],
+        "properties": {
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryDetailsBody",
+                "description": "What the person filled in for the entry of the time so far (when a required field has no\ndefault on its issue); left out for the defaults."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue": {
+            "type": "string",
+            "description": "The readable ID or the internal ID of the issue to go on with."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the timer that was looked at."
+          }
+        }
+      },
       "TagItem": {
         "type": "object",
         "description": "A tag as the people who look after tags see it: the fields that can be asked for.",
@@ -22415,10 +23374,133 @@
           }
         }
       },
+      "TimeEntryEvent": {
+        "type": "string",
+        "description": "What happened to an entry of time.",
+        "enum": ["booked", "changed", "deleted"]
+      },
+      "TimeEntryItem": {
+        "type": "object",
+        "description": "One of the person's own time entries.",
+        "required": ["id", "issue", "date", "minutes", "note", "own_fields", "version"],
+        "properties": {
+          "billable": {
+            "type": ["boolean", "null"],
+            "description": "Whether the time can be charged to a customer; left out while the organization does not\noffer it."
+          },
+          "date": {
+            "type": "string",
+            "description": "The date (YYYY-MM-DD)."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the entry."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long, in whole minutes.",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string",
+            "description": "The note, plain text: shown as text, never as HTML."
+          },
+          "own_fields": {
+            "$ref": "#/components/schemas/OwnValues",
+            "description": "The values of its own fields the person may see, by the key (ID) of the field."
+          },
+          "readable_id": {
+            "type": ["string", "null"],
+            "description": "The readable ID of the issue (WEB-142) while the person sees it."
+          },
+          "started_at": {
+            "type": ["string", "null"],
+            "description": "The start of the timer it was saved from; left out for an entry booked by hand.",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "TimerItem": {
+        "type": "object",
+        "description": "The person's timer.",
+        "required": ["version", "starters"],
+        "properties": {
+          "running": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunningItem",
+                "description": "What it runs on; left out while it stands still."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "starters": {
+            "type": "object",
+            "description": "The key (ID) of the own field each starter field of time entries is, by its mark\n(`activity`, `cost-center`), whatever it is called now.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at; 0 for a\nperson who never started a timer."
+          }
+        }
+      },
+      "TimerSavedItem": {
+        "type": "object",
+        "description": "What a stop or a switch did.",
+        "required": ["timer"],
+        "properties": {
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeEntryItem",
+                "description": "The entry that was saved; left out when the timer ran for less than a minute."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timer": {
+            "$ref": "#/components/schemas/TimerItem",
+            "description": "The timer as it is now."
+          }
+        }
+      },
+      "TimerVersionBody": {
+        "type": "object",
+        "description": "A change of the timer that only needs its version.",
+        "required": ["version"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the timer that was looked at."
+          }
+        }
+      },
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
-        "enum": ["projects", "issues", "work-settings", "people", "settings"]
+        "enum": ["projects", "issues", "work-settings", "people", "settings", "time"]
       },
       "TriedBody": {
         "type": "object",

@@ -288,13 +288,16 @@ impl FieldType {
 }
 
 words! {
-    /// What a field is added to (CF-08). Time entries, working days, documents and releases use
-    /// the same machinery later.
+    /// What a field is added to (CF-08). Working days, documents and releases use the same
+    /// machinery later.
     pub enum FieldFor {
         /// Issues.
         Issues => "issues",
         /// Projects.
         Projects => "projects",
+        /// Time entries (TIME-13). The issue and the project hold a value of such a field too: it
+        /// is the default of the entries booked there (ADR-0035, decision 1).
+        TimeEntries => "time-entries",
     }
     messages name = "field-for."
 }

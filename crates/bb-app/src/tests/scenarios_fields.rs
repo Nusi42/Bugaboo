@@ -232,14 +232,21 @@ async fn cf_01_a_field_written_in_a_request_is_read_in_the_same_request() -> Res
     // The definitions are read once for a request; a write of a field or a choice drops them.
     let world = World::new().await.map_err(text)?;
     let ctx = world.ctx();
-    assert!(ctx.field_catalogue().await.map_err(text)?.is_empty());
+    // The starter fields of time entries are there from the first start.
+    let before = ctx.field_catalogue().await.map_err(text)?.len();
     let made = create_field(&ctx, new_field(&world, "Customer", FieldType::PickOne, &[]))
         .await
         .map_err(text)?
         .into_value();
     let after_create = ctx.field_catalogue().await.map_err(text)?;
-    assert_eq!(after_create.len(), 1);
-    assert!(after_create[0].choices.is_empty());
+    assert_eq!(after_create.len(), before + 1);
+    let customer = |catalogue: &[crate::fields::Definition]| {
+        catalogue
+            .iter()
+            .find(|definition| definition.field.id == made.id)
+            .map(|definition| definition.choices.len())
+    };
+    assert_eq!(customer(&after_create), Some(0));
     add_choice(
         &ctx,
         AddChoice {
@@ -254,6 +261,6 @@ async fn cf_01_a_field_written_in_a_request_is_read_in_the_same_request() -> Res
     .await
     .map_err(text)?;
     let after_choice = ctx.field_catalogue().await.map_err(text)?;
-    assert_eq!(after_choice[0].choices.len(), 1);
+    assert_eq!(customer(&after_choice), Some(1));
     Ok(())
 }

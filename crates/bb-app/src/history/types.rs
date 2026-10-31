@@ -9,6 +9,7 @@ use bb_core::history::{FileEvent, HistoryTab};
 use bb_core::id::EventId;
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
+use bb_core::time::Minutes;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
@@ -118,6 +119,29 @@ pub enum HistoryWhat {
         /// The issue at the other end.
         issue: IssueLine,
     },
+    /// Time was booked on the issue, or an entry of time changed or was deleted (TIME-02).
+    Time {
+        /// What happened to the entry.
+        event: TimeEvent,
+        /// Its length (before it was deleted); none for a reader who may not read *Time spent*,
+        /// and for a change that left the length as it was.
+        minutes: Option<Minutes>,
+        /// The own fields of the entry (*Activity*, *Cost center*) as they were set or changed,
+        /// only those the reader may see.
+        fields: Vec<FieldChangeView>,
+    },
+}
+
+/// What happened to a time entry, in a row of the history.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TimeEvent {
+    /// Time was booked.
+    Booked,
+    /// An entry changed.
+    Changed,
+    /// An entry was deleted.
+    Deleted,
 }
 
 /// One row of the history.

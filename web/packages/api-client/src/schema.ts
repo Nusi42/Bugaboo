@@ -1806,6 +1806,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/time-entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The time entries on an issue the reader sees, newest first: each person as *Who sees people*
+     *     allows for the kind *Time entries*; the lengths and the notes only for a reader who may read
+     *     *Time spent*.
+     */
+    get: operations["listIssueTimeEntries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/uploads": {
     parameters: {
       query?: never;
@@ -2258,6 +2279,144 @@ export interface paths {
      *     again.
      */
     delete: operations["resetMySetting"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/time-entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The person's own time entries of some dates (a week of the timesheet), by date, then in the
+     *     order they were made.
+     */
+    get: operations["listMyTimeEntries"];
+    put?: never;
+    /**
+     * Books time on an issue by hand (*Add time*): a date and a length; the own fields left out take
+     *     the defaults of the issue, then of its projects. Needs *Book time*.
+     */
+    post: operations["addTimeEntry"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/time-entries/{entry}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Deletes one of the person's own entries. Only its person deletes an entry. */
+    delete: operations["deleteTimeEntry"];
+    options?: never;
+    head?: never;
+    /** Changes one of the person's own entries. Only its person changes an entry. */
+    patch: operations["changeTimeEntry"];
+    trace?: never;
+  };
+  "/api/v1/me/timer": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The person's own timer: what it runs on and since when. */
+    get: operations["getTimer"];
+    put?: never;
+    /**
+     * Starts the person's timer on an issue they see. Needs *Book time*; a timer that runs already,
+     *     also on another device, is a conflict.
+     */
+    post: operations["startTimer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/timer/start-time": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Moves the start of the running timer. */
+    post: operations["changeTimerStart"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/timer/stop": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stops the timer and saves the time as an entry, in whole minutes; under a minute nothing is
+     *     saved. A timer that ran longer than one entry can be is refused until its start time changes.
+     */
+    post: operations["stopTimer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/timer/switch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Saves the time so far with the defaults of its issue and starts the timer on another issue.
+     *     A required field without a default on the issue is refused at that field, so the screen asks
+     *     for it and switches again with the value.
+     */
+    post: operations["switchTimer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/timer/throw-away": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stops the timer and saves nothing. */
+    post: operations["throwAwayTimer"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -4000,6 +4159,22 @@ export interface components {
        */
       version: number;
     };
+    /** @description A change of one of the person's own entries; what is left out stays. */
+    ChangeTimeEntryBody: {
+      /** @description A new date (YYYY-MM-DD). */
+      date?: string | null;
+      entry?: components["schemas"]["EntryDetailsBody"] | null;
+      /**
+       * Format: int32
+       * @description A new length, in whole minutes.
+       */
+      minutes?: number | null;
+      /**
+       * Format: int64
+       * @description The version of the entry that was looked at.
+       */
+      version: number;
+    };
     /** @description A value in a change, as the person may see it. */
     ChangeValueBody:
       | {
@@ -4330,6 +4505,14 @@ export interface components {
      * @enum {string}
      */
     DatabaseKind: "built-in" | "sqlite" | "postgres";
+    /** @description The deletion of one of the person's own entries. */
+    DeleteTimeEntryBody: {
+      /**
+       * Format: int64
+       * @description The version of the entry that was looked at.
+       */
+      version: number;
+    };
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -4447,6 +4630,23 @@ export interface components {
       email: string;
     };
     /**
+     * @description What the person fills in for the entry that a stop or a switch saves; left out, the note is
+     *     empty, *Billable* is off and the own fields take the defaults of the issue.
+     */
+    EntryDetailsBody: {
+      /**
+       * @description Whether the time can be charged to a customer; taken only while the organization offers
+       *     it.
+       */
+      billable?: boolean | null;
+      /** @description The values of own fields of time entries, by the key (ID) of the field. */
+      fields?: {
+        [key: string]: unknown;
+      };
+      /** @description The note, plain text, at most 2,000 characters. */
+      note?: string | null;
+    };
+    /**
      * @description What went wrong. Clients react to this text, which never changes.
      * @enum {string}
      */
@@ -4488,6 +4688,16 @@ export interface components {
       | "issue.parent-circle"
       | "relation.exists"
       | "limit.reached"
+      | "timer.running"
+      | "timer.not-running"
+      | "timer.start-in-the-future"
+      | "timer.start-before-last-entry"
+      | "timer.too-long"
+      | "timer.too-fast"
+      | "time.too-many-entries"
+      | "time.entry-too-short"
+      | "time.entry-too-long"
+      | "time.note-too-long"
       | "tag.not-here"
       | "label.pick-one-conflict"
       | "field.required"
@@ -4609,7 +4819,7 @@ export interface components {
      * @description What an own field is added to.
      * @enum {string}
      */
-    FieldFor: "issues" | "projects";
+    FieldFor: "issues" | "projects" | "time-entries";
     /** @description A field in a section that is saved. */
     FieldInputBody: {
       /** @description The key of the field: the word of a built-in field or the ID of an own field. */
@@ -4938,11 +5148,22 @@ export interface components {
       may_delete?: boolean | null;
       /** @description A comment: whether the reader may change its text. */
       may_edit?: boolean | null;
+      /**
+       * Format: int32
+       * @description Time: the length in whole minutes; left out for a reader who may not read *Time spent*.
+       */
+      minutes?: number | null;
       relation_event?: components["schemas"]["RelationEvent"] | null;
       /** @description A relation: what the relation reads (*blocks*). */
       relation_name?: string | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
+      time_event?: components["schemas"]["TimeEntryEvent"] | null;
+      /**
+       * @description Time: the own fields of the entry (*Activity*, *Cost center*) as they were set or changed,
+       *     only those the reader may see.
+       */
+      time_fields?: components["schemas"]["FieldChangeBody"][] | null;
       /**
        * Format: int64
        * @description A comment: the version, which a change of it is made on.
@@ -4953,7 +5174,7 @@ export interface components {
      * @description What an item of the history is.
      * @enum {string}
      */
-    HistoryEntryKind: "comment" | "change" | "relation" | "file";
+    HistoryEntryKind: "comment" | "change" | "relation" | "file" | "time";
     /**
      * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
      * @enum {string}
@@ -5157,6 +5378,24 @@ export interface components {
        * @description The version of the issue: what *Part of* is changed from.
        */
       version: number;
+    };
+    /** @description A time entry on an issue, as the reader sees it. */
+    IssueTimeEntryItem: {
+      /** @description The date (YYYY-MM-DD). */
+      date: string;
+      /** @description The ID of the entry. */
+      id: string;
+      /**
+       * Format: int32
+       * @description How long, in whole minutes; only for a reader who may read *Time spent*.
+       */
+      minutes?: number | null;
+      /** @description The note, plain text; only for a reader who may read *Time spent*. */
+      note?: string | null;
+      /** @description The values of its own fields the reader may see, by the key (ID) of the field. */
+      own_fields: components["schemas"]["OwnValues"];
+      /** @description Whose time it is, as the reader may see people of the kind *Time entries*. */
+      person: components["schemas"]["PersonRef"];
     };
     /** @description An issue type: the fields that can be asked for. */
     IssueTypeItem: {
@@ -6036,6 +6275,19 @@ export interface components {
       /** @description The search text. */
       search_text: string;
     };
+    /** @description Time booked by hand. */
+    NewTimeEntryBody: {
+      /** @description The date the time belongs to (YYYY-MM-DD). */
+      date: string;
+      entry?: components["schemas"]["EntryDetailsBody"] | null;
+      /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+      issue: string;
+      /**
+       * Format: int32
+       * @description How long, in whole minutes: at least 1, at most 1,440.
+       */
+      minutes: number;
+    };
     /** @description A new value for a setting. */
     NewValueBody: {
       /** @description The value. It must be of the type of the setting and one it accepts. */
@@ -6100,7 +6352,7 @@ export interface components {
       text?: string | null;
     };
     /**
-     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.
+     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long.
      * @enum {string}
      */
     NotificationKind:
@@ -6109,7 +6361,8 @@ export interface components {
       | "followed-activity"
       | "followed-fields"
       | "run-ended"
-      | "edit-notice";
+      | "edit-notice"
+      | "long-timer";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}
@@ -6302,6 +6555,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_IssueTimeEntryItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["IssueTimeEntryItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_IssueTypeItem: {
       /** @description The items of this page. */
       items: components["schemas"]["IssueTypeItem"][];
@@ -6424,6 +6684,13 @@ export interface components {
     Page_TagItem: {
       /** @description The items of this page. */
       items: components["schemas"]["TagItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_TimeEntryItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["TimeEntryItem"][];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
@@ -6593,7 +6860,8 @@ export interface components {
       | "manage-groups"
       | "manage-roles"
       | "change-organization-settings"
-      | "see-status";
+      | "see-status"
+      | "book-time";
     /** @description One permission with *yes* or *no* and the reasons. */
     PermissionAnswerBody: {
       /** @description Whether the person has it here. */
@@ -7119,7 +7387,10 @@ export interface components {
       | "setting"
       | "setup-code"
       | "starting-roles"
-      | "tag";
+      | "tag"
+      | "time-entry"
+      | "timer"
+      | "starter-fields";
     /** @description A record, by its kind and ID. */
     RecordRefBody: {
       /** @description The ID of the record. */
@@ -7343,6 +7614,20 @@ export interface components {
       pattern?: string | null;
       /** @description The value has to be there. */
       required?: boolean;
+    };
+    /** @description A timer that runs. */
+    RunningItem: {
+      /** @description The internal ID of the issue it runs on. */
+      issue: string;
+      /** @description The readable ID of the issue (WEB-142) while the person sees it. */
+      readable_id?: string | null;
+      /** @description Whether it runs longer than the longest work day of the working-time rules. */
+      runs_long: boolean;
+      /**
+       * Format: date-time
+       * @description When it started.
+       */
+      started_at: string;
     };
     /** @description A draft to keep. */
     SaveDraftBody: {
@@ -7899,6 +8184,25 @@ export interface components {
       /** @description The person sees the project. */
       sees: boolean;
     };
+    /** @description A new start of the running timer. */
+    StartTimeBody: {
+      /**
+       * Format: date-time
+       * @description The new start (RFC 3339): never in the future, never before the end of the last time entry
+       *     that has a start.
+       */
+      started_at: string;
+      /**
+       * Format: int64
+       * @description The version of the timer that was looked at.
+       */
+      version: number;
+    };
+    /** @description The issue to start the timer on. */
+    StartTimerBody: {
+      /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+      issue: string;
+    };
     /** @description The file to upload. */
     StartUploadBody: {
       /** @description The comment the file is for; left out for a file of the issue itself. */
@@ -7973,6 +8277,26 @@ export interface components {
      * @enum {string}
      */
     StatusValue: "ok";
+    /** @description A stop of the timer. */
+    StopTimerBody: {
+      entry?: components["schemas"]["EntryDetailsBody"] | null;
+      /**
+       * Format: int64
+       * @description The version of the timer that was looked at.
+       */
+      version: number;
+    };
+    /** @description A switch of the timer to another issue. */
+    SwitchTimerBody: {
+      entry?: components["schemas"]["EntryDetailsBody"] | null;
+      /** @description The readable ID or the internal ID of the issue to go on with. */
+      issue: string;
+      /**
+       * Format: int64
+       * @description The version of the timer that was looked at.
+       */
+      version: number;
+    };
     /** @description A tag as the people who look after tags see it: the fields that can be asked for. */
     TagItem: {
       color?: components["schemas"]["ChoiceColor"] | null;
@@ -8032,10 +8356,81 @@ export interface components {
       lock_token: string;
     };
     /**
+     * @description What happened to an entry of time.
+     * @enum {string}
+     */
+    TimeEntryEvent: "booked" | "changed" | "deleted";
+    /** @description One of the person's own time entries. */
+    TimeEntryItem: {
+      /**
+       * @description Whether the time can be charged to a customer; left out while the organization does not
+       *     offer it.
+       */
+      billable?: boolean | null;
+      /** @description The date (YYYY-MM-DD). */
+      date: string;
+      /** @description The ID of the entry. */
+      id: string;
+      /** @description The internal ID of the issue. */
+      issue: string;
+      /**
+       * Format: int32
+       * @description How long, in whole minutes.
+       */
+      minutes: number;
+      /** @description The note, plain text: shown as text, never as HTML. */
+      note: string;
+      /** @description The values of its own fields the person may see, by the key (ID) of the field. */
+      own_fields: components["schemas"]["OwnValues"];
+      /** @description The readable ID of the issue (WEB-142) while the person sees it. */
+      readable_id?: string | null;
+      /**
+       * Format: date-time
+       * @description The start of the timer it was saved from; left out for an entry booked by hand.
+       */
+      started_at?: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description The person's timer. */
+    TimerItem: {
+      running?: components["schemas"]["RunningItem"] | null;
+      /**
+       * @description The key (ID) of the own field each starter field of time entries is, by its mark
+       *     (`activity`, `cost-center`), whatever it is called now.
+       */
+      starters: {
+        [key: string]: string;
+      };
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at; 0 for a
+       *     person who never started a timer.
+       */
+      version: number;
+    };
+    /** @description What a stop or a switch did. */
+    TimerSavedItem: {
+      entry?: components["schemas"]["TimeEntryItem"] | null;
+      /** @description The timer as it is now. */
+      timer: components["schemas"]["TimerItem"];
+    };
+    /** @description A change of the timer that only needs its version. */
+    TimerVersionBody: {
+      /**
+       * Format: int64
+       * @description The version of the timer that was looked at.
+       */
+      version: number;
+    };
+    /**
      * @description What a group of permissions is about.
      * @enum {string}
      */
-    Topic: "projects" | "issues" | "work-settings" | "people" | "settings";
+    Topic: "projects" | "issues" | "work-settings" | "people" | "settings" | "time";
     /** @description What *Try it* found. */
     TriedBody: {
       /** @description The status changes from there, each with the answer for the person. */
@@ -12037,6 +12432,44 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  listIssueTimeEntries: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The entries, newest first. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_IssueTimeEntryItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   startUpload: {
     parameters: {
       query?: never;
@@ -13000,6 +13433,334 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listMyTimeEntries: {
+    parameters: {
+      query?: {
+        /** @description The first date (YYYY-MM-DD); with `to` left out, the person's week of today. */
+        from?: string;
+        /** @description The last date, included (YYYY-MM-DD). */
+        to?: string;
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The entries. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_TimeEntryItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  addTimeEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewTimeEntryBody"];
+      };
+    };
+    responses: {
+      /** @description The entry. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimeEntryItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteTimeEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the entry. */
+        entry: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeleteTimeEntryBody"];
+      };
+    };
+    responses: {
+      /** @description The entry is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeTimeEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the entry. */
+        entry: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeTimeEntryBody"];
+      };
+    };
+    responses: {
+      /** @description The entry as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimeEntryItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getTimer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The timer. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  startTimer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartTimerBody"];
+      };
+    };
+    responses: {
+      /** @description The running timer. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeTimerStart: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartTimeBody"];
+      };
+    };
+    responses: {
+      /** @description The timer. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  stopTimer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StopTimerBody"];
+      };
+    };
+    responses: {
+      /** @description The timer and the entry that was saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerSavedItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  switchTimer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SwitchTimerBody"];
+      };
+    };
+    responses: {
+      /** @description The timer on the new issue and the entry that was saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerSavedItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  throwAwayTimer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TimerVersionBody"];
+      };
+    };
+    responses: {
+      /** @description The timer, standing still. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimerItem"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

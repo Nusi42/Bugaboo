@@ -289,14 +289,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Err(ErrorCode::Forbidden.into());
                 }
                 // Changing one's own settings needs no permission, only an actor that may change
-                // things at all: a key that may only look reads them and writes nothing.
-                if actor
-                    .key
-                    .as_ref()
-                    .is_some_and(|key| !key.narrowing.may_change())
-                {
-                    return Err(ErrorCode::Forbidden.into());
-                }
+                // things at all.
+                actor.may_change_own()?;
                 self.evaluation_of(actor, Place::Organization).await?
             }
         };

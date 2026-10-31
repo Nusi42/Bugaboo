@@ -315,6 +315,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a time entry (TIME-01, TIME-02).
+    TimeEntryId
+}
+
+define_ordered_id! {
     /// The ID of a file added to an issue or a comment (ATT-01).
     AttachmentId
 }
@@ -442,6 +447,7 @@ into_entity_id!(
     WorkflowId,
     SavedSearchId,
     CommentId,
+    TimeEntryId,
     AttachmentId,
     UploadId,
     TagId,

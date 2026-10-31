@@ -29,6 +29,7 @@ const kindName = {
   "followed-fields": "notification.kind.followed-fields",
   "run-ended": "notification.kind.run-ended",
   "edit-notice": "notification.kind.edit-notice",
+  "long-timer": "notification.kind.long-timer",
 } as const satisfies Record<Kind, MessageKey>;
 
 /** The two ways of hearing of an event, with the words the column of each has. */

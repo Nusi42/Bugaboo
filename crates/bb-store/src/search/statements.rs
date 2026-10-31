@@ -14,8 +14,9 @@ use sea_query::{
     UnionType, WithClause, WithQuery,
 };
 
-use super::order::{GroupValue, Grouping, IdOf, Key, Kind, SortValue};
+use super::order::{GroupValue, Grouping, IdOf, Key, Kind, SortValue, bigint};
 use super::source::Repeats;
+use super::spent::minutes_spent;
 use super::{CompileError, Compiler, Form};
 use crate::db::{Dialect, Row, Statement, StoredId as _};
 use crate::error::StoreError;
@@ -356,6 +357,25 @@ pub(crate) fn count_statement(
     Ok(finish(&compiler, select))
 }
 
+/// The sum of the minutes spent on the issues the search finds, in the column of the count: the
+/// minutes of each issue by the one expression of time spent, summed over the issues found.
+pub(crate) fn spent_statement(
+    request: &SearchRequest,
+    dialect: Dialect,
+) -> Result<Built, CompileError> {
+    let compiler = Compiler::new(request, dialect);
+    let spent = minutes_spent();
+    let mut select = Query::select();
+    select
+        .expr_as(
+            Func::coalesce([bigint(Func::sum(spent).into()), Expr::val(0_i64)]),
+            Counted,
+        )
+        .from(IssueRow::Table)
+        .cond_where(found(&compiler)?);
+    Ok(finish(&compiler, select))
+}
+
 /// How many issues the search finds for each value of the field, the value in the column `s0`.
 /// An issue with several values counts in the group of each; one with none in the group without a
 /// value (the last).
@@ -425,6 +445,12 @@ pub(crate) fn read_place(row: &Row, kinds: &[Kind]) -> Result<Vec<SortValue>, St
 }
 
 /// The number of a count statement.
+/// A number of minutes of the column of the count (a sum of minutes is never negative).
+pub(crate) fn read_minutes(row: &Row) -> Result<bb_core::time::Minutes, StoreError> {
+    bb_core::time::Minutes::try_from(row.get::<i64>(Counted)?)
+        .map_err(|_| StoreError::Corrupt("a sum of minutes"))
+}
+
 pub(crate) fn read_count(row: &Row) -> Result<u64, StoreError> {
     u64::try_from(row.get::<i64>(Counted)?).map_err(|_| StoreError::Corrupt("a count"))
 }

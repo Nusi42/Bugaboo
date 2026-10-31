@@ -149,3 +149,25 @@ pub(crate) mod saved_search {
     /// The saved search a project shows as its list (an event about the project).
     pub(crate) const DEFAULT_LIST: &str = "default_list";
 }
+
+/// The members of a time entry (TIME-01, TIME-02). The history of the issue reads the issue from
+/// `ISSUE`.
+pub(crate) mod time_entry {
+    pub(crate) const ISSUE: &str = "issue";
+    pub(crate) const DATE: &str = "date";
+    pub(crate) const MINUTES: &str = "minutes";
+    pub(crate) const NOTE: &str = "note";
+    pub(crate) const BILLABLE: &str = "billable";
+    pub(crate) const STARTED_AT: &str = "started_at";
+    /// The issue a switched timer goes on with.
+    pub(crate) const TIMER_ISSUE: &str = "timer_issue";
+}
+
+/// The members of the timer of a person (TIME-01).
+pub(crate) mod timer {
+    /// The issue it runs on; none once it stands still.
+    pub(crate) const ISSUE: &str = "issue";
+    pub(crate) const STARTED_AT: &str = "started_at";
+    /// The moment the person was told that it runs long.
+    pub(crate) const WARNED_AT: &str = "warned_at";
+}

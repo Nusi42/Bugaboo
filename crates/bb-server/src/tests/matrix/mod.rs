@@ -23,6 +23,7 @@ mod examples_people;
 mod examples_relations;
 mod examples_searches;
 mod examples_tags;
+mod examples_time;
 mod examples_workflows;
 mod record;
 mod routes;

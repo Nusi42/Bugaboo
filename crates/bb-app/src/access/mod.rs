@@ -74,6 +74,22 @@ impl Actor {
     pub(crate) fn key_scope(&self) -> Option<&Narrowing> {
         self.key.as_ref().map(|key| &key.narrowing)
     }
+
+    /// Whether the actor may change what is the person's own (their settings, their timer): a
+    /// person may; a key only when it may change things at all, so a key that may only look reads
+    /// and writes nothing.
+    ///
+    /// # Errors
+    /// `access.forbidden` for a key that may only look.
+    pub(crate) fn may_change_own(&self) -> Result<(), AppError> {
+        if self
+            .key_scope()
+            .is_some_and(|narrowing| !narrowing.may_change())
+        {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        Ok(())
+    }
 }
 
 impl From<Refusal> for AppError {

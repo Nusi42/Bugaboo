@@ -157,6 +157,12 @@ words! {
         StartingRoles => "starting_roles",
         /// A tag (TAG-01).
         Tag => "tag",
+        /// A time entry (TIME-01, TIME-02).
+        TimeEntry => "time_entry",
+        /// The timer of a person (TIME-01); the record is the person.
+        Timer => "timer",
+        /// The making of the starter fields of time entries (TIME-13).
+        StarterFields => "starter_fields",
     }
 }
 

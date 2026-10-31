@@ -230,7 +230,10 @@ impl Rules {
     }
 }
 
-fn day_of(date: Date) -> Option<i64> {
+/// The number of days from 1970-01-01 to a day: how a day is stored (a value of a *Date* field, the
+/// date of a time entry). The other way is [`date_of`].
+#[must_use]
+pub fn day_of(date: Date) -> Option<i64> {
     let moment = date.to_zoned(TimeZone::UTC).ok()?;
     Some(moment.timestamp().as_second().div_euclid(SECONDS_PER_DAY))
 }

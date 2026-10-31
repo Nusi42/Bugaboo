@@ -17,6 +17,7 @@ use crate::auth::{
 use crate::issues::{CreateStartingIssueTypes, create_starting_issue_types};
 use crate::notifications::{CreateMissingHandles, create_missing_handles};
 use crate::relations::{CreateStartingRelationKinds, create_starting_relation_kinds};
+use crate::time::{CreateStarterTimeFields, create_starter_time_fields};
 use crate::workflows::{CreateStartingWorkflows, create_starting_workflows};
 
 /// Makes what a new organization starts with, and the setup code while the organization has no
@@ -33,6 +34,8 @@ pub async fn first_start<S: AuthStore>(
     create_starting_issue_types(&ctx, CreateStartingIssueTypes).await?;
     create_starting_relation_kinds(&ctx, CreateStartingRelationKinds).await?;
     create_starting_workflows(&ctx, CreateStartingWorkflows).await?;
+    // The starter fields of time entries, also on a server made before they existed (ADR-0035).
+    create_starter_time_fields(&ctx, CreateStarterTimeFields).await?;
     // The people made before handles existed get theirs (M3-F70).
     create_missing_handles(&ctx, CreateMissingHandles).await?;
     issue_setup_code(&ctx, IssueSetupCode).await

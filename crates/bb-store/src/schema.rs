@@ -19,6 +19,7 @@ mod searches;
 mod sign_in;
 mod system;
 mod text_index;
+mod time;
 mod work;
 
 pub(crate) use access::*;
@@ -29,6 +30,7 @@ pub(crate) use searches::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
 pub(crate) use text_index::*;
+pub(crate) use time::*;
 pub(crate) use work::*;
 
 /// A table with the entity stored in it.
@@ -409,6 +411,30 @@ stored_tables! {
         Version => version,
         Text => text,
         SavedAt => saved_at,
+    },
+    TimerRow => bb_core::time::entry::Timer {
+        Person => person,
+        Issue => running,
+        StartedAt => running,
+        WarnedAt => running,
+        ChangedAt => changed_at,
+        Version => version,
+    },
+    TimeEntryRow => bb_core::time::entry::TimeEntry {
+        Id => id,
+        Person => person,
+        Issue => issue,
+        Day => date,
+        Minutes => minutes,
+        Note => note,
+        Billable => billable,
+        StartedAt => started_at,
+        CreatedAt => created_at,
+        Version => version,
+    },
+    StarterFieldRow => bb_core::time::entry::StarterFieldMark {
+        Starter => starter,
+        Field => field,
     },
     MentionRow => bb_core::comment::Mention {
         Comment => comment,

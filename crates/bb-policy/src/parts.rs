@@ -17,6 +17,8 @@ words! {
         People => "people",
         /// Organization settings and the state of the server.
         Settings => "settings",
+        /// Time on issues and working hours (ADR-0035).
+        Time => "time",
     }
     messages name = "permission-topic.";
 }

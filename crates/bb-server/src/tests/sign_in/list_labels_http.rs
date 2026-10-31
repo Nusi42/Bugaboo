@@ -25,8 +25,9 @@ const LABEL_READS: usize = 2;
 const AT_MOST: usize = LIST_AT_MOST + LABEL_READS;
 
 /// The same for the search with labels, which asks about the organization alone: 51 measured, 54 on
-/// main before the rights were read once (M4-F137).
-const SEARCH_AT_MOST: usize = 51;
+/// main before the rights were read once (M4-F137); with the values of the starter fields of time
+/// entries, 52.
+const SEARCH_AT_MOST: usize = 52;
 
 /// Makes a label and returns its ID.
 async fn label(browser: &mut Browser, name: &str) -> Result<String, Failure> {

@@ -991,6 +991,38 @@ pub const ERROR_SETTING_UNKNOWN_TIME_ZONE: MessageKey =
 /// The message `error.tag.not-here`.
 pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
+/// The message `error.time.entry-too-long`.
+pub const ERROR_TIME_ENTRY_TOO_LONG: MessageKey = MessageKey::new("error.time.entry-too-long");
+
+/// The message `error.time.entry-too-short`.
+pub const ERROR_TIME_ENTRY_TOO_SHORT: MessageKey = MessageKey::new("error.time.entry-too-short");
+
+/// The message `error.time.note-too-long`.
+pub const ERROR_TIME_NOTE_TOO_LONG: MessageKey = MessageKey::new("error.time.note-too-long");
+
+/// The message `error.time.too-many-entries`.
+pub const ERROR_TIME_TOO_MANY_ENTRIES: MessageKey = MessageKey::new("error.time.too-many-entries");
+
+/// The message `error.timer.not-running`.
+pub const ERROR_TIMER_NOT_RUNNING: MessageKey = MessageKey::new("error.timer.not-running");
+
+/// The message `error.timer.running`.
+pub const ERROR_TIMER_RUNNING: MessageKey = MessageKey::new("error.timer.running");
+
+/// The message `error.timer.start-before-last-entry`.
+pub const ERROR_TIMER_START_BEFORE_LAST_ENTRY: MessageKey =
+    MessageKey::new("error.timer.start-before-last-entry");
+
+/// The message `error.timer.start-in-the-future`.
+pub const ERROR_TIMER_START_IN_THE_FUTURE: MessageKey =
+    MessageKey::new("error.timer.start-in-the-future");
+
+/// The message `error.timer.too-fast`.
+pub const ERROR_TIMER_TOO_FAST: MessageKey = MessageKey::new("error.timer.too-fast");
+
+/// The message `error.timer.too-long`.
+pub const ERROR_TIMER_TOO_LONG: MessageKey = MessageKey::new("error.timer.too-long");
+
 /// The message `error.workflow.cannot-fill`.
 pub const ERROR_WORKFLOW_CANNOT_FILL: MessageKey = MessageKey::new("error.workflow.cannot-fill");
 
@@ -1064,6 +1096,9 @@ pub const FIELD_FOR_ISSUES: MessageKey = MessageKey::new("field-for.issues");
 
 /// The message `field-for.projects`.
 pub const FIELD_FOR_PROJECTS: MessageKey = MessageKey::new("field-for.projects");
+
+/// The message `field-for.time-entries`.
+pub const FIELD_FOR_TIME_ENTRIES: MessageKey = MessageKey::new("field-for.time-entries");
 
 /// The message `field-level.can-change`.
 pub const FIELD_LEVEL_CAN_CHANGE: MessageKey = MessageKey::new("field-level.can-change");
@@ -2870,6 +2905,10 @@ pub const NOTIFICATION_KIND_FOLLOWED_ACTIVITY: MessageKey =
 pub const NOTIFICATION_KIND_FOLLOWED_FIELDS: MessageKey =
     MessageKey::new("notification.kind.followed-fields");
 
+/// The message `notification.kind.long-timer`.
+pub const NOTIFICATION_KIND_LONG_TIMER: MessageKey =
+    MessageKey::new("notification.kind.long-timer");
+
 /// The message `notification.kind.mentioned`.
 pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notification.kind.mentioned");
 
@@ -2915,6 +2954,9 @@ pub const NOTIFICATIONS_ISSUE_IDS_FAILED_SHORT: MessageKey =
 
 /// The message `notifications.kind`.
 pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
+
+/// The message `notifications.long-timer`.
+pub const NOTIFICATIONS_LONG_TIMER: MessageKey = MessageKey::new("notifications.long-timer");
 
 /// The message `notifications.mark-all-read`.
 pub const NOTIFICATIONS_MARK_ALL_READ: MessageKey = MessageKey::new("notifications.mark-all-read");
@@ -3112,9 +3154,15 @@ pub const PERMISSION_TOPIC_PROJECTS: MessageKey = MessageKey::new("permission-to
 /// The message `permission-topic.settings`.
 pub const PERMISSION_TOPIC_SETTINGS: MessageKey = MessageKey::new("permission-topic.settings");
 
+/// The message `permission-topic.time`.
+pub const PERMISSION_TOPIC_TIME: MessageKey = MessageKey::new("permission-topic.time");
+
 /// The message `permission-topic.work-settings`.
 pub const PERMISSION_TOPIC_WORK_SETTINGS: MessageKey =
     MessageKey::new("permission-topic.work-settings");
+
+/// The message `permission.book-time`.
+pub const PERMISSION_BOOK_TIME: MessageKey = MessageKey::new("permission.book-time");
 
 /// The message `permission.change-issues`.
 pub const PERMISSION_CHANGE_ISSUES: MessageKey = MessageKey::new("permission.change-issues");
@@ -4856,6 +4904,22 @@ pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_HELP: MessageKey =
 pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.followed-fields-in-app.name");
 
+/// The message `setting.notifications.long-timer-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_LONG_TIMER_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.long-timer-by-mail.help");
+
+/// The message `setting.notifications.long-timer-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_LONG_TIMER_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.long-timer-by-mail.name");
+
+/// The message `setting.notifications.long-timer-in-app.help`.
+pub const SETTING_NOTIFICATIONS_LONG_TIMER_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.long-timer-in-app.help");
+
+/// The message `setting.notifications.long-timer-in-app.name`.
+pub const SETTING_NOTIFICATIONS_LONG_TIMER_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.long-timer-in-app.name");
+
 /// The message `setting.notifications.mentioned-by-mail.help`.
 pub const SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_HELP: MessageKey =
     MessageKey::new("setting.notifications.mentioned-by-mail.help");
@@ -5032,6 +5096,12 @@ pub const SETTING_START_PAGE_HELP: MessageKey = MessageKey::new("setting.start.p
 
 /// The message `setting.start.page.name`.
 pub const SETTING_START_PAGE_NAME: MessageKey = MessageKey::new("setting.start.page.name");
+
+/// The message `setting.time.billable.help`.
+pub const SETTING_TIME_BILLABLE_HELP: MessageKey = MessageKey::new("setting.time.billable.help");
+
+/// The message `setting.time.billable.name`.
+pub const SETTING_TIME_BILLABLE_NAME: MessageKey = MessageKey::new("setting.time.billable.name");
 
 /// The message `setting.ui.lock`.
 pub const SETTING_UI_LOCK: MessageKey = MessageKey::new("setting.ui.lock");
@@ -5350,6 +5420,32 @@ pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
 
 /// The message `sign-up.title`.
 pub const SIGN_UP_TITLE: MessageKey = MessageKey::new("sign-up.title");
+
+/// The message `starter-field.activity`.
+pub const STARTER_FIELD_ACTIVITY: MessageKey = MessageKey::new("starter-field.activity");
+
+/// The message `starter-field.activity-development`.
+pub const STARTER_FIELD_ACTIVITY_DEVELOPMENT: MessageKey =
+    MessageKey::new("starter-field.activity-development");
+
+/// The message `starter-field.activity-documentation`.
+pub const STARTER_FIELD_ACTIVITY_DOCUMENTATION: MessageKey =
+    MessageKey::new("starter-field.activity-documentation");
+
+/// The message `starter-field.activity-meetings`.
+pub const STARTER_FIELD_ACTIVITY_MEETINGS: MessageKey =
+    MessageKey::new("starter-field.activity-meetings");
+
+/// The message `starter-field.activity-support`.
+pub const STARTER_FIELD_ACTIVITY_SUPPORT: MessageKey =
+    MessageKey::new("starter-field.activity-support");
+
+/// The message `starter-field.activity-testing`.
+pub const STARTER_FIELD_ACTIVITY_TESTING: MessageKey =
+    MessageKey::new("starter-field.activity-testing");
+
+/// The message `starter-field.cost-center`.
+pub const STARTER_FIELD_COST_CENTER: MessageKey = MessageKey::new("starter-field.cost-center");
 
 /// The message `starting-role.administrator`.
 pub const STARTING_ROLE_ADMINISTRATOR: MessageKey = MessageKey::new("starting-role.administrator");
@@ -12195,6 +12291,43 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
     ),
     (
+        "error.time.entry-too-long",
+        "A time entry can be at most a day long.",
+    ),
+    (
+        "error.time.entry-too-short",
+        "A time entry needs at least a minute.",
+    ),
+    ("error.time.note-too-long", "The note is too long."),
+    (
+        "error.time.too-many-entries",
+        "You booked as many time entries today as one day can have.",
+    ),
+    (
+        "error.timer.not-running",
+        "Your timer is not running any more, maybe it was stopped on another device.",
+    ),
+    (
+        "error.timer.running",
+        "Your timer is already running, maybe on another device. Stop it first.",
+    ),
+    (
+        "error.timer.start-before-last-entry",
+        "The start time cannot be before the end of your last time entry.",
+    ),
+    (
+        "error.timer.start-in-the-future",
+        "The start time cannot be in the future.",
+    ),
+    (
+        "error.timer.too-fast",
+        "The timer was just started or switched. Wait a second and try again.",
+    ),
+    (
+        "error.timer.too-long",
+        "The timer ran longer than one time entry can be. Change the start time first.",
+    ),
+    (
         "error.workflow.cannot-fill",
         "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
     ),
@@ -12239,6 +12372,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("field-example.yes-no", "For example: Needs a refund"),
     ("field-for.issues", "Issues"),
     ("field-for.projects", "Projects"),
+    ("field-for.time-entries", "Time entries"),
     ("field-level.can-change", "Can change"),
     ("field-level.can-see", "Can see"),
     ("field-level.hidden", "Hidden"),
@@ -13645,6 +13779,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.followed-fields",
         "Other changes to issues you follow",
     ),
+    ("notification.kind.long-timer", "Your timer runs long"),
     ("notification.kind.mentioned", "You are mentioned"),
     (
         "notification.kind.run-ended",
@@ -13690,6 +13825,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notifications.locked-way",
         "{way}: {value} · Set by your organization",
+    ),
+    (
+        "notifications.long-timer",
+        "Your timer has been running for a long time. Stop it when you are done",
     ),
     ("notifications.mark-all-read", "Mark all as read"),
     ("notifications.mark-read", "Mark as read"),
@@ -13850,7 +13989,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
     ("permission-topic.settings", "Settings"),
+    ("permission-topic.time", "Time"),
     ("permission-topic.work-settings", "Work settings"),
+    (
+        "permission.book-time",
+        "Book their own time on the issues they see, and change and delete their own time entries",
+    ),
     (
         "permission.change-issues",
         "Change anybody's issues, in the fields they may change",
@@ -15499,6 +15643,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Other changes to issues you follow: in the app",
     ),
     (
+        "setting.notifications.long-timer-by-mail.help",
+        "Sends you an e-mail when your timer has run longer than the longest work day of your organization's working-time rules. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.long-timer-by-mail.name",
+        "Your timer runs long: by e-mail",
+    ),
+    (
+        "setting.notifications.long-timer-in-app.help",
+        "Tells you under Notifications when your timer has run longer than the longest work day of your organization's working-time rules.",
+    ),
+    (
+        "setting.notifications.long-timer-in-app.name",
+        "Your timer runs long: in the app",
+    ),
+    (
         "setting.notifications.mentioned-by-mail.help",
         "Sends you an e-mail when a comment mentions you, or a group or role you are in. E-mail goes only when your organization has switched it on.",
     ),
@@ -15640,6 +15800,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The page Bugaboo opens after you sign in.",
     ),
     ("setting.start.page.name", "Start page"),
+    (
+        "setting.time.billable.help",
+        "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
+    ),
+    ("setting.time.billable.name", "Billable time"),
     (
         "setting.ui.between",
         "Whole numbers from {least} to {most}.",
@@ -15887,6 +16052,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
+    ("starter-field.activity", "Activity"),
+    ("starter-field.activity-development", "Development"),
+    ("starter-field.activity-documentation", "Documentation"),
+    ("starter-field.activity-meetings", "Meetings"),
+    ("starter-field.activity-support", "Support"),
+    ("starter-field.activity-testing", "Testing"),
+    ("starter-field.cost-center", "Cost center"),
     ("starting-role.administrator", "Administrator"),
     ("starting-role.contributor", "Contributor"),
     ("starting-role.guest", "Guest"),

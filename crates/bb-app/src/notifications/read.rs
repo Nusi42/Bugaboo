@@ -263,6 +263,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     project: self.project_label(actor, project).await?,
                 }))
             }
+            // The kind says it all; the row names the issue the timer runs on.
+            NotificationKind::LongTimer => Ok(issue.map(|_| NotificationWhat::Plain)),
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,
                 // Only a run that says it is done ended well: one that failed, one that was

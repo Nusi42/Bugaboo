@@ -13,9 +13,10 @@ const QUERIES: &str = "crates/bb-server/src/tests/sign_in/perf_queries.rs";
 const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notifications.rs";
 const LIST_LABELS: &str = "crates/bb-server/src/tests/sign_in/list_labels_http.rs";
 const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_http.rs";
+const TIME_ENTRIES: &str = "crates/bb-server/src/tests/sign_in/time_perf_http.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 12] = [
+pub(super) const REQUIRED: [Required; 13] = [
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),
@@ -56,6 +57,10 @@ pub(super) const REQUIRED: [Required; 12] = [
         "perf_05_a_page_of_forty_saved_searches_runs_as_many_statements_as_a_page_of_five",
     )
     .within(SAVED_SEARCHES),
+    Required::both(
+        "perf_05_a_page_of_forty_time_entries_runs_as_many_statements_as_a_page_of_five",
+    )
+    .within(TIME_ENTRIES),
 ];
 
 pub(crate) struct PerfN1;

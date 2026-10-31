@@ -137,6 +137,13 @@ use crate::tags::{
     create_label_group, issue_labels_and_tags, label_change_preview, label_groups, labels,
     remove_label, remove_tag, tag_change_preview, tag_suggestions, tags,
 };
+use crate::time::{
+    AddTime, ChangeStartTime, ChangeTimeEntry, DeleteTimeEntry, IssueTimeEntries,
+    IssueTimeEntriesQuery, MyTimeEntriesQuery, StartTimer, StopTimer, SwitchTimer, ThrowAwayTimer,
+    TimeEntryPage, TimeEntryView, TimerQuery, TimerSaved, TimerView, add_time, change_start_time,
+    change_time_entry, delete_time_entry, issue_time_entries, my_time_entries, start_timer,
+    stop_timer, switch_timer, throw_away_timer, timer,
+};
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
     PublishPreviewQuery, PublishWorkflow, Published, Tried, TryWorkflowQuery, UseWorkflow,
@@ -666,4 +673,26 @@ use_cases! {
     try_workflow(TryWorkflowQuery) -> Authorized<Tried>;
     /// Tells which roles may change a field in the issues of a project.
     who_may_change(WhoMayChangeQuery) -> Authorized<WhoMayChange>;
+    /// Shows the timer of the person.
+    timer(TimerQuery) -> Authorized<TimerView>;
+    /// Starts the timer of the person on an issue.
+    start_timer(StartTimer) -> Authorized<TimerView>;
+    /// Stops the timer and saves the time as an entry.
+    stop_timer(StopTimer) -> Authorized<TimerSaved>;
+    /// Saves the time so far and starts the timer on another issue.
+    switch_timer(SwitchTimer) -> Authorized<TimerSaved>;
+    /// Moves the start of the running timer.
+    change_start_time(ChangeStartTime) -> Authorized<TimerView>;
+    /// Stops the timer and saves nothing.
+    throw_away_timer(ThrowAwayTimer) -> Authorized<TimerView>;
+    /// Books time on an issue by hand.
+    add_time(AddTime) -> Authorized<TimeEntryView>;
+    /// Changes one of the person's own time entries.
+    change_time_entry(ChangeTimeEntry) -> Authorized<TimeEntryView>;
+    /// Deletes one of the person's own time entries.
+    delete_time_entry(DeleteTimeEntry) -> Done;
+    /// Lists the person's own time entries of some dates.
+    my_time_entries(MyTimeEntriesQuery) -> Authorized<TimeEntryPage>;
+    /// Lists the time entries on an issue.
+    issue_time_entries(IssueTimeEntriesQuery) -> Authorized<IssueTimeEntries>;
 }

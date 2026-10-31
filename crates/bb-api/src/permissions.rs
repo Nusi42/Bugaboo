@@ -460,36 +460,6 @@ pub const ROUTES: &[Route] = &[
     route("applyManyChanges", Declared::ByRecord, Answer::Ordinary),
     route("getManyChangeRun", Declared::SignedIn, Answer::NeverStored),
     route("stopManyChangeRun", Declared::SignedIn, Answer::Ordinary),
-    route(
-        "addComment",
-        Declared::Permission(Permission::Comment),
-        Answer::Ordinary,
-    ),
-    route(
-        "saveComment",
-        Declared::Permission(Permission::Comment),
-        Answer::Ordinary,
-    ),
-    route(
-        "deleteComment",
-        Declared::Permission(Permission::Comment),
-        Answer::Ordinary,
-    ),
-    route(
-        "restoreComment",
-        Declared::Permission(Permission::Comment),
-        Answer::Ordinary,
-    ),
-    route(
-        "listCommentVersions",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
-    ),
-    route(
-        "listMentionChoices",
-        Declared::Permission(Permission::Comment),
-        Answer::NeverStored,
-    ),
     route("startUpload", Declared::ByRecord, Answer::Ordinary),
     route("getUpload", Declared::ByRecord, Answer::NeverStored),
     route("sendUploadPart", Declared::ByRecord, Answer::Ordinary),
@@ -855,10 +825,12 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
+mod comments;
 mod lookup;
 mod saved_searches;
 mod search_routes;
 #[cfg(test)]
 mod tests;
+mod time;
 
 pub use lookup::{csrf_exempt, declared, rows};

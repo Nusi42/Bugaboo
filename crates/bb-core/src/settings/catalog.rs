@@ -278,6 +278,18 @@ settings! {
         lockable: false,
     }
 
+    /// Whether a time entry offers *Billable*: off at the start; switching it off hides the box and
+    /// keeps the values (ADR-0035, decision 1).
+    TIME_BILLABLE: Bool = {
+        key: "time.billable",
+        name: message::SETTING_TIME_BILLABLE_NAME,
+        default: false,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_TIME_BILLABLE_HELP,
+        lockable: false,
+    }
+
     /// The e-mail domains that may sign up on their own (a list separated by commas).
     AUTH_SIGN_UP_DOMAINS: Text = {
         key: "auth.sign-up-domains",
@@ -564,6 +576,28 @@ settings! {
         levels: [Organization, Person],
         changed_by: EachPerson,
         help: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether a person hears in the app that their timer runs long (ADR-0035, decision 3).
+    NOTIFICATIONS_LONG_TIMER_IN_APP: Bool = {
+        key: "notifications.long-timer-in-app",
+        name: message::SETTING_NOTIFICATIONS_LONG_TIMER_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_LONG_TIMER_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether a person hears by e-mail that their timer runs long.
+    NOTIFICATIONS_LONG_TIMER_BY_MAIL: Bool = {
+        key: "notifications.long-timer-by-mail",
+        name: message::SETTING_NOTIFICATIONS_LONG_TIMER_BY_MAIL_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_LONG_TIMER_BY_MAIL_HELP,
         lockable: true,
     }
 

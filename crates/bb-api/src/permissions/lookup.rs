@@ -5,15 +5,17 @@ use std::sync::OnceLock;
 
 use axum::http::Method;
 
-use super::{Declared, ROUTES, Route, saved_searches, search_routes};
+use super::{Declared, ROUTES, Route, comments, saved_searches, search_routes, time};
 
 /// Every row of the table: the rows above and those of the areas that have a file of their own
 /// beside this one.
 pub fn rows() -> impl Iterator<Item = &'static Route> {
     ROUTES
         .iter()
+        .chain(comments::ROUTES)
         .chain(saved_searches::ROUTES)
         .chain(search_routes::ROUTES)
+        .chain(time::ROUTES)
 }
 
 /// The row of the route with this operation ID, if it is declared.

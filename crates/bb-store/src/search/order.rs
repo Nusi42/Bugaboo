@@ -141,7 +141,7 @@ fn names_of(domain: Domain) -> Option<(DynIden, DynIden, DynIden)> {
     }
 }
 
-fn bigint(value: Expr) -> Expr {
+pub(crate) fn bigint(value: Expr) -> Expr {
     Func::cast_as(value, Alias::new("BIGINT")).into()
 }
 

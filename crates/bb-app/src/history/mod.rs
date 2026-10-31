@@ -12,6 +12,7 @@ mod map;
 mod names;
 mod read;
 mod store;
+mod time;
 mod types;
 mod walk;
 

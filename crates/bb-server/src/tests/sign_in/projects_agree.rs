@@ -37,9 +37,12 @@ async fn decided(org: &Org<'_>, person: &Member, project: ProjectId) -> Result<D
             .filter(|decision| decision.allowed)
             .map(|decision| decision.permission)
             .collect(),
+        // The fields of the catalogue; the own fields (the starter fields of time entries) are
+        // compared by the tests of own fields.
         answer
             .fields
             .iter()
+            .filter(|field| matches!(field.subject, bb_core::fields::FieldKey::BuiltIn(_)))
             .map(|field| (field.subject, field.level))
             .collect(),
         answer

@@ -148,7 +148,12 @@ async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_dec
             )
             .await?
             .into_value();
-        assert_eq!(levels.fields.len(), Field::ALL.len());
+        // The built-in fields and the starter fields of time entries, which every role got a level
+        // of when they were made.
+        assert_eq!(
+            levels.fields.len(),
+            Field::ALL.len() + bb_core::time::entry::StarterField::ALL.len()
+        );
         assert_eq!(levels.people.len(), PeopleKind::ALL.len());
         let level = |field| {
             levels

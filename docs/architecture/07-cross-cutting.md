@@ -101,6 +101,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `manage-roles` | People | organization | Manage | Create, change and delete roles |
 | `change-organization-settings` | Settings | organization | Manage | Change organization settings |
 | `see-status` | Settings | organization | See | See how the server is doing |
+| `book-time` | Time | project | Change | Book their own time on the issues they see, and change and delete their own time entries |
 
 <!-- END GENERATED permission-catalogue -->
 
@@ -172,6 +173,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Create, change and delete roles | ✓ | – | – | – | – | – |
 | Change organization settings | ✓ | – | – | – | – | – |
 | See how the server is doing | ✓ | – | – | – | – | – |
+| Book their own time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – |
 | Two-step sign-in for everyone with this role | off | off | off | off | off | off |
 
 <!-- END GENERATED starting-permissions -->
@@ -343,6 +345,7 @@ erDiagram
 - **Relations:** one table for every kind, including timeline dependencies; sub-issues use a parent column, shown as *part of* on the map.
 - **Files:** content-addressed blobs (SHA-256), referenced by attachments and document versions; deleted when nothing references them and no keep rule applies.
 - **Time:** all timestamps in UTC. **The person's day** is the date a moment falls on in the person's time zone, worked out in one place (`bb_core::time`); each work day stores its zone. The rules that use it are [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md), decision 5.
+- **Time on issues** (ADR-0035, decisions 1 to 4): `timer` has one row for each person who ever started a timer, keyed by the person, so two devices that start at once make one timer and one refusal; it runs while it names an issue. `time_entry` holds the entries (the day as the days since 1970, like a day of an own field; the values of their own fields in `field_value` under the kind `time_entry`). `starter_field` names the own field of each starter mark (`activity`, `cost-center`), which is how *Activity* and *Cost center* are found after a rename. A field made for time entries also holds a value on an issue and a project: the default of the entries booked there, the nearest one winning. Time spent is written once in SQL, `search::spent` in `bb-store` (`minutes_sum`, `minutes_spent`), which the port `TimeSpentStore` reads and the search field *Time spent* and the totals build on. The module of time entries is `bb-app::time`; nothing outside it reads time entries but through that port.
 - **Versions:** every changeable entity has a `version` number for optimistic locking.
 - **Advisory locks (the order):** a check that a program makes before it writes (a name is free, a limit is not reached, an issue still has a status) holds a lock from the check to the end of the change. A change that takes more than one lock takes them in this order and no other: the migration lock, then **Policy**, **TagsAndLabels**, **Workflows**, **IssueCodes** (one per project), and then the rest by their numbers (**IssueParents**, **IssueRelations**, **Handles**, **Uploads**, **IssueFiles**); `LockClass` in `bb-store` is the one home of the classes and of the order. Two changes that take two locks in different orders can wait for each other (more so behind a change that takes the Workflows lock alone, which waits for every shared holder and is waited for by every new one). SQLite takes no advisory lock (its single writer already serializes), so a wrong order would show only as a PostgreSQL deadlock under load; every transaction therefore records the highest class it took, on both databases, and in debug and test builds refuses a lower one with an error. The SQL of a lock is written in one file (`db.rs`), so no lock passes the guard unseen. A rule that rests on a program check under a lock (the unique names of types and groups, the limits of a place, since the `offer` table has no unique key) is part of this order. Enforced by: ARCH-LOCK-ORDER.
 - **Edit locks:** `edit_lock` rows (what, who, session, token, expires at) for long text and admin editors; private drafts in `edit_draft`; both deleted when no longer needed (ADR-0019).

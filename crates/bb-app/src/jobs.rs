@@ -61,6 +61,10 @@ bb_core::words! {
         /// Making the statistics the database chooses its indexes by again, from every row, for each
         /// table that is out of date (SQLite; PostgreSQL keeps its own): `statistics`.
         RefreshStatistics => "statistics.refresh",
+        /// Telling a person once that their timer runs long (ADR-0035 decision 3, ADR-0017
+        /// amendment M6): queued for each start of a timer; the payload names the person and the
+        /// start, and a timer that stopped or started again meanwhile leaves it nothing to do.
+        TimersLongRunning => "timers.long-running",
     }
 }
 
@@ -78,7 +82,11 @@ impl JobKind {
             | Self::PruneSecurityLog
             | Self::PurgeSessions
             | Self::RotateServerLog => true,
-            Self::ManyChangesStep | Self::RenewIds | Self::MailSend | Self::PreviewFile => false,
+            Self::ManyChangesStep
+            | Self::RenewIds
+            | Self::MailSend
+            | Self::PreviewFile
+            | Self::TimersLongRunning => false,
         }
     }
 
@@ -99,7 +107,8 @@ impl JobKind {
             | Self::ManyChangesStep
             | Self::RenewIds
             | Self::MailSend
-            | Self::PreviewFile => Rhythm::FromTheStart,
+            | Self::PreviewFile
+            | Self::TimersLongRunning => Rhythm::FromTheStart,
         }
     }
 
@@ -341,6 +350,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     );
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::TimersLongRunning => Box::pin(self.run_long_timer(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a long timer could not be told");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
             JobKind::PurgeDrafts
             | JobKind::CatchUpHistory
@@ -446,7 +461,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::ManyChangesStep
             | JobKind::RenewIds
             | JobKind::MailSend
-            | JobKind::PreviewFile => Err(misrouted(job, kind)),
+            | JobKind::PreviewFile
+            | JobKind::TimersLongRunning => Err(misrouted(job, kind)),
         }
     }
 
@@ -478,6 +494,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
+            // Nobody waits for the note: a timer that is not told runs on as before.
+            Some(JobKind::TimersLongRunning) => Ok(()),
             // The daily kinds come back by themselves and leave no work that people can see; a
             // new kind has to be placed in one of these arms.
             Some(

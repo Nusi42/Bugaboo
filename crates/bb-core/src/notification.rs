@@ -82,13 +82,16 @@ words! {
         /// Somebody asked the person to finish editing, or took the editing over (*Ask … to
         /// finish*, *Edit anyway*).
         EditNotice => "edit-notice",
+        /// The person's timer has run longer than the longest work day of the working-time rules
+        /// (ADR-0035, decision 3); told once for each start.
+        LongTimer => "long-timer",
     }
     messages label = "notification.kind."
 }
 
 words_in_api!(
     NotificationKind,
-    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing."
+    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long."
 );
 
 words! {
@@ -129,6 +132,7 @@ impl NotificationKind {
             NOTIFICATIONS_EDIT_NOTICE_BY_MAIL, NOTIFICATIONS_EDIT_NOTICE_IN_APP,
             NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL, NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP,
             NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL, NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP,
+            NOTIFICATIONS_LONG_TIMER_BY_MAIL, NOTIFICATIONS_LONG_TIMER_IN_APP,
             NOTIFICATIONS_MENTIONED_BY_MAIL, NOTIFICATIONS_MENTIONED_IN_APP,
             NOTIFICATIONS_RUN_ENDED_BY_MAIL, NOTIFICATIONS_RUN_ENDED_IN_APP,
         };
@@ -145,6 +149,8 @@ impl NotificationKind {
             (Self::RunEnded, Via::Mail) => &NOTIFICATIONS_RUN_ENDED_BY_MAIL,
             (Self::EditNotice, Via::App) => &NOTIFICATIONS_EDIT_NOTICE_IN_APP,
             (Self::EditNotice, Via::Mail) => &NOTIFICATIONS_EDIT_NOTICE_BY_MAIL,
+            (Self::LongTimer, Via::App) => &NOTIFICATIONS_LONG_TIMER_IN_APP,
+            (Self::LongTimer, Via::Mail) => &NOTIFICATIONS_LONG_TIMER_BY_MAIL,
         }
     }
 }
@@ -261,6 +267,7 @@ mod tests {
             (NotificationKind::FollowedFields, (false, false)),
             (NotificationKind::RunEnded, (true, false)),
             (NotificationKind::EditNotice, (true, false)),
+            (NotificationKind::LongTimer, (true, false)),
         ];
         assert_eq!(expected.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {

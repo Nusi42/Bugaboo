@@ -29,10 +29,10 @@ mod values;
 
 pub use catalogue::{field, field_types, field_usage, fields};
 pub use choices::{add_choice, change_choice, combine_choices, reorder_choices};
-pub(crate) use manage::must_be_asked_for;
+pub(crate) use manage::{NewField, must_be_asked_for, next_position};
 pub use manage::{change_field, create_field};
 pub use store::{FieldStore, StoredValues};
 pub use text::{SaveFieldText, save_field_text};
 pub use types::*;
 
-pub(crate) use values::{Item, ItemValues, PlannedValues, is_kept};
+pub(crate) use values::{Item, ItemValues, Making, PlannedValues, is_kept};

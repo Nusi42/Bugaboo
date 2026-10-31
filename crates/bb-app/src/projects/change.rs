@@ -16,7 +16,7 @@ use super::Why;
 use super::types::{ChangeProject, ProjectView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::fields::{Item, PlannedValues};
+use crate::fields::{Item, Making, PlannedValues};
 use crate::input::clean_name;
 use crate::member;
 
@@ -110,7 +110,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let stored = self.load_values(RecordKind::Project, &[id.into()]).await?;
         let own = self
-            .plan_values(actor, &access, &item, &input.fields, &stored, false)
+            .plan_values(
+                actor,
+                &access,
+                &item,
+                &input.fields,
+                &stored,
+                Making::Change,
+            )
             .await?;
         let plan = Plan {
             name: name.unwrap_or_else(|| current.name.clone()),

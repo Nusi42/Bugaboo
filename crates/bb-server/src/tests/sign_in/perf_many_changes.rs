@@ -16,13 +16,15 @@ const PREVIEW: &str = "/api/v1/many-changes/preview";
 /// The most statements each issue of a selection costs the preview, however many there are (the
 /// issue by its address, the issue again as the change reads it, and who is assigned; 3 measured,
 /// 6 before the project of an address and the chain of a project were read once for the request
-/// (M5-F169), 10 before the definitions of the fields were).
-const PER_ISSUE_AT_MOST: usize = 3;
+/// (M5-F169), 10 before the definitions of the fields were). An organization with own fields also
+/// reads the values of each issue: every organization has the starter fields of time entries, so
+/// that is 4 (M6-F44 looks for one read of them for the whole selection).
+const PER_ISSUE_AT_MOST: usize = 4;
 
 /// The most statements a preview of one issue runs: the session and the rights, which every
 /// request pays (M4-F137: 31 measured, 42 before the rights of the person were read once), and the
-/// one issue.
-const ONE_AT_MOST: usize = 31;
+/// one issue, whose values of the starter fields of time entries are one read more (32).
+const ONE_AT_MOST: usize = 32;
 
 #[tokio::test]
 async fn perf_05_each_issue_of_a_preview_costs_the_same_few_statements() -> TestResult {

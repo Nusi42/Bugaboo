@@ -302,6 +302,7 @@ export const messages = {
   "permission-topic.work-settings": "Work settings",
   "permission-topic.people": "People",
   "permission-topic.settings": "Settings",
+  "permission-topic.time": "Time",
   "nav.access-keys": "Access keys",
   "access-keys.more": "More options",
   "permission.see-projects": "See the project and what is in it",
@@ -334,6 +335,8 @@ export const messages = {
   "permission.manage-roles": "Create, change and delete roles",
   "permission.change-organization-settings": "Change organization settings",
   "permission.see-status": "See how the server is doing",
+  "permission.book-time":
+    "Book their own time on the issues they see, and change and delete their own time entries",
   "starting-role.administrator": "Administrator",
   "starting-role.project-lead": "Project lead",
   "starting-role.team-member": "Team member",
@@ -450,6 +453,19 @@ export const messages = {
   "error.issue.parent-circle":
     "That would create a circle of issues or a chain that is too long. Choose another issue.",
   "error.limit.reached": "There is no room for more of these. Take some away first.",
+  "error.timer.running": "Your timer is already running, maybe on another device. Stop it first.",
+  "error.timer.not-running":
+    "Your timer is not running any more, maybe it was stopped on another device.",
+  "error.timer.start-in-the-future": "The start time cannot be in the future.",
+  "error.timer.start-before-last-entry":
+    "The start time cannot be before the end of your last time entry.",
+  "error.timer.too-long":
+    "The timer ran longer than one time entry can be. Change the start time first.",
+  "error.timer.too-fast": "The timer was just started or switched. Wait a second and try again.",
+  "error.time.too-many-entries": "You booked as many time entries today as one day can have.",
+  "error.time.entry-too-short": "A time entry needs at least a minute.",
+  "error.time.entry-too-long": "A time entry can be at most a day long.",
+  "error.time.note-too-long": "The note is too long.",
   "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
   "status.in-progress": "In progress",
@@ -528,6 +544,7 @@ export const messages = {
   "field-type.issue": "Issue",
   "field-for.issues": "Issues",
   "field-for.projects": "Projects",
+  "field-for.time-entries": "Time entries",
   "field-look.badge": "Badge",
   "field-look.pill": "Pill",
   "field-look.plain-text": "Plain text",
@@ -663,6 +680,7 @@ export const messages = {
     "A status change, a comment or a file on an issue you follow",
   "notification.kind.followed-fields": "Other changes to issues you follow",
   "notification.kind.run-ended": "Your change to many issues has ended",
+  "notification.kind.long-timer": "Your timer runs long",
   "notification.kind.edit-notice":
     "Somebody asks you to finish editing, or takes your editing over",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
@@ -697,6 +715,15 @@ export const messages = {
   "setting.notifications.run-ended-in-app.help":
     "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
   "setting.notifications.run-ended-by-mail.name": "Your change to many issues has ended: by e-mail",
+  "setting.notifications.long-timer-in-app.name": "Your timer runs long: in the app",
+  "setting.notifications.long-timer-in-app.help":
+    "Tells you under Notifications when your timer has run longer than the longest work day of your organization's working-time rules.",
+  "setting.notifications.long-timer-by-mail.name": "Your timer runs long: by e-mail",
+  "setting.notifications.long-timer-by-mail.help":
+    "Sends you an e-mail when your timer has run longer than the longest work day of your organization's working-time rules. E-mail goes only when your organization has switched it on.",
+  "setting.time.billable.name": "Billable time",
+  "setting.time.billable.help":
+    "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
   "setting.notifications.run-ended-by-mail.help":
     "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
   "setting.notifications.edit-notice-in-app.name":
@@ -768,6 +795,8 @@ export const messages = {
   "notifications.taken-over": "{who} took over the editing. What you wrote is kept as your draft",
   "notifications.let-go": "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
+  "notifications.long-timer":
+    "Your timer has been running for a long time. Stop it when you are done",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",

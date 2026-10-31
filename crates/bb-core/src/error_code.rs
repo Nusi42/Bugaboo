@@ -127,6 +127,26 @@ error_codes! {
     /// never `request.invalid`. The count includes what the person may not see, as it is a limit of
     /// storage, so the answer names no issue.
     LimitReached => ("limit.reached", 409),
+    /// A timer runs already for the person (maybe started on another device).
+    TimerRunning => ("timer.running", 409),
+    /// The person's timer does not run (it was stopped meanwhile, maybe on another device).
+    TimerNotRunning => ("timer.not-running", 409),
+    /// A new start time of a timer is in the future.
+    TimerStartInFuture => ("timer.start-in-the-future", 400),
+    /// A new start time of a timer is before the end of the person's last entry that has a start.
+    TimerStartBeforeLastEntry => ("timer.start-before-last-entry", 400),
+    /// A timer ran longer than one time entry can be; its start time has to change first.
+    TimerTooLong => ("timer.too-long", 409),
+    /// The timer was started or switched less than a second ago.
+    TimerTooFast => ("timer.too-fast", 429),
+    /// The person booked as many time entries on the day as one day can have.
+    TooManyTimeEntries => ("time.too-many-entries", 409),
+    /// A time entry of no time.
+    TimeEntryTooShort => ("time.entry-too-short", 400),
+    /// A time entry longer than a day.
+    TimeEntryTooLong => ("time.entry-too-long", 400),
+    /// The note of a time entry is too long.
+    TimeNoteTooLong => ("time.note-too-long", 400),
     /// A tag is limited to other projects than the one of the issue (TAG-01).
     TagNotHere => ("tag.not-here", 409),
     /// Some issue holds more than one label of a group that is to be a *Pick one* group (TAG-02).

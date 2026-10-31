@@ -158,6 +158,16 @@ fn reason_of(code: ErrorCode) -> Option<SkipReason> {
         | ErrorCode::PickOneConflict
         | ErrorCode::WorkflowStatusInUse
         | ErrorCode::WorkflowInvalid
+        | ErrorCode::TimerRunning
+        | ErrorCode::TimerNotRunning
+        | ErrorCode::TimerStartInFuture
+        | ErrorCode::TimerStartBeforeLastEntry
+        | ErrorCode::TimerTooLong
+        | ErrorCode::TimerTooFast
+        | ErrorCode::TooManyTimeEntries
+        | ErrorCode::TimeEntryTooShort
+        | ErrorCode::TimeEntryTooLong
+        | ErrorCode::TimeNoteTooLong
         | ErrorCode::FieldRequired
         | ErrorCode::FieldTooShort
         | ErrorCode::FieldTooLong

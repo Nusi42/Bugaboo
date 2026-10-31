@@ -21,6 +21,7 @@ use bb_core::own_fields::{
     OwnField, Rules, RulesRefused, Scope,
 };
 use bb_core::own_fields_value::FieldValue;
+use bb_core::time::entry::{StarterField, StarterFieldMark};
 use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, starting_own_field_level};
@@ -191,7 +192,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The choices a new field starts with: named, unique, colored in turn.
-    pub(super) fn new_choices(
+    pub(crate) fn new_choices(
         &self,
         field: FieldId,
         choices: &[NewChoice],
@@ -230,6 +231,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let changes_with = match applies_to {
             FieldFor::Issues => Permission::ChangeIssues,
             FieldFor::Projects => Permission::ChangeProjectSettings,
+            FieldFor::TimeEntries => Permission::BookTime,
         };
         Ok(self
             .store()
@@ -299,45 +301,130 @@ pub async fn create_field<S: AuthStore>(
             default_value,
             look,
             never_to_assistant: input.never_to_assistant,
-            position: definitions
-                .iter()
-                .map(|found| found.field.position)
-                .max()
-                .map_or(0, |last| last + 1),
+            position: next_position(&definitions),
             retired_at: None,
             version: FIRST_VERSION,
         },
         scope,
         choices,
     };
-    let changes = made_changes(&definition);
-    let event = ctx.event(by(actor.person.id), entity(RecordKind::Field, id), changes)?;
-    let levels = ctx.starting_levels(input.applies_to).await?;
-    let why = Why::default();
-    let (stopped, stored) = (why.clone(), definition.clone());
-    ctx.record_change(&event, move |transaction| {
-        Box::pin(async move {
-            S::lock_policy(transaction).await?;
-            let known = S::field_definitions_in(transaction).await?;
-            if name_taken(&known, &stored.field.name, stored.field.applies_to, None) {
-                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
-            }
-            S::insert_field(transaction, &stored).await?;
-            let key = FieldKey::Own(stored.field.id);
-            for (role, level) in &levels {
-                S::put_level(transaction, *role, None, None, key, Some(*level)).await?;
-            }
-            Ok(())
+    let plan = ctx
+        .plan_new_field(by(actor.person.id), definition.clone(), None)
+        .await?;
+    let (event, why) = (plan.event.clone(), plan.why.clone());
+    let result = ctx
+        .record_change(&event, move |transaction| {
+            Box::pin(async move { plan.write::<S>(transaction).await })
         })
-    })
-    .await
-    .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+        .await;
+    NewField::outcome::<S>(&why, result)?;
     let view = ctx.field_shown(&actor, &held, &definition).await?;
     Ok(held.authorize(view))
 }
 
+/// The place after the last field in the order the fields are offered in.
+pub(crate) fn next_position(definitions: &[Definition]) -> i64 {
+    definitions
+        .iter()
+        .map(|found| found.field.position)
+        .max()
+        .map_or(0, |last| last + 1)
+}
+
+/// A new field ready to be written: its event, the definition, its starter mark and the level
+/// every role starts with. The command that makes it calls `record_change` with [`Self::write`].
+pub(crate) struct NewField {
+    /// The event of the change.
+    pub(crate) event: bb_core::event::DomainEvent,
+    /// Why the change stopped itself, if it did.
+    pub(crate) why: Why,
+    definition: Definition,
+    starter: Option<StarterField>,
+    levels: Vec<(RoleId, FieldLevel)>,
+}
+
+impl NewField {
+    /// Writes the field, its mark and its levels inside the change. A name another field has
+    /// meanwhile stops it with `name.taken`; a starter mark that another start wrote first stops it
+    /// without a reason.
+    ///
+    /// # Errors
+    /// What the store reports, or the stop of the change.
+    pub(crate) async fn write<S: AuthStore>(
+        self,
+        transaction: &mut S::Transaction,
+    ) -> Result<(), S::Error> {
+        S::lock_policy(transaction).await?;
+        let known = S::field_definitions_in(transaction).await?;
+        let field = &self.definition.field;
+        if name_taken(&known, &field.name, field.applies_to, None) {
+            return Err(self.why.stop::<S>(ErrorCode::NameTaken));
+        }
+        S::insert_field(transaction, &self.definition).await?;
+        if let Some(starter) = self.starter {
+            let mark = StarterFieldMark {
+                starter,
+                field: field.id,
+            };
+            if !S::insert_starter_field(transaction, &mark).await? {
+                return Err(S::aborted());
+            }
+        }
+        let key = FieldKey::Own(field.id);
+        for (role, level) in &self.levels {
+            S::put_level(transaction, *role, None, None, key, Some(*level)).await?;
+        }
+        Ok(())
+    }
+
+    /// What the change came to: `Ok(true)` when the field was written, `Ok(false)` when another
+    /// start wrote the starter field first.
+    ///
+    /// # Errors
+    /// `name.taken` for a name another field has, an internal error when the store failed.
+    pub(crate) fn outcome<S: AuthStore>(
+        why: &Why,
+        result: Result<(), S::Error>,
+    ) -> Result<bool, AppError> {
+        match result {
+            Ok(()) => Ok(true),
+            Err(error) if why.said().is_none() && S::is_aborted(&error) => Ok(false),
+            Err(error) => Err(why.answer::<S>(&error, ErrorCode::NameTaken)),
+        }
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Plans a new field with the level every role starts with; a starter field (`starter`) gets
+    /// its mark.
+    pub(crate) async fn plan_new_field(
+        &self,
+        actor: bb_core::event::Actor,
+        definition: Definition,
+        starter: Option<StarterField>,
+    ) -> Result<NewField, AppError> {
+        let mut changes = made_changes(&definition);
+        if let Some(mark) = starter {
+            changes.push(set_to(member::STARTER, json!(mark.code())));
+        }
+        let event = self.event(
+            actor,
+            entity(RecordKind::Field, definition.field.id),
+            changes,
+        )?;
+        let levels = self.starting_levels(definition.field.applies_to).await?;
+        Ok(NewField {
+            event,
+            why: Why::default(),
+            definition,
+            starter,
+            levels,
+        })
+    }
+}
+
 /// What a new field says in its event.
-fn made_changes(definition: &Definition) -> Vec<FieldChange> {
+pub(crate) fn made_changes(definition: &Definition) -> Vec<FieldChange> {
     let field = &definition.field;
     let mut changes = vec![
         set_to(member::NAME, json!(field.name)),

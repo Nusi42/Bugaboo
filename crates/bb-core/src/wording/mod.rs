@@ -472,6 +472,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
                 said!(message::notifications_finish_asked, who())
             }
         }),
+        NotificationKind::LongTimer => one(Said::key(message::NOTIFICATIONS_LONG_TIMER)),
         NotificationKind::RunEnded => one(match (&notice.renewal, notice.run_done) {
             (
                 Some(Renewal {

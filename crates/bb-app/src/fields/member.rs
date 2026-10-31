@@ -14,6 +14,8 @@ pub(crate) const PROJECTS: &str = "projects";
 pub(crate) const ISSUE_TYPES: &str = "issue-types";
 /// The choices a field was made with.
 pub(crate) const CHOICES: &str = "choices";
+/// The mark of a starter field of time entries that Bugaboo made (ADR-0035, decision 1).
+pub(crate) const STARTER: &str = "starter";
 /// The order of the choices.
 pub(crate) const CHOICES_ORDER: &str = "choices-order";
 /// The choice that was added (its name).

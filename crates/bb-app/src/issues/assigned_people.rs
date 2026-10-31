@@ -105,6 +105,10 @@ pub async fn assignable_people<S: AuthStore>(
                     Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
                 ),
                 FieldFor::Projects => (held.allows(Permission::ChangeProjectSettings), None),
+                FieldFor::TimeEntries => (
+                    held.allows(Permission::BookTime),
+                    Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
+                ),
             }
         }
     };

@@ -45,14 +45,16 @@ const N: PeopleLevel = PeopleLevel::Names;
 const R: PeopleLevel = PeopleLevel::RoleOnly;
 const O: PeopleLevel = PeopleLevel::Hidden;
 
-/// The permissions of a Contributor, which every role above it has too (M3-Q6).
-const CONTRIBUTOR: [Permission; 6] = [
+/// The permissions of a Contributor, which every role above it has too (M3-Q6). *Book time* starts
+/// here (ADR-0035, decision 2).
+const CONTRIBUTOR: [Permission; 7] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
     Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
     Permission::ShareSearches,
+    Permission::BookTime,
 ];
 
 /// What a Team member has beyond a Contributor.

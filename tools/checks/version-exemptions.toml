@@ -70,6 +70,10 @@ routes = [
 reason = "Making a new record has no earlier version that could be stale; a name that is taken is refused on its own (name.taken)."
 
 [[exempt]]
+routes = ["POST /api/v1/me/timer", "POST /api/v1/me/time-entries"]
+reason = "Starting a timer and booking time by hand make a new run or a new entry: there is nothing earlier that could be stale. A timer that runs already, also one another device started a moment before, is refused on its own (timer.running, ADR-0035 decision 3)."
+
+[[exempt]]
 routes = [
   "DELETE /api/v1/access-keys/{access_key}",
   "DELETE /api/v1/assignments/{assignment}",

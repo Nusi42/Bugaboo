@@ -20,7 +20,7 @@ use super::ids::{code_plan_in, new_code_in};
 use super::types::{CreateIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::fields::{Item, PlannedValues};
+use crate::fields::{Item, Making, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
 use crate::offers::ensure_type_takes_issues_in;
@@ -168,7 +168,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let nothing_yet = self.load_values(RecordKind::Issue, &[]).await?;
         let own = self
-            .plan_values(actor, &access, &item, &input.fields, &nothing_yet, true)
+            .plan_values(
+                actor,
+                &access,
+                &item,
+                &input.fields,
+                &nothing_yet,
+                Making::New(&std::collections::BTreeMap::new()),
+            )
             .await?;
         let (status, entered) = self
             .starting_status(

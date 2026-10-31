@@ -13,6 +13,7 @@ use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::readable_id::IdMode;
+use bb_core::time::entry::StarterField;
 use bb_policy::{Permission, StartingRole, Topic};
 
 /// A message that the word of an enum makes, and the word.
@@ -78,6 +79,9 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for what in FieldFor::ALL {
         keys.push(made("what an own field is for", what.code(), what.name()));
+    }
+    for starter in StarterField::ALL {
+        keys.push(made("the starter field", starter.code(), starter.name()));
     }
     for color in ChoiceColor::ALL {
         keys.push(made("the color of a choice", color.code(), color.name()));

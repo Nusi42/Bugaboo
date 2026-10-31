@@ -218,11 +218,12 @@ pub(super) fn held_exactly_all(permissions: &[Permission]) -> Vec<Permission> {
 
 /// The permissions that act on an issue the person sees: the person of `Actor::Exactly` holds
 /// *See issues* beside them, as they hold *See projects* beside a permission of a project.
-const ACTS_ON_ISSUES_SEEN: [Permission; 4] = [
+const ACTS_ON_ISSUES_SEEN: [Permission; 5] = [
     Permission::ChangeIssues,
     Permission::Comment,
     Permission::ChangeOwnIssues,
     Permission::DeleteIssues,
+    Permission::BookTime,
 ];
 
 /// The permissions whose route sets fields of an issue: a role that is new has no level for any
@@ -237,7 +238,7 @@ pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
 /// The permissions of a starting role, from the table of architecture §7.
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
-        ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
+        BookTime, ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
         CheckAccess, Comment, CreateIssues, CreateProjects, CreateSubProjects, DecideRoles,
         DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
         ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles,
@@ -256,6 +257,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
+            BookTime,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -284,6 +286,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
+            BookTime,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -302,6 +305,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
+            BookTime,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -312,6 +316,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             CreateIssues,
             ChangeOwnIssues,
             Comment,
+            BookTime,
             ShareSearches,
         ]),
         StartingRole::Viewer => BTreeSet::from([SeeProjects, SeeIssues, ShareSearches]),

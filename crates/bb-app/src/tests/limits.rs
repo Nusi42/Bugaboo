@@ -223,8 +223,10 @@ async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Out
         refused.err(),
         Some(AppError::Refused(ErrorCode::LimitReached))
     );
-    // The organization holds as many fields as it may, and no more.
-    for number in 1..FIELDS_MAX {
+    // The organization holds as many fields as it may, and no more: the starter fields of time
+    // entries and the crowded one are there already.
+    let there = world.ctx().field_catalogue().await.map_err(text)?.len();
+    for number in there..FIELDS_MAX {
         a_field(&world, &format!("Field {number}"), FieldType::Text, &[])
             .await
             .map_err(text)?;

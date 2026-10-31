@@ -127,7 +127,7 @@ impl Batch<'_> {
 /// far (one cache for the page) and the issue lines.
 pub(super) struct Reading<'a> {
     pub(super) actor: &'a Actor,
-    held: &'a Evaluation,
+    pub(super) held: &'a Evaluation,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     maker: LineMaker,
     /// The names of types and labels the reader may know, read when first needed.
@@ -145,6 +145,11 @@ pub(crate) struct ChangeReader {
 /// Whether the row is about a relation (the rest are about an issue).
 fn is_relation(row: &HistoryEntry) -> bool {
     row.record_kind.as_str() == RecordKind::Relation.code()
+}
+
+/// Whether the row is about a time entry on the issue.
+pub(super) fn is_time(row: &HistoryEntry) -> bool {
+    row.record_kind.as_str() == RecordKind::TimeEntry.code()
 }
 
 /// Whether the row is about a file of the issue.
@@ -342,7 +347,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The fields of a change that the reader may see; `None` when none of them is.
-    async fn field_changes(
+    pub(super) async fn field_changes(
         &self,
         reading: &mut Reading<'_>,
         issue_type: IssueTypeId,
@@ -601,6 +606,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             HistoryKind::Change => {
                 if is_file(row) {
                     Self::file_change(batch, row)
+                } else if is_time(row) {
+                    self.time_change(reading, issue.issue_type, batch, row)
+                        .await?
                 } else if is_relation(row) {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
@@ -613,15 +621,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(what) = what else {
             return Ok(None);
         };
+        // Who booked time is shown as the kind *Time entries* says (ADR-0035, decision 8).
+        let kind = if is_time(row) {
+            PeopleKind::TimeEntries
+        } else {
+            PeopleKind::Authors
+        };
         let by = match row.by {
             Some(person) => Some(
-                self.person_ref(
-                    reading.held,
-                    PeopleKind::Authors,
-                    PeopleContext::Ordinary,
-                    person,
-                )
-                .await?,
+                self.person_ref(reading.held, kind, PeopleContext::Ordinary, person)
+                    .await?,
             ),
             None => None,
         };

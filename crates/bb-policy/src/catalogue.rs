@@ -132,6 +132,9 @@ permissions! {
     ChangeOrganizationSettings => ("change-organization-settings", Settings, Organization, Manage),
     /// See how the server is doing.
     SeeStatus => ("see-status", Settings, Organization, See),
+    /// Book one's own time on the issues one sees, and change and delete one's own time entries
+    /// (ADR-0035, decision 2).
+    BookTime => ("book-time", Time, Project, Change),
 }
 
 words_in_api!(Permission, "One permission of the catalogue.");

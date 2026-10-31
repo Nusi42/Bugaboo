@@ -50,6 +50,7 @@ mod tags;
 #[cfg(feature = "testing")]
 mod testing;
 pub mod text_index;
+mod time;
 mod workflows;
 
 pub use anchor::LogSeal;

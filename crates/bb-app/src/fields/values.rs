@@ -212,11 +212,11 @@ fn refused_at(code: ErrorCode, field: FieldId) -> AppError {
 /// item in a project of this chain and of this issue type.
 fn ensure_here(
     definition: &Definition,
-    used_for: FieldFor,
+    used_for: Holder,
     chain: &[ProjectId],
     issue_type: Option<IssueTypeId>,
 ) -> Result<(), AppError> {
-    if definition.field.applies_to != used_for
+    if !used_for.holds(definition.field.applies_to)
         || definition.field.retired_at.is_some()
         || !definition.scope.reaches(chain, issue_type)
     {
@@ -241,13 +241,44 @@ pub(crate) struct Item {
     pub(crate) reported_by: Option<UserId>,
 }
 
+/// Whether a request makes the item or changes it, and the values a new item inherits (a time
+/// entry from its issue and its projects) before the defaults of the fields.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Making<'a> {
+    /// The item is there and changes.
+    Change,
+    /// The item is being made.
+    New(&'a BTreeMap<FieldId, FieldValue>),
+}
+
+/// What an item holds values of own fields for: the fields made for its kind, and on an issue and
+/// a project also the fields of time entries, whose value there is the default of the entries
+/// booked there (ADR-0035, decision 1).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Holder(FieldFor);
+
+impl Holder {
+    /// Whether the item holds values of a field made for `applies_to`.
+    fn holds(self, applies_to: FieldFor) -> bool {
+        applies_to == self.0
+            || (applies_to == FieldFor::TimeEntries
+                && matches!(self.0, FieldFor::Issues | FieldFor::Projects))
+    }
+}
+
 impl Item {
-    /// What the fields of this item are for.
+    /// What the fields of this item are made for.
     const fn field_for(&self) -> FieldFor {
         match self.kind {
             RecordKind::Project => FieldFor::Projects,
+            RecordKind::TimeEntry => FieldFor::TimeEntries,
             _ => FieldFor::Issues,
         }
+    }
+
+    /// The fields the item holds values of.
+    const fn holder(&self) -> Holder {
+        Holder(self.field_for())
     }
 }
 
@@ -302,7 +333,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .filter(|definition| {
                 let field = &definition.field;
-                field.applies_to == item.field_for()
+                item.holder().holds(field.applies_to)
                     && field.retired_at.is_none()
                     && reached(&definition.scope)
                     && level_allows(FieldKey::Own(field.id))
@@ -336,7 +367,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let used_for = definition.field.applies_to;
         ensure_here(
             definition,
-            used_for,
+            Holder(used_for),
             &self.chain_of(project).await?,
             issue_type,
         )?;
@@ -481,7 +512,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The readable ID of an issue, when the actor sees the issue.
-    async fn readable_id_for(
+    pub(crate) async fn readable_id_for(
         &self,
         actor: &Actor,
         issue: IssueId,
@@ -559,8 +590,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         item: &Item,
         asked: &BTreeMap<String, Value>,
         current: &ItemValues,
-        creating: bool,
+        making: Making<'_>,
     ) -> Result<PlannedValues, AppError> {
+        let creating = matches!(making, Making::New(_));
         let definitions = Arc::clone(&current.definitions);
         // The mask first, for every field asked about.
         let mut targets: Vec<(&Definition, &Value)> = Vec::with_capacity(asked.len());
@@ -576,7 +608,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut sets: Vec<Set> = Vec::new();
         for (definition, json) in targets {
             let field = &definition.field;
-            ensure_here(definition, item.field_for(), &item.chain, item.issue_type)?;
+            ensure_here(definition, item.holder(), &item.chain, item.issue_type)?;
             if field.kind.is_long_text() && !creating {
                 // A long text is saved under an edit lock, on its own route.
                 return Err(ErrorCode::InvalidRequest.into());
@@ -593,8 +625,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 new,
             });
         }
-        if creating {
-            Self::add_defaults_and_required(viewer, item, &definitions, &mut sets)?;
+        if let Making::New(inherited) = making {
+            Self::add_defaults_and_required(viewer, item, &definitions, inherited, &mut sets)?;
         }
         Ok(PlannedValues { sets })
     }
@@ -712,12 +744,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         }))
     }
 
-    /// For a new item: the default of every field that reaches it and was not asked for, and the
-    /// check that every required field the person can fill in has a value.
+    /// For a new item: the value it inherits or else the default of every field that reaches it
+    /// and was not asked for, and the check that every required field the person can fill in has
+    /// a value.
     fn add_defaults_and_required(
         viewer: &Evaluation,
         item: &Item,
         definitions: &[Definition],
+        inherited: &BTreeMap<FieldId, FieldValue>,
         sets: &mut Vec<Set>,
     ) -> Result<(), AppError> {
         for definition in definitions {
@@ -726,6 +760,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 && field.retired_at.is_none()
                 && definition.scope.reaches(&item.chain, item.issue_type);
             if !reaches || sets.iter().any(|set| set.field == field.id) {
+                continue;
+            }
+            if let Some(value) = inherited.get(&field.id) {
+                sets.push(Set {
+                    field: field.id,
+                    kind: field.kind,
+                    old: None,
+                    new: Some(value.clone()),
+                });
                 continue;
             }
             if must_be_asked_for(definition) {

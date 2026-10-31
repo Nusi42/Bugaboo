@@ -11,8 +11,9 @@
 //! cannot tell a hidden issue from one that does not exist.
 //!
 //! The pieces: `filter` (the tree), `source` (what a field reads), `values` (what a value means),
-//! `time` (relative times in the zone of the person), `order` (sorting and the cursor) and
-//! `statements` (the statements and their results).
+//! `time` (relative times in the zone of the person), `order` (sorting and the cursor),
+//! `statements` (the statements and their results) and `spent` (the minutes spent on an issue, the
+//! one definition of time spent in SQL).
 
 use std::cell::{Cell, RefCell};
 
@@ -34,6 +35,7 @@ use crate::error::StoreError;
 mod filter;
 mod order;
 mod source;
+pub(crate) mod spent;
 mod statements;
 mod text;
 mod time;
@@ -299,5 +301,7 @@ mod tests;
 mod tests_more;
 #[cfg(test)]
 mod tests_rest;
+#[cfg(test)]
+mod tests_spent;
 #[cfg(test)]
 mod tests_streams;
