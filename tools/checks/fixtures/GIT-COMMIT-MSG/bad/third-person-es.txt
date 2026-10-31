@@ -1,0 +1,1 @@
+fix(web): fixes the empty card

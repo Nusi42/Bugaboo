@@ -1,0 +1,3 @@
+docs(roles): describe what the project lead decides
+
+The project lead approves a release.

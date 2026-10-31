@@ -1,0 +1,3 @@
+fix(web): reject empty names
+
+Empty names broke the list of people because the reader of the names did not expect them.

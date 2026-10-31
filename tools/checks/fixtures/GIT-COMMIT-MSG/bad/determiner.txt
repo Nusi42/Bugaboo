@@ -1,0 +1,1 @@
+fix(web): the list keeps its scroll position
