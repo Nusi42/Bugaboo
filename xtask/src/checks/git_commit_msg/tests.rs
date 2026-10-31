@@ -43,8 +43,7 @@ fn expected(name: &str) -> &'static str {
         "long-body-line" => "72 characters",
         "trailer-no-gap" => "blank line before the trailer",
         "full-stop" => "full stop",
-        "empty-merge" => "Merge <what it brought>",
-        "old-merge-form" => "`WIN3`",
+        "merge" | "old-merge-form" => "subject of a merge",
         "other-trailer" | "session-trailer" | "other-co-author" => "is not allowed",
         "page-link" => "claude.ai",
         "folder-name" => "`win3`",
@@ -107,16 +106,27 @@ fn only_the_co_author_trailer_of_claude_is_allowed() {
 }
 
 #[test]
-fn git_own_subjects_are_accepted_and_other_merges_need_a_description() {
+fn git_own_subjects_are_accepted_and_merges_are_refused() {
     for subject in [
         "Revert \"feat(web): add board\"",
         "fixup! feat(xtask): add setup",
         "squash! fix(web): x",
         "amend! docs: y",
-        "Merge the board",
-        "Merge pull request #4 from x/y",
     ] {
         assert!(problems(subject).is_empty(), "{subject}");
+    }
+    // Branches are rebased (ADR-0041): no merge subject is accepted, whatever it names.
+    for merge in [
+        "Merge the board",
+        "Merge pull request #4 from x/y",
+        "Merge branch 'side'",
+        "Merge",
+    ] {
+        let found = problems(merge);
+        assert!(
+            found.iter().any(|problem| problem.contains("git rebase")),
+            "{merge}: {found:?}"
+        );
     }
     assert!(!problems("Merged stuff").is_empty());
     assert!(!problems("Reverting things").is_empty());

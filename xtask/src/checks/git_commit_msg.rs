@@ -10,7 +10,9 @@
 //!   characters, a subject that starts in lower case (an identifier such as `README` or
 //!   `SEC-PRIVATE` keeps its case) with a verb in the imperative (no article or determiner, no
 //!   first word that ends in `ed` or `ing`, a few exceptions are known, and no third-person form
-//!   such as `adds`) and no full stop at the end; a merge is `Merge <what it brought>`;
+//!   such as `adds`) and no full stop at the end; Git's own subjects (`Revert "..."` and the marks
+//!   of `--fixup`) are accepted, a merge subject (`Merge ...`) is not, because branches are
+//!   rebased (ADR-0041);
 //! - one blank line between the first line and the body, body lines of at most
 //!   [`MAX_BODY_LINE`] characters (a URL, an indented line and a fenced code block may be longer)
 //!   and one blank line before the trailer;
@@ -23,6 +25,7 @@ use std::path::Path;
 
 use anyhow::Context as _;
 
+use super::git_linear::REBASE_INSTEAD;
 use super::{Check, Context, Finding};
 use crate::repo::Repo;
 
@@ -38,8 +41,8 @@ const TYPES: [&str; 11] = [
 /// Subjects Git itself writes (reverts, autosquash markers) are accepted as they are.
 const GIT_OWN: [&str; 4] = ["Revert \"", "fixup! ", "squash! ", "amend! "];
 
-/// A merge commit is `Merge <what it brought>`.
-const MERGE: &str = "Merge ";
+/// The subject Git and GitHub give a merge commit, which is never made (ADR-0041).
+const MERGE: &str = "Merge";
 
 /// The longest allowed subject line.
 const MAX_SUBJECT: usize = 72;
@@ -216,17 +219,10 @@ fn subject_problems(subject: &str) -> Vec<String> {
     if GIT_OWN.iter().any(|prefix| subject.starts_with(prefix)) {
         return Vec::new();
     }
-    if let Some(what) = subject
-        .strip_prefix(MERGE)
-        .or_else(|| (subject == MERGE.trim_end()).then_some(""))
-    {
-        let empty =
-            "Write a merge as `Merge <what it brought>`, for example `Merge the search page`.";
-        return if what.trim().is_empty() {
-            vec![empty.to_owned()]
-        } else {
-            Vec::new()
-        };
+    if subject.split_whitespace().next() == Some(MERGE) {
+        return vec![format!(
+            "The first line is the subject of a merge. {REBASE_INSTEAD}"
+        )];
     }
     let form =
         "Write the first line as `type(scope): subject`, for example `feat(xtask): add setup`.";
