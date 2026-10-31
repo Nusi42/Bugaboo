@@ -44,6 +44,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0038](0038-public-identity-and-commit-messages.md) | Public identity and plain commit messages |
 | [0039](0039-explicit-master-and-publishing-from-it.md) | Explicit master configuration; only the master publishes |
 | [0040](0040-version-numbers.md) | Version numbers follow the plan: 0.9.0 is feature complete |
+| [0041](0041-linear-history.md) | Branches are rebased, never merged: `main` is a straight line |
 
 ## Template
 

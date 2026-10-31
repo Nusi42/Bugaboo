@@ -7,9 +7,10 @@
 use crate::location::Role;
 
 /// The checks that build nothing, which the master runs before it publishes: the private-data
-/// guard on the commits to push and on every tracked file, and the licences of the dependencies.
-/// `main` only ever moves to a commit that passed the full run in a work folder.
-pub(crate) const NO_BUILD_CHECKS: [&str; 2] = ["SEC-PRIVATE", "DEP-LICENSES"];
+/// guard on the commits to push and on every tracked file, no merge commit in the commits to push
+/// (ADR-0041), and the licences of the dependencies. `main` only ever moves to a commit that
+/// passed the full run in a work folder.
+pub(crate) const NO_BUILD_CHECKS: [&str; 3] = ["SEC-PRIVATE", "GIT-LINEAR", "DEP-LICENSES"];
 
 /// What a push does.
 #[derive(Debug, PartialEq, Eq)]

@@ -517,7 +517,7 @@ mod tests {
         let Ok(runner::Scope::Only(ids)) = push_scope(location::Role::Master, network) else {
             panic!("the master runs the checks that build nothing");
         };
-        assert_eq!(ids, ["SEC-PRIVATE", "DEP-LICENSES"]);
+        assert_eq!(ids, ["SEC-PRIVATE", "GIT-LINEAR", "DEP-LICENSES"]);
         assert!(matches!(
             push_scope(location::Role::Work, Some("../master")),
             Ok(runner::Scope::Push)

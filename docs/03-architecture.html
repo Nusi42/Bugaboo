@@ -1193,6 +1193,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><strong>ARCH</strong></td><td>The structure in this document: allowed crate dependencies, pure crates, WebAssembly build, <code>Authorized&lt;T&gt;</code> only from the policy engine, only safe types leave the API, HTTP and SQL only at the edges, events for every change, versions and edit-lock tokens on change endpoints, lean list endpoints, permissions declared, settings via the registry, AI tools only from the registry, browser uses only the API client, module map matches the code, docs change with boundaries, no <code>unsafe</code>, both databases tested</td></tr>
 <tr><td><strong>SEC</strong></td><td>Secrets, private details of the maintainer, dangerous patterns, the permission matrix, security headers, known vulnerabilities</td></tr>
 <tr><td><strong>DATA</strong></td><td>Personal-data marks, no personal data in logs, one schema source</td></tr>
+<tr><td><strong>GIT</strong></td><td>Commit messages in plain words, no large or CRLF files, and a straight-line history: no merge commit in what a push adds (ADR-0041)</td></tr>
 <tr><td><strong>DEP / DOC</strong></td><td>Third-party register, licenses, unused dependencies, SBOM, generated files up to date, decision records name their checks</td></tr>
 <tr><td><strong>PERF / TEST</strong></td><td>Bundle and WebAssembly budgets, query counts, benchmarks, accessibility, search round trip, edit locks</td></tr>
 <tr><td><strong>META</strong></td><td>The checks themselves (next section)</td></tr>
@@ -1312,6 +1313,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested in a checkout that is marked as the master (BUGABOO_CHECKOUT_ROLE=master in .env.local); without the mark a plain clone builds, tests and commits as it is</td><td>ADR-0039</td><td>xtask (reads the mark before every build, test, dev and install command; `cargo xtask guard-master` writes it)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge &lt;what it brought&gt;`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process</td><td>coding-standards §2, ADR-0038</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: the messages of the commits not on main, merges included)</td><td>push · ci</td></tr>
 <tr><td><code>GIT-FILES</code></td><td>No large binaries and no CRLF line endings committed</td><td>coding-standards §7</td><td>xtask</td><td>commit · ci</td></tr>
+<tr><td><code>GIT-LINEAR</code></td><td>A push adds no merge commit: branches are combined by rebasing, so main stays a straight line</td><td>coding-standards §2, ADR-0041</td><td>xtask (push and CI: the commits a push can add, chosen as for SEC-PRIVATE, without those under the tip of main when the decision was taken; only in the master and in a folder whose origin is the master, so a plain clone is not checked)</td><td>push · ci</td></tr>
 <tr><td><code>META-CATALOG</code></td><td>Every check in this catalogue is implemented in xtask, and every implemented check is in this catalogue</td><td>architecture §10</td><td>xtask self-test</td><td>commit · ci</td></tr>
 <tr><td><code>META-FIXTURES</code></td><td>Every check has a 'bad' example that must fail and a 'good' example that must pass</td><td>architecture §10</td><td>xtask self-test over tools/checks/fixtures/&lt;ID&gt;/</td><td>ci</td></tr>
 <tr><td><code>META-COVERAGE</code></td><td>Every file is covered by a formatter or linter, is generated, or is listed with a reason in tools/checks/coverage-exemptions.toml — a new file type means a new check</td><td>architecture §10</td><td>xtask (project files vs the 'files' globs above, the generated marker and tools/checks/coverage-exemptions.toml)</td><td>commit · ci</td></tr>
@@ -1321,7 +1323,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>97 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>98 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -2761,11 +2763,11 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li><strong>Master:</strong> <code>&lt;master&gt;</code> holds <code>main</code> and the shared history. <strong>Nothing is built or installed there</strong>; it only receives pushes and fast-forward merges.</li>
 <li><strong>Work folders</strong> (outside the synced folder), clones of the master with <code>origin</code> pointing to it:
 <ul>
-<li><code>&lt;work root&gt;/bugaboo.win1</code>, branch <code>WIN1</code>: the lead's folder. Work packages are merged here, <code>cargo xtask ci</code> runs here, and only then is <code>main</code> fast-forwarded.</li>
+<li><code>&lt;work root&gt;/bugaboo.win1</code>, branch <code>WIN1</code>: the lead's folder. Work packages are combined here (by rebasing, ADR-0041), <code>cargo xtask ci</code> runs here, and only then is <code>main</code> fast-forwarded.</li>
 <li><code>bugaboo.win2</code>, <code>bugaboo.win3</code>, …, branches <code>WIN2</code>, <code>WIN3</code>, …: one per builder agent working in parallel. Each starts from <code>main</code>, pushes its branch when its work package is done, and is reset to <code>main</code> for the next one.</li>
 </ul>
 </li>
-<li><strong>Integration:</strong> in <code>win1</code>: fetch <code>WINn</code>, merge, run <code>cargo xtask ci</code>; push <code>WIN1</code>; in the master: <code>git merge --ff-only WIN1</code>. <code>main</code> therefore only ever moves to states that passed CI.</li>
+<li><strong>Integration:</strong> in <code>win1</code>: fetch <code>WINn</code>, rebase a copy of it onto <code>WIN1</code> and move <code>WIN1</code> forward to it (never a merge commit: Amendment, ADR-0041), run <code>cargo xtask ci</code>; push <code>WIN1</code>; in the master: <code>git merge --ff-only WIN1</code>. <code>main</code> therefore only ever moves to states that passed CI.</li>
 <li><strong>Build folders</strong> stay inside each work folder (they are outside the synced folder already). Machine-specific overrides go into <code>.cargo/config.local.toml</code>, which the committed <code>.cargo/config.toml</code> includes optionally (works on stable Cargo) and Git ignores.</li>
 <li><strong>Guard:</strong> <code>cargo xtask</code> refuses to build, test or install anything in a checkout marked as the master, with a message pointing to the work folders (marked explicitly, not by its path: Amendment, ADR-0039).</li>
 <li><strong>Later:</strong> when the repository moves to the public remote (<code>&lt;public remote&gt;</code>), it becomes <code>origin</code> for the work folders and the master becomes one more clone; nothing else changes.</li>
@@ -3953,7 +3955,7 @@ A change is a new or changed start, end, period or break, or the end of a day le
 <h4>Decision</h4>
 <ul>
 <li><strong>The master is marked, never guessed.</strong> A checkout is the master only when <code>BUGABOO_CHECKOUT_ROLE=master</code> is set in the environment or in the ignored file <code>.env.local</code> at its root. <code>cargo xtask guard-master</code> writes it, from a work folder (the master builds nothing): the <code>.env.local</code> mark, a <code>pre-push</code> hook in <code>.git/bugaboo-hooks/</code> together with <code>core.hooksPath</code> pointing there (so the hook runs whatever other hook folder is configured), and a program for Cargo's <code>rustc-wrapper</code> in <code>.cargo/config.local.toml</code>, so even a plain <code>cargo build</code> stops. Without the mark a plain clone builds, tests and commits as it is. The edit hook of Claude Code reads the same mark.</li>
-<li><strong>Only the master publishes.</strong> A work folder pushes only to a remote that is a path (the master); only the master pushes to a remote on the network (the public one): <code>git -C &lt;master&gt; push github main</code>. One tested function, <code>publish::plan</code>, decides from the role and the URL of the remote (a path or a network address): a work folder to a path runs the checks of a push; the master to the network runs only the checks that build nothing (SEC-PRIVATE on the commits to push and on every tracked file, DEP-LICENSES); every other combination is refused with a message that names the master command. <code>main</code> only moves to a commit that passed the full run in a work folder, so the master does not repeat it.</li>
+<li><strong>Only the master publishes.</strong> A work folder pushes only to a remote that is a path (the master); only the master pushes to a remote on the network (the public one): <code>git -C &lt;master&gt; push github main</code>. One tested function, <code>publish::plan</code>, decides from the role and the URL of the remote (a path or a network address): a work folder to a path runs the checks of a push; the master to the network runs only the checks that build nothing (SEC-PRIVATE on the commits to push and on every tracked file, GIT-LINEAR on the commits to push, DEP-LICENSES: Amendment, ADR-0041); every other combination is refused with a message that names the master command. <code>main</code> only moves to a commit that passed the full run in a work folder, so the master does not repeat it. <code>main</code> moves by a fast-forward only, and the commits it receives are a straight line (ADR-0041).</li>
 <li><strong>The master's hook uses a program built elsewhere.</strong> The hook calls the xtask program of the work folder that ran <code>guard-master</code>; if that program is gone, the hook says to run the command again.</li>
 <li><strong>Placeholders.</strong> Rule texts name the master as <code>&lt;master&gt;</code> and the folder of the work folders as <code>&lt;work root&gt;</code>; the concrete paths are the maintainer's own setup, kept outside the repository.</li>
 </ul>
@@ -3970,7 +3972,7 @@ A change is a new or changed start, end, period or break, or the end of a day le
 <li><strong>A tracked hook script for the master:</strong> a second place to keep current, and a file type without a linter. The hook is written by the command instead.</li>
 </ul>
 <h4>Enforced by</h4>
-<p>BUILD-LOCATION (the mark is read before every build, test and install command); META-WIRING (the pre-push command of lefthook and the edit hook); the pre-push plan by its tests in <code>xtask/src/publish.rs</code> and <code>xtask/src/main.rs</code>.</p>
+<p>BUILD-LOCATION (the mark is read before every build, test and install command); META-WIRING (the pre-push command of lefthook and the edit hook); the pre-push plan by its tests in <code>xtask/src/publish.rs</code> and <code>xtask/src/main.rs</code>; GIT-LINEAR (no merge commit in the commits to push, ADR-0041).</p>
 
 <!-- 0040-version-numbers.md -->
 <h3 id="adr-0040"><button class="sec" data-sec>§13.40</button>ADR-0040: Version numbers follow the plan</h3>
@@ -3996,6 +3998,35 @@ A change is a new or changed start, end, period or break, or the end of a day le
 </ul>
 <h4>Enforced by</h4>
 <p>review (the arithmetic needs the plan's table and the milestone tags, which no check reads yet): checked at the commit that records a finished milestone.</p>
+
+<!-- 0041-linear-history.md -->
+<h3 id="adr-0041"><button class="sec" data-sec>§13.41</button>ADR-0041: Branches are rebased, never merged</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-31</p>
+<h4>Context</h4>
+<p>The lead combined each builder's branch with the lead's branch <code>WIN1</code> by a merge commit (<code>Merge the search page</code>, ADR-0038), and <code>main</code> moved to <code>WIN1</code> by a fast-forward. The history of <code>main</code> therefore has a merge commit for every work package, and so will the public <code>main</code>. Each package appears twice in it (its own commits and the merge), and <code>git bisect</code> walks into the side branches. The public repository's ruleset on <code>main</code> can require a straight line ("Require linear history"); a merge commit would then reach GitHub only on the maintainer's bypass. The sister project made the same decision on the same day.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>Branches are combined by rebasing.</strong> The lead makes a copy of the package branch, rebases the copy onto <code>WIN1</code> (conflicts are resolved commit by commit during the rebase), and then moves <code>WIN1</code> to it with <code>git merge --ff-only</code>. No merge commit is made, on any branch that reaches <code>main</code>. Enforced by: GIT-LINEAR.</li>
+<li><strong><code>WIN1</code>, the master's <code>main</code> and the public <code>main</code> stay a straight line.</strong> The pre-push hook refuses a merge commit among the commits a push adds, on a work folder's push to the master and on the master's push to the public remote. The commits are chosen the same way as for the private-data guard (on a local branch, a tag or <code>HEAD</code>, and on no remote-tracking branch); one function chooses them for both. A plain clone, whose <code>origin</code> is no marked master, is not checked. Enforced by: GIT-LINEAR.</li>
+<li><strong>A builder brings in a newer <code>main</code> by rebasing</strong> its own branch onto <code>origin/main</code> and pushes it again with <code>git push --force-with-lease origin WINn</code>. Only the builder's own <code>WINn</code> is ever force-pushed; <code>WIN1</code>, <code>main</code> and every branch on the public remote never are (review: which branch is pushed with force is the person's choice, not something the hook can tell).</li>
+<li><strong>The merge commits already on <code>main</code> stay;</strong> history is not rewritten. The check leaves out every commit under the tip of <code>main</code> on the day of this decision, so the master can still publish them. Enforced by: GIT-LINEAR.</li>
+<li><strong>No merge subject.</strong> A commit message never has the subject of a merge (<code>Merge …</code>); this replaces the <code>Merge &lt;what it brought&gt;</code> form of ADR-0038. Git's <code>Revert "..."</code> stays. Enforced by: GIT-COMMIT-MSG.</li>
+<li><strong>The public side:</strong> the ruleset of the public repository requires linear history on <code>main</code> ("Require linear history"), so GitHub refuses a merge commit as well (review: the setting lives on GitHub, not in the repository).</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>The integration step of the lead is a rebase and a fast-forward; "Life of a work package" and "The lead's routine" in <span title="../04-milestones.md in the repository">04-milestones</span> say so.</li>
+<li>A rebased package gets new commit IDs; the builder's folder is reset to <code>main</code> for the next package anyway, and a builder whose branch was rebased by the lead does not push the old one again.</li>
+<li>The <code>WINn</code> branch of a builder may be force-pushed between review rounds, with <code>--force-with-lease</code>, so it can follow <code>main</code>.</li>
+<li>ADR-0038 (the <code>Merge</code> subject) and ADR-0039 (the checks of the master's push) are amended by this record, and the integration step of ADR-0024 follows it.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Merge commits (the old flow):</strong> keep each package together, but each package appears twice, <code>git bisect</code> walks into the side branches, and the public ruleset would need a bypass. Rejected.</li>
+<li><strong>Squash each package into one commit:</strong> a straight line, but the package's separate commits and their messages are lost. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>GIT-LINEAR (no merge commit in what a push adds) and GIT-COMMIT-MSG (no merge subject); review for force-pushes and for the ruleset on GitHub.</p>
 
 
   </main>

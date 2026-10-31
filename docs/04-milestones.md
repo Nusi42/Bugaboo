@@ -11,7 +11,7 @@ How Bugaboo gets built: in 16 milestones, each ending in something you can try. 
 | Role | Who | Does |
 |------|-----|------|
 | **Product owner** | The maintainer | Decide, try each milestone, comment on its review page, approve or ask for changes |
-| **Lead** | The main Claude session, high effort | Splits a milestone into work packages, starts builders and reviewers, merges, writes the milestone review page |
+| **Lead** | The main Claude session, high effort | Splits a milestone into work packages, starts builders and reviewers, brings the finished packages into `main`, writes the milestone review page |
 | **Builders** | Implementation agents, medium effort | Build one work package each, in their own Git worktree, tests first |
 | **Reviewers** | Separate agents with a fresh context | Review every work package adversarially: code, security, UX, words |
 
@@ -31,10 +31,10 @@ The lead splits each milestone into **work packages** (about half a day to a day
 flowchart LR
   plan["Lead writes<br/>work package"] --> build["Builder<br/>tests first, then code<br/>(edit-time checks after every file)"]
   build --> self["Builder runs<br/>cargo xtask check staged + package tests"]
-  self --> pr["Push WINn<br/>lead merges into WIN1<br/>cargo xtask ci"]
+  self --> pr["Push WINn<br/>lead rebases it onto WIN1<br/>cargo xtask ci"]
   pr --> rev["Reviewer agents<br/>code · security · UX · words"]
   rev -- "findings" --> build
-  rev -- "clean" --> merge["Lead merges<br/>to main"]
+  rev -- "clean" --> merge["Lead moves main<br/>forward to WIN1"]
 ```
 
 1. **Where:** each builder works in its own clone (`bugaboo.winN`, branch `WINn`, ADR-0024), outside the main checkout (`<master>`).
@@ -42,7 +42,7 @@ flowchart LR
 3. **Self-check:** `cargo xtask check staged` and the package's tests are green before the branch is pushed; a branch with a red test is not pushed. A package that changes screens also takes its own screenshots and checks them against the ten rules of UX design §1.1 (alignment, padding, state colors) before it is pushed, and its report names the pictures it looked at (M4: a builder that looked at 5 of 270 pictures cost three more screen rounds). The builder reports the exact commands it ran and their results.
 4. **CI:** `cargo xtask ci` in `bugaboo.win1`, on Windows and in WSL, both databases.
 5. **Review:** at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review of their own from screenshots (four themes × computer and phone) compared with the UX design: the ten rules of §1.1 and the visual system of §7 (type sizes and weights, state colors, spacing); a UX finding blocks the merge like a failing test, because a screen gets no second first impression (M5). Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.
-6. **Fix and merge:** findings go back to the builder; every fix round, however small, gets its own SSOT/DRY/ODR gate check by a reviewer with a fresh context before it is merged, never by the lead or the builder who wrote it (M5: a round the lead merged without one, and a round the lead checked itself, each failed the gate when checked; WP-03 needed four rounds). The lead merges the builder's `WINn` branch into `WIN1`, runs `cargo xtask ci` again, and fast-forwards `main` in the master repository. `main` is always green.
+6. **Fix and merge:** findings go back to the builder; every fix round, however small, gets its own SSOT/DRY/ODR gate check by a reviewer with a fresh context before it is merged, never by the lead or the builder who wrote it (M5: a round the lead merged without one, and a round the lead checked itself, each failed the gate when checked; WP-03 needed four rounds). The lead brings the builder's `WINn` branch into `WIN1` by rebasing a copy of it onto `WIN1` and moving `WIN1` forward to it, never by a merge commit (ADR-0041), runs `cargo xtask ci` again, and fast-forwards `main` in the master repository. `main` is always green and a straight line.
 
 ### Working in a folder
 
@@ -50,7 +50,7 @@ flowchart LR
 - A builder's folder starts from `main`: `git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup` (pinned tools and Git hooks, coding-standards §7).
 - **Nothing outside your folder.** Logs, notes, helper scripts, pictures, servers' data and built programs stay inside `bugaboo.winN`, in its ignored `.work/` folder (pictures in `.work/screenshots/`). Never create files or folders next to the work folders in `<work root>`, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into `.work/`. Delete what you no longer need before you report.
 - **Commit messages from a file.** Write the message into a file in `.work/` and commit with `git commit -F .work/<file>`; a message piped into `git commit` has hung in a work folder (M4).
-- **A newer `main` comes in by a merge:** `git merge origin/main`. A branch that was pushed is never rebased or force-pushed (coding-standards §2), also not between review rounds (M5).
+- **A newer `main` comes in by a rebase:** `git fetch origin && git rebase origin/main`, then push your own branch again with `git push --force-with-lease origin WINn`. Never force-push another branch, and never make a merge commit: the pre-push hook refuses it (ADR-0041, coding-standards §2).
 - Commit on your branch and push it to `origin` when the work package is done. Never push to `main`: only the lead moves it, by a fast-forward in the master.
 - Ports come from your folder's block in `tools/dev/ports.json` (ADR-0023).
 - **CodeGraph** keeps one index per work folder, never in the master. If your folder has no `.codegraph/codegraph.db`, run `codegraph init` in it, then pass your folder as `projectPath` to `codegraph_explore` (or run `codegraph explore` there). The lead's index is in `bugaboo.win1`.
@@ -100,7 +100,7 @@ A session can end at any time, and a new one starts in the master and continues 
 4. **Builders** (Sonnet, medium effort) work in `bugaboo.win2` and up, reset to `main` first (see "Working in a folder"). **Reviewers** start with a fresh context. Every agent that builds outside a `bugaboo.winN` folder gets a `CARGO_TARGET_DIR` of its own, never one another agent uses, and that folder is deleted once no build runs from it.
 5. **Every builder prompt** names the work package file, the folder and the branch, and points to the rules: this section's "Working in a folder", the coding standards (including the SSOT/DRY/ODR review gate and one logical change per commit — a package lands in several commits, not one) and the glossary. Every reviewer prompt names the review gate too.
 6. **One full run at a time:** while several builders work, only one folder runs a full `cargo xtask ci` at a time, the lead's merge runs included. A builder asks the lead before a full run and waits for the go. Browser and speed tests in several folders at once share the computer's connections and processors, and the load tests then fail for reasons that are not in the code (M4-F22, M4-F25). The checks and the unit tests run at any time; while the lead's full run is on, other folders run no browser tests at all, because the connections of the computer are shared (M4-F22).
-7. **Merge** into `WIN1` with a subject of the form `Merge <what it brought>`, the only form the commit-message check accepts for a merge, in plain words without folder, branch or package names: `git merge --no-ff origin/WINn -m "Merge the search page"`. Then `cargo xtask ci`, push `WIN1`, and `git merge --ff-only WIN1` in the master.
+7. **Rebase, never merge** (ADR-0041): `git fetch origin && git switch -C integrate origin/WINn && git rebase WIN1` (resolve conflicts commit by commit), then `git switch WIN1 && git merge --ff-only integrate`. No merge commit is made; the pre-push hook refuses one. Then `cargo xtask ci`, push `WIN1`, and `git merge --ff-only WIN1` in the master.
 8. **"Can I close this session?"** Answer with: running background agents and commands; uncommitted or unpushed work in each `bugaboo.winN` (`git status --short`, `git log origin/WINn..WINn`); `main` against `WIN1`; whether `STATUS.md` is current. Say "safe" only when all are clean, or when `STATUS.md` names exactly what a running builder will leave behind.
 9. **Memory** lives in `bugaboo.win1/.claude/memory/` (ADR-0024). Commit memory changes with the next `STATUS.md` update.
 10. **Reviews work on a phone:** milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are not committed: keep them outside the repository, and name the page in the docs instead (coding-standards §2).

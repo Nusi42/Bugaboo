@@ -10,9 +10,9 @@ The repository lives in a folder that a sync service (OneDrive or similar) keeps
 
 - **Master:** `<master>` holds `main` and the shared history. **Nothing is built or installed there**; it only receives pushes and fast-forward merges.
 - **Work folders** (outside the synced folder), clones of the master with `origin` pointing to it:
-  - `<work root>/bugaboo.win1`, branch `WIN1`: the lead's folder. Work packages are merged here, `cargo xtask ci` runs here, and only then is `main` fast-forwarded.
+  - `<work root>/bugaboo.win1`, branch `WIN1`: the lead's folder. Work packages are combined here (by rebasing, ADR-0041), `cargo xtask ci` runs here, and only then is `main` fast-forwarded.
   - `bugaboo.win2`, `bugaboo.win3`, …, branches `WIN2`, `WIN3`, …: one per builder agent working in parallel. Each starts from `main`, pushes its branch when its work package is done, and is reset to `main` for the next one.
-- **Integration:** in `win1`: fetch `WINn`, merge, run `cargo xtask ci`; push `WIN1`; in the master: `git merge --ff-only WIN1`. `main` therefore only ever moves to states that passed CI.
+- **Integration:** in `win1`: fetch `WINn`, rebase a copy of it onto `WIN1` and move `WIN1` forward to it (never a merge commit: Amendment, ADR-0041), run `cargo xtask ci`; push `WIN1`; in the master: `git merge --ff-only WIN1`. `main` therefore only ever moves to states that passed CI.
 - **Build folders** stay inside each work folder (they are outside the synced folder already). Machine-specific overrides go into `.cargo/config.local.toml`, which the committed `.cargo/config.toml` includes optionally (works on stable Cargo) and Git ignores.
 - **Guard:** `cargo xtask` refuses to build, test or install anything in a checkout marked as the master, with a message pointing to the work folders (marked explicitly, not by its path: Amendment, ADR-0039).
 - **Later:** when the repository moves to the public remote (`<public remote>`), it becomes `origin` for the work folders and the master becomes one more clone; nothing else changes.

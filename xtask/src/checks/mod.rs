@@ -48,6 +48,7 @@ mod fmt_toml;
 mod fmt_ts;
 pub(crate) mod git_commit_msg;
 mod git_files;
+mod git_linear;
 mod lint_api_types;
 mod lint_css;
 mod lint_dry;
@@ -240,6 +241,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(dep_licenses::DepLicenses),
         Box::new(git_files::GitFiles),
         Box::new(git_commit_msg::GitCommitMsg),
+        Box::new(git_linear::GitLinear),
         Box::new(fmt_ts::FmtTs),
         Box::new(fmt_css::FmtCss),
         Box::new(lint_ts::LintTs),
