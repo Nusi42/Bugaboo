@@ -126,6 +126,8 @@ As in [04-milestones](../../04-milestones.md) (M6): *Ana starts her work day, ru
 
 Each question has the lead's recommendation. Accepting all of them takes every recommendation as written. WP-01 writes each answer where it belongs.
 
+**Answered:** every recommendation was taken as written.
+
 - **M6-Q1: The theme files (M5-F167, M5-F121).**
   - `design/theme.kdl` is the base theme `default`: every token with its base value, the choices (*Compact*, *Larger text*, *Less motion*), more contrast, forced colors, the contrast rules, mixins, keyframes, part rules and the design pages.
   - One file per built-in theme in `design/themes/` (`daylight.kdl`, `paper.kdl`, `dusk.kdl`, `midnight.kdl`): `theme "dusk" extends="default" kind="dark" { … }` with colors only (also the colors of shadows; the shape of a shadow stays in the base). The base holds the colors of *Daylight*, the default light theme, and each theme file sets only the colors it changes, so no color is written twice. The file name is the theme's ID; the list of themes is the files, written nowhere else.
