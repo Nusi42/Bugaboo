@@ -34,7 +34,7 @@ async function coversThePage(page: Page): Promise<boolean> {
  * pointed at: the last control a test pressed (or a corner, where a *Back* may stand) would
  * otherwise show its hover fill in the picture.
  */
-async function pointerAway(page: Page): Promise<void> {
+export async function pointerAway(page: Page): Promise<void> {
   await page.mouse.move(-10, -10);
 }
 
