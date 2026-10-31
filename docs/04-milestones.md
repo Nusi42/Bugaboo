@@ -138,11 +138,11 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Work folders as in ADR-0024: the main checkout is the master (`main`, never built in); `<work root>/bugaboo.win1` (branch `WIN1`) for the lead and integration, `bugaboo.win2` and up for builders
-- `main` kept green by the local CI runner (`cargo xtask ci`: everything CI would run, both databases, on Windows and in WSL); nightly runs via a scheduled task. A GitHub Actions workflow is prepared but switched on only when the repository moves to GitHub
+- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0035)
 - `.cargo/config.toml` with an optional, ignored `config.local.toml` for machine-specific settings; the BUILD-LOCATION guard
 - Rust workspace with all crates as empty shells, dependency rules, `#![forbid(unsafe_code)]`, `rust-toolchain.toml`
 - `cargo xtask`: check runner reading `tools/checks/catalog.toml`; `cargo xtask setup` installs all tools on Windows, Linux and WSL
-- First checks active: FMT-*, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, LINT-CI, GIT-*, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example
+- First checks active: FMT-*, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, GIT-*, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example
 - lefthook, Claude Code hooks (`.claude/settings.json`) and `CLAUDE.md` with the agent rules
 - Browser app skeleton: Vite 8, React 19, TypeScript 7, oxlint + tsgolint, oxfmt, Vitest, Playwright, all on the ports from `tools/dev/ports.json`
 - `design/tokens.json` with the four themes; `cargo xtask gen tokens` generates CSS and TS (the design pages switch to the generated CSS); since M2C both are `design/theme.kdl` and `cargo xtask gen theme` (ADR-0026); `messages/en.json` with typed keys
@@ -678,7 +678,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 ## Decisions
 
-- **Git host:** the repository stays local in its current folder for now; GitHub (private, with GitHub Actions) comes later. Until then, `cargo xtask ci` on this PC is the CI: it runs exactly what GitHub Actions will run, on Windows and in WSL, against SQLite and PostgreSQL. Moving to GitHub later only adds a remote and switches on the prepared workflow.
+- **Git host:** the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0035): `cargo xtask ci` on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.
 - **Master and work folders (ADR-0024):** the main checkout is the master and is never built in; it may live in a folder that a sync service watches. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` never touch the synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`.
 
 ## Open questions

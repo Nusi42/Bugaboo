@@ -11,11 +11,11 @@ Checks (formatting, linting, hard-coded text, tokens only, terminology, licenses
 - **`cargo xtask`** is the single entry point: `cargo xtask check staged`, `check all`, `gen …`, `release …`. It's Rust, so it runs wherever the code builds.
 - **lefthook** runs `check staged` on commit, `check push` on push and the commit-message check; `cargo xtask setup` installs it and the hooks.
 - **Claude Code hooks** (`.claude/settings.json`) run the relevant checks after each file edit, so agents get immediate feedback.
-- **CI** runs `check all` plus slow checks (benchmarks, end-to-end, SBOM).
+- **The full local run** (`cargo xtask ci`) runs `check all` plus slow checks (benchmarks, end-to-end, SBOM). There is no hosted CI (ADR-0035).
 - **Rust:** `rustfmt` formats, `clippy` lints (warnings are errors, selected pedantic lints on).
 - **TypeScript 7:** **oxfmt** formats; **oxlint** lints, with **oxlint-tsgolint** for type-aware rules. tsgolint is built on typescript-go, the TypeScript 7 compiler itself, so it understands TypeScript 7 exactly. `tsc` (TypeScript 7) does the type check.
 - **CSS:** stylelint enforces "tokens only"; formatting by oxfmt (or Biome, if oxfmt doesn't cover CSS at setup time).
-- **Other files:** taplo (TOML), rumdl (Markdown), typos (spelling), lychee (links), actionlint (CI files).
+- **Other files:** taplo (TOML), rumdl (Markdown), typos (spelling), lychee (links).
 - **Pattern rules** across Rust and TypeScript (no literal UI text, no raw colors, no `unwrap` in production code, no SQL built with `format!`, `Authorized<T>` only in bb-policy) are **ast-grep** rules in `tools/rules/`.
 - Every check is listed once in **`tools/checks/catalog.toml`** (ADR-0020).
 

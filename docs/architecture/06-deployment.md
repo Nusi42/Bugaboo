@@ -87,7 +87,7 @@ Folders that Bugaboo creates are readable by their owner only: mode `0700` on Li
 
 ### One file per system (OPS-01, DIST-01)
 
-`cargo xtask build` builds the browser app and then the release program with the browser app inside (`rust-embed`); `--target` builds for another system. Windows x64 is built on the development PC. Static Linux programs (`x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`) are built by `cargo xtask ci` on Linux machines, which the CI workflow runs once the repository is on GitHub. Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.
+`cargo xtask build` builds the browser app and then the release program with the browser app inside (`rust-embed`); `--target` builds for another system. Windows x64 is built on the development PC. Static Linux programs (`x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`) are built by `cargo xtask ci` on Linux machines (there is no hosted CI, ADR-0035). Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.
 
 ## Served: we run it (hosted by Bugaboo)
 
@@ -123,7 +123,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  src["Tagged commit"] --> ci["CI: cargo xtask check all"]
+  src["Tagged commit"] --> ci["Local run: cargo xtask check all"]
   ci --> build["Build matrix<br/>windows-x64 · windows-arm64<br/>linux-x64-musl · linux-arm64-musl"]
   build --> sbom["SBOM (CycloneDX + SPDX)<br/>third-party notices"]
   sbom --> sign["Sign binaries, SBOM, checksums"]

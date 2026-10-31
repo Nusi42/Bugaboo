@@ -1,18 +1,15 @@
-//! META-WIRING: the git hooks, the Claude Code hooks and CI call only `cargo xtask …`, and call
+//! META-WIRING: the git hooks and the Claude Code hooks call only `cargo xtask …`, and call
 //! exactly the commands they should (ADR-0014).
 //!
 //! The files do not have to exist yet: a missing file passes.
 
 use super::{Check, Context, Finding};
-use crate::docs::source::sorted_files;
-use crate::docs::text::has_extension;
 use crate::source::read_text;
 
 const LEFTHOOK_FILES: [&str; 2] = ["lefthook.yml", "lefthook.yaml"];
 /// The folder of Claude Code in a work folder (settings, memory notes).
 pub(crate) const CLAUDE_FOLDER: &str = ".claude";
 const SETTINGS_FILE: &str = "settings.json";
-const WORKFLOWS: &str = ".github/workflows";
 
 /// Which command each Git hook runs.
 const GIT_HOOKS: [(&str, &str); 3] = [
@@ -35,12 +32,6 @@ const POST_EDIT_MATCHER: &str = "Edit|Write|MultiEdit|NotebookEdit";
 /// Any other Claude Code hook may run an xtask hook command.
 const HOOK_PREFIX: &str = "cargo xtask hook ";
 
-/// The only commands CI runs.
-const CI_COMMANDS: [&str; 2] = ["cargo xtask setup", "cargo xtask ci"];
-
-/// Length of a full Git commit SHA, which actions have to be pinned to.
-const SHA_LENGTH: usize = 40;
-
 pub(crate) struct MetaWiring;
 
 impl Check for MetaWiring {
@@ -59,14 +50,6 @@ impl Check for MetaWiring {
         let settings = format!("{CLAUDE_FOLDER}/{SETTINGS_FILE}");
         if repo.path(&settings).is_file() {
             findings.extend(check_settings(&settings, &read_text(repo, &settings)?));
-        }
-        if repo.path(WORKFLOWS).is_dir() {
-            let is_workflow =
-                |name: &str| has_extension(name, "yml") || has_extension(name, "yaml");
-            for name in sorted_files(repo, WORKFLOWS, is_workflow)? {
-                let path = format!("{WORKFLOWS}/{name}");
-                findings.extend(check_workflow(&path, &read_text(repo, &path)?));
-            }
         }
         Ok(findings)
     }
@@ -195,33 +178,6 @@ fn check_lefthook(path: &str, text: &str) -> Vec<Finding> {
     findings
 }
 
-/// Workflows: `run:` is only `cargo xtask setup` and `cargo xtask ci`; `uses:` only for actions
-/// pinned to a full commit SHA.
-fn check_workflow(path: &str, text: &str) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    for run in yaml_runs(text, "run") {
-        findings.extend(check_exact(
-            path,
-            &format!(":{}", run.line),
-            &run.command,
-            &CI_COMMANDS,
-        ));
-    }
-    for used in yaml_runs(text, "uses") {
-        let action = used.command.split('#').next().unwrap_or("").trim();
-        let pinned = action.rsplit_once('@').is_some_and(|(_, version)| {
-            version.len() == SHA_LENGTH && version.bytes().all(|b| b.is_ascii_hexdigit())
-        });
-        if !pinned {
-            findings.push(Finding::at(
-                format!("{path}:{}", used.line),
-                format!("`{action}` is not pinned to a full {SHA_LENGTH}-character commit SHA. Use `owner/action@<sha>`."),
-            ));
-        }
-    }
-    findings
-}
-
 /// Claude Code settings: hook commands are xtask hooks, and `PostToolUse` runs exactly
 /// `cargo xtask hook post-edit`.
 fn check_settings(path: &str, text: &str) -> Vec<Finding> {
@@ -295,8 +251,6 @@ fn collect_commands(value: &serde_json::Value, found: &mut Vec<String>) {
 mod tests {
     use super::*;
 
-    const SHA: &str = "11bd71901bbe5b1630ceea73d27597364c9af683";
-
     const LEFTHOOK: &str = "\
 pre-commit:
   commands:
@@ -318,12 +272,8 @@ commit-msg:
 
     #[test]
     fn good_example() {
-        let workflow = format!(
-            "jobs:\n  ci:\n    steps:\n      - uses: actions/checkout@{SHA} # v4\n      - run: |\n          cargo xtask setup\n          cargo xtask ci\n"
-        );
         let settings = settings(POST_EDIT_MATCHER, POST_EDIT);
         assert!(check_lefthook("lefthook.yml", LEFTHOOK).is_empty());
-        assert!(check_workflow("ci.yml", &workflow).is_empty());
         assert!(check_settings("settings.json", &settings).is_empty());
     }
 
@@ -360,17 +310,6 @@ commit-msg:
                 .iter()
                 .any(|f| f.message.contains("`scripts:` runs script files"))
         );
-    }
-
-    #[test]
-    fn workflows_run_only_setup_and_ci_and_pin_actions() {
-        let workflow = "steps:\n  - uses: actions/checkout@v4\n  - run: |\n      cargo xtask ci\n      npm test\n  - run: cargo xtask setup | tee log & rustup update\n";
-        let found = check_workflow("ci.yml", workflow);
-        assert_eq!(found.len(), 4);
-        assert!(found[0].message.contains("`npm test`"));
-        assert!(found[1].message.contains("`tee log`"));
-        assert!(found[2].message.contains("`rustup update`"));
-        assert!(found[3].message.contains("not pinned"));
     }
 
     #[test]

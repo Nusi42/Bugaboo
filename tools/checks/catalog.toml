@@ -157,15 +157,6 @@ files = ["**/*.md"]
 status = "active"
 
 [[check]]
-id = "LINT-CI"
-title = "CI workflow files are valid"
-rule = "ADR-0014"
-tool = "actionlint"
-when = ["commit", "ci"]
-files = [".github/workflows/*.yml"]
-status = "active"
-
-[[check]]
 id = "LINT-DRY"
 title = "No copy-pasted code blocks above the duplication threshold"
 rule = "coding-standards §1 (DRY)"
@@ -939,11 +930,11 @@ status = "active"
 
 [[check]]
 id = "META-WIRING"
-title = "lefthook, Claude Code hooks and CI call exactly the xtask commands they should, and only those; CI actions are pinned to a commit"
+title = "lefthook and the Claude Code hooks call exactly the xtask commands they should, and only those"
 rule = "ADR-0014"
-tool = "xtask (reads lefthook.yml, .claude/settings.json, CI workflow)"
+tool = "xtask (reads lefthook.yml, .claude/settings.json)"
 when = ["commit", "ci"]
-files = ["lefthook.yml", ".claude/settings.json", ".github/workflows/**"]
+files = ["lefthook.yml", ".claude/settings.json"]
 status = "active"
 
 [[check]]

@@ -174,15 +174,15 @@ Every check is listed **once**, in [`tools/checks/catalog.toml`](../tools/checks
 
 1. **Claude Code hooks** (`.claude/settings.json`): after an agent edits a file, the checks for that file run and errors go straight back to the agent.
 2. **Git hooks** (lefthook): fast checks on staged files at commit, the wider set on push, the commit-message check.
-3. **CI**: everything, plus nightly benchmarks and release-only checks (SBOM, notices). While the repository is local, CI is `cargo xtask ci` on the development PC (Windows and WSL); GitHub Actions runs the same command once the repository moves to GitHub.
+3. **The full local run**: everything, plus nightly benchmarks and release-only checks (SBOM, notices). It is `cargo xtask ci` on the development PC (Windows and WSL). There is no hosted CI (ADR-0035); the pre-push hook runs the push checks and `cargo xtask ci` runs before `main` moves.
 
-**Tools:** rustfmt and clippy for Rust; oxfmt and oxlint with type-aware tsgolint (built on TypeScript 7) for TypeScript; stylelint for CSS; taplo, rumdl, typos, lychee and actionlint for the rest; jscpd for copied blocks of Rust and TypeScript (LINT-DRY: a block of 100 tokens and 10 lines is the size, in `.jscpd.json`, and a copy that stands for now is named with the fingerprint of its block and its follow-up in `tools/checks/dry-exemptions.toml`); ast-grep for pattern rules across languages.
+**Tools:** rustfmt and clippy for Rust; oxfmt and oxlint with type-aware tsgolint (built on TypeScript 7) for TypeScript; stylelint for CSS; taplo, rumdl, typos and lychee for the rest; jscpd for copied blocks of Rust and TypeScript (LINT-DRY: a block of 100 tokens and 10 lines is the size, in `.jscpd.json`, and a copy that stands for now is named with the fingerprint of its block and its follow-up in `tools/checks/dry-exemptions.toml`); ast-grep for pattern rules across languages.
 
 **Checks for the checks** (META) make sure each check is implemented and tested, every file type is covered (a new kind of file needs a new check), new modules are declared, every rule names its check, and suppressions don't grow unnoticed. See [architecture §10](architecture/10-checks.md).
 
 **Zero warnings, zero errors.** Every formatter and linter reports 0 warnings and 0 errors; a warning counts as an error. Enforced by: the FMT and LINT checks (FMT-RUST, LINT-RUST, LINT-TS and the rest of the groups).
 
-- **Never skip the hooks** (`--no-verify`). `git push --force-with-lease` runs the push checks too. When a hook fails, fix the cause and commit again. CI runs the same checks, so nothing skipped locally reaches `main` (review).
+- **Never skip the hooks** (`--no-verify`). `git push --force-with-lease` runs the push checks too. When a hook fails, fix the cause and commit again. The full local run (`cargo xtask ci`) runs the same checks before `main` moves, so nothing skipped locally reaches `main` (review).
 - **Never switch off a check or a lint.** Fix the cause, not the symptom: no `#[allow]` to silence a real problem, no `// oxlint-disable` to make CI green, no skipped tests (review).
 - **If a rule is truly wrong for one place,** use the narrowest suppression, with a reason that names an issue or a doc section, for example `#[allow(clippy::print_stdout, reason = "CLI output, coding-standards §3")]`. Adding one needs the lead's approval in review. Enforced by: META-SUPPRESS.
 - **External tools** come only from `tools/dev/tools.toml` (pinned versions) and are installed by `cargo xtask setup` into `.tools/`, which also installs the Git hooks (ADR-0014). Run it once in every fresh or reset work folder (review).
