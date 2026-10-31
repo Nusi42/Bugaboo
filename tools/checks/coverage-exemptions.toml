@@ -3,6 +3,10 @@
 # generator's output list (`docs::generated_paths`) and DOC-GENERATED keeps them up to date. An entry that matches no file fails.
 
 [[exempt]]
+path = "LICENSE"
+reason = "The official text of the GNU Affero General Public License, word for word from gnu.org; it is never edited."
+
+[[exempt]]
 path = "Cargo.lock"
 reason = "Written by Cargo; never edited by hand."
 

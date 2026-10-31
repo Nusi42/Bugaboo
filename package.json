@@ -2,6 +2,7 @@
   "name": "bugaboo",
   "private": true,
   "description": "Bugaboo browser app workspace (ADR-0009). Tool versions are pinned exactly (architecture section 9).",
+  "license": "AGPL-3.0-or-later",
   "workspaces": [
     "web/app",
     "web/packages/ui",

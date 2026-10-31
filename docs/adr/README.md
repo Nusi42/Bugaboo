@@ -38,6 +38,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0032](0032-files.md) | Files: stored by content, checked from their content, previews in a separate process |
 | [0033](0033-notifications-and-e-mail.md) | Notifications and e-mail: an outbox reader that checks again before it tells anyone |
 | [0034](0034-saved-searches.md) | Saved searches: owned by one person, shared without giving anyone more |
+| [0035](0035-license.md) | License: AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement |
 
 ## Template
 

@@ -5,6 +5,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [features]
 # Lets a test look at what a use case answered (`Authorized::into_value`). Only `[dev-dependencies]`

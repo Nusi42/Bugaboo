@@ -56,7 +56,7 @@
 <li><strong>No telemetry</strong> and no outside requests unless an administrator configures them (mail, AI provider, single sign-on, update check).</li>
 </ul>
 <h4>Licenses of third-party parts</h4>
-<p>The license of Bugaboo itself is not decided. Every part we ship must therefore allow both proprietary and open-source distribution (DEP-LICENSES):</p>
+<p>Bugaboo itself is licensed under the GNU Affero General Public License v3.0 or later (ADR-0035), and the maintainer also offers it under other terms. Nothing from the GPL family may therefore be in it, and every part we ship must be under one of these licenses (DEP-LICENSES):</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Allowed in the shipped binary</th><th>Not allowed</th></tr></thead><tbody>
 <tr><td>MIT, Apache-2.0 (also with LLVM exception), BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, MIT-0, 0BSD, CC0, Unlicense, BSL-1.0, CDLA-Permissive-2.0 (data), OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified)</td><td>GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses</td></tr>
 </tbody></table>
@@ -2828,18 +2828,18 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h3 id="adr-0026"><button class="sec" data-sec>§13.26</button>ADR-0026: One theme file for everything about how the app looks</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a></p>
 <h4>Context</h4>
-<p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way the sister project the sister project keeps its complete look in <code>defaults/theme.kdl</code>. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
+<p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way another project keeps its complete look in one theme file. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
 <ul>
 <li>55 CSS modules with 3,261 lines; values that have no token (<code>font-weight: 700</code> 57 times, line heights 38 times, about 50 <code>1px solid</code> borders, a z-index chosen per file, opacities, keyframes);</li>
 <li>the same rule copied into many modules (the focus ring 22 times, the muted text, <code>.stack</code>, <code>.row</code>), the skip link twice, and <code>forced-colors</code> handling in ten components;</li>
 <li>the theme list written in <code>tokens.json</code> and again in the settings registry in Rust, held together by a test (M2C-F64);</li>
 <li>theme names and the <code>data-look</code> attribute written by hand in TypeScript and in the browser tests.</li>
 </ul>
-<p>the sister project compiles its theme to CSS <strong>in the browser</strong> and injects it as a style element. Bugaboo cannot do that: the content security policy is <code>style-src 'self'</code> (SEC-11), so nothing may put a style on the page at run time.</p>
+<p>Another project compiles its theme to CSS <strong>in the browser</strong> and injects it as a style element. Bugaboo cannot do that: the content security policy is <code>style-src 'self'</code> (SEC-11), so nothing may put a style on the page at run time.</p>
 <h4>Decision</h4>
 <ol>
 <li>
-<p><strong>One file, <code>design/theme.kdl</code></strong> (KDL, like the sister project; decision M2C-Q1). It holds everything: the themes, the choices that change token values, every token with its variants per mode, the contrast rules, the mixins, the keyframes and the rules of every component. Comments are allowed, and each token is one line. It replaces <code>design/tokens.json</code>. Only <code>cargo xtask gen theme</code> reads it (with the <code>kdl</code> crate, pinned like the sister project's); the server and the browser never parse KDL.</p>
+<p><strong>One file, <code>design/theme.kdl</code></strong> (KDL; the maintainer chose it on 2026-10-08, M2C-Q1). It holds everything: the themes, the choices that change token values, every token with its variants per mode, the contrast rules, the mixins, the keyframes and the rules of every component. Comments are allowed, and each token is one line. It replaces <code>design/tokens.json</code>. Only <code>cargo xtask gen theme</code> reads it (with the <code>kdl</code> crate, pinned exactly); the server and the browser never parse KDL.</p>
 </li>
 <li>
 <p><strong>Values are tokens, with their variants per mode on the line of the token.</strong> A token has a kind (<code>color</code>, <code>font</code>, <code>size</code>, <code>number</code>, <code>duration</code>, <code>easing</code>, <code>shadow</code>, <code>weight</code>, <code>line-height</code>, <code>border-width</code>, <code>layer</code>, <code>opacity</code>) and, besides its value:</p>
@@ -2858,7 +2858,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <p><strong>Components carry no style values and no class names.</strong> They emit <code>data-part</code>, <code>data-state</code> and <code>data-variant</code>, through <code>partOf(part.button, { variants: […], states: […] })</code> of <code>@bugaboo/ui</code>. The names of the parts and the words a part may have (<code>partWords</code>) are generated into <code>tokens.ts</code> from the rules, so a misspelled part or word is a type error. React Aria's own <code>data-*</code> state attributes (<code>data-hovered</code>, <code>data-pressed</code>, <code>data-selected</code>, <code>data-focus-visible</code>, <code>data-entering</code>, …) are allowed and used: a rule names them as <code>button[hovered]</code>.</p>
 </li>
 <li>
-<p><strong>The file is compiled at build time into one static style sheet</strong>, <code>web/packages/ui/src/theme.css</code> (committed, with a copy for the design pages at <code>docs/design/theme.css</code>). The content security policy stays <code>style-src 'self'</code>; no style element or attribute is made at run time. This is where Bugaboo differs from the sister project. Neither file is edited by hand: DOC-GENERATED compares them with the output of <code>cargo xtask gen theme</code>.</p>
+<p><strong>The file is compiled at build time into one static style sheet</strong>, <code>web/packages/ui/src/theme.css</code> (committed, with a copy for the design pages at <code>docs/design/theme.css</code>). The content security policy stays <code>style-src 'self'</code>; no style element or attribute is made at run time. This is where Bugaboo differs from that project. Neither file is edited by hand: DOC-GENERATED compares them with the output of <code>cargo xtask gen theme</code>.</p>
 </li>
 <li>
 <p><strong>The list of themes is written once.</strong> The four built-in themes (Daylight, Paper, Dusk, Midnight) and the two that start are defined in the file. <code>gen theme</code> writes them to TypeScript (<code>tokens.ts</code>: <code>themeIds</code>, <code>lightThemeIds</code>, <code>darkThemeIds</code>, the defaults) and to Rust (<code>crates/bb-core/src/settings/themes.rs</code>: the choices of the settings <em>Light theme</em> and <em>Dark theme</em> and their defaults, which <code>catalog.rs</code> names). The reader of the settings registry follows those names, so the browser's generated choices and defaults come from the same file. There is no hand-kept list in <code>catalog.rs</code> and no test that holds two lists together (closes M2C-F64).</p>
@@ -2867,7 +2867,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <p><strong>Custom themes, later, store token values only</strong>: names from the generated token list, values checked by the kind of the token. They never add a rule, a selector or CSS text. How the values reach the page without breaking the policy is decided when the theme editor is built.</p>
 </li>
 <li>
-<p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way the sister project's <code>theme_contrast</code> does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file: <code>hovered</code> (the pair of a brightened main button as it is seen hovered), <code>stronger</code> (the quiet words of a row at 5:1 on the tints) and <code>lines</code> (the edge of High, the hover line and the ring on the tints and surfaces) inside <code>contrast</code>; <code>distinct</code> also asks for a least difference of color (<code>min-delta-e-…</code>, CIE 1976 delta E) between the three status tints and the card, and between the red of Critical and the orange of High, because a ratio only knows brightness. <code>dimmed</code> holds the page behind a sheet as it is drawn (the token <code>scrim</code> over the fill and the text of the page): the sheet stands out and the page text is dim. A <code>distinct</code> rule that names no minimum is a parse error.
+<p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way that project's contrast test does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file: <code>hovered</code> (the pair of a brightened main button as it is seen hovered), <code>stronger</code> (the quiet words of a row at 5:1 on the tints) and <code>lines</code> (the edge of High, the hover line and the ring on the tints and surfaces) inside <code>contrast</code>; <code>distinct</code> also asks for a least difference of color (<code>min-delta-e-…</code>, CIE 1976 delta E) between the three status tints and the card, and between the red of Critical and the orange of High, because a ratio only knows brightness. <code>dimmed</code> holds the page behind a sheet as it is drawn (the token <code>scrim</code> over the fill and the text of the page): the sheet stands out and the page text is dim. A <code>distinct</code> rule that names no minimum is a parse error.
 Bold is the same kind of rule: the file has one <code>bold</code> list that names the selectors that may set the bold weight, each with its role from UX §7.3 (STY-BOLD), so a bold that UX does not name cannot be added by accident.</p>
 </li>
 <li>
@@ -2889,11 +2889,11 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li><strong>The pictures use the parts.</strong> <code>cargo xtask gen theme</code> also writes <code>docs/design/parts.css</code>, the rules of the parts without the tokens, so the pictures of the UX design are drawn with the same <code>data-part</code> markup as the app and cannot differ from it.</li>
 <li><strong>Several <code>distinct</code> rules.</strong> The hovered and the selected row must differ from the tint of a status group as well as from the plain surfaces, so the file has one <code>distinct</code> rule for the plain surfaces and one for each tint.</li>
 </ul>
-<h4>Update 2026-10-30 (fonts like the sister project)</h4>
+<h4>Update 2026-10-30 (system fonts)</h4>
 <ul>
-<li><strong>System font stacks, no font files.</strong> Decision: Bugaboo handles fonts like its sister project: the theme file has the sister project's four stacks word for word, and Bugaboo ships no font file, has no <code>@font-face</code> and asks no font service. The reasons: one look across the sister projects; nothing to download before the first page draws; no font licence to carry in the dependency register. A computer without the named faces takes its own system face (the last word of each stack), so text may look a little different between systems.</li>
-<li><strong>One token per role, the sister project's roles.</strong> <code>font-ui</code> is the text of the app (rows, fields, buttons, menus); <code>font-display</code> the titles and section headings, that is the parts the <code>bold</code> list names with the roles <code>issue-title</code>, <code>title</code> and <code>section</code> (STY-BOLD finds a rule of such a part that makes it bold without the display face); <code>font-reader</code> what a person reads at length (a description, a comment, the help of the search); <code>font-mono</code> code, issue IDs, the search language and time values. Every rule that sets a family names one of the four.</li>
-<li><strong>Cascadia Mono is first for code.</strong> Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. This was accepted to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the <code>bold</code> list does not name.</li>
+<li><strong>System font stacks, no font files.</strong> The maintainer decided that Bugaboo handles fonts with system font stacks: the theme file has four stacks, and Bugaboo ships no font file, has no <code>@font-face</code> and asks no font service. The reasons: one look across systems; nothing to download before the first page draws; no font licence to carry in the dependency register. A computer without the named faces takes its own system face (the last word of each stack), so text may look a little different between systems.</li>
+<li><strong>One token per role.</strong> <code>font-ui</code> is the text of the app (rows, fields, buttons, menus); <code>font-display</code> the titles and section headings, that is the parts the <code>bold</code> list names with the roles <code>issue-title</code>, <code>title</code> and <code>section</code> (STY-BOLD finds a rule of such a part that makes it bold without the display face); <code>font-reader</code> what a person reads at length (a description, a comment, the help of the search); <code>font-mono</code> code, issue IDs, the search language and time values. Every rule that sets a family names one of the four.</li>
+<li><strong>Cascadia Mono is first for code.</strong> Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. The maintainer accepted that to keep the stack as it is; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the <code>bold</code> list does not name.</li>
 <li><strong>Measured, not assumed.</strong> The width of the ID column still comes from <code>size-code-char</code>, a probe drawn in the code font of the computer, so it is right for Cascadia Mono, Consolas or the system monospace face alike.</li>
 </ul>
 <h4>Consequences</h4>
@@ -2907,7 +2907,7 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Keep JSON (<code>design/theme.json</code>):</strong> no new dependency, but no comments, long, and the variants of a value would not sit on one line. The maintainer chose KDL.</li>
-<li><strong>the sister project's way, compiling in the browser:</strong> needs a style element or <code>adoptedStyleSheets</code> from a string, which <code>style-src 'self'</code> forbids. Rejected.</li>
+<li><strong>Compiling the theme in the browser:</strong> needs a style element or <code>adoptedStyleSheets</code> from a string, which <code>style-src 'self'</code> forbids. Rejected.</li>
 <li><strong>Keep CSS Modules next to the token file:</strong> the situation of the audit. Rejected.</li>
 <li><strong>A hand-written style sheet with the same data attributes:</strong> the values and the rules would again be in two places that no tool joins, and the theme list could not be generated from it.</li>
 <li><strong>Tailwind CSS and CSS-in-JS at run time:</strong> rejected in ADR-0010 and still.</li>
@@ -3527,6 +3527,39 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>Enforced by (additional): the tests <code>qry_06_*</code> of <code>bb-core</code>, <code>bb-app</code>, <code>bb-store</code> and <code>bb-server</code>.</p>
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
+
+<!-- 0035-license.md -->
+<h3 id="adr-0035"><button class="sec" data-sec>§13.35</button>ADR-0035: License: AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-31</p>
+<h4>Context</h4>
+<p>Bugaboo is about to be published. The license of the code was open (the feature list said "decide later"). What is wanted:</p>
+<ul>
+<li>Anyone may run and change Bugaboo, also in a closed setting for their own use.</li>
+<li>Whoever distributes a changed version, or offers it to others over a network, must make its source available, so the maintainer can read and merge it.</li>
+<li>The maintainer can also offer Bugaboo under other terms, for example an edition with additions that are not published.</li>
+</ul>
+<h4>Decision</h4>
+<ol>
+<li>The code of Bugaboo is licensed under the <strong>GNU Affero General Public License v3.0 or later</strong> (SPDX <code>AGPL-3.0-or-later</code>). <code>LICENSE</code> holds the official text. The identifier is in <code>Cargo.toml</code> (<code>[workspace.package]</code>, which every crate inherits) and in every <code>package.json</code> of the project.</li>
+<li>The maintainer offers Bugaboo under other terms on request. To be able to do that for the whole code, every contribution comes with a <strong>contributor license agreement</strong> (<span title="../../CONTRIBUTING.md in the repository"><code>CONTRIBUTING.md</code></span>): contributors keep their copyright and grant the maintainer a perpetual, irrevocable, royalty-free license to use, sublicense and relicense the contribution under any terms, plus a patent license. It is accepted in the pull request with a comment.</li>
+<li><strong>No dependency from the GPL family</strong> (GPL, LGPL, AGPL, in any version) goes into Bugaboo: code under someone else's GPL could not be offered under other terms. The allow list in <code>deny.toml</code> names none of them, so <code>cargo deny</code> refuses them for Rust, and DEP-LICENSES refuses them for npm packages, also those that only run on a developer machine. A package that offers a choice (<code>MIT OR GPL-3.0-only</code>) is fine when the other side is on the allow list.</li>
+<li>Parts that third parties build on (a client library, a plug-in kit, examples) may later be under the MIT license, so that using them does not carry the AGPL into other programs. None exists as a separate product today; each such part needs its own decision record.</li>
+<li>Until a lawyer has reviewed the agreement, nothing commercial is offered.</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>Every new crate or package carries the license (<code>license.workspace = true</code>, or <code>"license": "AGPL-3.0-or-later"</code> in <code>package.json</code>).</li>
+<li>A change of the allow list or of the license of the project needs a new decision record.</li>
+<li>A pull request is merged only after its author has accepted the agreement (review).</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>MIT or Apache-2.0 for everything:</strong> anyone could close a changed version and keep it, and the maintainer could not read or merge it. Rejected.</li>
+<li><strong>GPL-3.0:</strong> does not cover use over a network, which is how Bugaboo is run. Rejected.</li>
+<li><strong>A source-available license (BUSL, SSPL):</strong> not open source, and the allow list refuses such licenses in dependencies for the same reasons. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>DEP-LICENSES (the allow list has no GPL family, npm included, with cargo deny and <code>deny.toml</code>), review for the agreement in pull requests.</p>
 
 
   </main>

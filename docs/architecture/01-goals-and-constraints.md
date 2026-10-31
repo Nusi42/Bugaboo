@@ -41,7 +41,7 @@ Across all of them: **privacy by design** (GDPR) and **EU product law** (CRA, AI
 
 ### Licenses of third-party parts
 
-The license of Bugaboo itself is not decided. Every part we ship must therefore allow both proprietary and open-source distribution (DEP-LICENSES):
+Bugaboo itself is licensed under the GNU Affero General Public License v3.0 or later (ADR-0035), and the maintainer also offers it under other terms. Nothing from the GPL family may therefore be in it, and every part we ship must be under one of these licenses (DEP-LICENSES):
 
 | Allowed in the shipped binary | Not allowed |
 |-------------------------------|-------------|

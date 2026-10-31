@@ -8,6 +8,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.97"
 publish = false
+license = "AGPL-3.0-or-later"
 
 # Zero warnings, zero errors: every lint below is a warning, and every check runs with
 # warnings denied (`cargo xtask check`). Exceptions need a narrow `#[allow(.., reason = "..")]`
