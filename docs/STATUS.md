@@ -46,7 +46,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 Start M6 wave 1 (WP-01 to WP-04) from `main`. `win2` holds the M5 picture helpers on the local branch `shots`.
 
-The public repository is on GitHub (private until the maintainer makes it public), pushed once from the master with its tags, with GitHub Actions switched off. Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
+The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
 ## Decisions that still bind
 
