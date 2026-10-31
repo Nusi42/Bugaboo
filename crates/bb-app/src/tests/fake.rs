@@ -52,6 +52,8 @@ pub(crate) enum FakeError {
     Refused(Refusal),
     /// Other writers kept changing the same row (the test made it, see `contended_replaces`).
     Contended,
+    /// The database stayed busy with its upkeep past the last try of a write (the test made it).
+    Busy,
     /// The store itself failed (the test made it).
     Failed,
 }
@@ -157,6 +159,8 @@ pub(crate) struct Shared {
     pub(crate) log_fails: bool,
     /// Changes fail as the database does when it breaks.
     pub(crate) changes_fail: bool,
+    /// How many more changes find the database busy past the last try of a write (ADR-0017).
+    pub(crate) busy_changes: usize,
     /// The reads of what the engine decides with fail as the database does when it breaks.
     pub(crate) policy_reads_fail: bool,
     /// How many more times the saving of the progress of a run fails.
@@ -211,6 +215,12 @@ impl FakeStore {
         self.lock().changes_fail = fails;
     }
 
+    /// Makes the next `times` changes find the database busy, as SQLite does when another
+    /// connection holds the lock past the last try of a write (ADR-0017).
+    pub(crate) fn keep_next_changes_busy(&self, times: usize) {
+        self.lock().busy_changes = times;
+    }
+
     /// Makes the reads of what the engine decides with fail (or work again): the store breaks
     /// while a request asks who may do what.
     pub(crate) fn fail_policy_reads(&self, fails: bool) {
@@ -256,9 +266,13 @@ impl ChangeStore for FakeStore {
         change: impl for<'t> FnOnce(&'t mut Tx) -> BoxFuture<'t, Result<T, FakeError>> + Send + 'a,
     ) -> Result<T, FakeError> {
         let state = {
-            let shared = self.lock();
+            let mut shared = self.lock();
             if shared.changes_fail {
                 return Err(FakeError::Failed);
+            }
+            if shared.busy_changes > 0 {
+                shared.busy_changes -= 1;
+                return Err(FakeError::Busy);
             }
             shared.state.clone()
         };

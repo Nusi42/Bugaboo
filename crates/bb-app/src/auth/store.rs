@@ -369,6 +369,10 @@ pub trait AuthStore:
     /// tried again from the start (it was undone).
     fn is_contended(error: &Self::Error) -> bool;
 
+    /// Whether the error says that the database stayed busy with its own upkeep past the last try
+    /// of a write (ADR-0017): nothing was written, and the person may try again a little later.
+    fn is_busy(error: &Self::Error) -> bool;
+
     /// The error a change returns when a rule of the policy engine stops it (the last
     /// administrator, no escalation): nothing it wrote stays, and no event is appended.
     fn refused(refusal: bb_policy::guards::Refusal) -> Self::Error;

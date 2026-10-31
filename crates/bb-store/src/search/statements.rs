@@ -15,6 +15,7 @@ use sea_query::{
 };
 
 use super::order::{GroupValue, Grouping, IdOf, Key, Kind, SortValue};
+use super::source::Repeats;
 use super::{CompileError, Compiler, Form};
 use crate::db::{Dialect, Row, Statement, StoredId as _};
 use crate::error::StoreError;
@@ -380,12 +381,18 @@ pub(crate) fn groups_statement(
             Ok((finish(&compiler, select), what))
         }
         Grouping::Many { rows, value, what } => {
+            // Counting rows lets PostgreSQL count in its parallel workers, which it cannot do for
+            // distinct issues (a quarter of the time of the groups by *Assigned to*, M5-F169).
+            let counted = match rows.repeats() {
+                Repeats::Never => Func::count(Expr::col(sea_query::Asterisk)),
+                Repeats::Maybe => Func::count_distinct(issue()),
+            };
             // The rows of the values of an issue, joined to it: an issue with none is one row with
             // no value, the group without a value, so the issues are read once.
             let mut select = Query::select();
             select
                 .expr_as(value, Sorted(0))
-                .expr_as(Func::count_distinct(issue()), Counted)
+                .expr_as(counted, Counted)
                 .from(IssueRow::Table);
             rows.join_to(&mut select);
             select.cond_where(cond).group_by_col(Sorted(0));

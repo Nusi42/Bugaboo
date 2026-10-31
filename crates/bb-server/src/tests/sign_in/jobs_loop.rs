@@ -185,12 +185,6 @@ fn adr_0017_the_real_loop_looks_for_jobs_every_few_seconds() {
     assert_eq!(bb_jobs::POLL_EVERY, Duration::from_secs(2));
 }
 
-/// How many events the database holds: the outbox read from its start by a reader that never ran.
-async fn events_in(rig: &Rig) -> Result<usize, Failure> {
-    let nobody = TechnicalName::new("never-reads")?;
-    Ok(rig.database.outbox_after(&nobody, 1_000_000).await?.len())
-}
-
 /// The daily job `statistics.refresh` on a real store (ADR-0017): it writes no event, leaves no
 /// table out of date, and its next round a day later does nothing more.
 #[tokio::test]
@@ -198,7 +192,7 @@ async fn adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_not
 {
     each_database("adr_0017_statistics_job", async |db| {
         let rig = Rig::start(db).await?;
-        let events = events_in(&rig).await?;
+        let events = rig.event_count().await?;
         let now = rig.clock_now();
         rig.storage
             .queue_job(
@@ -210,14 +204,14 @@ async fn adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_not
             )
             .await?;
         assert_eq!(rig.run_jobs().await?, 1);
-        assert_eq!(events_in(&rig).await?, events, "no event");
+        assert_eq!(rig.event_count().await?, events, "no event");
         assert!(
             !rig.database.refresh_statistics().await?,
             "the job left a table out of date"
         );
         rig.clock.advance(SECONDS_PER_DAY + 1);
         assert_eq!(rig.run_jobs().await?, 1, "the next round");
-        assert_eq!(events_in(&rig).await?, events, "no event");
+        assert_eq!(rig.event_count().await?, events, "no event");
         assert_eq!(rig.database.dead_jobs(10).await?.len(), 0, "no job died");
         Ok(())
     })

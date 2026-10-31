@@ -30,7 +30,7 @@ use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, entity, internal, locked};
 use crate::issues::{IssueView, OwnHtml};
 
 /// The values of a set of items, as stored, with the definitions they are read with.
@@ -360,11 +360,19 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The projects from the top down to this one: where the scope of a field is judged.
     pub(crate) async fn chain_of(&self, project: ProjectId) -> Result<Vec<ProjectId>, AppError> {
-        self.store()
+        if let Some(known) = locked(&self.known.projects).chains.get(&project).cloned() {
+            return Ok(known);
+        }
+        let chain = self
+            .store()
             .project_chain(project)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        locked(&self.known.projects)
+            .chains
+            .insert(project, chain.clone());
+        Ok(chain)
     }
 
     /// A person as the viewer is shown them in an own field; `people` caches them for a page.

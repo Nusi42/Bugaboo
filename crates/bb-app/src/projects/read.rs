@@ -15,10 +15,30 @@ use super::types::{
     MoveRight, ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
 };
 use crate::access::{Actor, place_of_address};
-use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
 use crate::fields::Item;
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The project that has this short name, or had it once, read once for the request (see
+    /// `Known::projects`, `KnownProjects::by_address`).
+    pub(crate) async fn project_by_address(
+        &self,
+        name: &ShortName,
+    ) -> Result<Option<Found>, AppError> {
+        if let Some(known) = locked(&self.known.projects).by_address.get(name).cloned() {
+            return Ok(known);
+        }
+        let found = self
+            .store()
+            .project_by_address(name)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        locked(&self.known.projects)
+            .by_address
+            .insert(name.clone(), found.clone());
+        Ok(found)
+    }
+
     /// The project an address names: an ID, or a short name (also an old one). An address that is
     /// neither asks the store for a project that is not there, so every address, good or not,
     /// costs one question.

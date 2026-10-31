@@ -31,11 +31,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let nowhere = IssueId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
             .map_err(|error| AppError::Internal(error.to_string()))?;
         if let Ok(key) = address.parse::<ReadableId>() {
-            let Some(project) = store
-                .project_by_address(&key.short_name)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-            else {
+            let Some(project) = self.project_by_address(&key.short_name).await? else {
                 return Ok(None);
             };
             return store

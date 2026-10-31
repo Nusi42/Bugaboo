@@ -5,8 +5,6 @@
 //! how many are left alone, then one row for each issue with what changes or why it is skipped,
 //! and the version of the issue it read, which the change takes back.
 
-use std::sync::Mutex;
-
 use bb_core::ErrorCode;
 use bb_core::many_changes::{MANY_CHANGES_ISSUES_MAX, MANY_CHANGES_JOB_ABOVE};
 use bb_policy::{Authorized, Place};
@@ -77,7 +75,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             token,
             action,
             other,
-            chains: Mutex::default(),
         })
     }
 

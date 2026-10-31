@@ -9,6 +9,7 @@ mod events;
 mod failures;
 mod fake;
 mod fake_auth;
+mod fake_auth_store;
 mod fake_editing;
 mod fake_fields;
 mod fake_files;

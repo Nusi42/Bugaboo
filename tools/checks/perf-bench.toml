@@ -32,4 +32,4 @@ p95_ms = 8000
 database = "sqlite"
 p95_ms_at_most = 700
 follow_up = "M5-F89"
-reason = "each of the about 109,000 issues that match needs a lookup in the index of the people assigned to it; kept counts or parallel slices come later (numbers: architecture section 11)"
+reason = "SQLite reads the whole table of the issues for the IDs of the about 116,000 that match; reading the IDs from an index, only the rows found, and parallel slices were measured and each failed another scenario or did not help; kept counts come later (numbers: architecture section 11)"

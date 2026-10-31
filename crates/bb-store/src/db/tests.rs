@@ -28,8 +28,9 @@ async fn m1_f24_programs_that_start_together_on_a_new_file_all_get_the_database(
 
 #[test]
 fn m1_f24_only_a_busy_or_locked_database_is_tried_again() {
-    assert!(!is_locked(&sqlx::Error::RowNotFound));
-    assert!(!is_locked(&sqlx::Error::PoolTimedOut));
+    assert!(!StoreError::from(sqlx::Error::RowNotFound).is_locked());
+    assert!(!StoreError::from(sqlx::Error::PoolTimedOut).is_locked());
+    assert!(!StoreError::Busy.is_locked());
 }
 /// The built-in database and the files SQLite keeps next to it are for the owner only, also
 /// under the usual umask (SEC-16, M1-F65).

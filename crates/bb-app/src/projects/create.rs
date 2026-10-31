@@ -76,38 +76,37 @@ pub async fn create_project<S: AuthStore>(
     let stored = project.clone();
     let why = Why::default();
     let stopped = why.clone();
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                // A project made while somebody gives a role for sub-projects is seen by them or
-                // reached by it: the two wait for each other.
-                S::lock_policy(transaction).await?;
-                // A project goes no deeper than the tree may: judged on the tree as it is now.
-                if let Some(parent) = stored.parent {
-                    let tree = super::tree_in::<S>(transaction).await?;
-                    if !tree.contains(parent) {
-                        return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                    }
-                    if tree
-                        .moved(stored.id, Some(parent))
-                        .too_deep_below(stored.id)
-                    {
-                        return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
-                    }
+    ctx.record_change(&event, move |transaction| {
+        Box::pin(async move {
+            // A project made while somebody gives a role for sub-projects is seen by them or
+            // reached by it: the two wait for each other.
+            S::lock_policy(transaction).await?;
+            // A project goes no deeper than the tree may: judged on the tree as it is now.
+            if let Some(parent) = stored.parent {
+                let tree = super::tree_in::<S>(transaction).await?;
+                if !tree.contains(parent) {
+                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
-                // Judged again on what is stored now: two people who make a project with the
-                // same short name at the same moment cannot both succeed.
-                if S::short_name_owner_in(transaction, &stored.short_name)
-                    .await?
-                    .is_some()
+                if tree
+                    .moved(stored.id, Some(parent))
+                    .too_deep_below(stored.id)
                 {
-                    return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+                    return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
                 }
-                S::insert_project(transaction, &stored).await
-            })
+            }
+            // Judged again on what is stored now: two people who make a project with the
+            // same short name at the same moment cannot both succeed.
+            if S::short_name_owner_in(transaction, &stored.short_name)
+                .await?
+                .is_some()
+            {
+                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+            }
+            S::insert_project(transaction, &stored).await
         })
-        .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+    })
+    .await
+    .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
     ctx.note(
         SecurityAction::ProjectCreated,
         Some(actor.person.id),

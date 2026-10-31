@@ -223,6 +223,10 @@ fn build_on(
         DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
             let url = postgres.empty_database(&layout.large.database)?;
             let made = run_program(repo, program, both, database, (&run, Some(&url)))?;
+            if made.status.success() {
+                // PostgreSQL's own upkeep would analyse the new rows only some time later.
+                postgres.vacuum_analyze(&layout.large.database)?;
+            }
             let size = postgres.size_of(&layout.large.database)? + folder_size(&out);
             Ok((made, size))
         })?,

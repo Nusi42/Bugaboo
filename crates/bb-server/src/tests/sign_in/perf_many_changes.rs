@@ -14,9 +14,10 @@ use super::perf_queries::Counter;
 const PREVIEW: &str = "/api/v1/many-changes/preview";
 
 /// The most statements each issue of a selection costs the preview, however many there are (the
-/// issue and the project it is in, who is assigned and the chain of the project; 6 measured, 10
-/// before the definitions of the fields were read once).
-const PER_ISSUE_AT_MOST: usize = 6;
+/// issue by its address, the issue again as the change reads it, and who is assigned; 3 measured,
+/// 6 before the project of an address and the chain of a project were read once for the request
+/// (M5-F169), 10 before the definitions of the fields were).
+const PER_ISSUE_AT_MOST: usize = 3;
 
 /// The most statements a preview of one issue runs: the session and the rights, which every
 /// request pays (M4-F137: 31 measured, 42 before the rights of the person were read once), and the

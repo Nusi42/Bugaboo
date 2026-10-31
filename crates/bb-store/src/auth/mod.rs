@@ -114,6 +114,10 @@ impl AuthStore for AuthStorage {
         matches!(error, StoreError::Contended)
     }
 
+    fn is_busy(error: &StoreError) -> bool {
+        matches!(error, StoreError::Busy)
+    }
+
     fn refused(refusal: bb_policy::guards::Refusal) -> StoreError {
         StoreError::Refused(refusal)
     }

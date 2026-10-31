@@ -33,6 +33,17 @@ use crate::sight::sight_condition_as;
 pub(super) struct Rows {
     table: DynIden,
     on: Cond,
+    repeats: Repeats,
+}
+
+/// Whether one issue can have the same value in two of its rows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Repeats {
+    /// No: the key of the table is the issue and the value, so a group of the value counts the
+    /// rows, one for each issue.
+    Never,
+    /// It may, so a group counts the distinct issues of its rows.
+    Maybe,
 }
 
 impl Rows {
@@ -41,7 +52,22 @@ impl Rows {
         Self {
             table: table.into_iden(),
             on: Cond::all().add(Expr::col((table, issue)).equals((IssueRow::Table, IssueRow::Id))),
+            repeats: Repeats::Maybe,
         }
+    }
+
+    /// The rows of `table`, whose key is the column `issue` and the value: an issue has a value
+    /// once.
+    fn keyed(table: impl Iden + Copy + 'static, issue: impl Iden + Copy + 'static) -> Self {
+        Self {
+            repeats: Repeats::Never,
+            ..Self::of(table, issue)
+        }
+    }
+
+    /// Whether one issue can have the same value in two of its rows.
+    pub(super) const fn repeats(&self) -> Repeats {
+        self.repeats
     }
 
     /// The rows only when `condition` holds too.
@@ -231,21 +257,21 @@ pub(super) fn subject_of(
         ),
         T::AssignedTo => (
             linked(
-                Rows::of(AssignedPersonRow::Table, AssignedPersonRow::Issue),
+                Rows::keyed(AssignedPersonRow::Table, AssignedPersonRow::Issue),
                 Expr::col((AssignedPersonRow::Table, AssignedPersonRow::Person)),
             ),
             Domain::Person(target.people_kind()),
         ),
         T::Tags => (
             linked(
-                Rows::of(IssueTagRow::Table, IssueTagRow::Issue),
+                Rows::keyed(IssueTagRow::Table, IssueTagRow::Issue),
                 Expr::col((IssueTagRow::Table, IssueTagRow::Tag)),
             ),
             Domain::Tag,
         ),
         T::Labels => (
             linked(
-                Rows::of(IssueLabelRow::Table, IssueLabelRow::Issue),
+                Rows::keyed(IssueLabelRow::Table, IssueLabelRow::Issue),
                 Expr::col((IssueLabelRow::Table, IssueLabelRow::Label)),
             ),
             Domain::Label,

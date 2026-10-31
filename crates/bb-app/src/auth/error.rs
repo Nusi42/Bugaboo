@@ -64,6 +64,21 @@ impl AppError {
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
+
+    /// The answer when the database stayed busy past the last try of a write (ADR-0017): nothing
+    /// was written, and the person is told to try again in a moment.
+    #[must_use]
+    pub const fn busy() -> Self {
+        Self::Refused(ErrorCode::Unavailable)
+    }
+
+    /// Whether this is the answer of a busy database ([`Self::busy`]): a fact of the moment, not
+    /// of the request or of what it names, so work that meets it is tried again later (a job) and
+    /// never counts it against an issue (a change to many issues). The one place that says so.
+    #[must_use]
+    pub fn is_busy(&self) -> bool {
+        self.code() == Some(ErrorCode::Unavailable)
+    }
 }
 
 /// What a read that may find nothing answers: `None` for "not found", which is a fact about the
@@ -118,6 +133,12 @@ impl std::error::Error for AppError {}
 /// The answer for a failure of the store: the person gets the standard answer and the cause goes
 /// to the log.
 pub(crate) fn internal<S: AuthStore>(error: &S::Error) -> AppError {
+    if S::is_busy(error) {
+        // Another connection held the database past the last try of the write (the upkeep or
+        // another writer, ADR-0017): nothing was written.
+        tracing::warn!("a write found the database busy past its last try");
+        return AppError::busy();
+    }
     AppError::Internal(S::describe(error))
 }
 
