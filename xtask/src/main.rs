@@ -427,9 +427,11 @@ mod tests {
         let repo = repo::Repo::at(temp.path().to_path_buf());
         let problems =
             |text: &str| commit_message_problems(&repo, &temp.write("MSG", text)).unwrap();
-        assert!(problems("fix(web): x\n\nCo-Authored-By: someone\n").is_empty());
-        assert_eq!(problems("wip\n").len(), 1);
-        assert_eq!(problems("fix: x\n\nClaude-Session: made-up\n").len(), 1);
+        let trailer = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>";
+        assert!(problems(&format!("fix(web): add x\n\n{trailer}\n")).is_empty());
+        assert_eq!(problems("wip\n").len(), 2);
+        // A session line is refused by the message rules and by the private-data rules.
+        assert_eq!(problems("fix: add x\n\nClaude-Session: made-up\n").len(), 2);
         // The author and the committer about to be recorded: a private address is refused.
         identity("Mira Made-Up", "mira@example.test");
         assert_eq!(problems("fix(web): x\n").len(), 2);

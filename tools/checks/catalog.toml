@@ -866,9 +866,9 @@ status = "active"
 
 [[check]]
 id = "GIT-COMMIT-MSG"
-title = "Commit messages follow Conventional Commits"
-rule = "coding-standards §2"
-tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: commits not on main)"
+title = "Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge <what it brought>`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process"
+rule = "coding-standards §2, ADR-0036"
+tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: the messages of the commits not on main, merges included)"
 when = ["push", "ci"]
 files = ["*"]
 status = "active"

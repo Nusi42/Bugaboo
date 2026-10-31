@@ -1,0 +1,5 @@
+feat(xtask): add the setup command
+
+The command installs the pinned tools.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

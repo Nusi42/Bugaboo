@@ -1,0 +1,1 @@
+refactor(core): keep one SSOT, no ODR break, stay DRY

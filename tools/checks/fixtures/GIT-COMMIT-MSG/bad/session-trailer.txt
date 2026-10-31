@@ -1,0 +1,3 @@
+fix(web): reject empty names
+
+Claude-Session: made-up

@@ -39,6 +39,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0033](0033-notifications-and-e-mail.md) | Notifications and e-mail: an outbox reader that checks again before it tells anyone |
 | [0034](0034-saved-searches.md) | Saved searches: owned by one person, shared without giving anyone more |
 | [0035](0035-no-hosted-ci.md) | No hosted CI; verification is local |
+| [0036](0036-public-identity-and-commit-messages.md) | Public identity and plain commit messages |
 
 ## Template
 

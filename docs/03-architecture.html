@@ -1304,7 +1304,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>TEST-CONNECTIONS</code></td><td>A run of the browser tests never leaves more connections in TIME_WAIT and CLOSE_WAIT than the limit, so the computer never runs out of ports</td><td>architecture §11</td><td>xtask (the Playwright reporter `web/tooling/connection-guard.ts` is in the config, fails the run, and its limit is one named number; tests are run again only in the speed project); the count itself: the reporter, during `cargo xtask ci`</td><td>ci · nightly</td></tr>
 <tr><td><code>PLAN-TRACE</code></td><td>Every M and V1 feature is in exactly one milestone, MVP features only in MVP milestones, and every work package names its features</td><td>04-milestones.md</td><td>xtask (parses the feature list, the milestones and docs/milestones/**)</td><td>commit · ci</td></tr>
 <tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root</td><td>ADR-0024</td><td>xtask (path check before every build, test, dev and install command)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits</td><td>coding-standards §2</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: commits not on main)</td><td>push · ci</td></tr>
+<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge &lt;what it brought&gt;`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process</td><td>coding-standards §2, ADR-0036</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: the messages of the commits not on main, merges included)</td><td>push · ci</td></tr>
 <tr><td><code>GIT-FILES</code></td><td>No large binaries and no CRLF line endings committed</td><td>coding-standards §7</td><td>xtask</td><td>commit · ci</td></tr>
 <tr><td><code>META-CATALOG</code></td><td>Every check in this catalogue is implemented in xtask, and every implemented check is in this catalogue</td><td>architecture §10</td><td>xtask self-test</td><td>commit · ci</td></tr>
 <tr><td><code>META-FIXTURES</code></td><td>Every check has a 'bad' example that must fail and a 'good' example that must pass</td><td>architecture §10</td><td>xtask self-test over tools/checks/fixtures/&lt;ID&gt;/</td><td>ci</td></tr>
@@ -3550,6 +3550,34 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 </ul>
 <h4>Enforced by</h4>
 <p>META-WIRING (hooks call only xtask); the rest by review.</p>
+
+<!-- 0036-public-identity-and-commit-messages.md -->
+<h3 id="adr-0036"><button class="sec" data-sec>§13.36</button>ADR-0036: Public identity and plain commit messages</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-01</p>
+<h4>Context</h4>
+<p>The history of the repository is published with it. Until now commits carried the identity Git found on the machine, the working vocabulary of the project (folder and branch names, work packages, milestone codes), session lines of the tool that wrote them, and merges in a form that named a branch and a package. None of that tells a reader of the public history what changed, and some of it is private.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>One public identity.</strong> The maintainer's commits are authored and committed as the name of the GitHub account with its noreply address (<code>Name &lt;id+Name@users.noreply.github.com&gt;</code>). The identity is configuration, never code: the local Git configuration of the master and of every work folder, copied by <code>cargo xtask setup</code> (from the <code>origin</code> master when that is a folder, or from the variable <code>BUGABOO_PUBLIC_IDENTITY</code>). The handle itself may appear in files and messages only in its GitHub forms: the noreply address and <code>github.com/&lt;login&gt;</code> links.</li>
+<li><strong>What counts as public.</strong> An identity is public when its address is a GitHub noreply address whose login is its name, or when it is the identity GitHub writes for merges made on its web site. Another contributor's public identity passes as well, because it is not the maintainer's private one; a real name or a private address in the author field never passes. A contribution that arrives with another identity is brought in by the maintainer (a squash or a new commit) rather than by relaxing the rule.</li>
+<li><strong>Where it is checked.</strong> The commit-msg hook reads the author and committer about to be recorded (<code>git var GIT_AUTHOR_IDENT</code>, <code>GIT_COMMITTER_IDENT</code>). The push and full checks read the author and committer of every commit that is on no remote yet. Both are part of SEC-PRIVATE, with the private list (words, several words, e-mail addresses; the variable <code>BUGABOO_PRIVATE_WORDS</code> names another file) and the refusal of the session key of Claude Code in memory notes.</li>
+<li><strong>Plain messages.</strong> GIT-COMMIT-MSG enforces: the types feat, fix, perf, refactor, test, docs, build, ci, chore, style and revert; a first line of at most 72 characters that starts in lower case with a verb in the imperative (the imperative is a heuristic: a first word ending in <code>ed</code> or <code>ing</code> is refused, with a short list of exceptions); merges as <code>Merge &lt;what it brought&gt;</code>; the single trailer <code>Co-Authored-By: Claude &lt;model&gt; &lt;noreply@anthropic.com&gt;</code>; no claude.ai link or session line; and none of the working vocabulary (folder and branch names, work folder, master, lead, fast-forward, wave, work package and its codes, milestone codes, the acronyms SSOT, ODR and DRY, owner, WIP). The list is in <code>xtask/src/checks/git_commit_msg/jargon.rs</code>, once.</li>
+<li><strong>Rewriting history.</strong> Commits that are on the public remote are never rewritten. History that has never been published may be rewritten once, before the first push, to bring it into line with these rules.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>The published history reads the same for everyone and carries no private identity.</li>
+<li>Until the unpublished history is rewritten, the push and full checks report its old identities and messages.</li>
+<li>A word of the working vocabulary is refused even when it is used in its ordinary sense (a master key, a lead role); the message is reworded.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Hard-code the identity in the check:</strong> puts the handle into the code outside its GitHub forms. Rejected.</li>
+<li><strong>Allow any noreply address:</strong> lets another person's identity pass as the maintainer's. It is accepted only because it is public, and documented.</li>
+<li><strong>Check the identity only at commit time:</strong> a commit made with <code>--no-verify</code> or on another machine would reach the remote. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>SEC-PRIVATE (identity, private list, memory-note key) and GIT-COMMIT-MSG (message rules).</p>
 
 
   </main>

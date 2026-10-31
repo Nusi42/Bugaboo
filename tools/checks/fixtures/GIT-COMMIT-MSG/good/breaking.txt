@@ -1,0 +1,1 @@
+fix(web)!: drop the old route
