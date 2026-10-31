@@ -39,6 +39,7 @@ pub mod status;
 mod store_macros;
 pub mod tags;
 pub mod text_index;
+pub mod time;
 mod walk;
 pub mod workflows;
 
