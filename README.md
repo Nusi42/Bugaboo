@@ -122,10 +122,10 @@ Each milestone is listed with its features in the [plan](docs/04-milestones.md).
 
 Bugaboo is not released yet, so you run it from source. You need Git, Node.js 26 and Rust. The Rust version is pinned in `rust-toolchain.toml`, and `rustup` installs it for you. Windows, Linux and WSL are supported.
 
-Clone the repository (the green *Code* button on the GitHub page shows its address), go into the folder and set up:
+Clone the repository, go into the folder and set up:
 
 ```sh
-git clone <address of this repository>
+git clone https://github.com/Nusi42/Bugaboo.git
 cd Bugaboo
 cargo xtask setup
 ```
