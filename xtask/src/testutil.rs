@@ -2,7 +2,6 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use crate::checks::Finding;
 
@@ -46,7 +45,7 @@ impl TempDir {
 
     /// Runs `git` in this folder and returns whether it succeeded.
     pub(crate) fn git(&self, args: &[&str]) -> bool {
-        Command::new("git")
+        crate::tools::command("git")
             .args([
                 "-c",
                 "user.name=tester",

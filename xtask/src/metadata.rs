@@ -1,7 +1,6 @@
 //! The Cargo workspace as `cargo metadata` describes it, for the architecture and dependency checks.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context as _, bail};
 use serde::Deserialize;
@@ -58,7 +57,7 @@ struct Metadata {
 
 /// Runs `cargo metadata --no-deps` in `root` and returns the workspace members.
 pub(crate) fn load(root: &Path) -> anyhow::Result<Vec<Package>> {
-    let out = Command::new("cargo")
+    let out = crate::tools::command("cargo")
         .args(["metadata", "--no-deps", "--format-version", "1"])
         .current_dir(root)
         .output()
@@ -112,7 +111,7 @@ pub(crate) type DirectVersions =
 /// Runs `cargo metadata` with the resolved graph and returns the locked version of every
 /// external package a workspace member lists as a dependency.
 pub(crate) fn load_direct_versions(root: &Path) -> anyhow::Result<DirectVersions> {
-    let out = Command::new("cargo")
+    let out = crate::tools::command("cargo")
         .args(["metadata", "--locked", "--format-version", "1"])
         .current_dir(root)
         .output()

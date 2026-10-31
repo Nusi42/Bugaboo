@@ -67,7 +67,7 @@ pub(crate) fn role(root: &Path) -> Role {
 
 /// The top folder of the checkout the command runs in, when that is marked as the master.
 pub(crate) fn master_here() -> Option<std::path::PathBuf> {
-    let out = std::process::Command::new("git")
+    let out = crate::tools::command("git")
         .args(["rev-parse", "--show-toplevel"])
         .output()
         .ok()?;

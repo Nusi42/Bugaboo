@@ -199,7 +199,7 @@ pub(crate) fn program_command(
     arguments: &Arguments<'_>,
     (layout, url): (&Layout, Option<&str>),
 ) -> Command {
-    let mut command = Command::new(program);
+    let mut command = crate::tools::command(program);
     command.current_dir(root);
     if let Some(seed) = arguments.seed {
         command.arg("--seed").arg(seed.to_string());

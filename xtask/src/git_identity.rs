@@ -7,7 +7,6 @@
 //! the maintainer's configuration.
 
 use std::path::Path;
-use std::process::Command;
 
 use crate::checks::sec_private::Identity;
 use crate::output;
@@ -42,7 +41,7 @@ pub(crate) fn choose(local: Option<&Identity>, sources: Vec<Option<Identity>>) -
 
 /// The value of a Git setting of the repository in `folder` (its own file only), if there is one.
 fn local_setting(folder: &Path, key: &str) -> Option<String> {
-    let out = Command::new("git")
+    let out = crate::tools::command("git")
         .args(["config", "--local", "--get", key])
         .current_dir(folder)
         .output()
@@ -84,7 +83,7 @@ fn apply(root: &Path, configured: Option<Identity>) -> String {
             ]
             .iter()
             .all(|(key, value)| {
-                Command::new("git")
+                crate::tools::command("git")
                     .args(["config", "--local", key, value])
                     .current_dir(root)
                     .status()

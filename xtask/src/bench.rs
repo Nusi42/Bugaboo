@@ -10,7 +10,6 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::Context as _;
 use bb_dev_words::database::DatabaseKind;
@@ -53,7 +52,7 @@ fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow:
     if index_is_current(folder) {
         return Ok(true);
     }
-    let mut command = Command::new(server);
+    let mut command = crate::tools::command(server);
     command
         .args(["search-index", "rebuild", "--data-dir"])
         .arg(folder.join("data"))
@@ -79,7 +78,7 @@ fn run_driver(
     result: &Path,
     url: Option<&str>,
 ) -> anyhow::Result<bool> {
-    let mut command = Command::new("node");
+    let mut command = crate::tools::command("node");
     command
         .arg(DRIVER)
         .args(["--folder"])

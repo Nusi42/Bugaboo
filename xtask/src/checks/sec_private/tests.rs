@@ -648,7 +648,7 @@ fn a_memory_note_with_the_session_key_is_refused_with_or_without_a_value() {
 /// Commits in `temp` with this identity (the environment decides over the settings of the
 /// helper).
 fn commit_as(temp: &TempDir, name: &str, email: &str) {
-    let done = std::process::Command::new("git")
+    let done = crate::tools::command("git")
         .args(["commit", "--quiet", "--allow-empty", "-m", "chore: more"])
         .env("GIT_AUTHOR_NAME", name)
         .env("GIT_AUTHOR_EMAIL", email)

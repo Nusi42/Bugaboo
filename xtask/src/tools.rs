@@ -167,16 +167,24 @@ pub(crate) struct Output {
 /// The variable that names the build folder of cargo.
 const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
 
-/// The build folder of the run, made absolute when it is relative, for every program xtask starts.
-/// Cargo reads a relative `CARGO_TARGET_DIR` from the folder it runs in, and the compile-fail
-/// tests run cargo from the folder of their crate (trybuild must: it reads its cases from there),
-/// so a relative one would put a build inside each crate. Made absolute here, from the folder
-/// xtask was started in, as cargo read it for xtask itself, it is the same folder everywhere.
-/// None when the variable is not set or is absolute already.
+/// The build folder of the run, made absolute when it is relative, for every program xtask starts
+/// (through [`command`]). Cargo reads a relative `CARGO_TARGET_DIR` from the folder it runs in, and
+/// the compile-fail tests run cargo from the folder of their crate (trybuild must: it reads its
+/// cases from there), so a relative one would put a build inside each crate. Made absolute here,
+/// from the folder xtask was started in, as cargo read it for xtask itself, it is the same folder
+/// everywhere. None when the variable is not set or is absolute already.
 pub(crate) fn absolute_target_dir() -> Option<(&'static str, PathBuf)> {
     let named = std::env::var_os(TARGET_DIR_VARIABLE)?;
     let here = std::env::current_dir().ok()?;
     target_dir_from(Path::new(&named), &here).map(|folder| (TARGET_DIR_VARIABLE, folder))
+}
+
+/// A program to start, with the build folder of the run as an absolute path: the only way xtask
+/// starts a program, so every cargo it starts, however deep, builds in the same folder.
+pub(crate) fn command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(program);
+    command.envs(absolute_target_dir());
+    command
 }
 
 /// The build folder `named` from the folder `here`, when it is relative.
@@ -196,9 +204,8 @@ pub(crate) fn run_with_env(
     cwd: &Path,
     env: &[(&str, &str)],
 ) -> anyhow::Result<Output> {
-    let out = Command::new(program)
+    let out = command(program)
         .args(args)
-        .envs(absolute_target_dir())
         .envs(env.iter().copied())
         .current_dir(cwd)
         .output()

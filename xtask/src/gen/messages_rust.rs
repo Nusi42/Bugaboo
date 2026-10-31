@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::io::Write as _;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context as _, bail};
 
@@ -153,7 +153,7 @@ fn parameter_name(name: &str) -> String {
 
 /// Runs `rustfmt` over generated code, so the file passes FMT-RUST without a second step.
 pub(crate) fn format(repo: &Repo, source: &str) -> anyhow::Result<String> {
-    let mut child = Command::new("rustfmt")
+    let mut child = crate::tools::command("rustfmt")
         .args(["--edition", "2024"])
         .current_dir(repo.root())
         .stdin(Stdio::piped())

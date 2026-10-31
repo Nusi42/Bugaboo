@@ -3,7 +3,7 @@
 //! (`web/app`) may not exist yet; its steps are then skipped with a clear note instead of failing.
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode, Stdio};
+use std::process::{ExitCode, Stdio};
 use std::time::Instant;
 
 use anyhow::Context as _;
@@ -166,11 +166,8 @@ pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
         }
         output::step_start(index + 1, steps.len(), step.name);
         let started = Instant::now();
-        let mut command = Command::new(&step.program);
-        command
-            .args(&step.args)
-            .envs(crate::tools::absolute_target_dir())
-            .current_dir(root);
+        let mut command = crate::tools::command(&step.program);
+        command.args(&step.args).current_dir(root);
         let passed = if let Some(name) = step.executable {
             // Cargo's messages are data for us; its readable diagnostics stay on stderr.
             let out = command

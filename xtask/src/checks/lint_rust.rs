@@ -127,7 +127,7 @@ fn stand_in_compiler(target: &str) -> anyhow::Result<Vec<(String, String)>> {
 /// `cc` crate is switched off for this run only (a Cargo `links` override): no C compiler for the
 /// other system is needed, and every workspace crate is still linted. Real builds are untouched.
 fn c_build_packages(root: &Path, target: &str) -> anyhow::Result<Vec<CBuild>> {
-    let output = std::process::Command::new("cargo")
+    let output = tools::command("cargo")
         .args([
             "metadata",
             "--format-version",

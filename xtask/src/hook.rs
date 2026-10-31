@@ -5,7 +5,7 @@
 //! Claude Code feeds back to the agent.
 
 use std::path::Path;
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 
 use anyhow::Context as _;
 use serde::Deserialize;
@@ -74,7 +74,7 @@ fn post_edit_with(root: &Path, stdin: &str, exe: &Path) -> anyhow::Result<ExitCo
         output::error(&format!("{error:#}"));
     }
     // The checks run in a child process: it prints for people, and we turn that into feedback.
-    let out = Command::new(exe)
+    let out = crate::tools::command(exe)
         .args(["check", "edit", &file])
         .current_dir(root)
         .output()

@@ -4,7 +4,6 @@
 //! does not link the store; the program does the work (`bugaboo search-index rebuild`).
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::Context as _;
 
@@ -14,7 +13,7 @@ use crate::dev;
 /// none is named). The result says whether it went well.
 pub(crate) fn rebuild(root: &Path, data_dir: Option<&Path>) -> anyhow::Result<bool> {
     let data_dir: PathBuf = data_dir.map_or_else(|| dev::data_folder(root), Path::to_path_buf);
-    let status = Command::new("cargo")
+    let status = crate::tools::command("cargo")
         .args([
             "run",
             "--quiet",

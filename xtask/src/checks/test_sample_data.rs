@@ -613,13 +613,13 @@ mod tests {
     #[test]
     fn no_fixture_file_is_ignored_by_git() {
         use std::io::Write as _;
-        use std::process::{Command, Stdio};
+        use std::process::Stdio;
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let mut files = Vec::new();
         let fixtures = root.join("tools/checks/fixtures/TEST-SAMPLE-DATA");
         collect(root, &fixtures, &layout().sign_in_file, &mut files).unwrap();
-        let mut child = Command::new("git")
+        let mut child = crate::tools::command("git")
             .args(["check-ignore", "--stdin"])
             .current_dir(root)
             .stdin(Stdio::piped())

@@ -8,7 +8,6 @@ use std::fmt::Write as _;
 use std::fs;
 use std::io::Read as _;
 use std::path::Path;
-use std::process::Command;
 
 use anyhow::{Context as _, bail};
 use sha2::{Digest as _, Sha256};
@@ -54,7 +53,7 @@ fn install_git_hooks(root: &Path) -> anyhow::Result<()> {
     } else {
         "lefthook"
     });
-    let status = Command::new(&lefthook)
+    let status = tools::command(&lefthook)
         .arg("install")
         .current_dir(root)
         .status()
@@ -68,7 +67,7 @@ fn install_git_hooks(root: &Path) -> anyhow::Result<()> {
 
 /// The crate names and versions already in `.tools`, from `cargo install --list`.
 fn installed_cargo_tools(root: &Path) -> anyhow::Result<HashMap<String, String>> {
-    let out = Command::new("cargo")
+    let out = tools::command("cargo")
         .args(["install", "--list", "--root", tools::TOOLS_DIR])
         .current_dir(root)
         .output()
@@ -109,7 +108,7 @@ fn install_cargo(
         "install  {} {} (cargo install; this can take a few minutes)",
         tool.name, tool.version
     ));
-    let status = Command::new("cargo")
+    let status = tools::command("cargo")
         .args([
             "install",
             "--locked",
@@ -184,7 +183,7 @@ fn install_download_with(
 
 /// Downloads `url` to `destination` with curl (present on every supported system).
 pub(crate) fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
-    let status = Command::new("curl")
+    let status = tools::command("curl")
         .args([
             "--fail",
             "--location",
@@ -336,7 +335,7 @@ fn install_npm(root: &Path) -> anyhow::Result<()> {
     }
     output::info("install  npm packages (npm ci)");
     let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
-    let status = Command::new(npm)
+    let status = tools::command(npm)
         .args(["ci", "--ignore-scripts"])
         .current_dir(root)
         .status()
@@ -372,7 +371,7 @@ fn install_browsers(root: &Path) -> anyhow::Result<()> {
         E2E_BROWSERS.join(", ")
     ));
     let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
-    let status = Command::new(npm)
+    let status = tools::command(npm)
         .args(browser_install_arguments())
         .current_dir(root)
         .status()

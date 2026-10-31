@@ -3,7 +3,7 @@
 use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context as _, bail};
 
@@ -42,7 +42,7 @@ fn link_directory(target: &Path, link: &Path) {
     #[cfg(unix)]
     let _ = std::os::unix::fs::symlink(target, link);
     #[cfg(windows)]
-    let _ = Command::new("cmd")
+    let _ = crate::tools::command("cmd")
         .arg("/C")
         .arg("mklink")
         .arg("/J")
@@ -166,7 +166,7 @@ impl Repo {
         args: &[&str],
         input: &[u8],
     ) -> anyhow::Result<Vec<u8>> {
-        let mut child = Command::new("git")
+        let mut child = crate::tools::command("git")
             .args(args)
             .current_dir(&self.root)
             .stdin(Stdio::piped())

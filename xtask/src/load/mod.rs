@@ -13,7 +13,6 @@ mod layout;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::Context as _;
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
@@ -145,7 +144,7 @@ fn run_driver(
     program: &Path,
     url: Option<&str>,
 ) -> anyhow::Result<bool> {
-    let mut command = Command::new("node");
+    let mut command = crate::tools::command("node");
     command
         .args(arguments)
         .current_dir(root)
@@ -166,7 +165,7 @@ fn run_check(
     checker: &Path,
     url: Option<&str>,
 ) -> anyhow::Result<bool> {
-    let mut command = Command::new(checker);
+    let mut command = crate::tools::command(checker);
     command.arg("--book").arg(folder.book()).current_dir(root);
     match url {
         Some(url) => command.arg("--database-url").arg(url),

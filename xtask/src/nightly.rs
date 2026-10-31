@@ -13,7 +13,7 @@
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::time::Duration;
 
 use anyhow::{Context as _, bail};
@@ -139,7 +139,7 @@ fn install(repo: &Repo) -> anyhow::Result<bool> {
     }
     let folder = in_folder(repo.root(), &load_layout(repo.root())?.large.nightly_out);
     fs::create_dir_all(&folder)?;
-    let status = Command::new("schtasks")
+    let status = crate::tools::command("schtasks")
         .args(schtasks_arguments(repo.root(), &folder.join(START_LOG)))
         .status()
         .context("could not run schtasks")?;
@@ -158,7 +158,7 @@ fn step(root: &Path, log: &File, name: &str, arguments: &[&str]) -> anyhow::Resu
     use std::io::Write as _;
     let mut note = log.try_clone()?;
     writeln!(note, "== {name}: xtask {}", arguments.join(" "))?;
-    let status = Command::new(std::env::current_exe()?)
+    let status = crate::tools::command(std::env::current_exe()?)
         .args(arguments)
         .current_dir(root)
         .env(HELD_VARIABLE, "1")

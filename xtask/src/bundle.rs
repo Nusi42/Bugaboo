@@ -192,7 +192,7 @@ pub(crate) fn find_program(root: &Path, tool: &Tool, program: &str) -> Option<Pa
 fn folder_named_by_system(tool: &Tool, root: &Path) -> Option<PathBuf> {
     let (program, arguments) = tool.system_folder_command.split_first()?;
     let program = find_on_path(program)?;
-    let output = std::process::Command::new(program)
+    let output = tools::command(program)
         .args(arguments)
         .current_dir(root)
         .output()

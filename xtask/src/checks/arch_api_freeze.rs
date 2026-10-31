@@ -96,7 +96,7 @@ fn lost_in_the_copy(origin: &str, kept: &Value, frozen: &Value) -> Vec<Finding> 
 
 /// Runs `git`; the answer is its text, or an error when git does not run or fails.
 fn git(repo: &Repo, arguments: &[&str]) -> anyhow::Result<String> {
-    let output = std::process::Command::new("git")
+    let output = crate::tools::command("git")
         .args(arguments)
         .current_dir(repo.root())
         .output()

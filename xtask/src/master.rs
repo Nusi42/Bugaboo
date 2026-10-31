@@ -14,7 +14,6 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context as _, bail};
 
@@ -126,7 +125,7 @@ pub(crate) fn mark(master: &Path, xtask: &Path) -> anyhow::Result<Vec<String>> {
     fs::create_dir_all(&hooks)?;
     write_executable(&hooks.join("pre-push"), &hook_text(xtask)?)?;
     let hooks_path = slashed(&hooks);
-    let set = Command::new("git")
+    let set = crate::tools::command("git")
         .args(["config", "--local", "core.hooksPath", &hooks_path])
         .current_dir(master)
         .status()
@@ -202,7 +201,7 @@ mod tests {
         assert_eq!(location::role_of(master.path(), |_| None), Role::Master);
         // Git runs the hook folder: the setting is there and the hook calls the push checks.
         let hooks = master.path().join(".git").join(HOOKS_FOLDER);
-        let out = Command::new("git")
+        let out = crate::tools::command("git")
             .args(["config", "--local", "--get", "core.hooksPath"])
             .current_dir(master.path())
             .output()

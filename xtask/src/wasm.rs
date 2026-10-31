@@ -9,7 +9,7 @@
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context as _, bail};
 use serde_json::Value;
@@ -250,7 +250,7 @@ pub(crate) fn ensure(root: &Path) -> anyhow::Result<()> {
 }
 
 fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
-    let status = Command::new(program)
+    let status = tools::command(program)
         .args(args)
         .current_dir(root)
         .status()
@@ -265,7 +265,7 @@ fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
 /// Runs cargo and returns the module it wrote. Cargo says where: a different `target-dir` in the
 /// settings of the machine needs no guessing.
 fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
-    let out = Command::new("cargo")
+    let out = tools::command("cargo")
         .args([
             "build",
             "--message-format=json-render-diagnostics",

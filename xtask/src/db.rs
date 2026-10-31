@@ -9,7 +9,7 @@ use std::fmt::Write as _;
 use std::fs;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -131,7 +131,7 @@ impl Cluster {
         if !self.data().join("PG_VERSION").is_file() {
             return Ok(false);
         }
-        let status = Command::new(self.program("pg_ctl")?)
+        let status = tools::command(self.program("pg_ctl")?)
             .arg("status")
             .arg("-D")
             .arg(self.data())
@@ -182,7 +182,7 @@ impl Cluster {
                 self.data().display(),
                 log.display()
             );
-            Command::new("powershell")
+            tools::command("powershell")
                 .args(["-NoProfile", "-NonInteractive", "-Command"])
                 .arg(format!(
                     "Start-Process -FilePath '{}' -ArgumentList '{}' -WindowStyle Hidden",
@@ -193,7 +193,7 @@ impl Cluster {
                 .status()
                 .context("could not run powershell")?
         } else {
-            Command::new(&pg_ctl)
+            tools::command(&pg_ctl)
                 .args(["start", "-D"])
                 .arg(self.data())
                 .arg("-l")
@@ -214,7 +214,7 @@ impl Cluster {
 
     /// `pg_isready` succeeds (exit code 0) once the server accepts connections.
     fn accepts_connections(&self) -> anyhow::Result<bool> {
-        let status = Command::new(self.program("pg_isready")?)
+        let status = tools::command(self.program("pg_isready")?)
             .args(["-h", HOST, "-p", &self.port.to_string()])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -232,7 +232,7 @@ impl Cluster {
         if data.exists() {
             fs::remove_dir_all(&data)?;
         }
-        let out = Command::new(self.program("initdb")?)
+        let out = tools::command(self.program("initdb")?)
             .arg("-D")
             .arg(&data)
             .args([
@@ -262,7 +262,7 @@ impl Cluster {
         if !self.is_running()? {
             return Ok(false);
         }
-        let status = Command::new(self.program("pg_ctl")?)
+        let status = tools::command(self.program("pg_ctl")?)
             .args(["stop", "-m", "fast", "-w", "-t", WAIT, "-D"])
             .arg(self.data())
             .stdin(Stdio::null())
@@ -326,9 +326,8 @@ impl Cluster {
         if let Some(folder) = record.parent() {
             fs::create_dir_all(folder)?;
         }
-        let ran = Command::new(program)
+        let ran = tools::command(program)
             .args(args)
-            .envs(tools::absolute_target_dir())
             .current_dir(root)
             .env(TEST_DATABASES_VARIABLE, DatabaseKind::names(","))
             .env(TEST_POSTGRES_URL_VARIABLE, self.url()?)
@@ -373,7 +372,7 @@ impl Cluster {
     /// Runs one SQL statement as the owner of the cluster in the database `database`, outside a
     /// transaction block, and returns what it printed (one value per line, no headers).
     fn psql_in(&self, database: &str, sql: &str) -> anyhow::Result<String> {
-        let out = Command::new(self.program("psql")?)
+        let out = tools::command(self.program("psql")?)
             .args(["-h", HOST, "-p", &self.port.to_string(), "-U", USER])
             .args(["-d", database, "-X", "-A", "-t", "-c", sql])
             .env("PGPASSWORD", self.password()?)
@@ -449,7 +448,7 @@ impl Postgres<'_> {
     /// Writes what the tables of the database `name` hold into `file`, as SQL (`pg_dump` of the
     /// pinned PostgreSQL, data only), so it can be read like any other file.
     pub(crate) fn dump_data(&self, name: &str, file: &Path) -> anyhow::Result<()> {
-        let out = Command::new(self.cluster.program("pg_dump")?)
+        let out = tools::command(self.cluster.program("pg_dump")?)
             .args(["-h", HOST, "-p", &self.cluster.port.to_string(), "-U", USER])
             .args(["-d", name, "--data-only", "--no-owner", "-f"])
             .arg(file)

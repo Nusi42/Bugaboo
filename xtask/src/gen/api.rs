@@ -47,7 +47,7 @@
 use std::collections::BTreeMap;
 use std::io::Write as _;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context as _, bail};
 
@@ -238,7 +238,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
 /// Asks the program for its API description. Only stdout is the document; cargo's own messages
 /// go to stderr and are shown when the run fails.
 fn openapi_text(repo: &Repo) -> anyhow::Result<String> {
-    let out = Command::new("cargo")
+    let out = tools::command("cargo")
         .args(["run", "--quiet", "--package", "bb-server", "--", "openapi"])
         .current_dir(repo.root())
         .output()
@@ -254,7 +254,7 @@ fn openapi_text(repo: &Repo) -> anyhow::Result<String> {
 
 /// Runs `program` with `input` on its standard input and returns its standard output.
 fn pipe(program: &Path, args: &[&str], cwd: &Path, input: &str) -> anyhow::Result<String> {
-    let mut child = Command::new(program)
+    let mut child = tools::command(program)
         .args(args)
         .current_dir(cwd)
         .stdin(Stdio::piped())

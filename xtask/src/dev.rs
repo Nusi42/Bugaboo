@@ -48,12 +48,12 @@ fn spawn(command: &mut Command, what: &str) -> anyhow::Result<Child> {
 /// Stops the program and everything it started (`npm` starts `node`).
 fn stop(child: &mut Child) {
     if cfg!(windows) {
-        let _ = Command::new("taskkill")
+        let _ = crate::tools::command("taskkill")
             .args(["/PID", &child.id().to_string(), "/T", "/F"])
             .output();
     } else {
         // A negative id addresses the whole process group.
-        let _ = Command::new("kill")
+        let _ = crate::tools::command("kill")
             .args(["-TERM", "--", &format!("-{}", child.id())])
             .output();
         let deadline = Instant::now() + STOP_GRACE;
@@ -98,7 +98,7 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     running.push(Running {
         name: "server",
         child: spawn(
-            Command::new(server)
+            crate::tools::command(server)
                 .args(["serve", "--port", &ports.server.to_string()])
                 // Development runs on this computer only, so plain HTTP is allowed (SEC-10); its
                 // data stays inside the work folder's build folder.
@@ -114,7 +114,7 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
         running.push(Running {
             name: "browser app",
             child: spawn(
-                Command::new(steps::npm())
+                crate::tools::command(steps::npm())
                     .args(["run", "dev", "--"])
                     .args(["--port", &ports.web.to_string(), "--strictPort"])
                     .current_dir(root),
