@@ -9,7 +9,7 @@ The timer and the work day are one tap away wherever a person is: at the bottom 
 
 ## Owns
 
-`web/app/src/features/time/timer*`, `web/app/src/features/time/entry*` (the time-entry form, used by *Stop timer*, *Add time* and, in WP-10, the details of a timesheet row), `web/app/src/features/time/work-day*` (the four buttons and the line *"Working since 8:02 · 6 h 51 so far"*), the sidebar and the phone bottom bar in `features/shell`, the phone issue bar and the time rows of the issue page in `features/issues`, *Quick search* actions of time, the keyboard shortcut `t`, the theme rules of these parts, the user docs of the timer.
+`web/app/src/features/time/timer*`, `web/app/src/features/time/entry*` (the time-entry form, used by *Stop timer*, *Add time* and, in WP-10, the details of a timesheet row), `web/app/src/features/time/work-day*` (the four buttons and the line *"Working since 8:02 · 6h 51m so far"*), the sidebar and the phone bottom bar in `features/shell`, the phone issue bar and the time rows of the issue page in `features/issues`, *Quick search* actions of time, the keyboard shortcut `t`, the theme rules of these parts, the user docs of the timer.
 
 ## What is decided (M6-Q5, the maintainer on M5-F150 and F172)
 

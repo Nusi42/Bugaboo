@@ -17,11 +17,11 @@ Each person records when their work day started and ended and their breaks, as G
 - **The rules as data:** ADR-0035, decision 6 (`bb_core::working_time`, one pure function: a day and the days next to it → warnings, run once per change, inside the change, stored with the day).
 - **Reasons, the old value, the notification:** ADR-0035, decision 7 (with `REASON_CHARS_MAX`).
 - **Who sees and who changes, *Totals only*, the security log:** ADR-0035, decision 8, and ADR-0025, amendment M6 (the permissions, the starting role *HR* and how it is given).
-- **The keep period:** an organization setting, 2 years in the Germany preset and never below it while that preset is chosen; the daily job `working-hours.delete-old` deletes days older than it, idempotently, also of removed people (legal hold until then, architecture §7).
+- **The keep period and its job:** ADR-0035, decision 7, and ADR-0017, amendment M6 (also for removed people: the legal hold, architecture §7).
 
 ## Tasks
 
-1. **The rules first** (pure, in `bb-core`): the presets, the function, the plain sentences of each warning as message keys with their numbers (*"10 h 35 min worked and only 15 min break. The rules allow 10 hours a day at most, with 45 min break after 9 hours."*). TEST-WORKING-TIME ("Adding a rule").
+1. **The rules first** (pure, in `bb-core`): the presets, the function, the plain sentences of each warning as message keys with their numbers (*"10 hours 35 minutes worked and only 15 minutes of break. The rules allow 10 hours a day at most, with 45 minutes of break after 9 hours."*). TEST-WORKING-TIME ("Adding a rule").
 2. **Tables and marks:** `work_day`, `work_break`; person `identity`, the rest `employee_time`, basis legal obligation; the reasons `employee_time`.
 3. **Use cases and routes:** one's own (`GET /api/v1/me/work-days?from=&to=`, `POST …/start`, `…/break/start`, `…/break/end`, `…/end`, `PATCH /api/v1/me/work-days/{date}` with an optional reason), another's (`GET /api/v1/people/{id}/work-days?from=&to=`, `PATCH …/{date}` with a required reason), the history of a day (its events, old and new values, who and why, for the person and for those who may see). The totals of a day and a week (worked, breaks) come from one function used by every answer.
 4. **The difference to booked time:** a route answers, for one's own week, the working hours, the time booked on issues (through `TimeSpentStore`, the minutes of one person per date) and the difference per day; only for one's own week, never for another person.
