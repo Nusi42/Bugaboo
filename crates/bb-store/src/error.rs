@@ -39,6 +39,10 @@ pub enum StoreError {
     Secret(SecretProblem),
     /// Another writer was faster too many times in a row; the caller may try again.
     Contended,
+    /// SQLite stayed busy: the upkeep of the database held the write lock past the last try of
+    /// the write (`db/upkeep.rs`), or another writer held it past the busy timeout. Nothing was
+    /// written; the person may try again a little later.
+    Busy,
     /// A read took longer than the time it was given and was stopped by the database (SEC-17).
     TimedOut,
     /// A change decided not to go ahead (a check inside its transaction failed) and was undone.
@@ -120,6 +124,7 @@ impl fmt::Display for StoreError {
             ),
             Self::ReservedName => formatter.write_str("this name is reserved for the store"),
             Self::Contended => formatter.write_str("too many writers at once; try again"),
+            Self::Busy => formatter.write_str("the database stayed busy; nothing was written"),
             Self::KeyFile(error) => write!(formatter, "a key file failed: {error}"),
             Self::AnchorFile(error) => {
                 write!(formatter, "the security log anchor file failed: {error}")
@@ -155,6 +160,17 @@ impl StoreError {
     #[must_use]
     pub fn is_duplicate(&self) -> bool {
         matches!(self, Self::Database(sqlx::Error::Database(error)) if error.is_unique_violation())
+    }
+
+    /// Whether SQLite refused because another connection holds the file (`SQLITE_BUSY` is 5,
+    /// `SQLITE_LOCKED` is 6). PostgreSQL's codes have five characters, so none of them is one.
+    #[must_use]
+    pub(crate) fn is_locked(&self) -> bool {
+        matches!(
+            self,
+            Self::Database(sqlx::Error::Database(database))
+                if matches!(database.code().as_deref(), Some("5" | "6"))
+        )
     }
 }
 

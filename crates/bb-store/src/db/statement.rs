@@ -9,6 +9,7 @@ use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 use super::Dialect;
 
 /// A query built with sea-query, ready to be built for a dialect.
+#[derive(Clone, Copy)]
 pub(crate) enum Statement<'a> {
     Select(&'a SelectStatement),
     Insert(&'a InsertStatement),

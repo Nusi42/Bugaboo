@@ -1,6 +1,6 @@
 //! When something fails or changes, against the in-memory store: a security log that cannot be
-//! written (M1-F52), a store that breaks while a change is committed, and the evaluations that
-//! live for one request and no longer (ADR-0025, decision 3).
+//! written (M1-F52), a store that breaks or stays busy while a change is committed, and the
+//! evaluations that live for one request and no longer (ADR-0025, decision 3).
 
 use std::io::Write;
 use std::sync::{Arc, Mutex};
@@ -164,6 +164,31 @@ async fn adr_0007_a_store_that_breaks_when_a_change_is_committed_leaves_nothing(
     // No event, no entry of the log, no invitation.
     assert_eq!(world.store.event_count(), events);
     assert_eq!(world.store.log_count(), entries);
+    assert!(world.store.read(|state| state.invitations.is_empty()));
+    Ok(())
+}
+
+/// A change that the store reports as staying busy with its upkeep (ADR-0017) is refused in plain
+/// words, *not available right now, try again in a moment*, and leaves nothing.
+#[tokio::test]
+async fn adr_0017_a_change_that_stays_busy_is_refused_as_not_available_and_leaves_nothing()
+-> Outcome {
+    let world = World::new().await?;
+    let events = world.store.event_count();
+    world.store.keep_changes_busy(true);
+    let result = create_invitation(
+        &world.ctx(),
+        CreateInvitation {
+            session_token: world.admin.session_token.clone(),
+            email: "bob@example.test".to_owned(),
+        },
+    )
+    .await;
+    assert_eq!(
+        result.err(),
+        Some(AppError::Refused(ErrorCode::Unavailable))
+    );
+    assert_eq!(world.store.event_count(), events);
     assert!(world.store.read(|state| state.invitations.is_empty()));
     Ok(())
 }

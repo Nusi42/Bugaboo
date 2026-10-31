@@ -3,6 +3,7 @@
 use bb_app::auth::AccountStore as _;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
+use std::time::Duration;
 
 use bb_api::FailureLimits;
 use bb_app::access::Permission;
@@ -21,6 +22,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EntityId, EventId, GroupId, RoleId, UserId};
 use bb_core::settings::SettingValue;
+use bb_core::technical::TechnicalName;
 use bb_files::{DiskFiles, PreviewCommand};
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{Failure, TestDatabase};
@@ -104,12 +106,22 @@ enum FirstStart {
     Left,
 }
 
+/// How long a writer of SQLite waits for the lock before the database answers that it is busy.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WriterWait {
+    /// What the program waits.
+    Shipped,
+    /// This long, for a test of a write that meets the upkeep and must not wait the whole time.
+    Short(Duration),
+}
+
 /// What a rig is made of.
 #[derive(Clone, Copy)]
 struct Shape {
     tries: Tries,
     passkeys: PasskeySupport,
     first_start: FirstStart,
+    writer_wait: WriterWait,
 }
 
 impl Shape {
@@ -117,6 +129,7 @@ impl Shape {
         tries: Tries::Default,
         passkeys: PasskeySupport::Available,
         first_start: FirstStart::Made,
+        writer_wait: WriterWait::Shipped,
     };
 }
 
@@ -136,6 +149,18 @@ impl Rig {
             },
         )
         .await
+    }
+
+    /// A server whose writers wait only `busy_timeout` for SQLite's write lock.
+    pub(super) async fn start_with_busy_timeout(
+        db: &TestDatabase,
+        busy_timeout: Duration,
+    ) -> Result<Self, Failure> {
+        let shape = Shape {
+            writer_wait: WriterWait::Short(busy_timeout),
+            ..Shape::NEW
+        };
+        Self::start_new(db, shape).await
     }
 
     /// A server without passkeys.
@@ -223,7 +248,10 @@ impl Rig {
         records: Option<Arc<dyn EditableRecords>>,
         folder: tempfile::TempDir,
     ) -> Result<Self, Failure> {
-        let database = Database::connect(db.url()).await?;
+        let database = match shape.writer_wait {
+            WriterWait::Shipped => Database::connect(db.url()).await?,
+            WriterWait::Short(wait) => Database::connect_with_busy_timeout(db.url(), wait).await?,
+        };
         database.migrate(Timestamp::from_second(START)?).await?;
         std::fs::create_dir_all(folder.path().join("logs"))?;
         let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
@@ -276,6 +304,13 @@ impl Rig {
                 .unwrap_or_default(),
             folder,
         })
+    }
+
+    /// How many events the database holds: the outbox read from its start by a reader that never
+    /// ran.
+    pub(super) async fn event_count(&self) -> Result<usize, Failure> {
+        let nobody = TechnicalName::new("never-reads")?;
+        Ok(self.database.outbox_after(&nobody, 1_000_000).await?.len())
     }
 
     /// The moment on the clock of the test.

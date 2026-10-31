@@ -9,7 +9,7 @@ use bb_core::time::SECONDS_PER_DAY as DAY;
 
 use super::scenarios::a_project;
 use super::world::{Outcome, World};
-use crate::jobs::{DAILY, JobKind};
+use crate::jobs::{DAILY, JobKind, QUIET_HOUR, QUIET_KIND_AFTER_START};
 
 async fn run_all(world: &World) -> Result<usize, crate::auth::AppError> {
     let mut total = 0;
@@ -45,13 +45,31 @@ fn kinds_waiting(world: &World) -> Vec<String> {
     kinds
 }
 
+/// The rounds of `statistics.refresh` that wait in the queue, by when they are due.
+fn statistics_rounds(world: &World) -> Vec<jiff::Timestamp> {
+    let mut due: Vec<jiff::Timestamp> = world
+        .store
+        .lock()
+        .state
+        .jobs
+        .iter()
+        .filter(|job| {
+            job.state == JobState::Queued && job.kind.as_str() == JobKind::RefreshStatistics.code()
+        })
+        .map(|job| job.run_at)
+        .collect();
+    due.sort();
+    due
+}
+
 #[tokio::test]
 async fn m3_f30_the_daily_jobs_run_at_the_start_and_come_back_every_day() -> Outcome {
     let world = World::new().await?;
     world.ctx().start_daily_jobs().await?;
     assert_eq!(kinds_waiting(&world), every_day());
-    // At the start every kind runs, and each leaves its next round behind, a day away.
-    assert_eq!(run_all(&world).await?, JobKind::daily().count());
+    // At the start every kind runs but the statistics, and each leaves its next round behind, a
+    // day away.
+    assert_eq!(run_all(&world).await?, JobKind::daily().count() - 1);
     assert_eq!(kinds_waiting(&world), every_day());
     assert_eq!(run_all(&world).await?, 0, "the next round is not due yet");
     world.clock.advance(DAILY.as_secs() + 1);
@@ -71,8 +89,46 @@ async fn m3_f30_a_start_while_the_next_round_waits_does_not_add_a_second_chain()
     run_all(&world).await?;
     // The server starts again within the day: it runs once more at once, and the chain stays one.
     world.ctx().start_daily_jobs().await?;
-    assert_eq!(run_all(&world).await?, JobKind::daily().count());
+    assert_eq!(run_all(&world).await?, JobKind::daily().count() - 1);
+    // The statistics of both starts run a few minutes later, and leave one next round.
+    world.clock.advance(QUIET_KIND_AFTER_START.as_secs());
+    assert_eq!(run_all(&world).await?, 2);
     assert_eq!(kinds_waiting(&world).len(), JobKind::daily().count());
+    Ok(())
+}
+
+/// The start round has no refresh of the statistics (M5-F168): it is queued a few minutes after the
+/// start, and from then on it comes every day at the quiet hour of the organization's time zone.
+#[tokio::test]
+async fn adr_0017_the_start_round_queues_no_statistics_refresh() -> Outcome {
+    let world = World::new().await?;
+    let start = world.ctx().now();
+    world.ctx().start_daily_jobs().await?;
+    let later = start.checked_add(QUIET_KIND_AFTER_START)?;
+    assert_eq!(
+        statistics_rounds(&world),
+        [later],
+        "none in the start round"
+    );
+    run_all(&world).await?;
+    assert_eq!(statistics_rounds(&world), [later], "it did not run");
+    world.clock.advance(QUIET_KIND_AFTER_START.as_secs());
+    assert_eq!(run_all(&world).await?, 1, "a few minutes later it runs");
+    let next = statistics_rounds(&world);
+    let [next] = next.as_slice() else {
+        return Err(format!("one next round, not {next:?}").into());
+    };
+    // The organization chose no zone, so the quiet hour is in UTC: the next one after the round.
+    let zoned = next.to_zoned(jiff::tz::TimeZone::UTC);
+    assert_eq!(
+        (zoned.hour(), zoned.minute(), zoned.second()),
+        (QUIET_HOUR, 0, 0)
+    );
+    assert!(*next > later, "{next} after {later}");
+    assert!(
+        next.duration_since(later) <= DAILY,
+        "within the day: {next} after {later}"
+    );
     Ok(())
 }
 

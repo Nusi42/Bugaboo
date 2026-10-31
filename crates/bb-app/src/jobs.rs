@@ -7,9 +7,12 @@
 
 use std::future::Future;
 
+use bb_core::ErrorCode;
 use bb_core::id::JobId;
 use bb_core::job::{FailureKind, FailureOutcome, Job};
 use bb_core::technical::TechnicalName;
+use bb_core::wording::Region;
+use jiff::tz::TimeZone;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
@@ -80,6 +83,27 @@ impl JobKind {
         }
     }
 
+    /// When the rounds of the kind come (only the daily kinds have rounds). A `match` without a
+    /// catch-all, so a new kind has to say.
+    const fn rhythm(self) -> Rhythm {
+        match self {
+            // Its first round on a large database holds SQLite's write lock for seconds, so it is
+            // kept away from the start, when people sign in again (M5-F168).
+            Self::RefreshStatistics => Rhythm::QuietHour,
+            Self::CatchUpHistory
+            | Self::CleanUpFiles
+            | Self::PurgeDrafts
+            | Self::PurgeNotifications
+            | Self::PruneSecurityLog
+            | Self::PurgeSessions
+            | Self::RotateServerLog
+            | Self::ManyChangesStep
+            | Self::RenewIds
+            | Self::MailSend
+            | Self::PreviewFile => Rhythm::FromTheStart,
+        }
+    }
+
     /// The kinds that come back every day.
     pub fn daily() -> impl Iterator<Item = Self> {
         Self::ALL.iter().copied().filter(|kind| kind.is_daily())
@@ -96,6 +120,58 @@ impl JobKind {
 
 /// How long after a daily job its next round is due.
 pub const DAILY: SignedDuration = SignedDuration::from_hours(24);
+
+/// How long after a start of the server the first round of a kind that keeps to the quiet hour
+/// runs: after the start, when people sign in again, but on the same day.
+pub const QUIET_KIND_AFTER_START: SignedDuration = SignedDuration::from_mins(5);
+
+/// The hour of the day, in the organization's time zone (*Region*), at which a kind that keeps to
+/// the quiet hour runs every day.
+pub const QUIET_HOUR: i8 = 3;
+
+/// When the rounds of a daily kind come: the one schedule of the daily jobs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Rhythm {
+    /// A round at every start of the server, then one every [`DAILY`].
+    FromTheStart,
+    /// A round [`QUIET_KIND_AFTER_START`] after every start, then one every day at
+    /// [`QUIET_HOUR`].
+    QuietHour,
+}
+
+impl Rhythm {
+    /// When the round that a start of the server queues is due.
+    fn first_round(self, now: Timestamp) -> Result<Timestamp, AppError> {
+        match self {
+            Self::FromTheStart => Ok(now),
+            Self::QuietHour => now
+                .checked_add(QUIET_KIND_AFTER_START)
+                .map_err(|error| AppError::Internal(error.to_string())),
+        }
+    }
+
+    /// When the round after the one that runs at `now` is due; `zone` is the organization's.
+    fn next_round(self, now: Timestamp, zone: &TimeZone) -> Result<Timestamp, AppError> {
+        let failed = |error: jiff::Error| AppError::Internal(error.to_string());
+        match self {
+            Self::FromTheStart => now.checked_add(DAILY).map_err(failed),
+            Self::QuietHour => {
+                let today = now.to_zoned(zone.clone()).date();
+                let at_quiet_hour = |day: jiff::civil::Date| {
+                    day.at(QUIET_HOUR, 0, 0, 0)
+                        .to_zoned(zone.clone())
+                        .map(|zoned| zoned.timestamp())
+                };
+                let quiet_today = at_quiet_hour(today).map_err(failed)?;
+                if quiet_today > now {
+                    Ok(quiet_today)
+                } else {
+                    at_quiet_hour(today.tomorrow().map_err(failed)?).map_err(failed)
+                }
+            }
+        }
+    }
+}
 
 /// How long a worker holds the jobs it took before another may take them: a step of a job is far
 /// shorter, and a worker that stops loses its jobs to another after this.
@@ -197,11 +273,12 @@ struct JobFailure {
 impl JobFailure {
     /// The failure of `error`: a refusal (the payload names nothing, the request is not allowed)
     /// can never succeed as it was asked for, so it is not tried again; every other error (the
-    /// store broke) may pass.
+    /// store broke, the database was busy with its upkeep) may pass.
     fn of(error: &AppError, code: &str, job: &Job) -> Self {
         Self {
             code: TechnicalName::new(code).unwrap_or_else(|_| job.kind.clone()),
             kind: match error {
+                AppError::Refused(ErrorCode::Unavailable) => FailureKind::Temporary,
                 AppError::Refused(_) => FailureKind::Permanent,
                 _ => FailureKind::Temporary,
             },
@@ -424,15 +501,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// Does the work of a job of a daily kind. Its next round is queued first, so a round that
-    /// fails (and is tried again by the queue) or a worker that stops does not end the daily
-    /// rounds; nothing is queued when a round for a later time waits already, so a server that
-    /// starts again within the day (see [`Ctx::start_daily_jobs`]) does not add a second chain.
+    /// Does the work of a job of a daily kind. Its next round is queued first (when its rhythm
+    /// says), so a round that fails (and is tried again by the queue) or a worker that stops does
+    /// not end the daily rounds; nothing is queued when a round for a later time waits already,
+    /// so a server that starts again within the day (see [`Ctx::start_daily_jobs`]) does not add
+    /// a second chain.
     async fn run_daily(
         &self,
         kind: JobKind,
         work: impl Future<Output = Result<(), AppError>>,
     ) -> Result<(), AppError> {
+        let rhythm = kind.rhythm();
         let kind = kind.name()?;
         let now = self.now();
         let waits = self
@@ -441,9 +520,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         if !waits {
-            let next = now
-                .checked_add(DAILY)
-                .map_err(|error| AppError::Internal(error.to_string()))?;
+            let layers = self.setting_layers_of(None).await?;
+            let next = rhythm.next_round(now, Region::of(&layers).zone())?;
             self.queue_daily(&kind, next).await?;
         }
         work.await
@@ -458,15 +536,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))
     }
 
-    /// Queues a round of every daily job at once: the server calls it when it starts, so old drafts
-    /// are cleared and the history is caught up at every start, and the rounds after that come
-    /// every [`DAILY`] from the jobs themselves.
+    /// Queues a round of every daily job: the server calls it when it starts, so old drafts are
+    /// cleared and the history is caught up at every start, and the rounds after that come every
+    /// [`DAILY`] from the jobs themselves. A kind that keeps to the quiet hour (the statistics of
+    /// the database) is not in this round: its round is queued [`QUIET_KIND_AFTER_START`] later.
     ///
     /// # Errors
     /// An internal error when the store fails.
     pub async fn start_daily_jobs(&self) -> Result<(), AppError> {
         for kind in JobKind::daily() {
-            self.queue_daily(&kind.name()?, self.now()).await?;
+            let at = kind.rhythm().first_round(self.now())?;
+            self.queue_daily(&kind.name()?, at).await?;
         }
         Ok(())
     }
@@ -530,5 +610,77 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| AppError::Internal(error.to_string()))?;
         TechnicalName::new(&format!("worker.{}", id.to_string().replace('-', "_")))
             .map_err(|error| AppError::Internal(error.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(text: &str) -> Timestamp {
+        text.parse().unwrap()
+    }
+
+    #[test]
+    fn adr_0017_a_quiet_kind_comes_next_at_the_quiet_hour_of_the_zone_and_the_others_a_day_later() {
+        let berlin = TimeZone::get("Europe/Berlin").unwrap();
+        // 01:30 in Berlin (winter, UTC+1): the quiet hour of the same night.
+        let night = at("2026-01-10T00:30:00Z");
+        assert_eq!(
+            Rhythm::QuietHour.next_round(night, &berlin).unwrap(),
+            at("2026-01-10T02:00:00Z")
+        );
+        // Just after the quiet hour: the one of the next night.
+        let after = at("2026-01-10T02:00:00Z");
+        assert_eq!(
+            Rhythm::QuietHour.next_round(after, &berlin).unwrap(),
+            at("2026-01-11T02:00:00Z")
+        );
+        // Summer time (UTC+2).
+        assert_eq!(
+            Rhythm::QuietHour
+                .next_round(at("2026-07-01T12:00:00Z"), &berlin)
+                .unwrap(),
+            at("2026-07-02T01:00:00Z")
+        );
+        assert_eq!(
+            Rhythm::FromTheStart.next_round(night, &berlin).unwrap(),
+            night.checked_add(DAILY).unwrap()
+        );
+    }
+
+    #[test]
+    fn adr_0017_only_the_statistics_wait_after_the_start() {
+        let now = at("2026-01-10T12:00:00Z");
+        for kind in JobKind::daily() {
+            let first = kind.rhythm().first_round(now).unwrap();
+            if kind == JobKind::RefreshStatistics {
+                assert_eq!(first, now.checked_add(QUIET_KIND_AFTER_START).unwrap());
+            } else {
+                assert_eq!(first, now, "{}", kind.code());
+            }
+        }
+    }
+
+    #[test]
+    fn adr_0017_a_job_that_met_the_busy_database_is_tried_again_and_a_refusal_is_not() {
+        let now = at("2026-01-10T12:00:00Z");
+        let job = Job {
+            id: JobId::generate(&mut crate::context::SystemIds).unwrap(),
+            kind: JobKind::ManyChangesStep.name().unwrap(),
+            payload: Value::Null,
+            run_at: now,
+            attempts: 1,
+            max_attempts: JOB_ATTEMPTS_MAX,
+            state: bb_core::job::JobState::Queued,
+            lease_owner: None,
+            lease_until: None,
+            last_failure: None,
+            created_at: now,
+        };
+        let busy = JobFailure::of(&AppError::Refused(ErrorCode::Unavailable), FAILED, &job);
+        assert_eq!(busy.kind, FailureKind::Temporary);
+        let refused = JobFailure::of(&AppError::Refused(ErrorCode::Forbidden), FAILED, &job);
+        assert_eq!(refused.kind, FailureKind::Permanent);
     }
 }

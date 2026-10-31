@@ -27,10 +27,16 @@ mod fixed;
 mod statement;
 mod statements;
 mod statistics;
+mod upkeep;
 
 pub(crate) use fixed::FixedSql;
 pub(crate) use statement::Statement;
 use statements::Statements;
+#[cfg(any(test, feature = "testing"))]
+mod hooks;
+#[cfg(any(test, feature = "testing"))]
+pub use hooks::UpkeepForTests;
+use upkeep::{Upkeep, while_locked};
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
@@ -60,32 +66,25 @@ const POSTGRES_FALLBACK_CONNECTIONS: u32 = 8;
 const SQLITE_OPEN_TRIES: u32 = 20;
 const SQLITE_OPEN_WAIT: Duration = Duration::from_millis(100);
 
-/// Whether the database refused because another connection holds the file (`SQLITE_BUSY` is 5,
-/// `SQLITE_LOCKED` is 6).
-fn is_locked(error: &sqlx::Error) -> bool {
-    matches!(
-        error,
-        sqlx::Error::Database(database)
-            if matches!(database.code().as_deref(), Some("5" | "6"))
-    )
-}
-
 /// Opens a SQLite pool in WAL mode with foreign keys on and a busy timeout. A file that another
 /// process is just setting up is tried again for a little while.
-async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreError> {
-    let mut tries = 1;
-    loop {
-        match open_sqlite_once(options.clone()).await {
-            Err(error) if is_locked(&error) && tries < SQLITE_OPEN_TRIES => {
-                tries += 1;
-                tokio::time::sleep(SQLITE_OPEN_WAIT).await;
-            }
-            other => return Ok(other?),
-        }
-    }
+async fn open_sqlite(
+    options: SqliteConnectOptions,
+    busy_timeout: Duration,
+) -> Result<SqlitePool, StoreError> {
+    while_locked(
+        SQLITE_OPEN_TRIES,
+        SQLITE_OPEN_WAIT,
+        || true,
+        || async { Ok(open_sqlite_once(options.clone(), busy_timeout).await?) },
+    )
+    .await
 }
 
-async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, sqlx::Error> {
+async fn open_sqlite_once(
+    options: SqliteConnectOptions,
+    busy_timeout: Duration,
+) -> Result<SqlitePool, sqlx::Error> {
     let options = options
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
@@ -96,7 +95,7 @@ async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, s
         // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
         .synchronous(SqliteSynchronous::Full)
         .foreign_keys(true)
-        .busy_timeout(SQLITE_BUSY_TIMEOUT);
+        .busy_timeout(busy_timeout);
     SqlitePoolOptions::new()
         .max_connections(SQLITE_MAX_CONNECTIONS)
         .connect_with(options)
@@ -193,6 +192,9 @@ pub struct Database {
     /// it before and after a request to see that a read runs as many statements for a busy
     /// issue as for a bare one.
     statements: Arc<Statements>,
+    /// Whether the upkeep holds the database (all clones share it): a write that meets SQLite's
+    /// busy answer meanwhile is tried again (`db/upkeep.rs`).
+    upkeep: Arc<Upkeep>,
 }
 
 impl Database {
@@ -202,8 +204,12 @@ impl Database {
     /// # Errors
     /// Fails for another kind of URL or when the database cannot be reached.
     pub async fn connect(url: &str) -> Result<Self, StoreError> {
+        Self::connect_waiting(url, SQLITE_BUSY_TIMEOUT).await
+    }
+
+    async fn connect_waiting(url: &str, busy_timeout: Duration) -> Result<Self, StoreError> {
         let pool = if url.starts_with("sqlite:") {
-            Pool::Sqlite(open_sqlite(SqliteConnectOptions::from_str(url)?).await?)
+            Pool::Sqlite(open_sqlite(SqliteConnectOptions::from_str(url)?, busy_timeout).await?)
         } else if url.starts_with("postgres:") || url.starts_with("postgresql:") {
             let options = PgConnectOptions::from_str(url)?;
             let connections = std::thread::available_parallelism()
@@ -222,6 +228,7 @@ impl Database {
         Ok(Self {
             pool,
             statements: Arc::default(),
+            upkeep: Arc::default(),
         })
     }
 
@@ -234,26 +241,15 @@ impl Database {
         #[cfg(unix)]
         create_private_file(file)?;
         Ok(Self {
-            pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
-            statements: Arc::default(),
-        })
-    }
-
-    /// A SQLite database with a pool of one connection, so a test gets the same connection back
-    /// every time it asks for one.
-    #[cfg(test)]
-    pub(crate) async fn single_connection(file: &std::path::Path) -> Result<Self, StoreError> {
-        let options = SqliteConnectOptions::new()
-            .filename(file)
-            .create_if_missing(true);
-        Ok(Self {
             pool: Pool::Sqlite(
-                SqlitePoolOptions::new()
-                    .max_connections(1)
-                    .connect_with(options)
-                    .await?,
+                open_sqlite(
+                    SqliteConnectOptions::new().filename(file),
+                    SQLITE_BUSY_TIMEOUT,
+                )
+                .await?,
             ),
             statements: Arc::default(),
+            upkeep: Arc::default(),
         })
     }
 
@@ -308,6 +304,8 @@ impl Database {
         let Pool::Sqlite(pool) = &self.pool else {
             return Ok(false);
         };
+        // A write that meets the lock of an analysis is tried again while this lives.
+        let _running = self.upkeep.mark();
         let mut connection = pool.acquire().await?;
         sqlx::query(statistics::RELOAD)
             .execute(&mut *connection)
@@ -331,22 +329,6 @@ impl Database {
         Ok(analysed)
     }
 
-    /// Renames a table. For tests only: they break one table on purpose, to see how a use case
-    /// behaves when the database fails half way, and put it right again afterwards. Nothing in
-    /// the program calls it.
-    ///
-    /// # Errors
-    /// Fails when the table does not exist or the name is taken.
-    #[cfg(any(test, feature = "testing"))]
-    pub async fn rename_table_for_tests(&self, from: &str, to: &str) -> Result<(), StoreError> {
-        let rename = sea_query::Table::rename()
-            .table(sea_query::Alias::new(from), sea_query::Alias::new(to))
-            .to_owned();
-        let mut transaction = self.begin().await?;
-        transaction.execute_schema(&rename).await?;
-        transaction.commit().await
-    }
-
     /// Asks the database a trivial question; for the *ready* health check.
     ///
     /// # Errors
@@ -366,7 +348,13 @@ impl Database {
             locks: Held::default(),
             statements: Arc::clone(&self.statements),
             inner: match &self.pool {
-                Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin_with("BEGIN IMMEDIATE").await?),
+                // Nothing is written before the lock is taken, so a try that met the busy answer
+                // can be made again whole.
+                Pool::Sqlite(pool) => TxInner::Sqlite(
+                    self.upkeep
+                        .write(|| async { Ok(pool.begin_with("BEGIN IMMEDIATE").await?) })
+                        .await?,
+                ),
                 Pool::Postgres(pool) => TxInner::Postgres(pool.begin().await?),
             },
         })
@@ -397,7 +385,11 @@ impl Database {
     ) -> Result<u64, StoreError> {
         let statement = statement.into();
         self.statements.record(&statement, self.dialect());
-        Connection::Pool(&self.pool).execute(statement).await
+        // One statement on its own is its own transaction: a try that met the busy answer
+        // changed nothing.
+        self.upkeep
+            .write(|| Connection::Pool(&self.pool).execute(statement))
+            .await
     }
 
     /// Reads all rows of a query.

@@ -55,6 +55,8 @@ mod workflows;
 pub use anchor::LogSeal;
 pub use auth::AuthStorage;
 pub use chain::{BreakReason, Verification};
+#[cfg(any(test, feature = "testing"))]
+pub use db::UpkeepForTests;
 pub use db::{Database, Dialect, Transaction};
 pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{NewJob, backoff};

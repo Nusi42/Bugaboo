@@ -113,6 +113,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// The error, when it is no reason to skip one issue.
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     match error {
+        // The database was busy with its upkeep (ADR-0017): a fact of the moment, not of the issue,
+        // so the step fails and the queue tries it again.
+        busy @ AppError::Refused(ErrorCode::Unavailable) => Err(busy),
         AppError::Stale(_) => Ok(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.
         AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Ok(match code {

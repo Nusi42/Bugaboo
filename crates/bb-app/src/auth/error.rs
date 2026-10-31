@@ -118,6 +118,12 @@ impl std::error::Error for AppError {}
 /// The answer for a failure of the store: the person gets the standard answer and the cause goes
 /// to the log.
 pub(crate) fn internal<S: AuthStore>(error: &S::Error) -> AppError {
+    if S::is_busy(error) {
+        // The upkeep of the database held it past the last try of the write (ADR-0017): nothing
+        // was written, and the person is told to try again in a moment.
+        tracing::warn!("a write met the upkeep of the database past its last try");
+        return AppError::Refused(ErrorCode::Unavailable);
+    }
     AppError::Internal(S::describe(error))
 }
 

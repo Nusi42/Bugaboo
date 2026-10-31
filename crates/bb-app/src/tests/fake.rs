@@ -52,6 +52,8 @@ pub(crate) enum FakeError {
     Refused(Refusal),
     /// Other writers kept changing the same row (the test made it, see `contended_replaces`).
     Contended,
+    /// The database stayed busy with its upkeep past the last try of a write (the test made it).
+    Busy,
     /// The store itself failed (the test made it).
     Failed,
 }
@@ -155,8 +157,8 @@ pub(crate) struct Shared {
     pub(crate) leveled_reads: usize,
     /// The security log cannot be written.
     pub(crate) log_fails: bool,
-    /// Changes fail as the database does when it breaks.
-    pub(crate) changes_fail: bool,
+    /// Changes fail with this error, as the database does when it breaks or stays busy.
+    pub(crate) changes_fail: Option<FakeError>,
     /// The reads of what the engine decides with fail as the database does when it breaks.
     pub(crate) policy_reads_fail: bool,
     /// How many more times the saving of the progress of a run fails.
@@ -208,7 +210,13 @@ impl FakeStore {
 
     /// Makes every change fail (or work again): the store breaks while a change is committed.
     pub(crate) fn fail_changes(&self, fails: bool) {
-        self.lock().changes_fail = fails;
+        self.lock().changes_fail = fails.then_some(FakeError::Failed);
+    }
+
+    /// Makes every change stay busy (or work again), as SQLite does when its upkeep holds the
+    /// lock past the last try of a write (ADR-0017).
+    pub(crate) fn keep_changes_busy(&self, busy: bool) {
+        self.lock().changes_fail = busy.then_some(FakeError::Busy);
     }
 
     /// Makes the reads of what the engine decides with fail (or work again): the store breaks
@@ -257,8 +265,8 @@ impl ChangeStore for FakeStore {
     ) -> Result<T, FakeError> {
         let state = {
             let shared = self.lock();
-            if shared.changes_fail {
-                return Err(FakeError::Failed);
+            if let Some(error) = shared.changes_fail.clone() {
+                return Err(error);
             }
             shared.state.clone()
         };
