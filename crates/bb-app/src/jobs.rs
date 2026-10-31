@@ -7,7 +7,6 @@
 
 use std::future::Future;
 
-use bb_core::ErrorCode;
 use bb_core::id::JobId;
 use bb_core::job::{FailureKind, FailureOutcome, Job};
 use bb_core::technical::TechnicalName;
@@ -278,7 +277,7 @@ impl JobFailure {
         Self {
             code: TechnicalName::new(code).unwrap_or_else(|_| job.kind.clone()),
             kind: match error {
-                AppError::Refused(ErrorCode::Unavailable) => FailureKind::Temporary,
+                busy if busy.is_busy() => FailureKind::Temporary,
                 AppError::Refused(_) => FailureKind::Permanent,
                 _ => FailureKind::Temporary,
             },
@@ -615,6 +614,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 #[cfg(test)]
 mod tests {
+    use bb_core::ErrorCode;
+
     use super::*;
 
     fn at(text: &str) -> Timestamp {
@@ -678,7 +679,7 @@ mod tests {
             last_failure: None,
             created_at: now,
         };
-        let busy = JobFailure::of(&AppError::Refused(ErrorCode::Unavailable), FAILED, &job);
+        let busy = JobFailure::of(&AppError::busy(), FAILED, &job);
         assert_eq!(busy.kind, FailureKind::Temporary);
         let refused = JobFailure::of(&AppError::Refused(ErrorCode::Forbidden), FAILED, &job);
         assert_eq!(refused.kind, FailureKind::Permanent);

@@ -153,6 +153,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 acting.set_reason(None);
                 match applied {
                     Ok(outcome) => outcome.skipped,
+                    // The database was busy: the step fails and the queue tries it again, from the
+                    // issue at hand (the progress up to it is saved).
+                    Err(busy) if busy.is_busy() => return Err(busy),
                     Err(error) => {
                         // The store broke: the run stops where it is, and says so.
                         tracing::error!(cause = %error, "a change to many issues stopped");

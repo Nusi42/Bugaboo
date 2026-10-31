@@ -90,97 +90,107 @@ pub(super) struct Selection<'a> {
 /// # Errors
 /// The error, when it is no reason to skip one issue.
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
-    match error {
-        // The database was busy with its upkeep (ADR-0017): a fact of the moment, not of the issue,
-        // so the step fails and the queue tries it again.
-        busy @ AppError::Refused(ErrorCode::Unavailable) => Err(busy),
-        AppError::Stale(_) => Ok(SkipReason::ChangedSince),
+    let reason = match &error {
+        AppError::Stale(_) => Some(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.
-        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Ok(match code {
-            ErrorCode::VersionChanged => SkipReason::ChangedSince,
-            ErrorCode::NotFound => SkipReason::NotFound,
-            ErrorCode::Forbidden => SkipReason::NotAllowed,
-            ErrorCode::FieldNotHere => SkipReason::FieldMissing,
-            ErrorCode::WorkflowNoSuchChange
-            | ErrorCode::WorkflowNotForYou
-            | ErrorCode::WorkflowNotNamed
-            | ErrorCode::WorkflowOnlyIf
-            | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
-            ErrorCode::TagNotHere => SkipReason::TagNotHere,
-            ErrorCode::LabelNotOffered => SkipReason::LabelNotHere,
-            ErrorCode::RelationExists => SkipReason::RelationExists,
-            ErrorCode::LimitReached => SkipReason::LimitReached,
-            code if code.is_field_rule() => SkipReason::FieldRule,
-            // Every other refusal says the single change would not take this issue as it is and has
-            // no word of its own. The codes are listed (the `field.*` ones are caught above) so a
-            // new one is a decision made here, not a silent "not valid".
-            ErrorCode::WrongCredentials
-            | ErrorCode::WrongSecondStepCode
-            | ErrorCode::WrongSetupCode
-            | ErrorCode::PasswordTooShort
-            | ErrorCode::PasswordBreached
-            | ErrorCode::InvitationInvalid
-            | ErrorCode::MailRejected
-            | ErrorCode::MailUnavailable
-            | ErrorCode::MailOff
-            | ErrorCode::MailInsecure
-            | ErrorCode::HandleChangedLately
-            | ErrorCode::SignUpRefused
-            | ErrorCode::PasskeyRejected
-            | ErrorCode::SecondStepRequired
-            | ErrorCode::AccessKeyNotAllowed
-            | ErrorCode::NotSignedIn
-            | ErrorCode::CannotLift
-            | ErrorCode::WouldLockOut
-            | ErrorCode::TooMuch
-            | ErrorCode::RoleInUse
-            | ErrorCode::AssignmentConflict
-            | ErrorCode::SettingLocked
-            | ErrorCode::SettingHostsNotBare
-            | ErrorCode::MoveLiftsNoAccess
-            | ErrorCode::MoveIntoItself
-            | ErrorCode::ProjectTooDeep
-            | ErrorCode::MovePreviewChanged
-            | ErrorCode::ParentCircle
-            | ErrorCode::IssueTypeRetired
-            | ErrorCode::IssueTypeNotOffered
-            | ErrorCode::PickOneConflict
-            | ErrorCode::WorkflowStatusInUse
-            | ErrorCode::WorkflowInvalid
-            | ErrorCode::FieldRequired
-            | ErrorCode::FieldTooShort
-            | ErrorCode::FieldTooLong
-            | ErrorCode::FieldTooSmall
-            | ErrorCode::FieldTooBig
-            | ErrorCode::FileTooBig
-            | ErrorCode::FileTypeBlocked
-            | ErrorCode::FileWrongPart
-            | ErrorCode::FileIncomplete
-            | ErrorCode::FileNoRoom
-            | ErrorCode::FieldNoMatch
-            | ErrorCode::FieldWrongValue
-            | ErrorCode::FieldUnknownChoice
-            | ErrorCode::FieldUnknownReference
-            | ErrorCode::NameTaken
-            | ErrorCode::InvalidRequest
-            | ErrorCode::UnknownField
-            | ErrorCode::BadCursor
-            | ErrorCode::WrongOrigin
-            | ErrorCode::WrongToken
-            | ErrorCode::MethodNotAllowed
-            | ErrorCode::TimedOut
-            | ErrorCode::TooLarge
-            | ErrorCode::EditLockLost
-            | ErrorCode::EditTakenOver
-            | ErrorCode::EditInProgress
-            | ErrorCode::SearchInvalid
-            | ErrorCode::SearchTooSlow
-            | ErrorCode::TooManyRequests
-            | ErrorCode::Unavailable
-            | ErrorCode::Internal => SkipReason::NotValid,
-        }),
-        other => Err(other),
+        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => reason_of(*code),
+        _ => None,
+    };
+    reason.ok_or(error)
+}
+
+/// The reason an issue is left alone for a refusal of the single change; none for a busy database
+/// ([`AppError::is_busy`]), a fact of the moment and not of the issue: the step fails and the queue
+/// tries it again.
+fn reason_of(code: ErrorCode) -> Option<SkipReason> {
+    if AppError::Refused(code).is_busy() {
+        return None;
     }
+    Some(match code {
+        ErrorCode::VersionChanged => SkipReason::ChangedSince,
+        ErrorCode::NotFound => SkipReason::NotFound,
+        ErrorCode::Forbidden => SkipReason::NotAllowed,
+        ErrorCode::FieldNotHere => SkipReason::FieldMissing,
+        ErrorCode::WorkflowNoSuchChange
+        | ErrorCode::WorkflowNotForYou
+        | ErrorCode::WorkflowNotNamed
+        | ErrorCode::WorkflowOnlyIf
+        | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
+        ErrorCode::TagNotHere => SkipReason::TagNotHere,
+        ErrorCode::LabelNotOffered => SkipReason::LabelNotHere,
+        ErrorCode::RelationExists => SkipReason::RelationExists,
+        ErrorCode::LimitReached => SkipReason::LimitReached,
+        code if code.is_field_rule() => SkipReason::FieldRule,
+        // Every other refusal says the single change would not take this issue as it is and has
+        // no word of its own. The codes are listed (the `field.*` ones are caught above) so a
+        // new one is a decision made here, not a silent "not valid".
+        ErrorCode::WrongCredentials
+        | ErrorCode::WrongSecondStepCode
+        | ErrorCode::WrongSetupCode
+        | ErrorCode::PasswordTooShort
+        | ErrorCode::PasswordBreached
+        | ErrorCode::InvitationInvalid
+        | ErrorCode::MailRejected
+        | ErrorCode::MailUnavailable
+        | ErrorCode::MailOff
+        | ErrorCode::MailInsecure
+        | ErrorCode::HandleChangedLately
+        | ErrorCode::SignUpRefused
+        | ErrorCode::PasskeyRejected
+        | ErrorCode::SecondStepRequired
+        | ErrorCode::AccessKeyNotAllowed
+        | ErrorCode::NotSignedIn
+        | ErrorCode::CannotLift
+        | ErrorCode::WouldLockOut
+        | ErrorCode::TooMuch
+        | ErrorCode::RoleInUse
+        | ErrorCode::AssignmentConflict
+        | ErrorCode::SettingLocked
+        | ErrorCode::SettingHostsNotBare
+        | ErrorCode::MoveLiftsNoAccess
+        | ErrorCode::MoveIntoItself
+        | ErrorCode::ProjectTooDeep
+        | ErrorCode::MovePreviewChanged
+        | ErrorCode::ParentCircle
+        | ErrorCode::IssueTypeRetired
+        | ErrorCode::IssueTypeNotOffered
+        | ErrorCode::PickOneConflict
+        | ErrorCode::WorkflowStatusInUse
+        | ErrorCode::WorkflowInvalid
+        | ErrorCode::FieldRequired
+        | ErrorCode::FieldTooShort
+        | ErrorCode::FieldTooLong
+        | ErrorCode::FieldTooSmall
+        | ErrorCode::FieldTooBig
+        | ErrorCode::FileTooBig
+        | ErrorCode::FileTypeBlocked
+        | ErrorCode::FileWrongPart
+        | ErrorCode::FileIncomplete
+        | ErrorCode::FileNoRoom
+        | ErrorCode::FieldNoMatch
+        | ErrorCode::FieldWrongValue
+        | ErrorCode::FieldUnknownChoice
+        | ErrorCode::FieldUnknownReference
+        | ErrorCode::NameTaken
+        | ErrorCode::InvalidRequest
+        | ErrorCode::UnknownField
+        | ErrorCode::BadCursor
+        | ErrorCode::WrongOrigin
+        | ErrorCode::WrongToken
+        | ErrorCode::MethodNotAllowed
+        | ErrorCode::TimedOut
+        | ErrorCode::TooLarge
+        | ErrorCode::EditLockLost
+        | ErrorCode::EditTakenOver
+        | ErrorCode::EditInProgress
+        | ErrorCode::SearchInvalid
+        | ErrorCode::SearchTooSlow
+        | ErrorCode::TooManyRequests
+        | ErrorCode::Internal => SkipReason::NotValid,
+        // A busy database is no reason, caught above by `is_busy`; listed so that the match stays
+        // whole.
+        ErrorCode::Unavailable => return None,
+    })
 }
 
 /// A judged change turned into a reason to skip the issue, when the single change would have

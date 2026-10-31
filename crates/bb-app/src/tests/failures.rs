@@ -178,7 +178,7 @@ async fn adr_0017_a_change_that_stays_busy_is_refused_as_not_available_and_leave
 -> Outcome {
     let world = World::new().await?;
     let events = world.store.event_count();
-    world.store.keep_changes_busy(true);
+    world.store.keep_next_changes_busy(1);
     let result = create_invitation(
         &world.ctx(),
         CreateInvitation {

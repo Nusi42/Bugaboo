@@ -20,7 +20,7 @@ use crate::fields::Item;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project that has this short name, or had it once, read once for the request (see
-    /// `Known::projects_by_address`).
+    /// `Known::projects`, `KnownProjects::by_address`).
     pub(crate) async fn project_by_address(
         &self,
         name: &ShortName,
