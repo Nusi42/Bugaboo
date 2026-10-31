@@ -44,9 +44,9 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-The public repository is prepared and waits for the maintainer's go-ahead to push. Done: the public commit identity, the private-word and identity guard, commit messages in the common pattern (checked by GIT-COMMIT-MSG), the marked master that alone publishes (`cargo xtask guard-master`, remote `github` in the master only), no hosted CI, the licence (ADR-0036; the API client under MIT), the version rule (ADR-0040, 0.3.0), the README with its banner, roadmap and recordings, a neutral voice in the docs, and one rewrite of the whole history (every folder moved onto it; the old history is kept outside the repository). Full ci on the rewritten history: green with known flakes run again (a timing test of a dropped search, 764 ms against 500 ms under load, passed alone; the browser run lost one test to `ERR_NO_BUFFER_SPACE`, M5-F171, passed alone; `cargo xtask load` passed on both databases). The nightly of the M5 statistics fix confirms the speed numbers (SQLite groups by *Assigned to* 587 ms within the known gap; the PostgreSQL preview 6.1 s).
+Start M6 wave 1 (WP-01 to WP-04) from `main`. `win2` holds the M5 picture helpers on the local branch `shots`.
 
-After the push: switch GitHub Actions off for the repository, then start M6 wave 1 (WP-01 to WP-04) from `main`. `win2` holds the M5 picture helpers on the local branch `shots`.
+The public repository is on GitHub (private until the maintainer makes it public), pushed once from the master with its tags, with GitHub Actions switched off. Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
 ## Decisions that still bind
 

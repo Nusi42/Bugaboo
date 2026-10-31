@@ -10,4 +10,3 @@
 - [Lead checks agents itself](lead-checks-agents-itself.md) — every ~15 min check running builders; act on reports without waiting
 - [Typography and status colors](typography-and-status-colors.md) — rows clearly tinted by status group; bold only per UX §7.3, enforced by a check
 - [Restart ci after a memory stop](restart-ci-after-memory-stop.md) — a ci stopped for low memory may be restarted without asking
-- [Going public](going-public.md) — clean files, tooling and history first, push to GitHub once after the go-ahead; M6 paused meanwhile
