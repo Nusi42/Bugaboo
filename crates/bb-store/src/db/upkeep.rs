@@ -94,10 +94,10 @@ impl Upkeep {
 }
 
 /// Runs `attempt` and tries it again while SQLite answers that the database is locked and
-/// `again()` allows it, `tries` times at most with `wait` between: the one loop for a locked
+/// `again()` allows it, `most` times at most with `wait` between: the one loop for a locked
 /// database (opening a new file, and a write while the upkeep holds the lock).
 pub(super) async fn while_locked<T, Fut>(
-    tries: u32,
+    most: u32,
     wait: Duration,
     again: impl Fn() -> bool,
     mut attempt: impl FnMut() -> Fut,
@@ -105,11 +105,11 @@ pub(super) async fn while_locked<T, Fut>(
 where
     Fut: Future<Output = Result<T, StoreError>>,
 {
-    let mut tried = 1;
+    let mut made = 1;
     loop {
         match attempt().await {
-            Err(error) if error.is_locked() && tried < tries && again() => {
-                tried += 1;
+            Err(error) if error.is_locked() && made < most && again() => {
+                made += 1;
                 tokio::time::sleep(wait).await;
             }
             other => return other,
