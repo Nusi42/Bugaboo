@@ -39,7 +39,8 @@
 //! that part replaced by `***`. Files in `tools/checks/private-exemptions.toml` are exempt from the
 //! rule on private words in their text (not from the others), each with a reason: they are data
 //! the project does not write. The failing examples of this check are the one place it does not
-//! look at.
+//! look at, and the old versions listed in the same file (path, blob and reason) are the ones the
+//! history scan does not read: made-up examples that a later, stricter rule reads as private.
 //!
 //! The words of a machine come from [`PrivateWords`], which tests build by hand, so no example
 //! depends on the real machine.
@@ -321,10 +322,38 @@ impl PrivateWords {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 struct Exemptions {
     #[serde(default)]
     exempt: Vec<Exempt>,
+    #[serde(default)]
+    old_version: Vec<OldVersion>,
+}
+
+/// One old version of a file (its blob) that the history scan does not read: a made-up example
+/// of an earlier commit that a later, stricter rule reads as private. The version in the tree is
+/// still read, and so is every other version.
+#[derive(Deserialize)]
+struct OldVersion {
+    path: String,
+    blob: String,
+    reason: String,
+}
+
+impl Exemption for OldVersion {
+    fn name(&self) -> String {
+        format!("{} at {}", self.path, self.blob)
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+}
+
+/// Whether the history scan leaves this version of the file unread.
+fn is_old_version(old: &[OldVersion], path: &str, blob: &str) -> bool {
+    old.iter()
+        .any(|entry| entry.path == path && entry.blob == blob)
 }
 
 /// A file that is exempt from the rule on private words.
@@ -386,6 +415,28 @@ impl Check for SecPrivate {
                     )
                 }),
         );
+        findings.extend(exemptions::reason_findings(
+            EXEMPTIONS_PATH,
+            &exempt.old_version,
+        ));
+        findings.extend(
+            exempt
+                .old_version
+                .iter()
+                .filter(|entry| {
+                    repo.git_bytes(&["cat-file", "-t", &entry.blob])
+                        .map_or(true, |kind| kind.trim_ascii() != b"blob")
+                })
+                .map(|entry| {
+                    Finding::at(
+                        EXEMPTIONS_PATH,
+                        format!(
+                            "The entry `{}` names no version of a file. Remove it.",
+                            entry.name()
+                        ),
+                    )
+                }),
+        );
         // Every file counts, the examples of other checks and the lock file too.
         let mut files = match context.files_for(self.id())? {
             Some(files) => files,
@@ -397,7 +448,7 @@ impl Check for SecPrivate {
         // The history belongs to a run on the whole repository; a staged run looks at files only
         // (the commit-msg hook checks the message being written).
         if context.files.is_none() {
-            findings.extend(scan_history(repo, &words, &exempt.exempt, &skipped)?);
+            findings.extend(scan_history(repo, &words, &exempt, &skipped)?);
             findings.extend(identity::unpushed_findings(repo)?);
         }
         Ok(findings)

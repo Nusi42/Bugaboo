@@ -1,4 +1,5 @@
-# Files that are exempt from the rule on private words of SEC-PRIVATE (coding-standards section 2).
+# Files that are exempt from the rule on private words of SEC-PRIVATE (coding-standards section 2),
+# and old versions of files that its history scan does not read (at the end).
 # They are data the project does not write, so a word of them matching the name of a machine
 # means nothing. The other rules (paths, session IDs) still apply to them. Each entry names an
 # existing file and gives a reason.
@@ -6,3 +7,12 @@
 [[exempt]]
 path = "crates/bb-auth/data/breached-passwords.txt"
 reason = "A list of passwords that leaked elsewhere, copied as it is; any common word, name or machine name can be in it."
+
+# Old versions of a file that the history scan does not read: made-up examples of an earlier
+# commit that a later, stricter rule reads as private. Each names the path, the blob of that
+# version and a reason; the version in the tree and every other version are still read.
+
+[[old_version]]
+path = "tools/checks/fixtures/SEC-PRIVATE/good/allowed.txt"
+blob = "0f8afe0e7f3137320458ca2b36ef99c20d9dd3d5"
+reason = "The first allowed examples held a made-up web path under /home/ that the later rule on Linux profile paths reads as an account; the next version replaced it."

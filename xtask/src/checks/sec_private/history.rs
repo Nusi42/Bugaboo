@@ -1,8 +1,8 @@
 //! Reading what the history of Git holds: commit messages, tags and what unpushed commits add.
 
 use super::{
-    BTreeMap, BTreeSet, Exempt, Finding, Origin, PrivateWordRule, PrivateWords, Repo, finding,
-    is_exempt, masked, scan_content, scan_name, scan_text,
+    BTreeMap, BTreeSet, Exemptions, Finding, Origin, PrivateWordRule, PrivateWords, Repo, finding,
+    is_exempt, is_old_version, masked, scan_content, scan_name, scan_text,
 };
 
 /// The records of a Git listing that ends each record with the separator `0x1e`.
@@ -20,7 +20,7 @@ pub(super) fn records(listing: &[u8]) -> Vec<String> {
 pub(super) fn scan_history(
     repo: &Repo,
     words: &PrivateWords,
-    exempt: &[Exempt],
+    exempt: &Exemptions,
     skipped: &str,
 ) -> anyhow::Result<Vec<Finding>> {
     if repo
@@ -187,14 +187,16 @@ pub(super) fn read_blobs(
 
 /// The names and contents of the files that the commits not on a remote add or change, through
 /// the same reading as the files of the tree. A file that was committed with private data and
-/// cleaned or renamed in a later commit is found here.
+/// cleaned or renamed in a later commit is found here; an old version listed in the exemptions is
+/// not read.
 pub(super) fn scan_unpushed_changes(
     repo: &Repo,
     words: &PrivateWords,
-    exempt: &[Exempt],
+    exempt: &Exemptions,
     skipped: &str,
 ) -> anyhow::Result<Vec<Finding>> {
-    let changes = unpushed_changes(repo, skipped)?;
+    let mut changes = unpushed_changes(repo, skipped)?;
+    changes.retain(|change| !is_old_version(&exempt.old_version, &change.path, &change.blob));
     let blobs: BTreeSet<&str> = changes.iter().map(|change| change.blob.as_str()).collect();
     let contents = read_blobs(repo, &blobs)?;
     let mut findings = Vec::new();
@@ -209,7 +211,7 @@ pub(super) fn scan_unpushed_changes(
             read.insert((&change.path, &change.blob)),
             contents.get(&change.blob),
         ) {
-            let private_words = PrivateWordRule::of_file(is_exempt(exempt, &change.path));
+            let private_words = PrivateWordRule::of_file(is_exempt(&exempt.exempt, &change.path));
             findings.extend(scan_content(&place, bytes, words, private_words));
         }
     }

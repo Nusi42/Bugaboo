@@ -222,7 +222,7 @@ fn names_of_branches_tags_and_files_are_masked_in_every_finding() {
         &machine(),
         &[],
     );
-    findings.extend(scan_history(&repo, &machine(), &[], "").unwrap());
+    findings.extend(scan_history(&repo, &machine(), &Exemptions::default(), "").unwrap());
     let places: Vec<_> = findings
         .iter()
         .filter_map(|finding| finding.location.clone())
@@ -407,6 +407,41 @@ fn a_file_name_in_a_commit_is_read_even_if_the_file_is_renamed_later() {
     assert_eq!(places.len(), 1, "{places:?}");
     assert!(
         places[0].ends_with(", session_***-notes.txt (its name)"),
+        "{places:?}"
+    );
+}
+
+#[test]
+fn an_old_version_named_in_the_exemptions_is_not_read_and_the_other_versions_are() {
+    let temp = repo_with_commit("private-old-version", "chore: fine");
+    temp.write("examples.txt", format!("{}\n", made_up_path()));
+    assert!(temp.git(&["add", "."]));
+    assert!(temp.git(&["commit", "--quiet", "-m", "chore: add"]));
+    let repo = Repo::at(temp.path().to_path_buf());
+    let old =
+        String::from_utf8(repo.git_bytes(&["rev-parse", "HEAD:examples.txt"]).unwrap()).unwrap();
+    temp.write("examples.txt", format!("fine\n{}\n", made_up_path()));
+    assert!(temp.git(&["commit", "--quiet", "-a", "-m", "chore: change"]));
+    temp.write("examples.txt", "fine\n");
+    assert!(temp.git(&["commit", "--quiet", "-a", "-m", "chore: clean"]));
+    assert_eq!(run_check(&temp, None).len(), 2);
+    let entry = |blob: &str| {
+        format!(
+            "[[old_version]]\npath = \"examples.txt\"\nblob = \"{blob}\"\nreason = \"A made-up example that a later rule reads as a profile path.\"\n"
+        )
+    };
+    temp.write(EXEMPTIONS_PATH, entry(old.trim()));
+    let places = run_check(&temp, None);
+    assert_eq!(places.len(), 1, "{places:?}");
+    assert!(places[0].ends_with(", examples.txt:2"), "{places:?}");
+    // An entry that names no version of a file is refused.
+    temp.write(
+        EXEMPTIONS_PATH,
+        entry("0123456789abcdef0123456789abcdef01234567"),
+    );
+    let places = run_check(&temp, None);
+    assert!(
+        places.iter().any(|place| place == EXEMPTIONS_PATH),
         "{places:?}"
     );
 }
