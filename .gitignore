@@ -49,3 +49,5 @@ desktop.ini
 # The WebAssembly module and its glue, made by `cargo xtask wasm` (ADR-0011)
 /web/packages/wasm/generated/
 /web/packages/wasm-search/generated/
+# The maintainer's own setup for Claude Code, never committed
+CLAUDE.local.md

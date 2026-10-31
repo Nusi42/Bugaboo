@@ -9,4 +9,4 @@ Decision: Bugaboo goes to its public GitHub repository (private at first) before
 
 **Why:** a force-push after a rewrite leaves the old commits reachable on GitHub; the old history carries the private e-mail as author.
 
-**How to apply:** no push to GitHub before the explicit "push"; M6 wave 1 stays paused (all work folders at the same commit) until the rewrite is done and the folders are moved onto the new history. See [[no-private-info-in-git]].
+**How to apply:** no push to GitHub before the explicit "push"; The history is rewritten and every folder is on it; the push waits for the go-ahead, then M6 wave 1 starts. See [[no-private-info-in-git]].
