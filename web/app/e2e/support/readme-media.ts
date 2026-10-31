@@ -3,10 +3,10 @@ import { mkdirSync } from "node:fs";
 import { type Browser, expect, type Page } from "@playwright/test";
 
 import { signIn } from "./flows.ts";
+import { accountOf } from "./readme-organization.ts";
 import { Recording } from "./recording.ts";
 import { type Instance } from "./server.ts";
-import { personOf } from "./showcase-sample.ts";
-import { openDevice } from "./showcase.ts";
+import { deviceContext, type DeviceOptions } from "./showcase.ts";
 
 /** The folder of the pictures and recordings of the front page, from `BB_README_MEDIA_DIR`. */
 export const mediaFolder = process.env["BB_README_MEDIA_DIR"];
@@ -20,12 +20,29 @@ export function folder(): string {
   return mediaFolder;
 }
 
-/** An issue of the sample that the pictures show, and the one the recordings open. */
-export const ISSUE = "WEB-12";
+/**
+ * How many pixels of a picture one pixel of the page is: twice as many, so the text stays sharp on
+ * the front page, which shows the window of a computer smaller than it is. The front picture, which
+ * shows the whole window in four themes, is taken at one and a half: at twice it would be larger
+ * than a file in Git may be (GIT-FILES).
+ */
+export const SHARP = { pictures: 2, front: 1.5 } as const;
+
+/** The windows of the pictures: sharp, and with less motion, so no picture is taken while something fades in. */
+function windowOf(scale: number): DeviceOptions {
+  return { deviceScaleFactor: scale, reducedMotion: "reduce" };
+}
+
+/**
+ * How far the clock of the browser is ahead of the moment the workshop was set up: what the
+ * workshop did then reads "yesterday" in the pictures, not "a few seconds ago".
+ */
+const A_DAY_LATER_MS = 24 * 60 * 60 * 1000;
 
 /** Waits for a page to have its first rows of issues. */
 export async function expectRows(page: Page): Promise<void> {
   await expect(page.locator("[data-part='list-row']").first()).toBeVisible();
+  await page.waitForLoadState("networkidle");
 }
 
 /** Waits for a page to have its heading and for what it asks of the server to have come. */
@@ -34,19 +51,21 @@ export async function expectHeading(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle");
 }
 
-/** The window of an administrator of the sample, on a computer or on a phone, signed in. */
+/** The window of Marta, the administrator of the workshop, on a computer or on a phone, signed in. */
 export async function administratorPage(
   browser: Browser,
   server: Instance,
   device: "computer" | "phone",
+  scale: number = SHARP.pictures,
 ): Promise<Page> {
-  const context = await openDevice(browser, server, device);
+  const context = await deviceContext(browser, server, device, windowOf(scale));
+  await context.clock.setFixedTime(Date.now() + A_DAY_LATER_MS);
   const page = await context.newPage();
-  await signIn(page, personOf.administrator());
+  await signIn(page, accountOf("marta"));
   return page;
 }
 
-/** A recording of the window of an administrator of the sample on a computer. */
+/** A recording of the window of Marta on a computer. */
 export async function recordingOf(
   browser: Browser,
   server: Instance,

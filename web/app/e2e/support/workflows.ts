@@ -126,14 +126,26 @@ export async function changeSimple(
   await publishChanged(admin, () => simple(admin), change);
 }
 
+/** The editor of a new workflow of a project's own (given by its short name), a copy of the one that counts there. */
+function ownWorkflowOf(admin: ApiSession, project: string): () => Promise<Editor> {
+  return async () => dataOf(await admin.client.POST("/api/v1/workflows", { body: { project } }));
+}
+
+/** Gives a project a workflow of its own with these statuses and status changes, and publishes it. */
+export async function giveOwnWorkflow(
+  admin: ApiSession,
+  project: string,
+  content: Content,
+): Promise<void> {
+  await publishChanged(admin, ownWorkflowOf(admin, project), () => content);
+}
+
 /**
  * Gives a project a workflow of its own, a copy of the one that counts there, in which the status
  * change from *Open* to *In progress* asks for who does the work (*Ask for*, WF-04).
  */
 export async function askForWhoWorks(admin: ApiSession, project: string): Promise<void> {
-  const editorOf = async (): Promise<Editor> =>
-    dataOf(await admin.client.POST("/api/v1/workflows", { body: { project } }));
-  await publishChanged(admin, editorOf, (content) => ({
+  await publishChanged(admin, ownWorkflowOf(admin, project), (content) => ({
     ...content,
     changes: content.changes.map((each) =>
       each.from === "open" && each.to === "in-progress"

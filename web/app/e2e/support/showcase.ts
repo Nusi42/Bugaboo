@@ -5,6 +5,7 @@ import { t } from "@bugaboo/messages";
 import {
   type Browser,
   type BrowserContext,
+  type BrowserContextOptions,
   expect,
   type Locator,
   type Page,
@@ -60,18 +61,34 @@ const INDEX = "index.json";
 /** The pictures taken so far by this run. */
 const taken = new Map<string, Picture>();
 
+/** What a window of its own may have beside its size: a sharper screen, less motion. */
+export type DeviceOptions = Readonly<
+  Pick<BrowserContextOptions, "deviceScaleFactor" | "reducedMotion">
+>;
+
 /** Opens a browser of its own for a window of the showcase: a phone has a touch screen. */
+export function deviceContext(
+  browser: Browser,
+  server: Instance,
+  device: Device,
+  options: DeviceOptions = {},
+): Promise<BrowserContext> {
+  return browser.newContext({
+    baseURL: server.url,
+    ignoreHTTPSErrors: true,
+    viewport: devices[device],
+    hasTouch: device === "phone",
+    ...options,
+  });
+}
+
+/** Opens a browser of its own for a window of the showcase, on the sample, with the clock of the sample. */
 export async function openDevice(
   browser: Browser,
   server: Instance,
   device: Device,
 ): Promise<BrowserContext> {
-  const context = await browser.newContext({
-    baseURL: server.url,
-    ignoreHTTPSErrors: true,
-    viewport: devices[device],
-    hasTouch: device === "phone",
-  });
+  const context = await deviceContext(browser, server, device);
   // The clock of the browser stands at the moment the sample was made: "3 days ago" is then the
   // same on every run, and what the tour makes itself is "now" (M2C-F104).
   await context.clock.setFixedTime(sampleStartMs());
