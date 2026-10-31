@@ -2,7 +2,16 @@
   <img src="docs/media/banner.svg" alt="Bugaboo: a self-hosted issue tracker for teams" width="100%">
 </p>
 
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-5b3fd9" alt="License: AGPL-3.0-or-later"></a>
+  <a href="docs/adr/0040-version-numbers.md"><img src="https://img.shields.io/badge/version-0.3.0-5b3fd9" alt="Version 0.3.0"></a>
+  <a href="#roadmap"><img src="https://img.shields.io/badge/status-pre--1.0-orange" alt="Status: before version 1.0"></a>
+  <a href="web/packages/api-client/LICENSE"><img src="https://img.shields.io/badge/API%20client-MIT-2ea44f" alt="The API client is under the MIT license"></a>
+</p>
+
 # Bugaboo
+
+*Bug* plus *boo*, as in shooing a bug away: you hush it, mark it done, and it is gone. (A bugaboo is also an old word for something that frightens people. Issue trackers can do that too.)
 
 Bugaboo is a self-hosted issue tracker with time and working-hours tracking, built with privacy in mind for teams in Germany and elsewhere. It is one program that you run on your own server, with the browser app inside it.
 
@@ -98,6 +107,16 @@ What is planned, in the order of the [roadmap](docs/04-milestones.md):
 - **Then:** a timeline, a theme editor, an assistant and connections for AI apps (always off until an administrator turns them on), the privacy tools and operations needed for a first release, boards, calendars, documents, and live updates.
 
 The full list is in the [feature list](docs/01-feature-list.md).
+
+## Roadmap
+
+The plan has 16 milestones. The version number follows it ([decision record](docs/adr/0040-version-numbers.md)): **0.9.0 means every feature of the plan is built**, and **1.0.0** follows the last milestone, live updates. Today it is **0.3.0**.
+
+<p align="center">
+  <img src="docs/media/roadmap.svg" alt="The 16 milestones M0 to M15 as tiles with their number of features: M0 to M5 are done, M6 (time and working hours) is next" width="100%">
+</p>
+
+Each milestone is listed with its features in the [plan](docs/04-milestones.md). A test keeps the picture the same as the plan.
 
 ## Getting started
 

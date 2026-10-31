@@ -1,37 +1,12 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-import { repoRoot } from "./ports.ts";
+import { colorsOf, looksOf, readMedia, tokensOf } from "./media-theme.ts";
 
 // The banner of the front page (docs/media/banner.svg) is a picture, so it cannot read the theme
 // file; its colors are copied from it, and this test keeps the copies the same as the tokens.
 
-const banner = readFileSync(join(repoRoot, "docs/media/banner.svg"), "utf8");
-const theme = readFileSync(join(repoRoot, "design/theme.kdl"), "utf8");
-
-/** The value of a token for one theme of `design/theme.kdl`, such as `#5b3fd9`. */
-function tokenValue(token: string, themeName: string): string {
-  const line = theme.split("\n").find((each) => each.trim().startsWith(`color "${token}" `));
-  return new RegExp(` ${themeName}="(#[0-9a-f]{6})"`, "u").exec(line ?? "")?.[1] ?? "no such token";
-}
-
-/** The custom properties of a block of the banner, as `token: value` lines (`bg-canvas: #ffffff`). */
-function colorsOf(block: string): string[] {
-  return (block.match(/--[a-z-]+: #[0-9a-f]{6};/gu) ?? []).map((line) => line.slice(2, -1));
-}
-
-/** What the tokens of a theme say about the same names, as `token: value` lines in the same order. */
-function tokensOf(block: string, themeName: string): string[] {
-  return colorsOf(block).map((line) => {
-    const token = line.slice(0, line.indexOf(":"));
-    return `${token}: ${tokenValue(token, themeName)}`;
-  });
-}
-
-const [light = "", afterLight = ""] = banner.split("@media (prefers-color-scheme: dark)");
-const dark = afterLight.split("text {")[0] ?? "";
+const banner = readMedia("banner.svg");
+const { light, dark } = looksOf(banner);
 
 describe("the banner of the front page", () => {
   it("uses the colors of the default light theme in its light look", () => {
@@ -46,6 +21,14 @@ describe("the banner of the front page", () => {
 
   it("stands still when a person asks for less motion", () => {
     expect(banner).toMatch(/@media \(prefers-reduced-motion: reduce\)[^}]*\{[^}]*animation: none/u);
+  });
+
+  it("shoos a bug away and says boo, and the bug and the word are still when motion is reduced", () => {
+    expect(banner).toContain('class="bug"');
+    expect(banner).toContain(">Boo!<");
+    expect(banner).toMatch(
+      /\.row, \.dot, \.fill, \.ring, \.bug, \.legs, \.boo \{ animation: none/u,
+    );
   });
 
   it("loads nothing from outside and runs no script", () => {

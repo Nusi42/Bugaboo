@@ -93,3 +93,7 @@ reason = "Recordings for the front page, made by `npm run readme-media` with the
 [[exempt]]
 path = "docs/media/banner.svg"
 reason = "The animated banner of the front page, drawn by hand; its colors are the tokens of the default themes and web/tooling/banner.test.ts keeps them the same, and checks that it stands still for people who ask for less motion."
+
+[[exempt]]
+path = "docs/media/roadmap.svg"
+reason = "The roadmap picture of the front page, drawn by hand; web/tooling/roadmap.test.ts keeps its colors the same as the tokens of the default themes and its milestones and feature counts the same as the table in docs/04-milestones.md, and checks that it stands still for people who ask for less motion."

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="title desc">
   <title id="title">Bugaboo</title>
-  <desc id="desc">The name Bugaboo, a self-hosted issue tracker, next to three issue rows whose status moves from not started to in progress to done.</desc>
+  <desc id="desc">The name Bugaboo, a self-hosted issue tracker, next to three issue rows whose status moves from not started to in progress to done. A small bug sits on the last row and is shooed away with a boo when the row is done.</desc>
   <style>
     /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
        under the names of the tokens; a test (web/tooling/banner.test.ts) keeps them the same. */
@@ -54,6 +54,15 @@
     .ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 170; stroke-dashoffset: 55; transform: rotate(-90deg); transform-origin: 80px 258px; }
     .ring-track { fill: none; stroke: var(--border); stroke-width: 6; }
 
+    .bug-body, .bug-head { fill: var(--accent); }
+    .bug-spot { fill: var(--bg-raised); }
+    .bug-leg { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+    .boo-bubble { fill: var(--accent); }
+    .boo-text { fill: var(--bg-raised); font-size: 17px; font-weight: 700; }
+    .bug { animation: shoo 9s 1.6s infinite; }
+    .legs { animation: scurry 400ms ease-in-out infinite alternate; transform-origin: 0 0; }
+    .boo { animation: boo 9s 1.6s infinite; transform-origin: 1175px 298px; }
+
     .row { animation: arrive 700ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
     .row:nth-of-type(1) { animation-delay: 100ms; }
     .row:nth-of-type(2) { animation-delay: 280ms; }
@@ -69,10 +78,14 @@
     @keyframes fill-ns { 0%, 20% { fill: none; } 30%, 55% { fill: var(--st-ip); } 65%, 90% { fill: var(--st-done); } 100% { fill: none; } }
     @keyframes to-ip { 0%, 25% { stroke: var(--st-ip); } 35%, 70% { stroke: var(--st-done); } 80%, 100% { stroke: var(--st-ip); } }
     @keyframes fill-ip { 0%, 25% { fill: var(--st-ip); } 35%, 70% { fill: var(--st-done); } 80%, 100% { fill: var(--st-ip); } }
+    @keyframes shoo { 0%, 62% { transform: translate(0, 0) rotate(0); opacity: 1; } 78% { transform: translate(190px, -34px) rotate(50deg); opacity: 1; } 84%, 96% { transform: translate(260px, -34px) rotate(50deg); opacity: 0; } 97% { transform: translate(-40px, 0) rotate(0); opacity: 0; } 100% { transform: translate(0, 0) rotate(0); opacity: 1; } }
+    @keyframes scurry { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+    @keyframes boo { 0%, 63% { opacity: 0; transform: scale(0.4); } 68%, 80% { opacity: 1; transform: scale(1); } 86%, 100% { opacity: 0; transform: scale(1); } }
     @keyframes tick { from { stroke-dashoffset: 176; } to { stroke-dashoffset: 0; } }
 
     @media (prefers-reduced-motion: reduce) {
-      .row, .dot, .fill, .ring { animation: none; }
+      .row, .dot, .fill, .ring, .bug, .legs, .boo { animation: none; }
+      .boo { opacity: 0; }
     }
   </style>
 
@@ -109,5 +122,21 @@
     <text class="title" x="772" y="254">Review the new sign-in rules</text>
     <rect class="chip" x="1128" y="230" width="72" height="32" rx="16"/>
     <text class="chip-text" x="1164" y="251" text-anchor="middle">Task</text>
+    <g transform="translate(1100 246)">
+      <g class="bug">
+        <g class="legs">
+          <path class="bug-leg" d="M-8-4-16-8M-9 2-17 3M-8 8-15 13M8-4 16-8M9 2 17 3M8 8 15 13M-3-12-7-19M3-12 7-19"/>
+        </g>
+        <ellipse class="bug-body" cx="0" cy="2" rx="9" ry="12"/>
+        <circle class="bug-head" cx="0" cy="-11" r="5.5"/>
+        <circle class="bug-spot" cx="-3.5" cy="0" r="2.2"/>
+        <circle class="bug-spot" cx="3.5" cy="0" r="2.2"/>
+        <circle class="bug-spot" cx="0" cy="8" r="1.8"/>
+      </g>
+    </g>
+    <g class="boo">
+      <rect class="boo-bubble" x="1140" y="284" width="70" height="28" rx="14"/>
+      <text class="boo-text" x="1175" y="304" text-anchor="middle">Boo!</text>
+    </g>
   </g>
 </svg>
