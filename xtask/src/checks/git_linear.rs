@@ -25,9 +25,6 @@ pub(crate) const REBASE_INSTEAD: &str = "Combine branches by rebasing onto the t
      (`git rebase <target>` on a copy of the branch, then `git merge --ff-only` on the target), \
      never with a merge commit (ADR-0041).";
 
-/// How many characters of a commit hash a finding shows.
-const SHORT_HASH: usize = 8;
-
 pub(crate) struct GitLinear;
 
 impl Check for GitLinear {
@@ -89,7 +86,7 @@ fn merge_findings(repo: &Repo) -> anyhow::Result<Vec<Finding>> {
     if !unpushed::has_commits(repo) {
         return Ok(Vec::new());
     }
-    let listing = repo.git_bytes(&unpushed::log_arguments(&["--merges", "--format=%H"], &[]))?;
+    let listing = repo.git_bytes(&unpushed::log_arguments(&["--merges", "--format=%h"], &[]))?;
     let mut findings = Vec::new();
     for hash in String::from_utf8_lossy(&listing)
         .lines()
@@ -112,9 +109,8 @@ fn merge_findings(repo: &Repo) -> anyhow::Result<Vec<Finding>> {
         } else {
             format!(" (on the local branch {})", branches.join(", "))
         };
-        let short: String = hash.chars().take(SHORT_HASH).collect();
         findings.push(Finding::at(
-            format!("commit {short}{held}"),
+            format!("commit {hash}{held}"),
             format!(
                 "is a merge commit. {REBASE_INSTEAD} A local branch that is not needed any more \
                  is deleted."
