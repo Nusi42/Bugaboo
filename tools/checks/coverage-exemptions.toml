@@ -7,6 +7,10 @@ path = "LICENSE"
 reason = "The official text of the GNU Affero General Public License, word for word from gnu.org; it is never edited."
 
 [[exempt]]
+path = "web/packages/api-client/LICENSE"
+reason = "The standard text of the MIT license for the API client (ADR-0036); it is never edited."
+
+[[exempt]]
 path = "Cargo.lock"
 reason = "Written by Cargo; never edited by hand."
 

@@ -15,12 +15,12 @@ Bugaboo is about to be published. The license of the code was open (the feature 
 1. The code of Bugaboo is licensed under the **GNU Affero General Public License v3.0 or later** (SPDX `AGPL-3.0-or-later`). `LICENSE` holds the official text. The identifier is in `Cargo.toml` (`[workspace.package]`, which every crate inherits) and in every `package.json` of the project.
 2. The maintainer offers Bugaboo under other terms on request. To be able to do that for the whole code, every contribution comes with a **contributor license agreement** ([`CONTRIBUTING.md`](../../CONTRIBUTING.md)): contributors keep their copyright and grant the maintainer a perpetual, irrevocable, royalty-free license to use, sublicense and relicense the contribution under any terms, plus a patent license. It is accepted in the pull request with a comment.
 3. **No dependency from the GPL family** (GPL, LGPL, AGPL, in any version) goes into Bugaboo: code under someone else's GPL could not be offered under other terms. The allow list in `deny.toml` names none of them, so `cargo deny` refuses them for Rust, and DEP-LICENSES refuses them for npm packages, also those that only run on a developer machine. A package that offers a choice (`MIT OR GPL-3.0-only`) is fine when the other side is on the allow list.
-4. Parts that third parties build on (a client library, a plug-in kit, examples) may later be under the MIT license, so that using them does not carry the AGPL into other programs. None exists as a separate product today; each such part needs its own decision record.
+4. Parts that third parties build on may be under the MIT license, so that using them does not carry the AGPL into other programs. The first is **`@bugaboo/api-client`** (`web/packages/api-client`, the generated TypeScript client of the public API): MIT, with its own `LICENSE` file and `"license": "MIT"` in its `package.json`. A further part (a plug-in kit, examples) gets the same treatment by an amendment of this record.
 5. Until a lawyer has reviewed the agreement, nothing commercial is offered.
 
 ## Consequences
 
-- Every new crate or package carries the license (`license.workspace = true`, or `"license": "AGPL-3.0-or-later"` in `package.json`).
+- Every new crate or package carries the license (`license.workspace = true`, or `"license": "AGPL-3.0-or-later"` in `package.json`), except the MIT parts named in decision 4.
 - A change of the allow list or of the license of the project needs a new decision record.
 - A pull request is merged only after its author has accepted the agreement (review).
 

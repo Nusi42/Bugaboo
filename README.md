@@ -195,6 +195,8 @@ The details are in [`docs/architecture/`](docs/architecture/README.md) and the [
 
 Bugaboo is free software under the [GNU Affero General Public License, version 3 or later](LICENSE) (`AGPL-3.0-or-later`).
 
+The generated client of the API, [`@bugaboo/api-client`](web/packages/api-client), is under the [MIT license](web/packages/api-client/LICENSE), so your own programs can use it without taking on the AGPL.
+
 In plain words: you may use Bugaboo, change it and run a changed version for yourself, even a version that you keep closed. If you give a changed version to others, or let others use it over a network, you must make the source of your version available under the same license.
 
 The maintainer also offers Bugaboo under other terms, for example for a commercial edition with additions that are not published. If you would like other terms, ask the maintainer.
