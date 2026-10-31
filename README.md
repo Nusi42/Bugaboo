@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/banner.svg" alt="Bugaboo: a self-hosted issue tracker for teams" width="100%">
+  <img src="docs/media/banner.svg" alt="Bugaboo: a self-hosted issue tracker and project management for teams of people and AI agents" width="100%">
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
 
 # Bugaboo
 
-**An issue tracker for teams that you run on your own server: for the work, the people who do it, and the AI agents that help them.** Plain words, every screen on a phone as well as on a computer, and privacy built in.
+**A self-hosted issue tracker and project management for teams of people and AI agents.** Plain words, every screen on a phone as well as on a computer, and privacy built in.
 
 *Bug* plus *boo*, as in shooing a bug away: you hush it, mark it done, and it is gone.
 
@@ -30,7 +30,8 @@ Bugaboo is for a team that wants to keep track of its work in one place it owns:
 - **One program to install.** The server and the app in the browser are one program, with its database built in. No cloud account, no outside service.
 - **Plain words for everyone.** The screens are written for people who are not experts, with the same words everywhere ([glossary](docs/glossary.md)). It works with a keyboard and a screen reader, and on phones, tablets and computers alike.
 - **Privacy by design.** No tracking, no outside scripts or fonts, only the cookies it needs. It is built for teams in Germany and elsewhere in the EU, with the GDPR in mind ([more below](#privacy)).
-- **Shared memory for people and AI agents.** Everything about a piece of work stays on its issue, so whoever picks it up next, a person or an agent, starts from what the last one knew ([more below](#ai-agents-and-bugaboo-as-shared-memory)).
+- **Project management, step by step.** Built today: projects and sub-projects, each with its own roles, fields and workflows, and lists that you filter, group by status, person or any field, and keep as saved searches to share. Planned: time and working hours, the timeline with Gantt charts and dependencies, boards, calendars and dashboards ([what comes next](#what-comes-next)).
+- **One team of people and AI agents.** Everything about a piece of work stays on its issue, so whoever picks it up next, a person or an agent, starts from what the last one knew. Today that serves the people; the agents are planned ([more below](#ai-agents-and-bugaboo-as-shared-memory)).
 
 ## A short tour
 
