@@ -342,6 +342,8 @@ impl Maker<'_> {
             description,
             status: first_status,
             priority: priority(facts.type_at == 0, &mut facts.random),
+            estimated_time: None,
+            time_left: None,
             reported_by: facts.reporter,
             created_at: facts.created_at,
             updated_at: facts.created_at,

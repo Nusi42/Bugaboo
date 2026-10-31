@@ -61,6 +61,8 @@ async fn salary_changes(
                     title: None,
                     status: None,
                     priority: None,
+                    estimated_time: None,
+                    time_left: None,
                     assigned_to: None,
                     fields: BTreeMap::from([(
                         salary_id.to_owned(),

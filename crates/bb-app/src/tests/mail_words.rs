@@ -136,6 +136,8 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
             title: None,
             status: None,
             priority: None,
+            estimated_time: None,
+            time_left: None,
             assigned_to: None,
             fields: BTreeMap::from([(starts.id.to_string(), json!("2026-10-05T07:30:00Z"))]),
         },

@@ -140,6 +140,82 @@ mod test_support {
         database.execute(&insert).await.map(|_| ())
     }
 
+    /// A project, written with the columns of migration 5: what a test of a migration that touches
+    /// issues starts from. The ID is as stored.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_project(
+        database: &Database,
+        project: Vec<u8>,
+    ) -> Result<(), crate::StoreError> {
+        use crate::schema::ProjectRow;
+        use sea_query::{Expr, Query};
+
+        let mut made = Query::insert();
+        made.into_table(ProjectRow::Table)
+            .columns([
+                ProjectRow::Id,
+                ProjectRow::ShortName,
+                ProjectRow::Name,
+                ProjectRow::Version,
+            ])
+            .values([
+                Expr::val(project),
+                Expr::val("ACME"),
+                Expr::val("Acme"),
+                Expr::val(1_i64),
+            ])
+            .map_err(|_| crate::StoreError::Corrupt("an old project"))?;
+        database.execute(&made).await.map(|_| ())
+    }
+
+    /// An issue of a project with this code, written with the columns of migration 7 (reported by
+    /// a made-up person): a test of a migration writes its issues the way the program before it
+    /// did, so the program of today never writes into an older table. The IDs are as stored.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_issue(
+        database: &Database,
+        (project, issue): (Vec<u8>, Vec<u8>),
+        issue_type: IssueTypeId,
+        code: &str,
+    ) -> Result<(), crate::StoreError> {
+        use crate::db::StoredId as _;
+        use crate::schema::IssueRow;
+        use sea_query::{Expr, Query};
+
+        let mut made = Query::insert();
+        made.into_table(IssueRow::Table)
+            .columns([
+                IssueRow::Id,
+                IssueRow::Project,
+                IssueRow::IssueType,
+                IssueRow::Code,
+                IssueRow::Title,
+                IssueRow::Description,
+                IssueRow::Status,
+                IssueRow::Priority,
+                IssueRow::ReportedBy,
+                IssueRow::CreatedAt,
+                IssueRow::UpdatedAt,
+                IssueRow::Version,
+            ])
+            .values([
+                Expr::val(issue),
+                Expr::val(project),
+                Expr::val(issue_type.stored()),
+                Expr::val(code),
+                Expr::val("An issue"),
+                Expr::val(""),
+                Expr::val("open"),
+                Expr::val("normal"),
+                Expr::val(UserId::generate(&mut SequentialIds::default()).stored()),
+                Expr::val(1_i64),
+                Expr::val(1_i64),
+                Expr::val(1_i64),
+            ])
+            .map_err(|_| crate::StoreError::Corrupt("an old issue"))?;
+        database.execute(&made).await.map(|_| ())
+    }
+
     /// A saved search written the way migration 24 made the row, with the `spacing` that migration
     /// 30 takes away: what a test of either migration starts from. The IDs are as stored.
     #[cfg(test)]
@@ -260,6 +336,8 @@ mod test_support {
             description: String::new(),
             status: starter::open(),
             priority: Priority::Normal,
+            estimated_time: None,
+            time_left: None,
             reported_by: UserId::generate(source),
             created_at: at(1),
             updated_at: at(1),

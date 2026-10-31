@@ -158,6 +158,16 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
             .as_str()
             .ok_or("no key")?
             .to_owned();
+        // The lengths are in an answer only while the issue has them.
+        let version = ok(&made)?["version"].clone();
+        let timed = ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{key}"),
+                Some(json!({"version": version, "estimated_time": 240, "time_left": 90})),
+            )
+            .await?;
+        assert_eq!(ok(&timed)?["estimated_time"], 240);
         let mut readers = vec![(
             "title reader".to_owned(),
             title_only_reader(&site, &rig).await?,
@@ -223,6 +233,8 @@ async fn changer(
         Field::Status,
         Field::Priority,
         Field::AssignedTo,
+        Field::EstimatedTime,
+        Field::TimeLeft,
     ] {
         let level = if field == Field::Title {
             FieldLevel::CanChange
@@ -276,12 +288,23 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
             "{ISSUES}/{}",
             ok(&made)?["readable_id"].as_str().ok_or("no key")?
         );
+        let version = ok(&made)?["version"].clone();
+        let timed = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "estimated_time": 240, "time_left": null})),
+            )
+            .await?;
+        ok(&timed)?;
         // The values the issue has now: sending one of them back must not tell the sender that
         // it is right, so it is refused like a value that differs.
         let now = [
             ("status", json!("open")),
             ("priority", json!("high")),
             ("assigned_to", json!([tim.to_string()])),
+            ("estimated_time", json!(240)),
+            ("time_left", json!(null)),
         ];
         for (name, level) in [("see", FieldLevel::CanSee), ("hidden", FieldLevel::Hidden)] {
             let mut who = changer(&site, &rig, &format!("{name}@example.test"), level).await?;

@@ -173,6 +173,8 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
             title: Some("Changed meanwhile".to_owned()),
             status: None,
             priority: None,
+            estimated_time: None,
+            time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
         },

@@ -8,10 +8,12 @@
 
 use std::collections::BTreeMap;
 
+use bb_core::given::SetTo;
 use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
 use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::relation::Direction;
+use bb_core::time::Minutes;
 use bb_core::workflow::StatusKey;
 use bb_policy::Masked;
 use jiff::Timestamp;
@@ -34,6 +36,20 @@ pub struct ManyChange {
     pub status_button: Option<String>,
     /// A new priority.
     pub priority: Option<Priority>,
+    /// A new *Estimated time*; `SetTo::Nothing` takes it away.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "bb_core::given::deserialize"
+    )]
+    pub estimated_time: Option<SetTo<Minutes>>,
+    /// A new *Time left* as typed; `SetTo::Nothing` takes it away, so it is worked out again.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "bb_core::given::deserialize"
+    )]
+    pub time_left: Option<SetTo<Minutes>>,
     /// The people the issues are assigned to from now on (all of them, not the ones to add).
     pub assigned_to: Option<Vec<UserId>>,
     /// The values of own fields to set, by the key of the field; `null` takes a value away.

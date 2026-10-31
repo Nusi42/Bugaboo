@@ -92,7 +92,10 @@ mod tests {
                     ])?;
                 database.execute(&old).await?;
             }
-            assert_eq!(database.migrate(at(1)).await?, [28, 29, 30, 31, 32]);
+            assert_eq!(
+                database.migrate_until(32, at(1)).await?,
+                [28, 29, 30, 31, 32]
+            );
             let mut select = Query::select();
             select
                 .column(PersonSettingCounterRow::Counter)

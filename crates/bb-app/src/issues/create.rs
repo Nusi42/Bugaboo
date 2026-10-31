@@ -194,6 +194,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             description: description.unwrap_or_default(),
             status,
             priority: input.priority.unwrap_or(Priority::NEW),
+            estimated_time: None,
+            time_left: None,
             reported_by: actor.person.id,
             created_at: now,
             updated_at: now,

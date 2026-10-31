@@ -27,9 +27,8 @@ mod tests {
     use sea_query::{Expr, ExprTrait as _, IntoIden as _, Query};
 
     use super::super::Database;
-    use crate::db::StoredId as _;
-    use crate::schema::{CommentRow, IssueRow, MentionRow, ProjectRow, Retired};
-    use crate::test_support::{at, insert_old_issue_type};
+    use crate::schema::{CommentRow, MentionRow, Retired};
+    use crate::test_support::{at, insert_old_issue, insert_old_issue_type, insert_old_project};
 
     /// A database of migration 19 with a comment that mentions a person, the mention marked as
     /// read: what a database of M4 before migration 20 holds. The comment and the person.
@@ -44,52 +43,8 @@ mod tests {
         insert_old_issue_type(&database, issue_type, "Task").await?;
         let (project, issue, comment) = (vec![3_u8; 16], vec![4_u8; 16], vec![5_u8; 16]);
         let (author, recipient) = (vec![6_u8; 16], vec![7_u8; 16]);
-        let mut made = Query::insert();
-        made.into_table(ProjectRow::Table)
-            .columns([
-                ProjectRow::Id,
-                ProjectRow::ShortName,
-                ProjectRow::Name,
-                ProjectRow::Version,
-            ])
-            .values([
-                Expr::val(project.clone()),
-                Expr::val("ACME"),
-                Expr::val("Acme"),
-                Expr::val(1_i64),
-            ])?;
-        database.execute(&made).await?;
-        let mut made = Query::insert();
-        made.into_table(IssueRow::Table)
-            .columns([
-                IssueRow::Id,
-                IssueRow::Project,
-                IssueRow::IssueType,
-                IssueRow::Code,
-                IssueRow::Title,
-                IssueRow::Description,
-                IssueRow::Status,
-                IssueRow::Priority,
-                IssueRow::ReportedBy,
-                IssueRow::CreatedAt,
-                IssueRow::UpdatedAt,
-                IssueRow::Version,
-            ])
-            .values([
-                Expr::val(issue.clone()),
-                Expr::val(project),
-                Expr::val(issue_type.stored()),
-                Expr::val("ACME-1"),
-                Expr::val("An issue"),
-                Expr::val(""),
-                Expr::val("open"),
-                Expr::val("normal"),
-                Expr::val(author.clone()),
-                Expr::val(1_i64),
-                Expr::val(1_i64),
-                Expr::val(1_i64),
-            ])?;
-        database.execute(&made).await?;
+        insert_old_project(&database, project.clone()).await?;
+        insert_old_issue(&database, (project, issue.clone()), issue_type, "1").await?;
         let mut made = Query::insert();
         made.into_table(CommentRow::Table)
             .columns([

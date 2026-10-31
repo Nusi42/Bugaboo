@@ -10,6 +10,7 @@ use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use crate::message::{self, MessageKey};
 use crate::personal::Entity;
 use crate::readable_id::IssueCode;
+use crate::time::Minutes;
 use crate::workflow::StatusKey;
 
 /// The most people an issue is assigned to.
@@ -222,6 +223,14 @@ pub struct Issue {
     /// How important it is.
     #[not_personal]
     pub priority: Priority,
+    /// *Estimated time*: how long it was expected to take, in whole minutes; none until somebody
+    /// gives one.
+    #[not_personal]
+    pub estimated_time: Option<Minutes>,
+    /// *Time left* as somebody typed it, in whole minutes; none while nobody did, when it is
+    /// worked out ([`crate::time::left`]).
+    #[not_personal]
+    pub time_left: Option<Minutes>,
     /// Who made it.
     #[personal(category = "activity", basis = "contract")]
     pub reported_by: UserId,

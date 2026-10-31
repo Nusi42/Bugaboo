@@ -76,14 +76,17 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// The fields of the catalogue that a request to make or change an issue names: the others (dates,
-/// time) come with the packages that store them, and tags and labels are put on and taken off on
-/// their own routes (`tags`).
-pub(crate) const CHANGEABLE: [Field; 5] = [
+/// releases) come with the packages that store them, *Time spent* is the total of the time
+/// entries and never typed, and tags and labels are put on and taken off on their own routes
+/// (`tags`).
+pub(crate) const CHANGEABLE: [Field; 7] = [
     Field::Title,
     Field::Description,
     Field::Status,
     Field::Priority,
     Field::AssignedTo,
+    Field::EstimatedTime,
+    Field::TimeLeft,
 ];
 
 /// Which fields of the catalogue a request names: given, whether the value differs from the one
@@ -118,13 +121,16 @@ impl Given {
 
 impl From<&ChangeIssue> for Given {
     fn from(input: &ChangeIssue) -> Self {
-        // Title, description (saved under its lock, never here), status, priority, assigned to.
+        // Title, description (saved under its lock, never here), status, priority, assigned to,
+        // estimated time, time left.
         Self([
             input.title.is_some(),
             false,
             input.status.is_some(),
             input.priority.is_some(),
             input.assigned_to.is_some(),
+            input.estimated_time.is_some(),
+            input.time_left.is_some(),
         ])
     }
 }
@@ -138,6 +144,9 @@ impl From<&CreateIssue> for Given {
             input.status.is_some(),
             input.priority.is_some(),
             input.assigned_to.is_some(),
+            // A new issue has no estimate and no time left yet: they are given by a change.
+            false,
+            false,
         ])
     }
 }
@@ -170,6 +179,8 @@ pub(crate) mod member {
     pub(crate) const PRIORITY: &str = Field::Priority.code();
     pub(crate) const REPORTED_BY: &str = Field::ReportedBy.code();
     pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
+    pub(crate) const ESTIMATED_TIME: &str = Field::EstimatedTime.code();
+    pub(crate) const TIME_LEFT: &str = Field::TimeLeft.code();
     pub(crate) const TAGS: &str = Field::Tags.code();
     pub(crate) const LABELS: &str = Field::Labels.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";

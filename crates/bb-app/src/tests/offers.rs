@@ -164,6 +164,8 @@ async fn iss_02_an_issue_of_a_type_the_project_does_not_offer_is_refused() -> Ou
             title: None,
             status: None,
             priority: None,
+            estimated_time: None,
+            time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
         },

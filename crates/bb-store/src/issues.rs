@@ -11,6 +11,7 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority};
 use bb_core::readable_id::IssueCode;
+use bb_core::time::Minutes;
 use bb_core::version::Version;
 use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
@@ -63,6 +64,8 @@ pub(crate) fn issue_select() -> SelectStatement {
             IssueRow::Description,
             IssueRow::Status,
             IssueRow::Priority,
+            IssueRow::EstimatedTime,
+            IssueRow::TimeLeft,
             IssueRow::ReportedBy,
             IssueRow::CreatedAt,
             IssueRow::UpdatedAt,
@@ -100,6 +103,8 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
             .map_err(|_| StoreError::Corrupt("a status"))?,
         priority: Priority::from_code(&row.get::<String>(IssueRow::Priority)?)
             .ok_or(StoreError::Corrupt("a priority"))?,
+        estimated_time: read_minutes(row, IssueRow::EstimatedTime)?,
+        time_left: read_minutes(row, IssueRow::TimeLeft)?,
         reported_by: row.id::<UserId>(IssueRow::ReportedBy)?,
         created_at: row.time(IssueRow::CreatedAt)?,
         updated_at: row.time(IssueRow::UpdatedAt)?,
@@ -107,6 +112,18 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
         deleted_at: row.optional_time(IssueRow::DeletedAt)?,
         version: row.get(IssueRow::Version)?,
     })
+}
+
+/// A length of time in whole minutes kept in a column of whole numbers; none when it is empty.
+pub(crate) fn read_minutes(row: &Row, column: IssueRow) -> Result<Option<Minutes>, StoreError> {
+    row.get::<Option<i64>>(column)?
+        .map(|minutes| Minutes::try_from(minutes).map_err(|_| StoreError::Corrupt("a length")))
+        .transpose()
+}
+
+/// A length of time as it is kept: whole minutes, `NULL` for none.
+pub(crate) fn stored_minutes(minutes: Option<Minutes>) -> Option<i64> {
+    minutes.map(i64::from)
 }
 
 fn read_assigned_person(row: &Row) -> Result<AssignedPerson, StoreError> {
@@ -436,6 +453,8 @@ impl IssueStore for AuthStorage {
                 IssueRow::Description,
                 IssueRow::Status,
                 IssueRow::Priority,
+                IssueRow::EstimatedTime,
+                IssueRow::TimeLeft,
                 IssueRow::ReportedBy,
                 IssueRow::CreatedAt,
                 IssueRow::UpdatedAt,
@@ -452,6 +471,8 @@ impl IssueStore for AuthStorage {
                 Expr::val(issue.description.as_str()),
                 Expr::val(issue.status.as_str()),
                 Expr::val(issue.priority.code()),
+                Expr::val(stored_minutes(issue.estimated_time)),
+                Expr::val(stored_minutes(issue.time_left)),
                 Expr::val(issue.reported_by.stored()),
                 Expr::val(to_micros(issue.created_at)),
                 Expr::val(to_micros(issue.updated_at)),
@@ -477,6 +498,11 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::Description, issue.description.as_str())
             .value(IssueRow::Status, issue.status.as_str())
             .value(IssueRow::Priority, issue.priority.code())
+            .value(
+                IssueRow::EstimatedTime,
+                stored_minutes(issue.estimated_time),
+            )
+            .value(IssueRow::TimeLeft, stored_minutes(issue.time_left))
             .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros));
         counting_up(&mut update, issue.updated_at)
             .and_where(Expr::col(IssueRow::Id).eq(issue.id.stored()))

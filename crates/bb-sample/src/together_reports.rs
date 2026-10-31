@@ -205,6 +205,8 @@ impl Maker<'_, '_> {
                     title: Some(title),
                     status: None,
                     priority: None,
+                    estimated_time: None,
+                    time_left: None,
                     assigned_to: None,
                     fields: std::collections::BTreeMap::new(),
                 },

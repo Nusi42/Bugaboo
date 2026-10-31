@@ -264,6 +264,8 @@ mod tests {
             let database = Database::connect(db.url()).await?;
             let (issues, _) = m3_database(&database).await?;
             assert_eq!(database.migrate_until(15, at(1)).await?, [15]);
+            // The program of today reads the issues, from the tables of today.
+            database.migrate(at(1)).await?;
             // Every issue is as it was: its key, its closed date, its version.
             for (id, status, closed) in &issues {
                 let stored = database

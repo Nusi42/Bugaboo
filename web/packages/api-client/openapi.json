@@ -15342,6 +15342,12 @@
             },
             "description": "The IDs of the people it is assigned to from now on: all of them, not the ones to add."
           },
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A new *Estimated time*, in whole minutes; `null` takes it away.",
+            "minimum": 0
+          },
           "fields": {
             "type": "object",
             "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.\nA long text is saved on its own route, under its edit lock.",
@@ -15368,6 +15374,12 @@
           "status": {
             "type": ["string", "null"],
             "description": "The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets\nthe closed date; leaving it clears it."
+          },
+          "time_left": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A new *Time left*, in whole minutes, which counts until it is taken away; `null` takes it\naway, and it is worked out from the estimate and the time spent again.",
+            "minimum": 0
           },
           "title": {
             "type": ["string", "null"],
@@ -17891,6 +17903,12 @@
             "type": ["string", "null"],
             "description": "The long text, in Markdown."
           },
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Estimated time*, in whole minutes; left out while it has none.",
+            "minimum": 0
+          },
           "id": {
             "type": ["string", "null"],
             "description": "The internal ID, which never changes."
@@ -17978,6 +17996,12 @@
               "$ref": "#/components/schemas/StatusChangeRef"
             },
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
+          },
+          "time_left": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Time left* as somebody typed it, in whole minutes; left out while nobody did and it is\nworked out from the estimate and the time spent.",
+            "minimum": 0
           },
           "title": {
             "type": ["string", "null"],
@@ -18943,6 +18967,12 @@
             },
             "description": "The IDs of the people the issues are assigned to from now on: all of them, not the ones to\nadd."
           },
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A new *Estimated time*, in whole minutes; `null` takes it away.",
+            "minimum": 0
+          },
           "fields": {
             "type": "object",
             "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.",
@@ -18969,6 +18999,12 @@
           "status_button": {
             "type": ["string", "null"],
             "description": "The words of the status change that was chosen to get to `status` (*Start working*). An\nissue whose workflow has no such change from its status is skipped, also when it has\nanother change to that status."
+          },
+          "time_left": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A new *Time left*, in whole minutes; `null` takes it away, so it is worked out again.",
+            "minimum": 0
           }
         }
       },

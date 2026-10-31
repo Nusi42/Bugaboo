@@ -57,7 +57,7 @@ fn has_change(event: &Value, field: &str, added: bool) -> bool {
 
 #[tokio::test]
 async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
-    each_database(
+    Box::pin(each_database(
         "m3_f111_every_role_does_only_what_the_role_may",
         async |db| {
             let folder = tempfile::tempdir()?;
@@ -125,13 +125,13 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
             }
             Ok(())
         },
-    )
+    ))
     .await
 }
 
 #[tokio::test]
 async fn no_notification_tells_a_guest_of_an_issue_they_did_not_report() -> TestResult {
-    each_database(
+    Box::pin(each_database(
         "no_notification_tells_a_guest_of_an_issue_they_did_not_report",
         async |db| {
             let folder = tempfile::tempdir()?;
@@ -152,7 +152,7 @@ async fn no_notification_tells_a_guest_of_an_issue_they_did_not_report() -> Test
             );
             Ok(())
         },
-    )
+    ))
     .await
 }
 

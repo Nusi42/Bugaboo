@@ -22,6 +22,7 @@ use bb_core::own_fields::FieldType;
 use bb_core::paging::{SkipCursor, page_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::relation::{Direction, RelationKind};
+use bb_core::time::Minutes;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
@@ -314,6 +315,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             },
             Member::Catalogue(Field::Tags) => self.tags_value(reading, value).await?,
             Member::Catalogue(Field::Labels) => self.labels_value(reading, value).await?,
+            // A length of the issue is kept in whole minutes and worded like the length of an own
+            // field, which the screens get in seconds.
+            Member::Catalogue(Field::EstimatedTime | Field::TimeLeft) => value
+                .as_i64()
+                .and_then(|minutes| Minutes::try_from(minutes).ok())
+                .map(|minutes| ChangeValue::Typed {
+                    kind: FieldType::Duration,
+                    value: Value::from(minutes.as_seconds()),
+                }),
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {

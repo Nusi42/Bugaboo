@@ -6,6 +6,7 @@ use bb_core::version::Version;
 
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
+use bb_core::given::SetTo;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, StatusGroup};
 use bb_core::version::next as next_version;
@@ -68,6 +69,16 @@ impl Plan {
             member::PRIORITY,
             json!(before.priority.code()),
             json!(after.priority.code()),
+        ));
+        add(difference(
+            member::ESTIMATED_TIME,
+            json!(before.estimated_time),
+            json!(after.estimated_time),
+        ));
+        add(difference(
+            member::TIME_LEFT,
+            json!(before.time_left),
+            json!(after.time_left),
         ));
         add(difference(
             member::ASSIGNED_TO,
@@ -205,13 +216,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &ChangeIssue,
     ) -> Result<(Arc<Evaluation>, Plan), AppError> {
         let (held, current) = self.issue_to_change(actor, &input.issue).await?;
-        if input.issue_type.is_none()
-            && input.title.is_none()
-            && input.status.is_none()
-            && input.priority.is_none()
-            && input.assigned_to.is_none()
-            && input.fields.is_empty()
-        {
+        // Nothing asked: no field of the catalogue, no issue type, no own field.
+        if named(input).is_empty() && input.issue_type.is_none() && input.fields.is_empty() {
             return Err(ErrorCode::InvalidRequest.into());
         }
         // Before anything else is looked at: a field the person may not change is refused whether
@@ -249,6 +255,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             next.title = clean_title(title)?;
         }
         next.priority = input.priority.unwrap_or(current.priority);
+        next.estimated_time = input
+            .estimated_time
+            .map_or(current.estimated_time, SetTo::into_option);
+        next.time_left = input
+            .time_left
+            .map_or(current.time_left, SetTo::into_option);
         if let Some(issue_type) = input.issue_type {
             next.issue_type = self.writable_type(actor, issue_type, &current).await?;
         }

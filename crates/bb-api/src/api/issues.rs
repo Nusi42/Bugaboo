@@ -19,9 +19,11 @@ use bb_app::issues::{
 use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
+use bb_core::given::SetTo;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{IssueIcon, Priority};
 use bb_core::own_fields_value::OwnValues;
+use bb_core::time::Minutes;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -42,7 +44,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(super) const ISSUE_FIELDS: [FieldSpec; 17] = [
+pub(super) const ISSUE_FIELDS: [FieldSpec; 19] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -52,6 +54,8 @@ pub(super) const ISSUE_FIELDS: [FieldSpec; 17] = [
     FieldSpec::by_default("status"),
     FieldSpec::on_request("status_changes"),
     FieldSpec::by_default("priority"),
+    FieldSpec::on_request("estimated_time"),
+    FieldSpec::on_request("time_left"),
     FieldSpec::on_request("reported_by"),
     FieldSpec::on_request("assigned_to"),
     FieldSpec::on_request("created_at"),
@@ -137,6 +141,17 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "priority")]
     priority: Option<Priority>,
+    /// *Estimated time*, in whole minutes; left out while it has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "estimated-time")]
+    #[schema(value_type = Option<u32>)]
+    estimated_time: Option<Minutes>,
+    /// *Time left* as somebody typed it, in whole minutes; left out while nobody did and it is
+    /// worked out from the estimate and the time spent.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "time-left")]
+    #[schema(value_type = Option<u32>)]
+    time_left: Option<Minutes>,
     /// Who made it, as the viewer may see people of this kind.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "reported-by", nested)]
@@ -191,6 +206,8 @@ impl From<&IssueView> for IssueItem {
                     .collect(),
             ),
             priority: Some(issue.priority),
+            estimated_time: issue.estimated_time,
+            time_left: issue.time_left,
             reported_by: Some(issue.reported_by.clone()),
             assigned_to: Some(issue.assigned_to.clone()),
             created_at: Some(issue.created_at.to_string()),
@@ -301,6 +318,15 @@ pub(crate) struct ChangeIssueBody {
     status: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
+    /// A new *Estimated time*, in whole minutes; `null` takes it away.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<u32>, nullable)]
+    estimated_time: Option<SetTo<Minutes>>,
+    /// A new *Time left*, in whole minutes, which counts until it is taken away; `null` takes it
+    /// away, and it is worked out from the estimate and the time spent again.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<u32>, nullable)]
+    time_left: Option<SetTo<Minutes>>,
     /// The IDs of the people it is assigned to from now on: all of them, not the ones to add.
     assigned_to: Option<Vec<String>>,
     /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
@@ -545,6 +571,8 @@ async fn change_issue(
                 title: body.title,
                 status: status_in(body.status.as_deref())?,
                 priority: body.priority,
+                estimated_time: body.estimated_time,
+                time_left: body.time_left,
                 assigned_to,
                 fields: body.fields,
             },
@@ -756,6 +784,8 @@ mod tests {
             status: Some(StatusRef::blank()),
             status_changes: Some(Vec::new()),
             priority: Some(Priority::Normal),
+            estimated_time: Some(Minutes::new(0)),
+            time_left: Some(Minutes::new(0)),
             reported_by: Some(PersonRef::Someone),
             assigned_to: Some(Vec::new()),
             created_at: Some(String::new()),

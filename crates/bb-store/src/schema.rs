@@ -241,6 +241,8 @@ stored_tables! {
         Description => description,
         Status => status,
         Priority => priority,
+        EstimatedTime => estimated_time,
+        TimeLeft => time_left,
         ReportedBy => reported_by,
         CreatedAt => created_at,
         UpdatedAt => updated_at,

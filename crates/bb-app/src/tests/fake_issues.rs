@@ -175,6 +175,8 @@ impl IssueStore for FakeStore {
         found.description.clone_from(&issue.description);
         found.status.clone_from(&issue.status);
         found.priority = issue.priority;
+        found.estimated_time = issue.estimated_time;
+        found.time_left = issue.time_left;
         found.updated_at = issue.updated_at;
         found.closed_at = issue.closed_at;
         found.version += 1;

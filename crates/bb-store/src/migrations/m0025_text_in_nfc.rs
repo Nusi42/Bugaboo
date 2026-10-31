@@ -80,9 +80,12 @@ mod tests {
     use crate::anchor::LogSeal;
     use crate::db::StoredId as _;
     use crate::schema::{IssueRow, TextIndexRow};
-    use crate::test_support::{at, event, ids, world};
+    use crate::test_support::{
+        at, event, ids, insert_old_issue, insert_old_issue_type, insert_old_project,
+    };
     use crate::text_index::TextScope;
     use crate::text_index::tests::found;
+    use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 
     /// An issue written before the migration has its title in the index with the accent removed
     /// (`muller`). After the migration the index is empty and the reader reads nothing; after the
@@ -99,9 +102,25 @@ mod tests {
             let keys = std::sync::Arc::new(database.open_keys(&folder.path().join("keys")).await?);
             let seal = LogSeal::new(&keys, folder.path().join("head.log"));
             let storage = AuthStorage::new(database.clone(), keys, seal);
+            // The issues as the program before the migration wrote them.
             let mut source = ids();
-            let world = world(&storage, &mut source, 2).await;
-            let (first, second) = (world.issues[0].id, world.issues[1].id);
+            let (first, second) = (
+                IssueId::generate(&mut source)?,
+                IssueId::generate(&mut source)?,
+            );
+            let project = ProjectId::generate(&mut source)?;
+            let issue_type = IssueTypeId::generate(&mut source)?;
+            insert_old_project(&database, project.stored()).await?;
+            insert_old_issue_type(&database, issue_type, "Bug").await?;
+            for (issue, code) in [(first, "1"), (second, "2")] {
+                insert_old_issue(
+                    &database,
+                    (project.stored(), issue.stored()),
+                    issue_type,
+                    code,
+                )
+                .await?;
+            }
             // Each issue has the event of its change that the reader follows (the creation of a
             // real issue writes one); the first also gets its new title.
             for (issue, title) in [
@@ -159,10 +178,8 @@ mod tests {
                 "nothing is left to read"
             );
 
-            assert_eq!(
-                database.migrate_until(RULE_MIGRATION, at(3)).await?,
-                [RULE_MIGRATION]
-            );
+            let applied = database.migrate(at(3)).await?;
+            assert_eq!(applied.first(), Some(&RULE_MIGRATION));
             // The migration itself prepares nothing: the index is empty, and the reader reads no
             // event until the index has been made again.
             assert!(found(&storage, "muller", everywhere).await?.is_empty());

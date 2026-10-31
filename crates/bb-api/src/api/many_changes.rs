@@ -18,11 +18,13 @@ use bb_app::many_changes::{
     ManyChangeRunQuery, ManyChangeRunStatus, ManyChangeRunView, ManyChangeSkipped,
     ManyChangeTarget,
 };
+use bb_core::given::SetTo;
 use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
 use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
+use bb_core::time::Minutes;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -53,6 +55,14 @@ pub(crate) struct ManyChangeBody {
     status_button: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
+    /// A new *Estimated time*, in whole minutes; `null` takes it away.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<u32>, nullable)]
+    estimated_time: Option<SetTo<Minutes>>,
+    /// A new *Time left*, in whole minutes; `null` takes it away, so it is worked out again.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<u32>, nullable)]
+    time_left: Option<SetTo<Minutes>>,
     /// The IDs of the people the issues are assigned to from now on: all of them, not the ones to
     /// add.
     assigned_to: Option<Vec<String>>,
@@ -102,6 +112,8 @@ impl ManyChangeActionBody {
                     status: status_in(change.status.as_deref())?,
                     status_button: change.status_button,
                     priority: change.priority,
+                    estimated_time: change.estimated_time,
+                    time_left: change.time_left,
                     assigned_to: change
                         .assigned_to
                         .map(|people| {

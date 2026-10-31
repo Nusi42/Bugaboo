@@ -124,7 +124,7 @@ async fn read_back(target: &Target, folder: &std::path::Path) -> Result<Reading,
         seen: Vec::new(),
         web_list: None,
     };
-    let sample = create(&options, folder, target, &mut reading).await?;
+    let sample = Box::pin(create(&options, folder, target, &mut reading)).await?;
     sample.close().await;
     Ok(reading)
 }

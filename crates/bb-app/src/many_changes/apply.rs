@@ -65,6 +65,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     title: None,
                     status: change.status.clone(),
                     priority: change.priority,
+                    estimated_time: change.estimated_time,
+                    time_left: change.time_left,
                     assigned_to: change.assigned_to.clone(),
                     fields: change.fields.clone(),
                 },

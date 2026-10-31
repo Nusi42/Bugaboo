@@ -13,7 +13,7 @@ use bb_core::technical::TechnicalName;
 use bb_policy::{Permission, PersonRef};
 
 use super::scenarios::{a_project, text, token};
-use super::scenarios_issues::an_issue;
+use super::scenarios_issues::{an_issue, change_of};
 use super::world::{Outcome, World};
 use crate::auth::Started;
 use crate::comments::{AddComment, add_comment};
@@ -150,15 +150,11 @@ impl Crew {
         change_issue(
             &self.world.ctx(),
             ChangeIssue {
-                session_token: who.to_owned(),
-                issue: self.issue.to_string(),
-                version: self.version,
-                issue_type: None,
                 title,
                 status,
                 priority,
                 assigned_to,
-                fields: std::collections::BTreeMap::new(),
+                ..change_of(who, self.issue, self.version)
             },
         )
         .await

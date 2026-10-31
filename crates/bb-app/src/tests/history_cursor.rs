@@ -102,6 +102,8 @@ async fn changes(
                 title: last.then(|| title.to_owned()),
                 status: None,
                 priority: (!last).then_some(priority),
+                estimated_time: None,
+                time_left: None,
                 assigned_to: None,
                 fields: BTreeMap::new(),
             },

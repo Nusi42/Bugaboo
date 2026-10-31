@@ -10,9 +10,11 @@
 use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
+use bb_core::given::SetTo;
 use bb_core::id::{IssueId, IssueTypeId, LockToken, UserId};
 use bb_core::issue::{IssueIcon, IssueType, Priority};
 use bb_core::own_fields_value::OwnValues;
+use bb_core::time::Minutes;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
@@ -65,6 +67,10 @@ pub struct ChangeIssue {
     pub status: Option<StatusKey>,
     /// A new priority.
     pub priority: Option<Priority>,
+    /// A new *Estimated time*; `SetTo::Nothing` takes it away.
+    pub estimated_time: Option<SetTo<Minutes>>,
+    /// A new *Time left* as typed; `SetTo::Nothing` takes it away, so it is worked out again.
+    pub time_left: Option<SetTo<Minutes>>,
     /// The people it is assigned to from now on (all of them, not the ones to add).
     pub assigned_to: Option<Vec<UserId>>,
     /// The values of own fields to set, by the key of the field; `null` takes a value away. A
@@ -199,6 +205,12 @@ pub struct IssueView {
     /// How important it is.
     #[masked(field = "priority")]
     pub priority: Priority,
+    /// *Estimated time*, in whole minutes; none until somebody gives one.
+    #[masked(field = "estimated-time")]
+    pub estimated_time: Option<Minutes>,
+    /// *Time left* as somebody typed it, in whole minutes; none while it is worked out.
+    #[masked(field = "time-left")]
+    pub time_left: Option<Minutes>,
     /// Who made it.
     #[masked(field = "reported-by", nested)]
     pub reported_by: PersonRef,

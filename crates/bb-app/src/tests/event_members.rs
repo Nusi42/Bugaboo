@@ -45,6 +45,8 @@ fn issue(ids: &mut SystemIds) -> Issue {
         description: "A text".to_owned(),
         status: key("open"),
         priority: Priority::High,
+        estimated_time: None,
+        time_left: None,
         reported_by: UserId::generate(ids),
         created_at: Timestamp::UNIX_EPOCH,
         updated_at: Timestamp::UNIX_EPOCH,

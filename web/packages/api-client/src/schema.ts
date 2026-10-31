@@ -4257,6 +4257,11 @@ export interface components {
       /** @description The IDs of the people it is assigned to from now on: all of them, not the ones to add. */
       assigned_to?: string[] | null;
       /**
+       * Format: int32
+       * @description A new *Estimated time*, in whole minutes; `null` takes it away.
+       */
+      estimated_time?: number | null;
+      /**
        * @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
        *     A long text is saved on its own route, under its edit lock.
        */
@@ -4271,6 +4276,12 @@ export interface components {
        *     the closed date; leaving it clears it.
        */
       status?: string | null;
+      /**
+       * Format: int32
+       * @description A new *Time left*, in whole minutes, which counts until it is taken away; `null` takes it
+       *     away, and it is worked out from the estimate and the time spent again.
+       */
+      time_left?: number | null;
       /** @description A new title. */
       title?: string | null;
       /**
@@ -5573,6 +5584,11 @@ export interface components {
       created_at?: string | null;
       /** @description The long text, in Markdown. */
       description?: string | null;
+      /**
+       * Format: int32
+       * @description *Estimated time*, in whole minutes; left out while it has none.
+       */
+      estimated_time?: number | null;
       /** @description The internal ID, which never changes. */
       id?: string | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
@@ -5593,6 +5609,12 @@ export interface components {
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
+      /**
+       * Format: int32
+       * @description *Time left* as somebody typed it, in whole minutes; left out while nobody did and it is
+       *     worked out from the estimate and the time spent.
+       */
+      time_left?: number | null;
       /** @description What it is about. */
       title?: string | null;
       /**
@@ -6064,6 +6086,11 @@ export interface components {
        *     add.
        */
       assigned_to?: string[] | null;
+      /**
+       * Format: int32
+       * @description A new *Estimated time*, in whole minutes; `null` takes it away.
+       */
+      estimated_time?: number | null;
       /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
       fields?: {
         [key: string]: unknown;
@@ -6080,6 +6107,11 @@ export interface components {
        *     another change to that status.
        */
       status_button?: string | null;
+      /**
+       * Format: int32
+       * @description A new *Time left*, in whole minutes; `null` takes it away, so it is worked out again.
+       */
+      time_left?: number | null;
     };
     /** @description What a row of the preview says will happen to the issue. */
     ManyChangeDetailBody:

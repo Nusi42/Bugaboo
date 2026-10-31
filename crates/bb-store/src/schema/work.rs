@@ -52,6 +52,8 @@ pub(crate) enum IssueRow {
     Description,
     Status,
     Priority,
+    EstimatedTime,
+    TimeLeft,
     ReportedBy,
     CreatedAt,
     UpdatedAt,

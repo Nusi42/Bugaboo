@@ -25,6 +25,24 @@ use crate::many_changes::{
 };
 use crate::offers::{ChangeOffers, OfferChange, change_offers};
 
+/// A change of `issue` by `who` on `version` that changes nothing yet: the fields a test changes
+/// are set over it (`ChangeIssue { title, ..change_of(…) }`).
+pub(crate) fn change_of(who: &str, issue: IssueId, version: i64) -> ChangeIssue {
+    ChangeIssue {
+        session_token: who.to_owned(),
+        issue: issue.to_string(),
+        version,
+        issue_type: None,
+        title: None,
+        status: None,
+        priority: None,
+        estimated_time: None,
+        time_left: None,
+        assigned_to: None,
+        fields: std::collections::BTreeMap::new(),
+    }
+}
+
 /// An issue type of the first start: *Task*, which uses the workflow *Simple*, where any status can
 /// follow any other.
 pub(crate) async fn a_type(world: &World) -> Result<IssueTypeId, String> {
@@ -106,6 +124,8 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 title: Some("The login button does nothing at all".to_owned()),
                 status: Some(starter::done()),
                 priority: None,
+                estimated_time: None,
+                time_left: None,
                 assigned_to: None,
                 fields: std::collections::BTreeMap::new(),
             },

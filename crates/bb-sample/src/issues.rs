@@ -495,6 +495,8 @@ impl Maker<'_, '_> {
                                 .map_err(|error| SampleError::NotMade(error.to_string()))?,
                         ),
                         priority: None,
+                        estimated_time: None,
+                        time_left: None,
                         // A change that asks for the person who does the work: the person who
                         // makes it does.
                         assigned_to: carried.clone(),

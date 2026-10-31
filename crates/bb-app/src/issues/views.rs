@@ -342,6 +342,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             status,
             status_changes,
             priority: issue.priority,
+            estimated_time: issue.estimated_time,
+            time_left: issue.time_left,
             reported_by,
             assigned_to: people,
             created_at: issue.created_at,

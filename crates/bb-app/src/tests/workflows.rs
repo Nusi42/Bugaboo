@@ -35,6 +35,8 @@ pub(super) fn change(
                 .map_err(|error| AppError::Internal(error.to_string()))?,
         ),
         priority: None,
+        estimated_time: None,
+        time_left: None,
         assigned_to: None,
         fields: BTreeMap::new(),
     })

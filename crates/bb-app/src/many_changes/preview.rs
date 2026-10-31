@@ -37,6 +37,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             ManyChangeAction::Change { change } => {
                 if change.status.is_none()
                     && change.priority.is_none()
+                    && change.estimated_time.is_none()
+                    && change.time_left.is_none()
                     && change.assigned_to.is_none()
                     && change.fields.is_empty()
                 {
