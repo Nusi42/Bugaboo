@@ -6,17 +6,17 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M6, Time and working hours, [plan](milestones/M6/README.md): 12 work packages in 4 waves. Every recommendation of the plan's questions M6-Q1 to M6-Q13 is taken. Its first package is the theme structure of the sister project (M5-F167).
 - **Done:** M0 to M5 (`m0-done` to `m5-done`).
-- **Wave:** none is running. Wave 1 (WP-01 to WP-04) has not been started, and nothing of it is committed.
+- **Wave:** 1 is running: WP-02, WP-03 and WP-04 are building (started 2026-10-31); the lead writes WP-01.
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M6)
 
 | WP | Name | State | Folder / branch | Notes |
 |----|------|-------|-----------------|-------|
-| WP-01 | Decision records, words, the security chapter, the UX gaps, the maintainer's answers | planned (lead) | `win1` / `WIN1` | Wave 1; must be merged before wave 2 starts |
-| WP-02 | Theme files like the sister project | planned | `win2` / `WIN2` | Wave 1; first code package, merged first |
-| WP-03 | Dates, the time of day and the person's day | planned | `win3` / `WIN3` | Wave 1 |
-| WP-04 | Speed edges and quiet upkeep | planned | `win4` / `WIN4` | Wave 1 |
+| WP-01 | Decision records, words, the security chapter, the UX gaps, the maintainer's answers | building (lead) | `win1` / `WIN1` | Wave 1; must be merged before wave 2 starts |
+| WP-02 | Theme files like the sister project | building | `win2` / `WIN2` | Wave 1; first code package, merged first |
+| WP-03 | Dates, the time of day and the person's day | building | `win3` / `WIN3` | Wave 1 |
+| WP-04 | Speed edges and quiet upkeep | building | `win4` / `WIN4` | Wave 1 |
 | WP-05 | Time on issues on the server | planned | `win2` / `WIN2` | Wave 2 |
 | WP-06 | Working hours on the server | planned | `win3` / `WIN3` | Wave 2 |
 | WP-07 | Estimates and totals | planned | `win4` / `WIN4` | Wave 2 |
@@ -44,7 +44,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-Start M6 wave 1 (WP-01 to WP-04) from `main`. `win2` holds the M5 picture helpers on the local branch `shots`.
+Wave 1 of M6 runs: the builders of WP-02, WP-03 and WP-04 work in `win2` to `win4`; the lead writes WP-01 in `win1`. WP-02 is merged first. `win2` holds the M5 picture helpers on the local branch `shots`.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
