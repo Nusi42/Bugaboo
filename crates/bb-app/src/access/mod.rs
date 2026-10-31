@@ -24,7 +24,7 @@ use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
-use bb_policy::guards::{Refusal, ensure_may_give};
+use bb_policy::guards::{Refusal, ensure_no_escalation};
 use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve};
 
 pub use bb_policy::{
@@ -632,7 +632,7 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
                 !(held.project == row.project && held.applies_to == AppliesTo::Project)
             });
         }
-        ensure_may_give(&evaluate(&inputs), &record.permissions).map_err(S::refused)?;
+        ensure_no_escalation(&evaluate(&inputs), &record.permissions).map_err(S::refused)?;
     }
     Ok(())
 }

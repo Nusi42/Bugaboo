@@ -21,6 +21,7 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// signed in. Defined once, here
 /// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
+// The last two entries are the permissions of working hours, `OF_WORKING_HOURS` below.
 pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageInvitations,
     Permission::ManagePeople,

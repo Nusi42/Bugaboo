@@ -175,3 +175,84 @@ async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_dec
     })
     .await
 }
+
+/// A member of the organization who holds `role` for the whole organization.
+async fn holding(org: &Org<'_>, email: &str, role: RoleId) -> Run<Member> {
+    let started = org.rig.person(&org.admin.session, email).await?;
+    let member = Member {
+        id: started.person.id,
+        session: started.session_token,
+    };
+    org.give_everywhere(&member, role).await?;
+    Ok(member)
+}
+
+#[tokio::test]
+async fn sec_02_the_administrator_pair_puts_the_permissions_of_working_hours_back_on_a_role()
+-> TestResult {
+    each_database("sec_02_working_hours_back", async |db| {
+        let rig = Rig::start(db).await?;
+        let org = Org::start(&rig).await?;
+        let of_working_hours = bb_policy::OF_WORKING_HOURS.to_vec();
+        let logged = rig.database.security_log_entries(0, 10_000).await?.len();
+        // The administrator holds neither permission and puts both on a role of their own.
+        let payroll = org.role("Payroll", &of_working_hours).await?;
+        assert_eq!(payroll.permissions, {
+            let mut sorted = of_working_hours.clone();
+            sorted.sort();
+            sorted
+        });
+        // HR stripped of them, and reset to the starting permissions.
+        let hr = role_named(&org, "HR").await?;
+        let stripped = org
+            .rig
+            .api()
+            .change_role(
+                Rig::info(),
+                ChangeRole {
+                    session_token: org.admin.session.clone(),
+                    role: hr.id,
+                    version: hr.version,
+                    name: None,
+                    permissions: Some(Vec::new()),
+                    two_step: None,
+                },
+            )
+            .await?
+            .into_value();
+        assert!(stripped.permissions.is_empty());
+        let reset = org
+            .rig
+            .api()
+            .reset_role(
+                Rig::info(),
+                ResetRole {
+                    session_token: org.admin.session.clone(),
+                    role: hr.id,
+                    version: stripped.version,
+                },
+            )
+            .await?
+            .into_value();
+        assert_eq!(reset.permissions, StartingRole::Hr.permissions());
+        // Every one of these changes is in the security log.
+        let actions: Vec<String> = rig
+            .database
+            .security_log_entries(0, 10_000)
+            .await?
+            .into_iter()
+            .skip(logged)
+            .map(|entry| entry.action.as_str().to_owned())
+            .collect();
+        assert!(actions.len() >= 3, "{actions:?}");
+        // Somebody who manages roles but does not decide who has which role is still refused.
+        let makers = org.role("Role makers", &[Permission::ManageRoles]).await?;
+        let maker = holding(&org, "maker@example.test", makers.id).await?;
+        let refusal = org
+            .create_role(&maker, "Own payroll", &of_working_hours)
+            .await;
+        assert_eq!(refused(refusal), Some(ErrorCode::TooMuch));
+        Ok(())
+    })
+    .await
+}

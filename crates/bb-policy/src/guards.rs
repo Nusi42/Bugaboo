@@ -8,11 +8,11 @@
 //! - **No escalation:** a person can add a permission to a role, or give a role, only when they
 //!   hold every permission of it at that place themselves. Enforced by: the tests
 //!   `sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role` and
-//!   `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`. Giving has one exception, for the
-//!   permissions of working hours that nobody holds at the start (ADR-0025, amendment M6): a person
-//!   who holds both *Manage roles* and *Decide who has which role* for the whole organization gives
-//!   a role with them without holding them ([`ensure_may_give`]). Enforced by: the test
-//!   `sec_02_a_person_who_decides_every_role_gives_hr_without_holding_its_permissions`.
+//!   `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`. The rule has one exception, for
+//!   the permissions of working hours that nobody holds at the start (ADR-0025, amendment M6): a
+//!   person who holds both *Manage roles* and *Decide who has which role* for the whole organization
+//!   gives, adds and resets them without holding them ([`ensure_no_escalation`]). Enforced by: the test
+//!   `sec_02_a_person_who_decides_every_role_gives_adds_and_resets_hr_without_holding_its_permissions`.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -206,9 +206,16 @@ fn counting_here(
     })
 }
 
-/// A person may add permissions to a role, or give a role, only when they hold all of them at
-/// that place themselves. `held` is the evaluation of the person at the place; `wanted` the
-/// permissions to be added or the permissions of the role to be given.
+/// A person may add permissions to a role, give a role, or reset one to its starting permissions,
+/// only when they hold all of them at that place themselves. `held` is the evaluation of the person
+/// at the place; `wanted` the permissions to be added or the permissions of the role.
+///
+/// The one exception, decided here and nowhere else (ADR-0025, amendment M6): a person who holds
+/// both *Manage roles* and *Decide who has which role* for the whole organization (the pair of the
+/// last-administrator rule) needs not hold the permissions of working hours
+/// ([`OF_WORKING_HOURS`]). Nobody holds them at the start, so without it nobody could give *HR*,
+/// nor put them back on a role after *HR* was deleted or stripped; it adds no power, because the
+/// pair can give *HR* anyway.
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] when one of them is missing from the person.
@@ -216,31 +223,18 @@ pub fn ensure_no_escalation(
     held: &Evaluation,
     wanted: &BTreeSet<Permission>,
 ) -> Result<(), Refusal> {
-    if counting_here(wanted, held.place()).all(|permission| held.allows(permission)) {
-        Ok(())
-    } else {
-        Err(Refusal::TooMuch)
-    }
-}
-
-/// Whether the person may give a role with `role` (its permissions): [`ensure_no_escalation`],
-/// except that a person who holds both *Manage roles* and *Decide who has which role* for the whole
-/// organization (the pair of the last-administrator rule) needs not hold the permissions of
-/// working hours ([`OF_WORKING_HOURS`]): nobody holds them at the start, so without the exception
-/// nobody could ever give *HR* (ADR-0025, amendment M6).
-/// Adding those permissions to a role keeps the rule: only who holds them adds them.
-///
-/// # Errors
-/// [`Refusal::TooMuch`] when a permission of the role is missing from the person.
-pub fn ensure_may_give(held: &Evaluation, role: &BTreeSet<Permission>) -> Result<(), Refusal> {
     let decides_every_role = held.place() == Place::Organization
         && MANAGE_AND_DECIDE
             .iter()
             .all(|permission| held.allows(*permission));
-    let wanted: BTreeSet<Permission> = role
-        .iter()
-        .copied()
-        .filter(|permission| !(decides_every_role && OF_WORKING_HOURS.contains(permission)))
-        .collect();
-    ensure_no_escalation(held, &wanted)
+    let excepted =
+        |permission: &Permission| decides_every_role && OF_WORKING_HOURS.contains(permission);
+    if counting_here(wanted, held.place())
+        .filter(|permission| !excepted(permission))
+        .all(|permission| held.allows(permission))
+    {
+        Ok(())
+    } else {
+        Err(Refusal::TooMuch)
+    }
 }
