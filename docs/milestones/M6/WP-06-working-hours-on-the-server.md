@@ -43,7 +43,7 @@ Each person records when their work day started and ended and their breaks, as G
 - `time_12_an_administrator_does_not_see_working_hours_until_given_hr`.
 - `priv_09_every_change_of_who_sees_working_hours_is_in_the_security_log`.
 - `priv_09_working_hours_are_in_no_search_list_or_order` (the search catalogue has no field of work days; no route of work days takes an order).
-- SEC-MATRIX: the entry points `work-days` and `others-working-hours`, every role and the *HR* group, both databases.
+- SEC-MATRIX: the routes of work days and of *Working hours of others*, every role and the *HR* group, both databases.
 
 ## Checks
 

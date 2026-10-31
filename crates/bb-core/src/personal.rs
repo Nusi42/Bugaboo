@@ -21,7 +21,7 @@ words! {
         Activity => "activity",
         /// Where a person works: their groups and the roles they have, and where (ADR-0025).
         Organization => "organization",
-        /// What a person wrote: comments, descriptions, reasons.
+        /// What a person wrote: comments, descriptions, the reasons of other changes.
         Content => "content",
         /// Time at work: work days and breaks, time entries with their notes and accounting
         /// fields, the running timer, and the reasons for changing a past work day (ADR-0035).

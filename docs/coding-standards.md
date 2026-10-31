@@ -60,8 +60,8 @@ touches** against this list, and a finding blocks the merge until it is fixed:
 - **Knowledge kept in two places by hand** and held together only by a test that compares
   them (SSOT). Generate one from the other, or read both from one file.
   **Approved exceptions** are the ones an ADR names, each held together by test vectors that
-  are generated from one side (not written by hand) and checked by a named check. Today there is
-  one approval, recorded in the amendment of
+  are generated from one side (not written by hand) and checked by a named check. Today there are
+  two approvals. The first is recorded in the amendment of
   [ADR-0033](adr/0033-notifications-and-e-mail.md): (1) the region-dependent writing of dates,
   numbers and time zones, kept in two implementations (Rust for e-mail, `Intl` in the browser,
   because the choice *device* cannot run on the server), and (2) the synchronous TypeScript
@@ -69,8 +69,12 @@ touches** against this list, and a finding blocks the merge until it is fixed:
   which stay beside the shared Rust wording. Both are checked against the vectors that
   `cargo xtask gen word-vectors` writes from Rust: DOC-GENERATED fails when the file differs from
   the code, and the browser test `web/app/src/shared/value-words.test.ts` fails when the screen
-  writes a case differently. A reviewer does not record these as findings; any other pair is a
-  finding.
+  writes a case differently. The second is recorded in
+  [ADR-0035](adr/0035-time-on-issues-and-working-hours.md), decision 4: the worked-out *Time left*
+  of `bb-core` and its one SQL expression in the search compiler, held together by
+  `tools/testdata/time-left.json`, which `cargo xtask gen time-vectors` writes from `bb-core`
+  (DOC-GENERATED) and the two-database test `time_03_the_compiled_time_left_matches_the_vectors`
+  reads. A reviewer does not record these as findings; any other pair is a finding.
 - **A magic number or string** that names a rule (a limit, a size, a timeout, a key) instead
   of a named constant from its single home.
 - **Common bad patterns:** a function that does several unrelated things; a long parameter

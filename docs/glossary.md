@@ -143,13 +143,13 @@ Rules:
 | **Activity**             | What kind of work a time entry was: *Development, Testing, Documentation, Meetings, Support* | work type, category, task type |
 | **Cost center**          | The accounting unit that pays for the work (Kostenstelle)          | cost object, account code          |
 | **Switch issue**         | Start the timer on another issue while one runs: the time so far is saved on the first issue, with its defaults, without a window | swap timer, change task (in UI) |
-| **Change start time**    | Set when the running timer started: never in the future, never before the end of your last time entry | edit timer, adjust timer (in UI) |
+| **Change start time**    | Set when the running timer started; the bounds are in ADR-0035, decision 3 | edit timer, adjust timer (in UI) |
 | **Throw away** (of a timer) | Stop the timer without saving any time                          | discard, cancel timer (in UI)      |
 | **Add time**             | Book a time entry by hand, with a date and a length, without a timer | log time, log work, manual entry (in UI) |
 | **Book time**            | The project permission to book your own time on an issue you can see, and to change and delete your own time entries | log time (in UI) |
 | **Billable**             | A mark on a time entry: time that can be charged to a customer. Shown only after an administrator switches it on | chargeable, invoiceable (in UI) |
 | **Booked on issues**     | The line of the timesheet with the time you booked on issues each day | logged (in UI)                  |
-| **Working hours not booked on issues** | The line of the timesheet with your working hours minus the time booked on issues each day, so gaps are easy to spot | idle time, unaccounted time (in UI) |
+| **Working hours not booked on issues** | The line of the timesheet with your working hours minus the time booked on issues each day, so gaps are easy to spot | idle time, unaccounted time, productivity, overtime score (in UI) |
 | **Preset** (of the working-time rules) | A ready set of working-time rules an organization starts from: *Germany* (the German Working Hours Act) or *No rules*. Administrators may change each number | compliance profile (in UI) |
 | **Reason** (for a change of a past day) | What a person writes, in their own words, when they change a work day that is past; it stays in the history of the day with the old value | justification (in UI) |
 
@@ -223,11 +223,11 @@ Rules:
 | **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |
 | **Work times**           | A person's usual work days, work hours, shares in projects and away times; also the kind of people information that says who may see them | availability, capacity (in UI) |
 | **Enter work times for others** | The permission to enter usual work days, work hours and away times for other people | — |
-| **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, employee monitoring, productivity, overtime score, ranking (in UI) |
+| **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, team hours, staff hours, timesheets of others (in UI) |
 | **See working hours of others** | The organization permission to see other people's working hours. Nobody has it at the start, also not *Administrator* | — |
-| **Change working hours of others** | The organization permission to change other people's work days, always with a reason; the person is told | — |
-| **Totals only**          | An organization setting: *Working hours of others* shows each person's week total and never days, starts, ends or breaks | aggregate mode (in UI) |
-| **HR**                   | The starting role with *See working hours of others* and *Change working hours of others*. Nobody has it at the start; an administrator gives it to a group, for example *Payroll* | human resources, personnel (as the role) |
+| **Change working hours of others** | The organization permission to change other people's work days; when a change asks for a reason and who is told is in ADR-0035, decision 7 | — |
+| **Totals only**          | An organization setting: for people who may only see them, *Working hours of others* shows each person's week total and never days, starts, ends or breaks | aggregate mode (in UI) |
+| **HR**                   | The starting role with *See working hours of others* and *Change working hours of others*. Nobody has it at the start; an administrator gives it, usually to a group such as *Payroll* | human resources, personnel (as the role) |
 | **Usual work days**      | The days of the week a person normally works, for example Monday to Thursday | work pattern, schedule (in UI) |
 | **Work hours**           | How many hours a person works on a usual work day, from their work contract | capacity, FTE (in UI) |
 | **Share in the project** | How much of a person's work hours belong to one project, for example 60 % | allocation, utilization (in UI) |
@@ -326,6 +326,6 @@ Rules:
 | Control plane       | Our separate system that creates, updates, backs up and monitors served instances; it holds no customer data |
 | Operator            | Us, when running served instances; our staff have no default access to customer data |
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
-| Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`). A work day belongs to the person's day it starts on and keeps its zone; a time entry's date is the person's day of its start (ADR-0035) |
+| Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`); how work days and time entries use it is ADR-0035, decision 5 |
 | Starter fields      | Own fields that Bugaboo makes at the first start and on upgrade, like *Activity* and *Cost center* of time entries; found by a stable mark, never by their name, and changed by administrators like any own field |
 | Time spent port     | `TimeSpentStore`: how code outside the module of time entries reads minutes booked on issues, for the issues the caller passes or a compiled search finds, and one person's minutes per date (ADR-0035, decision 4) |

@@ -102,7 +102,7 @@ Migrations get their numbers from the lead, in the order of merging. Ports come 
 - **TXT-DATES** (new, planned → active, WP-03): a date, a moment, a time of day and a length of time on a screen are written only by the shared helpers; no `Intl.DateTimeFormat`, `toLocaleDateString`, `toLocaleTimeString` or `toLocaleString` of a date elsewhere in `web/`.
 - **STY-CONTRAST** grows (WP-02, WP-08): it reads every theme file; a fill that carries no text (the label squares) has its own, looser line (M5-F149).
 - **DOC-GENERATED** grows (WP-02): the sheets and names are the output of the base file and the theme files.
-- **SEC-MATRIX** grows (WP-05, WP-06, WP-07): the entry points `time-entries`, `timer`, `work-days` and `others-working-hours`; *Time spent* and the totals under field levels and visibility.
+- **SEC-MATRIX** grows (WP-05, WP-06, WP-07): the routes of time entries, the timer, work days and *Working hours of others*; *Time spent* and the totals under field levels and visibility.
 - **ARCH-PERMS** grows (WP-05, WP-06): *Book time*, *See working hours of others*, *Change working hours of others*.
 - **DATA-MARKS** grows (WP-05, WP-06): every new table marked; working hours and time entries `employee_time`.
 - **PERF-N1** grows (WP-05, WP-06, WP-07, WP-10): every new list route counts its statements.

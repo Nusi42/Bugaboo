@@ -122,12 +122,12 @@ sequenceDiagram
 
 The decisions are [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md), decisions 5 to 8; this is how a work day moves through the server (`bb-app::working_hours`, the rules in `bb_core::working_time`).
 
-1. *Start work day* creates a work-day record for the person's day of now (the person, the start, the time zone of the person). If the person's last work day was never ended, the browser first asks when it ended, and that answer is a change of a past day (step 4) before the new day starts.
+1. *Start work day* creates a work-day record for the person's day of now (the person, the start, the time zone of the person), or reopens that day with a new period when it was ended already (ADR-0035, decision 5). If the person's last work day was never ended, the browser first asks when it ended, and that answer is a change of a past day (step 4) before the new day starts.
 2. *Start break*, *End break* and *End work day* add to the same record; the timesheet's *Work day* rows take the same values typed later. Every change is a command with a version and an event (ARCH-VERSIONED, ARCH-EVENTS).
 3. In the same change, the **working-time rules** of the organization (the numbers of its preset, from the settings registry) are checked for the day and the days next to it. Broken rules become warnings stored with the day; nothing is blocked.
-4. A change of a day that is past (from the day after its date on, in the zone of the day) carries a **reason**. The event keeps the old values and the reason; when the person who changes it is not the person of the day, the notifications reader tells that person (ADR-0033).
-5. The page *Working hours of others* reads another person's days only for a holder of *See working hours of others*, and only their week totals while *Totals only* is on; a change there needs *Change working hours of others* and goes through steps 2 to 4.
-6. The daily job `working-hours.delete-old` deletes the work days older than the keep period, with their breaks and the events of their changes (ADR-0017, amendment M6).
+4. A change that asks for a **reason** (ADR-0035, decision 7) carries it; the event keeps the old values and the reason, and when the person who changes it is not the person of the day, the notifications reader tells that person (ADR-0033).
+5. The page *Working hours of others* reads another person's days only for a holder of *See working hours of others*, as *Totals only* allows (ADR-0035, decision 8); a change there needs *Change working hours of others* and goes through steps 2 to 4.
+6. The daily job `working-hours.delete-old` deletes the work days older than the keep period (ADR-0035, decision 7), with their breaks and the events of their changes (ADR-0017, amendment M6).
 
 ## Removing a person (GDPR)
 
