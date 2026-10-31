@@ -20,6 +20,7 @@ mod docs;
 mod fakecc;
 #[path = "gen/mod.rs"]
 mod generate;
+mod git_identity;
 mod hook;
 mod load;
 mod location;
@@ -338,7 +339,7 @@ fn run() -> anyhow::Result<ExitCode> {
                 CheckScope::Push => runner::Scope::Push,
                 CheckScope::All => runner::Scope::All,
                 CheckScope::Only { ids } => runner::Scope::Only(ids),
-                CheckScope::CommitMsg { file } => return commit_msg(&file),
+                CheckScope::CommitMsg { file } => return commit_msg(&repo, &file),
             };
             let passed = runner::run(&repo, &catalog, &registry, &scope)?;
             Ok(if passed {
@@ -386,8 +387,8 @@ fn request_of(kind: DatasetKind) -> dataset::Request {
 }
 
 /// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG and SEC-PRIVATE).
-fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
-    let problems = commit_message_problems(file)?;
+fn commit_msg(repo: &repo::Repo, file: &std::path::Path) -> anyhow::Result<ExitCode> {
+    let problems = commit_message_problems(repo, file)?;
     for problem in &problems {
         output::info(problem);
     }
@@ -398,10 +399,15 @@ fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
     })
 }
 
-/// What is wrong with a commit message file: the form of the subject and what is private in it.
-fn commit_message_problems(file: &std::path::Path) -> anyhow::Result<Vec<String>> {
+/// What is wrong with a commit about to be recorded: the form of the message, what is private in
+/// it, and the author and committer it will have.
+fn commit_message_problems(
+    repo: &repo::Repo,
+    file: &std::path::Path,
+) -> anyhow::Result<Vec<String>> {
     let mut problems = checks::git_commit_msg::check_file(file)?;
     problems.extend(checks::sec_private::message_problems(file)?);
+    problems.extend(checks::sec_private::recorded_identity_problems(repo));
     Ok(problems)
 }
 
@@ -412,10 +418,21 @@ mod tests {
     #[test]
     fn the_commit_message_hook_reads_the_form_and_what_is_private() {
         let temp = testutil::TempDir::new("commit-message-hook");
-        let problems = |text: &str| commit_message_problems(&temp.write("MSG", text)).unwrap();
+        assert!(temp.git(&["init", "--quiet"]));
+        let identity = |name: &str, email: &str| {
+            assert!(temp.git(&["config", "user.name", name]));
+            assert!(temp.git(&["config", "user.email", email]));
+        };
+        identity("mira", "1+mira@users.noreply.github.com");
+        let repo = repo::Repo::at(temp.path().to_path_buf());
+        let problems =
+            |text: &str| commit_message_problems(&repo, &temp.write("MSG", text)).unwrap();
         assert!(problems("fix(web): x\n\nCo-Authored-By: someone\n").is_empty());
         assert_eq!(problems("wip\n").len(), 1);
         assert_eq!(problems("fix: x\n\nClaude-Session: made-up\n").len(), 1);
+        // The author and the committer about to be recorded: a private address is refused.
+        identity("Mira Made-Up", "mira@example.test");
+        assert_eq!(problems("fix(web): x\n").len(), 2);
     }
 
     fn parses(arguments: &[&str]) -> bool {

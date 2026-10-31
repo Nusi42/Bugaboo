@@ -39,6 +39,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
     }
     install_npm(root)?;
     install_browsers(root)?;
+    crate::git_identity::copy_into(repo);
     install_git_hooks(root)
 }
 

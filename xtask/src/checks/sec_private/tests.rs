@@ -14,7 +14,10 @@ fn machine() -> PrivateWords {
         "HOSTNAME" => Some("Admin".to_owned()),
         _ => None,
     };
-    PrivateWords::from_sources(variables, Some("# mine\n\nQuuxcorp\nMüller\n"))
+    PrivateWords::from_sources(
+        variables,
+        Some("# mine\n\nQuuxcorp\nMüller\nMira Made-Up\nmira@example.test\n"),
+    )
 }
 
 fn fixture(kind: &str, name: &str) -> String {
@@ -67,6 +70,11 @@ fn bad_example_page_links() {
 #[test]
 fn bad_example_private_words() {
     assert_every_line_breaks("private-words.txt", Rule::PrivateWord);
+}
+
+#[test]
+fn bad_example_entries_of_the_list_with_several_words_and_addresses() {
+    assert_every_line_breaks("private-entries.txt", Rule::PrivateWord);
 }
 
 #[test]
@@ -495,13 +503,13 @@ fn the_session_line_is_removed_from_a_memory_note_and_nothing_else() {
         ".claude/memory/note.md",
         format!("---\nname: n\n{MEMORY_SESSION_KEY}: 0123456789abcdef\n---\r\nBody\n"),
     );
-    assert!(strip_memory_session(&note).unwrap());
+    assert!(strip_generated_keys(&note).unwrap());
     assert_eq!(
         fs::read_to_string(&note).unwrap(),
         "---\nname: n\n---\r\nBody\n"
     );
     // A second run has nothing to do.
-    assert!(!strip_memory_session(&note).unwrap());
+    assert!(!strip_generated_keys(&note).unwrap());
 }
 
 #[test]
@@ -510,8 +518,134 @@ fn other_files_keep_their_text() {
     let text = format!("{MEMORY_SESSION_KEY}: 0123456789abcdef\n");
     let elsewhere = temp.write("docs/note.md", &text);
     let not_markdown = temp.write(".claude/memory/note.txt", &text);
-    assert!(!strip_memory_session(&elsewhere).unwrap());
-    assert!(!strip_memory_session(&not_markdown).unwrap());
+    assert!(!strip_generated_keys(&elsewhere).unwrap());
+    assert!(!strip_generated_keys(&not_markdown).unwrap());
     assert_eq!(fs::read_to_string(&elsewhere).unwrap(), text);
-    assert!(!strip_memory_session(&temp.path().join(".claude/memory/none.md")).unwrap());
+    assert!(!strip_generated_keys(&temp.path().join(".claude/memory/none.md")).unwrap());
+}
+
+/// A list with entries of every kind, for the tests of the list.
+fn listed(entries: &str) -> PrivateWords {
+    PrivateWords::from_sources(|_: &str| None, Some(entries))
+}
+
+#[test]
+fn bad_example_entries_with_several_words_and_addresses() {
+    let words = listed("Mira Made-Up\nmira@example.test\n@corp.example.test\n");
+    for found in [
+        "by Mira Made-Up today",
+        "mira  made-up",
+        "mira_made-up",
+        "MIRA-MADE-UP",
+        "mail MIRA@example.test now",
+        "<mira@example.test>",
+        "anyone@corp.example.test",
+    ] {
+        assert!(has_word(&words, found), "{found}");
+    }
+    for missed in [
+        "mira",
+        "made-up",
+        "mira made",
+        "xmira@example.test",
+        "mira@example.testing",
+        "mira@example.com",
+    ] {
+        assert!(!has_word(&words, missed), "{missed}");
+    }
+}
+
+#[test]
+fn a_private_word_is_allowed_inside_a_github_form_only() {
+    let words = listed("zanzibar\n");
+    for public in [
+        "https://github.com/Zanzibar42/Repo",
+        "git@github.com:zanzibar42/repo.git",
+        "167581605+Zanzibar42@users.noreply.github.com",
+        "zanzibar42@users.noreply.github.com",
+    ] {
+        assert!(!has_word(&words, public), "{public}");
+    }
+    for private in [
+        "Zanzibar42",
+        "zanzibar42@example.test",
+        "https://github.com/other/zanzibar-notes",
+        "zanzibar and github.com/zanzibar42",
+    ] {
+        assert!(has_word(&words, private), "{private}");
+    }
+}
+
+#[test]
+fn another_file_can_be_named_for_the_list_and_must_exist() {
+    let temp = TempDir::new("private-list-named");
+    let list = temp.write("elsewhere.txt", "Quuxcorp\n");
+    let named = list.to_string_lossy().into_owned();
+    let with = |value: String| move |name: &str| (name == WORDS_VARIABLE).then(|| value.clone());
+    let (words, problem) = PrivateWords::from_home(None, with(named));
+    assert!(problem.is_none() && has_word(&words, "quuxcorp"));
+    // A file that is named and missing is a problem: the guard would find nothing.
+    let missing = temp.path().join("none.txt").to_string_lossy().into_owned();
+    let (_, problem) = PrivateWords::from_home(None, with(missing));
+    assert!(problem.is_some());
+}
+
+#[test]
+fn a_memory_note_with_the_session_key_is_refused_with_or_without_a_value() {
+    let temp = TempDir::new("private-memory-key");
+    let note = ".claude/memory/note.md".to_owned();
+    for text in [
+        format!("---\nname: n\n{MEMORY_SESSION_KEY}: abc\n---\n"),
+        format!("---\nname: n\n{MEMORY_SESSION_KEY}:\n---\n"),
+    ] {
+        temp.write(&note, &text);
+        let found = scan_files(temp.path(), std::slice::from_ref(&note), &machine(), &[]);
+        assert_eq!(found.len(), 1, "{text:?}");
+        assert_eq!(
+            found[0].location.as_deref(),
+            Some("{}:3".replace("{}", &note).as_str())
+        );
+    }
+    temp.write(&note, "---\nname: n\n---\nfine\n");
+    assert!(scan_files(temp.path(), &[note], &machine(), &[]).is_empty());
+}
+
+/// Commits in `temp` with this identity (the environment decides over the settings of the
+/// helper).
+fn commit_as(temp: &TempDir, name: &str, email: &str) {
+    let done = std::process::Command::new("git")
+        .args(["commit", "--quiet", "--allow-empty", "-m", "chore: more"])
+        .env("GIT_AUTHOR_NAME", name)
+        .env("GIT_AUTHOR_EMAIL", email)
+        .env("GIT_COMMITTER_NAME", name)
+        .env("GIT_COMMITTER_EMAIL", email)
+        .current_dir(temp.path())
+        .status()
+        .unwrap();
+    assert!(done.success());
+}
+
+#[test]
+fn the_check_reads_the_author_and_committer_of_commits_not_on_a_remote() {
+    let temp = repo_with_commit("private-identity", "chore: fine");
+    assert!(run_check(&temp, None).is_empty());
+    commit_as(&temp, "Mira Made-Up", "mira@example.test");
+    let places = run_check(&temp, None);
+    // The author and the committer of the one commit.
+    assert_eq!(places.len(), 2, "{places:?}");
+    assert!(places.iter().all(|place| place.starts_with("commit ")));
+    // A staged run looks at files only; the commit-msg hook reads the identity to be recorded.
+    assert!(run_check(&temp, Some(&[])).is_empty());
+    // A commit a remote has already is not read again.
+    assert!(temp.git(&["update-ref", "refs/remotes/origin/main", "HEAD"]));
+    assert!(run_check(&temp, None).is_empty());
+}
+
+#[test]
+fn the_check_runs_at_commit_push_and_ci_and_the_message_hook_is_wired_in() {
+    let catalog = Catalog::load(&Repo::discover().unwrap()).unwrap();
+    let entry = catalog.get(SecPrivate::ID).unwrap();
+    for moment in ["commit", "push", "ci"] {
+        assert!(entry.runs_at(moment), "{moment}");
+    }
 }
