@@ -356,8 +356,14 @@
 <li>Visibility of working hours; no scores or rankings</li>
 <li>Sample organization, part 3: six months of working hours and time entries</li>
 </ul>
-<p><strong>Demo (exit):</strong> Ana starts her work day, runs a timer, takes a break and ends the day; the timesheet shows a rule warning on a long day; Ben can't see Ana's working hours.</p>
-<p><strong>Tests and checks added:</strong> Working-time rule tests (property tests on day boundaries and time zones); TEST-CONCURRENT timer scenarios.</p>
+<p><strong>Demo (exit):</strong> Ana starts her work day, runs a timer, takes a break and ends the day; the timesheet shows a rule warning on a long day; Ben can't see Ana's working hours. Four more steps (M6-Q12):</p>
+<ul>
+<li>the <em>Stop timer</em> window shows <em>Activity</em> and <em>Cost center</em> taken from the issue;</li>
+<li>Ana changes the end of yesterday and is asked for a reason; the history of the day keeps the old end;</li>
+<li>Hana, in the group that has <em>HR</em>, sees Ana's working hours, and with <em>Totals only</em> on sees only her week total;</li>
+<li>the four built-in themes look exactly as before the split into theme files.</li>
+</ul>
+<p><strong>Tests and checks added:</strong> Working-time rule tests (property tests on day boundaries and time zones, TEST-WORKING-TIME); one writer of dates and times on screens (TXT-DATES); TEST-CONCURRENT timer scenarios.</p>
 <h2 id="s10"><button class="sec" data-sec>§10</button>M7 — Timeline and theme editor</h2>
 <p><strong>Phase:</strong> MVP · <strong>Goal:</strong> Plan on a timeline and make Bugaboo look like your organization.</p>
 <p><strong>Features:</strong></p>

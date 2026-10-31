@@ -342,7 +342,7 @@ erDiagram
 - **Own fields** (ADR-0006): one `field_value` table with typed columns (text, number, date, reference) and indexes per type; used by issues, time entries, work days, documents, releases and projects.
 - **Relations:** one table for every kind, including timeline dependencies; sub-issues use a parent column, shown as *part of* on the map.
 - **Files:** content-addressed blobs (SHA-256), referenced by attachments and document versions; deleted when nothing references them and no keep rule applies.
-- **Time:** all timestamps in UTC; each work day stores the person's time zone so "day" means their day.
+- **Time:** all timestamps in UTC. **The person's day** is the date a moment falls on in the person's time zone, worked out in one place (`bb_core::time`); each work day stores its zone. The rules that use it are [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md), decision 5.
 - **Versions:** every changeable entity has a `version` number for optimistic locking.
 - **Advisory locks (the order):** a check that a program makes before it writes (a name is free, a limit is not reached, an issue still has a status) holds a lock from the check to the end of the change. A change that takes more than one lock takes them in this order and no other: the migration lock, then **Policy**, **TagsAndLabels**, **Workflows**, **IssueCodes** (one per project), and then the rest by their numbers (**IssueParents**, **IssueRelations**, **Handles**, **Uploads**, **IssueFiles**); `LockClass` in `bb-store` is the one home of the classes and of the order. Two changes that take two locks in different orders can wait for each other (more so behind a change that takes the Workflows lock alone, which waits for every shared holder and is waited for by every new one). SQLite takes no advisory lock (its single writer already serializes), so a wrong order would show only as a PostgreSQL deadlock under load; every transaction therefore records the highest class it took, on both databases, and in debug and test builds refuses a lower one with an error. The SQL of a lock is written in one file (`db.rs`), so no lock passes the guard unseen. A rule that rests on a program check under a lock (the unique names of types and groups, the limits of a place, since the `offer` table has no unique key) is part of this order. Enforced by: ARCH-LOCK-ORDER.
 - **Edit locks:** `edit_lock` rows (what, who, session, token, expires at) for long text and admin editors; private drafts in `edit_draft`; both deleted when no longer needed (ADR-0019).
@@ -377,7 +377,7 @@ Consumers are idempotent and resume from their last position after a restart.
 - The marks generate: *Download my data*, the *Remove a person* plan, keep-and-delete jobs, the record of processing, and the data-flow map.
 - **Logs** hold IDs, never names or e-mail addresses; IP addresses are kept 7 days by default.
 - **Former users:** a removed person becomes a tombstone (`Former user K7Q2`); references stay valid, personal data is gone.
-- **Legal holds:** working hours stay until their keep period ends, even after a person is removed.
+- **Legal holds:** work days, with their breaks and the reasons of their changes, stay at least for the keep period, even after a person is removed, and keep the person's name for the people who may see working hours; after it, an administrator deletes them (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with *Keep and delete rules* (M9).
 
 ## Search language (ADR-0005)
 
@@ -432,7 +432,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"
 - **Lean requests:** each screen asks for the fields its layout shows (`?fields=`); lists use cursor pagination and are virtualized.
 - **Text:** every user-facing string is a key in `messages/en.json` (ICU message format), typed via generated keys. The hooks reject literal text in components. The browser catalog is split into parts (ADR-0028): the first page loads `shared`, and the entry of each feature imports its own part, so the texts of a lazy area arrive with its chunk; `t()` of a text whose part is not loaded fails. Enforced by: TXT-CATALOG, DOC-GENERATED.
 - **Text in Rust:** the server uses the constants and functions generated into `bb_core::message` (`SERVER_NOT_FOUND`, `server_port_busy(port)`), whose placeholders are typed arguments; a key that does not exist does not compile. Keys that nothing uses are found. Enforced by: TXT-CATALOG.
-- **Styles:** one theme file (`design/theme.kdl`): tokens per theme and mode, and the rules of every component as `part` rules that use token variables only; one generated style sheet; no inline styles and no class names (CSP, THEME-ONLY).
+- **Styles:** the theme files of `design/` (the base `theme.kdl` and one file of colors per theme in `design/themes/`): tokens per theme and mode, and the rules of every component as `part` rules that use token variables only; one generated style sheet; no inline styles and no class names (CSP, THEME-ONLY).
 - **Accessibility:** React Aria Components for focus, keyboard and screen-reader behavior; axe checks in CI.
 
 ## Errors

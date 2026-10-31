@@ -7,8 +7,9 @@ import { colorsOf, looksOf, readMedia, tokensOf } from "./media-theme.ts";
 import { repoRoot } from "./ports.ts";
 
 // The roadmap picture of the front page (docs/media/roadmap.svg) is drawn by hand. Its colors come
-// from design/theme.kdl, and its milestones and feature counts from the overview table of
-// docs/04-milestones.md; this test keeps both the same, so the picture cannot drift.
+// from the theme (as the generated sheet has them), and its milestones and feature counts from
+// the overview table of docs/04-milestones.md; this test keeps both the same, so the picture
+// cannot drift.
 
 const roadmap = readMedia("roadmap.svg");
 const { light, dark } = looksOf(roadmap);

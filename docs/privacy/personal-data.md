@@ -8,15 +8,15 @@ Every stored field says whether it holds personal data. This page lists the answ
 
 ## Categories
 
-| Category        | What it covers                                                                    |
-| --------------- | --------------------------------------------------------------------------------- |
-| `identity`      | Who a person is: name, e-mail address, avatar.                                    |
-| `credentials`   | What proves who a person is: password hash, passkeys, backup codes.               |
-| `activity`      | What a person did and when: who changed what, who is assigned.                    |
-| `organization`  | Where a person works: their groups and the roles they have, and where (ADR-0025). |
-| `content`       | What a person wrote: comments, descriptions, reasons.                             |
-| `employee_time` | Working hours and the accounting fields of time entries.                          |
-| `technical`     | What identifies a device or connection: network address, browser, session.        |
+| Category        | What it covers                                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `identity`      | Who a person is: name, e-mail address, avatar.                                                                                                                       |
+| `credentials`   | What proves who a person is: password hash, passkeys, backup codes.                                                                                                  |
+| `activity`      | What a person did and when: who changed what, who is assigned.                                                                                                       |
+| `organization`  | Where a person works: their groups and the roles they have, and where (ADR-0025).                                                                                    |
+| `content`       | What a person wrote: comments, descriptions, the reasons of other changes.                                                                                           |
+| `employee_time` | Time at work: work days and breaks, time entries with their notes and accounting fields, the running timer, and the reasons for changing a past work day (ADR-0035). |
+| `technical`     | What identifies a device or connection: network address, browser, session.                                                                                           |
 
 ## Legal bases
 

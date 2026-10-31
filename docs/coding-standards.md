@@ -136,13 +136,17 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - **No hard-coded user-facing text:** JSX text, `aria-*`, `title`, `alt` and `placeholder`
   values must come from the message catalog. Enforced by: TXT-LITERAL.
 - **Dates and times through the shared helpers:** a date, a moment, a time of day and a length of
-  time on a screen are written by the helpers of `web/app/src/shared/` (`format.ts`), which follow
-  the person's *Region*; a screen never asks `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat` or a
-  `toLocale…String` itself. Enforced by: TXT-DATES.
+  time on a screen are written by the shared helpers of `web/app/src/shared/` and `web/packages/`,
+  from the person's *Region*: no `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`,
+  `toLocaleDateString`, `toLocaleTimeString` or `toLocaleString` of a date anywhere else in `web/`
+  (tests and tools excluded: they may work out what they expect another way). Enforced by:
+  TXT-DATES. A length of time written by hand (`${hours}h`) is not something a check can see:
+  review.
 - **No hard-coded styles:** no hex/rgb colors, pixel magic numbers, durations, weights, line
   heights, layers or opacities. Only design tokens. Enforced by: STY-TOKENS, LINT-CSS.
-- **All theming lives in `design/theme.kdl`** (ADR-0026): values are tokens, rules are `part`
-  rules that use tokens only. Components carry no style values and no class names: no `style=`,
+- **All theming lives in the theme files of `design/`: the base `theme.kdl` and one color file
+  per theme** in `design/themes/` (ADR-0026): values are tokens, rules are `part` rules of the
+  base that use tokens only, and a theme file sets only the colors (and its shadow) it changes. Components carry no style values and no class names: no `style=`,
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.

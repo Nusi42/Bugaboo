@@ -378,9 +378,14 @@ A session can end at any time, and a new one starts in the master and continues 
 - Visibility of working hours; no scores or rankings
 - Sample organization, part 3: six months of working hours and time entries
 
-**Demo (exit):** Ana starts her work day, runs a timer, takes a break and ends the day; the timesheet shows a rule warning on a long day; Ben can't see Ana's working hours.
+**Demo (exit):** Ana starts her work day, runs a timer, takes a break and ends the day; the timesheet shows a rule warning on a long day; Ben can't see Ana's working hours. Four more steps (M6-Q12):
 
-**Tests and checks added:** Working-time rule tests (property tests on day boundaries and time zones); TEST-CONCURRENT timer scenarios.
+- the *Stop timer* window shows *Activity* and *Cost center* taken from the issue;
+- Ana changes the end of yesterday and is asked for a reason; the history of the day keeps the old end;
+- Hana, in the group that has *HR*, sees Ana's working hours, and with *Totals only* on sees only her week total;
+- the four built-in themes look exactly as before the split into theme files.
+
+**Tests and checks added:** Working-time rule tests (property tests on day boundaries and time zones, TEST-WORKING-TIME); one writer of dates and times on screens (TXT-DATES); TEST-CONCURRENT timer scenarios.
 
 ## M7 — Timeline and theme editor
 

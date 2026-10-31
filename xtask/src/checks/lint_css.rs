@@ -12,7 +12,7 @@ use std::path::Path;
 use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
 use crate::generate::theme::{doc_css_with_lines, parts_css_with_lines};
-use crate::generate::theme_file::{THEME_PATH, ThemeFile};
+use crate::generate::theme_file::{THEME_PATH, ThemeFile, is_theme_source};
 
 /// The rules for the compiled rules of the theme file.
 const CONFIG: &str = "stylelint.config.mjs";
@@ -31,7 +31,7 @@ impl Check for LintCss {
         let selected = context.selected(self.id())?;
         let theme_changed = selected
             .iter()
-            .any(|file| file == THEME_PATH || file.starts_with("stylelint."));
+            .any(|file| is_theme_source(file) || file.starts_with("stylelint."));
         if !theme_changed {
             return Ok(Vec::new());
         }
@@ -136,7 +136,7 @@ mod tests {
     fn theme_findings(name: &str, rules: &str) -> Vec<Finding> {
         let repo = Repo::discover().unwrap();
         let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
-        let file = ThemeFile::parse(&format!("{text}\n{rules}\n")).unwrap();
+        let file = ThemeFile::parse_base(&format!("{text}\n{rules}\n")).unwrap();
         // Each test has its own file: the tests run side by side.
         lint_theme(repo.root(), &file, &format!("test-{name}.css")).unwrap()
     }
@@ -241,7 +241,7 @@ mod tests {
         let wanted = "    rule \"html\" {";
         assert!(text.contains(wanted));
         let text = text.replacen(wanted, &format!("{rule}\n\n{wanted}"), 1);
-        let file = ThemeFile::parse(&text).unwrap();
+        let file = ThemeFile::parse_base(&text).unwrap();
         lint_theme(repo.root(), &file, &format!("test-{name}.css")).unwrap()
     }
 

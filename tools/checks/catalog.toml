@@ -115,9 +115,9 @@ status = "active"
 id = "LINT-CSS"
 title = "Styles use only token variables; no raw colors, sizes or !important"
 rule = "ADR-0010, ADR-0026"
-tool = "stylelint (the compiled rules of design/theme.kdl)"
+tool = "stylelint (the compiled rules of design/theme.kdl, run again when a theme file of design/themes/ changes)"
 when = ["edit", "commit", "ci"]
-files = ["design/theme.kdl", "stylelint*.mjs"]
+files = ["design/theme.kdl", "design/themes/*.kdl", "stylelint*.mjs"]
 status = "active"
 
 [[check]]
@@ -203,15 +203,6 @@ files = ["messages/**", "web/**/*.{ts,tsx}", "crates/**/*.rs"]
 status = "active"
 
 [[check]]
-id = "TXT-DATES"
-title = "A date, a moment, a time of day and a length of time on a screen are written only by the shared helpers"
-rule = "UX-07, CFG-04, coding-standards §4"
-tool = "xtask (reads web/app/src outside shared/, tests and tools excluded: Intl.DateTimeFormat, Intl.RelativeTimeFormat, toLocaleDateString, toLocaleTimeString and toLocaleString)"
-when = ["edit", "commit", "ci"]
-files = ["web/app/src/**/*.{ts,tsx}"]
-status = "active"
-
-[[check]]
 id = "TXT-TERMS"
 title = "No words from the glossary's 'Don't say' column in UI text, user docs, API names or the names the code declares"
 rule = "glossary.md"
@@ -230,12 +221,21 @@ files = [
 status = "active"
 
 [[check]]
+id = "TXT-DATES"
+title = "Dates, moments, times of day and lengths of time on a screen are written only by the shared helpers, from the person's Region"
+rule = "coding-standards §4, ADR-0033 (amendment M6), UX-07"
+tool = "xtask (no Intl.DateTimeFormat, Intl.RelativeTimeFormat, toLocaleDateString, toLocaleTimeString or toLocaleString of a date in web/ outside the shared helpers of web/app/src/shared/ and web/packages/; tests, end-to-end tests and tools excluded)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx}"]
+status = "active"
+
+[[check]]
 id = "STY-TOKENS"
 title = "Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file"
 rule = "ADR-0010, ADR-0026"
-tool = "xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; sizes are LINT-CSS, styles from code are THEME-ONLY)"
+tool = "xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; colors are the tokens of the base and the theme files of design/themes/; sizes are LINT-CSS, styles from code are THEME-ONLY)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,css}", "design/theme.kdl"]
+files = ["web/**/*.{ts,tsx,css}", "design/theme.kdl", "design/themes/*.kdl"]
 status = "active"
 
 [[check]]
@@ -258,7 +258,7 @@ status = "active"
 
 [[check]]
 id = "THEME-ONLY"
-title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)"
+title = "The look lives in the theme files of design/ only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)"
 rule = "ADR-0026, coding-standards §4"
 tool = "xtask (the TypeScript and CSS files of the app, and no style element or attribute in the pages of docs/; nothing is exempt)"
 when = ["edit", "commit", "ci"]
@@ -269,9 +269,9 @@ status = "active"
 id = "STY-CONTRAST"
 title = "Every text/background pair in the built-in themes passes WCAG AA, and the status tints, priority edges, hover and scrim keep their clear differences"
 rule = "THM-03, UX-04"
-tool = "xtask (reads design/theme.kdl: every theme, in the usual mode and with more contrast)"
+tool = "xtask (reads design/theme.kdl and every theme file of design/themes/: every theme, in the usual mode and with more contrast, a color that names another with the color it leads to; a finding names the theme's file)"
 when = ["commit", "ci"]
-files = ["design/theme.kdl"]
+files = ["design/theme.kdl", "design/themes/*.kdl"]
 status = "active"
 
 # ───────────── Architecture ─────────────
@@ -572,6 +572,15 @@ tool = "xtask (the unit, property and two-database tests of the workflow rules e
 when = ["ci"]
 files = ["crates/**"]
 status = "active"
+
+[[check]]
+id = "TEST-WORKING-TIME"
+title = "The working-time rules, the person's day and the records of work days are tested by name: day boundaries, daylight-saving changes, zones, rest across days, a day that ends after midnight, a past day without a reason"
+rule = "ADR-0035, TIME-08, TIME-09, TIME-10"
+tool = "xtask (the unit and property tests of the working-time rules and of the person's day exist by name and are not switched off; the two-database tests of work days run through each_database)"
+when = ["ci"]
+files = ["crates/**"]
+status = "planned"
 
 [[check]]
 id = "TEST-UPLOADS"

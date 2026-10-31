@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M4 built, M5 planned)
+## Scope (status: M5 built, M6 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments, mail and workflows (M4; threats below), search and lists (M5; threats below, planned), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5) | Time on issues and working hours (M6; threats below, planned), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -199,6 +199,24 @@ M5 lets people type searches that become database queries, search the text of is
 | Denial of service | Typing in the search bar asks the names route at every key press, and either uses up the 60 searches a minute (so a person cannot search) or, with a script, reads people without bound | The names route has an allowance of its own, `SUGGESTIONS_PER_MINUTE` (600) per person and minute, apart from the searches; a start of a name is at most `NAME_MAX` characters, an answer at most 20 names, and the store reads at most 5 pages of one name more than the answer holds (a `LIKE` on the stored name key, ordered, with the characters of a pattern written as themselves; the key is made in Rust, so capitals and repeated spaces do not count and accents do, on both databases) | `sec_17_suggestions_have_an_allowance_apart_from_searches` (unit test in `bb-api`, and over HTTP in `bb-server`: the names are still answered when the 60 searches are used up), `qry_05_a_start_that_is_too_long_or_a_kind_that_is_unknown_is_refused` |
 | Information disclosure | The names route lists people by their first letters, 20 at a time, including people of projects the person cannot open | **Accepted risk** (ADR-0005, decision 9): the names are those the person may name by *Who sees people* for the person fields; where that setting is at organization level a person may already see every name, so listing by start gives nothing more than the setting allows. A person who is shown no names is offered only themselves, and a person who exists looks the same as one who does not | `qry_05_a_person_who_is_shown_no_names_is_offered_no_one_and_a_missing_name_looks_the_same` |
 
+### Time and working hours (M6)
+
+M6 stores what people spent their time on and when they worked ([ADR-0035](../adr/0035-time-on-issues-and-working-hours.md)). Working hours are sensitive employee data (PRIV-09): the main threat is that somebody learns about another person's time without the permission for it, by any way out of the server. Each row names the check that proves it; the packages add the test names ([M6 plan](../milestones/M6/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|------------|-----------|
+| Information disclosure | A person reads another person's working hours (work days, breaks, warnings, reasons, totals) through a page, a total, a count, a history, a notification, an e-mail, an export or a search (PRIV-09, PRIV-13) | Working hours leave their module only for the person themselves and, on *Working hours of others*, for a holder of *See working hours of others*, as *Totals only* allows (ADR-0035, decision 8). A notification about a day goes to the person of the day only; no search field, export or list reads work days (ADR-0035, decision 8) | SEC-MATRIX (the routes of work days and of *Working hours of others* for every starting role, *HR* included, and with *Totals only* on; the notifications and e-mail channels); the tests of WP-06 and WP-10 |
+| Information disclosure | A person learns another person's time on issues through the time entries of an issue, *Time spent*, a total of an issue or a project, the history or a search (PRIV-12, PRIV-13) | A time entry shows its person only as *Who sees people* allows (the kind *Time entries*) and its length only to a reader of *Time spent*; totals count only the issues the reader sees and the fields they read, by the compiled search; the port of time spent reads only the issues the use case passes (ADR-0035, decision 4) | SEC-MATRIX (the routes of the timer and of time entries, *Time spent* and the totals under field levels and visibility), ARCH-PERSON-REF, ARCH-DB-PARITY; the tests of WP-05 and WP-07 |
+| Information disclosure | A list, a search or an export orders or ranks people by a number of time, or an AI tool reads working hours (PRIV-09, COMP-10) | No route of time takes an order by person or by a total; grouping by person gives no length per person; the tool registry has no tool that reaches working hours (ADR-0035, decision 9; ADR-0013) | SEC-MATRIX, ARCH-AI-TOOLS; the tests of WP-05 and WP-06 |
+| Tampering | A person changes another person's work day without *Change working hours of others* | The use case judges the permission for the whole organization before every change of another person's day; the routes declare it | ARCH-PERMS, SEC-MATRIX (the routes of *Working hours of others* that change a day, for every starting role); the tests of WP-06 |
+| Repudiation | A work day is changed without a reason, the old value is lost, or the person is not told (TIME-10) | A change that asks for a reason (ADR-0035, decision 7) is refused without one; its event keeps the old values and the reason, which the history of the day shows; a change by somebody else notifies the person of the day | TEST-WORKING-TIME, ARCH-EVENTS; the tests of WP-06 |
+| Repudiation | A day left open is ended by the server, so the record shows an end that nobody gave | Nothing ends a day by itself; the next *Start work day* asks the person (ADR-0035, decision 5) | TEST-WORKING-TIME |
+| Elevation of privilege | A person gives themselves, or a group they are in, *See working hours of others* or *Change working hours of others* | Only a person who holds both *Manage roles* and *Decide who has which role* for the whole organization gives *HR* without holding its permissions, and only one who holds the permissions adds them to a role; no access key holds them (ADR-0025, amendment M6). Such a person can give *HR* to themselves: **accepted risk** (below), recorded in the security log with every gift and removal | ARCH-PERMS, SEC-MATRIX; `sec_15_every_change_of_permissions_is_in_the_security_log`; the tests of WP-06 |
+| Tampering | Two devices start two timers, or one work day is saved twice, so time is counted twice | One timer per person and one work day per person and date (ADR-0035, decisions 3 and 5) | TEST-CONCURRENT ("Timers and working hours start and stop at the same time", both databases), ARCH-VERSIONED |
+| Tampering | The note of a time entry or the reason of a change carries script that runs for another reader | Notes and reasons are plain text, shown as text and never as HTML; an e-mail writes them like any other text (ADR-0033) | SEC-RICHTEXT; the tests of WP-05 and WP-06 |
+| Tampering | A person deletes working hours that the law asks to keep, or deletes old ones without a trace | Only a holder of *Change organization settings* deletes, only days older than the keep period, after a confirmation, and every deletion is in the security log (ADR-0035, decision 7) | ARCH-PERMS, SEC-MATRIX (the route that deletes old work days, for every starting role); the tests of WP-06 |
+| Denial of service | Many timers, starts or entries slow the server for everyone | The limits of ADR-0035, decisions 1, 3 and 5 (named constants of WP-05 and WP-06), and pages with cursors on every list | PERF-N1, PERF-BENCH (the timesheet week and the totals of a project on 1 M issues); the tests of WP-05 and WP-06 |
+
 ### Boundary 4 (operator ↔ data) and the host
 
 | STRIDE | Threat | Mitigation | Proven by |
@@ -229,6 +247,7 @@ M5 lets people type searches that become database queries, search the text of is
 | A security-log entry that cannot be written (the anchor file or the database fails) is reported in the server log but does not undo or refuse the sign-in. The server counts the entries it could not write since it started, and the status page warns when the count is above zero (`sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written`); the status page and `bugaboo security-log verify` also name a database that lacks the newest entries that the anchor file knows of (a restore from an older backup, lost writes or a cut-off end) and say what to check (`sec_15_the_status_page_warns_when_the_anchor_is_ahead`) | A sign-in that fails because the log is full would let anybody who can fill the disk lock everybody out | The decision stays (M1-F40, done in M2 WP-04) |
 | *Check access* tells a checker that a role comes from *a project you can't see*, so they learn that such a project exists above, never its name or anything in it | A sentence that leaves the row out would explain a decision wrongly; only people who can check access at that place see it (ADR-0025, decision 12) | When restricted projects need more (SEC-05, V1) |
 | The version of a move preview is a digest of the tree, who has which role and the levels the roles set, so somebody who keeps asking for the preview of a project they see can tell that something changed in a project they cannot see | The preview is what *Show, then do* needs and a stale one is refused; the digest is opaque and names nothing, no count and no place, and the person only learns that the preview is old (ADR-0025, decision 12) | When restricted projects need more (SEC-05, V1) |
+| A person who holds both *Manage roles* and *Decide who has which role* for the whole organization can give themselves *HR* and so read and change everybody's working hours | Nobody holds the two permissions at the start, so without the exception nobody could give *HR*; an administrator holds every other permission and so can give every other role already. The gift is in the security log, and the people whose hours are read are not told of each reading (ADR-0025, amendment M6) | When the security log can tell named people of such a gift (M9) |
 | People with *Decide who has which role* from above keep it on a project where they have *No access*, and see its name and short name there | Otherwise a project lead could shut the administrators out for good (ADR-0025, decision 6) | — |
 | The child that makes a preview holds the rights of the server account: protection is the separation of the process and the limits on memory, time and pixels, not a sandbox. A memory-safety bug in `image`, `hayro` or `vello_cpu` (they use `unsafe` inside, though our code does not) lets a crafted file run code in the child, which can then read the keys and the database of the server account and reach the network | The libraries are pure Rust with only the gif, jpeg, png and webp decoders compiled in, and the child reads its input from standard input with limits; a sandbox needs system calls that code without `unsafe` cannot make today. The row of denial of service above says what the limits stop (crashes and bombs), not a compromise. On a small host, five previews at once may use 5 GiB of heap | M4-F121 (landlock or seccomp on Linux, a separate user, a restricted token on Windows once a safe crate exists) |
 | A person who may change their handle can learn once for each change whether one handle is taken (`name.taken`, or the handle of a group or a role), because a free handle is changed at once and starts the 7-day clock; a few refused tries are allowed first | Handles are made from names, so a guess is cheap, but the limits leave a person at most 20 answers *taken* in a day (`TAKEN_ANSWERS_PER_DAY`, counted per person, reserved in one step so parallel tries cannot pass the last one, after which every handle gets the same *try again later*) and, for each change, one more. The day is a fixed window from the first answer counted, so a person can get up to about 40 across the turn of a day; each server process counts for itself and a restart forgets the count, so with several processes the bound is 20 a day for each process; the refused tries of a minute only pace it. A person who never changed their handle has no 7-day clock, so the bound is 20 a day without end, for each account; the handle is shown wherever a mention is, and a mention follows *Who sees people* | When a handle is judged apart from the rest of the person's data |
@@ -371,3 +390,50 @@ flowchart LR
 | Previews (a small image) | Showing a picture or a page of a file | (b) contract | As long as the attachment | As the file |
 
 The delete and export paths for a person are M9 work and are named in the follow-ups: the bytes of files M4-F52, the handles M4-F64, notifications and files in the export M4-F93. Until then, *Remove a person* (PRIV-04) is not built.
+
+## Personal data in M6
+
+M6 adds the time of people: what they spent it on (time entries and the timer) and when they worked (work days and breaks). Both are employee data that German law and the GDPR treat with care (PRIV-09); the decisions are in [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md). The marks below are decided here; WP-05 and WP-06 write them on their entities, and `cargo xtask gen privacy` lists them on the generated page `docs/privacy/personal-data.md`. Enforced by: DATA-MARKS.
+
+| Entity (package) | Field | Personal data | Category | Legal basis |
+|------------------|-------|---------------|----------|-------------|
+| Work day (WP-06) | person | yes | `identity` | `legal_obligation` |
+| Work day (WP-06) | date, periods (start, end), time zone, the warnings of the rules | yes | `employee_time` | `legal_obligation` |
+| Break (WP-06) | start, end | yes | `employee_time` | `legal_obligation` |
+| Event of a change of a past day (WP-06) | the reason, the old values | yes | `employee_time` | `legal_obligation` |
+| Time entry (WP-05) | person | yes | `identity` | `contract` |
+| Time entry (WP-05) | issue, date, start (from a timer), length, note, *Billable*, the values of *Activity*, *Cost center* and other own fields | yes | `employee_time` | `contract` |
+| Timer (WP-05) | person | yes | `identity` | `contract` |
+| Timer (WP-05) | issue, start, the mark of a long timer | yes | `employee_time` | `contract` |
+| Working-time settings (WP-06, WP-11) | preset, rules, keep period, *Totals only*, *Billable* | no | – | – |
+
+```mermaid
+flowchart LR
+  person(["Person"])
+  hr(["Holder of See working hours of others<br/>(the role HR)"])
+  subgraph bb["Bugaboo"]
+    timer["Timer<br/>person, issue, start"]
+    entries["Time entries<br/>person, issue, date, length,<br/>note, Activity, Cost center"]
+    days["Work days and breaks<br/>person, date, start, end,<br/>zone, warnings"]
+    reasons["Reasons and old values<br/>(events of past days)"]
+    notes["Notification to the person<br/>when somebody else changed a day"]
+    seclog["Security log<br/>gifts of HR, changes of the settings"]
+  end
+  person -- "starts, stops" --> timer --> entries
+  person -- "records" --> days
+  hr -- "reads (as ADR-0035, decision 8 allows)" --> days
+  hr -- "changes, with a reason" --> reasons --> notes --> person
+  days --> reasons
+  hr -.-> seclog
+```
+
+| Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
+|------|---------|---------------------------|------|---------------|
+| Work days and breaks, with their warnings | Recording working time as German law asks, and checking it against the working-time rules | Art. 6(1)(c) GDPR, legal obligation: ArbZG §16 (2) and § 3 (2) no. 1 ArbSchG as the Federal Labour Court reads it (1 ABR 22/21, 2022) | At least the keep period; after it, until an administrator deletes them; a removed person's days keep the name (ADR-0035, decision 7; architecture §7, *Legal holds*) | The person; holders of *See working hours of others*, as ADR-0035, decision 8 allows. Never into a search, an export or an AI tool in M6 |
+| Reasons of changes and the old values | Trustworthy records (TIME-10) | (c) legal obligation | With their day | As the day; the notification of a change by somebody else goes to the person of the day only |
+| Time entries (length, date, note, accounting fields) | Accounting of work on issues, billing | (b) contract | No rule of their own in M6; 10 years with *Keep and delete rules* (PRIV-05, M9) | The person; others as *Who sees people* (the kind *Time entries*) and the field levels (*Time spent*) allow; the totals count only what the reader sees |
+| The running timer | Keeping the time on every device until it is saved | (b) contract | Until it is stopped or thrown away | The person only; the long-timer notification goes to the person |
+
+Nothing about time leaves the server, except the e-mail of a notification to the person themselves when they keep e-mail on (ADR-0033). No outside service and no AI reads working hours (COMP-10).
+
+Storage limitation (GDPR Art. 5(1)(e)) is the organization's judgement: Bugaboo deletes no working hours by itself, shows how many are past the keep period, and makes deleting them one step (ADR-0035, decision 7).

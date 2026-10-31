@@ -30,7 +30,9 @@ bugaboo/
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
-├── design/theme.kdl        the theme — source of all colors, fonts, sizes and component rules
+├── design/                 the theme (ADR-0026)
+│   ├── theme.kdl           the base — source of all fonts, sizes, component rules and the colors of Daylight
+│   └── themes/             one file of colors per built-in theme, named by the theme's ID
 ├── messages/en.json        message catalog — source of all user-facing text
 ├── web/                    browser app (TypeScript)
 │   ├── app/                the React app: routes and feature folders
@@ -202,7 +204,7 @@ The words that the developer tools, the tests and `xtask` share, written once: t
 
 ### bb-ai and bb-mcp
 
-One **tool registry** (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
+One **tool registry** (search issues, get issue, create, change status, comment, book time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
 
 ### bb-sample
 

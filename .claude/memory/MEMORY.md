@@ -11,3 +11,4 @@
 - [Typography and status colors](typography-and-status-colors.md) — rows clearly tinted by status group; bold only per UX §7.3, enforced by a check
 - [Restart ci after a memory stop](restart-ci-after-memory-stop.md) — a ci stopped for low memory may be restarted without asking
 - [Publish only after the gate](publish-only-after-the-gate.md) — chain push to master, fast-forward and GitHub push with &&; stop at the first failure
+- [Explicit deletion](explicit-deletion.md) — keep periods are minimums; business data is deleted only explicitly by an administrator

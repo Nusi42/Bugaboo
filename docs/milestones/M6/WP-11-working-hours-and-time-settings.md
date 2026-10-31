@@ -13,7 +13,7 @@ An administrator sets up working hours and time in one page in plain words: the 
 
 ## What is decided (M6-Q7, Q8, Q10, Q11)
 
-- *Organization settings › Working hours*: *Rules* (preset *Germany* or *No rules*, then each number with its plain sentence; a changed number marks the preset as changed and *Reset to default* brings it back), *Keep working hours for* (2 years with the Germany preset, never less while it is chosen), *Totals only* (with a sentence that says what others with *See working hours of others* then see), *Billable* (on or off).
+- *Organization settings › Working hours*: *Rules* (preset *Germany* or *No rules*, then each number with its plain sentence; a changed number marks the preset as changed and *Reset to default* brings it back), *Keep working hours for* (the minimum of ADR-0035, decision 7), the count of older work days with *Delete them* (all, or one person's, after a confirmation in the page; only for holders of *Change organization settings*), *Totals only* (with a sentence that says what others with *See working hours of others* then see), *Billable* (on or off).
 - The page says that every change is in the security log, and who holds *See working hours of others* today (the groups, by name, with a link to *Roles and permissions*).
 - The project settings: *Activity* and *Cost center* defaults of the project, inherited by sub-projects (*Set by the project above* when inherited, *Reset to default* when set here).
 - *Activity* and *Cost center* themselves are managed on the *Fields* page like any own field (rename, choices, required); no second page for them.
@@ -29,6 +29,7 @@ An administrator sets up working hours and time in one page in plain words: the 
 
 - `time_09_an_administrator_changes_the_longest_day_and_the_next_change_of_a_day_warns_by_it`.
 - `time_10_the_keep_period_cannot_go_below_two_years_with_the_germany_preset`.
+- `time_10_delete_them_asks_first_and_deletes_only_days_older_than_the_keep_period`.
 - `time_12_turning_on_totals_only_is_in_the_security_log_and_others_see_totals_only`.
 - `time_13_a_projects_cost_center_is_the_default_of_its_sub_projects_issues`.
 - `time_02_billable_shows_in_stop_timer_only_while_the_organization_has_it_on`.

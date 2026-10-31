@@ -150,7 +150,7 @@ fn rust_has_the_theme_choices_and_the_defaults() {
 fn a_part_rule_is_compiled_with_its_mixins_and_media() {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     let extra = "\nmixin \"m\" {\n  color \"$fg\"\n}\npart \"zz[variant=a]:hover\" \"zz[state=busy]\" {\n  use \"m\"\n  margin 0\n  forced {\n    color \"CanvasText\"\n  }\n}\n";
-    let file = ThemeFile::parse(&format!("{text}{extra}")).unwrap();
+    let file = ThemeFile::parse_base(&format!("{text}{extra}")).unwrap();
     let parts = parts_css(&file).unwrap();
     assert!(parts.contains("[data-part=\"zz\"][data-variant~=\"a\"]:hover,\n[data-part=\"zz\"][data-state~=\"busy\"] {\n  color: var(--fg);\n  margin: 0;\n}"), "{parts}");
     assert!(
@@ -163,7 +163,7 @@ fn a_part_rule_is_compiled_with_its_mixins_and_media() {
 fn file_with_device_choice_and_container() -> ThemeFile {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     let extra = "\nvariants {\n  variant \"zz-touch\" media=\"(pointer: coarse)\"\n}\ntokens {\n  size \"zz-height\" \"36px\" zz-touch=\"44px\"\n}\npart \"zz\" {\n  container \"(min-width: $bp-tablet)\" {\n    margin 0\n  }\n}\n";
-    ThemeFile::parse(&format!("{text}{extra}")).unwrap()
+    ThemeFile::parse_base(&format!("{text}{extra}")).unwrap()
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn only_the_marked_sizes_are_variables_the_code_may_set() {
         "color \"accent\" run-time=\"true\" ",
         1,
     );
-    assert!(ThemeFile::parse(&color).is_err());
+    assert!(ThemeFile::parse_base(&color).is_err());
 }
 
 #[test]
@@ -233,7 +233,7 @@ part \"zz\" {
   }
 }
 ";
-    let css = css(&ThemeFile::parse(&format!("{text}{extra}")).unwrap()).unwrap();
+    let css = css(&ThemeFile::parse_base(&format!("{text}{extra}")).unwrap()).unwrap();
     assert!(
         css.contains(
             "@supports (width: calc(1px * (2px / 1px))) {
@@ -252,7 +252,7 @@ fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
         "\nvariants {\n  variant \"zz\"\n}\n",
     ] {
         assert!(
-            ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+            ThemeFile::parse_base(&format!("{text}{extra}")).is_err(),
             "{extra}"
         );
     }
@@ -266,7 +266,7 @@ fn an_unknown_token_or_mixin_is_refused() {
         "\npart \"zz\" {\n  use \"nope\"\n}\n",
     ] {
         assert!(
-            ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+            ThemeFile::parse_base(&format!("{text}{extra}")).is_err(),
             "{extra}"
         );
     }
@@ -335,4 +335,43 @@ fn the_fonts_are_system_stacks_one_for_each_role_and_none_is_shipped() {
         !css.contains("Load fonts"),
         "the sheet asks nobody to load a font"
     );
+}
+
+/// The block a theme has in the last `@media (prefers-contrast: more)`, where each theme is named.
+fn more_contrast_block(css: &str, theme: &str) -> String {
+    let media = css
+        .rfind("@media (prefers-contrast: more) {")
+        .expect("the sheet has the blocks of more contrast");
+    let start = media
+        + css[media..]
+            .find(&format!(":root[data-look=\"{theme}\"]"))
+            .expect("the theme has a block");
+    let end = start + css[start..].find('}').expect("the block ends");
+    css[start..end].to_owned()
+}
+
+#[test]
+fn thm_06_a_theme_restates_with_more_contrast_a_color_the_dark_theme_that_starts_changes() {
+    // The dark fallback of more contrast (`:root:not([data-theme="light"])`) weighs as much as the
+    // block of a theme and comes before it in the same media block: a theme that has no `more=` of
+    // its own for a color Dusk changes must say its own color again, or it shows Dusk's.
+    let file = file();
+    let css = css(&file).unwrap();
+    for theme in &file.themes {
+        let block = more_contrast_block(&css, &theme.name);
+        for token in file
+            .colors()
+            .filter(|token| token.more_in(&file.default_dark).is_some())
+        {
+            let own = token
+                .in_theme_with_more_contrast(&theme.name)
+                .expect("every theme has every color");
+            assert!(
+                block.contains(&format!("--{}: {};", token.name, substitute(own))),
+                "{}: `{}` is not said again with more contrast",
+                theme.name,
+                token.name
+            );
+        }
+    }
 }
