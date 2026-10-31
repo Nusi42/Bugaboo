@@ -55,7 +55,20 @@ const otherThan = { light: "dark", dark: "light" } as const;
  * of the milestone.
  */
 export async function shoot(page: Page, name: string, milestone = "M1"): Promise<void> {
-  const target = folderOf(milestone);
+  await shootLooksInto(page, folderOf(milestone), name, "page");
+}
+
+/**
+ * Takes the open screen in both looks as `<name>-light.png` and `<name>-dark.png` in `target`.
+ * `shown: "page"` takes the whole page (a window or a question that covers the page is taken as
+ * the screen shows it); `shown: "window"` takes what the window shows, as a person sees it.
+ */
+export async function shootLooksInto(
+  page: Page,
+  target: string,
+  name: string,
+  shown: "page" | "window",
+): Promise<void> {
   await pointerAway(page);
   await inOrder(
     looks.map((look) => async () => {
@@ -67,7 +80,7 @@ export async function shoot(page: Page, name: string, milestone = "M1"): Promise
       await expectLook(page, themeOf[look]);
       await page.screenshot({
         path: join(target, `${name}-${look}.png`),
-        fullPage: !(await coversThePage(page)),
+        fullPage: shown === "page" && !(await coversThePage(page)),
       });
     }),
   );

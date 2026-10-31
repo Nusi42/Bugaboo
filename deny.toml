@@ -6,6 +6,10 @@ all-features = true
 version = 2
 yanked = "deny"
 
+# Nothing from the GPL family (GPL, LGPL, AGPL) is on this list, so cargo deny refuses it, and
+# DEP-LICENSES refuses it in npm packages too, tools for developers included (ADR-0036). Bugaboo
+# itself is AGPL-3.0-or-later; the maintainer also offers it under other terms, which only works
+# while no part is under someone else's GPL.
 [licenses]
 version = 2
 confidence-threshold = 0.93

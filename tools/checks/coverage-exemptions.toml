@@ -3,6 +3,10 @@
 # generator's output list (`docs::generated_paths`) and DOC-GENERATED keeps them up to date. An entry that matches no file fails.
 
 [[exempt]]
+path = "LICENSE"
+reason = "The official text of the GNU Affero General Public License, word for word from gnu.org; it is never edited."
+
+[[exempt]]
 path = "Cargo.lock"
 reason = "Written by Cargo; never edited by hand."
 
@@ -73,3 +77,15 @@ reason = "The allowed image hosts of the corpus case of the same name, one per l
 [[exempt]]
 path = "docs/third-party/notices/*.txt"
 reason = "The license texts that the licenses of third-party code ask to ship with the binary, copied word for word from the crate; no formatter may change a license text. The notices of a release include this folder (COMP-02)."
+
+[[exempt]]
+path = "docs/media/*.png"
+reason = "Pictures of the main screens for the front page, taken by `npm run readme-media` (web/app/e2e/readme-media.spec.ts) from the sample organization; a picture is no code, and the script that makes them is covered by LINT-TS."
+
+[[exempt]]
+path = "docs/media/*.gif"
+reason = "Recordings for the front page, made by `npm run readme-media` with the encoder in web/app/e2e/support/gif.ts, which has its own tests (web/tooling/gif.test.ts)."
+
+[[exempt]]
+path = "docs/media/banner.svg"
+reason = "The animated banner of the front page, drawn by hand; its colors are the tokens of the default themes and web/tooling/banner.test.ts keeps them the same, and checks that it stands still for people who ask for less motion."

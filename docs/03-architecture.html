@@ -56,7 +56,7 @@
 <li><strong>No telemetry</strong> and no outside requests unless an administrator configures them (mail, AI provider, single sign-on, update check).</li>
 </ul>
 <h4>Licenses of third-party parts</h4>
-<p>The license of Bugaboo itself is not decided. Every part we ship must therefore allow both proprietary and open-source distribution (DEP-LICENSES):</p>
+<p>Bugaboo itself is licensed under the GNU Affero General Public License v3.0 or later (ADR-0036), and the maintainer also offers it under other terms. Nothing from the GPL family may therefore be in it, and every part we ship must be under one of these licenses (DEP-LICENSES):</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Allowed in the shipped binary</th><th>Not allowed</th></tr></thead><tbody>
 <tr><td>MIT, Apache-2.0 (also with LLVM exception), BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, MIT-0, 0BSD, CC0, Unlicense, BSL-1.0, CDLA-Permissive-2.0 (data), OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified)</td><td>GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses</td></tr>
 </tbody></table>
@@ -3531,8 +3531,41 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
 
+<!-- 0036-license.md -->
+<h3 id="adr-0036"><button class="sec" data-sec>§13.35</button>ADR-0036: License: AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-31</p>
+<h4>Context</h4>
+<p>Bugaboo is about to be published. The license of the code was open (the feature list said "decide later"). What is wanted:</p>
+<ul>
+<li>Anyone may run and change Bugaboo, also in a closed setting for their own use.</li>
+<li>Whoever distributes a changed version, or offers it to others over a network, must make its source available, so the maintainer can read and merge it.</li>
+<li>The maintainer can also offer Bugaboo under other terms, for example an edition with additions that are not published.</li>
+</ul>
+<h4>Decision</h4>
+<ol>
+<li>The code of Bugaboo is licensed under the <strong>GNU Affero General Public License v3.0 or later</strong> (SPDX <code>AGPL-3.0-or-later</code>). <code>LICENSE</code> holds the official text. The identifier is in <code>Cargo.toml</code> (<code>[workspace.package]</code>, which every crate inherits) and in every <code>package.json</code> of the project.</li>
+<li>The maintainer offers Bugaboo under other terms on request. To be able to do that for the whole code, every contribution comes with a <strong>contributor license agreement</strong> (<span title="../../CONTRIBUTING.md in the repository"><code>CONTRIBUTING.md</code></span>): contributors keep their copyright and grant the maintainer a perpetual, irrevocable, royalty-free license to use, sublicense and relicense the contribution under any terms, plus a patent license. It is accepted in the pull request with a comment.</li>
+<li><strong>No dependency from the GPL family</strong> (GPL, LGPL, AGPL, in any version) goes into Bugaboo: code under someone else's GPL could not be offered under other terms. The allow list in <code>deny.toml</code> names none of them, so <code>cargo deny</code> refuses them for Rust, and DEP-LICENSES refuses them for npm packages, also those that only run on a developer machine. A package that offers a choice (<code>MIT OR GPL-3.0-only</code>) is fine when the other side is on the allow list.</li>
+<li>Parts that third parties build on (a client library, a plug-in kit, examples) may later be under the MIT license, so that using them does not carry the AGPL into other programs. None exists as a separate product today; each such part needs its own decision record.</li>
+<li>Until a lawyer has reviewed the agreement, nothing commercial is offered.</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>Every new crate or package carries the license (<code>license.workspace = true</code>, or <code>"license": "AGPL-3.0-or-later"</code> in <code>package.json</code>).</li>
+<li>A change of the allow list or of the license of the project needs a new decision record.</li>
+<li>A pull request is merged only after its author has accepted the agreement (review).</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>MIT or Apache-2.0 for everything:</strong> anyone could close a changed version and keep it, and the maintainer could not read or merge it. Rejected.</li>
+<li><strong>GPL-3.0:</strong> does not cover use over a network, which is how Bugaboo is run. Rejected.</li>
+<li><strong>A source-available license (BUSL, SSPL):</strong> not open source, and the allow list refuses such licenses in dependencies for the same reasons. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>DEP-LICENSES (the allow list has no GPL family, npm included, with cargo deny and <code>deny.toml</code>), review for the agreement in pull requests.</p>
+
 <!-- 0037-no-hosted-ci.md -->
-<h3 id="adr-0037"><button class="sec" data-sec>§13.35</button>ADR-0037: No hosted CI; verification is local</h3>
+<h3 id="adr-0037"><button class="sec" data-sec>§13.36</button>ADR-0037: No hosted CI; verification is local</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The repository had a workflow file for a hosted CI service, prepared for the day the code moves to a public Git host. Hosted runners cost money on private repositories, repeat what the development computer already runs, and need a second place where the commands are listed and kept in step with the first.</p>
@@ -3557,7 +3590,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>META-WIRING (hooks call only xtask); the rest by review.</p>
 
 <!-- 0038-public-identity-and-commit-messages.md -->
-<h3 id="adr-0038"><button class="sec" data-sec>§13.36</button>ADR-0038: Public identity and plain commit messages</h3>
+<h3 id="adr-0038"><button class="sec" data-sec>§13.37</button>ADR-0038: Public identity and plain commit messages</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The history of the repository is published with it. Until now commits carried the identity Git found on the machine, the working vocabulary of the project (folder and branch names, work packages, milestone codes), session lines of the tool that wrote them, and merges in a form that named a branch and a package. None of that tells a reader of the public history what changed, and some of it is private.</p>
@@ -3585,7 +3618,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>SEC-PRIVATE (identity, private list, memory-note key) and GIT-COMMIT-MSG (message rules).</p>
 
 <!-- 0039-explicit-master-and-publishing-from-it.md -->
-<h3 id="adr-0039"><button class="sec" data-sec>§13.37</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
+<h3 id="adr-0039"><button class="sec" data-sec>§13.38</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>ADR-0024 keeps a master checkout that never builds, and recognised it by a path segment (a folder whose name starts with <code>OneDrive</code>). That is one person's setup, not the project's: anyone who clones into a synced folder would be locked out of building, and the master would be undetectable anywhere else. Publishing was also open: any checkout could push anywhere, and the public remote is reached from exactly one place.</p>

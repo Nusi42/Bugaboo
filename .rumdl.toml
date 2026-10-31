@@ -10,6 +10,9 @@ line-length = 100
 code-blocks = false
 
 [per-file-ignores]
+# The front page (GitHub shows it): a banner above the title, and pictures that follow the light or
+# dark setting of the reader (`picture`), which Markdown cannot say. Every other page stays plain.
+"README.md" = ["MD033", "MD041"]
 # Agent memory files (ADR-0024 amendment) follow Claude Code's own format: YAML front matter and a
 # one-line-per-memory index, never a title heading.
 ".claude/memory/*.md" = ["MD041"]

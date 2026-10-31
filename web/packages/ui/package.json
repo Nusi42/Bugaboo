@@ -1,6 +1,7 @@
 {
   "name": "@bugaboo/ui",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": [
     "*.css"

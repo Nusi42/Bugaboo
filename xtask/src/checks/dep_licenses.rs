@@ -108,14 +108,12 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
         let packages = lock.get("packages").and_then(Value::as_object);
         for (key, entry) in packages.into_iter().flatten() {
             // Only installed packages count: keys outside node_modules/ are our own workspace
-            // packages, links are the same. Dev-only packages never ship (DECISION: exempt from the
-            // allow list; they still need register rows).
+            // packages, links are the same. Dev-only packages never ship, so they are exempt from
+            // the allow list (they still need register rows), but not from the ban on the GPL
+            // family (ADR-0036).
             let is_dependency = key.starts_with("node_modules/") || key.contains("/node_modules/");
             let dev_only = entry.get("dev").and_then(Value::as_bool) == Some(true);
-            if !is_dependency
-                || dev_only
-                || entry.get("link").and_then(Value::as_bool) == Some(true)
-            {
+            if !is_dependency || entry.get("link").and_then(Value::as_bool) == Some(true) {
                 continue;
             }
             let name = key.rsplit("node_modules/").next().unwrap_or(key);
@@ -128,6 +126,19 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
                 .as_ref()
                 .and_then(declared_license)
                 .or_else(|| declared_license(entry));
+            if dev_only {
+                if let Some(expression) = license
+                    && !satisfied_by(&expression, &|id| !is_gpl_family(id))
+                {
+                    findings.push(Finding::at(
+                        format!("{lockfile}: {name}"),
+                        format!(
+                            "has the license `{expression}`; the GPL family is not allowed, not even in a tool for developers."
+                        ),
+                    ));
+                }
+                continue;
+            }
             match license {
                 None => findings.push(Finding::at(
                     format!("{lockfile}: {name}"),
@@ -169,44 +180,60 @@ fn license_text(value: &Value) -> Option<String> {
 /// Whether an SPDX expression (`MIT`, `(MIT OR Apache-2.0)`, `A AND B`) is allowed.
 /// `OR` needs one allowed side, `AND` needs both.
 pub(crate) fn satisfied(expression: &str, allow: &BTreeSet<String>) -> bool {
+    satisfied_by(expression, &|id| allow.contains(id))
+}
+
+/// Whether a license identifier belongs to the GPL family (GPL, LGPL, AGPL), which Bugaboo never
+/// takes in, not even in a tool that only runs on a developer machine (ADR-0036): code under
+/// another party's GPL could not go into an edition under other terms.
+fn is_gpl_family(id: &str) -> bool {
+    let id = id.to_ascii_uppercase();
+    ["GPL", "LGPL", "AGPL"].iter().any(|family| {
+        id.strip_prefix(family)
+            .is_some_and(|rest| rest.starts_with('-'))
+    })
+}
+
+/// Whether an SPDX expression can be met by identifiers for which `is_allowed` holds.
+fn satisfied_by(expression: &str, is_allowed: &dyn Fn(&str) -> bool) -> bool {
     let spaced = expression.replace('(', " ( ").replace(')', " ) ");
     let tokens: Vec<&str> = spaced.split_whitespace().collect();
     let mut position = 0;
-    let result = parse_or(&tokens, &mut position, allow);
+    let result = parse_or(&tokens, &mut position, is_allowed);
     result.is_some_and(|ok| ok) && position == tokens.len()
 }
 
-fn parse_or(tokens: &[&str], at: &mut usize, allow: &BTreeSet<String>) -> Option<bool> {
-    let mut result = parse_and(tokens, at, allow)?;
+fn parse_or(tokens: &[&str], at: &mut usize, is_allowed: &dyn Fn(&str) -> bool) -> Option<bool> {
+    let mut result = parse_and(tokens, at, is_allowed)?;
     while tokens
         .get(*at)
         .is_some_and(|t| t.eq_ignore_ascii_case("OR"))
     {
         *at += 1;
-        let next = parse_and(tokens, at, allow)?;
+        let next = parse_and(tokens, at, is_allowed)?;
         result |= next;
     }
     Some(result)
 }
 
-fn parse_and(tokens: &[&str], at: &mut usize, allow: &BTreeSet<String>) -> Option<bool> {
-    let mut result = parse_atom(tokens, at, allow)?;
+fn parse_and(tokens: &[&str], at: &mut usize, is_allowed: &dyn Fn(&str) -> bool) -> Option<bool> {
+    let mut result = parse_atom(tokens, at, is_allowed)?;
     while tokens
         .get(*at)
         .is_some_and(|t| t.eq_ignore_ascii_case("AND"))
     {
         *at += 1;
-        let next = parse_atom(tokens, at, allow)?;
+        let next = parse_atom(tokens, at, is_allowed)?;
         result &= next;
     }
     Some(result)
 }
 
-fn parse_atom(tokens: &[&str], at: &mut usize, allow: &BTreeSet<String>) -> Option<bool> {
+fn parse_atom(tokens: &[&str], at: &mut usize, is_allowed: &dyn Fn(&str) -> bool) -> Option<bool> {
     let token = *tokens.get(*at)?;
     *at += 1;
     if token == "(" {
-        let inner = parse_or(tokens, at, allow)?;
+        let inner = parse_or(tokens, at, is_allowed)?;
         (*tokens.get(*at)? == ")").then_some(())?;
         *at += 1;
         return Some(inner);
@@ -219,7 +246,7 @@ fn parse_atom(tokens: &[&str], at: &mut usize, allow: &BTreeSet<String>) -> Opti
         id = format!("{id} WITH {}", tokens.get(*at + 1)?);
         *at += 2;
     }
-    Some(allow.contains(&id))
+    Some(is_allowed(&id))
 }
 
 #[cfg(test)]
@@ -289,11 +316,54 @@ mod tests {
             "package-lock.json",
             r#"{"packages":{"":{},
               "web/ui":{"license":"UNLICENSED"},
-              "node_modules/tool":{"license":"GPL-3.0-only","dev":true},
+              "node_modules/tool":{"license":"MPL-2.0","dev":true},
               "node_modules/legacy":{"licenses":[{"type":"MIT"}]}}}"#,
         );
         let findings = npm_licenses(temp.path(), &["package-lock.json".into()]).unwrap();
         assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn dev_only_packages_may_not_be_gpl() {
+        let temp = TempDir::new("licenses-npm-dev-gpl");
+        temp.write(
+            DENY_CONFIG,
+            "[licenses]
+allow = [\"MIT\"]
+",
+        );
+        temp.write(
+            "package-lock.json",
+            r#"{"packages":{
+              "node_modules/a":{"license":"AGPL-3.0-or-later","dev":true},
+              "node_modules/b":{"license":"(MIT OR GPL-3.0-only)","dev":true},
+              "node_modules/c":{"license":"MPL-2.0","dev":true}}}"#,
+        );
+        let findings = npm_licenses(temp.path(), &["package-lock.json".into()]).unwrap();
+        assert_eq!(findings.len(), 1);
+        assert!(findings[0].message.contains("AGPL-3.0-or-later"));
+    }
+
+    #[test]
+    fn gpl_family_is_recognised_and_never_allowed() {
+        for id in [
+            "GPL-3.0-only",
+            "LGPL-2.1-or-later",
+            "AGPL-3.0-or-later",
+            "GPL-2.0-with-classpath-exception",
+        ] {
+            assert!(is_gpl_family(id), "{id}");
+        }
+        for id in ["MIT", "MPL-2.0", "Apache-2.0"] {
+            assert!(!is_gpl_family(id), "{id}");
+        }
+        let text = include_str!("../../../deny.toml");
+        assert!(
+            allow_list(text)
+                .unwrap()
+                .iter()
+                .all(|id| !is_gpl_family(id))
+        );
     }
 
     #[test]

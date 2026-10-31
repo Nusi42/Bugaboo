@@ -496,7 +496,7 @@ the start. See [compliance.md](compliance.md) for what each model means legally.
 | Tenancy      | One organization per instance                                            |
 | Additions    | Kept: restricted issues (SEC-05), releases (ISS-08), board (PLAN-06), notifications & integrations (NTF) |
 | Naming       | Plain language for users without technical background; no terms copied from other vendors. [Glossary](glossary.md) is the single source |
-| License      | Decide later. The repo stays private; dependency licenses are checked in CI |
+| License      | AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement (ADR-0036); dependency licenses are checked by DEP-LICENSES |
 | Scale (1.0)  | ~500 users, ~1 M issues per instance                                     |
 | UI language  | English only. All strings in one catalog; hooks block hard-coded strings |
 | Documents    | First-class entity, built into the core design from the start; DOC features ship in 1.0 |
@@ -508,7 +508,7 @@ the start. See [compliance.md](compliance.md) for what each model means legally.
 | Engineering  | SSOT, DRY, ODR mandatory; enforced by hooks ([coding-standards.md](coding-standards.md)) |
 | Calendar     | In 1.0 (PLAN-09)                                                         |
 | Relations    | Relations editable on every issue (ISS-04); relation map in 1.0 (ISS-16) |
-| Look         | Violet highlight color. Fonts: the system font stacks of the sister project (Segoe UI Variable, Cascadia Mono), no font files shipped |
+| Look         | Violet highlight color. Fonts: system font stacks (Segoe UI Variable, Cascadia Mono), no font files shipped |
 | Working hours | Daily start, end and breaks recorded (German working-time recording), first release (TIME-08…12) |
 | Accounting   | Activity and cost center on every time entry, fully customizable (TIME-13, CF-08) |
 | GDPR         | Required everywhere, first release (PRIV section)                        |
