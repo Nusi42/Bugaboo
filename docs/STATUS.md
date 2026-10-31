@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M6, Time and working hours, [plan](milestones/M6/README.md): 12 work packages in 4 waves. Every recommendation of the plan's questions M6-Q1 to M6-Q13 is taken. Its first package is the theme structure of the sister project (M5-F167).
 - **Done:** M0 to M5 (`m0-done` to `m5-done`).
-- **Wave:** 1 is merged: WP-01 to WP-04. Wave 2 (WP-05 to WP-08) starts next.
+- **Wave:** 1 is merged: WP-01 to WP-04. Wave 2 runs: WP-05, WP-06 and WP-07 are building; WP-08 starts in `win5` after the change to a straight-line history (rebase instead of merge), which is building there now.
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M6)
@@ -17,9 +17,9 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-02 | Theme files like the sister project | merged (one fix round) | `win2` / `WIN2` | Wave 1; first code package, merged first |
 | WP-03 | Dates, the time of day and the person's day | merged (one fix round) | `win3` / `WIN3` | Wave 1 |
 | WP-04 | Speed edges and quiet upkeep | merged (one fix round) | `win4` / `WIN4` | Wave 1 |
-| WP-05 | Time on issues on the server | planned | `win2` / `WIN2` | Wave 2 |
-| WP-06 | Working hours on the server | planned | `win3` / `WIN3` | Wave 2 |
-| WP-07 | Estimates and totals | planned | `win4` / `WIN4` | Wave 2 |
+| WP-05 | Time on issues on the server | building | `win2` / `WIN2` | Wave 2 |
+| WP-06 | Working hours on the server | building | `win3` / `WIN3` | Wave 2 |
+| WP-07 | Estimates and totals | building | `win4` / `WIN4` | Wave 2 |
 | WP-08 | The maintainer's decisions on settings screens, label squares and IDs | planned | `win5` / `WIN5` | Wave 2 |
 | WP-09 | The timer and the work day on screen | planned | `win2` / `WIN2` | Wave 3 |
 | WP-10 | The timesheet | planned | `win3` / `WIN3` | Wave 3 |
