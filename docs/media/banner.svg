@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="title desc">
   <title id="title">Bugaboo</title>
-  <desc id="desc">The name Bugaboo, a self-hosted issue tracker, next to three issues of a made-up bicycle workshop: one done, one in progress, one not started. A small bug sits on the last row and is shooed away with a boo, once.</desc>
+  <desc id="desc">The name Bugaboo, a self-hosted issue tracker for teams, next to what it does: issues that follow your own workflow from Not started through In progress to Done, and, planned, Gantt charts and AI agents that share its memory, all built for the GDPR. A bug sits beside the workflow; when the issue reaches Done it is shooed away with a boo, once.</desc>
   <style>
     /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
        under the names of the tokens; a test (web/tooling/banner.test.ts) keeps them the same. */
@@ -37,95 +37,145 @@
     .glow { fill: var(--accent-soft); }
     .name { fill: var(--fg); font-size: 92px; font-weight: 700; letter-spacing: -2px; }
     .name tspan { fill: var(--accent); }
-    .line { fill: var(--fg-muted); font-size: 26px; }
+    .line { fill: var(--fg-muted); font-size: 24px; }
     .note { fill: var(--fg-muted); font-size: 18px; }
-    .card { fill: var(--bg-raised); stroke: var(--border); stroke-width: 2; }
-    .title { fill: var(--fg); font-size: 22px; }
-    .chip { fill: var(--accent-soft); }
-    .chip-text { fill: var(--accent); font-size: 15px; font-weight: 600; }
-    .dot { fill: none; stroke-width: 4; }
-    .done .dot { stroke: var(--st-done); }
-    .progress .dot { stroke: var(--st-ip); }
-    .waiting .dot { stroke: var(--st-ns); }
-    .fill { stroke: none; }
-    .done .fill { fill: var(--st-done); }
-    .progress .fill { fill: var(--st-ip); }
-    .waiting .fill { fill: none; }
     .ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 170; stroke-dashoffset: 55; transform: rotate(-90deg); transform-origin: 80px 258px; }
     .ring-track { fill: none; stroke: var(--border); stroke-width: 6; }
 
+    /* The tiles of what Bugaboo does: a title, a short line under it, and a small drawing. */
+    .tile { fill: var(--bg-raised); stroke: var(--border); stroke-width: 2; }
+    .tile-title { fill: var(--fg); font-size: 19px; font-weight: 600; }
+    .tile-line { fill: var(--fg-muted); font-size: 14px; }
+    .pill { fill: var(--bg-surface); stroke: var(--border); stroke-width: 1.5; }
+    .pill-text { fill: var(--fg); font-size: 15px; }
+    .here { fill: none; stroke: var(--accent); stroke-width: 3; }
+    .step { fill: none; stroke: var(--fg-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: none; stroke-width: 3; }
+    .ns .dot { stroke: var(--st-ns); stroke-dasharray: 3 3; }
+    .ip .dot { stroke: var(--st-ip); }
+    .ip .fill { fill: var(--st-ip); }
+    .done .dot { stroke: var(--st-done); }
+    .done .fill { fill: var(--st-done); }
+    .bar-ip { fill: var(--st-ip); }
+    .bar-accent { fill: var(--accent); }
+    .bar-done { fill: var(--st-done); }
+    .axis { stroke: var(--border); stroke-width: 2; }
+    .memo { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+    .memo-line { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+    .spark { fill: var(--accent); }
+    .shield { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+    .check { fill: none; stroke: var(--st-done); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+
     .bug-body, .bug-head { fill: var(--accent); }
     .bug-spot { fill: var(--bg-raised); }
-    .bug-leg { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+    .bug-leg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
     .boo-bubble { fill: var(--accent); }
-    .boo-text { fill: var(--bg-raised); font-size: 17px; font-weight: 700; }
-    /* One calm sequence that plays once and then rests: the rows come in, the bug is shooed away
-       with a boo, and nothing moves again. Nothing blinks and no color changes. */
-    .row { animation: arrive 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
-    .row:nth-of-type(1) { animation-delay: 150ms; }
-    .row:nth-of-type(2) { animation-delay: 400ms; }
-    .row:nth-of-type(3) { animation-delay: 650ms; }
-    .bug { animation: shoo 1800ms 2400ms ease-in both; }
-    .boo { animation: boo 2600ms 2200ms ease-out both; transform-origin: 1175px 298px; }
+    .boo-text { fill: var(--bg-raised); font-size: 30px; font-weight: 700; }
 
-    @keyframes arrive { from { opacity: 0; transform: translateX(32px); } }
-    @keyframes shoo { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(220px, -30px) rotate(40deg); opacity: 0; } }
-    @keyframes boo { 0% { opacity: 0; transform: scale(0.6); } 20%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
+    /* One calm sequence that plays once and then rests. The tiles come in; a bug walks onto the
+       workflow; the issue moves from Not started through In progress to Done; at Done a big
+       "Boo!" pops up and the bug scurries off the card. Nothing blinks and no color changes: only
+       places, sizes and opacity move. */
+    .tiles > g { animation: arrive 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+    .tiles > g:nth-of-type(2) { animation-delay: 250ms; }
+    .tiles > g:nth-of-type(3) { animation-delay: 400ms; }
+    .tiles > g:nth-of-type(4) { animation-delay: 550ms; }
+    .walk { animation: walk 2200ms 1000ms cubic-bezier(0.3, 0.6, 0.4, 1) both; }
+    .legs { animation: legs 275ms 1000ms 8 ease-in-out both; transform-origin: 0 0; }
+    .here { animation: advance 2400ms 3400ms ease-in-out both; }
+    .done .fill { animation: fill 500ms 5600ms ease-out both; transform-origin: 966px 104px; }
+    .bug { animation: shoo 1400ms 6300ms cubic-bezier(0.5, 0, 0.8, 0.6) both; }
+    .boo { animation: boo 3200ms 5900ms ease-out both; transform-origin: 1150px 82px; }
+
+    @keyframes arrive { from { opacity: 0; transform: translateY(16px); } }
+    @keyframes walk { from { transform: translateX(170px); } to { transform: translateX(0); } }
+    @keyframes legs { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(9deg); } }
+    @keyframes advance { 0%, 15% { transform: translateX(0); } 40%, 65% { transform: translateX(180px); } 90%, 100% { transform: translateX(360px); } }
+    @keyframes fill { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+    @keyframes shoo { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 15% { transform: translate(-6px, 4px) rotate(-8deg); opacity: 1; } 100% { transform: translate(190px, -110px) rotate(40deg); opacity: 0; } }
+    @keyframes boo { 0% { opacity: 0; transform: scale(0.4); } 12% { opacity: 1; transform: scale(1.12); } 20%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .row, .bug, .boo { animation: none; }
+      .tiles > g, .walk, .legs, .here, .done .fill, .bug, .boo { animation: none; }
       .boo { opacity: 0; }
     }
   </style>
 
   <rect class="canvas" width="1280" height="320" rx="24"/>
-  <circle class="glow" cx="1180" cy="40" r="170"/>
+  <circle class="glow" cx="1180" cy="20" r="150"/>
 
   <text class="name" x="64" y="140">Bug<tspan>aboo</tspan></text>
-  <text class="line" x="68" y="186">A self-hosted issue tracker for teams.</text>
+  <text class="line" x="68" y="184">A self-hosted issue tracker for teams.</text>
   <circle class="ring-track" cx="80" cy="258" r="27"/>
   <circle class="ring" cx="80" cy="258" r="27"/>
-  <text class="note" x="126" y="256">Time and working hours, privacy first.</text>
+  <text class="note" x="126" y="256">Time and working hours come next.</text>
   <text class="note" x="126" y="280">Under development, before version 1.0.</text>
 
-  <g class="row done">
-    <rect class="card" x="700" y="40" width="520" height="68" rx="14"/>
-    <circle class="dot" cx="742" cy="74" r="12"/>
-    <circle class="fill" cx="742" cy="74" r="6"/>
-    <text class="title" x="772" y="82">Chain snapped on a hill climb</text>
-    <rect class="chip" x="1128" y="58" width="72" height="32" rx="16"/>
-    <text class="chip-text" x="1164" y="79" text-anchor="middle">Gears</text>
-  </g>
-  <g class="row progress">
-    <rect class="card" x="700" y="126" width="520" height="68" rx="14"/>
-    <circle class="dot" cx="742" cy="160" r="12"/>
-    <circle class="fill" cx="742" cy="160" r="6"/>
-    <text class="title" x="772" y="168">Child seat mount is loose</text>
-    <rect class="chip" x="1128" y="144" width="72" height="32" rx="16"/>
-    <text class="chip-text" x="1164" y="165" text-anchor="middle">Frame</text>
-  </g>
-  <g class="row waiting">
-    <rect class="card" x="700" y="212" width="520" height="68" rx="14"/>
-    <circle class="dot" cx="742" cy="246" r="12"/>
-    <circle class="fill" cx="742" cy="246" r="6"/>
-    <text class="title" x="772" y="254">Try a moss green powder coat</text>
-    <rect class="chip" x="1128" y="230" width="72" height="32" rx="16"/>
-    <text class="chip-text" x="1164" y="251" text-anchor="middle">Paint</text>
-    <g transform="translate(1100 246)">
-      <g class="bug">
-        <g>
-          <path class="bug-leg" d="M-8-4-16-8M-9 2-17 3M-8 8-15 13M8-4 16-8M9 2 17 3M8 8 15 13M-3-12-7-19M3-12 7-19"/>
+  <g class="tiles">
+    <g>
+      <rect class="tile" x="560" y="28" width="672" height="120" rx="16"/>
+      <text class="tile-title" x="584" y="64">Issues and your own workflows</text>
+      <g class="ns">
+        <rect class="pill" x="584" y="86" width="140" height="36" rx="18"/>
+        <circle class="dot" cx="606" cy="104" r="7"/>
+        <text class="pill-text" x="622" y="109">Not started</text>
+      </g>
+      <path class="step" d="M732 104h22m-6-5 6 5-6 5"/>
+      <g class="ip">
+        <rect class="pill" x="764" y="86" width="140" height="36" rx="18"/>
+        <circle class="dot" cx="786" cy="104" r="7"/>
+        <path class="fill" d="M786 98a6 6 0 0 1 0 12z"/>
+        <text class="pill-text" x="802" y="109">In progress</text>
+      </g>
+      <path class="step" d="M912 104h22m-6-5 6 5-6 5"/>
+      <g class="done">
+        <rect class="pill" x="944" y="86" width="140" height="36" rx="18"/>
+        <circle class="dot" cx="966" cy="104" r="7"/>
+        <circle class="fill" cx="966" cy="104" r="4"/>
+        <text class="pill-text" x="982" y="109">Done</text>
+      </g>
+      <rect class="here" x="581" y="83" width="146" height="42" rx="21"/>
+      <g transform="translate(1150 104)">
+        <g class="walk">
+          <g class="bug">
+            <path class="legs bug-leg" d="M-13-6-25-13M-14 3-27 4M-13 12-23 21M13-6 25-13M14 3 27 4M13 12 23 21M-5-19-10-29M5-19 10-29"/>
+            <ellipse class="bug-body" cx="0" cy="3" rx="14" ry="18"/>
+            <circle class="bug-head" cx="0" cy="-17" r="8"/>
+            <circle class="bug-spot" cx="-5.5" cy="0" r="3.2"/>
+            <circle class="bug-spot" cx="5.5" cy="0" r="3.2"/>
+            <circle class="bug-spot" cx="0" cy="11" r="2.6"/>
+          </g>
         </g>
-        <ellipse class="bug-body" cx="0" cy="2" rx="9" ry="12"/>
-        <circle class="bug-head" cx="0" cy="-11" r="5.5"/>
-        <circle class="bug-spot" cx="-3.5" cy="0" r="2.2"/>
-        <circle class="bug-spot" cx="3.5" cy="0" r="2.2"/>
-        <circle class="bug-spot" cx="0" cy="8" r="1.8"/>
+      </g>
+      <g class="boo">
+        <rect class="boo-bubble" x="1086" y="36" width="128" height="50" rx="25"/>
+        <path class="boo-bubble" d="M1128 84h18l-12 12z"/>
+        <text class="boo-text" x="1150" y="71" text-anchor="middle">Boo!</text>
       </g>
     </g>
-    <g class="boo">
-      <rect class="boo-bubble" x="1140" y="284" width="70" height="28" rx="14"/>
-      <text class="boo-text" x="1175" y="304" text-anchor="middle">Boo!</text>
+    <g>
+      <rect class="tile" x="560" y="164" width="214" height="128" rx="16"/>
+      <line class="axis" x1="580" y1="228" x2="644" y2="228"/>
+      <rect class="bar-ip" x="580" y="184" width="28" height="10" rx="5"/>
+      <rect class="bar-accent" x="598" y="199" width="32" height="10" rx="5"/>
+      <rect class="bar-done" x="618" y="214" width="26" height="10" rx="5"/>
+      <text class="tile-title" x="580" y="262">Gantt charts</text>
+      <text class="tile-line" x="580" y="282">Planned: plans on a timeline</text>
+    </g>
+    <g>
+      <rect class="tile" x="789" y="164" width="214" height="128" rx="16"/>
+      <rect class="memo" x="809" y="186" width="38" height="44" rx="6"/>
+      <path class="memo-line" d="M817 200h22M817 210h22M817 220h14"/>
+      <path class="spark" d="M855 178q2 9 11 11-9 2-11 11-2-9-11-11 9-2 11-11z"/>
+      <text class="tile-title" x="809" y="262">AI agents</text>
+      <text class="tile-line" x="809" y="282">Planned: shared memory</text>
+    </g>
+    <g>
+      <rect class="tile" x="1018" y="164" width="214" height="128" rx="16"/>
+      <path class="shield" d="M1058 182l20 7v15c0 13-9 21-20 25-11-4-20-12-20-25v-15z"/>
+      <path class="check" d="M1049 206l7 7 12-13"/>
+      <text class="tile-title" x="1038" y="262">Built for the GDPR</text>
+      <text class="tile-line" x="1038" y="282">On your own server</text>
     </g>
   </g>
 </svg>
