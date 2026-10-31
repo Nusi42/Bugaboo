@@ -60,8 +60,8 @@ touches** against this list, and a finding blocks the merge until it is fixed:
 - **Knowledge kept in two places by hand** and held together only by a test that compares
   them (SSOT). Generate one from the other, or read both from one file.
   **Approved exceptions** are the ones an ADR names, each held together by test vectors that
-  are generated from one side (not written by hand) and checked by a named check. Today there is
-  one approval, recorded in the amendment of
+  are generated from one side (not written by hand) and checked by a named check. Today there are
+  two approvals. The first is recorded in the amendment of
   [ADR-0033](adr/0033-notifications-and-e-mail.md): (1) the region-dependent writing of dates,
   numbers and time zones, kept in two implementations (Rust for e-mail, `Intl` in the browser,
   because the choice *device* cannot run on the server), and (2) the synchronous TypeScript
@@ -69,8 +69,12 @@ touches** against this list, and a finding blocks the merge until it is fixed:
   which stay beside the shared Rust wording. Both are checked against the vectors that
   `cargo xtask gen word-vectors` writes from Rust: DOC-GENERATED fails when the file differs from
   the code, and the browser test `web/app/src/shared/value-words.test.ts` fails when the screen
-  writes a case differently. A reviewer does not record these as findings; any other pair is a
-  finding.
+  writes a case differently. The second is recorded in
+  [ADR-0035](adr/0035-time-on-issues-and-working-hours.md), decision 4: the worked-out *Time left*
+  of `bb-core` and its one SQL expression in the search compiler, held together by
+  `tools/testdata/time-left.json`, which `cargo xtask gen time-vectors` writes from `bb-core`
+  (DOC-GENERATED) and the two-database test `time_03_the_compiled_time_left_matches_the_vectors`
+  reads. A reviewer does not record these as findings; any other pair is a finding.
 - **A magic number or string** that names a rule (a limit, a size, a timeout, a key) instead
   of a named constant from its single home.
 - **Common bad patterns:** a function that does several unrelated things; a long parameter
@@ -143,7 +147,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.
-- **One exception: the size a person drags.** A window follows the pointer, so its size is two variables of the theme file that the code sets: only `element.style.setProperty(variableOf("…"), value)`, only in `web/packages/ui/src/`, where `variableOf` (defined once, in `variables.ts`) takes only a token that the theme file marks `run-time="true"` (today `window-width` and `window-height`, and for the issue list `list-columns`, the widths of the columns that the head and every row share, `list-gutter`, the width of the bar the rows have now, which the head keeps the room of so the columns stand over each other, and `list-width`, the measured width of the head, which the virtualized rows are given because they have no width of their own, and `size-code-char`, one character of the code font as the browser draws it, measured from a probe in that font). A color or a spacing is never set from code, and a second `variableOf` is a finding. Enforced by: THEME-ONLY.
+- **One exception: the size a person drags.** A window follows the pointer, so its size is two variables of the base theme file that the code sets: only `element.style.setProperty(variableOf("…"), value)`, only in `web/packages/ui/src/`, where `variableOf` (defined once, in `variables.ts`) takes only a token that the base theme file marks `run-time="true"` (today `window-width` and `window-height`, and for the issue list `list-columns`, the widths of the columns that the head and every row share, `list-gutter`, the width of the bar the rows have now, which the head keeps the room of so the columns stand over each other, and `list-width`, the measured width of the head, which the virtualized rows are given because they have no width of their own, and `size-code-char`, one character of the code font as the browser draws it, measured from a probe in that font). A color or a spacing is never set from code, and a second `variableOf` is a finding. Enforced by: THEME-ONLY.
 - **One exception to `jsx-a11y/prefer-tag-over-role`: the roles of the issue list's head and cells.** A virtualized grid of divs tied to the rows of the GridList cannot use `table`, `tr`, `th` or `hr`, so those roles are given by attribute, as named constants, once, in `web/packages/ui/src/ListRoles.tsx`, and every use goes through its components (UX §4.2, TEST-A11Y). Enforced by: ARCH-WEB-ROLES.
 - No `eval`, `new Function`, `document.write`, a timer given a string, or inline event-handler
   strings (these would break the CSP). Enforced by: SEC-PATTERNS. Setting HTML from a string is

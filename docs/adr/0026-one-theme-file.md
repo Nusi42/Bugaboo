@@ -1,6 +1,6 @@
 # ADR-0026: One theme file for everything about how the app looks
 
-Status: **Accepted** · 2026-10-08 · replaces the styling part of [ADR-0010](0010-design-tokens.md)
+Status: **Accepted** · 2026-10-08 · replaces the styling part of [ADR-0010](0010-design-tokens.md) · updated in M6: a base file and one file of colors and its shadow per theme (decision M6-Q1)
 
 ## Context
 

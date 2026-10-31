@@ -2932,7 +2932,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 
 <!-- 0026-one-theme-file.md -->
 <h3 id="adr-0026"><button class="sec" data-sec>§13.26</button>ADR-0026: One theme file for everything about how the app looks</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a></p>
+<p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a> · updated in M6: a base file and one file of colors and its shadow per theme (decision M6-Q1)</p>
 <h4>Context</h4>
 <p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way a sister project keeps its complete look in one theme file. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
 <ul>
