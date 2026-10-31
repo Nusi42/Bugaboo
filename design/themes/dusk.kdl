@@ -67,6 +67,18 @@ theme "dusk" extends="default" kind="dark" {
         color "cat11-fg" "#b8b9bb"
         color "cat12-bg" "#3b2e19"
         color "cat12-fg" "#ac9a81"
+        color "cat1-mark" "#f05a9e"
+        color "cat2-mark" "#7a9cff"
+        color "cat3-mark" "#3fbf6a"
+        color "cat4-mark" "#f5893a"
+        color "cat5-mark" "#b57cf0"
+        color "cat6-mark" "#33c4b8"
+        color "cat7-mark" "#ff8a80"
+        color "cat8-mark" "#e7c03a"
+        color "cat9-mark" "#4cb8f0"
+        color "cat10-mark" "#a2d23c"
+        color "cat11-mark" "#9a9ea6"
+        color "cat12-mark" "#d4b483"
         shadow "shadow" "0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059"
     }
 }

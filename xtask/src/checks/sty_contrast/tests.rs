@@ -623,3 +623,71 @@ fn a_finding_points_at_the_line_that_sets_the_color_in_its_theme() {
             .collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn the_squares_of_labels_are_read_as_fills_without_text() {
+    // M5-F149: the squares carry no text, so they have a rule of their own, the `fills` line, and not the text rule.
+    let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    let fills = file
+        .contrast
+        .plain_lines
+        .iter()
+        .find(|lines| lines.drawn == crate::generate::contrast_spec::Drawn::Fill)
+        .expect("the theme file has a `fills` line");
+    assert_eq!(fills.colors.len(), 12, "one square for each choice color");
+    assert!(fills.colors.iter().all(|name| name.ends_with("-mark")));
+    assert!(
+        fills.min >= 3.0,
+        "a fill to see is held to the ratio of a line"
+    );
+    assert!(
+        !file
+            .contrast
+            .text
+            .iter()
+            .any(|name| name.ends_with("-mark"))
+            && !file
+                .contrast
+                .backgrounds
+                .iter()
+                .any(|name| name.ends_with("-mark")),
+        "a square is neither text nor a background for text"
+    );
+}
+
+#[test]
+fn a_pale_square_of_a_label_is_rejected_in_every_theme() {
+    // M5-F149: in the light themes the squares were the pale fills of the chips (Coral #ffe2df on the white card).
+    let findings = evaluate(&with_value("cat7-mark", "daylight", "#ffe2df"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("the fill `cat7-mark`")
+                && f.message.contains("Theme daylight")),
+        "{:?}",
+        messages(&findings)
+    );
+    // And in the dark themes the dark ones: a brick red on the card of Dusk.
+    let findings = evaluate(&with_value("cat7-mark", "dusk", "#561f1a"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("the fill `cat7-mark`") && f.message.contains("Theme dusk")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn the_squares_of_neighbouring_choices_are_told_apart() {
+    // M5-F149: Coral next to Pink. A Coral square that is dark enough to be seen but close to the Pink square is
+    // rejected by the `distinct` rule of the squares.
+    let findings = evaluate(&with_value("cat7-mark", "daylight", "#c8336f"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`cat1-mark`") && f.message.contains("`cat7-mark`")),
+        "{:?}",
+        messages(&findings)
+    );
+}

@@ -199,9 +199,32 @@ impl MoreSpec {
     }
 }
 
-/// Lines that people have to see (the edge of a box to tick), kept at a ratio on the plain surfaces
-/// in every theme, also without the device setting for more contrast.
+/// What a group of [`PlainLines`] draws: a line, or a fill that carries no text (the square of a label).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Drawn {
+    /// A line (`lines`): the edge of a box to tick, a ring, a divider.
+    Line,
+    /// A fill without text (`fills`): only its color has to be seen, so it is held to the ratio of a line
+    /// (WCAG 1.4.11), not to the ratio of the text that other fills carry (M5-F149).
+    Fill,
+}
+
+impl Drawn {
+    /// The word a finding uses for it.
+    pub(crate) const fn word(self) -> &'static str {
+        match self {
+            Self::Line => "line",
+            Self::Fill => "fill",
+        }
+    }
+}
+
+/// Lines that people have to see (the edge of a box to tick), and fills without text (the square of a
+/// label), kept at a ratio on the plain surfaces in every theme, also without the device setting for more
+/// contrast.
 pub(crate) struct PlainLines {
+    /// Whether the colors are lines or fills without text; both are checked the same way.
+    pub(crate) drawn: Drawn,
     pub(crate) min: f64,
     pub(crate) colors: Vec<String>,
     pub(crate) on: Vec<String>,
@@ -346,9 +369,14 @@ impl ContrastSpec {
                     reason(child)?;
                     non_text.extend(child.args()?);
                 }
-                "lines" => {
+                "lines" | "fills" => {
                     reason(child)?;
                     plain_lines.push(PlainLines {
+                        drawn: if child.name() == "fills" {
+                            Drawn::Fill
+                        } else {
+                            Drawn::Line
+                        },
                         min: child.number_prop("min")?,
                         colors: child.words("colors")?,
                         on: child.words("on")?,

@@ -5,6 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
+import { resolved } from "./support/styles.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, the final pass: *Create a label* says that a label has a name, a color and a label group, so the form
@@ -23,9 +24,8 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
     .getByRole("group", { name: t("labels.field-new-color"), exact: true })
     .getByRole("radio", { name: picked, exact: true })
     .check();
-  const fill = await partIn(page, "field-swatch", "cat7").evaluate(
-    (node) => getComputedStyle(node).backgroundColor,
-  );
+  // The color of the square, as the theme gives it (M5-F149).
+  const square = await resolved(page, "background-color", "var(--cat7-mark)");
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();
   await expect(page.getByText(t("labels.label-created", { name: "backend" }))).toBeVisible();
   const row = page
@@ -34,8 +34,8 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
   // The list shows the label with a small square in its color before its name (UX §7.5).
   const mark = partIn(row, "label-mark", "cat7");
   await expect(mark).toBeVisible();
-  // The square is the fill of its color, as the swatch it was chosen from, not its text color.
-  await expect(mark).toHaveCSS("background-color", fill);
+  // The square is the clear color of its own, not the pale fill of the swatch it was chosen from (M5-F149).
+  await expect(mark).toHaveCSS("background-color", square);
   await row.click();
   await expect(
     page

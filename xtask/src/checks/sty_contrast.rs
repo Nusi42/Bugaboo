@@ -204,7 +204,8 @@ fn stronger_findings(file: &ThemeFile) -> Vec<Finding> {
 }
 
 /// The lines that people have to see (the edge of a box to tick, the edge of a button that cannot be
-/// pressed, the ring and the hover line of a row) reach their ratio on their surfaces in every theme,
+/// pressed, the ring and the hover line of a row), and the fills that carry no text (the square of a
+/// label), reach their ratio on their surfaces in every theme,
 /// as they are and with the device setting for more contrast. A line that is faded (`faded-by`) is checked as it is seen: its color
 /// mixed with the surface behind it by the opacity.
 fn line_findings(file: &ThemeFile) -> Vec<Finding> {
@@ -248,8 +249,10 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
                             findings.push(Finding::at(
                                 place(file, line, theme),
                                 format!(
-                                    "Theme {}{mode}: the line `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
-                                    theme.name, lines.min
+                                    "Theme {}{mode}: the {} `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
+                                    theme.name,
+                                    lines.drawn.word(),
+                                    lines.min
                                 ),
                             ));
                         }

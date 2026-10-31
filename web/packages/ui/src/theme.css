@@ -214,6 +214,18 @@
   --cat11-fg: #53595e;
   --cat12-bg: #e5d7ba;
   --cat12-fg: #655940;
+  --cat1-mark: #c2306f;
+  --cat2-mark: #2f62d9;
+  --cat3-mark: #2e8a3e;
+  --cat4-mark: #c9560a;
+  --cat5-mark: #8e44c9;
+  --cat6-mark: #0f8a84;
+  --cat7-mark: #e04a5a;
+  --cat8-mark: #a18000;
+  --cat9-mark: #2b8dc4;
+  --cat10-mark: #6a9410;
+  --cat11-mark: #80858b;
+  --cat12-mark: #9c7a4c;
   --shadow: 0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14;
   color-scheme: light;
 }
@@ -282,6 +294,18 @@
     --cat11-fg: #b8b9bb;
     --cat12-bg: #3b2e19;
     --cat12-fg: #ac9a81;
+    --cat1-mark: #f05a9e;
+    --cat2-mark: #7a9cff;
+    --cat3-mark: #3fbf6a;
+    --cat4-mark: #f5893a;
+    --cat5-mark: #b57cf0;
+    --cat6-mark: #33c4b8;
+    --cat7-mark: #ff8a80;
+    --cat8-mark: #e7c03a;
+    --cat9-mark: #4cb8f0;
+    --cat10-mark: #a2d23c;
+    --cat11-mark: #9a9ea6;
+    --cat12-mark: #d4b483;
     --shadow: 0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059;
     color-scheme: dark;
   }
@@ -350,6 +374,18 @@
   --cat11-fg: #b8b9bb;
   --cat12-bg: #3b2e19;
   --cat12-fg: #ac9a81;
+  --cat1-mark: #f05a9e;
+  --cat2-mark: #7a9cff;
+  --cat3-mark: #3fbf6a;
+  --cat4-mark: #f5893a;
+  --cat5-mark: #b57cf0;
+  --cat6-mark: #33c4b8;
+  --cat7-mark: #ff8a80;
+  --cat8-mark: #e7c03a;
+  --cat9-mark: #4cb8f0;
+  --cat10-mark: #a2d23c;
+  --cat11-mark: #9a9ea6;
+  --cat12-mark: #d4b483;
   --shadow: 0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059;
   color-scheme: dark;
 }
@@ -418,6 +454,18 @@
   --cat11-fg: #53595e;
   --cat12-bg: #e5d7ba;
   --cat12-fg: #655940;
+  --cat1-mark: #c2306f;
+  --cat2-mark: #2f62d9;
+  --cat3-mark: #2e8a3e;
+  --cat4-mark: #c9560a;
+  --cat5-mark: #8e44c9;
+  --cat6-mark: #0f8a84;
+  --cat7-mark: #e04a5a;
+  --cat8-mark: #a18000;
+  --cat9-mark: #2b8dc4;
+  --cat10-mark: #6a9410;
+  --cat11-mark: #80858b;
+  --cat12-mark: #9c7a4c;
   --shadow: 0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14;
   color-scheme: light;
 }
@@ -486,6 +534,18 @@
   --cat11-fg: #51575c;
   --cat12-bg: #e7d6bc;
   --cat12-fg: #655741;
+  --cat1-mark: #c2306f;
+  --cat2-mark: #2f62d9;
+  --cat3-mark: #2e8a3e;
+  --cat4-mark: #c9560a;
+  --cat5-mark: #8e44c9;
+  --cat6-mark: #0f8a84;
+  --cat7-mark: #e04a5a;
+  --cat8-mark: #a18000;
+  --cat9-mark: #2b8dc4;
+  --cat10-mark: #6a9410;
+  --cat11-mark: #80858b;
+  --cat12-mark: #9c7a4c;
   --shadow: 0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914;
   color-scheme: light;
 }
@@ -554,6 +614,18 @@
   --cat11-fg: #b8b9bb;
   --cat12-bg: #3b2e19;
   --cat12-fg: #ac9a81;
+  --cat1-mark: #f05a9e;
+  --cat2-mark: #7a9cff;
+  --cat3-mark: #3fbf6a;
+  --cat4-mark: #f5893a;
+  --cat5-mark: #b57cf0;
+  --cat6-mark: #33c4b8;
+  --cat7-mark: #ff8a80;
+  --cat8-mark: #e7c03a;
+  --cat9-mark: #4cb8f0;
+  --cat10-mark: #a2d23c;
+  --cat11-mark: #9a9ea6;
+  --cat12-mark: #d4b483;
   --shadow: 0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059;
   color-scheme: dark;
 }
@@ -622,6 +694,18 @@
   --cat11-fg: #a7a8aa;
   --cat12-bg: #2c2009;
   --cat12-fg: #9d8b73;
+  --cat1-mark: #f05a9e;
+  --cat2-mark: #7a9cff;
+  --cat3-mark: #3fbf6a;
+  --cat4-mark: #f5893a;
+  --cat5-mark: #b57cf0;
+  --cat6-mark: #33c4b8;
+  --cat7-mark: #ff8a80;
+  --cat8-mark: #e7c03a;
+  --cat9-mark: #4cb8f0;
+  --cat10-mark: #a2d23c;
+  --cat11-mark: #9a9ea6;
+  --cat12-mark: #d4b483;
   --shadow: 0 0 0 1px #272a31, 0 8px 24px 0 #00000099;
   color-scheme: dark;
 }
@@ -6626,98 +6710,146 @@ textarea,
 
 [data-part="field-badge"][data-variant~="cat1"],
 [data-part="field-pill"][data-variant~="cat1"],
-[data-part="field-swatch"][data-variant~="cat1"],
-[data-part="label-mark"][data-variant~="cat1"] {
+[data-part="field-swatch"][data-variant~="cat1"] {
   background: var(--cat1-bg);
   color: var(--cat1-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat2"],
 [data-part="field-pill"][data-variant~="cat2"],
-[data-part="field-swatch"][data-variant~="cat2"],
-[data-part="label-mark"][data-variant~="cat2"] {
+[data-part="field-swatch"][data-variant~="cat2"] {
   background: var(--cat2-bg);
   color: var(--cat2-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat3"],
 [data-part="field-pill"][data-variant~="cat3"],
-[data-part="field-swatch"][data-variant~="cat3"],
-[data-part="label-mark"][data-variant~="cat3"] {
+[data-part="field-swatch"][data-variant~="cat3"] {
   background: var(--cat3-bg);
   color: var(--cat3-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat4"],
 [data-part="field-pill"][data-variant~="cat4"],
-[data-part="field-swatch"][data-variant~="cat4"],
-[data-part="label-mark"][data-variant~="cat4"] {
+[data-part="field-swatch"][data-variant~="cat4"] {
   background: var(--cat4-bg);
   color: var(--cat4-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat5"],
 [data-part="field-pill"][data-variant~="cat5"],
-[data-part="field-swatch"][data-variant~="cat5"],
-[data-part="label-mark"][data-variant~="cat5"] {
+[data-part="field-swatch"][data-variant~="cat5"] {
   background: var(--cat5-bg);
   color: var(--cat5-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat6"],
 [data-part="field-pill"][data-variant~="cat6"],
-[data-part="field-swatch"][data-variant~="cat6"],
-[data-part="label-mark"][data-variant~="cat6"] {
+[data-part="field-swatch"][data-variant~="cat6"] {
   background: var(--cat6-bg);
   color: var(--cat6-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat7"],
 [data-part="field-pill"][data-variant~="cat7"],
-[data-part="field-swatch"][data-variant~="cat7"],
-[data-part="label-mark"][data-variant~="cat7"] {
+[data-part="field-swatch"][data-variant~="cat7"] {
   background: var(--cat7-bg);
   color: var(--cat7-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat8"],
 [data-part="field-pill"][data-variant~="cat8"],
-[data-part="field-swatch"][data-variant~="cat8"],
-[data-part="label-mark"][data-variant~="cat8"] {
+[data-part="field-swatch"][data-variant~="cat8"] {
   background: var(--cat8-bg);
   color: var(--cat8-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat9"],
 [data-part="field-pill"][data-variant~="cat9"],
-[data-part="field-swatch"][data-variant~="cat9"],
-[data-part="label-mark"][data-variant~="cat9"] {
+[data-part="field-swatch"][data-variant~="cat9"] {
   background: var(--cat9-bg);
   color: var(--cat9-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat10"],
 [data-part="field-pill"][data-variant~="cat10"],
-[data-part="field-swatch"][data-variant~="cat10"],
-[data-part="label-mark"][data-variant~="cat10"] {
+[data-part="field-swatch"][data-variant~="cat10"] {
   background: var(--cat10-bg);
   color: var(--cat10-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat11"],
 [data-part="field-pill"][data-variant~="cat11"],
-[data-part="field-swatch"][data-variant~="cat11"],
-[data-part="label-mark"][data-variant~="cat11"] {
+[data-part="field-swatch"][data-variant~="cat11"] {
   background: var(--cat11-bg);
   color: var(--cat11-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat12"],
 [data-part="field-pill"][data-variant~="cat12"],
-[data-part="field-swatch"][data-variant~="cat12"],
-[data-part="label-mark"][data-variant~="cat12"] {
+[data-part="field-swatch"][data-variant~="cat12"] {
   background: var(--cat12-bg);
   color: var(--cat12-fg);
+}
+
+[data-part="label-mark"][data-variant~="cat1"] {
+  background: var(--cat1-mark);
+  color: var(--cat1-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat2"] {
+  background: var(--cat2-mark);
+  color: var(--cat2-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat3"] {
+  background: var(--cat3-mark);
+  color: var(--cat3-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat4"] {
+  background: var(--cat4-mark);
+  color: var(--cat4-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat5"] {
+  background: var(--cat5-mark);
+  color: var(--cat5-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat6"] {
+  background: var(--cat6-mark);
+  color: var(--cat6-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat7"] {
+  background: var(--cat7-mark);
+  color: var(--cat7-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat8"] {
+  background: var(--cat8-mark);
+  color: var(--cat8-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat9"] {
+  background: var(--cat9-mark);
+  color: var(--cat9-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat10"] {
+  background: var(--cat10-mark);
+  color: var(--cat10-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat11"] {
+  background: var(--cat11-mark);
+  color: var(--cat11-mark);
+}
+
+[data-part="label-mark"][data-variant~="cat12"] {
+  background: var(--cat12-mark);
+  color: var(--cat12-mark);
 }
 
 [data-part="layout-editor"] {

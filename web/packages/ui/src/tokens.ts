@@ -106,6 +106,18 @@ export const colorTokens = [
   "cat11-fg",
   "cat12-bg",
   "cat12-fg",
+  "cat1-mark",
+  "cat2-mark",
+  "cat3-mark",
+  "cat4-mark",
+  "cat5-mark",
+  "cat6-mark",
+  "cat7-mark",
+  "cat8-mark",
+  "cat9-mark",
+  "cat10-mark",
+  "cat11-mark",
+  "cat12-mark",
 ] as const;
 export type ColorToken = (typeof colorTokens)[number];
 
@@ -319,6 +331,18 @@ export const tokenNames = [
   "cat11-fg",
   "cat12-bg",
   "cat12-fg",
+  "cat1-mark",
+  "cat2-mark",
+  "cat3-mark",
+  "cat4-mark",
+  "cat5-mark",
+  "cat6-mark",
+  "cat7-mark",
+  "cat8-mark",
+  "cat9-mark",
+  "cat10-mark",
+  "cat11-mark",
+  "cat12-mark",
   "shadow",
 ] as const;
 export type TokenName = (typeof tokenNames)[number];

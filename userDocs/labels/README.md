@@ -27,7 +27,7 @@ A tag can be limited to some projects. In another project it is not offered whil
 - **Labels:** create a label (name, color, label group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
 - **Tags:** rename a tag, change its color, and choose the projects it is for, or *Use in all projects*.
 
-Colors are the twelve colors of the theme, so a label is readable in every theme.
+Colors are the twelve colors of the theme, so a label is readable in every theme. The small square of a label is the color itself, clear in every theme: it carries no words, so it does not have to stay as pale as the fill behind a name.
 
 ### Label groups per project
 

@@ -267,7 +267,7 @@ status = "active"
 
 [[check]]
 id = "STY-CONTRAST"
-title = "Every text/background pair in the built-in themes passes WCAG AA, and the status tints, priority edges, hover and scrim keep their clear differences"
+title = "Every text/background pair in the built-in themes passes WCAG AA, the squares of labels are seen and told apart, and the status tints, priority edges, hover and scrim keep their clear differences"
 rule = "THM-03, UX-04"
 tool = "xtask (reads design/theme.kdl and every theme file of design/themes/: every theme, in the usual mode and with more contrast, a color that names another with the color it leads to; a finding names the theme's file)"
 when = ["commit", "ci"]
