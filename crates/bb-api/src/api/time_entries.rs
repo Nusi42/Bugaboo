@@ -28,6 +28,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized, done,
 };
+use super::roles::VersionBody;
 use super::time::EntryDetailsBody;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -186,13 +187,6 @@ pub(crate) struct ChangeTimeEntryBody {
     entry: Option<EntryDetailsBody>,
 }
 
-/// The deletion of one of the person's own entries.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct DeleteTimeEntryBody {
-    /// The version of the entry that was looked at.
-    version: i64,
-}
-
 /// The dates of the person's own entries to list.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
@@ -333,7 +327,7 @@ async fn change_time_entry(
     operation_id = "deleteTimeEntry",
     tag = "time",
     params(("entry" = String, Path, description = "The ID of the entry.")),
-    request_body = DeleteTimeEntryBody,
+    request_body = VersionBody,
     responses(
         (status = 204, description = "The entry is gone."),
         NotSignedInAnswer,
@@ -347,7 +341,7 @@ async fn delete_time_entry(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(entry): ApiPath<String>,
-    ApiJson(body): ApiJson<DeleteTimeEntryBody>,
+    ApiJson(body): ApiJson<VersionBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .delete_time_entry(

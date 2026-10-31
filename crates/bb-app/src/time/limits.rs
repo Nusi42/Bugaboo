@@ -96,9 +96,9 @@ mod tests {
 
     use super::*;
 
-    fn refused(result: Result<impl std::fmt::Debug, AppError>) -> Option<ErrorCode> {
+    fn refused<T>(result: &Result<T, AppError>) -> Option<ErrorCode> {
         match result {
-            Err(AppError::Refused(code)) => Some(code),
+            Err(AppError::Refused(code)) => Some(*code),
             _ => None,
         }
     }
@@ -109,7 +109,7 @@ mod tests {
         let soon = at.checked_add(SignedDuration::from_millis(999)).unwrap();
         let later = at.checked_add(SignedDuration::from_secs(1)).unwrap();
         assert_eq!(
-            refused(may_change_timer(at, soon)),
+            refused(&may_change_timer(at, soon)),
             Some(ErrorCode::TimerTooFast)
         );
         assert!(may_change_timer(at, later).is_ok());
@@ -119,7 +119,7 @@ mod tests {
     fn time_02_a_day_holds_at_most_two_hundred_entries() {
         assert!(room_for_an_entry(TIME_ENTRIES_PER_DAY_MAX - 1).is_ok());
         assert_eq!(
-            refused(room_for_an_entry(TIME_ENTRIES_PER_DAY_MAX)),
+            refused(&room_for_an_entry(TIME_ENTRIES_PER_DAY_MAX)),
             Some(ErrorCode::TooManyTimeEntries)
         );
     }
@@ -134,11 +134,11 @@ mod tests {
         let longest = "a".repeat(TIME_NOTE_CHARS_MAX);
         assert_eq!(clean_note(&longest).unwrap(), longest);
         assert_eq!(
-            refused(clean_note(&format!("{longest}a"))),
+            refused(&clean_note(&format!("{longest}a"))),
             Some(ErrorCode::TimeNoteTooLong)
         );
         assert_eq!(
-            refused(clean_note("bell\u{7}")),
+            refused(&clean_note("bell\u{7}")),
             Some(ErrorCode::InvalidRequest)
         );
     }
@@ -154,11 +154,13 @@ mod tests {
             TIME_ENTRY_MINUTES_MAX
         );
         assert_eq!(
-            refused(entry_length(Minutes::default())),
+            refused(&entry_length(Minutes::default())),
             Some(ErrorCode::TimeEntryTooShort)
         );
         assert_eq!(
-            refused(entry_length(Minutes::new(TIME_ENTRY_MINUTES_MAX.get() + 1))),
+            refused(&entry_length(Minutes::new(
+                TIME_ENTRY_MINUTES_MAX.get() + 1
+            ))),
             Some(ErrorCode::TimeEntryTooLong)
         );
     }

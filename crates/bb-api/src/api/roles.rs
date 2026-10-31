@@ -120,11 +120,14 @@ impl From<&RoleView> for RoleBody {
     }
 }
 
-/// Which role to give its starting permissions back, made on the version that was looked at.
+/// A change that needs nothing but the version of the record it is made on: giving a role its
+/// starting permissions back, throwing the timer away, deleting a time entry. One schema for all of
+/// them; its name is the one the API was frozen with (ADR-0008).
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct ResetRoleBody {
-    /// The version of the role the person looked at; a change made meanwhile stops this one.
-    version: i64,
+#[schema(as = ResetRoleBody)]
+pub(crate) struct VersionBody {
+    /// The version of the record the person looked at; a change made meanwhile stops this one.
+    pub(crate) version: i64,
 }
 
 /// What a role is used for, as far as the person who asks may see.
@@ -510,7 +513,7 @@ async fn copy_role(
     operation_id = "resetRole",
     tag = "roles",
     params(("role" = String, Path, description = "The ID of the role.")),
-    request_body = ResetRoleBody,
+    request_body = VersionBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),
         InvalidAnswer,
@@ -525,7 +528,7 @@ async fn reset_role(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
-    ApiJson(body): ApiJson<ResetRoleBody>,
+    ApiJson(body): ApiJson<VersionBody>,
 ) -> Result<Response, ApiError> {
     let role = path_id::<RoleId>(&role_id)?;
     let reset = auth

@@ -407,10 +407,10 @@ pub async fn change_time_entry<S: AuthStore>(
             Making::Change,
         )
         .await?;
-    let mut changes = vec![set_to(member::ISSUE, json!(entry.issue.to_string()))];
+    let mut members = vec![set_to(member::ISSUE, json!(entry.issue.to_string()))];
     let mut differs = |name: &str, before: serde_json::Value, after: serde_json::Value| {
         if before != after {
-            changes.push(FieldChange {
+            members.push(FieldChange {
                 field: name.to_owned(),
                 before: Some(before),
                 after: Some(after),
@@ -433,12 +433,12 @@ pub async fn change_time_entry<S: AuthStore>(
         json!(entry.billable),
         json!(changed.billable),
     );
-    changes.extend(values.changes());
-    changes.push(counted_up(entry.version));
+    members.extend(values.changes());
+    members.push(counted_up(entry.version));
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::TimeEntry, entry.id),
-        changes,
+        members,
     )?;
     let why = Why::default();
     let stopped = why.clone();

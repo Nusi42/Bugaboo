@@ -203,9 +203,11 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
         // out inside the change cannot be in the event written before it).
         match *name {
             "create_starting_roles" => {}
-            "move_issue" => assert_eq!(added, 2, "{name} appended {added} events"),
-            // One change for each of the two starter fields of time entries.
-            "create_starter_time_fields" => assert_eq!(added, 2, "{name} appended {added} events"),
+            // A move also writes the event of the new readable ID; the starter fields of time
+            // entries are one change for each of the two fields.
+            "move_issue" | "create_starter_time_fields" => {
+                assert_eq!(added, 2, "{name} appended {added} events");
+            }
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }
     }

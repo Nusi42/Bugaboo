@@ -18,6 +18,7 @@
 mod catalogue;
 mod choices;
 mod definitions;
+mod making;
 mod manage;
 pub(crate) mod member;
 mod naming;
@@ -35,4 +36,5 @@ pub use store::{FieldStore, StoredValues};
 pub use text::{SaveFieldText, save_field_text};
 pub use types::*;
 
-pub(crate) use values::{Item, ItemValues, Making, PlannedValues, is_kept};
+pub(crate) use making::Making;
+pub(crate) use values::{Item, ItemValues, PlannedValues, is_kept};

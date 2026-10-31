@@ -494,8 +494,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
-            // Nobody waits for the note: a timer that is not told runs on as before.
-            Some(JobKind::TimersLongRunning) => Ok(()),
             // The daily kinds come back by themselves and leave no work that people can see; a
             // new kind has to be placed in one of these arms.
             Some(
@@ -511,7 +509,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())
             }
-            None => Ok(()),
+            // Nobody waits for the note of a long timer: a timer that is not told runs on as
+            // before.
+            Some(JobKind::TimersLongRunning) | None => Ok(()),
         };
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");

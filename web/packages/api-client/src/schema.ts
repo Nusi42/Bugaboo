@@ -4505,14 +4505,6 @@ export interface components {
      * @enum {string}
      */
     DatabaseKind: "built-in" | "sqlite" | "postgres";
-    /** @description The deletion of one of the person's own entries. */
-    DeleteTimeEntryBody: {
-      /**
-       * Format: int64
-       * @description The version of the entry that was looked at.
-       */
-      version: number;
-    };
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -5150,7 +5142,9 @@ export interface components {
       may_edit?: boolean | null;
       /**
        * Format: int32
-       * @description Time: the length in whole minutes; left out for a reader who may not read *Time spent*.
+       * @description Time: the length in whole minutes; left out for a reader who may not read *Time spent*. The
+       *     own fields of the entry (*Activity*, *Cost center*) that the reader may see follow as items
+       *     of the kind `change` of the same event.
        */
       minutes?: number | null;
       relation_event?: components["schemas"]["RelationEvent"] | null;
@@ -5159,11 +5153,6 @@ export interface components {
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
       time_event?: components["schemas"]["TimeEntryEvent"] | null;
-      /**
-       * @description Time: the own fields of the entry (*Activity*, *Cost center*) as they were set or changed,
-       *     only those the reader may see.
-       */
-      time_fields?: components["schemas"]["FieldChangeBody"][] | null;
       /**
        * Format: int64
        * @description A comment: the version, which a change of it is made on.
@@ -7475,11 +7464,15 @@ export interface components {
        */
       version: number;
     };
-    /** @description Which role to give its starting permissions back, made on the version that was looked at. */
+    /**
+     * @description A change that needs nothing but the version of the record it is made on: giving a role its
+     *     starting permissions back, throwing the timer away, deleting a time entry. One schema for all of
+     *     them; its name is the one the API was frozen with.
+     */
     ResetRoleBody: {
       /**
        * Format: int64
-       * @description The version of the role the person looked at; a change made meanwhile stops this one.
+       * @description The version of the record the person looked at; a change made meanwhile stops this one.
        */
       version: number;
     };
@@ -8417,14 +8410,6 @@ export interface components {
       entry?: components["schemas"]["TimeEntryItem"] | null;
       /** @description The timer as it is now. */
       timer: components["schemas"]["TimerItem"];
-    };
-    /** @description A change of the timer that only needs its version. */
-    TimerVersionBody: {
-      /**
-       * Format: int64
-       * @description The version of the timer that was looked at.
-       */
-      version: number;
     };
     /**
      * @description What a group of permissions is about.
@@ -13521,7 +13506,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["DeleteTimeEntryBody"];
+        "application/json": components["schemas"]["ResetRoleBody"];
       };
     };
     responses: {
@@ -13744,7 +13729,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TimerVersionBody"];
+        "application/json": components["schemas"]["ResetRoleBody"];
       };
     };
     responses: {

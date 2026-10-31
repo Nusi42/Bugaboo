@@ -166,16 +166,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             issue_type: Some(issue_type.id),
             reported_by: Some(actor.person.id),
         };
-        let nothing_yet = self.load_values(RecordKind::Issue, &[]).await?;
+        let blank = self.load_values(RecordKind::Issue, &[]).await?;
         let own = self
-            .plan_values(
-                actor,
-                &access,
-                &item,
-                &input.fields,
-                &nothing_yet,
-                Making::New(&std::collections::BTreeMap::new()),
-            )
+            .plan_values(actor, &access, &item, &input.fields, &blank, Making::FRESH)
             .await?;
         let (status, entered) = self
             .starting_status(

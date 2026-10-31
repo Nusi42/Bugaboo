@@ -8438,7 +8438,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeleteTimeEntryBody"
+                "$ref": "#/components/schemas/ResetRoleBody"
               }
             }
           },
@@ -8815,7 +8815,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TimerVersionBody"
+                "$ref": "#/components/schemas/ResetRoleBody"
               }
             }
           },
@@ -15559,18 +15559,6 @@
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
       },
-      "DeleteTimeEntryBody": {
-        "type": "object",
-        "description": "The deletion of one of the person's own entries.",
-        "required": ["version"],
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the entry that was looked at."
-          }
-        }
-      },
       "Direction": {
         "type": "string",
         "description": "Which end of a relation a person starts from: the forward name or the backward one.",
@@ -16815,7 +16803,7 @@
           "minutes": {
             "type": ["integer", "null"],
             "format": "int32",
-            "description": "Time: the length in whole minutes; left out for a reader who may not read *Time spent*.",
+            "description": "Time: the length in whole minutes; left out for a reader who may not read *Time spent*. The\nown fields of the entry (*Activity*, *Cost center*) that the reader may see follow as items\nof the kind `change` of the same event.",
             "minimum": 0
           },
           "relation_event": {
@@ -16847,13 +16835,6 @@
                 "type": "null"
               }
             ]
-          },
-          "time_fields": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/FieldChangeBody"
-            },
-            "description": "Time: the own fields of the entry (*Activity*, *Cost center*) as they were set or changed,\nonly those the reader may see."
           },
           "version": {
             "type": ["integer", "null"],
@@ -21695,13 +21676,13 @@
       },
       "ResetRoleBody": {
         "type": "object",
-        "description": "Which role to give its starting permissions back, made on the version that was looked at.",
+        "description": "A change that needs nothing but the version of the record it is made on: giving a role its\nstarting permissions back, throwing the timer away, deleting a time entry. One schema for all of\nthem; its name is the one the API was frozen with.",
         "required": ["version"],
         "properties": {
           "version": {
             "type": "integer",
             "format": "int64",
-            "description": "The version of the role the person looked at; a change made meanwhile stops this one."
+            "description": "The version of the record the person looked at; a change made meanwhile stops this one."
           }
         }
       },
@@ -23482,18 +23463,6 @@
           "timer": {
             "$ref": "#/components/schemas/TimerItem",
             "description": "The timer as it is now."
-          }
-        }
-      },
-      "TimerVersionBody": {
-        "type": "object",
-        "description": "A change of the timer that only needs its version.",
-        "required": ["version"],
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the timer that was looked at."
           }
         }
       },

@@ -27,6 +27,7 @@ use super::auth::{
     NotSignedInAnswer, Session, answer_authorized,
 };
 use super::body_id;
+use super::roles::VersionBody;
 use super::time_entries::TimeEntryItem;
 use crate::errors::{ApiError, ApiJson};
 
@@ -174,13 +175,6 @@ pub(crate) struct StartTimeBody {
     /// The new start (RFC 3339): never in the future, never before the end of the last time entry
     /// that has a start.
     started_at: String,
-}
-
-/// A change of the timer that only needs its version.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct TimerVersionBody {
-    /// The version of the timer that was looked at.
-    version: i64,
 }
 
 /// The person's own timer: what it runs on and since when.
@@ -356,7 +350,7 @@ async fn change_timer_start(
     path = "/api/v1/me/timer/throw-away",
     operation_id = "throwAwayTimer",
     tag = "time",
-    request_body = TimerVersionBody,
+    request_body = VersionBody,
     responses(
         (status = 200, description = "The timer, standing still.", body = TimerItem),
         NotSignedInAnswer,
@@ -368,7 +362,7 @@ async fn throw_away_timer(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<TimerVersionBody>,
+    ApiJson(body): ApiJson<VersionBody>,
 ) -> Result<Response, ApiError> {
     let stopped = auth
         .api()?

@@ -29,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 21] = [
+const HISTORY_FIELDS: [FieldSpec; 20] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -50,7 +50,6 @@ const HISTORY_FIELDS: [FieldSpec; 21] = [
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("time_event"),
     FieldSpec::by_default("minutes"),
-    FieldSpec::by_default("time_fields"),
 ];
 
 /// What happened to a relation.
@@ -159,13 +158,11 @@ pub(crate) struct HistoryEntryItem {
     /// the kind *Time entries*.
     #[serde(skip_serializing_if = "Option::is_none")]
     time_event: Option<TimeEntryEvent>,
-    /// Time: the length in whole minutes; left out for a reader who may not read *Time spent*.
+    /// Time: the length in whole minutes; left out for a reader who may not read *Time spent*. The
+    /// own fields of the entry (*Activity*, *Cost center*) that the reader may see follow as items
+    /// of the kind `change` of the same event.
     #[serde(skip_serializing_if = "Option::is_none")]
     minutes: Option<u32>,
-    /// Time: the own fields of the entry (*Activity*, *Cost center*) as they were set or changed,
-    /// only those the reader may see.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    time_fields: Option<Vec<FieldChangeBody>>,
 }
 
 impl Masked for HistoryEntryItem {}
@@ -193,7 +190,6 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         file_name: None,
         time_event: None,
         minutes: None,
-        time_fields: None,
     }
 }
 
@@ -252,8 +248,12 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             let mut item = start(row, HistoryEntryKind::Time);
             item.time_event = Some((*event).into());
             item.minutes = minutes.map(bb_core::time::Minutes::get);
-            item.time_fields = Some(fields.iter().map(FieldChangeBody::from).collect());
-            vec![item]
+            let changes = fields.iter().map(|change| {
+                let mut each = start(row, HistoryEntryKind::Change);
+                each.change = Some(FieldChangeBody::from(change));
+                each
+            });
+            std::iter::once(item).chain(changes).collect()
         }
     }
 }
@@ -368,7 +368,6 @@ mod tests {
             file_name: Some(String::new()),
             time_event: Some(TimeEntryEvent::Booked),
             minutes: Some(0),
-            time_fields: Some(Vec::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);
     }

@@ -26,6 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
+use super::making::Making;
 use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
 use super::types::Definition;
@@ -239,16 +240,6 @@ pub(crate) struct Item {
     pub(crate) issue_type: Option<IssueTypeId>,
     /// Who reported it, for an issue: a person named in a field has to be able to see the issue.
     pub(crate) reported_by: Option<UserId>,
-}
-
-/// Whether a request makes the item or changes it, and the values a new item inherits (a time
-/// entry from its issue and its projects) before the defaults of the fields.
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum Making<'a> {
-    /// The item is there and changes.
-    Change,
-    /// The item is being made.
-    New(&'a BTreeMap<FieldId, FieldValue>),
 }
 
 /// What an item holds values of own fields for: the fields made for its kind, and on an issue and
