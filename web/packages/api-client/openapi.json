@@ -15905,11 +15905,22 @@
       "GroupDetailBody": {
         "type": "object",
         "description": "One group with what it is used for.",
-        "required": ["group", "used_by"],
+        "required": ["group", "used_by", "roles", "truncated"],
         "properties": {
           "group": {
             "$ref": "#/components/schemas/GroupBody",
             "description": "The group."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleAtRef"
+            },
+            "description": "The rows of *Who has which role* of the group in the places where the person who asks\ndecides who has which role, the whole organization first."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The group has more rows than the page lists (at most 100): the first ones are listed."
           },
           "used_by": {
             "$ref": "#/components/schemas/GroupUsedByBody",

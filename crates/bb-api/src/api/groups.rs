@@ -20,7 +20,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{RoleAtRef, cursor_error};
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
@@ -80,6 +80,11 @@ pub(crate) struct GroupDetailBody {
     group: GroupBody,
     /// What it is used for.
     used_by: GroupUsedByBody,
+    /// The rows of *Who has which role* of the group in the places where the person who asks
+    /// decides who has which role, the whole organization first.
+    roles: Vec<RoleAtRef>,
+    /// The group has more rows than the page lists (at most 100): the first ones are listed.
+    truncated: bool,
 }
 
 impl Masked for GroupDetailBody {}
@@ -93,6 +98,8 @@ impl From<&GroupDetail> for GroupDetailBody {
                 projects: detail.used_by.projects,
                 members: detail.used_by.members,
             },
+            roles: detail.roles.iter().map(RoleAtRef::from).collect(),
+            truncated: detail.truncated,
         }
     }
 }

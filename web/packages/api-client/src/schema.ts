@@ -4858,6 +4858,13 @@ export interface components {
     GroupDetailBody: {
       /** @description The group. */
       group: components["schemas"]["GroupBody"];
+      /**
+       * @description The rows of *Who has which role* of the group in the places where the person who asks
+       *     decides who has which role, the whole organization first.
+       */
+      roles: components["schemas"]["RoleAtRef"][];
+      /** @description The group has more rows than the page lists (at most 100): the first ones are listed. */
+      truncated: boolean;
       /** @description What it is used for. */
       used_by: components["schemas"]["GroupUsedByBody"];
     };

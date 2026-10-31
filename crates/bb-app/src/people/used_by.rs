@@ -8,11 +8,12 @@
 
 use std::collections::BTreeSet;
 
-use bb_core::access::{Assignment, Group};
+use bb_core::access::Assignment;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_policy::Masked;
 use serde::Serialize;
 
+use super::HeldRole;
 use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx};
 
@@ -47,6 +48,11 @@ pub struct GroupDetail {
     pub group: super::GroupView,
     /// What it is used for.
     pub used_by: GroupUsedBy,
+    /// The rows of *Who has which role* of the group that the viewer may see, as the page of a
+    /// person lists theirs.
+    pub roles: Vec<HeldRole>,
+    /// More rows than [`super::GROUP_ROLES_MAX`] exist: the first ones are listed.
+    pub truncated: bool,
 }
 
 impl Masked for GroupDetail {}
@@ -96,19 +102,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(seen)
     }
 
-    /// The group with what it is used for.
+    /// What a group is used for, from its rows of *Who has which role*.
     pub(crate) async fn group_used_by(
         &self,
         actor: &Actor,
-        group: &Group,
+        rows: &[Assignment],
         members: usize,
     ) -> Result<GroupUsedBy, AppError> {
-        let rows = self
-            .store()
-            .assignments_of_group(group.id)
-            .await
-            .map_err(|error| crate::auth::internal::<S>(&error))?;
-        let seen = self.rows_seen_by(actor, &rows).await?;
+        let seen = self.rows_seen_by(actor, rows).await?;
         Ok(GroupUsedBy {
             whole_organization: seen.whole_organization,
             projects: u64::try_from(seen.projects.len()).unwrap_or(u64::MAX),

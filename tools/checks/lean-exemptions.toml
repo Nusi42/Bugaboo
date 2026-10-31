@@ -10,6 +10,11 @@ property = "sessions"
 reason = "The sessions of one person are few; the list has a hard cap and says when it was cut (M1-F44)."
 
 [[exempt]]
+route = "GET /api/v1/groups/{group}"
+property = "roles"
+reason = "The rows of Who has which role of one group, in the places the person who asks decides about: a group has a row in a few places, the list has a hard cap (GROUP_ROLES_MAX) and says when it was cut; Who has which role pages them all (SEC-02, UX §5.1)."
+
+[[exempt]]
 route = "GET /api/v1/auth/two-step"
 property = "passkeys"
 reason = "A person has at most 20 passkeys; the list has a hard cap and says when it was cut (M1-F44)."

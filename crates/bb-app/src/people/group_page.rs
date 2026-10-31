@@ -1,4 +1,4 @@
-//! The page of one group: its name and what it is used for (SEC-02, UX §5.1).
+//! The page of one group: its name, what it is used for and its roles (SEC-02, UX §5.1).
 
 use bb_core::id::GroupId;
 use bb_policy::{Authorized, Permission, Place};
@@ -6,6 +6,10 @@ use bb_policy::{Authorized, Permission, Place};
 use super::GroupView;
 use super::used_by::GroupDetail;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+
+/// The most rows of *Who has which role* the page of a group lists. A group with more is cut off
+/// and the answer says so (`truncated`); *Who has which role* has them all.
+pub const GROUP_ROLES_MAX: usize = 100;
 
 /// One group, with what it is used for.
 pub struct GroupQuery {
@@ -34,8 +38,18 @@ pub async fn group<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .len();
+    let rows = ctx
+        .store()
+        .assignments_of_group(found.id)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let mut roles = ctx.held_roles_seen_by(&actor, &rows).await?;
+    let truncated = roles.len() > GROUP_ROLES_MAX;
+    roles.truncate(GROUP_ROLES_MAX);
     Ok(access.authorize(GroupDetail {
         group: GroupView::from(&found),
-        used_by: ctx.group_used_by(&actor, &found, members).await?,
+        used_by: ctx.group_used_by(&actor, &rows, members).await?,
+        roles,
+        truncated,
     }))
 }

@@ -215,9 +215,9 @@ fn shown(viewer: &Evaluation, person: &Person) -> PersonRef {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The role rows of a person that the viewer may see: those at a place where the viewer
-    /// decides who has which role (the whole organization, or a project).
-    async fn held_roles_seen_by(
+    /// The role rows of a person or a group that the viewer may see: those at a place where the
+    /// viewer decides who has which role (the whole organization, or a project).
+    pub(crate) async fn held_roles_seen_by(
         &self,
         actor: &Actor,
         rows: &[Assignment],

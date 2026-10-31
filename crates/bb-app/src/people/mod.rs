@@ -11,7 +11,7 @@ mod group_page;
 mod list;
 mod used_by;
 
-pub use group_page::{GroupQuery, group};
+pub use group_page::{GROUP_ROLES_MAX, GroupQuery, group};
 pub(crate) use list::write_cursor;
 pub use list::{
     AssignmentChoicesQuery, ChoiceKind, ChoicePage, ChoiceView, HeldRole, MemberChoicesQuery,

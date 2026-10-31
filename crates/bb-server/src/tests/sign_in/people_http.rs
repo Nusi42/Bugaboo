@@ -251,6 +251,59 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
 }
 
 #[tokio::test]
+async fn sec_02_the_page_of_a_group_lists_the_roles_the_viewer_decides_about() -> TestResult {
+    each_database("sec_02_http_group_page_roles", async |db| {
+        let mut org = start(db).await?;
+        let viewer = org.role_named("Viewer").await?;
+        let acme = org
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Backend"})).await?;
+        let empty = org
+            .ada
+            .send("GET", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(empty.status, StatusCode::OK, "{}", empty.body);
+        assert_eq!(empty.body["roles"], json!([]));
+        assert_eq!(empty.body["truncated"], false);
+
+        org.create(
+            &format!("/api/v1/projects/{acme}/assignments"),
+            json!({"who": {"group": group}, "role": viewer, "applies_to": "project-and-sub-projects"}),
+        )
+        .await?;
+        org.create(
+            "/api/v1/assignments",
+            json!({"who": {"group": group}, "role": viewer}),
+        )
+        .await?;
+
+        // The rows of the group, the whole organization first, as on the page of a person.
+        let page = org
+            .ada
+            .send("GET", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.body);
+        let places: Vec<&str> = page.body["roles"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| row["place"]["kind"].as_str())
+            .collect();
+        assert_eq!(places, ["organization", "project"]);
+        assert_eq!(page.body["roles"][1]["place"]["short_name"], "ACME");
+        assert_eq!(page.body["roles"][1]["role"]["name"], "Viewer");
+        assert_eq!(
+            page.body["roles"][1]["applies_to"],
+            "project-and-sub-projects"
+        );
+        assert_eq!(page.body["used_by"]["projects"], 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn sec_02_groups_are_made_and_renamed_over_http() -> TestResult {
     each_database("sec_02_http_groups_made", async |db| {
         let mut org = start(db).await?;
