@@ -26,6 +26,13 @@ export const buttonLook = {
 } as const;
 export type ButtonLook = (typeof buttonLook)[keyof typeof buttonLook];
 
+/**
+ * How a choice of a list looks: a box under its name, or its name and then its value as quiet
+ * words, for a choice of how something is shown (*Group by* above a list).
+ */
+export const selectLook = { box: "box", inline: "inline" } as const;
+export type SelectLook = (typeof selectLook)[keyof typeof selectLook];
+
 /** Besides its look, a button can fill the width of its container or be square (an icon). */
 export const buttonShape = { wide: "wide", square: "square" } as const;
 

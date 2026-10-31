@@ -1339,6 +1339,29 @@ part "field.input" {
     text-overflow ellipsis
 }
 
+// A choice that says how something is shown (Group by above a list): its name and then its value as quiet words in
+// the color of a link, with no box, like the text buttons beside it. The native list keeps the keyboard, the screen
+// reader and a phone's own picker; it is a control high, so a finger finds 44 on touch.
+part "field[variant=inline]" {
+    flex-direction row
+    flex-wrap wrap
+    align-items center
+    gap "$space-1"
+}
+
+part "field.input[variant=inline]" {
+    width auto
+    padding-inline "$space-1"
+    border-color transparent
+    background transparent
+    color "$accent-fg"
+    cursor pointer
+}
+
+part "field.input[variant=inline]:hover" {
+    background "$bg-hover"
+}
+
 part "field.input[variant=multiline]" {
     height auto
     padding-block "$space-2"
@@ -2833,17 +2856,12 @@ part "list-nothing" {
     text-align center
 }
 
-// The controls above the list: Group by and Customize.
+// The controls above the list: Group by and Customize, quiet words on one line, level with each other (UX §4.2).
 part "list-options" {
     display flex
     flex-wrap wrap
-    align-items flex-start
-    gap "$space-3" "$space-5"
-}
-
-// The button stands level with the control of Group by, not with its label.
-part "list-options button" {
-    align-self flex-end
+    align-items center
+    gap "$space-2" "$space-5"
 }
 
 // A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.
@@ -5470,6 +5488,7 @@ part "issue-main" {
     min-width 0
     max-width "$size-main"
 }
+
 
 // Details on wide screens keep their own scroll bar, so long details never push the description away.
 part "issue-details" {

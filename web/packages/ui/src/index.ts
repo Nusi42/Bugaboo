@@ -151,6 +151,7 @@ export {
   listRowLook,
   overlayEdge,
   pickerLook,
+  selectLook,
   type AlertTone,
   type ButtonLook,
   type ButtonType,
@@ -158,6 +159,7 @@ export {
   type IconSize,
   type OverlayEdge,
   type PickerLook,
+  type SelectLook,
 } from "./props.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
 export { listShowsWord, type PriorityWord, type StatusGroup } from "./status.ts";
