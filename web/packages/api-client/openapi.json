@@ -15912,7 +15912,8 @@
           "time-spent",
           "activity",
           "cost-center"
-        ]
+        ],
+        "x-retired": ["activity", "cost-center"]
       },
       "FieldBody": {
         "type": "object",

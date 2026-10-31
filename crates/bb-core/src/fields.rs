@@ -105,11 +105,18 @@ pub const RETIRED_FIELD_WORDS: [&str; 2] = ["activity", "cost-center"];
 #[cfg(feature = "openapi")]
 impl utoipa::PartialSchema for Field {
     fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::extensions::ExtensionsBuilder;
         use utoipa::openapi::schema::{ObjectBuilder, Type};
         ObjectBuilder::new()
             .schema_type(Type::String)
             .description(Some(
                 "A built-in field of the field catalogue, by its key. `activity` and `cost-center` are retired: a request may name them and nothing happens, no answer names them.",
+            ))
+            // The retired words by name, so the browser lists only the words in use.
+            .extensions(Some(
+                ExtensionsBuilder::new()
+                    .add("x-retired", serde_json::json!(RETIRED_FIELD_WORDS))
+                    .build(),
             ))
             .enum_values(Some(
                 Self::ALL

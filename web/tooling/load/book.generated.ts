@@ -93,4 +93,6 @@ export interface Book {
   readonly hidden_from_guests?: readonly string[];
   /** The searches people made. */
   readonly searched?: readonly Searched[];
+  /** The readable ID of the issue of every time entry a stop of a timer saved (architecture §11, "Timers and working hours start and stop at the same time"). */
+  readonly timed?: readonly string[];
 }

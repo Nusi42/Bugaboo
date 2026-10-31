@@ -42,8 +42,6 @@ export const fieldWords = [
   "estimated-time",
   "time-left",
   "time-spent",
-  "activity",
-  "cost-center",
 ] as const;
 
 /** Every word of `FieldType`, in the order the server lists them. */
