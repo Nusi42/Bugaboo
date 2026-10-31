@@ -6,20 +6,12 @@ import { type Locator, type Page } from "@playwright/test";
 import { type Frame, drawPointer, encodeGif } from "./gif.ts";
 import { glide, type Point } from "./glide.ts";
 import { readPng } from "./png.ts";
+import { PACE } from "./readme-pace.ts";
 import { pointerAway } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
-/** How long one picture of a movement shows. */
-const STEP_MS = 40;
-
-/** How long a picture shows when the screen is looked at for a moment. */
-const LOOK_MS = 700;
-
 /** Where the pointer rests before it first moves, as a share of the width and the height of the window. */
 const REST = { x: 0.72, y: 0.9 } as const;
-
-/** The pause between two typed letters, in pictures: a picture is taken every few letters. */
-const LETTERS_PER_PICTURE = 2;
 
 const CHANNELS = 4;
 
@@ -61,7 +53,7 @@ export class Recording {
   }
 
   /** Takes a picture of the window as it is now. */
-  public async picture(delayMs = STEP_MS): Promise<void> {
+  public async picture(delayMs: number = PACE.stepMs): Promise<void> {
     const shot = await this.#page.screenshot({ type: "png", animations: "disabled" });
     if (framesFolder !== undefined) {
       this.#shots.push(shot);
@@ -74,7 +66,7 @@ export class Recording {
   }
 
   /** Lets the screen be looked at for a moment. */
-  public look(delayMs = LOOK_MS): Promise<void> {
+  public look(delayMs: number = PACE.lookMs): Promise<void> {
     return this.picture(delayMs);
   }
 
@@ -93,7 +85,8 @@ export class Recording {
       }),
     );
     await this.#page.mouse.move(to.x, to.y);
-    await this.picture();
+    // It rests on what it points at for a moment, with its hover look, so the eye finds it.
+    await this.picture(PACE.pointedMs);
   }
 
   /**
@@ -104,18 +97,18 @@ export class Recording {
     await this.pointAt(target);
     await target.click();
   }
-  /** Types into an element, with a picture every few letters (each `settleMs` after its letter). */
+  /**
+   * Types into an element at a readable pace, with a picture of each letter (taken `settleMs`
+   * after its letter).
+   */
   public async type(target: Locator, text: string, settleMs = 0): Promise<void> {
     await target.focus();
     await inOrder(
-      Array.from(text).map((letter, number) => async () => {
+      Array.from(text).map((letter) => async () => {
         await this.#page.keyboard.type(letter);
-        if ((number + 1) % LETTERS_PER_PICTURE === 0) {
-          await this.#settledPicture(settleMs);
-        }
+        await this.#settledPicture(settleMs);
       }),
     );
-    await this.#settledPicture(settleMs);
   }
 
   /**
@@ -126,7 +119,7 @@ export class Recording {
     if (settleMs > 0) {
       await this.#page.waitForTimeout(settleMs);
     }
-    await this.picture();
+    await this.picture(PACE.letterMs);
   }
 
   /**

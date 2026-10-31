@@ -1,7 +1,6 @@
-// The way the drawn pointer of a recording of the front page takes from one place to the next.
+import { PACE } from "./readme-pace.ts";
 
-/** How many pictures the pointer takes to go from one place to another. */
-const MOVE_STEPS = 9;
+// The way the drawn pointer of a recording of the front page takes from one place to the next.
 
 /** A place on the page, in pixels of the page. */
 export interface Point {
@@ -15,7 +14,7 @@ export function eased(share: number): number {
 }
 
 /** The places the pointer passes on its way from `from` to `to`, without `from`, ending at `to`. */
-export function glide(from: Point, to: Point, steps = MOVE_STEPS): readonly Point[] {
+export function glide(from: Point, to: Point, steps: number = PACE.moveSteps): readonly Point[] {
   return Array.from({ length: steps }, (_, step) => {
     const share = eased((step + 1) / steps);
     return { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };

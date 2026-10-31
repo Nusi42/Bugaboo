@@ -69,8 +69,10 @@ It starts a server with an empty data folder, sets up Quillmoor Cycle Works, a m
 workshop, through the API (`web/app/e2e/support/readme-organization-data.ts` says what it holds),
 drives a browser through the screens (`web/app/e2e/readme-media.spec.ts`) and writes the pictures
 and GIFs to `docs/media/`. The pictures are taken at twice the size of the window, so their text
-stays sharp; the front picture cycles through the four themes. With `BB_README_FRAMES=<folder>` it
-also writes every picture of a recording as a PNG, to look at them one by one.
+stays sharp; the front picture cycles through the four themes, and every other picture and
+recording is in Paper, the second light theme, at a pace a reader can follow
+(`web/app/e2e/support/readme-pace.ts`). With `BB_README_FRAMES=<folder>` it also writes every
+picture of a recording as a PNG, to look at them one by one.
 
 ### Architecture
 

@@ -63,10 +63,7 @@ An issue holds its description, its status, the person it is assigned to, labels
 Each project can have its own statuses and the steps between them, drawn as a map. A step can ask for something first, such as who does the work. You change a workflow as a draft, try it, and publish it when it is right.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/workflows-dark.png">
-    <img src="docs/media/workflows-light.png" alt="The workflow of the repairs drawn as a map: Booked in, Checked, Waiting for parts, Repairing, Ready for pickup and Picked up, with the steps between them" width="100%">
-  </picture>
+  <img src="docs/media/workflows.png" alt="The workflow of the repairs drawn as a map: Booked in, Checked, Waiting for parts, Repairing, Ready for pickup and Picked up, with the steps between them" width="100%">
 </p>
 
 ### Who sees and does what
@@ -74,10 +71,7 @@ Each project can have its own statuses and the steps between them, drawn as a ma
 Roles and permissions are set up in the browser, for the whole organization or for one project. A customer can be a *Guest* in one project, a field can be hidden from a role, and *Check access* answers what one person can do, project by project. One set of rules decides every read and every change: in the browser, in search, in notifications, and later for AI apps too.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/roles-dark.png">
-    <img src="docs/media/roles-light.png" alt="The page of roles and permissions: the six starting roles and the two roles of the workshop, Mechanic and Bookkeeper" width="100%">
-  </picture>
+  <img src="docs/media/roles.png" alt="The page of roles and permissions: the six starting roles and the two roles of the workshop, Mechanic and Bookkeeper" width="100%">
 </p>
 
 ### On a computer and on a phone
@@ -85,21 +79,15 @@ Roles and permissions are set up in the browser, for the whole organization or f
 <table>
   <tr>
     <td width="68%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/media/issue-page-dark.png">
-        <img src="docs/media/issue-page-light.png" alt="The page of one issue: the list on the left, the description, status and details on the right" width="100%">
-      </picture>
+      <img src="docs/media/issue-page.png" alt="The page of one issue: the list on the left, the description, status and details on the right" width="100%">
     </td>
     <td width="32%" align="center">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/media/issue-list-phone-dark.png">
-        <img src="docs/media/issue-list-phone-light.png" alt="The list of the repairs on a phone" width="100%">
-      </picture>
+      <img src="docs/media/issue-list-phone.png" alt="The list of the repairs on a phone" width="100%">
     </td>
   </tr>
 </table>
 
-These pictures follow the light or dark setting of your GitHub. The app has four themes, two light and two dark, and settings for the size of text and the spacing.
+The pictures and recordings show the theme Paper. The app has four themes, two light and two dark, and settings for the size of text and the spacing.
 
 ### Also there today
 
