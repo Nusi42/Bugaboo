@@ -93,13 +93,18 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
             (&json!("device"), &json!(false))
         );
 
-        // What the registry does not accept is refused with the code of an invalid request.
-        for (key, value) in [
-            ("appearance.mode", json!("sometimes")),
-            ("appearance.mode", json!(true)),
-            ("appearance.less-motion", json!("yes")),
-            ("region.time-zone", json!("Nowhere")),
-            ("start.page", json!("https://evil.test/")),
+        // What the registry does not accept is refused with the code of an invalid request, or with
+        // the code of its own format where it has one.
+        for (key, value, code) in [
+            ("appearance.mode", json!("sometimes"), "request.invalid"),
+            ("appearance.mode", json!(true), "request.invalid"),
+            ("appearance.less-motion", json!("yes"), "request.invalid"),
+            (
+                "region.time-zone",
+                json!("Nowhere"),
+                "setting.unknown-time-zone",
+            ),
+            ("start.page", json!("https://evil.test/"), "request.invalid"),
         ] {
             let refused = ada
                 .send(
@@ -109,7 +114,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
                 )
                 .await?;
             assert_eq!(refused.status, StatusCode::BAD_REQUEST, "{key}");
-            assert_eq!(refused.code(), "request.invalid", "{key}");
+            assert_eq!(refused.code(), code, "{key}");
         }
         let unknown = ada
             .send(
