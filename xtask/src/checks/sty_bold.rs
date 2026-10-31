@@ -220,7 +220,7 @@ mod tests {
     fn changed(from: &str, to: &str) -> ThemeFile {
         let text = text();
         assert!(text.contains(from), "{from} is in the file");
-        ThemeFile::parse(&text.replacen(from, to, 1)).unwrap()
+        ThemeFile::parse_base(&text.replacen(from, to, 1)).unwrap()
     }
 
     #[test]
@@ -286,7 +286,7 @@ mod tests {
                 1,
             )
             .replacen(LABEL, &label_with("font-weight \"$weight-semi\""), 1);
-        let findings = evaluate(&ThemeFile::parse(&text).unwrap());
+        let findings = evaluate(&ThemeFile::parse_base(&text).unwrap());
         assert!(
             findings.iter().any(|f| f.message.contains("`field.label`")),
             "{:?}",
@@ -342,6 +342,6 @@ mod tests {
     #[test]
     fn a_role_that_is_not_in_the_list_of_roles_is_refused() {
         let text = text().replacen("role=\"priority\"", "role=\"shouting\"", 1);
-        assert!(ThemeFile::parse(&text).is_err());
+        assert!(ThemeFile::parse_base(&text).is_err());
     }
 }

@@ -196,12 +196,15 @@ fn split_words(selector: &str) -> anyhow::Result<Vec<String>> {
     Ok(words)
 }
 
-fn is_word(text: &str) -> bool {
-    !text.is_empty()
-        && text.chars().next().is_some_and(|c| c.is_ascii_lowercase())
-        && text
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+/// A name of the theme: a part, a word of a part, a token or a theme. It starts with a small letter
+/// and holds small letters, digits and `-`.
+pub(crate) fn is_word(text: &str) -> bool {
+    text.chars().next().is_some_and(|c| c.is_ascii_lowercase()) && text.chars().all(is_name_char)
+}
+
+/// A letter that may stand in a name of the theme (and in a CSS property after its first).
+pub(crate) fn is_name_char(c: char) -> bool {
+    c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'
 }
 
 fn is_part_name(text: &str) -> bool {

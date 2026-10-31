@@ -14,6 +14,8 @@ fn dollar_names_become_variables_and_back() {
     );
 }
 
+mod themes;
+
 #[test]
 fn the_theme_file_of_the_repository_is_valid() {
     let repo = Repo::discover().unwrap();
@@ -27,7 +29,7 @@ fn the_theme_file_of_the_repository_is_valid() {
 fn problem_with(extra: &str) -> Option<String> {
     let repo = Repo::discover().unwrap();
     let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
-    ThemeFile::parse(&format!("{text}\n{extra}\n"))
+    ThemeFile::parse_base(&format!("{text}\n{extra}\n"))
         .err()
         .map(|error| format!("{error:#}"))
 }
@@ -81,7 +83,7 @@ fn bad_example_a_token_of_the_design_pages_must_be_named_doc() {
     let repo = Repo::discover().unwrap();
     let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
     let renamed = text.replacen("\"doc-lh-page\"", "\"lh-page\"", 1);
-    let error = ThemeFile::parse(&renamed)
+    let error = ThemeFile::parse_base(&renamed)
         .err()
         .map(|error| format!("{error:#}"));
     assert!(error.is_some_and(|text| text.contains("doc-")));
@@ -120,7 +122,7 @@ fn bad_example_duplicates_and_forced_values_that_are_no_system_color() {
     assert!(error.contains("defined twice"), "{error}");
     let text = crate::source::read_text(&Repo::discover().unwrap(), THEME_PATH).unwrap();
     let bad = text.replace("forced=\"Highlight\"", "forced=\"#ff0000\"");
-    let error = ThemeFile::parse(&bad)
+    let error = ThemeFile::parse_base(&bad)
         .err()
         .map(|error| format!("{error:#}"))
         .unwrap_or_default();
@@ -129,11 +131,19 @@ fn bad_example_duplicates_and_forced_values_that_are_no_system_color() {
 
 #[test]
 fn a_bad_file_names_the_line() {
-    let error = ThemeFile::parse("defaults light=\"a\" dark=\"b\"\nthemes {\n  theme \"a\" kind=\"light\"\n}\ntokens {\n  color \"x\" a=\"red\"\n}\n")
-            .err()
-            .map(|error| format!("{error:#}"))
-            .unwrap_or_default();
-    assert!(error.contains("line 6"), "{error}");
+    let error = ThemeFile::parse(
+        "defaults light=\"a\" dark=\"b\"
+tokens {
+  color \"x\" \"red\"
+}
+",
+        &[],
+    )
+    .err()
+    .map(|error| format!("{error:#}"))
+    .unwrap_or_default();
+    assert!(error.contains("design/theme.kdl"), "{error}");
+    assert!(error.contains("line 3"), "{error}");
 }
 
 /// The theme file of the repository with one piece of text replaced: the error, or nothing.
@@ -144,7 +154,7 @@ fn problem_replacing(from: &str, to: &str) -> Option<String> {
         &crate::source::read_text(&repo, THEME_PATH).unwrap(),
     );
     assert!(text.contains(from), "{from} is not in the theme file");
-    ThemeFile::parse(&text.replacen(from, to, 1))
+    ThemeFile::parse_base(&text.replacen(from, to, 1))
         .err()
         .map(|error| format!("{error:#}"))
 }
@@ -213,7 +223,9 @@ fn list_beside_is_the_sum(file: &ThemeFile) -> bool {
 fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need_at_density_1() {
     let repo = Repo::discover().unwrap();
     let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
-    assert!(list_beside_is_the_sum(&ThemeFile::parse(&text).unwrap()));
+    assert!(list_beside_is_the_sum(
+        &ThemeFile::parse_base(&text).unwrap()
+    ));
     // A list made wider without the breakpoint is refused.
     let wider = text.replacen(
         "size \"size-list-main\" \"560px\"",
@@ -221,5 +233,7 @@ fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need_at_densi
         1,
     );
     assert_ne!(wider, text, "the least width of the list is in the file");
-    assert!(!list_beside_is_the_sum(&ThemeFile::parse(&wider).unwrap()));
+    assert!(!list_beside_is_the_sum(
+        &ThemeFile::parse_base(&wider).unwrap()
+    ));
 }

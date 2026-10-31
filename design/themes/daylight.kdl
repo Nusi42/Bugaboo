@@ -1,0 +1,10 @@
+// Bugaboo built-in theme: Daylight (light).
+//
+// Colors (and the shadow) only: everything else, and every color this file does not set,
+// comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
+// when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
+
+theme "daylight" extends="default" kind="light" {
+    tokens {
+    }
+}

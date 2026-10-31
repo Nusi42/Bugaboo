@@ -1,12 +1,16 @@
-// Bugaboo theme: the one file for everything about how the app looks (ADR-0026).
+// Bugaboo theme: the base theme `default`, everything about how the app looks (ADR-0026).
+//
+// Each built-in theme is a file of design/themes/ (`dusk.kdl`, named by the theme's ID) that
+// says `extends="default"` and sets only the colors it changes; the colors here are those of
+// Daylight, the light theme that starts.
 //
 // Read only by `cargo xtask gen theme`, which writes the one static style sheet
 // (web/packages/ui/src/theme.css), the TypeScript names (tokens.ts), the Rust theme
 // choices of the settings and the copy for the design pages. Neither the server nor the
-// browser reads this file.
+// browser reads these files.
 //
 // What is in here, in this order:
-//   1. themes and the choices that change token values (spacing, text size, motion),
+//   1. the themes that start and the choices that change token values (spacing, text size, motion),
 //   2. tokens: every value, with its variants for each mode on one line,
 //   3. contrast: the rules that every theme must keep (STY-CONTRAST),
 //   4. mixins, keyframes and part rules: the look of every component, using tokens only.
@@ -23,14 +27,6 @@ defaults light="daylight" dark="dusk"
 // read the names from here.
 frame look="data-look" mode="data-theme" preview="data-preview-look"
 
-// The built-in themes. `kind` decides the browser's own controls and scrollbars.
-themes {
-    theme "daylight" kind="light"
-    theme "paper" kind="light"
-    theme "dusk" kind="dark"
-    theme "midnight" kind="dark"
-}
-
 // Choices of a person that change token values without changing the theme. Each is an
 // attribute on <html>; a token names the variant as a property (`density` below has
 // `compact=`). `media` switches the variant on from the device setting too.
@@ -43,9 +39,11 @@ variants {
     variant "phone" media="(width < $bp-tablet)"
 }
 
-// Tokens. The first value (unnamed) is the same in every theme. A color has one value per
-// theme, `<theme>-more=` replaces it when the device asks for more contrast, `forced=`
-// replaces it while forced colors are on, and `<variant>=` is the value while that choice is on.
+// Tokens. The first value (unnamed) is the token's value. A color or a shadow is the base's, a
+// theme file replaces it; a color may name another color (`"$border-control"`), which it then
+// follows in every theme and mode. `more=` replaces a color when the device asks for more
+// contrast, `forced=` replaces it while forced colors are on, and `<variant>=` is the value while
+// that choice is on.
 tokens {
     // Fonts: the system font stacks of the sister project, word for word; no font file is shipped (ADR-0026).
     // `font-ui` is the text of the app, `font-display` its titles and headings, `font-reader` what a person reads at
@@ -300,96 +298,95 @@ tokens {
     number "hover-brightness" 1.12
 
     // Colors
-    color "bg-canvas" daylight="#ffffff" paper="#fbf8f3" dusk="#1d2027" midnight="#000000"
-    color "bg-surface" daylight="#f6f7f9" paper="#f4efe7" dusk="#252932" midnight="#0c0d10"
-    color "bg-raised" daylight="#ffffff" paper="#fffdf9" dusk="#2d323c" midnight="#16181d"
-    color "bg-sunken" daylight="#eef0f3" paper="#ede6da" dusk="#191b21" midnight="#050506"
-    color "bg-hover" daylight="#eceef2" paper="#ede6db" dusk="#333945" midnight="#1e2127"
-    color "bg-selected" daylight="#ebe7fb" paper="#dce3eb" dusk="#3c375d" midnight="#242046"
-    color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    color "bg-canvas" "#ffffff"
+    color "bg-surface" "#f6f7f9"
+    color "bg-raised" "#ffffff"
+    color "bg-sunken" "#eef0f3"
+    color "bg-hover" "#eceef2"
+    color "bg-selected" "#ebe7fb"
+    color "border" "#dfe3e9" more="#6d6f72" forced="ButtonText"
     // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
     // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
-    color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    color "border-control" "#80838b" more="#6d6f72" forced="ButtonText"
     // The shadow at the end of a scrolling box that has more behind it: it must be seen in every theme (the `distinct` rule
     // below keeps it so), a dark shade on the light themes and a light one on the dark themes, where the shade of a dark box has nothing to darken.
-    color "cue" daylight="#4b5160" paper="#4f4638" dusk="#aab3c5" midnight="#9aa2b3"
-    color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
-    color "divider" daylight="#a9b0bc" paper="#b2a795" dusk="#5a6272" midnight="#454b57" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
-    color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
-    color "fg-muted" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
-    color "fg-subtle" daylight="#5c6172" paper="#645b51" dusk="#a9afbb" midnight="#9198a4" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
-    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#4a30b8" paper-more="#244b78" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
-    color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
-    color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
+    color "cue" "#4b5160"
+    color "border-subtle" "#eaedf1" more="#8c8e91"
+    color "divider" "#a9b0bc" more="#6d6f72" forced="ButtonText"
+    color "fg" "#16181d"
+    color "fg-muted" "#565d6b" more="#464c57"
+    color "fg-subtle" "#5c6172" more="#484c58"
+    color "accent" "#5b3fd9" more="#4a30b8" forced="Highlight"
+    color "accent-soft" "#eeeafd"
+    color "accent-fg" "#4a2fc4" more="#492ec0"
     // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
     // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
-    color "disabled-fill" daylight="#d7dbe1" paper="#d3d1ce" dusk="#434955" midnight="#30333a" forced="ButtonFace"
-    color "on-disabled" daylight="#4d5461" paper="#564e45" dusk="#c0c6d1" midnight="#9ca3af" daylight-more="#333843" paper-more="#3d3731" dusk-more="#e6e9ef" midnight-more="#c4c9d2" forced="GrayText"
-    color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
-    color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
-    color "danger-soft" daylight="#fdecec" paper="#f8e6e1" dusk="#4a2a2c" midnight="#3a1414"
-    color "warning" daylight="#aa4e09" paper="#925611" dusk="#f5b65b" midnight="#ffb547" daylight-more="#7c3907" paper-more="#693e0c" dusk-more="#f7c781"
-    color "warning-soft" daylight="#fef3e2" paper="#f6ead5" dusk="#47391f" midnight="#382810"
-    color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
-    color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
-    // The value of `fg-muted` on purpose, written twice: there is no alias between tokens, and the two are named
-    // for what they say (a status, a quiet word) so one may change without the other.
-    color "st-ns" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
-    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#262a31" midnight-more="#1a1c21"
-    color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
-    color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
-    color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
-    color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
+    color "disabled-fill" "#d7dbe1" forced="ButtonFace"
+    color "on-disabled" "#4d5461" more="#333843" forced="GrayText"
+    color "on-accent" "#ffffff" forced="HighlightText"
+    color "danger" "#c62f2f" more="#912222"
+    color "danger-soft" "#fdecec"
+    color "warning" "#aa4e09" more="#7c3907"
+    color "warning-soft" "#fef3e2"
+    color "success" "#1f784c" more="#165637"
+    color "success-soft" "#e6f4ec"
+    // The color of `fg-muted`, named, not copied: the two are named for what they say (a status, a quiet word), so a
+    // theme may set one without the other (Midnight does, for more contrast).
+    color "st-ns" "$fg-muted"
+    color "st-ns-soft" "#eef0f3"
+    color "st-ip" "#1d5fd1" more="#16489f"
+    color "st-ip-soft" "#e7effc"
+    color "st-done" "#1f784c" more="#165637"
+    color "st-done-soft" "#e6f4ec"
     // The tint of a row by its status group, one for each of the three groups (Not started, In progress,
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
-    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#3b3b3b" midnight="#252525"
-    color "tint-ip" daylight="#d2eefe" paper="#c4e9ef" dusk="#1f3b68" midnight="#0a2350"
-    color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
+    color "tint-ns" "#e9e9ec"
+    color "tint-ip" "#d2eefe"
+    color "tint-done" "#c8f3de"
     // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
     // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
     // Daylight) and a line to see (3:1) on every tint and surface.
-    color "edge-high" daylight="#cf6a00" paper="#cb6300" dusk="#f5b65b" midnight="#ffb547" forced="CanvasText"
+    color "edge-high" "#cf6a00" forced="CanvasText"
     // The thin line just inside a row that is pointed at: the edge of a control in the light themes, a step
     // stronger in the dark ones, where the edge of a control was barely seen on the tints of Dusk.
-    // A token of its own, though three themes give it the value of `border-control`: the two are set apart by
-    // what they draw, and the dark themes already differ. A token that says "the same as" another is not in
-    // the file (tokens have no alias); a follow-up may add one.
-    color "hover-line" daylight="#80838b" paper="#7a7366" dusk="#a0a8b6" midnight="#8e95a2" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#b0b4bb" midnight-more="#9a9ca2" forced="ButtonText"
+    // A token of its own that names `border-control`: the two are set apart by what they draw, and the dark themes
+    // give the hover line a brighter color of its own in their files.
+    color "hover-line" "$border-control" forced="ButtonText"
     // The dimmed page behind a sheet, a menu or Quick search. Dark in every theme: in the light themes the old
     // fill (the sunken surface at 80%) left the text under the panel readable.
-    color "scrim" daylight="#1c2029" paper="#2a2826" dusk="#101217" midnight="#000000" forced="Canvas"
+    color "scrim" "#1c2029" forced="Canvas"
     // The twelve colors of choices, labels and tags (UX §7.1), each a fill and its text, with plain names in the catalog
     // (`choice-color.cat1` Pink … `cat12` Sand). The fills are told apart at a glance in every theme (the `distinct`
     // rule below), and the text color, the edge of a swatch, is seen on every surface (the `lines` rule).
-    color "cat1-bg" daylight="#ffc8da" paper="#ffe1ef" dusk="#5e2943" midnight="#4d1934" daylight-more="#ffe1ed" paper-more="#ffe1ef" dusk-more="#5e2943" midnight-more="#491831"
-    color "cat1-fg" daylight="#7b4a5c" paper="#83586e" dusk="#d798b3" midnight="#c487a2"
-    color "cat2-bg" daylight="#c0d9fe" paper="#bdd8ff" dusk="#033e67" midnight="#022e4f" daylight-more="#dbebff" paper-more="#d0e4ff" dusk-more="#033e67" midnight-more="#052c4b"
-    color "cat2-fg" daylight="#3e5c7e" paper="#375b81" dusk="#88aee1" midnight="#749bcd"
-    color "cat3-bg" daylight="#b5edc2" paper="#b5edc2" dusk="#034120" midnight="#002b15" daylight-more="#c5f4cf" paper-more="#bbefc7" dusk-more="#034120" midnight-more="#002b15"
-    color "cat3-fg" daylight="#366945" paper="#366945" dusk="#7bb28b" midnight="#6f9a7d"
-    color "cat4-bg" daylight="#ffccaa" paper="#ffc39d" dusk="#5d3818" midnight="#532a01" daylight-more="#ffe5cf" paper-more="#ffdbc2" dusk-more="#543419" midnight-more="#422305"
-    color "cat4-fg" daylight="#7f4c26" paper="#7b4722" dusk="#daa984" midnight="#c99873"
-    color "cat5-bg" daylight="#eed5ff" paper="#ecd2ff" dusk="#422e59" midnight="#311f49" daylight-more="#f6e2ff" paper-more="#f1daff" dusk-more="#422e59" midnight-more="#311f49"
-    color "cat5-fg" daylight="#6c557d" paper="#6a537d" dusk="#b59ccf" midnight="#a289bc"
-    color "cat6-bg" daylight="#b5ebe4" paper="#abe8e3" dusk="#124d49" midnight="#0a3e3a" daylight-more="#c5f2ec" paper-more="#b7ece8" dusk-more="#19423f" midnight-more="#102f2c"
-    color "cat6-fg" daylight="#366864" paper="#2b6663" dusk="#8ac3bd" midnight="#7daea8"
-    color "cat7-bg" daylight="#ffe2df" paper="#ffc5c0" dusk="#561f1a" midnight="#4a160f" daylight-more="#ffe2df" paper-more="#ffdad6" dusk-more="#561f1a" midnight-more="#4a160f"
-    color "cat7-fg" daylight="#905450" paper="#844541" dusk="#d18b81" midnight="#c58275"
-    color "cat8-bg" daylight="#f8e7a4" paper="#ffe99c" dusk="#433905" midnight="#403507" daylight-more="#faeaab" paper-more="#ffe99c" dusk-more="#433905" midnight-more="#332a0a"
-    color "cat8-fg" daylight="#6f6427" paper="#736518" dusk="#b7a771" midnight="#b4a270"
-    color "cat9-bg" daylight="#97e3fc" paper="#91e2fd" dusk="#003543" midnight="#012631" daylight-more="#bff1ff" paper-more="#b2ecff" dusk-more="#003543" midnight-more="#012631"
-    color "cat9-fg" daylight="#056277" paper="#016176" dusk="#74a3b5" midnight="#5297b1"
-    color "cat10-bg" daylight="#dcf7b6" paper="#e9febe" dusk="#364916" midnight="#2a3e0f" daylight-more="#dcf7b6" paper-more="#e9febe" dusk-more="#324118" midnight-more="#222e10"
-    color "cat10-fg" daylight="#556f35" paper="#60733c" dusk="#aabd86" midnight="#99ae78"
-    color "cat11-bg" daylight="#d0d7dd" paper="#cdd5db" dusk="#454647" midnight="#38393a" daylight-more="#e4e9ed" paper-more="#dde3e7" dusk-more="#3b3c3d" midnight-more="#2a2b2b"
-    color "cat11-fg" daylight="#53595e" paper="#51575c" dusk="#b8b9bb" midnight="#a7a8aa"
-    color "cat12-bg" daylight="#e5d7ba" paper="#e7d6bc" dusk="#3b2e19" midnight="#2c2009" daylight-more="#f3e8d4" paper-more="#eee0cb" dusk-more="#3b2e19" midnight-more="#2c2009"
-    color "cat12-fg" daylight="#655940" paper="#655741" dusk="#ac9a81" midnight="#9d8b73"
+    color "cat1-bg" "#ffc8da" more="#ffe1ed"
+    color "cat1-fg" "#7b4a5c"
+    color "cat2-bg" "#c0d9fe" more="#dbebff"
+    color "cat2-fg" "#3e5c7e"
+    color "cat3-bg" "#b5edc2" more="#c5f4cf"
+    color "cat3-fg" "#366945"
+    color "cat4-bg" "#ffccaa" more="#ffe5cf"
+    color "cat4-fg" "#7f4c26"
+    color "cat5-bg" "#eed5ff" more="#f6e2ff"
+    color "cat5-fg" "#6c557d"
+    color "cat6-bg" "#b5ebe4" more="#c5f2ec"
+    color "cat6-fg" "#366864"
+    color "cat7-bg" "#ffe2df"
+    color "cat7-fg" "#905450"
+    color "cat8-bg" "#f8e7a4" more="#faeaab"
+    color "cat8-fg" "#6f6427"
+    color "cat9-bg" "#97e3fc" more="#bff1ff"
+    color "cat9-fg" "#056277"
+    color "cat10-bg" "#dcf7b6"
+    color "cat10-fg" "#556f35"
+    color "cat11-bg" "#d0d7dd" more="#e4e9ed"
+    color "cat11-fg" "#53595e"
+    color "cat12-bg" "#e5d7ba" more="#f3e8d4"
+    color "cat12-fg" "#655940"
 
     // The shadow of things that float
-    shadow "shadow" daylight="0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" paper="0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914" dusk="0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059" midnight="0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
+    shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14"
 }
 
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
