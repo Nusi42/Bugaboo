@@ -26,9 +26,19 @@ describe("the banner of the front page", () => {
   it("shoos a bug away and says boo, and the bug and the word are still when motion is reduced", () => {
     expect(banner).toContain('class="bug"');
     expect(banner).toContain(">Boo!<");
-    expect(banner).toMatch(
-      /\.row, \.dot, \.fill, \.ring, \.bug, \.legs, \.boo \{ animation: none/u,
-    );
+    expect(banner).toMatch(/\.row, \.bug, \.boo \{ animation: none/u);
+  });
+
+  it("plays one calm sequence once: nothing repeats, blinks or changes its color", () => {
+    expect(banner).not.toMatch(/infinite|alternate/u);
+    const frames = banner
+      .split("@keyframes ")
+      .slice(1)
+      .map((piece) => piece.slice(0, piece.indexOf("}\n")));
+    expect(frames.length).toBeGreaterThan(0);
+    for (const frame of frames) {
+      expect(frame).not.toMatch(/fill:|stroke:|color:/u);
+    }
   });
 
   it("loads nothing from outside and runs no script", () => {
