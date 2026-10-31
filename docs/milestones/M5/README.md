@@ -142,7 +142,7 @@ Each question has a proposal. Accepting all of them takes every proposal as writ
   - A shared search always runs with the rights of the person who opens it. Two people may see different issues in the same search, and nobody sees more by being shared with.
 - **M5-Q2: The columns of a list.**
   - The default columns are those of UX design §4.2: status, ID, type, title, labels, priority, assigned, changed.
-  - Grouped by status, *Comfortable* spacing.
+  - Grouped by status, *Comfortable* spacing *(amended after M5: the list has no spacing of its own and follows the person's Spacing; ADR-0034, amendment "Spacing is the person's own")*.
   - A Project lead may set the project's default list; everyone may save their own.
 - **M5-Q3: What *Quick search* finds in M5.**
   - Issues by ID or words of the title, saved searches, projects, settings pages.

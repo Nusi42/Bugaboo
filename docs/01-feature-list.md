@@ -252,7 +252,7 @@ What each means in practice:
 - **CFG-01 (M)** — **Layout editor**: drag fields into sections and tabs of the issue page, the new-issue form and the board card, per project and issue type.
   - **Role-based:** for each field in a layout, choose which roles see it (for example a short new-issue form for Guests). Field permissions always win: a role that may not see or change a field never gets it, whatever the layout says.
   - *Add a field* on an issue lists only fields the person's role may fill in.
-- **CFG-02 (M)** — Configurable lists: columns, order, widths, density, grouping and sorting. All of it is stored in the **saved search**.
+- **CFG-02 (M)** — Configurable lists: columns, order, widths, grouping and sorting. All of it is stored in the **saved search**. How close together the rows are (*Spacing*) is the person's own preference (CFG-04), which every list follows (ADR-0034, amendment).
 - **CFG-03 (V1)** — **Dashboards** built from boxes (widgets): search results, charts, time summaries, Gantt snippet, my timer, and recent activity.
 - **CFG-04 (M)** — Personal preferences: theme, density, start page, date/time/number formats, week start, time zone, keyboard shortcuts.
 - **CFG-05 (V1)** — Customizable navigation: pin projects, saved searches and documents to the sidebar.

@@ -12,7 +12,7 @@ The pages you see before signing in have the choice of theme at the bottom, so y
 
 ## Spacing
 
-"Comfortable" is the usual spacing. "Compact" fits more on the page.
+"Comfortable" is the usual spacing. "Compact" fits more on the page. Every page follows your choice, the lists of issues and saved searches included.
 
 ## Larger text
 
