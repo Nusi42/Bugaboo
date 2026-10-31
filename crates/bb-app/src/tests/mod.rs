@@ -80,6 +80,7 @@ mod settings;
 mod sign_up;
 mod tags;
 mod tags_hidden;
+mod time_totals;
 mod workflows;
 mod workflows_changers;
 mod workflows_outside;

@@ -23,6 +23,7 @@ use bb_app::search::{
 };
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
+use bb_core::time::Minutes;
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -95,6 +96,20 @@ pub(crate) enum SearchGroupKeyBody {
     Tag(SearchNamedBody),
     /// A label, by its ID and its name.
     Label(SearchNamedBody),
+    /// A range of lengths of time, in whole minutes: from `from` up to `to` (not included), or
+    /// with no end.
+    Length(SearchLengthRangeBody),
+}
+
+/// A range of lengths of time, in whole minutes.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SearchLengthRangeBody {
+    /// Where it starts (included).
+    #[schema(value_type = u32)]
+    from: Minutes,
+    /// Where the next range starts (not included); null for the last range, which has no end.
+    #[schema(value_type = Option<u32>, required = true)]
+    to: Option<Minutes>,
 }
 
 /// A thing with a name the person may know.
@@ -193,6 +208,10 @@ fn group_key(key: ShownKey) -> SearchGroupKeyBody {
             GroupKey::Choice(id) => SearchGroupKeyBody::Choice(id.to_string()),
             GroupKey::Priority(each) => SearchGroupKeyBody::Priority(each),
             GroupKey::StatusGroup(each) => SearchGroupKeyBody::StatusGroup(each),
+            GroupKey::Length(range) => SearchGroupKeyBody::Length(SearchLengthRangeBody {
+                from: range.from,
+                to: range.to,
+            }),
             // A person, a tag and a label are shown by the use case, never as a bare ID.
             GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => {
                 SearchGroupKeyBody::Empty

@@ -3,7 +3,9 @@
 //! put there. The compiler itself is tested on both databases in `bb-store`.
 
 use super::fake::FakeStore;
-use crate::search::{GroupCount, SearchFailure, SearchHit, SearchRequest, SearchStore};
+use crate::search::{
+    GroupCount, LengthTotals, SearchFailure, SearchHit, SearchRequest, SearchStore,
+};
 
 impl SearchStore for FakeStore {
     async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
@@ -30,5 +32,11 @@ impl SearchStore for FakeStore {
         let mut shared = self.lock();
         shared.searches.push(request.clone());
         Ok(shared.search_groups.clone())
+    }
+
+    async fn search_lengths(&self, request: &SearchRequest) -> Result<LengthTotals, SearchFailure> {
+        let mut shared = self.lock();
+        shared.searches.push(request.clone());
+        Ok(shared.search_lengths)
     }
 }

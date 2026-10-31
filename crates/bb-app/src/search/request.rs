@@ -11,7 +11,9 @@ use bb_core::issue::{Issue, Priority, StatusGroup};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::ShortName;
 use bb_core::tags::IssueSight;
+use bb_core::time::Minutes;
 use bb_core::time::day::FirstDay;
+use bb_core::time::range::LengthRange;
 use bb_searchlang::CheckedSearch;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
@@ -175,6 +177,9 @@ pub enum GroupKey {
     Priority(Priority),
     /// A status group.
     StatusGroup(StatusGroup),
+    /// A range of lengths of time (*Estimated time*, *Time left*, *Time spent*): a length is
+    /// grouped by its range, never by its own minutes.
+    Length(LengthRange),
 }
 
 /// How many issues a group of a search holds.
@@ -217,4 +222,26 @@ pub trait SearchStore: IssueStore + 'static {
         request: &SearchRequest,
         by: &str,
     ) -> impl Future<Output = Result<Vec<GroupCount>, SearchFailure>> + Send;
+
+    /// The totals of *Estimated time* and *Time left* of the issues the search finds, in one
+    /// statement (ADR-0035, decision 4): only of the fields among the readable ones of the request,
+    /// like a filter. *Time spent* is read through the port of time spent. Like `search_count`, it
+    /// ignores `after` and `limit`.
+    fn search_lengths(
+        &self,
+        request: &SearchRequest,
+    ) -> impl Future<Output = Result<LengthTotals, SearchFailure>> + Send;
+}
+
+/// The totals of the lengths of time of the issues a search finds, for the use case of the totals:
+/// none for a field that is not readable or that no issue found has a value of.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LengthTotals {
+    /// Whether the search found any issue: a total of nothing is not shown. Never given to a
+    /// person (PRIV-13).
+    pub found_any: bool,
+    /// The sum of *Estimated time*.
+    pub estimated: Option<Minutes>,
+    /// The sum of *Time left*, each issue's typed or worked out.
+    pub time_left: Option<Minutes>,
 }

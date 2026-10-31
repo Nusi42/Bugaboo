@@ -9,6 +9,7 @@
 
 use bb_app::search::FieldTarget;
 use bb_core::id::IssueId;
+use bb_core::time::range::LengthRange;
 use bb_searchlang::Direction;
 use sea_query::{
     Alias, Cond, DynIden, Expr, ExprTrait as _, Func, IntoIden as _, JoinType, Order, Query,
@@ -54,6 +55,8 @@ pub(super) enum GroupValue {
     Priority,
     /// The place of the status group.
     StatusGroup,
+    /// The start of the range of a length of time, in whole minutes (`LengthRange`).
+    Length,
 }
 
 /// What an ID in a group is the ID of.
@@ -181,7 +184,11 @@ impl Compiler<'_> {
             Domain::Text | Domain::Status => {
                 Ok((self.bytes(Self::plain(&subject, first)), Kind::Text))
             }
-            Domain::Number(_) | Domain::Duration | Domain::YesNo | Domain::Time(_) => {
+            Domain::Number(_)
+            | Domain::Duration
+            | Domain::Minutes
+            | Domain::YesNo
+            | Domain::Time(_) => {
                 let value = Self::plain(&subject, first);
                 // A column of whole numbers is the same on both databases and stays the column, so an
                 // index of it can give the order.
@@ -279,6 +286,7 @@ impl Compiler<'_> {
                     GroupValue::Priority | GroupValue::StatusGroup => {
                         bigint(self.rank(&subject, domain)?)
                     }
+                    GroupValue::Length => bigint(range_start(&value)),
                 };
                 Ok(Grouping::One(value, what))
             }
@@ -471,10 +479,24 @@ const fn kind_of(domain: Domain) -> Kind {
         | Domain::StatusGroup
         | Domain::Number(_)
         | Domain::Duration
+        | Domain::Minutes
         | Domain::YesNo
         | Domain::Time(_) => Kind::Whole,
         _ => Kind::Text,
     }
+}
+
+/// The start of the range a length of time is in (`LengthRange`), `NULL` for no length: the one
+/// place that turns a length into its range in a statement.
+fn range_start(length: &Expr) -> Expr {
+    let mut ranges = sea_query::CaseStatement::new();
+    for range in LengthRange::all().iter().rev() {
+        ranges = ranges.case(
+            length.clone().gte(i64::from(range.from)),
+            Expr::val(i64::from(range.from)),
+        );
+    }
+    ranges.finally(Expr::null()).into()
 }
 
 /// What the groups of a field are, by the domain of its values.
@@ -489,6 +511,7 @@ const fn group_value_of(domain: Domain) -> GroupValue {
         Domain::Priority => GroupValue::Priority,
         Domain::StatusGroup => GroupValue::StatusGroup,
         Domain::Number(_) | Domain::Duration | Domain::YesNo | Domain::Time(_) => GroupValue::Whole,
+        Domain::Minutes => GroupValue::Length,
         Domain::Tag => GroupValue::Id(IdOf::Tag),
         Domain::Label => GroupValue::Id(IdOf::Label),
         Domain::Text | Domain::Status => GroupValue::Text,

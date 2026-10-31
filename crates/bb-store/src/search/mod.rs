@@ -18,8 +18,8 @@
 use std::cell::{Cell, RefCell};
 
 use bb_app::search::{
-    FieldTarget, GroupCount, GroupKey, SearchFailure, SearchHit, SearchRequest, SearchStore,
-    target_of,
+    FieldTarget, GroupCount, GroupKey, LengthTotals, SearchFailure, SearchHit, SearchRequest,
+    SearchStore, target_of,
 };
 use bb_core::issue::{Priority, StatusGroup};
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
@@ -166,6 +166,7 @@ fn group_order(group: &GroupCount) -> (bool, String, i64) {
     match &group.key {
         GroupKey::Empty => (true, String::new(), 0),
         GroupKey::Whole(number) => (false, String::new(), *number),
+        GroupKey::Length(range) => (false, String::new(), i64::from(range.from)),
         GroupKey::Text(text) => (false, text.clone(), 0),
         GroupKey::Person(id) => (false, id.to_string(), 0),
         GroupKey::Group(id) => (false, id.to_string(), 0),
@@ -293,6 +294,20 @@ impl SearchStore for AuthStorage {
         groups.sort_by_cached_key(group_order);
         Ok(groups)
     }
+
+    async fn search_lengths(&self, request: &SearchRequest) -> Result<LengthTotals, SearchFailure> {
+        let built = spent::lengths_statement(request, self.database().dialect()).map_err(failed)?;
+        let rows = self
+            .database()
+            .fetch_all_within(&built, SEARCH_TIME)
+            .await
+            .map_err(stopped)?;
+        rows.first()
+            .map(spent::read_lengths)
+            .transpose()
+            .map_err(failed)
+            .map(Option::unwrap_or_default)
+    }
 }
 
 #[cfg(test)]
@@ -305,3 +320,7 @@ mod tests_rest;
 mod tests_spent;
 #[cfg(test)]
 mod tests_streams;
+#[cfg(test)]
+mod tests_time;
+#[cfg(test)]
+mod tests_time_spent;

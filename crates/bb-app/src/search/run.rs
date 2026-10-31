@@ -149,14 +149,14 @@ pub enum ShownKey {
 impl Masked for SearchGroups {}
 
 /// A search that is checked and ready for the store.
-struct Prepared {
-    request: SearchRequest,
+pub(crate) struct Prepared {
+    pub(crate) request: SearchRequest,
     looked: Looked,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Reads and checks the text, and gathers what the store needs to compile it.
-    async fn prepare_search(
+    pub(crate) async fn prepare_search(
         &self,
         actor: &Actor,
         text: &str,
@@ -210,7 +210,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-fn stopped(error: SearchFailure) -> AppError {
+/// What a person is answered when a search did not run.
+pub(crate) fn stopped(error: SearchFailure) -> AppError {
     match error {
         SearchFailure::TooSlow => AppError::Refused(ErrorCode::SearchTooSlow),
         SearchFailure::BadCursor => AppError::Refused(ErrorCode::InvalidRequest),

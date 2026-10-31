@@ -153,6 +153,9 @@ pub(super) enum Domain {
     Number(i64),
     /// A length of time, held in seconds.
     Duration,
+    /// A length of time of the issue, held in whole minutes (*Estimated time*, *Time left*, *Time
+    /// spent*).
+    Minutes,
     /// Yes or no.
     YesNo,
     /// A moment or a day.
@@ -297,6 +300,15 @@ pub(super) fn subject_of(
         T::Closed => (
             Subject::Column(issue_column(IssueRow::ClosedAt)),
             Domain::Time(Clock::Micros),
+        ),
+        T::EstimatedTime => (
+            Subject::Column(issue_column(IssueRow::EstimatedTime)),
+            Domain::Minutes,
+        ),
+        T::TimeLeft => (Subject::Column(super::spent::time_left()), Domain::Minutes),
+        T::TimeSpent => (
+            Subject::Column(super::spent::minutes_spent()),
+            Domain::Minutes,
         ),
         T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
     }

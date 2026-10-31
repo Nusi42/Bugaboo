@@ -176,6 +176,8 @@ pub(crate) struct Shared {
     pub(crate) search_hits: Vec<crate::search::SearchHit>,
     /// The groups a search finds.
     pub(crate) search_groups: Vec<crate::search::GroupCount>,
+    /// The totals of the lengths of time a search finds.
+    pub(crate) search_lengths: crate::search::LengthTotals,
     /// How a search fails, instead of finding anything.
     pub(crate) search_fails: Option<crate::search::SearchFailure>,
 }

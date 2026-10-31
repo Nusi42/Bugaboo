@@ -426,7 +426,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 },
                 None => None,
             },
-            GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => None,
+            // A range of lengths is two comparisons, which a group's filter of one value cannot
+            // say yet.
+            GroupKey::Empty
+            | GroupKey::Person(_)
+            | GroupKey::Tag(_)
+            | GroupKey::Label(_)
+            | GroupKey::Length(_) => None,
         })
     }
 }

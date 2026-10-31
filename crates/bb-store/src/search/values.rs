@@ -215,8 +215,8 @@ impl Compiler<'_> {
                 Some(number) => Cond::all().add(subject.eq(number)),
                 None => nothing(),
             },
-            Domain::Duration => match seconds_of(operand) {
-                Some(seconds) => Cond::all().add(subject.eq(seconds)),
+            Domain::Duration | Domain::Minutes => match length_in(domain, operand) {
+                Some(length) => Cond::all().add(subject.eq(length)),
                 None => nothing(),
             },
             Domain::Time(clock) => {
@@ -272,15 +272,15 @@ impl Compiler<'_> {
                     Comparison::GreaterOrEqual => subject.gte(number),
                 }))
             }
-            Domain::Duration => {
-                let Some(seconds) = seconds_of(operand) else {
+            Domain::Duration | Domain::Minutes => {
+                let Some(length) = length_in(domain, operand) else {
                     return Ok(nothing());
                 };
                 Ok(Cond::all().add(match operator {
-                    Comparison::Less => subject.lt(seconds),
-                    Comparison::LessOrEqual => subject.lte(seconds),
-                    Comparison::Greater => subject.gt(seconds),
-                    Comparison::GreaterOrEqual => subject.gte(seconds),
+                    Comparison::Less => subject.lt(length),
+                    Comparison::LessOrEqual => subject.lte(length),
+                    Comparison::Greater => subject.gt(length),
+                    Comparison::GreaterOrEqual => subject.gte(length),
                 }))
             }
             Domain::Time(clock) => {
@@ -344,14 +344,15 @@ impl Compiler<'_> {
     }
 }
 
-/// The operand as seconds: a length of time is held in seconds. `None` when it is no length of
-/// time.
-fn seconds_of(operand: &Operand) -> Option<i64> {
-    match operand {
-        Operand::Duration { minutes, .. } => {
-            i64::from(*minutes).checked_mul(i64::from(SECONDS_PER_MINUTE))
-        }
-        _ => None,
+/// The operand as the column of the domain holds a length: seconds for the length of an own field,
+/// whole minutes for a length of the issue. `None` when it is no length of time.
+fn length_in(domain: Domain, operand: &Operand) -> Option<i64> {
+    let Operand::Duration { minutes, .. } = operand else {
+        return None;
+    };
+    match domain {
+        Domain::Minutes => Some(i64::from(*minutes)),
+        _ => i64::from(*minutes).checked_mul(i64::from(SECONDS_PER_MINUTE)),
     }
 }
 

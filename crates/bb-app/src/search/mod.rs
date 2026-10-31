@@ -19,12 +19,12 @@ pub(crate) use names::NameCache;
 pub use readable::{FieldName, ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub(crate) use readable::{Looked, readable_of, word_is_taken};
 pub use request::{
-    GroupCount, GroupKey, Names, OwnReach, ProjectLink, SearchFailure, SearchHit, SearchRequest,
-    SearchStore, UnknownName,
+    GroupCount, GroupKey, LengthTotals, Names, OwnReach, ProjectLink, SearchFailure, SearchHit,
+    SearchRequest, SearchStore, UnknownName,
 };
-pub(crate) use run::search_page;
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
     SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
 };
+pub(crate) use run::{search_page, stopped};
 pub use target::{FieldTarget, Searchable, TextPlace, target_of};

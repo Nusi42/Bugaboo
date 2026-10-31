@@ -39,6 +39,12 @@ pub enum FieldTarget {
     Changed,
     /// When the issue was closed.
     Closed,
+    /// *Estimated time*, in whole minutes.
+    EstimatedTime,
+    /// *Time left*: the typed value, or the one worked out (ADR-0035, decision 4).
+    TimeLeft,
+    /// *Time spent*: the total of the time entries of the issue.
+    TimeSpent,
     /// An own field.
     Own {
         /// The field.
@@ -121,6 +127,9 @@ impl FieldTarget {
             Self::Created => message::ISSUE_FIELD_CREATED,
             Self::Changed => message::ISSUE_FIELD_CHANGED,
             Self::Closed => message::ISSUE_FIELD_CLOSED,
+            Self::EstimatedTime => message::ISSUE_FIELD_ESTIMATED_TIME,
+            Self::TimeLeft => message::ISSUE_FIELD_TIME_LEFT,
+            Self::TimeSpent => message::ISSUE_FIELD_TIME_SPENT,
             Self::Own { .. } => return None,
         })
     }

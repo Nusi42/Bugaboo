@@ -30,6 +30,10 @@ fn field_word() -> impl Strategy<Value = String> {
         // Names of several words, some with a word that is a word of the language (D3).
         Just("assigned to".to_owned()),
         Just("found in release".to_owned()),
+        // The lengths of time of an issue (TIME-03).
+        Just("estimated time".to_owned()),
+        Just("time left".to_owned()),
+        Just("time spent".to_owned()),
         Just("x in last".to_owned()),
         Just("a is b".to_owned()),
         Just("planned for a to z".to_owned()),

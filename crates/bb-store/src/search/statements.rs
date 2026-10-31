@@ -8,6 +8,8 @@ use bb_core::issue::{Priority, StatusGroup};
 use bb_core::tags::IssueSight;
 use bb_core::text_index::TextSource;
 use bb_core::text_words::{SearchWord, search_words};
+use bb_core::time::Minutes;
+use bb_core::time::range::LengthRange;
 use bb_searchlang::{MAX_CONTAINS_WORDS, MAX_SORT_KEYS};
 use sea_query::{
     Alias, Cond, Expr, ExprTrait as _, Func, Iden, NullOrdering, Order, Query, SelectStatement,
@@ -66,13 +68,13 @@ impl Iden for Counted {
 
 /// The condition every statement of a search has: the issues the person reads, that the search
 /// finds.
-fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
+pub(super) fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
     Ok(Cond::all()
         .add(sight_condition(&compiler.request.sight))
         .add(found_by(compiler)?))
 }
 
-fn finish(compiler: &Compiler<'_>, select: SelectStatement) -> Built {
+pub(super) fn finish(compiler: &Compiler<'_>, select: SelectStatement) -> Built {
     let tables = compiler.take_tables();
     if tables.is_empty() {
         return Built::Plain(select);
@@ -445,7 +447,7 @@ pub(crate) fn read_place(row: &Row, kinds: &[Kind]) -> Result<Vec<SortValue>, St
 }
 
 /// The sum of minutes of a statement of time spent, in the column of the count.
-pub(crate) fn read_spent(row: &Row) -> Result<bb_core::time::Minutes, StoreError> {
+pub(crate) fn read_spent(row: &Row) -> Result<Minutes, StoreError> {
     crate::time::read_minutes(row.get::<i64>(Counted)?)
 }
 
@@ -464,6 +466,14 @@ fn read_key(row: &Row, what: GroupValue) -> Result<GroupKey, StoreError> {
         GroupValue::Whole => row
             .get::<Option<i64>>(Sorted(0))?
             .map_or(GroupKey::Empty, GroupKey::Whole),
+        GroupValue::Length => match row.get::<Option<i64>>(Sorted(0))? {
+            None => GroupKey::Empty,
+            Some(from) => Minutes::try_from(from)
+                .ok()
+                .and_then(LengthRange::starting_at)
+                .map(GroupKey::Length)
+                .ok_or_else(corrupt)?,
+        },
         GroupValue::Priority => match row.get::<Option<i64>>(Sorted(0))? {
             None => GroupKey::Empty,
             Some(place) => Priority::ALL

@@ -8192,6 +8192,15 @@ export interface components {
           type: "label";
           /** @description A label, by its ID and its name. */
           value: components["schemas"]["SearchNamedBody"];
+        }
+      | {
+          /** @enum {string} */
+          type: "length";
+          /**
+           * @description A range of lengths of time, in whole minutes: from `from` up to `to` (not included), or
+           *     with no end.
+           */
+          value: components["schemas"]["SearchLengthRangeBody"];
         };
     /** @description How many issues a search finds in each group of a field. */
     SearchGroupsBody: {
@@ -8202,6 +8211,19 @@ export interface components {
        *     and the group without a value.
        */
       truncated: boolean;
+    };
+    /** @description A range of lengths of time, in whole minutes. */
+    SearchLengthRangeBody: {
+      /**
+       * Format: int32
+       * @description Where it starts (included).
+       */
+      from: number;
+      /**
+       * Format: int32
+       * @description Where the next range starts (not included); null for the last range, which has no end.
+       */
+      to: number | null;
     };
     /** @description A thing with a name the person may know. */
     SearchNamedBody: {

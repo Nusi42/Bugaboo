@@ -23299,6 +23299,21 @@
                 "description": "A label, by its ID and its name."
               }
             }
+          },
+          {
+            "type": "object",
+            "description": "A range of lengths of time, in whole minutes: from `from` up to `to` (not included), or\nwith no end.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["length"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/SearchLengthRangeBody",
+                "description": "A range of lengths of time, in whole minutes: from `from` up to `to` (not included), or\nwith no end."
+              }
+            }
           }
         ],
         "description": "The key of a group, by identity or word; a person as the viewer sees them."
@@ -23318,6 +23333,25 @@
           "truncated": {
             "type": "boolean",
             "description": "Whether the list was cut off at its cap: over 200 groups the answer holds the first 199\nand the group without a value."
+          }
+        }
+      },
+      "SearchLengthRangeBody": {
+        "type": "object",
+        "description": "A range of lengths of time, in whole minutes.",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Where it starts (included).",
+            "minimum": 0
+          },
+          "to": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "Where the next range starts (not included); null for the last range, which has no end.",
+            "minimum": 0
           }
         }
       },
