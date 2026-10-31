@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="title desc">
+  <title id="title">Bugaboo</title>
+  <desc id="desc">The name Bugaboo, a self-hosted issue tracker, next to three issue rows whose status moves from not started to in progress to done.</desc>
+  <style>
+    /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
+       under the names of the tokens; a test (web/tooling/banner.test.ts) keeps them the same. */
+    :root {
+      --bg-canvas: #ffffff;
+      --bg-surface: #f6f7f9;
+      --bg-raised: #ffffff;
+      --border: #dfe3e9;
+      --fg: #16181d;
+      --fg-muted: #565d6b;
+      --accent: #5b3fd9;
+      --accent-soft: #eeeafd;
+      --st-ns: #565d6b;
+      --st-ip: #1d5fd1;
+      --st-done: #1f784c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-canvas: #1d2027;
+        --bg-surface: #252932;
+        --bg-raised: #2d323c;
+        --border: #3b414d;
+        --fg: #e5e8ed;
+        --fg-muted: #aeb5c1;
+        --accent: #a495ff;
+        --accent-soft: #37325a;
+        --st-ns: #aeb5c1;
+        --st-ip: #7fb0ff;
+        --st-done: #6fd39a;
+      }
+    }
+    text { font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+    .canvas { fill: var(--bg-surface); }
+    .glow { fill: var(--accent-soft); }
+    .name { fill: var(--fg); font-size: 92px; font-weight: 700; letter-spacing: -2px; }
+    .name tspan { fill: var(--accent); }
+    .line { fill: var(--fg-muted); font-size: 26px; }
+    .note { fill: var(--fg-muted); font-size: 18px; }
+    .card { fill: var(--bg-raised); stroke: var(--border); stroke-width: 2; }
+    .title { fill: var(--fg); font-size: 22px; }
+    .chip { fill: var(--accent-soft); }
+    .chip-text { fill: var(--accent); font-size: 15px; font-weight: 600; }
+    .dot { fill: none; stroke-width: 4; }
+    .done .dot { stroke: var(--st-done); }
+    .progress .dot { stroke: var(--st-ip); }
+    .waiting .dot { stroke: var(--st-ns); }
+    .fill { stroke: none; }
+    .done .fill { fill: var(--st-done); }
+    .progress .fill { fill: var(--st-ip); }
+    .waiting .fill { fill: none; }
+    .ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 170; stroke-dashoffset: 55; transform: rotate(-90deg); transform-origin: 80px 258px; }
+    .ring-track { fill: none; stroke: var(--border); stroke-width: 6; }
+
+    .row { animation: arrive 700ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+    .row:nth-of-type(1) { animation-delay: 100ms; }
+    .row:nth-of-type(2) { animation-delay: 280ms; }
+    .row:nth-of-type(3) { animation-delay: 460ms; }
+    .waiting .dot { animation: to-ns 9s 1.6s infinite; }
+    .waiting .fill { animation: fill-ns 9s 1.6s infinite; }
+    .progress .dot { animation: to-ip 9s 1.6s infinite; }
+    .progress .fill { animation: fill-ip 9s 1.6s infinite; }
+    .ring { animation: tick 6s linear infinite; }
+
+    @keyframes arrive { from { opacity: 0; transform: translateX(48px); } }
+    @keyframes to-ns { 0%, 20% { stroke: var(--st-ns); } 30%, 55% { stroke: var(--st-ip); } 65%, 90% { stroke: var(--st-done); } 100% { stroke: var(--st-ns); } }
+    @keyframes fill-ns { 0%, 20% { fill: none; } 30%, 55% { fill: var(--st-ip); } 65%, 90% { fill: var(--st-done); } 100% { fill: none; } }
+    @keyframes to-ip { 0%, 25% { stroke: var(--st-ip); } 35%, 70% { stroke: var(--st-done); } 80%, 100% { stroke: var(--st-ip); } }
+    @keyframes fill-ip { 0%, 25% { fill: var(--st-ip); } 35%, 70% { fill: var(--st-done); } 80%, 100% { fill: var(--st-ip); } }
+    @keyframes tick { from { stroke-dashoffset: 176; } to { stroke-dashoffset: 0; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .row, .dot, .fill, .ring { animation: none; }
+    }
+  </style>
+
+  <rect class="canvas" width="1280" height="320" rx="24"/>
+  <circle class="glow" cx="1180" cy="40" r="170"/>
+
+  <text class="name" x="64" y="140">Bug<tspan>aboo</tspan></text>
+  <text class="line" x="68" y="186">A self-hosted issue tracker for teams.</text>
+  <circle class="ring-track" cx="80" cy="258" r="27"/>
+  <circle class="ring" cx="80" cy="258" r="27"/>
+  <text class="note" x="126" y="256">Time and working hours, privacy first.</text>
+  <text class="note" x="126" y="280">Under development, before version 1.0.</text>
+
+  <g class="row done">
+    <rect class="card" x="700" y="40" width="520" height="68" rx="14"/>
+    <circle class="dot" cx="742" cy="74" r="12"/>
+    <circle class="fill" cx="742" cy="74" r="6"/>
+    <text class="title" x="772" y="82">Checkout saves the time zone</text>
+    <rect class="chip" x="1128" y="58" width="72" height="32" rx="16"/>
+    <text class="chip-text" x="1164" y="79" text-anchor="middle">Bug</text>
+  </g>
+  <g class="row progress">
+    <rect class="card" x="700" y="126" width="520" height="68" rx="14"/>
+    <circle class="dot" cx="742" cy="160" r="12"/>
+    <circle class="fill" cx="742" cy="160" r="6"/>
+    <text class="title" x="772" y="168">Export the timesheet as a table</text>
+    <rect class="chip" x="1128" y="144" width="72" height="32" rx="16"/>
+    <text class="chip-text" x="1164" y="165" text-anchor="middle">Task</text>
+  </g>
+  <g class="row waiting">
+    <rect class="card" x="700" y="212" width="520" height="68" rx="14"/>
+    <circle class="dot" cx="742" cy="246" r="12"/>
+    <circle class="fill" cx="742" cy="246" r="6"/>
+    <text class="title" x="772" y="254">Review the new sign-in rules</text>
+    <rect class="chip" x="1128" y="230" width="72" height="32" rx="16"/>
+    <text class="chip-text" x="1164" y="251" text-anchor="middle">Task</text>
+  </g>
+</svg>
