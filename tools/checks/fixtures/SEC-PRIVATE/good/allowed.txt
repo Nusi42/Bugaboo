@@ -19,3 +19,6 @@ zanzibarish is another word
 the claude.ai/artifact links live outside Git
 claude.ai/artifact/{id} and claude.ai/code/artifact/{uuid}
 claude.ai/artifact/short
+https://github.com/Zanzibar42/Repo
+git@github.com:Zanzibar42/repo.git
+167581605+Zanzibar42@users.noreply.github.com

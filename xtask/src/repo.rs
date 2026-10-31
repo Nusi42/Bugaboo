@@ -58,8 +58,15 @@ impl Repo {
         Self { root, view: None }
     }
 
-    /// The repository containing this xtask crate.
+    /// The repository containing this xtask crate, or the master when the command runs in it: the
+    /// hook of the master runs the xtask program of a work folder on the master (ADR-0039).
     pub(crate) fn discover() -> anyhow::Result<Self> {
+        if let Some(master) = crate::location::master_here() {
+            return Ok(Self {
+                root: master,
+                view: None,
+            });
+        }
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let root = manifest_dir
             .parent()

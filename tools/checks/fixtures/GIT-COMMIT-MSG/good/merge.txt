@@ -1,0 +1,3 @@
+Merge the search page
+
+Brings the search page and its tests.

@@ -20,13 +20,16 @@ mod docs;
 mod fakecc;
 #[path = "gen/mod.rs"]
 mod generate;
+mod git_identity;
 mod hook;
 mod load;
 mod location;
+mod master;
 mod metadata;
 mod nightly;
 mod output;
 mod ports;
+mod publish;
 mod repo;
 mod runner;
 mod rust_registry;
@@ -125,6 +128,13 @@ enum Command {
     Freeze,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
     Setup,
+    /// Mark the master repository (ADR-0039): write `.env.local` with the role, make its pre-push
+    /// hook run the checks that build nothing, and make Cargo refuse to compile there. Run it in
+    /// a work folder; the master is its `origin` unless a folder is named.
+    GuardMaster {
+        /// The master folder (default: the folder the `origin` remote points to).
+        master: Option<PathBuf>,
+    },
     /// The index of the text search (ADR-0016).
     SearchIndex {
         #[command(subcommand)]
@@ -225,8 +235,15 @@ enum CheckScope {
     },
     /// Commit-time checks for staged files (Git pre-commit hook).
     Staged,
-    /// Push-time checks on the whole repository (Git pre-push hook).
-    Push,
+    /// Push-time checks (Git pre-push hook): `check push <remote> <url>`. A work folder pushing
+    /// to the master runs the checks of a push; the master pushing to the public remote runs the
+    /// checks that build nothing; every other push is refused (ADR-0039).
+    Push {
+        /// The name of the remote (given by Git).
+        remote: Option<String>,
+        /// The URL of the remote (given by Git).
+        url: Option<String>,
+    },
     /// Every check that CI runs.
     All,
     /// Check one commit message file (Git commit-msg hook): `check commit-msg <file>`.
@@ -257,7 +274,7 @@ fn main() -> ExitCode {
 fn run() -> anyhow::Result<ExitCode> {
     let cli = Cli::parse();
     let repo = repo::Repo::discover()?;
-    location::guard(repo.root())?;
+    location::guard(repo.root(), builds_nothing(&cli.command))?;
     let catalog = catalog::Catalog::load(&repo)?;
     let registry = checks::registry();
     match cli.command {
@@ -285,6 +302,12 @@ fn run() -> anyhow::Result<ExitCode> {
                 "All tools are installed in {}/.",
                 tools::TOOLS_DIR
             ));
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::GuardMaster { master } => {
+            for line in master::run(&repo, master)? {
+                output::info(&line);
+            }
             Ok(ExitCode::SUCCESS)
         }
         Command::Gen { target } => {
@@ -331,22 +354,62 @@ fn run() -> anyhow::Result<ExitCode> {
             std::io::stdin().read_to_string(&mut stdin)?;
             hook::post_edit(repo.root(), &stdin)
         }
-        Command::Check { scope } => {
-            let scope = match scope {
-                CheckScope::Edit { files } => runner::Scope::Edit(repo.relative_paths(&files)),
-                CheckScope::Staged => runner::Scope::Staged(repo.staged_files()?),
-                CheckScope::Push => runner::Scope::Push,
-                CheckScope::All => runner::Scope::All,
-                CheckScope::Only { ids } => runner::Scope::Only(ids),
-                CheckScope::CommitMsg { file } => return commit_msg(&file),
-            };
-            let passed = runner::run(&repo, &catalog, &registry, &scope)?;
-            Ok(if passed {
-                ExitCode::SUCCESS
-            } else {
-                ExitCode::FAILURE
-            })
+        Command::Check { scope } => run_check(&repo, &catalog, &registry, scope),
+    }
+}
+
+/// `cargo xtask check …`: picks the checks of the scope and runs them.
+fn run_check(
+    repo: &repo::Repo,
+    catalog: &catalog::Catalog,
+    registry: &[Box<dyn checks::Check>],
+    scope: CheckScope,
+) -> anyhow::Result<ExitCode> {
+    let scope = match scope {
+        CheckScope::Edit { files } => runner::Scope::Edit(repo.relative_paths(&files)),
+        CheckScope::Staged => runner::Scope::Staged(repo.staged_files()?),
+        CheckScope::Push { url, .. } => {
+            match push_scope(location::role(repo.root()), url.as_deref()) {
+                Ok(scope) => scope,
+                Err(why) => {
+                    output::error(&why);
+                    return Ok(ExitCode::FAILURE);
+                }
+            }
         }
+        CheckScope::All => runner::Scope::All,
+        CheckScope::Only { ids } => runner::Scope::Only(ids),
+        CheckScope::CommitMsg { file } => return commit_msg(repo, &file),
+    };
+    let passed = runner::run(repo, catalog, registry, &scope)?;
+    Ok(if passed {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
+}
+
+/// Whether the command builds, installs and tests nothing, so the master may run it: marking the
+/// master, listing the checks and the checks of a push.
+fn builds_nothing(command: &Command) -> bool {
+    matches!(
+        command,
+        Command::GuardMaster { .. }
+            | Command::List
+            | Command::Check {
+                scope: CheckScope::Push { .. }
+            }
+    )
+}
+
+/// The checks a push runs, or why it is refused (ADR-0039): the one decision is `publish::plan`.
+fn push_scope(role: location::Role, url: Option<&str>) -> Result<runner::Scope, String> {
+    match publish::plan(role, url) {
+        publish::Plan::Full => Ok(runner::Scope::Push),
+        publish::Plan::NoBuild => Ok(runner::Scope::Only(
+            publish::NO_BUILD_CHECKS.map(str::to_owned).to_vec(),
+        )),
+        publish::Plan::Refuse(why) => Err(why),
     }
 }
 
@@ -386,8 +449,8 @@ fn request_of(kind: DatasetKind) -> dataset::Request {
 }
 
 /// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG and SEC-PRIVATE).
-fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
-    let problems = commit_message_problems(file)?;
+fn commit_msg(repo: &repo::Repo, file: &std::path::Path) -> anyhow::Result<ExitCode> {
+    let problems = commit_message_problems(repo, file)?;
     for problem in &problems {
         output::info(problem);
     }
@@ -398,10 +461,15 @@ fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
     })
 }
 
-/// What is wrong with a commit message file: the form of the subject and what is private in it.
-fn commit_message_problems(file: &std::path::Path) -> anyhow::Result<Vec<String>> {
+/// What is wrong with a commit about to be recorded: the form of the message, what is private in
+/// it, and the author and committer it will have.
+fn commit_message_problems(
+    repo: &repo::Repo,
+    file: &std::path::Path,
+) -> anyhow::Result<Vec<String>> {
     let mut problems = checks::git_commit_msg::check_file(file)?;
     problems.extend(checks::sec_private::message_problems(file)?);
+    problems.extend(checks::sec_private::recorded_identity_problems(repo));
     Ok(problems)
 }
 
@@ -412,10 +480,52 @@ mod tests {
     #[test]
     fn the_commit_message_hook_reads_the_form_and_what_is_private() {
         let temp = testutil::TempDir::new("commit-message-hook");
-        let problems = |text: &str| commit_message_problems(&temp.write("MSG", text)).unwrap();
-        assert!(problems("fix(web): x\n\nCo-Authored-By: someone\n").is_empty());
-        assert_eq!(problems("wip\n").len(), 1);
-        assert_eq!(problems("fix: x\n\nClaude-Session: made-up\n").len(), 1);
+        assert!(temp.git(&["init", "--quiet"]));
+        let identity = |name: &str, email: &str| {
+            assert!(temp.git(&["config", "user.name", name]));
+            assert!(temp.git(&["config", "user.email", email]));
+        };
+        identity("mira", "1+mira@users.noreply.github.com");
+        let repo = repo::Repo::at(temp.path().to_path_buf());
+        let problems =
+            |text: &str| commit_message_problems(&repo, &temp.write("MSG", text)).unwrap();
+        let trailer = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>";
+        assert!(problems(&format!("fix(web): add x\n\n{trailer}\n")).is_empty());
+        assert_eq!(problems("wip\n").len(), 2);
+        // A session line is refused by the message rules and by the private-data rules.
+        assert_eq!(problems("fix: add x\n\nClaude-Session: made-up\n").len(), 2);
+        // The author and the committer about to be recorded: a private address is refused.
+        identity("Mira Made-Up", "mira@example.test");
+        assert_eq!(problems("fix(web): x\n").len(), 2);
+    }
+
+    #[test]
+    fn the_pre_push_hook_decides_by_the_role_and_the_remote() {
+        // The arguments Git gives the hook: the name and the URL of the remote.
+        let parsed =
+            Cli::try_parse_from(["xtask", "check", "push", "origin", "https://example.test/x"])
+                .unwrap();
+        let Command::Check {
+            scope: CheckScope::Push { url, .. },
+        } = &parsed.command
+        else {
+            panic!("not a push");
+        };
+        assert!(builds_nothing(&parsed.command));
+        let network = url.as_deref();
+        assert!(push_scope(location::Role::Work, network).is_err());
+        let Ok(runner::Scope::Only(ids)) = push_scope(location::Role::Master, network) else {
+            panic!("the master runs the checks that build nothing");
+        };
+        assert_eq!(ids, ["SEC-PRIVATE", "DEP-LICENSES"]);
+        assert!(matches!(
+            push_scope(location::Role::Work, Some("../master")),
+            Ok(runner::Scope::Push)
+        ));
+        assert!(push_scope(location::Role::Master, Some("../master")).is_err());
+        // Building is not allowed in the master.
+        let build = Cli::try_parse_from(["xtask", "build"]).unwrap();
+        assert!(!builds_nothing(&build.command));
     }
 
     fn parses(arguments: &[&str]) -> bool {

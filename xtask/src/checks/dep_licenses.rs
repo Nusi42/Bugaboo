@@ -43,21 +43,27 @@ impl Check for DepLicenses {
 fn rust_licenses(root: &Path) -> anyhow::Result<Vec<Finding>> {
     // `license-not-encountered` is allowed: the allow list is the architecture's policy
     // (architecture §1), not a list of what happens to be used today.
-    let output = tools::run_installed(
-        "cargo-deny",
-        &[
-            "--workspace",
-            "--config",
-            DENY_CONFIG,
-            "check",
-            "-A",
-            "license-not-encountered",
-            "licenses",
-            "bans",
-            "sources",
-        ],
-        root,
-    )?;
+    // The master marks Cargo with a program that refuses to compile; reading the dependencies
+    // (`cargo metadata` inside cargo-deny) compiles nothing, so the wrapper is switched off here.
+    let output = match tools::find("cargo-deny") {
+        Ok(program) => Ok(tools::run_with_env(
+            &program,
+            &[
+                "--workspace",
+                "--config",
+                DENY_CONFIG,
+                "check",
+                "-A",
+                "license-not-encountered",
+                "licenses",
+                "bans",
+                "sources",
+            ],
+            root,
+            &[("RUSTC_WRAPPER", "")],
+        )?),
+        Err(missing) => Err(missing),
+    };
     let output = output.map(|mut output| {
         // cargo-deny exits 0 on warnings; this project treats warnings as errors.
         output.success &= !output.text.contains("warning[");

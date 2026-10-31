@@ -70,7 +70,7 @@ fn post_edit_with(root: &Path, stdin: &str, exe: &Path) -> anyhow::Result<ExitCo
     };
     // Claude Code adds a session line to every memory note it saves; it must not reach Git. A
     // note that cannot be cleaned is reported, and the edit checks still run.
-    if let Err(error) = checks::sec_private::strip_memory_session(&root.join(&file)) {
+    if let Err(error) = checks::sec_private::strip_generated_keys(&root.join(&file)) {
         output::error(&format!("{error:#}"));
     }
     // The checks run in a child process: it prints for people, and we turn that into feedback.

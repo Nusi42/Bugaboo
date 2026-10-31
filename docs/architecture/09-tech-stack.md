@@ -93,7 +93,6 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Link check | lychee | 0.24.2 | MIT/Apache-2.0 |
 | Unused Rust dependencies | cargo-machete | 0.9.2 | MIT/Apache-2.0 |
 | Secret scan | gitleaks | pinned in `tools/dev/tools.toml` | MIT |
-| CI file lint | actionlint | pinned in `tools/dev/tools.toml` | MIT |
 | Licenses, bans, advisories | cargo-deny | 0.20.2 | MIT/Apache-2.0 |
 | Third-party notices | cargo-about | 0.9.2 | MIT/Apache-2.0 |
 | SBOM | cargo-cyclonedx / @cyclonedx/cyclonedx-npm | 0.5.9 / 6.0.1 | Apache-2.0 |

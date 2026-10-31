@@ -157,15 +157,6 @@ files = ["**/*.md"]
 status = "active"
 
 [[check]]
-id = "LINT-CI"
-title = "CI workflow files are valid"
-rule = "ADR-0014"
-tool = "actionlint"
-when = ["commit", "ci"]
-files = [".github/workflows/*.yml"]
-status = "active"
-
-[[check]]
 id = "LINT-DRY"
 title = "No copy-pasted code blocks above the duplication threshold"
 rule = "coding-standards §1 (DRY)"
@@ -594,9 +585,9 @@ status = "active"
 
 [[check]]
 id = "SEC-PRIVATE"
-title = "Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no links to published pages, no account or computer names"
+title = "Nothing private about the maintainer in Git: no profile paths with an account name, no session IDs or links, no session key in a memory note, no links to published pages, no account or computer names, no private words, and only public identities as author and committer"
 rule = "coding-standards §2"
-tool = "xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg <file>`; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, and what the commits not on a remote add; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)"
+tool = "xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg <file>`, which also reads the author and committer about to be recorded; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, what the commits not on a remote add, and their authors and committers; reads the optional private list ~/.config/bugaboo/private-words.txt, or the file named by BUGABOO_PRIVATE_WORDS, with words, several words and e-mail addresses per entry; exemptions in tools/checks/private-exemptions.toml)"
 when = ["commit", "push", "ci"]
 files = ["*"]
 status = "active"
@@ -866,18 +857,18 @@ status = "active"
 
 [[check]]
 id = "BUILD-LOCATION"
-title = "Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root"
-rule = "ADR-0024"
-tool = "xtask (path check before every build, test, dev and install command)"
+title = "Nothing is built, installed or tested in a checkout that is marked as the master (BUGABOO_CHECKOUT_ROLE=master in .env.local); without the mark a plain clone builds, tests and commits as it is"
+rule = "ADR-0039"
+tool = "xtask (reads the mark before every build, test, dev and install command; `cargo xtask guard-master` writes it)"
 when = ["edit", "commit", "ci"]
 files = ["*"]
 status = "active"
 
 [[check]]
 id = "GIT-COMMIT-MSG"
-title = "Commit messages follow Conventional Commits"
-rule = "coding-standards §2"
-tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: commits not on main)"
+title = "Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge <what it brought>`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process"
+rule = "coding-standards §2, ADR-0038"
+tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: the messages of the commits not on main, merges included)"
 when = ["push", "ci"]
 files = ["*"]
 status = "active"
@@ -939,11 +930,11 @@ status = "active"
 
 [[check]]
 id = "META-WIRING"
-title = "lefthook, Claude Code hooks and CI call exactly the xtask commands they should, and only those; CI actions are pinned to a commit"
+title = "lefthook and the Claude Code hooks call exactly the xtask commands they should, and only those"
 rule = "ADR-0014"
-tool = "xtask (reads lefthook.yml, .claude/settings.json, CI workflow)"
+tool = "xtask (reads lefthook.yml, .claude/settings.json)"
 when = ["commit", "ci"]
-files = ["lefthook.yml", ".claude/settings.json", ".github/workflows/**"]
+files = ["lefthook.yml", ".claude/settings.json"]
 status = "active"
 
 [[check]]

@@ -1,0 +1,3 @@
+docs(readme): explain the dry run option
+
+A dry run changes nothing.

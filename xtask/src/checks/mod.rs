@@ -49,7 +49,6 @@ mod fmt_ts;
 pub(crate) mod git_commit_msg;
 mod git_files;
 mod lint_api_types;
-mod lint_ci;
 mod lint_css;
 mod lint_dry;
 mod lint_file_size;
@@ -198,7 +197,6 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_rust::LintRust),
         Box::new(lint_spell::LintSpell),
         Box::new(lint_links::LintLinks),
-        Box::new(lint_ci::LintCi),
         Box::new(lint_dry::LintDry),
         Box::new(arch_deps::ArchDeps),
         Box::new(arch_no_unsafe::ArchNoUnsafe),

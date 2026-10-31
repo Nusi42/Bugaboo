@@ -18,13 +18,21 @@
 //! 3. a link to a published page (an artifact on claude.ai) with an ID: the owner keeps those
 //!    links outside the repository;
 //! 4. a private word: the values of `USERNAME`, `COMPUTERNAME`, `USER` and `HOSTNAME` of the
-//!    machine the check runs on, and the words of the optional list
-//!    `~/.config/bugaboo/private-words.txt` (one per line; blank lines and `#` lines ignored; the
-//!    list lives outside the repository). A word matches in any case, and ends where a letter
-//!    ends: `_`, digits and punctuation do not continue it (`name_notes` and `name42` match,
-//!    `names` does not). For the words of the variables a value of fewer than [`MIN_NAME_LEN`]
-//!    characters or a generic word is not used, because it would match ordinary text; the rule on
-//!    paths still knows them.
+//!    machine the check runs on, and the entries of the optional list
+//!    `~/.config/bugaboo/private-words.txt` (the variable `BUGABOO_PRIVATE_WORDS` names another
+//!    file; one entry per line; blank lines and `#` lines ignored; the list lives outside the
+//!    repository). An entry is a word, several words (they match with spaces, `_`, `-` or `.`
+//!    between them) or an e-mail address (an entry with `@`). A word matches in any case, and ends
+//!    where a letter ends: `_`, digits and punctuation do not continue it (`name_notes` and
+//!    `name42` match, `names` does not). A private word inside a GitHub form is allowed: the
+//!    login in `github.com/<login>` and the login in a noreply address
+//!    (`<id>+<login>@users.noreply.github.com`), because those are public by nature. For the
+//!    words of the variables a value of fewer than [`MIN_NAME_LEN`] characters or a generic word
+//!    is not used, because it would match ordinary text; the rule on paths still knows them;
+//! 5. an author or committer that is not a public identity (see [`identity`]): the commit about to
+//!    be recorded (commit-msg hook) and every commit that is on no remote yet (push and the full
+//!    check);
+//! 6. the session key of Claude Code in a memory note, with or without a value.
 //!
 //! The check never prints a private word: a finding names the place (file and line, or commit and
 //! line) and the rule only, and a name that holds a private word, an account or an ID is shown with
@@ -51,10 +59,17 @@ use crate::repo::Repo;
 use crate::source::{FIXTURES_FOLDER, decode_text, is_word_char, printable_runs};
 
 mod history;
+mod identity;
+mod memory;
 mod patterns;
+mod words;
 
 use history::scan_history;
-use patterns::{Origin, PrivateWordRule, masked, scan_text, value_starts};
+pub(crate) use identity::Identity;
+pub(crate) use identity::recorded_problems as recorded_identity_problems;
+pub(crate) use memory::strip_generated_keys;
+use patterns::{Origin, PrivateWordRule, masked, scan_text};
+use words::Pattern;
 
 /// A part of a text: byte positions from and to.
 type Span = (usize, usize);
@@ -139,6 +154,8 @@ const GENERIC_MACHINE_NAMES: [&str; 7] = [
 ];
 /// The list of private words, below the home folder.
 const WORDS_FILE: &str = ".config/bugaboo/private-words.txt";
+/// The variable that names another file for the list.
+const WORDS_VARIABLE: &str = "BUGABOO_PRIVATE_WORDS";
 const EXEMPTIONS_PATH: &str = "tools/checks/private-exemptions.toml";
 /// The characters between the parts of a path.
 const SEPARATORS: [char; 2] = ['/', '\\'];
@@ -153,6 +170,8 @@ pub(crate) enum Rule {
     SessionTrailer,
     PageLink,
     PrivateWord,
+    Identity,
+    MemorySessionKey,
 }
 
 impl Rule {
@@ -172,6 +191,15 @@ impl Rule {
                 "has a link to a published page. Keep it in the owner's list outside Git and \
                  name the page instead."
             }
+            Self::Identity => {
+                "is not a public identity. Use a name with the noreply address of its GitHub \
+                 account (`Name <id+Name@users.noreply.github.com>`): set `user.name` and \
+                 `user.email`; `cargo xtask setup` copies them from the master."
+            }
+            Self::MemorySessionKey => {
+                "has the session key of Claude Code in a memory note. Remove the line; \
+                 `cargo xtask hook post-edit` removes it after an edit."
+            }
             Self::PrivateWord => {
                 "has a private word (the account or computer name of this machine, or a word of \
                  the private list). Use a made-up name instead."
@@ -187,8 +215,10 @@ fn is_generic(value: &str) -> bool {
 /// The words that must not appear, in lower case.
 #[derive(Default)]
 pub(crate) struct PrivateWords {
-    /// The words to look for in text.
+    /// The words to look for in text, in lower case.
     words: BTreeSet<String>,
+    /// The same words, ready to be found.
+    patterns: Vec<Pattern>,
     /// The names of the machine and the words of the list, whatever their length: an account
     /// among them is never taken for a placeholder in a path.
     own: BTreeSet<String>,
@@ -222,6 +252,7 @@ impl PrivateWords {
                 found.words.insert(line);
             }
         }
+        found.patterns = found.words.iter().map(|word| Pattern::new(word)).collect();
         found
     }
 
@@ -240,20 +271,26 @@ impl PrivateWords {
         home: Option<&Path>,
         variable: impl Fn(&str) -> Option<String>,
     ) -> (Self, Option<String>) {
-        // A list that is not there is fine; one that is there and cannot be used is a problem.
-        let list = home.map(|home| fs::read(home.join(WORDS_FILE)));
+        // A list that is not there is fine; one that is there and cannot be used is a problem. A
+        // file that the variable names must be there: a list that is silently missing guards
+        // nothing.
+        let named = variable(WORDS_VARIABLE).filter(|path| !path.trim().is_empty());
+        let list = match &named {
+            Some(path) => Some(fs::read(path.trim())),
+            None => home.map(|home| fs::read(home.join(WORDS_FILE))),
+        };
         let (list, unusable) = match list {
             Some(Ok(bytes)) => {
                 let text = decode_text(&bytes);
                 let unusable = text.is_none();
                 (text, unusable)
             }
-            Some(Err(error)) => (None, error.kind() != ErrorKind::NotFound),
+            Some(Err(error)) => (None, named.is_some() || error.kind() != ErrorKind::NotFound),
             None => (None, false),
         };
         let problem = unusable.then(|| {
             format!(
-                "The list of private words (`~/{WORDS_FILE}`) exists but cannot be read as text, \
+                "The list of private words (`~/{WORDS_FILE}`, or the file that `{WORDS_VARIABLE}` names) cannot be read as text, \
                  so it was not used. Fix or remove the file."
             )
         });
@@ -261,33 +298,21 @@ impl PrivateWords {
     }
 
     /// Where the words stand in the text, in any case, as whole words: a word ends where a
-    /// letter ends.
+    /// letter ends. A word inside a GitHub form is public and not found.
     fn word_spans(&self, text: &str) -> Vec<Span> {
         // The text in lower case, each character with the place of the character it came from.
-        let mut lowered: Vec<(char, usize, usize)> = Vec::new();
+        let mut lowered: Vec<words::Lowered> = Vec::new();
         let mut positions = text.char_indices().peekable();
         while let Some((start, c)) = positions.next() {
             let end = positions.peek().map_or(text.len(), |next| next.0);
             lowered.extend(c.to_lowercase().map(|lower| (lower, start, end)));
         }
-        let mut spans = Vec::new();
-        for word in &self.words {
-            let word: Vec<char> = word.chars().collect();
-            for from in 0..lowered.len().saturating_sub(word.len().saturating_sub(1)) {
-                let found = &lowered[from..from + word.len()];
-                if word.is_empty() || found.iter().zip(&word).any(|(a, b)| a.0 != *b) {
-                    continue;
-                }
-                let before = from.checked_sub(1).map(|at| lowered[at].0);
-                let after = lowered.get(from + word.len()).map(|next| next.0);
-                if !before.is_some_and(|c| c.is_ascii_alphabetic())
-                    && !after.is_some_and(|c| c.is_ascii_alphabetic())
-                {
-                    spans.push((found[0].1, found[word.len() - 1].2));
-                }
-            }
-        }
-        spans
+        let public = words::github_forms(text);
+        self.patterns
+            .iter()
+            .flat_map(|pattern| pattern.spans(&lowered))
+            .filter(|(from, to)| !public.iter().any(|(a, b)| a <= from && to <= b))
+            .collect()
     }
 
     /// Whether this account is the machine's own or on the private list.
@@ -373,6 +398,7 @@ impl Check for SecPrivate {
         // (the commit-msg hook checks the message being written).
         if context.files.is_none() {
             findings.extend(scan_history(repo, &words, &exempt.exempt, &skipped)?);
+            findings.extend(identity::unpushed_findings(repo)?);
         }
         Ok(findings)
     }
@@ -441,6 +467,13 @@ fn scan_files(
         let shown = masked(file, words);
         findings.extend(scan_name(&shown, file, words));
         if let Ok(bytes) = fs::read(root.join(file)) {
+            if memory::is_memory_note(Path::new(file)) {
+                findings.extend(
+                    memory::session_key_lines(&decode_text(&bytes).unwrap_or_default())
+                        .into_iter()
+                        .map(|line| finding(&shown, line, Rule::MemorySessionKey)),
+                );
+            }
             findings.extend(scan_content(
                 &shown,
                 &bytes,
@@ -471,45 +504,6 @@ pub(crate) fn message_problems(file: &Path) -> anyhow::Result<Vec<String>> {
         .map(|(line, rule)| format!("The message, line {line}, {}", rule.message())),
     );
     Ok(problems)
-}
-
-/// Whether `path` is a memory note of Claude Code (`.claude/memory/*.md`).
-fn is_memory_note(path: &Path) -> bool {
-    let folder = path.parent();
-    path.extension().is_some_and(|ending| ending == "md")
-        && folder
-            .and_then(Path::file_name)
-            .is_some_and(|name| name == MEMORY_FOLDER)
-        && folder
-            .and_then(Path::parent)
-            .and_then(Path::file_name)
-            .is_some_and(|name| name == CLAUDE_FOLDER)
-}
-
-/// Whether the line is the session line of a memory note: the key as the first thing on it.
-fn is_session_line(line: &str) -> bool {
-    let start = line.trim_start().trim_start_matches(QUOTES);
-    start
-        .get(..MEMORY_SESSION_KEY.len())
-        .is_some_and(|key| key.eq_ignore_ascii_case(MEMORY_SESSION_KEY))
-        && !value_starts(line, MEMORY_SESSION_KEY).is_empty()
-}
-
-/// Removes the session line from a memory note after an edit. Returns whether it changed the file.
-pub(crate) fn strip_memory_session(path: &Path) -> anyhow::Result<bool> {
-    if !is_memory_note(path) || !path.is_file() {
-        return Ok(false);
-    }
-    let text = fs::read_to_string(path)?;
-    let kept: String = text
-        .split_inclusive('\n')
-        .filter(|line| !is_session_line(line))
-        .collect();
-    if kept == text {
-        return Ok(false);
-    }
-    fs::write(path, kept)?;
-    Ok(true)
 }
 
 #[cfg(test)]

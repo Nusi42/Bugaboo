@@ -59,10 +59,6 @@ path = "crates/*/tests/ui/*.stderr"
 reason = "The compiler messages that the compile-fail tests expect (DATA-MARKS); written by trybuild and compared with the real output on every test run."
 
 [[exempt]]
-path = "tools/dev/refuse-build.cmd"
-reason = "Three-line Windows batch file that only refuses builds in the master (ADR-0024); no batch linter exists, review reads every change."
-
-[[exempt]]
 path = "crates/bb-auth/data/breached-passwords.txt"
 reason = "Data, not code: a sorted list of leaked passwords; the unit tests in bb-auth check that it is sorted and has no short lines (AUTH-01)."
 

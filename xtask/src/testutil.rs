@@ -39,7 +39,12 @@ impl TempDir {
     /// Runs `git` in this folder and returns whether it succeeded.
     pub(crate) fn git(&self, args: &[&str]) -> bool {
         Command::new("git")
-            .args(["-c", "user.name=Test", "-c", "user.email=test@example.test"])
+            .args([
+                "-c",
+                "user.name=tester",
+                "-c",
+                "user.email=1+tester@users.noreply.github.com",
+            ])
             .args(["-c", "core.autocrlf=false", "-c", "commit.gpgsign=false"])
             .args(args)
             .current_dir(&self.path)

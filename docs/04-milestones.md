@@ -46,7 +46,7 @@ flowchart LR
 
 ### Working in a folder
 
-- **Never build, install or run anything in the master repository** (`<master>`, which may live in a synced folder). Work only in your own folder `<work root>/bugaboo.winN`, on your branch `WINn` (ADR-0024).
+- **Never build, install or run anything in the master repository** (the checkout marked as the master, ADR-0039). Work only in your own folder `<work root>/bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - A builder's folder starts from `main`: `git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup` (pinned tools and Git hooks, coding-standards §7).
 - **Nothing outside your folder.** Logs, notes, helper scripts, pictures, servers' data and built programs stay inside `bugaboo.winN`, in its ignored `.work/` folder (pictures in `.work/screenshots/`). Never create files or folders next to the work folders in `<work root>`, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into `.work/`. Delete what you no longer need before you report.
 - **Commit messages from a file.** Write the message into a file in `.work/` and commit with `git commit -F .work/<file>`; a message piped into `git commit` has hung in a work folder (M4).
@@ -100,7 +100,7 @@ A session can end at any time, and a new one starts in the master and continues 
 4. **Builders** (Sonnet, medium effort) work in `bugaboo.win2` and up, reset to `main` first (see "Working in a folder"). **Reviewers** start with a fresh context. Every agent that builds outside a `bugaboo.winN` folder gets a `CARGO_TARGET_DIR` of its own, never one another agent uses, and that folder is deleted once no build runs from it.
 5. **Every builder prompt** names the work package file, the folder and the branch, and points to the rules: this section's "Working in a folder", the coding standards (including the SSOT/DRY/ODR review gate and one logical change per commit — a package lands in several commits, not one) and the glossary. Every reviewer prompt names the review gate too.
 6. **One full run at a time:** while several builders work, only one folder runs a full `cargo xtask ci` at a time, the lead's merge runs included. A builder asks the lead before a full run and waits for the go. Browser and speed tests in several folders at once share the computer's connections and processors, and the load tests then fail for reasons that are not in the code (M4-F22, M4-F25). The checks and the unit tests run at any time; while the lead's full run is on, other folders run no browser tests at all, because the connections of the computer are shared (M4-F22).
-7. **Merge** into `WIN1` with Git's own subject, the only form the commit-message check accepts for a merge: `git merge --no-ff origin/WINn -m "Merge branch 'WINn' (Mx WP-nn name)"`. Then `cargo xtask ci`, push `WIN1`, and `git merge --ff-only WIN1` in the master.
+7. **Merge** into `WIN1` with a subject of the form `Merge <what it brought>`, the only form the commit-message check accepts for a merge, in plain words without folder, branch or package names: `git merge --no-ff origin/WINn -m "Merge the search page"`. Then `cargo xtask ci`, push `WIN1`, and `git merge --ff-only WIN1` in the master.
 8. **"Can I close this session?"** Answer with: running background agents and commands; uncommitted or unpushed work in each `bugaboo.winN` (`git status --short`, `git log origin/WINn..WINn`); `main` against `WIN1`; whether `STATUS.md` is current. Say "safe" only when all are clean, or when `STATUS.md` names exactly what a running builder will leave behind.
 9. **Memory** lives in `bugaboo.win1/.claude/memory/` (ADR-0024). Commit memory changes with the next `STATUS.md` update.
 10. **Reviews work on a phone:** milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are not committed: keep them outside the repository, and name the page in the docs instead (coding-standards §2).
@@ -138,11 +138,11 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Work folders as in ADR-0024: the main checkout is the master (`main`, never built in); `<work root>/bugaboo.win1` (branch `WIN1`) for the lead and integration, `bugaboo.win2` and up for builders
-- `main` kept green by the local CI runner (`cargo xtask ci`: everything CI would run, both databases, on Windows and in WSL); nightly runs via a scheduled task. A GitHub Actions workflow is prepared but switched on only when the repository moves to GitHub
+- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0037)
 - `.cargo/config.toml` with an optional, ignored `config.local.toml` for machine-specific settings; the BUILD-LOCATION guard
 - Rust workspace with all crates as empty shells, dependency rules, `#![forbid(unsafe_code)]`, `rust-toolchain.toml`
 - `cargo xtask`: check runner reading `tools/checks/catalog.toml`; `cargo xtask setup` installs all tools on Windows, Linux and WSL
-- First checks active: FMT-*, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, LINT-CI, GIT-*, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example
+- First checks active: FMT-*, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, GIT-*, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example
 - lefthook, Claude Code hooks (`.claude/settings.json`) and `CLAUDE.md` with the agent rules
 - Browser app skeleton: Vite 8, React 19, TypeScript 7, oxlint + tsgolint, oxfmt, Vitest, Playwright, all on the ports from `tools/dev/ports.json`
 - `design/tokens.json` with the four themes; `cargo xtask gen tokens` generates CSS and TS (the design pages switch to the generated CSS); since M2C both are `design/theme.kdl` and `cargo xtask gen theme` (ADR-0026); `messages/en.json` with typed keys
@@ -678,8 +678,8 @@ A session can end at any time, and a new one starts in the master and continues 
 
 ## Decisions
 
-- **Git host:** the repository stays local in its current folder for now; GitHub (private, with GitHub Actions) comes later. Until then, `cargo xtask ci` on this PC is the CI: it runs exactly what GitHub Actions will run, on Windows and in WSL, against SQLite and PostgreSQL. Moving to GitHub later only adds a remote and switches on the prepared workflow.
-- **Master and work folders (ADR-0024):** the main checkout is the master and is never built in; it may live in a folder that a sync service watches. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` never touch the synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`.
+- **Git host:** the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0037): `cargo xtask ci` on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.
+- **The master and work folders (ADR-0024, ADR-0039):** the master (marked with `BUGABOO_CHECKOUT_ROLE=master`) is never built in. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` stay out of the master, which may sit in a synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`. Only the master pushes to the public remote: `git -C <master> push github main`.
 
 ## Open questions
 

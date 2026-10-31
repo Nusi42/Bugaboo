@@ -1,0 +1,4 @@
+fix(api): reject empty names
+
+# On branch WIN2
+# Changes to be committed:

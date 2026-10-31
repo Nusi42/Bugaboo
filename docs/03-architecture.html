@@ -547,7 +547,7 @@ tls/         the generated certificate and its key
 setup-code.txt   the setup code of a server without a console (dead once an account exists; deleted by the change that makes the first administrator, and again at the next start)</code></pre>
 <p>Folders that Bugaboo creates are readable by their owner only: mode <code>0700</code> on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode <code>0600</code> on Linux. <code>keys/</code> and <code>tls/</code> are checked on <strong>every start</strong> and made private again if someone loosened them (Windows: the access list is reset to the running account, found by its SID, not its name). Certificate and key are written as new files and renamed into place (key first, certificate second), and a key that does not belong to the certificate is replaced. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when <code>tls_names</code> changes. <strong>While the server runs</strong> (follow-up M1-F03) a timer looks at the certificate every hour: a generated certificate with under 30 days left is renewed, and an own certificate (<code>tls_mode = "files"</code>) is read again and used when its files hold another one. The new certificate is swapped into the settings of the listener, so connections that start from then on get it and nothing restarts; open connections keep the one they started with. Files that cannot be used (half a copy, a key of another certificate) are reported in the log and the old certificate keeps serving until the next look. The status page shows the end of the certificate it serves now. <strong>The rest of an existing folder is only looked at</strong> (follow-up M1-F65): at every start Bugaboo checks the data folder itself, the database file (and the files SQLite keeps next to it), <code>files/</code>, <code>backups/</code> and the setup code file, and reports what other accounts on this computer can open, in the log and on the console, and the status page shows it with the same words. Too open means: on Linux a group or world permission bit is set; on Windows the access list gives something to everybody, to all users or to all signed-in accounts. A part whose rights cannot be read (the system tool fails or its answer cannot be understood) is reported as <em>unknown</em>, never as private. The status page looks on a thread of its own and keeps the answer for a minute. A folder that a person made or moved keeps its rights, because making it private could lock out the account that backs it up (the backup command is OPS-06, M9). The built-in database file is made with mode <code>0600</code> before SQLite opens it, so a default install reports nothing. Enforced by: tests <code>sec_16_…</code> and <code>sec_10_…</code> (<code>sec_10_a_certificate_near_its_end_is_renewed_without_a_restart</code> with a clock that is moved on, <code>sec_10_an_own_certificate_that_changed_is_served_after_the_next_look</code>, <code>ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now</code>; <code>sec_16_a_too_open_data_folder_is_reported_at_start</code> and its Windows form, <code>sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open</code>).</p>
 <h4>One file per system (OPS-01, DIST-01)</h4>
-<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines, which the CI workflow runs once the repository is on GitHub. Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
+<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines (there is no hosted CI, ADR-0037). Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
 <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Served: we run it (hosted by Bugaboo)</h3>
 <pre class="mermaid">flowchart TB
   subgraph eu["EU data centre"]
@@ -577,7 +577,7 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 </ul>
 <h3 id="s6-3"><button class="sec" data-sec>§6.3</button>Releases</h3>
 <pre class="mermaid">flowchart LR
-  src["Tagged commit"] --&gt; ci["CI: cargo xtask check all"]
+  src["Tagged commit"] --&gt; ci["Local run: cargo xtask check all"]
   ci --&gt; build["Build matrix&lt;br/&gt;windows-x64 · windows-arm64&lt;br/&gt;linux-x64-musl · linux-arm64-musl"]
   build --&gt; sbom["SBOM (CycloneDX + SPDX)&lt;br/&gt;third-party notices"]
   sbom --&gt; sign["Sign binaries, SBOM, checksums"]
@@ -1144,7 +1144,6 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td>Link check</td><td>lychee</td><td>0.24.2</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Unused Rust dependencies</td><td>cargo-machete</td><td>0.9.2</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Secret scan</td><td>gitleaks</td><td>pinned in <code>tools/dev/tools.toml</code></td><td>MIT</td></tr>
-<tr><td>CI file lint</td><td>actionlint</td><td>pinned in <code>tools/dev/tools.toml</code></td><td>MIT</td></tr>
 <tr><td>Licenses, bans, advisories</td><td>cargo-deny</td><td>0.20.2</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Third-party notices</td><td>cargo-about</td><td>0.9.2</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>SBOM</td><td>cargo-cyclonedx / @cyclonedx/cyclonedx-npm</td><td>0.5.9 / 6.0.1</td><td>Apache-2.0</td></tr>
@@ -1172,20 +1171,20 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
   xt["cargo xtask check …&lt;br/&gt;implements every entry"]
   edit["Claude Code hook&lt;br/&gt;after each file edit"]
   commit["lefthook&lt;br/&gt;commit · push"]
-  ci["CI&lt;br/&gt;all · nightly · release"]
+  ci["Local run&lt;br/&gt;all · nightly · release"]
   cat --&gt; xt
   edit --&gt; xt
   commit --&gt; xt
   ci --&gt; xt</pre>
 <ul>
-<li><strong>One catalogue, one runner.</strong> Each check has an ID (for example <code>ARCH-AUTHZ-ONLY</code>), a plain title, the rule it enforces, the tool, when it runs and which files trigger it. People, agents and CI all run the same code.</li>
+<li><strong>One catalogue, one runner.</strong> Each check has an ID (for example <code>ARCH-AUTHZ-ONLY</code>), a plain title, the rule it enforces, the tool, when it runs and which files trigger it. People and agents run the same code everywhere.</li>
 <li><strong>Small and fast.</strong> A check runs only when its files change, and the selected checks run side by side, as many at once as the machine has cores (several read the whole repository, so one after the other they grow with the code). Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds on a quiet PC, so nobody is tempted to skip them.</li>
 <li><strong>Explains itself.</strong> A failing check prints one sentence: what's wrong, which rule, and where it's written down.</li>
 </ul>
 <h3 id="s10-2"><button class="sec" data-sec>§10.2</button>Groups of checks</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Group</th><th>Guards</th></tr></thead><tbody>
 <tr><td><strong>FMT</strong></td><td>Formatting: rustfmt, oxfmt (TypeScript, JSON, CSS), taplo (TOML), rumdl (Markdown)</td></tr>
-<tr><td><strong>LINT</strong></td><td>Linting: clippy, oxlint with type-aware tsgolint (TypeScript 7), stylelint, tsc type check, typos, lychee, actionlint</td></tr>
+<tr><td><strong>LINT</strong></td><td>Linting: clippy, oxlint with type-aware tsgolint (TypeScript 7), stylelint, tsc type check, typos, lychee</td></tr>
 <tr><td><strong>TXT / STY</strong></td><td>Plain words and design: no literal UI text, message catalog complete, glossary "don't say" words, tokens only, theme contrast (every text pair, the main button hovered, the status tints and the edges of High and Critical told apart by color, quiet words on tints at 5:1, the dimmed page behind a sheet and its text), bold only where UX §7.3 allows it</td></tr>
 <tr><td><strong>ARCH</strong></td><td>The structure in this document: allowed crate dependencies, pure crates, WebAssembly build, <code>Authorized&lt;T&gt;</code> only from the policy engine, only safe types leave the API, HTTP and SQL only at the edges, events for every change, versions and edit-lock tokens on change endpoints, lean list endpoints, permissions declared, settings via the registry, AI tools only from the registry, browser uses only the API client, module map matches the code, docs change with boundaries, no <code>unsafe</code>, both databases tested</td></tr>
 <tr><td><strong>SEC</strong></td><td>Secrets, private details of the owner, dangerous patterns, the permission matrix, security headers, known vulnerabilities</td></tr>
@@ -1204,7 +1203,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li><strong>Nothing is unchecked</strong> (<code>META-COVERAGE</code>): every file type in the repository is covered by a formatter or linter. Adding the first <code>.sql</code>, <code>.yaml</code> or <code>.py</code> file fails until a check covers it. This is the hook that asks for new hooks. Generated files need no check of their own; the few other exceptions are listed with a reason in <code>tools/checks/coverage-exemptions.toml</code>.</li>
 <li><strong>New modules are declared first</strong> (<code>META-NEW-MODULE</code>): a new crate, package or top-level folder needs a module-map entry and dependency rules.</li>
 <li><strong>Every rule is traceable</strong> (<code>META-RULE-TRACE</code>): each "must" in the coding standards, decision records and these chapters names its check ID or says <em>review</em> with a reason.</li>
-<li><strong>Callers agree</strong> (<code>META-WIRING</code>): lefthook, the Claude Code hooks and CI call only xtask, with the same lists.</li>
+<li><strong>Callers agree</strong> (<code>META-WIRING</code>): lefthook and the Claude Code hooks call only xtask, with the same lists.</li>
 <li><strong>Suppressions are visible</strong> (<code>META-SUPPRESS</code>): every <code>allow</code>, <code>oxlint-disable</code>, ast-grep ignore or "not affected" vulnerability statement needs a reason and an issue ID, and the total can't grow unnoticed. The file types searched are listed in <code>xtask/src/checks/meta_suppress.rs</code>.</li>
 <li><strong>Checks stay fast</strong> (<code>META-SPEED</code>). The 3 and 10 seconds hold on a quiet PC. Several builds often run at once, and wall-clock time alone would then fail a fast check, so the check times a fixed <em>reference workload</em> (a few small processes plus some file and CPU work, like a typical check) right before, during and right after each measurement. The budget is a multiple of that reference: the quiet-PC budget times how much longer the reference took than on a quiet PC (the <em>load factor</em>, never below 1 and never above 20). Each timing is taken up to 3 times and the best attempt counts, which drops one-off spikes. A check that is slow by itself is slow in every attempt and still fails. The failure names the measured time, the allowed time, the reference time and the load factor, so a human can tell real slowness from load. The numbers (budgets, quiet reference, attempts, ceiling) are defined once, in <code>xtask/src/checks/meta_speed.rs</code>.</li>
 </ol>
@@ -1234,7 +1233,6 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>LINT-TYPES</code></td><td>TypeScript type check passes</td><td>coding-standards §4</td><td>tsc (TypeScript 7) --noEmit</td><td>push · ci</td></tr>
 <tr><td><code>LINT-SPELL</code></td><td>No spelling mistakes in code, UI text and docs</td><td>coding-standards §2</td><td>typos</td><td>commit · ci</td></tr>
 <tr><td><code>LINT-LINKS</code></td><td>Links in the docs point somewhere real</td><td>coding-standards §2</td><td>lychee (offline mode for repo links)</td><td>ci</td></tr>
-<tr><td><code>LINT-CI</code></td><td>CI workflow files are valid</td><td>ADR-0014</td><td>actionlint</td><td>commit · ci</td></tr>
 <tr><td><code>LINT-DRY</code></td><td>No copy-pasted code blocks above the duplication threshold</td><td>coding-standards §1 (DRY)</td><td>jscpd (Rust and TypeScript; .jscpd.json, tools/checks/dry-exemptions.toml)</td><td>ci</td></tr>
 <tr><td><code>LINT-HYGIENE</code></td><td>No console.log, no any, no non-null !, no @ts-ignore, no TODO without an issue number, no dbg!/println!</td><td>coding-standards §2, §3, §4</td><td>oxlint rules + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-API-TYPES</code></td><td>No hand-written API response types in the browser app</td><td>ADR-0008</td><td>xtask (type and interface names in web/app against the schemas of the generated OpenAPI document, and names that say they are server answers)</td><td>edit · commit · ci</td></tr>
@@ -1277,7 +1275,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>TEST-WORKFLOWS</code></td><td>Every rule of a status change (Who can do it, Only if, Must be filled in, Ask for) is decided by one judge and tested on both databases</td><td>ADR-0031</td><td>xtask (the unit, property and two-database tests of the workflow rules exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
 <tr><td><code>TEST-UPLOADS</code></td><td>Uploads are checked from their content and limited; downloads re-check access; previews never take the server down</td><td>ADR-0032</td><td>xtask (the upload security tests exist by name and are not switched off: wrong type, SVG, HTML, too large, blocked type, a decompression bomb, a broken PDF, a huge picture, a link after access ended, a link for one person and five minutes; the suites are crates/bb-server/src/tests/sign_in/files_http.rs on both databases, crates/bb-server/tests/preview.rs with the real child process, and crates/bb-files)</td><td>ci</td></tr>
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
-<tr><td><code>SEC-PRIVATE</code></td><td>Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no links to published pages, no account or computer names</td><td>coding-standards §2</td><td>xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, and what the commits not on a remote add; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)</td><td>commit · push · ci</td></tr>
+<tr><td><code>SEC-PRIVATE</code></td><td>Nothing private about the maintainer in Git: no profile paths with an account name, no session IDs or links, no session key in a memory note, no links to published pages, no account or computer names, no private words, and only public identities as author and committer</td><td>coding-standards §2</td><td>xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg &lt;file&gt;`, which also reads the author and committer about to be recorded; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, what the commits not on a remote add, and their authors and committers; reads the optional private list ~/.config/bugaboo/private-words.txt, or the file named by BUGABOO_PRIVATE_WORDS, with words, several words and e-mail addresses per entry; exemptions in tools/checks/private-exemptions.toml)</td><td>commit · push · ci</td></tr>
 <tr><td><code>SEC-RICHTEXT</code></td><td>Text written by people is rendered only by bb-markdown: no second Markdown or HTML library, HTML is set from a string in one file only and only SafeHtml reaches it, the corpus tests exist, and the CSP allows exactly the one policy, whose name is written once</td><td>coding-standards §4, ADR-0011, SEC-13</td><td>xtask (reads Cargo manifests and the browser code) + the corpus tests `sec_13_the_sanitizer_corpus_renders_every_attack_as_text` and `sec_13_server_and_browser_render_the_same_html`</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-PATTERNS</code></td><td>No unwrap/expect/panic/unreachable/todo/dbg in Rust code that ships; no eval, new Function, document.write or timer with a string in the browser code</td><td>coding-standards §3, §4</td><td>xtask (reads the Rust code that ships, without comments, strings and #[cfg(test)] code, and the browser code)</td><td>edit · push · ci</td></tr>
 <tr><td><code>SEC-MATRIX</code></td><td>Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)</td><td>ADR-0004</td><td>generated tests (crates/bb-server/src/tests/matrix runs every route of the API description for every actor and writes tools/checks/sec-matrix-record.txt) + xtask (holds the record and the table of examples against the API description)</td><td>push · ci</td></tr>
@@ -1305,19 +1303,19 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>TEST-CONCURRENT</code></td><td>Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained</td><td>architecture §11, ADR-0019</td><td>xtask (the browser scenarios of ten Playwright contexts, the invariants test on both databases and the short run of `cargo xtask load` in ci are there and not switched off); the runs themselves: Playwright, the Rust tests and `cargo xtask load --people 10`, short in ci, `--nightly` for 30 minutes</td><td>ci · nightly</td></tr>
 <tr><td><code>TEST-CONNECTIONS</code></td><td>A run of the browser tests never leaves more connections in TIME_WAIT and CLOSE_WAIT than the limit, so the computer never runs out of ports</td><td>architecture §11</td><td>xtask (the Playwright reporter `web/tooling/connection-guard.ts` is in the config, fails the run, and its limit is one named number; tests are run again only in the speed project); the count itself: the reporter, during `cargo xtask ci`</td><td>ci · nightly</td></tr>
 <tr><td><code>PLAN-TRACE</code></td><td>Every M and V1 feature is in exactly one milestone, MVP features only in MVP milestones, and every work package names its features</td><td>04-milestones.md</td><td>xtask (parses the feature list, the milestones and docs/milestones/**)</td><td>commit · ci</td></tr>
-<tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root</td><td>ADR-0024</td><td>xtask (path check before every build, test, dev and install command)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits</td><td>coding-standards §2</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: commits not on main)</td><td>push · ci</td></tr>
+<tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested in a checkout that is marked as the master (BUGABOO_CHECKOUT_ROLE=master in .env.local); without the mark a plain clone builds, tests and commits as it is</td><td>ADR-0039</td><td>xtask (reads the mark before every build, test, dev and install command; `cargo xtask guard-master` writes it)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge &lt;what it brought&gt;`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process</td><td>coding-standards §2, ADR-0038</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: the messages of the commits not on main, merges included)</td><td>push · ci</td></tr>
 <tr><td><code>GIT-FILES</code></td><td>No large binaries and no CRLF line endings committed</td><td>coding-standards §7</td><td>xtask</td><td>commit · ci</td></tr>
 <tr><td><code>META-CATALOG</code></td><td>Every check in this catalogue is implemented in xtask, and every implemented check is in this catalogue</td><td>architecture §10</td><td>xtask self-test</td><td>commit · ci</td></tr>
 <tr><td><code>META-FIXTURES</code></td><td>Every check has a 'bad' example that must fail and a 'good' example that must pass</td><td>architecture §10</td><td>xtask self-test over tools/checks/fixtures/&lt;ID&gt;/</td><td>ci</td></tr>
 <tr><td><code>META-COVERAGE</code></td><td>Every file is covered by a formatter or linter, is generated, or is listed with a reason in tools/checks/coverage-exemptions.toml — a new file type means a new check</td><td>architecture §10</td><td>xtask (project files vs the 'files' globs above, the generated marker and tools/checks/coverage-exemptions.toml)</td><td>commit · ci</td></tr>
 <tr><td><code>META-NEW-MODULE</code></td><td>Every crate, package and top-level folder is listed in the module map (the dependency rules are ARCH-DEPS' job)</td><td>architecture §10, ARCH-MAP-SYNC</td><td>xtask</td><td>commit · ci</td></tr>
 <tr><td><code>META-RULE-TRACE</code></td><td>Every rule in coding standards, ADRs and the architecture (must, shall, has to, may only …) names its check ID or says 'review' with a reason</td><td>architecture §10</td><td>xtask (parses docs for Enforced-by markers)</td><td>commit · ci</td></tr>
-<tr><td><code>META-WIRING</code></td><td>lefthook, Claude Code hooks and CI call exactly the xtask commands they should, and only those; CI actions are pinned to a commit</td><td>ADR-0014</td><td>xtask (reads lefthook.yml, .claude/settings.json, CI workflow)</td><td>commit · ci</td></tr>
+<tr><td><code>META-WIRING</code></td><td>lefthook and the Claude Code hooks call exactly the xtask commands they should, and only those</td><td>ADR-0014</td><td>xtask (reads lefthook.yml, .claude/settings.json)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>96 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>95 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -2267,11 +2265,11 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li><strong><code>cargo xtask</code></strong> is the single entry point: <code>cargo xtask check staged</code>, <code>check all</code>, <code>gen …</code>, <code>release …</code>. It's Rust, so it runs wherever the code builds.</li>
 <li><strong>lefthook</strong> runs <code>check staged</code> on commit, <code>check push</code> on push and the commit-message check; <code>cargo xtask setup</code> installs it and the hooks.</li>
 <li><strong>Claude Code hooks</strong> (<code>.claude/settings.json</code>) run the relevant checks after each file edit, so agents get immediate feedback.</li>
-<li><strong>CI</strong> runs <code>check all</code> plus slow checks (benchmarks, end-to-end, SBOM).</li>
+<li><strong>The full local run</strong> (<code>cargo xtask ci</code>) runs <code>check all</code> plus slow checks (benchmarks, end-to-end, SBOM). There is no hosted CI (ADR-0037).</li>
 <li><strong>Rust:</strong> <code>rustfmt</code> formats, <code>clippy</code> lints (warnings are errors, selected pedantic lints on).</li>
 <li><strong>TypeScript 7:</strong> <strong>oxfmt</strong> formats; <strong>oxlint</strong> lints, with <strong>oxlint-tsgolint</strong> for type-aware rules. tsgolint is built on typescript-go, the TypeScript 7 compiler itself, so it understands TypeScript 7 exactly. <code>tsc</code> (TypeScript 7) does the type check.</li>
 <li><strong>CSS:</strong> stylelint enforces "tokens only"; formatting by oxfmt (or Biome, if oxfmt doesn't cover CSS at setup time).</li>
-<li><strong>Other files:</strong> taplo (TOML), rumdl (Markdown), typos (spelling), lychee (links), actionlint (CI files).</li>
+<li><strong>Other files:</strong> taplo (TOML), rumdl (Markdown), typos (spelling), lychee (links).</li>
 <li><strong>Pattern rules</strong> across Rust and TypeScript (no literal UI text, no raw colors, no <code>unwrap</code> in production code, no SQL built with <code>format!</code>, <code>Authorized&lt;T&gt;</code> only in bb-policy) are <strong>ast-grep</strong> rules in <code>tools/rules/</code>.</li>
 <li>Every check is listed once in <strong><code>tools/checks/catalog.toml</code></strong> (ADR-0020).</li>
 </ul>
@@ -2690,7 +2688,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </li>
 <li><strong>Integration:</strong> in <code>win1</code>: fetch <code>WINn</code>, merge, run <code>cargo xtask ci</code>; push <code>WIN1</code>; in the master: <code>git merge --ff-only WIN1</code>. <code>main</code> therefore only ever moves to states that passed CI.</li>
 <li><strong>Build folders</strong> stay inside each work folder (they are outside OneDrive already). Machine-specific overrides go into <code>.cargo/config.local.toml</code>, which the committed <code>.cargo/config.toml</code> includes optionally (works on stable Cargo) and Git ignores.</li>
-<li><strong>Guard:</strong> <code>cargo xtask</code> refuses to build, test or install anything when it runs inside a synced folder, with a message pointing to the work folders.</li>
+<li><strong>Guard:</strong> <code>cargo xtask</code> refuses to build, test or install anything in a checkout marked as the master, with a message pointing to the work folders (marked explicitly, not by its path: Amendment, ADR-0039).</li>
 <li><strong>Later:</strong> when the repository moves to GitHub, GitHub becomes <code>origin</code> for the work folders and the master becomes one more clone; nothing else changes.</li>
 </ul>
 <h4>Consequences</h4>
@@ -2715,6 +2713,11 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h4>Amendment (M3 WP-10)</h4>
 <ul>
 <li><strong>The browsers of the end-to-end tests.</strong> <code>cargo xtask setup</code> also runs the pinned Playwright's <code>install</code> for Chromium and WebKit (the phone project in WebKit, M2-F12). Which revision of each browser is installed is decided by the Playwright version in <code>package-lock.json</code>, so the versions are pinned like the other tools. Playwright keeps the browsers in one cache of the user (<code>ms-playwright</code>), shared by all work folders, and skips what is there; they are the one thing <code>setup</code> does not put into <code>.tools/</code>, because each copy is several hundred megabytes.</li>
+</ul>
+<h4>Amendment (ADR-0039)</h4>
+<ul>
+<li><strong>The master is marked, not detected.</strong> <code>BUGABOO_CHECKOUT_ROLE=master</code> in <code>.env.local</code> (written by <code>cargo xtask guard-master</code>) replaces every test of the path for a folder name. The edit hook, the build guard and the refusing <code>rustc-wrapper</code> read that mark; the tracked batch file is gone. A synced folder, such as OneDrive, may still be a good place for the master, and is nothing special to the tooling.</li>
+<li><strong>Only the master pushes to the public remote</strong> (<code>git -C &lt;master&gt; push github main</code>); work folders push only to the master. See ADR-0039.</li>
 </ul>
 <h4>Enforced by</h4>
 <p>BUILD-LOCATION and META-WIRING (see <code>tools/checks/catalog.toml</code>); the recovery steps by review.</p>
@@ -2828,18 +2831,18 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h3 id="adr-0026"><button class="sec" data-sec>§13.26</button>ADR-0026: One theme file for everything about how the app looks</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a></p>
 <h4>Context</h4>
-<p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way the sister project the sister project keeps its complete look in <code>defaults/theme.kdl</code>. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
+<p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way a sister project keeps its complete look in one theme file. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
 <ul>
 <li>55 CSS modules with 3,261 lines; values that have no token (<code>font-weight: 700</code> 57 times, line heights 38 times, about 50 <code>1px solid</code> borders, a z-index chosen per file, opacities, keyframes);</li>
 <li>the same rule copied into many modules (the focus ring 22 times, the muted text, <code>.stack</code>, <code>.row</code>), the skip link twice, and <code>forced-colors</code> handling in ten components;</li>
 <li>the theme list written in <code>tokens.json</code> and again in the settings registry in Rust, held together by a test (M2C-F64);</li>
 <li>theme names and the <code>data-look</code> attribute written by hand in TypeScript and in the browser tests.</li>
 </ul>
-<p>the sister project compiles its theme to CSS <strong>in the browser</strong> and injects it as a style element. Bugaboo cannot do that: the content security policy is <code>style-src 'self'</code> (SEC-11), so nothing may put a style on the page at run time.</p>
+<p>The sister project compiles its theme to CSS <strong>in the browser</strong> and injects it as a style element. Bugaboo cannot do that: the content security policy is <code>style-src 'self'</code> (SEC-11), so nothing may put a style on the page at run time.</p>
 <h4>Decision</h4>
 <ol>
 <li>
-<p><strong>One file, <code>design/theme.kdl</code></strong> (KDL, like the sister project; decision M2C-Q1). It holds everything: the themes, the choices that change token values, every token with its variants per mode, the contrast rules, the mixins, the keyframes and the rules of every component. Comments are allowed, and each token is one line. It replaces <code>design/tokens.json</code>. Only <code>cargo xtask gen theme</code> reads it (with the <code>kdl</code> crate, pinned like the sister project's); the server and the browser never parse KDL.</p>
+<p><strong>One file, <code>design/theme.kdl</code></strong> (KDL; the maintainer chose it on 2026-10-08, M2C-Q1). It holds everything: the themes, the choices that change token values, every token with its variants per mode, the contrast rules, the mixins, the keyframes and the rules of every component. Comments are allowed, and each token is one line. It replaces <code>design/tokens.json</code>. Only <code>cargo xtask gen theme</code> reads it (with the <code>kdl</code> crate, pinned like the sister project's); the server and the browser never parse KDL.</p>
 </li>
 <li>
 <p><strong>Values are tokens, with their variants per mode on the line of the token.</strong> A token has a kind (<code>color</code>, <code>font</code>, <code>size</code>, <code>number</code>, <code>duration</code>, <code>easing</code>, <code>shadow</code>, <code>weight</code>, <code>line-height</code>, <code>border-width</code>, <code>layer</code>, <code>opacity</code>) and, besides its value:</p>
@@ -2867,7 +2870,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <p><strong>Custom themes, later, store token values only</strong>: names from the generated token list, values checked by the kind of the token. They never add a rule, a selector or CSS text. How the values reach the page without breaking the policy is decided when the theme editor is built.</p>
 </li>
 <li>
-<p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way the sister project's <code>theme_contrast</code> does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file: <code>hovered</code> (the pair of a brightened main button as it is seen hovered), <code>stronger</code> (the quiet words of a row at 5:1 on the tints) and <code>lines</code> (the edge of High, the hover line and the ring on the tints and surfaces) inside <code>contrast</code>; <code>distinct</code> also asks for a least difference of color (<code>min-delta-e-…</code>, CIE 1976 delta E) between the three status tints and the card, and between the red of Critical and the orange of High, because a ratio only knows brightness. <code>dimmed</code> holds the page behind a sheet as it is drawn (the token <code>scrim</code> over the fill and the text of the page): the sheet stands out and the page text is dim. A <code>distinct</code> rule that names no minimum is a parse error.
+<p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way the sister project's contrast check does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file: <code>hovered</code> (the pair of a brightened main button as it is seen hovered), <code>stronger</code> (the quiet words of a row at 5:1 on the tints) and <code>lines</code> (the edge of High, the hover line and the ring on the tints and surfaces) inside <code>contrast</code>; <code>distinct</code> also asks for a least difference of color (<code>min-delta-e-…</code>, CIE 1976 delta E) between the three status tints and the card, and between the red of Critical and the orange of High, because a ratio only knows brightness. <code>dimmed</code> holds the page behind a sheet as it is drawn (the token <code>scrim</code> over the fill and the text of the page): the sheet stands out and the page text is dim. A <code>distinct</code> rule that names no minimum is a parse error.
 Bold is the same kind of rule: the file has one <code>bold</code> list that names the selectors that may set the bold weight, each with its role from UX §7.3 (STY-BOLD), so a bold that UX does not name cannot be added by accident.</p>
 </li>
 <li>
@@ -2891,9 +2894,9 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 </ul>
 <h4>Update 2026-10-30 (fonts like the sister project)</h4>
 <ul>
-<li><strong>System font stacks, no font files.</strong> Decision: Bugaboo handles fonts like its sister project: the theme file has the sister project's four stacks word for word, and Bugaboo ships no font file, has no <code>@font-face</code> and asks no font service. The reasons: one look across the sister projects; nothing to download before the first page draws; no font licence to carry in the dependency register. A computer without the named faces takes its own system face (the last word of each stack), so text may look a little different between systems.</li>
+<li><strong>System font stacks, no font files.</strong> The maintainer decided that Bugaboo handles fonts like its sister project: the theme file has the sister project's four stacks word for word, and Bugaboo ships no font file, has no <code>@font-face</code> and asks no font service. The reasons: one look across the sister projects; nothing to download before the first page draws; no font licence to carry in the dependency register. A computer without the named faces takes its own system face (the last word of each stack), so text may look a little different between systems.</li>
 <li><strong>One token per role, the sister project's roles.</strong> <code>font-ui</code> is the text of the app (rows, fields, buttons, menus); <code>font-display</code> the titles and section headings, that is the parts the <code>bold</code> list names with the roles <code>issue-title</code>, <code>title</code> and <code>section</code> (STY-BOLD finds a rule of such a part that makes it bold without the display face); <code>font-reader</code> what a person reads at length (a description, a comment, the help of the search); <code>font-mono</code> code, issue IDs, the search language and time values. Every rule that sets a family names one of the four.</li>
-<li><strong>Cascadia Mono is first for code.</strong> Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. This was accepted to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the <code>bold</code> list does not name.</li>
+<li><strong>Cascadia Mono is first for code.</strong> Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. The maintainer accepted that to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the <code>bold</code> list does not name.</li>
 <li><strong>Measured, not assumed.</strong> The width of the ID column still comes from <code>size-code-char</code>, a probe drawn in the code font of the computer, so it is right for Cascadia Mono, Consolas or the system monospace face alike.</li>
 </ul>
 <h4>Consequences</h4>
@@ -2907,7 +2910,7 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Keep JSON (<code>design/theme.json</code>):</strong> no new dependency, but no comments, long, and the variants of a value would not sit on one line. The maintainer chose KDL.</li>
-<li><strong>the sister project's way, compiling in the browser:</strong> needs a style element or <code>adoptedStyleSheets</code> from a string, which <code>style-src 'self'</code> forbids. Rejected.</li>
+<li><strong>The sister project's way, compiling in the browser:</strong> needs a style element or <code>adoptedStyleSheets</code> from a string, which <code>style-src 'self'</code> forbids. Rejected.</li>
 <li><strong>Keep CSS Modules next to the token file:</strong> the situation of the audit. Rejected.</li>
 <li><strong>A hand-written style sheet with the same data attributes:</strong> the values and the rules would again be in two places that no tool joins, and the theme list could not be generated from it.</li>
 <li><strong>Tailwind CSS and CSS-in-JS at run time:</strong> rejected in ADR-0010 and still.</li>
@@ -3527,6 +3530,86 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>Enforced by (additional): the tests <code>qry_06_*</code> of <code>bb-core</code>, <code>bb-app</code>, <code>bb-store</code> and <code>bb-server</code>.</p>
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
+
+<!-- 0037-no-hosted-ci.md -->
+<h3 id="adr-0037"><button class="sec" data-sec>§13.35</button>ADR-0037: No hosted CI; verification is local</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-01</p>
+<h4>Context</h4>
+<p>The repository had a workflow file for a hosted CI service, prepared for the day the code moves to a public Git host. Hosted runners cost money on private repositories, repeat what the development computer already runs, and need a second place where the commands are listed and kept in step with the first.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>No hosted CI.</strong> There is no <code>.github/workflows/</code> folder and no workflow linter (actionlint, check LINT-CI). META-WIRING no longer reads workflow files.</li>
+<li><strong>Verification is local.</strong> The pre-push hook runs the push checks (<code>cargo xtask check push</code>); <code>cargo xtask ci</code> is the full local run (checks, tests of both databases, browser build, browser tests) and runs before <code>main</code> moves. Nothing reaches <code>main</code> without it.</li>
+<li><strong>Releases are built, signed and published locally;</strong> the release page on the Git host is created by hand.</li>
+<li><strong>Hosted automation stays off</strong> on the public repository (the repository setting is switched off before the first push).</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>One list of commands (<code>catalog.toml</code>) and one runner; no second description of the same steps.</li>
+<li>A contributor's pull request is verified by the maintainer, who runs <code>cargo xtask ci</code> on it.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Keep the workflow, run it by hand only:</strong> a file that never runs drifts from the real commands. Rejected.</li>
+<li><strong>Run only the cheap checks in hosted CI:</strong> a partial copy of the gate, and a second place to keep current. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>META-WIRING (hooks call only xtask); the rest by review.</p>
+
+<!-- 0038-public-identity-and-commit-messages.md -->
+<h3 id="adr-0038"><button class="sec" data-sec>§13.36</button>ADR-0038: Public identity and plain commit messages</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-01</p>
+<h4>Context</h4>
+<p>The history of the repository is published with it. Until now commits carried the identity Git found on the machine, the working vocabulary of the project (folder and branch names, work packages, milestone codes), session lines of the tool that wrote them, and merges in a form that named a branch and a package. None of that tells a reader of the public history what changed, and some of it is private.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>One public identity.</strong> The maintainer's commits are authored and committed as the name of the GitHub account with its noreply address (<code>Name &lt;id+Name@users.noreply.github.com&gt;</code>). The identity is configuration, never code: the local Git configuration of the master and of every work folder, copied by <code>cargo xtask setup</code> (from the <code>origin</code> master when that is a folder, or from the variable <code>BUGABOO_PUBLIC_IDENTITY</code>). The handle itself may appear in files and messages only in its GitHub forms: the noreply address and <code>github.com/&lt;login&gt;</code> links.</li>
+<li><strong>What counts as public.</strong> An identity is public when its address is a GitHub noreply address whose login is its name, or when it is the identity GitHub writes for merges made on its web site. Another contributor's public identity passes as well, because it is not the maintainer's private one; a real name or a private address in the author field never passes. A contribution that arrives with another identity is brought in by the maintainer (a squash or a new commit) rather than by relaxing the rule.</li>
+<li><strong>Where it is checked.</strong> The commit-msg hook reads the author and committer about to be recorded (<code>git var GIT_AUTHOR_IDENT</code>, <code>GIT_COMMITTER_IDENT</code>). The push and full checks read the author and committer of every commit that is on no remote yet. Both are part of SEC-PRIVATE, with the private list (words, several words, e-mail addresses; the variable <code>BUGABOO_PRIVATE_WORDS</code> names another file) and the refusal of the session key of Claude Code in memory notes.</li>
+<li><strong>Plain messages.</strong> GIT-COMMIT-MSG enforces: the types feat, fix, perf, refactor, test, docs, build, ci, chore, style and revert; a first line of at most 72 characters that starts in lower case with a verb in the imperative (the imperative is a heuristic: a first word ending in <code>ed</code> or <code>ing</code> is refused, with a short list of exceptions); merges as <code>Merge &lt;what it brought&gt;</code>; the single trailer <code>Co-Authored-By: Claude &lt;model&gt; &lt;noreply@anthropic.com&gt;</code>; no claude.ai link or session line; and none of the working vocabulary (folder and branch names, work folder, master, lead, fast-forward, wave, work package and its codes, milestone codes, the acronyms SSOT, ODR and DRY, owner, WIP). The list is in <code>xtask/src/checks/git_commit_msg/jargon.rs</code>, once.</li>
+<li><strong>Rewriting history.</strong> Commits that are on the public remote are never rewritten. History that has never been published may be rewritten once, before the first push, to bring it into line with these rules.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>The published history reads the same for everyone and carries no private identity.</li>
+<li>Until the unpublished history is rewritten, the push and full checks report its old identities and messages.</li>
+<li>A word of the working vocabulary is refused even when it is used in its ordinary sense (a master key, a lead role); the message is reworded.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Hard-code the identity in the check:</strong> puts the handle into the code outside its GitHub forms. Rejected.</li>
+<li><strong>Allow any noreply address:</strong> lets another person's identity pass as the maintainer's. It is accepted only because it is public, and documented.</li>
+<li><strong>Check the identity only at commit time:</strong> a commit made with <code>--no-verify</code> or on another machine would reach the remote. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>SEC-PRIVATE (identity, private list, memory-note key) and GIT-COMMIT-MSG (message rules).</p>
+
+<!-- 0039-explicit-master-and-publishing-from-it.md -->
+<h3 id="adr-0039"><button class="sec" data-sec>§13.37</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-01</p>
+<h4>Context</h4>
+<p>ADR-0024 keeps a master checkout that never builds, and recognised it by a path segment (a folder whose name starts with <code>OneDrive</code>). That is one person's setup, not the project's: anyone who clones into a synced folder would be locked out of building, and the master would be undetectable anywhere else. Publishing was also open: any checkout could push anywhere, and the public remote is reached from exactly one place.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>The master is marked, never guessed.</strong> A checkout is the master only when <code>BUGABOO_CHECKOUT_ROLE=master</code> is set in the environment or in the ignored file <code>.env.local</code> at its root. <code>cargo xtask guard-master</code> writes it, from a work folder (the master builds nothing): the <code>.env.local</code> mark, a <code>pre-push</code> hook in <code>.git/bugaboo-hooks/</code> together with <code>core.hooksPath</code> pointing there (so the hook runs whatever other hook folder is configured), and a program for Cargo's <code>rustc-wrapper</code> in <code>.cargo/config.local.toml</code>, so even a plain <code>cargo build</code> stops. Without the mark a plain clone builds, tests and commits as it is. The edit hook of Claude Code reads the same mark.</li>
+<li><strong>Only the master publishes.</strong> A work folder pushes only to a remote that is a path (the master); only the master pushes to a remote on the network (the public one): <code>git -C &lt;master&gt; push github main</code>. One tested function, <code>publish::plan</code>, decides from the role and the URL of the remote (a path or a network address): a work folder to a path runs the checks of a push; the master to the network runs only the checks that build nothing (SEC-PRIVATE on the commits to push and on every tracked file, DEP-LICENSES); every other combination is refused with a message that names the master command. <code>main</code> only moves to a commit that passed the full run in a work folder, so the master does not repeat it.</li>
+<li><strong>The master's hook uses a program built elsewhere.</strong> The hook calls the xtask program of the work folder that ran <code>guard-master</code>; if that program is gone, the hook says to run the command again.</li>
+<li><strong>Placeholders.</strong> Rule texts name the master as <code>&lt;master&gt;</code> and the folder of the work folders as <code>&lt;work root&gt;</code>; the concrete paths are the maintainer's own setup, kept outside the repository.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>No path decides anything; the old guard for <code>OneDrive</code> folders and the tracked Windows batch file are gone, the build-refusing program is written per master.</li>
+<li>When the xtask program that the hook calls moves or is deleted, <code>guard-master</code> is run again.</li>
+<li>ADR-0024 is amended: its guard and its hook rule now follow this record.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Keep detecting by path:</strong> locks out other people's setups. Rejected.</li>
+<li><strong>Publish from a work folder (the earlier flow):</strong> the public remote would be reachable from every checkout and needs the full checks repeated by the hook. Rejected.</li>
+<li><strong>A tracked hook script for the master:</strong> a second place to keep current, and a file type without a linter. The hook is written by the command instead.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>BUILD-LOCATION (the mark is read before every build, test and install command); META-WIRING (the pre-push command of lefthook and the edit hook); the pre-push plan by its tests in <code>xtask/src/publish.rs</code> and <code>xtask/src/main.rs</code>.</p>
 
 
   </main>

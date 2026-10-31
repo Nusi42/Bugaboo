@@ -1,45 +1,36 @@
-//! META-WIRING: the git hooks, the Claude Code hooks and CI call only `cargo xtask …`, and call
+//! META-WIRING: the git hooks and the Claude Code hooks call only `cargo xtask …`, and call
 //! exactly the commands they should (ADR-0014).
 //!
 //! The files do not have to exist yet: a missing file passes.
 
 use super::{Check, Context, Finding};
-use crate::docs::source::sorted_files;
-use crate::docs::text::has_extension;
 use crate::source::read_text;
 
 const LEFTHOOK_FILES: [&str; 2] = ["lefthook.yml", "lefthook.yaml"];
 /// The folder of Claude Code in a work folder (settings, memory notes).
 pub(crate) const CLAUDE_FOLDER: &str = ".claude";
 const SETTINGS_FILE: &str = "settings.json";
-const WORKFLOWS: &str = ".github/workflows";
 
 /// Which command each Git hook runs.
 const GIT_HOOKS: [(&str, &str); 3] = [
     ("pre-commit", "cargo xtask check staged"),
-    ("pre-push", "cargo xtask check push"),
+    ("pre-push", "cargo xtask check push {1} {2}"),
     ("commit-msg", "cargo xtask check commit-msg {1}"),
 ];
 
 /// The only command the Claude Code `PostToolUse` hook runs. The session (and every agent it
-/// starts) may run in the master repository, so the command decides from the EDITED FILE, not
-/// from `$CLAUDE_PROJECT_DIR`: it finds the nearest folder above the file that has `.git` and
-/// `xtask/Cargo.toml`, skips files in OneDrive and files outside any work folder, and runs that
-/// work folder's own `cargo xtask hook post-edit` (ADR-0024). It needs no build before the
-/// OneDrive test, so nothing is ever compiled in the master.
-const POST_EDIT: &str = r#"in=$(cat); f=$(printf '%s' "$in" | sed -n 's/.*"\(file_path\|notebook_path\)" *: *"\([^"]*\)".*/\2/p' | head -n 1 | tr '\134' '/' | sed 's#//*#/#g'); [ -n "$f" ] || exit 0; d=$(dirname "$f"); while [ ! -f "$d/xtask/Cargo.toml" ] || [ ! -e "$d/.git" ]; do p=$(dirname "$d"); [ "$p" = "$d" ] && exit 0; d=$p; done; case "$d" in *OneDrive*) exit 0;; esac; cd "$d" && printf '%s' "$in" | cargo xtask hook post-edit"#;
+/// starts) may run in the master, so the command decides from the EDITED FILE, not from
+/// `$CLAUDE_PROJECT_DIR`: it finds the nearest folder above the file that has `.git` and
+/// `xtask/Cargo.toml`, skips a folder whose `.env.local` marks it as the master (ADR-0039) and
+/// files outside any checkout, and runs that checkout's own `cargo xtask hook post-edit`. It needs
+/// no build before the test of the mark, so nothing is ever compiled in the master.
+const POST_EDIT: &str = r#"in=$(cat); f=$(printf '%s' "$in" | sed -n 's/.*"\(file_path\|notebook_path\)" *: *"\([^"]*\)".*/\2/p' | head -n 1 | tr '\134' '/' | sed 's#//*#/#g'); [ -n "$f" ] || exit 0; d=$(dirname "$f"); while [ ! -f "$d/xtask/Cargo.toml" ] || [ ! -e "$d/.git" ]; do p=$(dirname "$d"); [ "$p" = "$d" ] && exit 0; d=$p; done; grep -qs '^BUGABOO_CHECKOUT_ROLE=master' "$d/.env.local" && exit 0; cd "$d" && printf '%s' "$in" | cargo xtask hook post-edit"#;
 
 /// The tools whose use triggers the `PostToolUse` hook.
 const POST_EDIT_MATCHER: &str = "Edit|Write|MultiEdit|NotebookEdit";
 
 /// Any other Claude Code hook may run an xtask hook command.
 const HOOK_PREFIX: &str = "cargo xtask hook ";
-
-/// The only commands CI runs.
-const CI_COMMANDS: [&str; 2] = ["cargo xtask setup", "cargo xtask ci"];
-
-/// Length of a full Git commit SHA, which actions have to be pinned to.
-const SHA_LENGTH: usize = 40;
 
 pub(crate) struct MetaWiring;
 
@@ -59,14 +50,6 @@ impl Check for MetaWiring {
         let settings = format!("{CLAUDE_FOLDER}/{SETTINGS_FILE}");
         if repo.path(&settings).is_file() {
             findings.extend(check_settings(&settings, &read_text(repo, &settings)?));
-        }
-        if repo.path(WORKFLOWS).is_dir() {
-            let is_workflow =
-                |name: &str| has_extension(name, "yml") || has_extension(name, "yaml");
-            for name in sorted_files(repo, WORKFLOWS, is_workflow)? {
-                let path = format!("{WORKFLOWS}/{name}");
-                findings.extend(check_workflow(&path, &read_text(repo, &path)?));
-            }
         }
         Ok(findings)
     }
@@ -195,33 +178,6 @@ fn check_lefthook(path: &str, text: &str) -> Vec<Finding> {
     findings
 }
 
-/// Workflows: `run:` is only `cargo xtask setup` and `cargo xtask ci`; `uses:` only for actions
-/// pinned to a full commit SHA.
-fn check_workflow(path: &str, text: &str) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    for run in yaml_runs(text, "run") {
-        findings.extend(check_exact(
-            path,
-            &format!(":{}", run.line),
-            &run.command,
-            &CI_COMMANDS,
-        ));
-    }
-    for used in yaml_runs(text, "uses") {
-        let action = used.command.split('#').next().unwrap_or("").trim();
-        let pinned = action.rsplit_once('@').is_some_and(|(_, version)| {
-            version.len() == SHA_LENGTH && version.bytes().all(|b| b.is_ascii_hexdigit())
-        });
-        if !pinned {
-            findings.push(Finding::at(
-                format!("{path}:{}", used.line),
-                format!("`{action}` is not pinned to a full {SHA_LENGTH}-character commit SHA. Use `owner/action@<sha>`."),
-            ));
-        }
-    }
-    findings
-}
-
 /// Claude Code settings: hook commands are xtask hooks, and `PostToolUse` runs exactly
 /// `cargo xtask hook post-edit`.
 fn check_settings(path: &str, text: &str) -> Vec<Finding> {
@@ -295,8 +251,6 @@ fn collect_commands(value: &serde_json::Value, found: &mut Vec<String>) {
 mod tests {
     use super::*;
 
-    const SHA: &str = "11bd71901bbe5b1630ceea73d27597364c9af683";
-
     const LEFTHOOK: &str = "\
 pre-commit:
   commands:
@@ -305,7 +259,7 @@ pre-commit:
 pre-push:
   commands:
     check:
-      run: cargo xtask check push
+      run: cargo xtask check push {1} {2}
 commit-msg:
   commands:
     check:
@@ -318,19 +272,15 @@ commit-msg:
 
     #[test]
     fn good_example() {
-        let workflow = format!(
-            "jobs:\n  ci:\n    steps:\n      - uses: actions/checkout@{SHA} # v4\n      - run: |\n          cargo xtask setup\n          cargo xtask ci\n"
-        );
         let settings = settings(POST_EDIT_MATCHER, POST_EDIT);
         assert!(check_lefthook("lefthook.yml", LEFTHOOK).is_empty());
-        assert!(check_workflow("ci.yml", &workflow).is_empty());
         assert!(check_settings("settings.json", &settings).is_empty());
     }
 
     #[test]
     fn bad_example() {
         let lefthook = LEFTHOOK
-            .replace("check staged", "check push")
+            .replace("check staged", "check push {1} {2}")
             .replace(
                 "cargo xtask check commit-msg",
                 "cargo fmt --check && cargo xtask check commit-msg",
@@ -340,7 +290,7 @@ commit-msg:
         let text: Vec<&str> = found.iter().map(|f| f.message.as_str()).collect();
         let has = |needle: &str| text.iter().any(|m| m.contains(needle));
         assert!(has(
-            "`cargo xtask check push` is called here, but only `cargo xtask check staged`"
+            "`cargo xtask check push {1} {2}` is called here, but only `cargo xtask check staged`"
         ));
         assert!(has("`cargo fmt --check` is called here"));
         assert!(has("`post-merge` is not one of the wired hooks"));
@@ -360,17 +310,6 @@ commit-msg:
                 .iter()
                 .any(|f| f.message.contains("`scripts:` runs script files"))
         );
-    }
-
-    #[test]
-    fn workflows_run_only_setup_and_ci_and_pin_actions() {
-        let workflow = "steps:\n  - uses: actions/checkout@v4\n  - run: |\n      cargo xtask ci\n      npm test\n  - run: cargo xtask setup | tee log & rustup update\n";
-        let found = check_workflow("ci.yml", workflow);
-        assert_eq!(found.len(), 4);
-        assert!(found[0].message.contains("`npm test`"));
-        assert!(found[1].message.contains("`tee log`"));
-        assert!(found[2].message.contains("`rustup update`"));
-        assert!(found[3].message.contains("not pinned"));
     }
 
     #[test]

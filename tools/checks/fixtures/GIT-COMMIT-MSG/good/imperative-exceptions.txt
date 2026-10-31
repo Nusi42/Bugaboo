@@ -1,0 +1,1 @@
+chore(deps): embed the font and speed up the build
