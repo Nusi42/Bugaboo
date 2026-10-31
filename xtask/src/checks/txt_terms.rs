@@ -473,24 +473,46 @@ fn name_words(name: &str) -> String {
     text
 }
 
+/// The words of a text, cut once and read against every term: where each word stands, and the word in lower case.
+/// Cutting a text again for each of the many terms was most of the time of the check (META-SPEED).
+struct CutText<'a> {
+    text: &'a str,
+    words: Vec<(&'a str, usize)>,
+    lower: Vec<String>,
+}
+
+impl<'a> CutText<'a> {
+    fn of(text: &'a str, kind: Kind) -> Self {
+        let words = words(text, kind == Kind::Text);
+        let lower = words.iter().map(|(word, _)| word.to_lowercase()).collect();
+        Self { text, words, lower }
+    }
+}
+
 /// Where `term` stands in `text` (the byte offset of its first word), if it does.
 fn find(text: &str, term: &Term, kind: Kind) -> Option<usize> {
-    let words = words(text, kind == Kind::Text);
+    find_in(&CutText::of(text, kind), term, kind)
+}
+
+/// Where `term` stands among the words of a text, if it does.
+fn find_in(cut: &CutText<'_>, term: &Term, kind: Kind) -> Option<usize> {
+    let words = &cut.words;
     let count = term.words.len();
     'start: for first in 0..words.len().checked_sub(count - 1)? {
         for (offset, wanted) in term.words.iter().enumerate() {
             let (word, at) = words[first + offset];
+            let lower = &cut.lower[first + offset];
             let same = match (kind, term.exact) {
-                (Kind::Name | Kind::Code, _) => word.to_lowercase() == wanted.to_lowercase(),
+                (_, false) => lower == wanted,
+                (Kind::Name | Kind::Code, true) => *lower == wanted.to_lowercase(),
                 (Kind::Text, true) => word == wanted,
-                (Kind::Text, false) => word.to_lowercase() == *wanted,
             };
             if !same {
                 continue 'start;
             }
             if offset > 0 {
                 let (previous, from) = words[first + offset - 1];
-                let between = &text[from + previous.len()..at];
+                let between = &cut.text[from + previous.len()..at];
                 if !between.chars().all(|c| c.is_whitespace() || c == '-') {
                     continue 'start;
                 }
@@ -556,6 +578,7 @@ fn evaluate_with(
         } else {
             name_words(&source.text)
         };
+        let cut = CutText::of(&text, source.kind);
         for term in terms {
             let reads = if source.kind == Kind::Code {
                 term.code
@@ -565,7 +588,7 @@ fn evaluate_with(
             if !reads {
                 continue;
             }
-            let Some(at) = find(&text, term, source.kind) else {
+            let Some(at) = find_in(&cut, term, source.kind) else {
                 continue;
             };
             // The entries of the word that name this place. One with phrases is used when it
