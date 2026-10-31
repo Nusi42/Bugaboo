@@ -444,13 +444,12 @@ pub(crate) fn read_place(row: &Row, kinds: &[Kind]) -> Result<Vec<SortValue>, St
     Ok(values)
 }
 
-/// The number of a count statement.
-/// A number of minutes of the column of the count (a sum of minutes is never negative).
-pub(crate) fn read_minutes(row: &Row) -> Result<bb_core::time::Minutes, StoreError> {
-    bb_core::time::Minutes::try_from(row.get::<i64>(Counted)?)
-        .map_err(|_| StoreError::Corrupt("a sum of minutes"))
+/// The sum of minutes of a statement of time spent, in the column of the count.
+pub(crate) fn read_spent(row: &Row) -> Result<bb_core::time::Minutes, StoreError> {
+    crate::time::read_minutes(row.get::<i64>(Counted)?)
 }
 
+/// The number of a count statement.
 pub(crate) fn read_count(row: &Row) -> Result<u64, StoreError> {
     u64::try_from(row.get::<i64>(Counted)?).map_err(|_| StoreError::Corrupt("a count"))
 }

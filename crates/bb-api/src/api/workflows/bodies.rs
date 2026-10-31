@@ -135,6 +135,8 @@ impl StatusRulesBody {
             only_if: self
                 .only_if
                 .iter()
+                // A word of a field that left the catalogue is accepted and asks for nothing.
+                .filter(|condition| !crate::api::is_retired_field(&condition.field))
                 .map(|condition| {
                     Ok(Condition {
                         field: field_in(&condition.field)?,
@@ -145,11 +147,13 @@ impl StatusRulesBody {
             must_fill: self
                 .must_fill
                 .iter()
+                .filter(|text| !crate::api::is_retired_field(text))
                 .map(|text| field_in(text))
                 .collect::<Result<_, _>>()?,
             ask_for: self
                 .ask_for
                 .iter()
+                .filter(|text| !crate::api::is_retired_field(text))
                 .map(|text| field_in(text))
                 .collect::<Result<_, _>>()?,
         })

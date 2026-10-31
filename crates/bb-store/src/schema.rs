@@ -432,6 +432,16 @@ stored_tables! {
         CreatedAt => created_at,
         Version => version,
     },
+    TimeEntryValueRow => bb_core::time::entry::TimeEntryValue {
+        EntityKind => entity_kind,
+        EntityId => entity_id,
+        Field => field,
+        ValueText => value_text,
+        ValueNumber => value_number,
+        ValueDate => value_date,
+        ValueRef => value_ref,
+        Position => position,
+    },
     StarterFieldRow => bb_core::time::entry::StarterFieldMark {
         Starter => starter,
         Field => field,

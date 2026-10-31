@@ -3,7 +3,7 @@
 
 use bb_core::id::{FieldId, IssueId, UserId};
 use bb_core::time::entry::{Running, StarterField, StarterFieldMark, Timer};
-use bb_core::version::Version;
+use bb_core::version::{FIRST_VERSION, Version};
 use sea_query::{Expr, ExprTrait as _, OnConflict, Query};
 
 use crate::db::{Row, StoredId as _, Transaction, to_micros};
@@ -98,6 +98,35 @@ pub(super) async fn put_timer(
         .and_where(Expr::col(TimerRow::Person).eq(timer.person.stored()))
         .and_where(Expr::col(TimerRow::Version).eq(version.get()));
     Ok(transaction.execute(&update).await? > 0)
+}
+
+/// Holds the timer row of a person until the change ends, making one that stands still when the
+/// person has none (an upsert that writes the key again, which takes the lock of the row on
+/// PostgreSQL; SQLite has one writer anyway): the changes of one person's time come one after
+/// the other, so a count of their entries cannot be passed by two at once.
+pub(super) async fn hold_time_of(
+    transaction: &mut Transaction,
+    person: UserId,
+) -> Result<(), StoreError> {
+    let standing = Timer {
+        person,
+        running: None,
+        changed_at: jiff::Timestamp::UNIX_EPOCH,
+        version: FIRST_VERSION,
+    };
+    let mut insert = Query::insert();
+    insert
+        .into_table(TimerRow::Table)
+        .columns(TIMER_COLUMNS)
+        .values(timer_values(&standing))
+        .map_err(|_| StoreError::Corrupt("a timer"))?
+        .on_conflict(
+            OnConflict::column(TimerRow::Person)
+                .update_column(TimerRow::Person)
+                .to_owned(),
+        );
+    transaction.execute(&insert).await?;
+    Ok(())
 }
 
 /// The marks of the starter fields that were made.

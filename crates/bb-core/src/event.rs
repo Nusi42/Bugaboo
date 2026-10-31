@@ -218,6 +218,8 @@ pub struct DomainEvent {
     /// The fields that changed. They can hold anything a person typed, but never credentials,
     /// password hashes or secrets: use cases leave those fields out of the changes (review).
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
+    #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
     pub changes: Vec<FieldChange>,
     /// Why, when the person said so; for a change a job made as the person, the item of the job
     /// (a change to many issues, `ManyChangeRun::item_reason`).

@@ -35,6 +35,9 @@ pub(crate) struct Field {
     pub(crate) name: String,
     /// The mark, or what is wrong with the marks written on the field.
     pub(crate) mark: Result<Mark, String>,
+    /// The marks of the field in the rows of some kinds of record (`#[personal_for(…)]`): the
+    /// kind, and the mark there or what is wrong with it.
+    pub(crate) by_kind: Vec<(String, Result<Mark, String>)>,
     pub(crate) doc: String,
 }
 
@@ -152,11 +155,14 @@ fn read_field(field: &syn::Field) -> Field {
         .as_ref()
         .map_or_else(String::new, ToString::to_string);
     let mut marks = Vec::new();
+    let mut by_kind = Vec::new();
     for attr in &field.attrs {
         if attr.path().is_ident("not_personal") {
             marks.push(Ok(Mark::NotPersonal));
         } else if attr.path().is_ident("personal") {
             marks.push(read_personal(attr));
+        } else if attr.path().is_ident("personal_for") {
+            by_kind.push(read_kind(attr));
         }
     }
     let mark = match marks.len() {
@@ -170,8 +176,25 @@ fn read_field(field: &syn::Field) -> Field {
     Field {
         name,
         mark,
+        by_kind,
         doc: doc(&field.attrs),
     }
+}
+
+/// A `#[personal_for(kind = …, category = …, basis = …)]`: the kind, and the mark in its rows.
+fn read_kind(attr: &Attribute) -> (String, Result<Mark, String>) {
+    let mut kind = None;
+    let parsed = attr.parse_nested_meta(|meta| {
+        let value: syn::LitStr = meta.value()?.parse()?;
+        if meta.path.is_ident("kind") {
+            kind = Some(value.value());
+        }
+        Ok(())
+    });
+    let mark = parsed
+        .map_err(|error| format!("has a mark that is not understood: {error}"))
+        .and_then(|()| read_personal(attr));
+    (kind.unwrap_or_default(), mark)
 }
 
 fn read_personal(attr: &Attribute) -> Result<Mark, String> {
@@ -356,7 +379,11 @@ pub(crate) fn render(model: &Model) -> String {
             let _ = writeln!(out, "{}\n", entity.doc);
         }
         let _ = writeln!(out, "Defined in `{}`.\n", entity.path);
-        let rows: Vec<Vec<String>> = entity.fields.iter().map(field_row).collect();
+        let rows: Vec<Vec<String>> = entity
+            .fields
+            .iter()
+            .flat_map(|field| std::iter::once(field_row(field)).chain(kind_rows(field)))
+            .collect();
         out.push_str(&table(
             &[
                 "Field",
@@ -393,6 +420,29 @@ fn field_row(field: &Field) -> Vec<String> {
         basis,
         field.doc.clone(),
     ]
+}
+
+/// The rows of the marks a field has in the rows of some kinds of record.
+fn kind_rows(field: &Field) -> Vec<Vec<String>> {
+    field
+        .by_kind
+        .iter()
+        .map(|(kind, mark)| {
+            let row = field_row(&Field {
+                name: field.name.clone(),
+                mark: mark.clone(),
+                by_kind: Vec::new(),
+                doc: String::new(),
+            });
+            vec![
+                format!("`{}` (rows about a `{kind}`)", field.name),
+                row[1].clone(),
+                row[2].clone(),
+                row[3].clone(),
+                "The same, in the rows about this kind of record; the person of that record is the one the data is about.".to_owned(),
+            ]
+        })
+        .collect()
 }
 
 /// A Markdown table with padded columns.

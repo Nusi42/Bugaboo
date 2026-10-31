@@ -339,7 +339,7 @@ fn spec() -> impl Strategy<Value = Spec> {
             (
                 prop::option::of(0..6_usize),
                 0..3_usize,
-                0..16_usize,
+                0..Field::ALL.len(),
                 0..3_usize,
             ),
             0..8,

@@ -28,6 +28,7 @@ crate::entities! {
     crate::comment::Mention,
     crate::time::entry::StarterFieldMark,
     crate::time::entry::TimeEntry,
+    crate::time::entry::TimeEntryValue,
     crate::time::entry::Timer,
     crate::edit::Draft,
     crate::edit::EditLock,

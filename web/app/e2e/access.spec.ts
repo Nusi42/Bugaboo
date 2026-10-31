@@ -47,7 +47,7 @@ test.use({
   },
 });
 
-const costCenter = t("issue-field.cost-center");
+const dueDate = t("issue-field.due-date");
 
 /** Opens a page and waits for its heading. */
 async function open(page: Page, address: string, heading: string): Promise<void> {
@@ -55,7 +55,7 @@ async function open(page: Page, address: string, heading: string): Promise<void>
   await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
 }
 
-test("sec_04 hiding Cost center from Contributors in a project reaches its sub-projects and can be changed below", async ({
+test("sec_04 hiding Due date from Contributors in a project reaches its sub-projects and can be changed below", async ({
   page,
   server,
 }) => {
@@ -64,7 +64,7 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
   // Where the last run left it: nothing set by the projects.
   await inOrder(
     ["ACME", "WEB"].map((short) => async () => {
-      await forgetFieldLevel(admin, await projectIdOf(admin, short), contributor, "cost-center");
+      await forgetFieldLevel(admin, await projectIdOf(admin, short), contributor, "due-date");
     }),
   );
   await admin.dispose();
@@ -77,15 +77,15 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
     addressInProject(paths.projectFields, "DOCS"),
     t("field-permissions.project-title", { project: "Documents" }),
   );
-  const inDocs = await levelList(page, costCenter, roleName.contributor);
+  const inDocs = await levelList(page, dueDate, roleName.contributor);
   await expect(inDocs).toHaveValue("hidden");
 });
 
-/** A Contributor starts with *Can see* on Cost center; hide it in ACME. */
+/** A Contributor starts with *Can see* on Due date; hide it in ACME. */
 async function hideInAcme(page: Page): Promise<void> {
   const acme = t("field-permissions.project-title", { project: "Acme Corporation" });
   await open(page, addressInProject(paths.projectFields, "ACME"), acme);
-  const inAcme = await levelList(page, costCenter, roleName.contributor);
+  const inAcme = await levelList(page, dueDate, roleName.contributor);
   await expect(inAcme).toHaveValue("can-see");
   await pickLevel(inAcme, page, t("field-level.hidden"));
   await expect(around(inAcme)).toContainText(t("access.origin-here"));
@@ -98,7 +98,7 @@ async function changeBelow(page: Page): Promise<void> {
     addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
-  const inWeb = await levelList(page, costCenter, roleName.contributor);
+  const inWeb = await levelList(page, dueDate, roleName.contributor);
   await expect(inWeb).toHaveValue("hidden");
   await expect(around(inWeb)).toContainText(
     t("access.origin-from", { project: "Acme Corporation" }),
@@ -113,7 +113,7 @@ async function changeBelow(page: Page): Promise<void> {
   await expect(around(inWeb)).toContainText(t("access.origin-here"));
   await around(inWeb)
     .getByRole("button", {
-      name: t("access.reset-label", { subject: costCenter, role: roleName.contributor }),
+      name: t("access.reset-label", { subject: dueDate, role: roleName.contributor }),
     })
     .click();
   await expect(inWeb).toHaveValue("hidden");
@@ -273,7 +273,7 @@ test("ux_04 the matrix, the preview and the answer are good in the four themes",
     addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
-  await levelList(page, costCenter, roleName.contributor);
+  await levelList(page, dueDate, roleName.contributor);
   await expectGoodInEveryLook(page);
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
   await levelList(page, t("people-kind.assigned-to"), roleName.guest);

@@ -48,6 +48,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod bodies;
 mod check_access;
 mod comments;
 mod editing;
@@ -350,6 +351,13 @@ pub(crate) struct EmailBody {
 /// The ID in an address of the API; a text that is no ID names nothing, so it is not found.
 pub(crate) fn path_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
+}
+
+/// Whether a field named in a request is one of the words of built-in fields that left the
+/// catalogue (`bb_core::fields::RETIRED_FIELD_WORDS`): the API accepts it and does nothing with it
+/// (ADR-0035, amendment of the starter fields; ADR-0008).
+pub(crate) fn is_retired_field(word: &str) -> bool {
+    bb_core::fields::RETIRED_FIELD_WORDS.contains(&word)
 }
 
 /// The ID in a request body or query; a text that is no ID is not a valid request.

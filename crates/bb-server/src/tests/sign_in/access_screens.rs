@@ -124,10 +124,10 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
                 );
                 let table = ada.send("GET", &path, None).await?;
                 assert_eq!(table.status, StatusCode::OK, "{}", table.body);
-                Ok(cell(&table.body, "cost-center", contributor)?.clone())
+                Ok(cell(&table.body, "due-date", contributor)?.clone())
             };
 
-        // A Contributor starts with *Can see* on *Cost center*, as the role's own level.
+        // A Contributor starts with *Can see* on *Due date*, as the role's own level.
         let own = cell_of(&mut ada, None).await?;
         assert_eq!(
             (own["level"].as_str(), own["origin"]["kind"].as_str()),
@@ -135,8 +135,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
         );
 
         // Hidden on ACME: set there, inherited by WEB and by API below it.
-        let path =
-            |project: ProjectId| format!("{FIELDS}/{contributor}/cost-center{}", at(project));
+        let path = |project: ProjectId| format!("{FIELDS}/{contributor}/due-date{}", at(project));
         let hidden = ada
             .send("PUT", &path(acme), Some(json!({"level": "hidden"})))
             .await?;
@@ -174,7 +173,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
         assert_eq!(api_cell["origin"]["from"]["short_name"], "WEB");
         assert_eq!(cell_of(&mut ada, Some(acme)).await?["level"], "hidden");
 
-        // The engine agrees: a Contributor on ACME has *Cost center* hidden in ACME and *Can see*
+        // The engine agrees: a Contributor on ACME has *Due date* hidden in ACME and *Can see*
         // in WEB, with the same reasons.
         let bea = org.person().await?;
         org.give(&bea, contributor, acme).await?;
@@ -183,7 +182,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
             Ok(answer
                 .fields
                 .iter()
-                .find(|field| field.subject == bb_core::fields::Field::CostCenter.into())
+                .find(|field| field.subject == bb_core::fields::Field::DueDate.into())
                 .map(|field| field.level))
         };
         assert_eq!(
@@ -208,7 +207,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
         assert_eq!(level(api).await?, Some(bb_core::access::FieldLevel::Hidden));
 
         // A role's own level cannot be taken away, only changed.
-        let own_path = format!("{FIELDS}/{contributor}/cost-center");
+        let own_path = format!("{FIELDS}/{contributor}/due-date");
         let refused = ada
             .send("PUT", &own_path, Some(json!({"level": null})))
             .await?;
@@ -238,7 +237,7 @@ async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_th
         let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         let cell_path = |project: Option<ProjectId>| {
             format!(
-                "{FIELDS}/{contributor}/cost-center{}",
+                "{FIELDS}/{contributor}/due-date{}",
                 project.map_or_else(String::new, at)
             )
         };
@@ -588,14 +587,14 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
             .as_array()
             .into_iter()
             .flatten()
-            .find(|field| field["subject"] == "cost-center")
+            .find(|field| field["subject"] == "due-date")
             .ok_or("no cost center")?;
         assert_eq!(cost["level"], "hidden");
         // Asking for a field she may not see fails exactly as asking for one that does not exist.
         let hidden = cleo_browser
             .send(
                 "GET",
-                &format!("{CHECK}{}&fields=name,cost_center", at(acme)),
+                &format!("{CHECK}{}&fields=name,due_date", at(acme)),
                 None,
             )
             .await?;

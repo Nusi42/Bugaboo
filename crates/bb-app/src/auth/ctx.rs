@@ -265,6 +265,10 @@ pub(crate) struct Known {
     pub(crate) projects: Box<Mutex<KnownProjects>>,
     /// The groups people are in, for the rule *Who can do it* of a status change.
     pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
+    /// Issues found by their address ahead of the work on them, with the values of their own
+    /// fields read in one go: the preview of a change to many issues reads its selection so
+    /// (`Ctx::read_ahead`). A read-only request fills it, so nothing it holds goes stale.
+    pub(crate) ahead: Mutex<Option<Box<crate::issues::ReadAhead>>>,
 }
 
 /// The projects that the short names of issue addresses named, and the chains of projects, read

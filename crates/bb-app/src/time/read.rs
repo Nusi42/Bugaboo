@@ -21,15 +21,13 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
-use bb_core::time::day::{Week, date_of};
-use bb_core::wording::Region;
+use bb_core::time::day::Week;
 use jiff::civil::Date;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The first and the last date of the actor's week of today, by their *Region*.
     async fn this_week(&self, actor: &Actor) -> Result<(Date, Date), AppError> {
-        let region = Region::of(&self.setting_layers_of(Some(actor.person.id)).await?);
-        let today = date_of(self.now(), region.zone());
+        let (today, region) = self.day_of(actor.person.id, self.now()).await?;
         let days = Week::of(today, region.first_day())
             .map(|week| week.days())
             .unwrap_or_default();

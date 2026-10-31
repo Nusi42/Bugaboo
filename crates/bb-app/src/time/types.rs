@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use bb_core::id::{FieldId, IssueId, TimeEntryId};
 use bb_core::own_fields_value::OwnValues;
 use bb_core::time::Minutes;
-use bb_policy::{Masked, PersonRef};
+use bb_policy::{Authorized, Masked, PersonRef};
 use jiff::Timestamp;
 use jiff::civil::Date;
 use serde::Serialize;
@@ -151,8 +151,8 @@ pub struct IssueTimeEntriesQuery {
 /// A timer that runs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct RunningView {
-    /// The issue it runs on.
-    pub issue: IssueId,
+    /// The issue it runs on; none for an access key that does not see it.
+    pub issue: Option<IssueId>,
     /// The readable ID of the issue while the person sees it.
     pub readable_id: Option<String>,
     /// When it started.
@@ -203,21 +203,23 @@ pub struct TimeEntryView {
 impl Masked for TimeEntryView {}
 
 /// What stopping or switching the timer did.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TimerSaved {
     /// The timer as it is now.
     pub timer: TimerView,
-    /// The entry that was saved; none when the timer ran for less than a minute.
-    pub entry: Option<TimeEntryView>,
+    /// The entry that was saved, masked with the rights where its issue is; none when the timer
+    /// ran for less than a minute.
+    pub entry: Option<Authorized<TimeEntryView>>,
 }
 
 impl Masked for TimerSaved {}
 
 /// A page of the person's own time entries.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TimeEntryPage {
-    /// The entries, by date, then in the order they were made.
-    pub items: Vec<TimeEntryView>,
+    /// The entries, by date, then in the order they were made, each masked with the rights where
+    /// its issue is.
+    pub items: Vec<Authorized<TimeEntryView>>,
     /// The cursor of the next page, if there is one.
     pub next_cursor: Option<String>,
 }

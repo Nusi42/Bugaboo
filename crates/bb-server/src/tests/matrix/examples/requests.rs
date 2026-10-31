@@ -333,7 +333,7 @@ pub(super) fn project_request(
         "changeFieldPermission" => (
             "PUT",
             format!(
-                "/api/v1/field-permissions/{}/cost-center?project={target}",
+                "/api/v1/field-permissions/{}/due-date?project={target}",
                 fixture.a_role()?
             ),
             Some(json!({"level": "hidden"})),

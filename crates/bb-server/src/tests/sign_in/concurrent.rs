@@ -139,6 +139,37 @@ impl Person {
     }
 
     /// Writes a comment.
+    /// Starts the person's timer on the issue, or stops the one that runs, while the others do the
+    /// same: a stop that saved time is written down, and the database must hold it once.
+    async fn time(&mut self, work: &Work) -> Result<(), Failure> {
+        let timer = self.browser.send("GET", "/api/v1/me/timer", None).await?;
+        let timer = ok(&timer)?.clone();
+        if timer.get("running").is_none() {
+            let started = self
+                .browser
+                .send("POST", "/api/v1/me/timer", Some(json!({"issue": work.key})))
+                .await?;
+            // A start within a second of the last one waits for the next round.
+            return match started.code() {
+                "" | "timer.too-fast" => Ok(()),
+                other => Err(format!("a start: {other}: {}", started.body).into()),
+            };
+        }
+        let stopped = self
+            .browser
+            .send(
+                "POST",
+                "/api/v1/me/timer/stop",
+                Some(json!({"version": timer["version"]})),
+            )
+            .await?;
+        let saved = ok(&stopped)?;
+        if let Some(key) = saved["entry"]["readable_id"].as_str() {
+            book(&self.book)?.timed.push(key.to_owned());
+        }
+        Ok(())
+    }
+
     async fn comment(&mut self, work: &Work, round: usize) -> Result<(), Failure> {
         let reply = self
             .browser
@@ -283,6 +314,7 @@ impl Person {
                 1 | 2 => self.describe(&work, round).await?,
                 3 => {
                     self.comment(&work, round).await?;
+                    self.time(&work).await?;
                     self.read(&work).await?;
                 }
                 4 | 5 => {

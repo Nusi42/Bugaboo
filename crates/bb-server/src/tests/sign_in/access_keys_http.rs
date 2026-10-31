@@ -586,3 +586,70 @@ async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() 
     })
     .await
 }
+
+#[tokio::test]
+async fn auth_07_a_key_for_some_projects_reads_only_the_time_it_sees() -> TestResult {
+    each_database("auth_07_key_time", async |db| {
+        use super::issues_site::{PROJECTS, Site, id_in, key_of, ok};
+        use super::time_http::{MY_ENTRIES, TIMER};
+
+        let (rig, app) = super::http::rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let beta = ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?;
+        let beta = id_in(ok(&beta)?)?;
+        let in_acme = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let in_beta = key_of(
+            &ada.send(
+                "POST",
+                &format!("{PROJECTS}/{beta}/issues"),
+                Some(site.new_issue("Secret plan")),
+            )
+            .await?,
+        )?;
+        for issue in [&in_acme, &in_beta] {
+            let body = json!({"issue": issue, "date": "2027-01-14", "minutes": 30,
+                "entry": {"note": format!("Note on {issue}")}});
+            ok(&ada.send("POST", MY_ENTRIES, Some(body)).await?)?;
+        }
+        ok(&ada
+            .send("POST", TIMER, Some(json!({"issue": in_beta})))
+            .await?)?;
+        let key = super::access_keys::create(
+            &rig,
+            &site.org.admin,
+            KeyChoice::Everything,
+            &[],
+            &[site.acme.parse().map_err(|_| "no project ID")?],
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .secret;
+        let mut script = Browser::new(&app, &called());
+        // Only the entry on the issue the key sees, and nothing of the other.
+        let week = script
+            .script(
+                "GET",
+                &format!("{MY_ENTRIES}?from=2027-01-11&to=2027-01-17"),
+                None,
+                &key,
+            )
+            .await?;
+        let items = ok(&week)?["items"].as_array().cloned().unwrap_or_default();
+        assert_eq!(items.len(), 1, "{}", week.body);
+        assert_eq!(items[0]["readable_id"], in_acme.as_str());
+        assert!(!week.body.to_string().contains(&in_beta), "{}", week.body);
+        // The timer runs, on an issue the key is not told.
+        let timer = script.script("GET", TIMER, None, &key).await?;
+        let running = &ok(&timer)?["running"];
+        assert!(running.get("started_at").is_some(), "{}", timer.body);
+        assert!(running.get("issue").is_none() && running.get("readable_id").is_none());
+        Ok(())
+    })
+    .await
+}

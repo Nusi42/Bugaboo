@@ -563,7 +563,7 @@ async fn prepare_time(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Sa
         return if id == "changeTimeEntry" {
             Save::new("PATCH", path, json!({"minutes": 45}), &entry["version"])
         } else {
-            Save::new("DELETE", path, json!({}), &entry["version"])
+            Ok(Save::new("DELETE", path, json!({}), &entry["version"])?.in_the_query())
         };
     }
     let mut timer = read(ada, TIMER).await?;

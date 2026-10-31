@@ -5,12 +5,12 @@
 
 use bb_core::event::FieldChange;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::history::HistoryEntry;
+use bb_core::history::{HistoryEntry, TimeEvent};
 use bb_core::id::IssueTypeId;
 use bb_core::time::Minutes;
 
 use super::read::{Batch, Reading};
-use super::types::{HistoryWhat, TimeEvent};
+use super::types::HistoryWhat;
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::member::time_entry;
 

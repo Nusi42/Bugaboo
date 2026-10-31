@@ -37,6 +37,8 @@ pub struct IssueFacts {
     pub status: String,
     /// How many files the issue holds that are not in the trash.
     pub attachments: usize,
+    /// The person and the start of each time entry on the issue that a timer saved.
+    pub timer_entries: Vec<(String, i64)>,
 }
 
 /// A notification of a person the run judges by what they may see.
@@ -156,6 +158,16 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
             title: row.title,
             status: row.status.to_string(),
             attachments: database.stored_attachments(id).await?.len(),
+            timer_entries: database
+                .stored_time_entries(id)
+                .await?
+                .into_iter()
+                .filter_map(|entry| {
+                    entry
+                        .started_at
+                        .map(|start| (entry.person.to_string(), start.as_microsecond()))
+                })
+                .collect(),
         });
     }
     for guest in &book.guests {

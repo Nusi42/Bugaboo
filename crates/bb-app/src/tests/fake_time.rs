@@ -194,6 +194,11 @@ impl TimeStore for FakeStore {
         }
     }
 
+    async fn hold_time_of(_tx: &mut Tx, _person: UserId) -> Result<(), FakeError> {
+        // The in-memory store runs one change at a time.
+        Ok(())
+    }
+
     async fn insert_time_entry(tx: &mut Tx, entry: &TimeEntry) -> Result<(), FakeError> {
         tx.state.time_entries.push(entry.clone());
         Ok(())

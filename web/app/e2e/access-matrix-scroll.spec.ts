@@ -29,11 +29,7 @@ const wide = "6000px";
 const wider = "9000px";
 
 for (const [name, address, subject] of [
-  [
-    "field permissions",
-    addressInProject(paths.projectFields, "ACME"),
-    t("issue-field.cost-center"),
-  ],
+  ["field permissions", addressInProject(paths.projectFields, "ACME"), t("issue-field.due-date")],
   ["who sees people", paths.peopleVisibility, t("people-kind.assigned-to")],
 ] as const) {
   test(`ux_04 the matrix of ${name} says that it scrolls exactly when it does`, async ({
@@ -62,7 +58,7 @@ test("ux_04 the note follows the matrix when the region or the table changes siz
       await signIn(page, ada);
       await page.goto(addressInProject(paths.projectFields, "ACME"));
       await expect(
-        await levelList(page, t("issue-field.cost-center"), roleName.contributor),
+        await levelList(page, t("issue-field.due-date"), roleName.contributor),
       ).toBeVisible();
       const region = partIn(page, "access.scroll");
       const note = page.getByText(t("access.scrolls"), { exact: true });
@@ -140,7 +136,7 @@ test("ux_04 no level in the matrix is cut with Larger text on, and the measure c
       await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
       await page.goto(addressInProject(paths.projectFields, "ACME"));
       await expect(
-        await levelList(page, t("issue-field.cost-center"), roleName.contributor),
+        await levelList(page, t("issue-field.due-date"), roleName.contributor),
       ).toBeVisible();
       const rooms = await page.evaluate(roomForLevels, levelLists);
       expect(rooms.length).toBeGreaterThan(0);

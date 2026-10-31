@@ -2,7 +2,7 @@
 //! that says it. The longest and the shortest entry are those of `bb_core::time`.
 
 use bb_core::ErrorCode;
-use bb_core::text::clean_long;
+use bb_core::text::has_stray_control;
 use bb_core::time::Minutes;
 use bb_core::time::length::{self, LengthMistake};
 use jiff::{SignedDuration, Timestamp};
@@ -70,9 +70,10 @@ pub(crate) fn clean_note(note: &str) -> Result<String, AppError> {
     if note.chars().count() > TIME_NOTE_CHARS_MAX {
         return Err(ErrorCode::TimeNoteTooLong.into());
     }
-    clean_long(note, TIME_NOTE_CHARS_MAX)
-        .map(str::to_owned)
-        .ok_or_else(|| ErrorCode::InvalidRequest.into())
+    if has_stray_control(note) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    Ok(note.to_owned())
 }
 
 /// A length of one entry, held to the bound of `bb_core::time` (the one rule of it).

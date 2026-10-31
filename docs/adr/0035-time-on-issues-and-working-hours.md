@@ -29,7 +29,7 @@ The maintainer answered M6-Q3 to M6-Q11 by taking every recommendation of the [M
 ### 2. Who books time: *Book time* (M6-Q4)
 
 - A new project permission, ***Book time***: book one's own time on an issue one can see. The starting roles from *Contributor* up have it; *Viewer* and *Guest* do not. Its row in the catalogue (topic *Time*, kind, starting values) is in ADR-0025, amendment M6.
-- It also covers changing and deleting one's own entries. Nobody changes or deletes another person's entries in M6; that is TIME-06 (1.0).
+- It also covers changing and deleting one's own entries. The timer itself is the person's own (`own-account`): an access key reads it, and a key that holds any permission that changes something may stop, switch, move or throw away its owner's timer, the same rule as for *My settings* (`Actor::may_change_own`); *Book time* is still judged on every issue whose time is saved. Nobody changes or deletes another person's entries in M6; that is TIME-06 (1.0).
 - Enforced by: ARCH-PERMS (every route of time declares it or `own-account`), SEC-MATRIX (the routes of the timer and of time entries for every starting role).
 
 ### 3. The timer (M6-Q5)
@@ -138,6 +138,12 @@ The maintainer answered M6-Q3 to M6-Q11 by taking every recommendation of the [M
 - **No route, export, search or list orders, ranks or compares people by a number of time**: not by working hours, not by time booked, not by warnings, not by *Time spent*. A list of people is in the order of their names, and a total of a person is shown for that person alone. Grouping by person in the search language never gives a length per person.
 - **No AI tool reads working hours.** The tool registry has no tool that reads work days, breaks, warnings or the totals of a person, and none that reads another person's time entries (ADR-0013, COMP-10).
 - Enforced by: SEC-MATRIX (no route of time takes an order by person or by a total), ARCH-AI-TOOLS (no tool reaches the use cases of working hours), and the tests `priv_09_…` of WP-05 and WP-06.
+
+## Amendment (WP-05): *Activity* and *Cost center* leave the catalogue, the API keeps their words
+
+*Activity* and *Cost center* are own fields of time entries (decision 1), so the values `Activity` and `CostCenter` of the built-in `Field` of `bb-core` are gone, with their starting levels and their rows in the generated field table. The API was frozen with the words `activity` and `cost-center` in the schema `Field` (ADR-0008, amendment M4), and API v1 does not take a word away: the schema keeps them, marked retired (`bb_core::fields::RETIRED_FIELD_WORDS`). A request that names one is accepted and nothing happens (a level of the field is not set, a layout places nothing, a rule of a workflow asks for nothing); no answer names them, because no field of the catalogue is either. The mapping is at the edge of the API only (`bb_api::api::is_retired_field`); no frozen copy is written again. Enforced by: ARCH-API-FREEZE (the schema still holds both words), and the test of `bb-core` that no field of the catalogue has a retired word.
+
+**The values of the own fields of time entries** are kept in a table of their own, `time_entry_value`, with the columns of `field_value` and every part marked `employee_time`, basis contract (ADR-0015), instead of the shared `field_value`, whose marks are those of issues and projects. The rows of the domain events and of the history about a time entry or a timer are marked the same way by the kind of their record (`#[personal_for(kind = …)]`, ADR-0015). Enforced by: DATA-MARKS.
 
 ## Consequences
 

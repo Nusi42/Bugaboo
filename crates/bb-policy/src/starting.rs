@@ -105,13 +105,10 @@ const fn field_levels(field: Field) -> [FieldLevel; 6] {
         | Field::Labels
         | Field::PlannedForRelease => [C, C, C, S, S, S],
         Field::ReportedBy => [C, C, S, S, S, S],
-        Field::DueDate
-        | Field::EstimatedTime
-        | Field::TimeLeft
-        | Field::TimeSpent
-        | Field::Activity => [C, C, C, S, S, H],
+        Field::DueDate | Field::EstimatedTime | Field::TimeLeft | Field::TimeSpent => {
+            [C, C, C, S, S, H]
+        }
         Field::Tags => [C, C, C, C, S, S],
-        Field::CostCenter => [C, C, S, S, S, H],
     }
 }
 
@@ -299,14 +296,6 @@ mod tests {
         assert_eq!(
             starting_own_field_level(&BTreeSet::new(), Permission::ChangeIssues),
             FieldLevel::Hidden
-        );
-    }
-
-    #[test]
-    fn a_contributor_sees_the_cost_center_at_the_start_so_the_exit_demo_can_hide_it() {
-        assert_eq!(
-            StartingRole::Contributor.field_level(Field::CostCenter),
-            FieldLevel::CanSee
         );
     }
 }

@@ -18,7 +18,7 @@ use crate::roles::{
 use bb_core::ErrorCode;
 
 /// The cost center, which the role below sees for every type but one.
-const FIELD: Field = Field::CostCenter;
+const FIELD: Field = Field::EstimatedTime;
 
 #[tokio::test]
 async fn sec_03_check_access_answers_for_one_issue_type_in_memory() -> Outcome {

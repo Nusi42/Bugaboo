@@ -1802,9 +1802,6 @@ pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.take
 /// The message `invitations.title`.
 pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
 
-/// The message `issue-field.activity`.
-pub const ISSUE_FIELD_ACTIVITY: MessageKey = MessageKey::new("issue-field.activity");
-
 /// The message `issue-field.assigned-to`.
 pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
 
@@ -1813,9 +1810,6 @@ pub const ISSUE_FIELD_CHANGED: MessageKey = MessageKey::new("issue-field.changed
 
 /// The message `issue-field.closed`.
 pub const ISSUE_FIELD_CLOSED: MessageKey = MessageKey::new("issue-field.closed");
-
-/// The message `issue-field.cost-center`.
-pub const ISSUE_FIELD_COST_CENTER: MessageKey = MessageKey::new("issue-field.cost-center");
 
 /// The message `issue-field.created`.
 pub const ISSUE_FIELD_CREATED: MessageKey = MessageKey::new("issue-field.created");
@@ -12301,7 +12295,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("error.time.note-too-long", "The note is too long."),
     (
         "error.time.too-many-entries",
-        "You booked as many time entries today as one day can have.",
+        "This date holds as many time entries as one date can have. Book on another date or change an entry.",
     ),
     (
         "error.timer.not-running",
@@ -12900,11 +12894,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("invitations.taken-back", "The invitation is taken back."),
     ("invitations.title", "Invitations"),
-    ("issue-field.activity", "Activity"),
     ("issue-field.assigned-to", "Assigned to"),
     ("issue-field.changed", "Changed"),
     ("issue-field.closed", "Closed"),
-    ("issue-field.cost-center", "Cost center"),
     ("issue-field.created", "Created"),
     ("issue-field.description", "Description"),
     ("issue-field.due-date", "Due date"),

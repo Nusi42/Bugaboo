@@ -530,6 +530,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         kind: RecordKind,
         items: &[EntityId],
     ) -> Result<ItemValues, AppError> {
+        if kind == RecordKind::Issue
+            && let Some(ahead) = locked(&self.known.ahead).as_ref()
+            && items.iter().all(|item| ahead.values.has(*item))
+        {
+            return Ok(ahead.values.clone());
+        }
         let definitions = self.field_catalogue().await?;
         let mut values: HashMap<EntityId, BTreeMap<FieldId, FieldValue>> =
             items.iter().map(|id| (*id, BTreeMap::new())).collect();

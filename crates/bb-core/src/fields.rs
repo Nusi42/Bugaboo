@@ -51,10 +51,6 @@ words! {
         TimeLeft => "time-left",
         /// *Time spent*.
         TimeSpent => "time-spent",
-        /// *Activity*.
-        Activity => "activity",
-        /// *Cost center*.
-        CostCenter => "cost-center",
     }
     messages name = "issue-field.";
 }
@@ -100,10 +96,33 @@ pub fn word_key(word: &str) -> String {
         .collect()
 }
 
-words_in_api!(
-    Field,
-    "A built-in field of the field catalogue, by its key."
-);
+/// The words of built-in fields that left the catalogue (ADR-0035, amendment of the starter
+/// fields): *Activity* and *Cost center* are own fields of time entries now. The API keeps the words
+/// in the schema of `Field`, which is frozen (ADR-0008): a request may still name them and nothing
+/// happens, and no answer names them.
+pub const RETIRED_FIELD_WORDS: [&str; 2] = ["activity", "cost-center"];
+
+#[cfg(feature = "openapi")]
+impl utoipa::PartialSchema for Field {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some(
+                "A built-in field of the field catalogue, by its key. `activity` and `cost-center` are retired: a request may name them and nothing happens, no answer names them.",
+            ))
+            .enum_values(Some(
+                Self::ALL
+                    .iter()
+                    .map(|field| field.code())
+                    .chain(RETIRED_FIELD_WORDS),
+            ))
+            .into()
+    }
+}
+
+#[cfg(feature = "openapi")]
+impl utoipa::ToSchema for Field {}
 
 /// The key of a field, built-in or own: what levels, masks, the matrix of *Field permissions*,
 /// history and `fields=` name a field by. A built-in field has its word (`assigned-to`), an own
@@ -221,10 +240,6 @@ pub enum BelongsTo {
     Issue,
     /// An issue, as the total of its time entries.
     IssueTimeTotal,
-    /// A time entry (it has a default on the issue).
-    TimeEntry,
-    /// A time entry (it has a default on the issue and on the project).
-    TimeEntryWithProjectDefault,
 }
 
 impl Field {
@@ -233,8 +248,6 @@ impl Field {
     pub const fn belongs_to(self) -> BelongsTo {
         match self {
             Self::TimeSpent => BelongsTo::IssueTimeTotal,
-            Self::Activity => BelongsTo::TimeEntry,
-            Self::CostCenter => BelongsTo::TimeEntryWithProjectDefault,
             _ => BelongsTo::Issue,
         }
     }
@@ -283,8 +296,6 @@ mod tests {
                 "estimated-time",
                 "time-left",
                 "time-spent",
-                "activity",
-                "cost-center",
             ]
         );
     }
@@ -341,7 +352,11 @@ mod tests {
             .filter(|field| field.person_kind().is_some())
             .collect();
         assert_eq!(with_person, [Field::AssignedTo, Field::ReportedBy]);
-        assert_eq!(Field::Activity.belongs_to(), BelongsTo::TimeEntry);
+        assert!(
+            RETIRED_FIELD_WORDS
+                .iter()
+                .all(|word| Field::from_code(word).is_none())
+        );
         assert_eq!(Field::TimeSpent.belongs_to(), BelongsTo::IssueTimeTotal);
     }
 }

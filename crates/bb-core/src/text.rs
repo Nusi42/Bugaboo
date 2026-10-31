@@ -162,11 +162,16 @@ pub fn plain_line(text: &str, longest: usize) -> String {
 /// `None` for a text that breaks one of these.
 #[must_use]
 pub fn clean_long(text: &str, longest: usize) -> Option<&str> {
-    let fine = text.chars().count() <= longest
-        && !text
-            .chars()
-            .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'));
+    let fine = text.chars().count() <= longest && !has_stray_control(text);
     fine.then_some(text)
+}
+
+/// Whether a long text holds a control character other than a line break or a tab: the rule of
+/// [`clean_long`] about its characters, for a caller that judges the length apart.
+#[must_use]
+pub fn has_stray_control(text: &str) -> bool {
+    text.chars()
+        .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
 }
 
 #[cfg(test)]

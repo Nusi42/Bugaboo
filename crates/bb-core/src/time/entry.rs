@@ -48,6 +48,37 @@ pub struct TimeEntry {
     pub version: i64,
 }
 
+/// A value of an own field of a time entry, as stored (TIME-13): one row per value, like
+/// `own_fields_value::StoredFieldValue`, kept in a table of its own because every part of it is
+/// about a person's time (ADR-0035, decision 1; ADR-0015).
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct TimeEntryValue {
+    /// The kind of item: always `time_entry`.
+    #[not_personal]
+    pub entity_kind: crate::event::EntityKind,
+    /// The time entry.
+    #[personal(category = "employee_time", basis = "contract")]
+    pub entity_id: crate::id::EntityId,
+    /// The field.
+    #[not_personal]
+    pub field: FieldId,
+    /// A text.
+    #[personal(category = "employee_time", basis = "contract")]
+    pub value_text: Option<String>,
+    /// A number, a yes or no, or a length of time.
+    #[personal(category = "employee_time", basis = "contract")]
+    pub value_number: Option<i64>,
+    /// A day or a moment.
+    #[personal(category = "employee_time", basis = "contract")]
+    pub value_date: Option<i64>,
+    /// A choice (an *Activity*, a *Cost center*), a person, a group or an issue.
+    #[personal(category = "employee_time", basis = "contract")]
+    pub value_ref: Option<crate::id::EntityId>,
+    /// The place among several values.
+    #[not_personal]
+    pub position: i64,
+}
+
 /// The timer of a person (TIME-01): one row for each person who ever started one, running while it
 /// names an issue. One row per person is what makes one running timer for every device.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]

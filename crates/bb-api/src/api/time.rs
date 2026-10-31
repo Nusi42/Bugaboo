@@ -15,7 +15,7 @@ use bb_app::time::{
     ChangeStartTime, EntryDetails, RunningView, StartTimer, StopTimer, SwitchTimer, ThrowAwayTimer,
     TimerQuery, TimerSaved, TimerView,
 };
-use bb_policy::{FieldMask, Masked, MaskedValue, mask_member};
+use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
@@ -26,8 +26,8 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
+use super::bodies::VersionBody;
 use super::body_id;
-use super::roles::VersionBody;
 use super::time_entries::TimeEntryItem;
 use crate::errors::{ApiError, ApiJson};
 
@@ -60,8 +60,9 @@ impl From<EntryDetailsBody> for EntryDetails {
 /// A timer that runs.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct RunningItem {
-    /// The internal ID of the issue it runs on.
-    issue: String,
+    /// The internal ID of the issue it runs on; left out for an access key that does not see it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    issue: Option<String>,
     /// The readable ID of the issue (WEB-142) while the person sees it.
     #[serde(skip_serializing_if = "Option::is_none")]
     readable_id: Option<String>,
@@ -104,7 +105,7 @@ impl From<&TimerView> for TimerItem {
 impl From<&RunningView> for RunningItem {
     fn from(view: &RunningView) -> Self {
         Self {
-            issue: view.issue.to_string(),
+            issue: view.issue.map(|issue| issue.to_string()),
             readable_id: view.readable_id.clone(),
             started_at: view.started_at.to_string(),
             runs_long: view.runs_long,
@@ -117,22 +118,23 @@ impl From<&RunningView> for RunningItem {
 pub(crate) struct TimerSavedItem {
     /// The timer as it is now.
     timer: TimerItem,
-    /// The entry that was saved; left out when the timer ran for less than a minute.
+    /// The entry that was saved, masked with the rights where its issue is; left out when the
+    /// timer ran for less than a minute.
     #[serde(skip_serializing_if = "Option::is_none")]
-    entry: Option<TimeEntryItem>,
+    #[schema(value_type = Option<TimeEntryItem>)]
+    entry: Option<Authorized<TimeEntryItem>>,
 }
 
-impl Masked for TimerSavedItem {
-    fn mask(value: &mut MaskedValue, mask: &FieldMask) {
-        mask_member::<TimeEntryItem>(value, "entry", mask);
-    }
-}
+/// The entry inside carries the mask of its own issue; the timer has no fields to mask.
+impl Masked for TimerSavedItem {}
 
-impl From<&TimerSaved> for TimerSavedItem {
-    fn from(saved: &TimerSaved) -> Self {
+impl From<TimerSaved> for TimerSavedItem {
+    fn from(saved: TimerSaved) -> Self {
         Self {
             timer: TimerItem::from(&saved.timer),
-            entry: saved.entry.as_ref().map(TimeEntryItem::from),
+            entry: saved
+                .entry
+                .map(|entry| entry.map(|view| TimeEntryItem::from(&view))),
         }
     }
 }
@@ -267,7 +269,7 @@ async fn stop_timer(
             },
         )
         .await?;
-    answer_authorized(&saved.map(|saved| TimerSavedItem::from(&saved)))
+    answer_authorized(&saved.map(TimerSavedItem::from))
 }
 
 /// Saves the time so far with the defaults of its issue and starts the timer on another issue.
@@ -306,7 +308,7 @@ async fn switch_timer(
             },
         )
         .await?;
-    answer_authorized(&saved.map(|saved| TimerSavedItem::from(&saved)))
+    answer_authorized(&saved.map(TimerSavedItem::from))
 }
 
 /// Moves the start of the running timer.

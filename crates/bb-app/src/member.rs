@@ -159,8 +159,11 @@ pub(crate) mod time_entry {
     pub(crate) const NOTE: &str = "note";
     pub(crate) const BILLABLE: &str = "billable";
     pub(crate) const STARTED_AT: &str = "started_at";
-    /// The issue a switched timer goes on with.
+    /// The timer that saved the entry: the issue it ran on (and the one a switch goes on with),
+    /// its new start after a switch, and its version.
     pub(crate) const TIMER_ISSUE: &str = "timer_issue";
+    pub(crate) const TIMER_STARTED_AT: &str = "timer_started_at";
+    pub(crate) const TIMER_VERSION: &str = "timer_version";
 }
 
 /// The members of the timer of a person (TIME-01).

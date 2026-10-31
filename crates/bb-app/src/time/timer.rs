@@ -74,10 +74,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((timer, running))
     }
 
-    /// The date a moment is on for a person: their day of it, in their time zone.
-    async fn day_of(&self, person: UserId, moment: Timestamp) -> Result<Date, AppError> {
-        let layers = self.setting_layers_of(Some(person)).await?;
-        Ok(date_of(moment, Region::of(&layers).zone()))
+    /// The date a moment is on for a person (their day of it, in their time zone), with the
+    /// person's *Region* it was worked out by.
+    pub(super) async fn day_of(
+        &self,
+        person: UserId,
+        moment: Timestamp,
+    ) -> Result<(Date, Region), AppError> {
+        let region = Region::of(&self.setting_layers_of(Some(person)).await?);
+        Ok((date_of(moment, region.zone()), region))
     }
 
     /// The marks of the starter fields with the own field each marks, by the code of the mark.
@@ -99,12 +104,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         timer: Option<&Timer>,
     ) -> Result<TimerView, AppError> {
         let running = match timer.and_then(Timer::running) {
-            Some(running) => Some(RunningView {
-                issue: running.issue,
-                readable_id: self.readable_id_for(actor, running.issue).await?,
-                started_at: running.started_at,
-                runs_long: running.warned_at.is_some(),
-            }),
+            Some(running) => {
+                let readable_id = self.readable_id_for(actor, running.issue).await?;
+                // An access key that does not see the issue is not told which one it is.
+                let issue = (actor.key.is_none() || readable_id.is_some()).then_some(running.issue);
+                Some(RunningView {
+                    issue,
+                    readable_id,
+                    started_at: running.started_at,
+                    runs_long: running.warned_at.is_some(),
+                })
+            }
             None => None,
         };
         Ok(TimerView {
@@ -116,8 +126,14 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The job that tells the person when the timer of `person` that started at `started_at` runs
     /// long.
-    fn long_timer_job(person: UserId, started_at: Timestamp) -> Result<LongTimerJob, AppError> {
+    fn long_timer_job(
+        &self,
+        person: UserId,
+        started_at: Timestamp,
+    ) -> Result<LongTimerJob, AppError> {
         Ok(LongTimerJob {
+            id: bb_core::id::JobId::generate(&mut self.ids())
+                .map_err(|error| AppError::Internal(error.to_string()))?,
             kind: JobKind::TimersLongRunning.name()?,
             payload: json!({
                 payload::PERSON: person.to_string(),
@@ -130,6 +146,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// A job of a long timer, ready to be queued inside the change that starts the timer.
 struct LongTimerJob {
+    id: bb_core::id::JobId,
     kind: bb_core::technical::TechnicalName,
     payload: Value,
     run_at: Timestamp,
@@ -140,11 +157,60 @@ impl LongTimerJob {
     async fn queue<S: AuthStore>(
         &self,
         transaction: &mut S::Transaction,
-        id: bb_core::id::JobId,
         now: Timestamp,
     ) -> Result<(), S::Error> {
-        S::enqueue_job(transaction, id, &self.kind, &self.payload, self.run_at, now).await
+        S::enqueue_job(
+            transaction,
+            self.id,
+            &self.kind,
+            &self.payload,
+            self.run_at,
+            now,
+        )
+        .await
     }
+}
+
+/// Writes the timer of a person that is still at `version`; one that changed meanwhile stops the
+/// change with `edit.version-changed`.
+async fn write_timer<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    timer: &Timer,
+    version: i64,
+    why: &Why,
+) -> Result<(), S::Error> {
+    if S::put_timer(transaction, timer, Some(Version::new(version))).await? {
+        Ok(())
+    } else {
+        Err(why.stop::<S>(ErrorCode::VersionChanged))
+    }
+}
+
+/// The change of a timer that stands still from now on: it ran on `running`'s issue.
+fn issue_cleared(running: &Running) -> FieldChange {
+    FieldChange {
+        field: member::ISSUE.to_owned(),
+        before: Some(json!(running.issue.to_string())),
+        after: None,
+    }
+}
+
+/// The changes of the timer inside the event of the entry a stop or a switch saved, named as the
+/// timer's own (`timer_…`): so they do not read as the entry's (a `version` there would say the
+/// new entry counted up).
+fn as_the_timers(changes: Vec<FieldChange>) -> Vec<FieldChange> {
+    changes
+        .into_iter()
+        .map(|mut change| {
+            let name = match change.field.as_str() {
+                member::ISSUE | entry_member::TIMER_ISSUE => entry_member::TIMER_ISSUE,
+                member::STARTED_AT => entry_member::TIMER_STARTED_AT,
+                _ => entry_member::TIMER_VERSION,
+            };
+            name.clone_into(&mut change.field);
+            change
+        })
+        .collect()
 }
 
 /// The whole minutes a timer that started at `started_at` ran until `now`, rounded down.
@@ -211,9 +277,7 @@ pub async fn start_timer<S: AuthStore>(
         entity(RecordKind::Timer, actor.person.id),
         changes,
     )?;
-    let job = Ctx::<S>::long_timer_job(actor.person.id, now)?;
-    let job_id = bb_core::id::JobId::generate(&mut ctx.ids())
-        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let job = ctx.long_timer_job(actor.person.id, now)?;
     let why = Why::default();
     let (stopped, written) = (why.clone(), started.clone());
     ctx.store()
@@ -222,7 +286,7 @@ pub async fn start_timer<S: AuthStore>(
                 if !S::put_timer(transaction, &written, before).await? {
                     return Err(stopped.stop::<S>(ErrorCode::TimerRunning));
                 }
-                job.queue::<S>(transaction, job_id, now).await
+                job.queue::<S>(transaction, now).await
             })
         })
         .await
@@ -260,7 +324,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let (issue, held) = self
             .bookable_issue(actor, &running.issue.to_string())
             .await?;
-        let date = self.day_of(actor.person.id, running.started_at).await?;
+        let (date, _) = self.day_of(actor.person.id, running.started_at).await?;
         let entry = self
             .new_entry(
                 actor,
@@ -303,11 +367,7 @@ fn saving_event<S: AuthStore>(
     match &saving.entry {
         Some(made) => {
             let mut changes = made.changes();
-            changes.extend(
-                timer_changes
-                    .into_iter()
-                    .filter(|change| change.field == entry_member::TIMER_ISSUE),
-            );
+            changes.extend(as_the_timers(timer_changes));
             ctx.event(
                 by(actor.person.id),
                 entity(RecordKind::TimeEntry, made.entry.id),
@@ -342,14 +402,7 @@ pub async fn stop_timer<S: AuthStore>(
         version: next(timer.version),
         ..timer.clone()
     };
-    let changes = vec![
-        FieldChange {
-            field: member::ISSUE.to_owned(),
-            before: Some(json!(running.issue.to_string())),
-            after: None,
-        },
-        counted_up(timer.version),
-    ];
+    let changes = vec![issue_cleared(&running), counted_up(timer.version)];
     let event = saving_event(ctx, &actor, &saving, changes)?;
     let made = saving.entry.as_ref().map(|made| made.entry.clone());
     let why = Why::default();
@@ -357,9 +410,7 @@ pub async fn stop_timer<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::put_timer(transaction, &written, Some(Version::new(timer.version))).await? {
-                    return Err(halted.stop::<S>(ErrorCode::VersionChanged));
-                }
+                write_timer::<S>(transaction, &written, timer.version, &halted).await?;
                 match &saving.entry {
                     Some(entry) => entry.write::<S>(transaction, &halted).await,
                     None => Ok(()),
@@ -410,21 +461,17 @@ pub async fn switch_timer<S: AuthStore>(
     ];
     let event = saving_event(ctx, &actor, &saving, changes)?;
     let made = saving.entry.as_ref().map(|made| made.entry.clone());
-    let job = Ctx::<S>::long_timer_job(actor.person.id, now)?;
-    let job_id = bb_core::id::JobId::generate(&mut ctx.ids())
-        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let job = ctx.long_timer_job(actor.person.id, now)?;
     let why = Why::default();
     let (halted, written) = (why.clone(), switched.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::put_timer(transaction, &written, Some(Version::new(timer.version))).await? {
-                    return Err(halted.stop::<S>(ErrorCode::VersionChanged));
-                }
+                write_timer::<S>(transaction, &written, timer.version, &halted).await?;
                 if let Some(entry) = &saving.entry {
                     entry.write::<S>(transaction, &halted).await?;
                 }
-                job.queue::<S>(transaction, job_id, now).await
+                job.queue::<S>(transaction, now).await
             })
         })
         .await
@@ -476,18 +523,14 @@ pub async fn change_start_time<S: AuthStore>(
             counted_up(timer.version),
         ],
     )?;
-    let job = Ctx::<S>::long_timer_job(actor.person.id, input.started_at)?;
-    let job_id = bb_core::id::JobId::generate(&mut ctx.ids())
-        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let job = ctx.long_timer_job(actor.person.id, input.started_at)?;
     let why = Why::default();
     let (halted, written) = (why.clone(), moved.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::put_timer(transaction, &written, Some(Version::new(timer.version))).await? {
-                    return Err(halted.stop::<S>(ErrorCode::VersionChanged));
-                }
-                job.queue::<S>(transaction, job_id, now).await
+                write_timer::<S>(transaction, &written, timer.version, &halted).await?;
+                job.queue::<S>(transaction, now).await
             })
         })
         .await
@@ -514,25 +557,14 @@ pub async fn throw_away_timer<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Timer, actor.person.id),
-        vec![
-            FieldChange {
-                field: member::ISSUE.to_owned(),
-                before: Some(json!(running.issue.to_string())),
-                after: None,
-            },
-            counted_up(timer.version),
-        ],
+        vec![issue_cleared(&running), counted_up(timer.version)],
     )?;
     let why = Why::default();
     let (halted, written) = (why.clone(), stopped.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::put_timer(transaction, &written, Some(Version::new(timer.version))).await? {
-                    Ok(())
-                } else {
-                    Err(halted.stop::<S>(ErrorCode::VersionChanged))
-                }
+                write_timer::<S>(transaction, &written, timer.version, &halted).await
             })
         })
         .await

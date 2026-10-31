@@ -98,7 +98,7 @@ impl EditableRecords for TestNotes {
 
     fn shows(&self, _record: &EntityRef, field: &str) -> Shown {
         match field {
-            "description" | "title" | "status" | "cost-center" => Shown::Plain,
+            "description" | "title" | "status" | "estimated-time" => Shown::Plain,
             "assigned-to" => Shown::Person(PeopleKind::AssignedTo),
             _ => Shown::Hidden,
         }

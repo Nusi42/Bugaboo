@@ -64,8 +64,6 @@ fn belongs_to(thing: BelongsTo) -> &'static str {
     match thing {
         BelongsTo::Issue => "issue",
         BelongsTo::IssueTimeTotal => "issue (total of its time entries)",
-        BelongsTo::TimeEntry => "time entry (default on the issue)",
-        BelongsTo::TimeEntryWithProjectDefault => "time entry (default on the issue and project)",
     }
 }
 

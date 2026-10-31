@@ -8,7 +8,7 @@ use bb_core::time::Minutes;
 use sea_query::{Expr, ExprTrait as _, Func, Query};
 
 use super::order::bigint;
-use super::statements::{read_minutes, spent_statement};
+use super::statements::{read_spent, spent_statement};
 use super::{SEARCH_TIME, failed, scalar, stopped};
 use crate::auth::AuthStorage;
 use crate::schema::{IssueRow, TimeEntryRow};
@@ -55,7 +55,7 @@ impl AuthStorage {
             .await
             .map_err(stopped)?;
         rows.first()
-            .map(read_minutes)
+            .map(read_spent)
             .transpose()
             .map_err(failed)
             .map(Option::unwrap_or_default)

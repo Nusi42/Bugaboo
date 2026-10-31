@@ -3,6 +3,7 @@
 //! issue and its projects, the starter fields found by their mark, and a long timer told once.
 
 use axum::http::StatusCode;
+use bb_app::access::StartingRole;
 use bb_app::time::LONG_TIMER_HOURS;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
@@ -394,6 +395,170 @@ async fn time_13_a_required_cost_center_refuses_an_entry_without_one() -> TestRe
         // An issue that has the value as its default needs nothing more.
         set_on_issue(&mut ada, &issue, &cost_center, &product).await?;
         ok(&book(&mut ada, &issue, 30).await?)?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_13_a_person_with_a_role_in_one_project_sees_the_fields_of_their_own_entries()
+-> TestResult {
+    each_database("time_13_project_role", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let activity = starter(&mut ada, "activity").await?;
+        let testing = choice_named(&field(&mut ada, &activity).await?, "Testing")?;
+        // Tom holds his role in ACME only: the organization gives him nothing.
+        let (mut tom, _) = site.person_in_acme(StartingRole::TeamMember, "tom").await?;
+        let booked = tom
+            .send(
+                "POST",
+                MY_ENTRIES,
+                Some(json!({
+                    "issue": issue,
+                    "date": "2027-01-14",
+                    "minutes": 20,
+                    "entry": {"fields": {&activity: testing}},
+                })),
+            )
+            .await?;
+        assert_eq!(ok(&booked)?["own_fields"][&activity], json!(testing));
+        let week = tom
+            .send(
+                "GET",
+                &format!("{MY_ENTRIES}?from=2027-01-11&to=2027-01-17&fields=id,own_fields"),
+                None,
+            )
+            .await?;
+        assert_eq!(
+            ok(&week)?["items"][0]["own_fields"][&activity],
+            json!(testing),
+            "{}",
+            week.body
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_02_two_bookings_at_once_never_pass_the_most_entries_of_a_date() -> TestResult {
+    each_database("time_02_most_entries_at_once", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let most = usize::try_from(bb_app::time::TIME_ENTRIES_PER_DAY_MAX)?;
+        for _ in 1..most {
+            ok(&book(&mut ada, &issue, 1).await?)?;
+        }
+        let mut other = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let (first, second) = tokio::join!(book(&mut ada, &issue, 1), book(&mut other, &issue, 1));
+        let (first, second) = (first?, second?);
+        let mut codes = [first.code().to_owned(), second.code().to_owned()];
+        codes.sort();
+        assert_eq!(
+            codes,
+            ["", "time.too-many-entries"],
+            "{} {}",
+            first.body,
+            second.body
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_01_a_stop_on_two_devices_or_a_stop_and_a_switch_save_the_time_once() -> TestResult {
+    each_database("time_01_stop_twice", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut laptop) = Site::start(&rig, &app).await?;
+        let first = key_of(&site.create(&mut laptop, "Printer jams").await?)?;
+        let second = key_of(&site.create(&mut laptop, "Scanner is slow").await?)?;
+        let mut phone = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        for other_action in ["stop", "switch"] {
+            let version = ok(&start(&mut laptop, &first).await?)?["version"].clone();
+            rig.clock.advance(10 * MINUTE);
+            let stop = json!({"version": version});
+            let other = if other_action == "stop" {
+                stop.clone()
+            } else {
+                json!({"version": version, "issue": second})
+            };
+            let (stop_path, other_path) =
+                (format!("{TIMER}/stop"), format!("{TIMER}/{other_action}"));
+            let (a, b) = tokio::join!(
+                laptop.send("POST", &stop_path, Some(stop)),
+                phone.send("POST", &other_path, Some(other))
+            );
+            let (a, b) = (a?, b?);
+            let saved = [&a, &b]
+                .iter()
+                .filter(|reply| reply.status == StatusCode::OK)
+                .count();
+            assert_eq!(saved, 1, "{other_action}: {} {}", a.body, b.body);
+            // Whatever won, the issue has the ten minutes once more, never twice.
+            let entries = laptop
+                .send("GET", &format!("{ISSUES}/{first}/time-entries"), None)
+                .await?;
+            let count = ok(&entries)?["items"].as_array().map_or(0, Vec::len);
+            let expected = if other_action == "stop" { 1 } else { 2 };
+            assert_eq!(count, expected, "{}", entries.body);
+            // A switch that won leaves the timer running; stop it for the next round.
+            let timer = timer_of(&mut laptop).await?;
+            if timer.get("running").is_some() {
+                ok(&laptop
+                    .send(
+                        "POST",
+                        &format!("{TIMER}/throw-away"),
+                        Some(json!({"version": timer["version"]})),
+                    )
+                    .await?)?;
+            }
+            rig.clock.advance(MINUTE);
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_13_the_retired_words_of_activity_and_cost_center_are_accepted_and_change_nothing()
+-> TestResult {
+    each_database("time_13_retired_words", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let roles = ada.send("GET", "/api/v1/roles", None).await?;
+        let role = ok(&roles)?["items"][0]["id"]
+            .as_str()
+            .ok_or("no role")?
+            .to_owned();
+        for word in bb_core::fields::RETIRED_FIELD_WORDS {
+            let set = ada
+                .send(
+                    "PUT",
+                    &format!("/api/v1/field-permissions/{role}/{word}"),
+                    Some(json!({"level": "hidden"})),
+                )
+                .await?;
+            assert_eq!(set.status, StatusCode::NO_CONTENT, "{word}: {}", set.body);
+        }
+        // No answer names them.
+        let table = ada.send("GET", "/api/v1/field-permissions", None).await?;
+        let text = ok(&table)?.to_string();
+        assert!(
+            !text.contains("\"cost-center\"") && !text.contains("\"activity\""),
+            "{text}"
+        );
+        // The schema of the frozen API still holds them.
+        let description: Value = serde_json::from_str(bb_api::openapi::json())?;
+        let words = &description["components"]["schemas"]["Field"]["enum"];
+        assert!(
+            words
+                .as_array()
+                .is_some_and(|all| all.contains(&json!("cost-center")))
+        );
         Ok(())
     })
     .await

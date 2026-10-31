@@ -41,7 +41,7 @@ fn changed_by_ada(world: &World, notes: &TestNotes) -> Result<EntityRef, String>
                 after: Some(json!("Done")),
             },
             FieldChange {
-                field: "cost-center".to_owned(),
+                field: "estimated-time".to_owned(),
                 before: None,
                 after: Some(json!("4711")),
             },
@@ -72,7 +72,7 @@ async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome
     .await?
     .into_value()
     .id;
-    for field in [Field::Status, Field::CostCenter] {
+    for field in [Field::Status, Field::EstimatedTime] {
         set_level(
             &world.ctx(),
             SetFieldLevel {

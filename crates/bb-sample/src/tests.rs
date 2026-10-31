@@ -518,7 +518,7 @@ async fn the_sample_shows_the_role_mix_through_check_access() -> TestResult {
             );
 
             // Ana is a Contributor on Website because the group External has the role there;
-            // her Cost center is what the exit demo hides.
+            // her Due date is what the exit demo hides.
             let ana = checking
                 .ana_on_website
                 .ok_or("no answer for Ana on Website")?;
@@ -532,11 +532,11 @@ async fn the_sample_shows_the_role_mix_through_check_access() -> TestResult {
                 "External"
             );
             assert_eq!(text(&see["reasons"][0], &["role", "name"])?, "Contributor");
-            let cost_center = ana["fields"]
+            let due_date = ana["fields"]
                 .as_array()
-                .and_then(|all| all.iter().find(|f| f["subject"] == "cost-center"))
-                .ok_or("no cost-center")?;
-            assert_eq!(cost_center["level"], "can-see");
+                .and_then(|all| all.iter().find(|f| f["subject"] == "due-date"))
+                .ok_or("no due-date")?;
+            assert_eq!(due_date["level"], "can-see");
             Ok(())
         },
     )

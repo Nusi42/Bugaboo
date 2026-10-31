@@ -52,7 +52,7 @@ function previewWithEverything() {
             loses: [],
             fields: [
               {
-                field: { code: "cost-center", message_key: "issue-field.cost-center" },
+                field: { code: "due-date", message_key: "issue-field.due-date" },
                 before: { code: "hidden", message_key: "field-level.hidden" },
                 after: { code: "can-see", message_key: "field-level.can-see" },
               },
@@ -82,7 +82,7 @@ export function everySentence(): readonly string[] {
     t("projects.line-roles", { before: "Viewer", after: "Team member" }),
     t("projects.line-can-now", { things: t("permission.create-sub-projects") }),
     t("projects.line-field", {
-      field: t("issue-field.cost-center"),
+      field: t("issue-field.due-date"),
       before: t("field-level.hidden"),
       after: t("field-level.can-see"),
     }),

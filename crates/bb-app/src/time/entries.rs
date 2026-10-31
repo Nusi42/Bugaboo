@@ -75,6 +75,8 @@ impl NewEntry {
         transaction: &mut S::Transaction,
         why: &Why,
     ) -> Result<(), S::Error> {
+        // The person's time is held first, so two bookings at once count one after the other.
+        S::hold_time_of(transaction, self.entry.person).await?;
         let booked = S::entries_on_date_in(transaction, self.entry.person, self.entry.date).await?;
         if room_for_an_entry(booked).is_err() {
             return Err(why.stop::<S>(ErrorCode::TooManyTimeEntries));
@@ -250,13 +252,16 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Entries as their own person sees them, read together for a page: the issues, the values of
     /// own fields and the setting of *Billable* once, the rights and the projects once for each
-    /// project (PERF-N1). The issue of an entry the person no longer sees keeps the entry in their
-    /// list, without its readable ID and with the own fields the organization lets them see.
+    /// project (PERF-N1). Each entry is masked with the rights where its issue is, so a field a
+    /// person may see through a role in that project is in their own entry. The issue of an entry
+    /// the person no longer sees keeps the entry in their list, without its readable ID and with
+    /// the own fields the organization lets them see; an access key is told nothing of an entry
+    /// whose issue it does not see (AUTH-07).
     pub(super) async fn entry_views(
         &self,
         actor: &Actor,
         entries: &[TimeEntry],
-    ) -> Result<Vec<TimeEntryView>, AppError> {
+    ) -> Result<Vec<Authorized<TimeEntryView>>, AppError> {
         let mut issue_ids: Vec<IssueId> = entries.iter().map(|entry| entry.issue).collect();
         issue_ids.sort_unstable();
         issue_ids.dedup();
@@ -283,8 +288,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 ),
                 None => (None, None),
             };
-            let held = held.unwrap_or_else(|| Arc::clone(&organization));
-            views.push(TimeEntryView {
+            let held = match held {
+                Some(held) => held,
+                None if actor.key.is_some() => continue,
+                None => Arc::clone(&organization),
+            };
+            let view = TimeEntryView {
                 id: entry.id,
                 issue: entry.issue,
                 readable_id: line.map(|line| line.key),
@@ -299,7 +308,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     entry.id.into(),
                 ),
                 version: entry.version,
-            });
+            };
+            views.push(held.authorize(view));
         }
         Ok(views)
     }
@@ -309,7 +319,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         entry: &TimeEntry,
-    ) -> Result<TimeEntryView, AppError> {
+    ) -> Result<Authorized<TimeEntryView>, AppError> {
         self.entry_views(actor, std::slice::from_ref(entry))
             .await?
             .pop()
@@ -355,8 +365,7 @@ pub async fn add_time<S: AuthStore>(
         })
         .await
         .map_err(|error| why.said_or_failed::<S>(&error))?;
-    let view = ctx.entry_view(&actor, &entry).await?;
-    Ok(held.authorize(view))
+    ctx.entry_view(&actor, &entry).await
 }
 
 /// Changes one of the person's own entries: its date, length, note, *Billable* or the values of
@@ -447,6 +456,7 @@ pub async fn change_time_entry<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if moved {
+                    S::hold_time_of(transaction, written.person).await?;
                     let booked =
                         S::entries_on_date_in(transaction, written.person, written.date).await?;
                     if room_for_an_entry(booked).is_err() {
@@ -466,8 +476,7 @@ pub async fn change_time_entry<S: AuthStore>(
                 entry_stale(&actor, entry.id, issue.project)
             })
         })?;
-    let view = ctx.entry_view(&actor, &changed).await?;
-    Ok(held.authorize(view))
+    ctx.entry_view(&actor, &changed).await
 }
 
 /// Deletes one of the person's own entries, with the values of its own fields.

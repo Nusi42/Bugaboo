@@ -70,6 +70,10 @@ routes = [
 reason = "Making a new record has no earlier version that could be stale; a name that is taken is refused on its own (name.taken)."
 
 [[exempt]]
+routes = ["DELETE /api/v1/me/time-entries/{entry}"]
+reason = "A DELETE has no body: the deletion of one's own time entry takes the version it read in the query (`?version=`), and a stale one is refused with the conflict (ADR-0035)."
+
+[[exempt]]
 routes = ["POST /api/v1/me/timer", "POST /api/v1/me/time-entries"]
 reason = "Starting a timer and booking time by hand make a new run or a new entry: there is nothing earlier that could be stale. A timer that runs already, also one another device started a moment before, is refused on its own (timer.running, ADR-0035 decision 3)."
 

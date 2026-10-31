@@ -25,6 +25,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::bodies::VersionBody;
 use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -118,16 +119,6 @@ impl From<&RoleView> for RoleBody {
             permissions: role.permissions.clone(),
         }
     }
-}
-
-/// A change that needs nothing but the version of the record it is made on: giving a role its
-/// starting permissions back, throwing the timer away, deleting a time entry. One schema for all of
-/// them; its name is the one the API was frozen with (ADR-0008).
-#[derive(Deserialize, ToSchema)]
-#[schema(as = ResetRoleBody)]
-pub(crate) struct VersionBody {
-    /// The version of the record the person looked at; a change made meanwhile stops this one.
-    pub(crate) version: i64,
 }
 
 /// What a role is used for, as far as the person who asks may see.

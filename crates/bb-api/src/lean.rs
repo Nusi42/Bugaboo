@@ -446,7 +446,7 @@ mod tests {
         const FIELDS: &'static [(&'static str, Field)] = &[
             ("title", Field::Title),
             ("status", Field::Status),
-            ("cost_center", Field::CostCenter),
+            ("cost_center", Field::EstimatedTime),
         ];
     }
 
@@ -553,9 +553,10 @@ mod tests {
     #[tokio::test]
     async fn perf_02_a_list_refuses_an_unknown_field_like_a_hidden_one() {
         // `salary` does not exist; `cost_center` exists but is hidden from this person.
-        let (unknown_status, unknown) = ask(app(Some(Field::CostCenter)), "fields=id,salary").await;
+        let (unknown_status, unknown) =
+            ask(app(Some(Field::EstimatedTime)), "fields=id,salary").await;
         let (hidden_status, hidden) =
-            ask(app(Some(Field::CostCenter)), "fields=id,cost_center").await;
+            ask(app(Some(Field::EstimatedTime)), "fields=id,cost_center").await;
         assert_eq!(unknown_status, StatusCode::BAD_REQUEST);
         assert_eq!(hidden_status, unknown_status);
         assert_eq!(unknown["code"], "request.unknown-field");

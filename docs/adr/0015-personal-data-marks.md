@@ -15,6 +15,10 @@ Every stored field is marked in its entity definition with a derive attribute, f
 - GDPR compliance becomes part of the type system and CI, not a checklist.
 - Events and logs follow the same marks.
 
+## Amendment M6 WP-05: marks by the kind of record
+
+A table that holds rows about many kinds of record (the domain events, the history) marks a field once for every row, and may also mark it for the rows of one kind: `#[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]`, once for each kind, beside the field's own mark. In those rows the data is about the person of that record (the person of a time entry, of a work day), not the actor of the row. `#[derive(Entity)]` writes the marks into `FieldMark::by_kind` (a kind is a word of `RecordKind`, checked when the program is built), and the personal-data page lists each one under its field. The working hours of WP-06 mark the `reason` and the `changes` of the events of a work day the same way. Enforced by: DATA-MARKS (the build of the marks), DOC-GENERATED (the page).
+
 ## Alternatives considered
 
 - **A hand-maintained spreadsheet of personal data:** drifts. Rejected.

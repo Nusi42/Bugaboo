@@ -3,7 +3,6 @@
 //! `time_entry`, and go with it.
 
 use bb_app::time::{EntryCursor, TimeStore};
-use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::{IssueId, TimeEntryId, UserId};
 use bb_core::time::entry::{StarterFieldMark, TimeEntry, Timer};
 use bb_core::version::Version;
@@ -11,13 +10,12 @@ use jiff::Timestamp;
 use jiff::civil::Date;
 use sea_query::{Cond, Expr, ExprTrait as _, Func, Order, Query, SelectStatement};
 
-use super::timer::{insert_starter_field, put_timer, starter_fields_in, timer_in};
+use super::timer::{hold_time_of, insert_starter_field, put_timer, starter_fields_in, timer_in};
 use super::{Answered, read_day, read_minutes, stored_day};
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId as _, Transaction, from_micros, to_micros};
+use crate::db::{Database, Row, StoredId as _, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
-use crate::fields::kind_text;
-use crate::schema::{FieldValueRow, TimeEntryRow};
+use crate::schema::{TimeEntryRow, TimeEntryValueRow};
 use crate::search::scalar;
 
 /// The microseconds in a minute: the end of an entry with a start is its start plus its length.
@@ -61,6 +59,40 @@ fn read_entry(row: &Row) -> Result<TimeEntry, StoreError> {
 /// A column of an entry, named with its table.
 fn column(name: TimeEntryRow) -> Expr {
     Expr::col((TimeEntryRow::Table, name))
+}
+
+/// The time entries on an issue, newest first, a page after `after`.
+async fn entries_of_issue(
+    database: &Database,
+    issue: IssueId,
+    after: EntryCursor,
+    limit: u64,
+) -> Result<Vec<TimeEntry>, StoreError> {
+    let mut select = entry_select();
+    select.and_where(column(TimeEntryRow::Issue).eq(issue.stored()));
+    if let Some(after) = after {
+        select.and_where(column(TimeEntryRow::Id).lt(after.stored()));
+    }
+    select
+        .order_by((TimeEntryRow::Table, TimeEntryRow::Id), Order::Desc)
+        .limit(limit);
+    database
+        .fetch_all(&select)
+        .await?
+        .iter()
+        .map(read_entry)
+        .collect()
+}
+
+impl Database {
+    /// Every time entry on an issue, newest first: what the check after a load run reads.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_time_entries(&self, issue: IssueId) -> Result<Vec<TimeEntry>, StoreError> {
+        entries_of_issue(self, issue, None, u64::MAX >> 1).await
+    }
 }
 
 impl TimeStore for AuthStorage {
@@ -177,20 +209,7 @@ impl TimeStore for AuthStorage {
         after: EntryCursor,
         limit: u64,
     ) -> Result<Vec<TimeEntry>, StoreError> {
-        let mut select = entry_select();
-        select.and_where(column(TimeEntryRow::Issue).eq(issue.stored()));
-        if let Some(after) = after {
-            select.and_where(column(TimeEntryRow::Id).lt(after.stored()));
-        }
-        select
-            .order_by((TimeEntryRow::Table, TimeEntryRow::Id), Order::Desc)
-            .limit(limit);
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_entry)
-            .collect()
+        entries_of_issue(self.database(), issue, after, limit).await
     }
 
     async fn put_timer(
@@ -199,6 +218,10 @@ impl TimeStore for AuthStorage {
         version: Option<Version>,
     ) -> Result<bool, StoreError> {
         put_timer(transaction, timer, version).await
+    }
+
+    async fn hold_time_of(transaction: &mut Transaction, person: UserId) -> Result<(), StoreError> {
+        hold_time_of(transaction, person).await
     }
 
     async fn insert_time_entry(
@@ -259,12 +282,8 @@ impl TimeStore for AuthStorage {
         }
         let mut values = Query::delete();
         values
-            .from_table(FieldValueRow::Table)
-            .and_where(
-                Expr::col(FieldValueRow::EntityKind)
-                    .eq(kind_text(&EntityKind::from(RecordKind::TimeEntry))),
-            )
-            .and_where(Expr::col(FieldValueRow::EntityId).eq(id.stored()));
+            .from_table(TimeEntryValueRow::Table)
+            .and_where(Expr::col(TimeEntryValueRow::EntityId).eq(id.stored()));
         transaction.execute(&values).await?;
         Ok(true)
     }

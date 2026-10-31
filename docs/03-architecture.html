@@ -773,8 +773,6 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <tr><td>Estimated time</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">H</td></tr>
 <tr><td>Time left</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">H</td></tr>
 <tr><td>Time spent</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">H</td></tr>
-<tr><td>Activity</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">H</td></tr>
-<tr><td>Cost center</td><td class="align-center">C</td><td class="align-center">C</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">S</td><td class="align-center">H</td></tr>
 </tbody></table>
 </div>
 <!-- END GENERATED starting-field-levels -->
@@ -814,8 +812,6 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <tr><td><code>estimated-time</code></td><td>Estimated time</td><td>issue</td><td>–</td></tr>
 <tr><td><code>time-left</code></td><td>Time left</td><td>issue</td><td>–</td></tr>
 <tr><td><code>time-spent</code></td><td>Time spent</td><td>issue (total of its time entries)</td><td>–</td></tr>
-<tr><td><code>activity</code></td><td>Activity</td><td>time entry (default on the issue)</td><td>–</td></tr>
-<tr><td><code>cost-center</code></td><td>Cost center</td><td>time entry (default on the issue and project)</td><td>–</td></tr>
 </tbody></table>
 </div>
 <!-- END GENERATED field-catalogue -->
@@ -2183,6 +2179,8 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </ul>
 <h5>Compatible later (not in the freeze)</h5>
 <p>These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared <code>400</code> and <code>409</code> answers (B2), the open <code>fields</code> maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a <code>truncated</code> member of the list of workflows (M4-F180), and an optional <code>version</code> in the body of a change of a person's own setting and the same member in the answer (M5-F97, ADR-0018).</p>
+<h4>Amendment M6 WP-05: a retired word of a frozen enum</h4>
+<p>A word of a frozen enum may leave the code when an amendment of the decision that owns it says so: the schema keeps the word marked retired, a request that names it is accepted with no effect, and no answer names it. The first case is <code>activity</code> and <code>cost-center</code> of <code>Field</code> (ADR-0035, amendment WP-05). The frozen copy is not written again.</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Hand-written TypeScript types:</strong> drift. Rejected.</li>
@@ -2366,6 +2364,8 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li>GDPR compliance becomes part of the type system and CI, not a checklist.</li>
 <li>Events and logs follow the same marks.</li>
 </ul>
+<h4>Amendment M6 WP-05: marks by the kind of record</h4>
+<p>A table that holds rows about many kinds of record (the domain events, the history) marks a field once for every row, and may also mark it for the rows of one kind: <code>#[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]</code>, once for each kind, beside the field's own mark. In those rows the data is about the person of that record (the person of a time entry, of a work day), not the actor of the row. <code>#[derive(Entity)]</code> writes the marks into <code>FieldMark::by_kind</code> (a kind is a word of <code>RecordKind</code>, checked when the program is built), and the personal-data page lists each one under its field. The working hours of WP-06 mark the <code>reason</code> and the <code>changes</code> of the events of a work day the same way. Enforced by: DATA-MARKS (the build of the marks), DOC-GENERATED (the page).</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>A hand-maintained spreadsheet of personal data:</strong> drifts. Rejected.</li>
@@ -3712,7 +3712,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h5>2. Who books time: <em>Book time</em> (M6-Q4)</h5>
 <ul>
 <li>A new project permission, <em><strong>Book time</strong></em>: book one's own time on an issue one can see. The starting roles from <em>Contributor</em> up have it; <em>Viewer</em> and <em>Guest</em> do not. Its row in the catalogue (topic <em>Time</em>, kind, starting values) is in ADR-0025, amendment M6.</li>
-<li>It also covers changing and deleting one's own entries. Nobody changes or deletes another person's entries in M6; that is TIME-06 (1.0).</li>
+<li>It also covers changing and deleting one's own entries. The timer itself is the person's own (<code>own-account</code>): an access key reads it, and a key that holds any permission that changes something may stop, switch, move or throw away its owner's timer, the same rule as for <em>My settings</em> (<code>Actor::may_change_own</code>); <em>Book time</em> is still judged on every issue whose time is saved. Nobody changes or deletes another person's entries in M6; that is TIME-06 (1.0).</li>
 <li>Enforced by: ARCH-PERMS (every route of time declares it or <code>own-account</code>), SEC-MATRIX (the routes of the timer and of time entries for every starting role).</li>
 </ul>
 <h5>3. The timer (M6-Q5)</h5>
@@ -3843,6 +3843,9 @@ A change is a new or changed start, end, period or break, or the end of a day le
 <li><strong>No AI tool reads working hours.</strong> The tool registry has no tool that reads work days, breaks, warnings or the totals of a person, and none that reads another person's time entries (ADR-0013, COMP-10).</li>
 <li>Enforced by: SEC-MATRIX (no route of time takes an order by person or by a total), ARCH-AI-TOOLS (no tool reaches the use cases of working hours), and the tests <code>priv_09_…</code> of WP-05 and WP-06.</li>
 </ul>
+<h4>Amendment (WP-05): <em>Activity</em> and <em>Cost center</em> leave the catalogue, the API keeps their words</h4>
+<p><em>Activity</em> and <em>Cost center</em> are own fields of time entries (decision 1), so the values <code>Activity</code> and <code>CostCenter</code> of the built-in <code>Field</code> of <code>bb-core</code> are gone, with their starting levels and their rows in the generated field table. The API was frozen with the words <code>activity</code> and <code>cost-center</code> in the schema <code>Field</code> (ADR-0008, amendment M4), and API v1 does not take a word away: the schema keeps them, marked retired (<code>bb_core::fields::RETIRED_FIELD_WORDS</code>). A request that names one is accepted and nothing happens (a level of the field is not set, a layout places nothing, a rule of a workflow asks for nothing); no answer names them, because no field of the catalogue is either. The mapping is at the edge of the API only (<code>bb_api::api::is_retired_field</code>); no frozen copy is written again. Enforced by: ARCH-API-FREEZE (the schema still holds both words), and the test of <code>bb-core</code> that no field of the catalogue has a retired word.</p>
+<p><strong>The values of the own fields of time entries</strong> are kept in a table of their own, <code>time_entry_value</code>, with the columns of <code>field_value</code> and every part marked <code>employee_time</code>, basis contract (ADR-0015), instead of the shared <code>field_value</code>, whose marks are those of issues and projects. The rows of the domain events and of the history about a time entry or a timer are marked the same way by the kind of their record (<code>#[personal_for(kind = …)]</code>, ADR-0015). Enforced by: DATA-MARKS.</p>
 <h4>Consequences</h4>
 <ul>
 <li>New tables for timers, time entries, work days and breaks, each column with its personal-data mark (DATA-MARKS); the values of own fields of time entries in <code>field_value</code>. Every column that says something about a person's time is <code>employee_time</code> (architecture §12, <em>Personal data in M6</em>).</li>

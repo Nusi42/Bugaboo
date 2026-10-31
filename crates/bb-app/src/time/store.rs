@@ -54,6 +54,9 @@ pub trait TimeStore: TimeSpentStore + FieldStore + 'static {
         /// person has one already), otherwise the row that is still at `version` (false when it is
         /// not).
         fn put_timer(timer: &Timer, version: Option<Version>) -> bool;
+        /// Holds the timer row of a person until the change ends (making one that stands still
+        /// when there is none), so the changes of one person's time come one after the other.
+        fn hold_time_of(person: UserId) -> ();
         /// Adds a time entry.
         fn insert_time_entry(entry: &TimeEntry) -> ();
         /// Writes the date, length, note and *Billable* of an entry, counts its version up, and

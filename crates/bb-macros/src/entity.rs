@@ -76,11 +76,17 @@ fn field_mark(entity: &Ident, field: &Field) -> syn::Result<(TokenStream, Option
         ));
     };
     let name = ident.to_string();
+    let kinds = read_kinds(&field.attrs)?;
+    let with_kinds = if kinds.is_empty() {
+        quote! {}
+    } else {
+        quote! { .with_kinds(&[#(#kinds),*]) }
+    };
     Ok(match read_mark(entity, ident, &field.attrs)? {
         Mark::NotPersonal => {
             let ty = &field.ty;
             (
-                quote! { ::bb_core::personal::FieldMark::not_personal(#name) },
+                quote! { ::bb_core::personal::FieldMark::not_personal(#name) #with_kinds },
                 Some(quote_spanned! { ty.span() => not_personal::<#ty>(); }),
             )
         }
@@ -88,7 +94,9 @@ fn field_mark(entity: &Ident, field: &Field) -> syn::Result<(TokenStream, Option
             let category = word(&category, "Category");
             let basis = word(&basis, "Basis");
             (
-                quote! { ::bb_core::personal::FieldMark::personal(#name, #category, #basis) },
+                quote! {
+                    ::bb_core::personal::FieldMark::personal(#name, #category, #basis) #with_kinds
+                },
                 None,
             )
         }
@@ -125,6 +133,53 @@ fn read_mark(entity: &Ident, field: &Ident, attrs: &[Attribute]) -> syn::Result<
             ),
         )
     })
+}
+
+/// The marks of the field in the rows of some kinds of record (`#[personal_for(…)]`).
+fn read_kinds(attrs: &[Attribute]) -> syn::Result<Vec<TokenStream>> {
+    let mut kinds = Vec::new();
+    for attr in attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("personal_for"))
+    {
+        let mut kind = None;
+        let mut category = None;
+        let mut basis = None;
+        attr.parse_nested_meta(|meta| {
+            let target = if meta.path.is_ident("kind") {
+                &mut kind
+            } else if meta.path.is_ident("category") {
+                &mut category
+            } else if meta.path.is_ident("basis") {
+                &mut basis
+            } else {
+                return Err(meta.error(
+                    "expected `kind = \"...\"`, `category = \"...\"` or `basis = \"...\"`",
+                ));
+            };
+            if target.is_some() {
+                return Err(meta.error("this part is given twice"));
+            }
+            *target = Some(meta.value()?.parse::<LitStr>()?);
+            Ok(())
+        })?;
+        let (Some(kind), Some(category), Some(basis)) = (kind, category, basis) else {
+            return Err(syn::Error::new(
+                attr.span(),
+                "`#[personal_for(...)]` needs `kind`, `category` and `basis`",
+            ));
+        };
+        let category = word(&category, "Category");
+        let basis = word(&basis, "Basis");
+        kinds.push(quote_spanned! { kind.span() =>
+            ::bb_core::personal::KindMark::new(
+                ::bb_core::event::RecordKind::from_code_const(#kind),
+                #category,
+                #basis,
+            )
+        });
+    }
+    Ok(kinds)
 }
 
 fn read_personal(attr: &Attribute) -> syn::Result<Mark> {

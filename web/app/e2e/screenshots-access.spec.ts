@@ -54,10 +54,10 @@ test("what roles see at phone width", async ({ page, server }) => {
   const guest = await roleId(admin, roleName.guest);
   const acme = await projectIdOf(admin, "ACME");
   const web = await projectIdOf(admin, "WEB");
-  // The screens as the demo leaves them: Cost center hidden from Contributors in Acme Corporation,
+  // The screens as the demo leaves them: Due date hidden from Contributors in Acme Corporation,
   // and Guests see neither who is assigned nor who wrote a comment.
-  await forgetFieldLevel(admin, web, contributor, "cost-center");
-  await setFieldLevel(admin, { role: contributor, field: "cost-center", project: acme }, "hidden");
+  await forgetFieldLevel(admin, web, contributor, "due-date");
+  await setFieldLevel(admin, { role: contributor, field: "due-date", project: acme }, "hidden");
   await setPeopleLevel(admin, { role: guest, kind: "assigned-to" }, "hidden");
   await setPeopleLevel(admin, { role: guest, kind: "authors" }, "hidden");
   await admin.dispose();
@@ -65,12 +65,12 @@ test("what roles see at phone width", async ({ page, server }) => {
   await signIn(page, ada);
 
   await page.goto(addressInProject(paths.projectFields, "ACME"));
-  const list = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
+  const list = await levelList(page, t("issue-field.due-date"), roleName.contributor);
   await expect(list).toHaveValue("hidden");
   await shotWhole(page, "60-field-permissions", MILESTONE);
 
   await page.goto(addressInProject(paths.projectFields, "WEB"));
-  const below = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
+  const below = await levelList(page, t("issue-field.due-date"), roleName.contributor);
   await expect(below).toHaveValue("hidden");
   await shotWhole(page, "61-field-permissions-inherited", MILESTONE);
 
@@ -123,7 +123,7 @@ test("a level that is set and taken away at phone width", async ({ page }) => {
   await page.setViewportSize(viewports.phoneForPictures);
   await signIn(page, ada);
   await page.goto(addressInProject(paths.projectFields, "WEB"));
-  const list = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
+  const list = await levelList(page, t("issue-field.due-date"), roleName.contributor);
   await pickLevel(list, page, t("field-level.can-see"));
   await shotWhole(page, "67-field-permissions-changed-below", MILESTONE);
 });
@@ -135,7 +135,7 @@ test("the matrix of field permissions on a computer", async ({ page }) => {
   await page.goto(addressInProject(paths.projectFields, "ACME"));
   await expect(
     page.getByLabel(
-      t("access.cell-label", { subject: t("issue-field.cost-center"), role: roleName.contributor }),
+      t("access.cell-label", { subject: t("issue-field.due-date"), role: roleName.contributor }),
       { exact: true },
     ),
   ).toBeVisible();

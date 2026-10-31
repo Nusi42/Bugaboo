@@ -6,6 +6,8 @@
 //! *See issues* a person sees the issues they reported. No answer holds a count (PRIV-13): a page
 //! has a cursor, never a total.
 
+use std::collections::HashMap;
+
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
@@ -18,7 +20,7 @@ use super::fields::CHANGEABLE;
 use super::store::IssueFound;
 use super::types::{IssueDetail, IssueQuery, IssuesQuery};
 use crate::access::place_of_address;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::fields::Item;
 use crate::search::{SearchPage, SearchQuery, SearchScope, search_page};
 
@@ -27,6 +29,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// one; the short name of the project now or an old one). An address that is neither asks the
     /// store for an issue that is not there, so every address, good or not, costs a question.
     pub(crate) async fn find_issue(&self, address: &str) -> Result<Option<IssueFound>, AppError> {
+        if let Some(found) = locked(&self.known.ahead)
+            .as_ref()
+            .and_then(|ahead| ahead.found.get(address).cloned())
+        {
+            return Ok(found);
+        }
         let store = self.store();
         let nowhere = IssueId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -48,6 +56,35 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue,
                 old_code: false,
             }))
+    }
+}
+
+/// A selection of issues read ahead of the work on each: each issue by its address, and the values
+/// of their own fields in one read.
+pub(crate) struct ReadAhead {
+    found: HashMap<String, Option<IssueFound>>,
+    pub(crate) values: crate::fields::ItemValues,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Finds the issues of a read-only request by their addresses and reads the values of their own
+    /// fields in one go, so the work on each of them reads neither again (PERF-N1).
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn read_ahead(&self, addresses: &[&str]) -> Result<(), AppError> {
+        let mut found = HashMap::with_capacity(addresses.len());
+        for address in addresses {
+            found.insert((*address).to_owned(), self.find_issue(address).await?);
+        }
+        let ids: Vec<bb_core::id::EntityId> = found
+            .values()
+            .flatten()
+            .map(|each| each.issue.id.into())
+            .collect();
+        let values = self.load_values(RecordKind::Issue, &ids).await?;
+        *locked(&self.known.ahead) = Some(Box::new(ReadAhead { found, values }));
+        Ok(())
     }
 }
 

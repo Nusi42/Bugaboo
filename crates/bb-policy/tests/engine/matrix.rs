@@ -70,8 +70,6 @@ impl Masked for Answer {
         ("estimated-time", Field::EstimatedTime),
         ("time-left", Field::TimeLeft),
         ("time-spent", Field::TimeSpent),
-        ("activity", Field::Activity),
-        ("cost-center", Field::CostCenter),
     ];
 }
 
@@ -162,8 +160,9 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
             }
         }
     }
-    // 16 fields for 6 roles at their own level, and for 6 roles 3 levels in 3 projects.
-    assert_eq!(rows, 16 * 6 + 16 * 6 * 3 * 3);
+    // Every field for 6 roles at their own level, and for 6 roles 3 levels in 3 projects.
+    let fields = Field::ALL.len();
+    assert_eq!(rows, fields * 6 + fields * 6 * 3 * 3);
 }
 
 /// How the viewer sees a person of the kind, as the doc says.

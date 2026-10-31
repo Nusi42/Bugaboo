@@ -122,7 +122,7 @@ pub enum HistoryWhat {
     /// Time was booked on the issue, or an entry of time changed or was deleted (TIME-02).
     Time {
         /// What happened to the entry.
-        event: TimeEvent,
+        event: bb_core::history::TimeEvent,
         /// Its length (before it was deleted); none for a reader who may not read *Time spent*,
         /// and for a change that left the length as it was.
         minutes: Option<Minutes>,
@@ -130,18 +130,6 @@ pub enum HistoryWhat {
         /// only those the reader may see.
         fields: Vec<FieldChangeView>,
     },
-}
-
-/// What happened to a time entry, in a row of the history.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum TimeEvent {
-    /// Time was booked.
-    Booked,
-    /// An entry changed.
-    Changed,
-    /// An entry was deleted.
-    Deleted,
 }
 
 /// One row of the history.

@@ -1,5 +1,5 @@
-//! The tables of time on issues (ADR-0035): the timer of each person, the time entries, and the
-//! marks of the starter fields of time entries.
+//! The tables of time on issues (ADR-0035): the timer of each person, the time entries, the values
+//! of their own fields, and the marks of the starter fields of time entries.
 
 use super::Iden;
 
@@ -42,4 +42,20 @@ pub(crate) enum StarterFieldRow {
     Table,
     Starter,
     Field,
+}
+
+/// The values of the own fields of time entries (TIME-13): the columns of `field_value`, in a
+/// table of their own because every part of them is about a person's time.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum TimeEntryValueRow {
+    #[iden = "time_entry_value"]
+    Table,
+    EntityKind,
+    EntityId,
+    Field,
+    ValueText,
+    ValueNumber,
+    ValueDate,
+    ValueRef,
+    Position,
 }

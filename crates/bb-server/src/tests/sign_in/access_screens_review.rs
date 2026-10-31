@@ -31,7 +31,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
         org.give(&lea, lead, web).await?;
         let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         for (table, subject, level) in [
-            (FIELDS, "cost-center", "hidden"),
+            (FIELDS, "due-date", "hidden"),
             (PEOPLE, "followers", "hidden"),
         ] {
             let set = ada
@@ -44,7 +44,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
             assert_eq!(set.status, StatusCode::NO_CONTENT, "{}", set.body);
         }
         let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
-        for (table, subject) in [(FIELDS, "cost-center"), (PEOPLE, "followers")] {
+        for (table, subject) in [(FIELDS, "due-date"), (PEOPLE, "followers")] {
             let reply = lea_browser
                 .send("GET", &format!("{table}{}", at(web)), None)
                 .await?;
@@ -62,7 +62,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
             .send("GET", &format!("{FIELDS}{}", at(web)), None)
             .await?;
         assert_eq!(
-            cell(&all.body, "cost-center", contributor)?["origin"]["from"]["short_name"],
+            cell(&all.body, "due-date", contributor)?["origin"]["from"]["short_name"],
             "ACME"
         );
         Ok(())
@@ -84,7 +84,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
         let fields = ada
             .send("GET", &format!("{FIELDS}{}", at(acme)), None)
             .await?;
-        let own = cell(&fields.body, "cost-center", contributor)?;
+        let own = cell(&fields.body, "due-date", contributor)?;
         assert_eq!(own["level"], "can-see");
         assert_eq!(own["origin"], json!({"kind": "role-own"}));
         // A role that was given no level at all is closed: nothing set, so hidden.

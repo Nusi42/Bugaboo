@@ -61,7 +61,11 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
         "m3_f111_every_role_does_only_what_the_role_may",
         async |db| {
             let folder = tempfile::tempdir()?;
-            let dump = dump_of(&Target::Address(db.url().to_owned()), folder.path()).await?;
+            let dump = Box::pin(dump_of(
+                &Target::Address(db.url().to_owned()),
+                folder.path(),
+            ))
+            .await?;
             let roles = roles_of(&dump)?;
             let events = dump["events"].as_array().ok_or("no events")?;
             // Who made each issue.
@@ -131,7 +135,11 @@ async fn no_notification_tells_a_guest_of_an_issue_they_did_not_report() -> Test
         "no_notification_tells_a_guest_of_an_issue_they_did_not_report",
         async |db| {
             let folder = tempfile::tempdir()?;
-            let dump = dump_of(&Target::Address(db.url().to_owned()), folder.path()).await?;
+            let dump = Box::pin(dump_of(
+                &Target::Address(db.url().to_owned()),
+                folder.path(),
+            ))
+            .await?;
             let work = &dump["issues"]["work"]["notifications"];
             assert_eq!(
                 work["to_guests_about_others"].as_u64(),

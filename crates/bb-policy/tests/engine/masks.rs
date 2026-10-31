@@ -19,25 +19,31 @@ fn sec_04_the_highest_field_level_of_the_roles_wins() {
     let member = world.role("Team member", &[Permission::SeeProjects]);
     world.field(viewer, None, Field::Title, FieldLevel::CanSee);
     world.field(member, None, Field::Title, FieldLevel::CanChange);
-    world.field(viewer, None, Field::CostCenter, FieldLevel::Hidden);
-    world.field(member, None, Field::CostCenter, FieldLevel::CanSee);
+    world.field(viewer, None, Field::EstimatedTime, FieldLevel::Hidden);
+    world.field(member, None, Field::EstimatedTime, FieldLevel::CanSee);
     world.give(viewer, world.acme);
     let one_role = world.at(world.acme);
     assert_eq!(one_role.field_level(Field::Title), FieldLevel::CanSee);
-    assert_eq!(one_role.field_level(Field::CostCenter), FieldLevel::Hidden);
+    assert_eq!(
+        one_role.field_level(Field::EstimatedTime),
+        FieldLevel::Hidden
+    );
     // A second role never lowers a level: the highest counts.
     world.give(member, world.acme);
     let two_roles = world.at(world.acme);
     assert_eq!(two_roles.field_level(Field::Title), FieldLevel::CanChange);
-    assert_eq!(two_roles.field_level(Field::CostCenter), FieldLevel::CanSee);
+    assert_eq!(
+        two_roles.field_level(Field::EstimatedTime),
+        FieldLevel::CanSee
+    );
     // A field nobody set is hidden: default deny.
     assert_eq!(two_roles.field_level(Field::Priority), FieldLevel::Hidden);
     let mask = two_roles.field_mask_for(None);
     assert!(mask.can_change(Field::Title));
-    assert!(mask.can_see(Field::CostCenter) && !mask.can_change(Field::CostCenter));
+    assert!(mask.can_see(Field::EstimatedTime) && !mask.can_change(Field::EstimatedTime));
     assert!(!mask.can_see(Field::Priority));
     let readable: Vec<_> = mask.readable().collect();
-    assert_eq!(readable, [Field::Title.into(), Field::CostCenter.into()]);
+    assert_eq!(readable, [Field::Title.into(), Field::EstimatedTime.into()]);
 }
 
 #[test]
@@ -45,45 +51,45 @@ fn sec_04_a_project_sets_its_own_level_and_sub_projects_inherit_until_one_sets_i
     let mut world = World::new();
     let member = world.role("Team member", &[Permission::SeeProjects]);
     world.give_everywhere(member);
-    world.field(member, None, Field::CostCenter, FieldLevel::CanSee);
+    world.field(member, None, Field::EstimatedTime, FieldLevel::CanSee);
     world.field(
         member,
         Some(world.acme),
-        Field::CostCenter,
+        Field::EstimatedTime,
         FieldLevel::Hidden,
     );
     world.field(
         member,
         Some(world.web),
-        Field::CostCenter,
+        Field::EstimatedTime,
         FieldLevel::CanChange,
     );
     assert_eq!(
-        world.at_organization().field_level(Field::CostCenter),
+        world.at_organization().field_level(Field::EstimatedTime),
         FieldLevel::CanSee,
         "the role's own level at the organization"
     );
     assert_eq!(
-        world.at(world.other).field_level(Field::CostCenter),
+        world.at(world.other).field_level(Field::EstimatedTime),
         FieldLevel::CanSee
     );
     assert_eq!(
-        world.at(world.acme).field_level(Field::CostCenter),
+        world.at(world.acme).field_level(Field::EstimatedTime),
         FieldLevel::Hidden
     );
     assert_eq!(
-        world.at(world.web).field_level(Field::CostCenter),
+        world.at(world.web).field_level(Field::EstimatedTime),
         FieldLevel::CanChange,
         "the nearer project wins"
     );
     assert_eq!(
-        world.at(world.api).field_level(Field::CostCenter),
+        world.at(world.api).field_level(Field::EstimatedTime),
         FieldLevel::CanChange,
         "inherited from WEB, the nearest parent that set one"
     );
     let decision = world
         .at(world.api)
-        .explain_level(FieldKey::from(Field::CostCenter));
+        .explain_level(FieldKey::from(Field::EstimatedTime));
     assert_eq!(decision.level, FieldLevel::CanChange);
     assert_eq!(decision.roles.len(), 1);
     assert_eq!(decision.roles[0].level, FieldLevel::CanChange);
@@ -100,8 +106,10 @@ struct IssueView {
 }
 
 impl Masked for IssueView {
-    const FIELDS: &'static [(&'static str, Field)] =
-        &[("title", Field::Title), ("cost_center", Field::CostCenter)];
+    const FIELDS: &'static [(&'static str, Field)] = &[
+        ("title", Field::Title),
+        ("cost_center", Field::EstimatedTime),
+    ];
 
     fn mask(value: &mut Value, mask: &bb_policy::FieldMask) {
         drop_hidden(value, Self::FIELDS, mask);
@@ -125,7 +133,7 @@ fn masked_world(cost_center: FieldLevel) -> World {
     let mut world = World::new();
     let member = world.role("Team member", &[Permission::SeeProjects]);
     world.field(member, None, Field::Title, FieldLevel::CanChange);
-    world.field(member, None, Field::CostCenter, cost_center);
+    world.field(member, None, Field::EstimatedTime, cost_center);
     world.give(member, world.acme);
     world
 }
@@ -352,7 +360,7 @@ struct NestedIssue {
     id: u32,
     #[masked(field = "title")]
     title: String,
-    #[masked(field = "cost-center")]
+    #[masked(field = "estimated-time")]
     cost_center: String,
     #[masked(field = "assigned-to", nested)]
     assigned_to: Vec<PersonInside>,
@@ -412,7 +420,7 @@ fn sec_04_the_derive_lists_the_fields_a_view_holds_and_nothing_else() {
         <NestedIssue as Masked>::FIELDS,
         [
             ("title", Field::Title),
-            ("cost_center", Field::CostCenter),
+            ("cost_center", Field::EstimatedTime),
             ("assigned_to", Field::AssignedTo)
         ]
     );

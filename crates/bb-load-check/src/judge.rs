@@ -341,6 +341,26 @@ fn locks_are_gone(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<St
     found
 }
 
+/// Every stop of a timer that saved its time is one entry, and no run of a timer is saved twice:
+/// no two entries of one person share a start.
+fn time_is_saved_once(book: &Book, issue: &IssueFacts) -> Vec<String> {
+    let mut found = Vec::new();
+    let saved = book.timed.iter().filter(|key| **key == issue.key).count();
+    if saved != issue.timer_entries.len() {
+        found.push(format!(
+            "{}: {saved} stops of a timer saved time, the issue holds {} entries of a timer",
+            issue.key,
+            issue.timer_entries.len()
+        ));
+    }
+    let mut starts = issue.timer_entries.clone();
+    starts.sort();
+    if starts.windows(2).any(|pair| pair[0] == pair[1]) {
+        found.push(format!("{}: one run of a timer was saved twice", issue.key));
+    }
+    found
+}
+
 /// Everything that must hold after a run; what does not is listed in words (empty: it all does).
 #[must_use]
 pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String> {
@@ -351,6 +371,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
         found.extend(last_description(book, issue));
         found.extend(titles_and_statuses(book, issue));
         found.extend(files_are_kept(book, issue));
+        found.extend(time_is_saved_once(book, issue));
     }
     found.extend(guests_hear_only_what_they_may(book, &facts.notifications));
     found.extend(searches_hold_the_rules(book));
@@ -448,6 +469,7 @@ mod tests {
             files: vec!["A-1".to_owned(), "A-1".to_owned()],
             guests: vec!["guest".to_owned()],
             hidden_from_guests: vec!["secret-field".to_owned()],
+            timed: Vec::new(),
             searched: vec![
                 search("p1", true, &["A-1", "A-2"], Some(2)),
                 search("guest", true, &["A-2"], Some(1)),
@@ -464,6 +486,7 @@ mod tests {
                     title: "A title".to_owned(),
                     status: "in-progress".to_owned(),
                     attachments: 2,
+                    timer_entries: Vec::new(),
                 },
                 IssueFacts {
                     key: "A-2".to_owned(),
@@ -474,6 +497,7 @@ mod tests {
                     title: "A bug of the Guest".to_owned(),
                     status: "open".to_owned(),
                     attachments: 0,
+                    timer_entries: Vec::new(),
                 },
             ],
             notifications: vec![NotificationFacts {
@@ -641,7 +665,7 @@ mod tests {
         }
         // A field the starting role hides from Guests, and one the run hid.
         facts.notifications[0].issue = Some("id-2".to_owned());
-        for field in ["cost-center", "secret-field"] {
+        for field in ["estimated-time", "secret-field"] {
             facts.notifications[0].fields = vec!["status".to_owned(), field.to_owned()];
             let found = judge(&book, &facts, &afterwards());
             assert_eq!(found.len(), 1, "{field}: {found:?}");

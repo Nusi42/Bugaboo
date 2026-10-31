@@ -59,6 +59,23 @@ words! {
     }
 }
 
+words! {
+    /// What happened to a time entry, in a row of the history of its issue (TIME-02).
+    pub enum TimeEvent {
+        /// Time was booked.
+        Booked => "booked",
+        /// An entry changed.
+        Changed => "changed",
+        /// An entry was deleted.
+        Deleted => "deleted",
+    }
+}
+
+words_in_api!(
+    TimeEvent,
+    "What happened to a time entry: booked, changed or deleted."
+);
+
 words_in_api!(
     FileEvent,
     "What happened to a file of an issue: added, deleted or brought back."
@@ -93,5 +110,6 @@ pub struct HistoryEntry {
     pub record_kind: TechnicalName,
     /// What changed. It can hold anything a person typed.
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
     pub changes: Vec<FieldChange>,
 }

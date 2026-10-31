@@ -17,7 +17,9 @@ use bb_core::fields::Field;
 use bb_core::id::TimeEntryId;
 use bb_core::own_fields_value::OwnValues;
 use bb_core::time::Minutes;
-use bb_policy::{FieldMask, Masked, MaskedValue, PersonRef, drop_hidden, drop_hidden_own_fields};
+use bb_policy::{
+    Authorized, FieldMask, Masked, MaskedValue, PersonRef, drop_hidden, drop_hidden_own_fields,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -28,7 +30,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized, done,
 };
-use super::roles::VersionBody;
+use super::bodies::VersionParams;
 use super::time::EntryDetailsBody;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -230,13 +232,20 @@ async fn list_my_time_entries(
         .await
         .map_err(cursor_error)?;
     bad_cursor?;
-    let list = page.map(|page| Listed {
-        items: page.items.iter().map(TimeEntryItem::from).collect(),
-        next: page.next_cursor,
-    });
-    let fields = params.fields_readable(&MINE_FIELDS, &list.hidden_properties())?;
-    Ok(super::auth::answer(Page::of_authorized(
-        MINE_LIST, &list, &fields,
+    // Each entry carries the rights where its issue is; the wrapper adds nothing to them.
+    let mut taken = None;
+    let _ = page.map(|page| taken = Some((page.items, page.next_cursor)));
+    let (items, next) = taken.unwrap_or_default();
+    let items: Vec<Authorized<TimeEntryItem>> = items
+        .into_iter()
+        .map(|each| each.map(|view| TimeEntryItem::from(&view)))
+        .collect();
+    Ok(super::auth::answer(Page::of_authorized_items(
+        MINE_LIST,
+        &items,
+        next.as_deref(),
+        &params,
+        &MINE_FIELDS,
     )?))
 }
 
@@ -326,8 +335,7 @@ async fn change_time_entry(
     path = "/api/v1/me/time-entries/{entry}",
     operation_id = "deleteTimeEntry",
     tag = "time",
-    params(("entry" = String, Path, description = "The ID of the entry.")),
-    request_body = VersionBody,
+    params(("entry" = String, Path, description = "The ID of the entry."), VersionParams),
     responses(
         (status = 204, description = "The entry is gone."),
         NotSignedInAnswer,
@@ -341,7 +349,7 @@ async fn delete_time_entry(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(entry): ApiPath<String>,
-    ApiJson(body): ApiJson<VersionBody>,
+    ApiQuery(body): ApiQuery<VersionParams>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .delete_time_entry(

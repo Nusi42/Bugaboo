@@ -122,7 +122,7 @@ async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Failure> {
     // Levels set for a project, which the projects below inherit.
     for (project, field, kind) in [
         (chain[5], Field::Title, PeopleKind::ProjectMembers),
-        (branch, Field::CostCenter, PeopleKind::AssignedTo),
+        (branch, Field::DueDate, PeopleKind::AssignedTo),
     ] {
         api(org)
             .set_field_level(

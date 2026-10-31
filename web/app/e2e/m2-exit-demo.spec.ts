@@ -30,7 +30,7 @@ import {
 } from "./support/sample.ts";
 
 // The exit demo of M2 (docs/04-milestones.md) on the sample organization, as the maintainer can repeat
-// it by hand with `cargo xtask dev --sample`: an administrator makes a role, hides Cost center from
+// it by hand with `cargo xtask dev --sample`: an administrator makes a role, hides Due date from
 // Contributors and names from Guests on the Website, checks Ana's access and reads the
 // explanation; then a Guest and a Contributor sign in and see only what is theirs. Every step has
 // no accessibility problem in the four themes, on a phone and on a computer, and with
@@ -40,7 +40,7 @@ import {
 test.use({ sample: true });
 test.describe.configure({ mode: "serial" });
 
-const costCenter = t("issue-field.cost-center");
+const dueDate = t("issue-field.due-date");
 const ana = sampleNamed("Ana Moreno");
 const ben = sampleNamed("Ben Hale");
 /** The role the administrator makes: a copy of Viewer that may also see how the server is doing. */
@@ -85,7 +85,7 @@ async function createARole(page: Page): Promise<void> {
   await good(page, "01-create-role");
 }
 
-/** Step 2: Cost center is hidden from Contributors on the Website; the Mobile app had it hidden already. */
+/** Step 2: Due date is hidden from Contributors on the Website; the Mobile app had it hidden already. */
 async function hideCostCenter(page: Page): Promise<void> {
   const mobileApp = sampleProjectName("APP");
   await open(
@@ -93,7 +93,7 @@ async function hideCostCenter(page: Page): Promise<void> {
     addressInProject(paths.projectFields, "APP"),
     t("field-permissions.project-title", { project: mobileApp }),
   );
-  const inApp = await levelList(page, costCenter, roleName.contributor);
+  const inApp = await levelList(page, dueDate, roleName.contributor);
   await expect(inApp).toHaveValue("hidden");
   await expect(around(inApp)).toContainText(t("access.origin-here"));
 
@@ -103,11 +103,11 @@ async function hideCostCenter(page: Page): Promise<void> {
     addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: website }),
   );
-  const inWebsite = await levelList(page, costCenter, roleName.contributor);
+  const inWebsite = await levelList(page, dueDate, roleName.contributor);
   await expect(inWebsite).toHaveValue("can-see");
   await pickLevel(inWebsite, page, t("field-level.hidden"));
   await expect(around(inWebsite)).toContainText(t("access.origin-here"));
-  await good(page, "02-hide-cost-center");
+  await good(page, "02-hide-due-date");
 
   // The sub-projects of the Website have it hidden as well, and say where that comes from.
   await open(
@@ -115,7 +115,7 @@ async function hideCostCenter(page: Page): Promise<void> {
     addressInProject(paths.projectFields, "SHOP"),
     t("field-permissions.project-title", { project: sampleProjectName("SHOP") }),
   );
-  const inShop = await levelList(page, costCenter, roleName.contributor);
+  const inShop = await levelList(page, dueDate, roleName.contributor);
   await expect(inShop).toHaveValue("hidden");
   await expect(around(inShop)).toContainText(t("access.origin-from", { project: website }));
 }
@@ -177,9 +177,9 @@ async function checkAnasAccess(page: Page): Promise<void> {
     project: website,
   });
   await expect(sentence(page, reason)).toBeVisible();
-  // Cost center is hidden from her now, and the answer says which role sets that and where.
+  // Due date is hidden from her now, and the answer says which role sets that and where.
   // The answer opens grouped: the fields with the same level and reason are told together, and
-  // Cost center, which the Website sets for itself, stands apart.
+  // Due date, which the Website sets for itself, stands apart.
   await expect(sentence(page, t("check-access.all-other-fields"))).toBeVisible();
   const level = t("check-access.level.role-project", {
     role: roleName.contributor,
@@ -213,7 +213,7 @@ test("the exit demo: an administrator makes a role, hides what Contributors and 
   await signIn(page, sampleAdministrator());
   await test.step("1. The administrator makes a role from a copy of Viewer", () =>
     createARole(page));
-  await test.step("2. The administrator hides Cost center from Contributors on the Website", () =>
+  await test.step("2. The administrator hides Due date from Contributors on the Website", () =>
     hideCostCenter(page));
   await test.step("3. The administrator hides names from Guests on the Website", () =>
     hideNames(page));

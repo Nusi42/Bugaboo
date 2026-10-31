@@ -89,11 +89,51 @@ pub enum Personal {
     No,
 }
 
+/// The mark a field has in the rows that are about one kind of record (`#[personal_for(kind = …,
+/// category = …, basis = …)]`): a table that holds rows of many kinds of record, like the domain
+/// events or the history, says for each such kind what the field holds there. The person the data
+/// is about is the person of that record (the person of a time entry, of a work day), not the
+/// actor of the row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KindMark {
+    kind: crate::event::RecordKind,
+    category: Category,
+    basis: Basis,
+}
+
+impl KindMark {
+    /// The mark of the rows about records of `kind`. Written by `#[derive(Entity)]`.
+    #[must_use]
+    pub const fn new(kind: crate::event::RecordKind, category: Category, basis: Basis) -> Self {
+        Self {
+            kind,
+            category,
+            basis,
+        }
+    }
+
+    /// The kind of record whose rows the mark is for.
+    #[must_use]
+    pub const fn kind(&self) -> crate::event::RecordKind {
+        self.kind
+    }
+
+    /// What the field holds in those rows.
+    #[must_use]
+    pub const fn personal_data(&self) -> Personal {
+        Personal::Yes {
+            category: self.category,
+            basis: self.basis,
+        }
+    }
+}
+
 /// The mark of one field.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FieldMark {
     name: &'static str,
     personal: Personal,
+    by_kind: &'static [KindMark],
 }
 
 impl FieldMark {
@@ -103,6 +143,7 @@ impl FieldMark {
         Self {
             name,
             personal: Personal::Yes { category, basis },
+            by_kind: &[],
         }
     }
 
@@ -112,7 +153,21 @@ impl FieldMark {
         Self {
             name,
             personal: Personal::No,
+            by_kind: &[],
         }
+    }
+
+    /// The same field with the marks it has in the rows of some kinds of record.
+    #[must_use]
+    pub const fn with_kinds(self, by_kind: &'static [KindMark]) -> Self {
+        Self { by_kind, ..self }
+    }
+
+    /// The marks the field has in the rows of some kinds of record; empty when the field holds
+    /// the same in every row.
+    #[must_use]
+    pub const fn by_kind(&self) -> &'static [KindMark] {
+        self.by_kind
     }
 
     /// The name of the field.

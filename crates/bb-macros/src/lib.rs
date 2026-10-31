@@ -19,9 +19,14 @@ use syn::{DeriveInput, parse_macro_input};
 /// - `#[personal(category = "employee_time", basis = "legal_obligation")]` for personal data,
 /// - `#[not_personal]` for everything else.
 ///
+/// A field of a table that holds rows about many kinds of record (the domain events, the history)
+/// may also say what it holds in the rows of one kind:
+/// `#[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]`, once for
+/// each kind. The kind is a word of `bb_core::event::RecordKind`.
+///
 /// A field without a mark, a mark with a missing or unknown part, or two marks on one field are
 /// compile errors. The macro implements `bb_core::personal::Entity`.
-#[proc_macro_derive(Entity, attributes(personal, not_personal))]
+#[proc_macro_derive(Entity, attributes(personal, not_personal, personal_for))]
 pub fn derive_entity(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     entity::expand(&input)

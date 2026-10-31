@@ -339,9 +339,7 @@ const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
         | Field::FoundInRelease
         | Field::EstimatedTime
         | Field::TimeLeft
-        | Field::TimeSpent
-        | Field::Activity
-        | Field::CostCenter => None,
+        | Field::TimeSpent => None,
     }
 }
 

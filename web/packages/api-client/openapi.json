@@ -8432,18 +8432,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version of the record the person looked at; a change made meanwhile stops this one.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetRoleBody"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "204": {
             "description": "The entry is gone."
@@ -8459,9 +8459,6 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -15897,7 +15894,7 @@
       },
       "Field": {
         "type": "string",
-        "description": "A built-in field of the field catalogue, by its key.",
+        "description": "A built-in field of the field catalogue, by its key. `activity` and `cost-center` are retired: a request may name them and nothing happens, no answer names them.",
         "enum": [
           "title",
           "description",
@@ -16828,7 +16825,7 @@
           "time_event": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/TimeEntryEvent",
+                "$ref": "#/components/schemas/TimeEvent",
                 "description": "Time: what happened to the entry. Who booked it is `by`, as the reader may see people of\nthe kind *Time entries*."
               },
               {
@@ -21676,7 +21673,7 @@
       },
       "ResetRoleBody": {
         "type": "object",
-        "description": "A change that needs nothing but the version of the record it is made on: giving a role its\nstarting permissions back, throwing the timer away, deleting a time entry. One schema for all of\nthem; its name is the one the API was frozen with.",
+        "description": "A change that needs nothing but the version of the record it is made on: giving a role its\nstarting permissions back, throwing the timer away. One schema for all of them; its name is the\none the API was frozen with.",
         "required": ["version"],
         "properties": {
           "version": {
@@ -21897,11 +21894,11 @@
       "RunningItem": {
         "type": "object",
         "description": "A timer that runs.",
-        "required": ["issue", "started_at", "runs_long"],
+        "required": ["started_at", "runs_long"],
         "properties": {
           "issue": {
-            "type": "string",
-            "description": "The internal ID of the issue it runs on."
+            "type": ["string", "null"],
+            "description": "The internal ID of the issue it runs on; left out for an access key that does not see it."
           },
           "readable_id": {
             "type": ["string", "null"],
@@ -23355,11 +23352,6 @@
           }
         }
       },
-      "TimeEntryEvent": {
-        "type": "string",
-        "description": "What happened to an entry of time.",
-        "enum": ["booked", "changed", "deleted"]
-      },
       "TimeEntryItem": {
         "type": "object",
         "description": "One of the person's own time entries.",
@@ -23411,6 +23403,11 @@
           }
         }
       },
+      "TimeEvent": {
+        "type": "string",
+        "description": "What happened to a time entry: booked, changed or deleted.",
+        "enum": ["booked", "changed", "deleted"]
+      },
       "TimerItem": {
         "type": "object",
         "description": "The person's timer.",
@@ -23453,7 +23450,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/TimeEntryItem",
-                "description": "The entry that was saved; left out when the timer ran for less than a minute."
+                "description": "The entry that was saved, masked with the rights where its issue is; left out when the\ntimer ran for less than a minute."
               },
               {
                 "type": "null"

@@ -12,6 +12,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable};
 use bb_app::roles::SetFieldLevel;
+use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
@@ -227,7 +228,7 @@ pub(crate) struct NewFieldLevelBody {
 #[derive(Deserialize)]
 pub(crate) struct FieldCellPath {
     role: String,
-    field: FieldKey,
+    field: String,
 }
 
 /// Which level every role has for every field, for the whole organization or for one project,
@@ -297,6 +298,23 @@ async fn change_field_permission(
     let project = place.project()?;
     let issue_type = place.issue_type()?;
     let role = path_id::<RoleId>(&path.role)?;
+    // A word of a field that left the catalogue is accepted and changes nothing, for a person who
+    // may decide the levels there (the table of the place is read for that judgement).
+    if super::is_retired_field(&path.field) {
+        auth.api()?
+            .field_permissions(
+                info,
+                FieldPermissionsQuery {
+                    session_token,
+                    project,
+                    issue_type,
+                },
+            )
+            .await?;
+        return Ok(done());
+    }
+    let field =
+        FieldKey::from_code(&path.field).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
     auth.api()?
         .set_field_level(
             info,
@@ -305,7 +323,7 @@ async fn change_field_permission(
                 role,
                 project,
                 issue_type,
-                field: path.field,
+                field,
                 level: body.level,
             },
         )

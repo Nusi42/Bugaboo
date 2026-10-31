@@ -88,7 +88,7 @@ fn spec_strategy() -> impl Strategy<Value = Spec> {
             (
                 prop::option::of(0..3_usize),
                 0..3_usize,
-                0..16_usize,
+                0..Field::ALL.len(),
                 0..3_usize,
             )
                 .prop_map(|(project, role, field, level)| RuleSpec {

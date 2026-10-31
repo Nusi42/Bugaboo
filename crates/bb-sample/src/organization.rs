@@ -21,7 +21,7 @@ use bb_app::roles::{
     copy_role, create_role, set_level,
 };
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 
@@ -137,7 +137,7 @@ const GROUPS: [GroupRule; 8] = [
     },
 ];
 
-/// The key of the custom role that is a Team member without *Cost center*.
+/// The key of the custom role that is a Team member without *Due date*.
 pub(crate) const SUPPORT_AGENT: &str = "support-agent";
 /// The key of the custom role that needs two-step sign-in.
 pub(crate) const SECURITY_REVIEWER: &str = "security-reviewer";
@@ -502,7 +502,7 @@ impl Making<'_, '_> {
         .map_err(|error| SampleError::step(Step::Project, &error))
     }
 
-    /// The custom roles: a Team member without *Cost center*, and a role that needs two-step
+    /// The custom roles: a Team member without *Due date*, and a role that needs two-step
     /// sign-in and sees little.
     async fn custom_roles(&self, names: &OrganizationNames) -> Result<(), SampleError> {
         let step = |error: &dyn std::fmt::Display| SampleError::step(Step::Role, &error);
@@ -519,7 +519,7 @@ impl Making<'_, '_> {
         .await
         .map_err(|error| step(&error))?;
         let support = self.named_role(support).await?;
-        self.field_level(support, None, Field::CostCenter, FieldLevel::Hidden)
+        self.field_level(support, None, Field::DueDate.into(), FieldLevel::Hidden)
             .await?;
 
         let reviewer = names.role(SECURITY_REVIEWER)?;
@@ -536,13 +536,13 @@ impl Making<'_, '_> {
         .map_err(|error| step(&error))?;
         let reviewer = self.named_role(reviewer).await?;
         for field in [Field::Title, Field::Status, Field::Priority] {
-            self.field_level(reviewer, None, field, FieldLevel::CanSee)
+            self.field_level(reviewer, None, field.into(), FieldLevel::CanSee)
                 .await?;
         }
         Ok(())
     }
 
-    /// Mobile app: *Cost center* is hidden from Contributors, and Guests see no names of authors
+    /// Mobile app: *Due date* is hidden from Contributors, and Guests see no names of authors
     /// or mentions. Website keeps the starting rules, so the exit demo has something to change.
     async fn what_roles_see(&self) -> Result<(), SampleError> {
         let app = self.world.project_named("APP").await?;
@@ -550,7 +550,7 @@ impl Making<'_, '_> {
         self.field_level(
             contributor,
             Some(app),
-            Field::CostCenter,
+            Field::DueDate.into(),
             FieldLevel::Hidden,
         )
         .await?;
@@ -576,7 +576,7 @@ impl Making<'_, '_> {
         &self,
         role: RoleId,
         project: Option<ProjectId>,
-        field: Field,
+        field: FieldKey,
         level: FieldLevel,
     ) -> Result<(), SampleError> {
         set_level(
@@ -586,7 +586,7 @@ impl Making<'_, '_> {
                 role,
                 project,
                 issue_type: None,
-                field: field.into(),
+                field,
                 level: Some(level),
             },
         )

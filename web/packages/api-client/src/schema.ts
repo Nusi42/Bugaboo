@@ -4732,7 +4732,7 @@ export interface components {
       | "server.unavailable"
       | "server.internal";
     /**
-     * @description A built-in field of the field catalogue, by its key.
+     * @description A built-in field of the field catalogue, by its key. `activity` and `cost-center` are retired: a request may name them and nothing happens, no answer names them.
      * @enum {string}
      */
     Field:
@@ -5152,7 +5152,7 @@ export interface components {
       relation_name?: string | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
-      time_event?: components["schemas"]["TimeEntryEvent"] | null;
+      time_event?: components["schemas"]["TimeEvent"] | null;
       /**
        * Format: int64
        * @description A comment: the version, which a change of it is made on.
@@ -7466,8 +7466,8 @@ export interface components {
     };
     /**
      * @description A change that needs nothing but the version of the record it is made on: giving a role its
-     *     starting permissions back, throwing the timer away, deleting a time entry. One schema for all of
-     *     them; its name is the one the API was frozen with.
+     *     starting permissions back, throwing the timer away. One schema for all of them; its name is the
+     *     one the API was frozen with.
      */
     ResetRoleBody: {
       /**
@@ -7610,8 +7610,8 @@ export interface components {
     };
     /** @description A timer that runs. */
     RunningItem: {
-      /** @description The internal ID of the issue it runs on. */
-      issue: string;
+      /** @description The internal ID of the issue it runs on; left out for an access key that does not see it. */
+      issue?: string | null;
       /** @description The readable ID of the issue (WEB-142) while the person sees it. */
       readable_id?: string | null;
       /** @description Whether it runs longer than the longest work day of the working-time rules. */
@@ -8348,11 +8348,6 @@ export interface components {
       /** @description The lock token to save with and to send with every heartbeat. */
       lock_token: string;
     };
-    /**
-     * @description What happened to an entry of time.
-     * @enum {string}
-     */
-    TimeEntryEvent: "booked" | "changed" | "deleted";
     /** @description One of the person's own time entries. */
     TimeEntryItem: {
       /**
@@ -8388,6 +8383,11 @@ export interface components {
        */
       version: number;
     };
+    /**
+     * @description What happened to a time entry: booked, changed or deleted.
+     * @enum {string}
+     */
+    TimeEvent: "booked" | "changed" | "deleted";
     /** @description The person's timer. */
     TimerItem: {
       running?: components["schemas"]["RunningItem"] | null;
@@ -13496,7 +13496,10 @@ export interface operations {
   };
   deleteTimeEntry: {
     parameters: {
-      query?: never;
+      query: {
+        /** @description The version of the record the person looked at; a change made meanwhile stops this one. */
+        version: number;
+      };
       header?: never;
       path: {
         /** @description The ID of the entry. */
@@ -13504,11 +13507,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ResetRoleBody"];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description The entry is gone. */
       204: {
@@ -13521,7 +13520,6 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
-      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

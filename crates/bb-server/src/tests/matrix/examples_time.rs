@@ -108,8 +108,8 @@ pub(super) async fn time_request(
             let (entry, version) = own_entry(fixture, browser).await?;
             (
                 "DELETE",
-                format!("/api/v1/me/time-entries/{entry}"),
-                Some(json!({"version": version})),
+                format!("/api/v1/me/time-entries/{entry}?version={version}"),
+                None,
             )
         }
         "listIssueTimeEntries" => (

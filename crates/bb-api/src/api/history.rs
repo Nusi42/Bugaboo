@@ -8,8 +8,8 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat, TimeEvent};
-use bb_core::history::{FileEvent, HistoryTab};
+use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat};
+use bb_core::history::{FileEvent, HistoryTab, TimeEvent};
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -78,28 +78,6 @@ pub(crate) enum HistoryEntryKind {
     Time,
 }
 
-/// What happened to an entry of time.
-#[derive(Clone, Copy, Serialize, ToSchema)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum TimeEntryEvent {
-    /// Time was booked.
-    Booked,
-    /// An entry changed.
-    Changed,
-    /// An entry was deleted.
-    Deleted,
-}
-
-impl From<TimeEvent> for TimeEntryEvent {
-    fn from(event: TimeEvent) -> Self {
-        match event {
-            TimeEvent::Booked => Self::Booked,
-            TimeEvent::Changed => Self::Changed,
-            TimeEvent::Deleted => Self::Deleted,
-        }
-    }
-}
-
 /// One item of the history of an issue.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct HistoryEntryItem {
@@ -157,7 +135,7 @@ pub(crate) struct HistoryEntryItem {
     /// Time: what happened to the entry. Who booked it is `by`, as the reader may see people of
     /// the kind *Time entries*.
     #[serde(skip_serializing_if = "Option::is_none")]
-    time_event: Option<TimeEntryEvent>,
+    time_event: Option<TimeEvent>,
     /// Time: the length in whole minutes; left out for a reader who may not read *Time spent*. The
     /// own fields of the entry (*Activity*, *Cost center*) that the reader may see follow as items
     /// of the kind `change` of the same event.
@@ -246,7 +224,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             fields,
         } => {
             let mut item = start(row, HistoryEntryKind::Time);
-            item.time_event = Some((*event).into());
+            item.time_event = Some(*event);
             item.minutes = minutes.map(bb_core::time::Minutes::get);
             let changes = fields.iter().map(|change| {
                 let mut each = start(row, HistoryEntryKind::Change);
@@ -366,7 +344,7 @@ mod tests {
             issue: Some(line()),
             file_event: Some(FileEvent::Added),
             file_name: Some(String::new()),
-            time_event: Some(TimeEntryEvent::Booked),
+            time_event: Some(TimeEvent::Booked),
             minutes: Some(0),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);

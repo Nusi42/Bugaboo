@@ -295,6 +295,8 @@ fn section_input(body: &SectionInputBody) -> Result<SectionInput, ApiError> {
         fields: body
             .fields
             .iter()
+            // A word of a field that left the catalogue is accepted and placed nowhere.
+            .filter(|field| !super::is_retired_field(&field.field))
             .map(|field| {
                 Ok(FieldInput {
                     field: FieldKey::from_code(&field.field)

@@ -8,6 +8,8 @@
 //!   of an own field is stored). The index of the issue serves the entries of an issue and the
 //!   minutes spent on it; the index of the person and the day serves a person's week and the count
 //!   of a day.
+//! - `time_entry_value` holds the values of the own fields of time entries: the columns of
+//!   `field_value`, apart, because every part of them is about a person's time (`employee_time`).
 //! - `starter_field` names the own field of each starter mark (`activity`, `cost-center`), once.
 //!
 //! Nothing is written into the tables: the starter fields are made by the use case of the first
@@ -17,11 +19,14 @@
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
-use crate::schema::{FieldRow, IssueRow, StarterFieldRow, TimeEntryRow, TimerRow};
+use crate::schema::{
+    FieldRow, IssueRow, StarterFieldRow, TimeEntryRow, TimeEntryValueRow, TimerRow,
+};
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = vec![timers()];
     steps.extend(entries());
+    steps.extend(entry_values());
     steps.push(starter_fields());
     steps
 }
@@ -96,6 +101,55 @@ fn entries() -> Vec<Step> {
                 .col(TimeEntryRow::Person)
                 .col(TimeEntryRow::Day)
                 .col(TimeEntryRow::Id)
+                .to_owned(),
+        ),
+    ]
+}
+
+/// The values of the own fields of time entries: the columns of `field_value` (migration 9), with
+/// the marks of time at work.
+fn entry_values() -> Vec<Step> {
+    vec![
+        Step::Table(
+            Table::create()
+                .table(TimeEntryValueRow::Table)
+                .col(
+                    ColumnDef::new(TimeEntryValueRow::EntityKind)
+                        .text()
+                        .not_null(),
+                )
+                .col(id_column(TimeEntryValueRow::EntityId))
+                .col(id_column(TimeEntryValueRow::Field))
+                .col(ColumnDef::new(TimeEntryValueRow::ValueText).text())
+                .col(ColumnDef::new(TimeEntryValueRow::ValueNumber).big_integer())
+                .col(ColumnDef::new(TimeEntryValueRow::ValueDate).big_integer())
+                .col(ColumnDef::new(TimeEntryValueRow::ValueRef).blob())
+                .col(
+                    ColumnDef::new(TimeEntryValueRow::Position)
+                        .big_integer()
+                        .not_null(),
+                )
+                .primary_key(
+                    Index::create()
+                        .col(TimeEntryValueRow::EntityKind)
+                        .col(TimeEntryValueRow::EntityId)
+                        .col(TimeEntryValueRow::Field)
+                        .col(TimeEntryValueRow::Position),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(TimeEntryValueRow::Table, TimeEntryValueRow::Field)
+                        .to(FieldRow::Table, FieldRow::Id),
+                )
+                .to_owned(),
+        ),
+        // The entries that hold a choice: combining two choices moves them.
+        Step::Index(
+            Index::create()
+                .name("time_entry_value_by_ref")
+                .table(TimeEntryValueRow::Table)
+                .col(TimeEntryValueRow::Field)
+                .col(TimeEntryValueRow::ValueRef)
                 .to_owned(),
         ),
     ]

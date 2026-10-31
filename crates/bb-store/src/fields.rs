@@ -17,13 +17,14 @@ use bb_core::own_fields::{
 };
 use bb_core::own_fields_value::Cell;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query};
+use sea_query::{DynIden, Expr, ExprTrait as _, IntoIden as _, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::db::{Reader, Row, STATEMENT_ITEMS, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     FieldChoiceRow, FieldIssueTypeRow, FieldProjectRow, FieldRow, FieldValueRow, IssueRow,
+    TimeEntryValueRow,
 };
 
 /// The IDs of every own field, so that each has a level in an evaluation.
@@ -183,6 +184,25 @@ pub(crate) fn kind_text(kind: &EntityKind) -> String {
     kind.as_str().to_owned()
 }
 
+/// The table that holds the values of the own fields of items of `kind`: a time entry keeps its
+/// values apart (`time_entry_value`, every part of it about a person's time); every other item in
+/// `field_value`. Both have the same columns.
+pub(crate) fn values_table(kind: &EntityKind) -> DynIden {
+    if *kind == EntityKind::from(RecordKind::TimeEntry) {
+        TimeEntryValueRow::Table.into_iden()
+    } else {
+        FieldValueRow::Table.into_iden()
+    }
+}
+
+/// Both tables of values, for what a choice of any field reaches.
+fn every_values_table() -> [DynIden; 2] {
+    [
+        FieldValueRow::Table.into_iden(),
+        TimeEntryValueRow::Table.into_iden(),
+    ]
+}
+
 fn kind_from(text: &str) -> Result<EntityKind, StoreError> {
     EntityKind::new(text).map_err(|_| StoreError::Corrupt("a kind of item"))
 }
@@ -215,7 +235,7 @@ async fn values_of_chunk(
             FieldValueRow::ValueDate,
             FieldValueRow::ValueRef,
         ])
-        .from(FieldValueRow::Table)
+        .from(values_table(kind))
         .and_where(Expr::col(FieldValueRow::EntityKind).eq(kind_text(kind)))
         .and_where(
             Expr::col(FieldValueRow::EntityId)
@@ -246,25 +266,24 @@ async fn items_with_choice_in(
     field: FieldId,
     choice: ChoiceId,
 ) -> Result<Vec<(EntityKind, EntityId)>, StoreError> {
-    let mut select = Query::select();
-    select
-        .distinct()
-        .columns([FieldValueRow::EntityKind, FieldValueRow::EntityId])
-        .from(FieldValueRow::Table)
-        .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
-        .and_where(Expr::col(FieldValueRow::ValueRef).eq(choice.stored()))
-        .order_by(FieldValueRow::EntityId, Order::Asc);
-    reader
-        .fetch_all(&select)
-        .await?
-        .iter()
-        .map(|row| {
-            Ok((
+    let mut found = Vec::new();
+    for table in every_values_table() {
+        let mut select = Query::select();
+        select
+            .distinct()
+            .columns([FieldValueRow::EntityKind, FieldValueRow::EntityId])
+            .from(table)
+            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+            .and_where(Expr::col(FieldValueRow::ValueRef).eq(choice.stored()))
+            .order_by(FieldValueRow::EntityId, Order::Asc);
+        for row in reader.fetch_all(&select).await? {
+            found.push((
                 kind_from(&row.get::<String>(FieldValueRow::EntityKind)?)?,
                 row.id::<EntityId>(FieldValueRow::EntityId)?,
-            ))
-        })
-        .collect()
+            ));
+        }
+    }
+    Ok(found)
 }
 
 async fn write_scope(
@@ -574,9 +593,10 @@ impl FieldStore for AuthStorage {
         field: FieldId,
         cells: &[Cell],
     ) -> Result<(), StoreError> {
+        let table = values_table(&kind);
         let mut delete = Query::delete();
         delete
-            .from_table(FieldValueRow::Table)
+            .from_table(table.clone())
             .and_where(Expr::col(FieldValueRow::EntityKind).eq(kind_text(&kind)))
             .and_where(Expr::col(FieldValueRow::EntityId).eq(entity.stored()))
             .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()));
@@ -584,7 +604,7 @@ impl FieldStore for AuthStorage {
         for (position, cell) in (0_i64..).zip(cells) {
             let mut insert = Query::insert();
             insert
-                .into_table(FieldValueRow::Table)
+                .into_table(table.clone())
                 .columns([
                     FieldValueRow::EntityKind,
                     FieldValueRow::EntityId,
@@ -621,35 +641,37 @@ impl FieldStore for AuthStorage {
         if holders.is_empty() {
             return Ok(holders);
         }
-        // An item that holds both choices keeps the one row it has for the other: the rows of
-        // the first choice go, for every such item at once.
-        let mut into_holders = Query::select();
-        into_holders
-            .columns([FieldValueRow::EntityKind, FieldValueRow::EntityId])
-            .from(FieldValueRow::Table)
-            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
-            .and_where(Expr::col(FieldValueRow::ValueRef).eq(into.stored()));
-        let mut delete = Query::delete();
-        delete
-            .from_table(FieldValueRow::Table)
-            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
-            .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()))
-            .and_where(
-                Expr::tuple([
-                    Expr::col(FieldValueRow::EntityKind),
-                    Expr::col(FieldValueRow::EntityId),
-                ])
-                .in_subquery(into_holders),
-            );
-        transaction.execute(&delete).await?;
-        // The others move to the other choice, all in one statement.
-        let mut update = Query::update();
-        update
-            .table(FieldValueRow::Table)
-            .value(FieldValueRow::ValueRef, into.stored())
-            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
-            .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()));
-        transaction.execute(&update).await?;
+        for table in every_values_table() {
+            // An item that holds both choices keeps the one row it has for the other: the rows
+            // of the first choice go, for every such item at once.
+            let mut into_holders = Query::select();
+            into_holders
+                .columns([FieldValueRow::EntityKind, FieldValueRow::EntityId])
+                .from(table.clone())
+                .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+                .and_where(Expr::col(FieldValueRow::ValueRef).eq(into.stored()));
+            let mut delete = Query::delete();
+            delete
+                .from_table(table.clone())
+                .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+                .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()))
+                .and_where(
+                    Expr::tuple([
+                        Expr::col(FieldValueRow::EntityKind),
+                        Expr::col(FieldValueRow::EntityId),
+                    ])
+                    .in_subquery(into_holders),
+                );
+            transaction.execute(&delete).await?;
+            // The others move to the other choice, all in one statement.
+            let mut update = Query::update();
+            update
+                .table(table)
+                .value(FieldValueRow::ValueRef, into.stored())
+                .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+                .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()));
+            transaction.execute(&update).await?;
+        }
         Ok(holders)
     }
 }

@@ -32,8 +32,8 @@ fn read_day(days: i64) -> Result<Date, StoreError> {
     date_of(days).ok_or(StoreError::Corrupt("a date"))
 }
 
-/// A number of minutes as it is stored.
-fn read_minutes(minutes: i64) -> Result<Minutes, StoreError> {
+/// A number of minutes as it is stored, or a sum of them.
+pub(crate) fn read_minutes(minutes: i64) -> Result<Minutes, StoreError> {
     Minutes::try_from(minutes).map_err(|_| StoreError::Corrupt("a number of minutes"))
 }
 

@@ -146,6 +146,8 @@ pub async fn preview_many_changes<S: AuthStore>(
         .selection(&actor, &input.session_token, &input.action)
         .await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    // The selection is read once: its issues by their addresses and the values of their fields.
+    ctx.read_ahead(&addresses).await?;
     let mut maker = ctx.line_maker().await?;
     let mut reader = ctx.change_reader().await?;
     let (mut will_change, mut skipped) = (0_usize, 0_usize);

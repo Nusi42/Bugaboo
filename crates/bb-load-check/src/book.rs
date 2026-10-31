@@ -125,6 +125,10 @@ pub struct Book {
     /// The searches people made.
     #[serde(default)]
     pub searched: Vec<Searched>,
+    /// The readable ID of the issue of every time entry a stop of a timer saved (architecture
+    /// §11, "Timers and working hours start and stop at the same time").
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub timed: Vec<String>,
 }
 
 impl Book {

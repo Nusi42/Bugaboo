@@ -202,8 +202,6 @@ C = *Can change*, S = *Can see*, H = *Hidden*.
 | Estimated time | C | C | C | S | S | H |
 | Time left | C | C | C | S | S | H |
 | Time spent | C | C | C | S | S | H |
-| Activity | C | C | C | S | S | H |
-| Cost center | C | C | S | S | S | H |
 
 <!-- END GENERATED starting-field-levels -->
 
@@ -252,8 +250,6 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 | `estimated-time` | Estimated time | issue | – |
 | `time-left` | Time left | issue | – |
 | `time-spent` | Time spent | issue (total of its time entries) | – |
-| `activity` | Activity | time entry (default on the issue) | – |
-| `cost-center` | Cost center | time entry (default on the issue and project) | – |
 
 <!-- END GENERATED field-catalogue -->
 

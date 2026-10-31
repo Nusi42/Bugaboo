@@ -454,14 +454,14 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
                     .await
             }
         };
-        set(viewer.id, None, Field::CostCenter, Some(FieldLevel::Hidden)).await?;
-        set(member.id, None, Field::CostCenter, Some(FieldLevel::CanSee)).await?;
+        set(viewer.id, None, Field::DueDate, Some(FieldLevel::Hidden)).await?;
+        set(member.id, None, Field::DueDate, Some(FieldLevel::CanSee)).await?;
         org.give(&bea, viewer.id, projects.acme).await?;
         let level = |answer: &bb_app::roles::AccessAnswer| {
             answer
                 .fields
                 .iter()
-                .find(|field| field.subject == Field::CostCenter.into())
+                .find(|field| field.subject == Field::DueDate.into())
                 .map(|field| field.level)
         };
         let answer = org.check(&org.admin, bea.id, Some(projects.web)).await?;
@@ -474,14 +474,14 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
         set(
             member.id,
             Some(projects.web),
-            Field::CostCenter,
+            Field::DueDate,
             Some(FieldLevel::Hidden),
         )
         .await?;
         set(
             viewer.id,
             Some(projects.web),
-            Field::CostCenter,
+            Field::DueDate,
             Some(FieldLevel::Hidden),
         )
         .await?;
@@ -512,13 +512,13 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
         assert_eq!(levels.fields.len(), 1);
         assert_eq!(levels.fields[0].level, FieldLevel::Hidden);
         // Taking the level of the project away gives the role's own level back.
-        set(member.id, Some(projects.web), Field::CostCenter, None).await?;
-        set(viewer.id, Some(projects.web), Field::CostCenter, None).await?;
+        set(member.id, Some(projects.web), Field::DueDate, None).await?;
+        set(viewer.id, Some(projects.web), Field::DueDate, None).await?;
         let answer = org.check(&org.admin, bea.id, Some(projects.api)).await?;
         assert_eq!(level(&answer), Some(FieldLevel::CanSee));
         // A role's own level cannot be taken away, only changed.
         assert_eq!(
-            refused(set(member.id, None, Field::CostCenter, None).await),
+            refused(set(member.id, None, Field::DueDate, None).await),
             Some(ErrorCode::InvalidRequest)
         );
         // The place a level comes from is in the reasons, with the project named only when visible.
@@ -526,7 +526,7 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
         let own = answer
             .fields
             .iter()
-            .find(|field| field.subject == Field::CostCenter.into())
+            .find(|field| field.subject == Field::DueDate.into())
             .ok_or("the field is there")?;
         assert!(own.roles.iter().all(|says| says.set == LevelPlace::RoleOwn));
         Ok(())
