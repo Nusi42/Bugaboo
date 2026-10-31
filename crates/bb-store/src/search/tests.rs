@@ -17,6 +17,7 @@ use bb_core::own_fields::ChoiceColor;
 use bb_core::project::{Project, ShortName};
 use bb_core::relation::{IssueParent, Relation, RelationKind};
 use bb_core::tags::{IssueSight, IssueTag, Tag};
+use bb_core::time::day::FirstDay;
 use bb_core::version::FIRST_VERSION;
 use bb_core::workflow::starter;
 use bb_searchlang::{Field, FieldKind, IssueField, ReadableFields, YES, check, parse_with};
@@ -359,6 +360,7 @@ pub(super) fn request_with(
         me: data.me,
         now: at(100),
         zone: TimeZone::UTC,
+        first_day: FirstDay::default(),
         projects: vec![ProjectLink {
             id: data.project,
             parent: None,

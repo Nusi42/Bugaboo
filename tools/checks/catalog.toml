@@ -203,6 +203,15 @@ files = ["messages/**", "web/**/*.{ts,tsx}", "crates/**/*.rs"]
 status = "active"
 
 [[check]]
+id = "TXT-DATES"
+title = "A date, a moment, a time of day and a length of time on a screen are written only by the shared helpers"
+rule = "UX-07, CFG-04, coding-standards §4"
+tool = "xtask (reads web/app/src outside shared/, tests and tools excluded: Intl.DateTimeFormat, Intl.RelativeTimeFormat, toLocaleDateString, toLocaleTimeString and toLocaleString)"
+when = ["edit", "commit", "ci"]
+files = ["web/app/src/**/*.{ts,tsx}"]
+status = "active"
+
+[[check]]
 id = "TXT-TERMS"
 title = "No words from the glossary's 'Don't say' column in UI text, user docs, API names or the names the code declares"
 rule = "glossary.md"

@@ -28,8 +28,8 @@ use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
 use bb_core::settings::{
-    ChangedBy, Format, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue,
-    Source, changed_only_on_its_own_screen, find, list_items, registry,
+    ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
+    changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{Version, counted_up};
@@ -498,11 +498,12 @@ pub async fn change_setting<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     if !definition.accepts(&input.value) {
-        // A list of hosts with an address in it has an answer of its own, in plain words.
-        let bare_hosts_refused = definition.format() == Format::Hosts
-            && matches!(&input.value, SettingValue::Text(text) if !definition.format().accepts(text));
-        return Err(if bare_hosts_refused {
-            ErrorCode::SettingHostsNotBare
+        // A text its format refuses has the format's answer (a list of hosts with an address in it,
+        // a zone the server does not know), in plain words; anything else is an invalid request.
+        let format_refused =
+            matches!(&input.value, SettingValue::Text(text) if !definition.format().accepts(text));
+        return Err(if format_refused {
+            definition.format().refusal()
         } else {
             ErrorCode::InvalidRequest
         }

@@ -26,7 +26,7 @@ use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::paging::{Cut, SkipCursor, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::sign_in::{SecurityAction, SessionStage};
-use bb_core::time::SECONDS_PER_DAY;
+use bb_core::time::days;
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -218,16 +218,9 @@ fn expiry(
 ) -> Result<Timestamp, AppError> {
     // A default longer than the longest time is cut to it: the longest time is the rule.
     let default_days = default_days.min(longest_days);
-    let latest = now
-        .as_second()
-        .saturating_add(longest_days.saturating_mul(SECONDS_PER_DAY));
-    let wanted = picked.map_or_else(
-        || {
-            now.as_second()
-                .saturating_add(default_days.saturating_mul(SECONDS_PER_DAY))
-        },
-        Timestamp::as_second,
-    );
+    let after = |count| now.as_second().saturating_add(days(count).as_secs());
+    let latest = after(longest_days);
+    let wanted = picked.map_or_else(|| after(default_days), Timestamp::as_second);
     if wanted <= now.as_second() || wanted > latest.saturating_add(CLOCK_SLACK_SECONDS) {
         return Err(ErrorCode::InvalidRequest.into());
     }

@@ -2,6 +2,8 @@
 //! moments by the calendar of the zone the request carries, so a day begins where the person's day
 //! begins. The tree keeps the words; only here do they become numbers.
 
+use bb_core::time::SECONDS_PER_DAY;
+use bb_core::time::day::{Week, date_of, start_of};
 use bb_searchlang::{Date, TimeWord, Unit};
 use jiff::civil;
 use jiff::tz::TimeZone;
@@ -34,20 +36,18 @@ impl Compiler<'_> {
     }
 
     fn today(&self) -> civil::Date {
-        self.request.now.to_zoned(self.zone().clone()).date()
+        date_of(self.request.now, self.zone())
     }
 
     /// The value of the start of `day` in the column.
     fn at(&self, day: civil::Date, clock: Clock) -> Result<i64, CompileError> {
         match clock {
-            Clock::Micros => day
-                .to_zoned(self.zone().clone())
-                .map(|start| start.timestamp().as_microsecond())
-                .map_err(|_| NOT_A_DATE),
-            Clock::Days => day
-                .to_zoned(TimeZone::UTC)
-                .map(|start| start.timestamp().as_second().div_euclid(86_400))
-                .map_err(|_| NOT_A_DATE),
+            Clock::Micros => start_of(day, self.zone())
+                .map(jiff::Timestamp::as_microsecond)
+                .ok_or(NOT_A_DATE),
+            Clock::Days => start_of(day, &TimeZone::UTC)
+                .map(|start| start.as_second().div_euclid(SECONDS_PER_DAY))
+                .ok_or(NOT_A_DATE),
         }
     }
 
@@ -80,15 +80,15 @@ impl Compiler<'_> {
     /// The stretch a time word stands for.
     pub(super) fn word(&self, word: TimeWord, clock: Clock) -> Result<Range, CompileError> {
         let today = self.today();
-        let monday = today
-            .checked_sub(Span::new().days(i64::from(today.weekday().to_monday_zero_offset())))
-            .map_err(|_| NOT_A_DATE)?;
+        let week = Week::of(today, self.request.first_day)
+            .map(|week| week.first())
+            .ok_or(NOT_A_DATE)?;
         let step = |day: civil::Date, by: Span| day.checked_add(by).map_err(|_| NOT_A_DATE);
         let (from, to) = match word {
             TimeWord::Today => (today, step(today, 1.day())?),
             TimeWord::Yesterday => (step(today, -1.day())?, today),
-            TimeWord::ThisWeek => (monday, step(monday, 7.days())?),
-            TimeWord::LastWeek => (step(monday, -7.days())?, monday),
+            TimeWord::ThisWeek => (week, step(week, 7.days())?),
+            TimeWord::LastWeek => (step(week, -7.days())?, week),
             TimeWord::ThisMonth => {
                 let first = today.first_of_month();
                 (first, step(first, 1.month())?)

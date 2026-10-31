@@ -8,8 +8,7 @@
 
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, SECURITY_LOG_KEEP_DAYS};
-use bb_core::time::SECONDS_PER_DAY;
-use jiff::{SignedDuration, Timestamp};
+use jiff::Timestamp;
 
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, change_failed, changed, fixed_entity, internal, purge_sessions,
@@ -45,9 +44,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let days = layers.number(&SECURITY_LOG_KEEP_DAYS);
         let now = self.now();
         let before: Timestamp = now
-            .checked_sub(SignedDuration::from_secs(
-                days.saturating_mul(SECONDS_PER_DAY),
-            ))
+            .checked_sub(bb_core::time::days(days))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         self.store()
             .prune_security_log(before, now)

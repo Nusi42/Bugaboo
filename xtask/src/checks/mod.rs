@@ -95,6 +95,7 @@ mod test_uploads;
 mod test_workflows;
 mod theme_only;
 mod txt_catalog;
+mod txt_dates;
 mod txt_literal;
 mod txt_terms;
 mod web_source;
@@ -262,6 +263,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(perf_n1::PerfN1),
         Box::new(test_workflows::TestWorkflows),
         Box::new(txt_catalog::TxtCatalog),
+        Box::new(txt_dates::TxtDates),
         Box::new(txt_literal::TxtLiteral),
         Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),

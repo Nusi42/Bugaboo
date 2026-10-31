@@ -11,6 +11,7 @@ use bb_core::issue::{Issue, Priority, StatusGroup};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::ShortName;
 use bb_core::tags::IssueSight;
+use bb_core::time::day::FirstDay;
 use bb_searchlang::CheckedSearch;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
@@ -117,6 +118,8 @@ pub struct SearchRequest {
     pub now: Timestamp,
     /// The zone of the person's region, which says where a day begins.
     pub zone: TimeZone,
+    /// The day the person's week starts on, for *this week* and *last week*.
+    pub first_day: FirstDay,
     /// The projects the person sees.
     pub projects: Vec<ProjectLink>,
     /// What the names of statuses, types and choices stand for.

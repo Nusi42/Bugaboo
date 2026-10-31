@@ -100,3 +100,23 @@ export interface Notice {
   /** A file that was added, deleted or brought back; the notice names who did it. */
   readonly file?: FileChange | null;
 }
+
+/** A length of time a person typed, as the browser hands it to the reader: the text, the person's *Number format* that says the decimal mark (the browser names the format of the device by the fixed one that writes the same mark), and the short words of the units from the browser's catalog, so the module carries no catalog of its own. */
+export interface LengthTyped {
+  /** What the person typed. */
+  readonly text: string;
+  /** A value of the setting *Number format*. */
+  readonly number_format: string;
+  /** The text of `fields.unit-hour`. */
+  readonly hour_unit: string;
+  /** The text of `fields.unit-minute`. */
+  readonly minute_unit: string;
+}
+
+/** What the reader of lengths made of a typed text ([`length::read`]): the minutes, or the sentence that says what is wrong and how to write it. */
+export interface LengthRead {
+  /** The whole minutes, when the text is a length of one entry. */
+  readonly minutes: number | null;
+  /** What is wrong with the text, when it is none. */
+  readonly mistake: Said | null;
+}

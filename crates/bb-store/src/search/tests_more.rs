@@ -584,3 +584,64 @@ async fn m5_f94_issues_sorted_by_a_person_field_follow_the_name_key() -> TestRes
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_04_this_week_starts_on_the_first_day_of_the_persons_week() -> TestResult {
+    use bb_app::ports::ChangeStore;
+    use bb_core::time::day::FirstDay;
+    use jiff::Timestamp;
+
+    each_database("search_first_day", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        // Saturday, Sunday and Monday before Wednesday, 2026-10-07.
+        let moments = [
+            ("a", "2026-10-03T12:00:00Z"),
+            ("b", "2026-10-04T12:00:00Z"),
+            ("c", "2026-10-05T12:00:00Z"),
+        ];
+        let mut made = Vec::new();
+        for (number, (title, at_time)) in moments.iter().enumerate() {
+            let mut each = issue(
+                &mut data.source,
+                data.project,
+                data.issue_type,
+                200 + i64::try_from(number)?,
+            );
+            each.title = (*title).to_owned();
+            let time: Timestamp = at_time.parse()?;
+            each.created_at = time;
+            each.updated_at = time;
+            made.push(each);
+        }
+        let ev = event(&mut data.source, 9);
+        let rows = made.clone();
+        ChangeStore::record_change(&fixture.storage, &ev, move |tx| {
+            Box::pin(async move {
+                for each in &rows {
+                    AuthStorage::insert_issue(tx, each, &[]).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        let mut ask = request(&data, "created is this week sort by title", None, 10);
+        ask.now = "2026-10-07T12:00:00Z".parse()?;
+        for (first_day, expected) in [
+            (FirstDay::Monday, vec!["c"]),
+            (FirstDay::Sunday, vec!["b", "c"]),
+            (FirstDay::Saturday, vec!["a", "b", "c"]),
+        ] {
+            ask.first_day = first_day;
+            let hits = fixture
+                .storage
+                .search_page(&ask)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let titles: Vec<_> = hits.into_iter().map(|hit| hit.issue.title).collect();
+            assert_eq!(titles, expected, "{first_day:?}");
+        }
+        Ok(())
+    })
+    .await
+}

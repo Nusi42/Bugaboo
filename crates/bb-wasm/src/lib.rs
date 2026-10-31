@@ -11,6 +11,7 @@
 pub mod names;
 
 use bb_core::fields::Field;
+use bb_core::time::Minutes;
 use bb_core::wording::{self, Change, File, Notice, Side};
 use bb_markdown::Options;
 use serde::Deserialize;
@@ -95,6 +96,31 @@ pub fn side_words(side: &str) -> Result<String, JsError> {
     .map_err(|e| JsError::new(&e))
 }
 
+/// Reads a length of time a person typed, as the server reads it (`bb_core::time::length`): the
+/// minutes, or the sentence of the mistake, as JSON.
+///
+/// # Errors
+/// The text is not a typed length as `bb_core::wording::LengthTyped` reads it.
+#[wasm_bindgen]
+pub fn read_length(typed: &str) -> Result<String, JsError> {
+    answer(typed, wording::length_read).map_err(|e| JsError::new(&e))
+}
+
+/// A length of whole minutes in a sentence, as the server words it (`bb_core::wording`): message
+/// keys with their words, as JSON.
+#[must_use]
+#[wasm_bindgen]
+pub fn length_sentence(minutes: u32) -> String {
+    serde_json::to_string(&wording::length_sentence(Minutes::new(minutes))).unwrap_or_default()
+}
+
+/// A length of whole minutes on a clock, as a grid shows it: `1:30` (`Minutes::on_clock`).
+#[must_use]
+#[wasm_bindgen]
+pub fn length_on_clock(minutes: u32) -> String {
+    Minutes::new(minutes).on_clock()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,6 +157,21 @@ mod tests {
             wording::side_said(Field::from_code(&asked.field), &asked.side)
         });
         assert!(asked.is_err());
+    }
+
+    #[test]
+    fn the_browser_reads_a_length_as_the_server_does() {
+        let read = |json: &str| answer(json, wording::length_read).unwrap_or_default();
+        assert_eq!(
+            read(r#"{"text":"1,5","number_format":"comma","hour_unit":"h","minute_unit":"m"}"#),
+            r#"{"minutes":90,"mistake":null}"#
+        );
+        let wrong: serde_json::Value = serde_json::from_str(&read(
+            r#"{"text":"soon","number_format":"point","hour_unit":"h","minute_unit":"m"}"#,
+        ))
+        .unwrap_or_default();
+        assert_eq!(wrong["mistake"]["key"], "time.length.not-a-length");
+        assert_eq!(length_on_clock(90), "1:30");
     }
 
     #[test]

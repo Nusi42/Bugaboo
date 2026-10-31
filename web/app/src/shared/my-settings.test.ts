@@ -122,11 +122,25 @@ describe("cfg_04 a change of the look is sent as the settings that differ", () =
   });
 });
 
+/** The clock of the region whose *Time of day* has a value. */
+function clock(value: string): string {
+  return regionOf(list({ [settingKeys.regionTimeOfDay]: value })).timeOfDay;
+}
+
+describe("cfg_04 the time of day of the region", () => {
+  it("reads the clock the person chose, and nothing else", () => {
+    expect(clock("12-hour")).toBe("12-hour");
+    expect(clock("24-hour")).toBe("24-hour");
+    expect(clock("13-hour")).toBe("device");
+  });
+});
+
 describe("cfg_04 region, start page and shortcut keys", () => {
   it("reads the region, and the device where nothing is set", () => {
     expect(regionOf()).toEqual({
       timeZone: "device",
       dateFormat: "device",
+      timeOfDay: "device",
       numberFormat: "device",
       firstDay: "device",
     });
@@ -142,6 +156,7 @@ describe("cfg_04 region, start page and shortcut keys", () => {
     ).toEqual({
       timeZone: "Europe/Berlin",
       dateFormat: "day-month-year",
+      timeOfDay: "device",
       numberFormat: "device",
       firstDay: "monday",
     });

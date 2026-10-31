@@ -14,9 +14,9 @@ use bb_core::ErrorCode;
 use bb_core::id::{IssueId, ProjectId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
+use bb_core::wording::Region;
 use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place as Where};
 use bb_searchlang::{Mistake, check, parse_with};
-use jiff::tz::TimeZone;
 use serde::Serialize;
 
 use super::names::status_groups;
@@ -185,7 +185,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         sight
             .own
             .retain(|project| looked.projects.contains(project));
-        let layers = self.setting_layers_of(Some(actor.person.id)).await?;
+        let region = Region::of(&self.setting_layers_of(Some(actor.person.id)).await?);
         let blocking = self.blocking_kinds().await?;
         let request = SearchRequest {
             search: checked,
@@ -196,7 +196,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             },
             me: actor.person.id,
             now: self.now(),
-            zone: TimeZone::clone(bb_core::wording::Region::of(&layers).zone()),
+            zone: region.zone().clone(),
+            first_day: region.first_day(),
             projects: looked.seen.links(&looked.projects),
             names,
             status_groups: status_groups(&looked),

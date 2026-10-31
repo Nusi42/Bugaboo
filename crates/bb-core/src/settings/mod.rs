@@ -16,11 +16,16 @@ use crate::message::MessageKey;
 mod catalog;
 mod format;
 mod layers;
+mod region;
 mod themes;
 
 pub use catalog::*;
 pub use format::{Choice, DEVICE, Format, is_host};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
+pub use region::{
+    DATE_FORMAT_DAY_MONTH_YEAR, DATE_FORMAT_MONTH_DAY_YEAR, FIRST_DAY_SATURDAY, FIRST_DAY_SUNDAY,
+    NUMBER_FORMAT_COMMA, NUMBER_FORMAT_SPACE, TIME_OF_DAY_12_HOUR, TIME_OF_DAY_24_HOUR,
+};
 
 words! {
     /// Where a setting can be set. A lower level overrides a higher one unless it is locked. The

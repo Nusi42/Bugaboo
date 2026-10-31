@@ -1,5 +1,8 @@
 //! The settings of Bugaboo. Add a setting here and nowhere else (ADR-0018).
 
+use super::region::{
+    DATE_FORMAT_CHOICES, FIRST_DAY_CHOICES, NUMBER_FORMAT_CHOICES, TIME_OF_DAY_CHOICES,
+};
 use super::themes::{
     DARK_THEME_CHOICES, DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, LIGHT_THEME_CHOICES,
 };
@@ -25,52 +28,6 @@ const SPACING_CHOICES: &[Choice] = &[
 const ISSUE_VIEW_CHOICES: &[Choice] = &[
     Choice::new("focus", message::APPEARANCE_ISSUE_VIEW_FOCUS),
     Choice::new("panel", message::APPEARANCE_ISSUE_VIEW_PANEL),
-];
-
-/// The value of *Date format* for day, month, year.
-pub const DATE_FORMAT_DAY_MONTH_YEAR: &str = "day-month-year";
-/// The value of *Date format* for month, day, year.
-pub const DATE_FORMAT_MONTH_DAY_YEAR: &str = "month-day-year";
-
-/// The value of *Number format* for a comma before the decimals.
-pub const NUMBER_FORMAT_COMMA: &str = "comma";
-/// The value of *Number format* for a space between groups and a comma before the decimals.
-pub const NUMBER_FORMAT_SPACE: &str = "space";
-
-const DATE_FORMAT_CHOICES: &[Choice] = &[
-    Choice::new("device", message::THEME_DEVICE),
-    Choice::new(
-        DATE_FORMAT_DAY_MONTH_YEAR,
-        message::SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR,
-    ),
-    Choice::new(
-        DATE_FORMAT_MONTH_DAY_YEAR,
-        message::SETTING_REGION_DATE_FORMAT_MONTH_DAY_YEAR,
-    ),
-    Choice::new(
-        "year-month-day",
-        message::SETTING_REGION_DATE_FORMAT_YEAR_MONTH_DAY,
-    ),
-];
-
-const NUMBER_FORMAT_CHOICES: &[Choice] = &[
-    Choice::new("device", message::THEME_DEVICE),
-    Choice::new("point", message::SETTING_REGION_NUMBER_FORMAT_POINT),
-    Choice::new(
-        NUMBER_FORMAT_COMMA,
-        message::SETTING_REGION_NUMBER_FORMAT_COMMA,
-    ),
-    Choice::new(
-        NUMBER_FORMAT_SPACE,
-        message::SETTING_REGION_NUMBER_FORMAT_SPACE,
-    ),
-];
-
-const FIRST_DAY_CHOICES: &[Choice] = &[
-    Choice::new("device", message::THEME_DEVICE),
-    Choice::new("monday", message::SETTING_REGION_FIRST_DAY_MONDAY),
-    Choice::new("sunday", message::SETTING_REGION_FIRST_DAY_SUNDAY),
-    Choice::new("saturday", message::SETTING_REGION_FIRST_DAY_SATURDAY),
 ];
 
 /// The choices of *Issue IDs*: the two modes of ADR-0021. The registry is read as text by the tools
@@ -210,6 +167,18 @@ settings! {
         help: message::SETTING_REGION_DATE_FORMAT_HELP,
         lockable: false,
         format: Format::Choices(DATE_FORMAT_CHOICES),
+    }
+
+    /// How a time of day is written: on a clock of 24 or of 12 hours, or as the date format says.
+    REGION_TIME_OF_DAY: Text = {
+        key: "region.time-of-day",
+        name: message::SETTING_REGION_TIME_OF_DAY_NAME,
+        default: "device",
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_REGION_TIME_OF_DAY_HELP,
+        lockable: false,
+        format: Format::Choices(TIME_OF_DAY_CHOICES),
     }
 
     /// How big numbers and decimals are written.

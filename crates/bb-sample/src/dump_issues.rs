@@ -23,6 +23,7 @@ use bb_core::issue::Issue;
 use bb_core::message::Message;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use bb_core::tags::IssueSight;
+use bb_core::time::day::FirstDay;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 use serde::Serialize;
@@ -335,6 +336,7 @@ fn whole_project(
         me: nobody,
         now: Timestamp::UNIX_EPOCH,
         zone: TimeZone::UTC,
+        first_day: FirstDay::default(),
         projects: Vec::new(),
         names: Names::default(),
         status_groups: Vec::new(),

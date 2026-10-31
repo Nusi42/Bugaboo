@@ -82,6 +82,8 @@ error_codes! {
     SettingLocked => ("setting.locked", 409),
     /// A list of hosts has an address or a path in it, not only host names (SEC-13).
     SettingHostsNotBare => ("setting.hosts-not-bare", 400),
+    /// A time zone that is not on the list of zones the server carries (M2-F72).
+    SettingUnknownTimeZone => ("setting.unknown-time-zone", 400),
     /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
     MoveLiftsNoAccess => ("project.move-lifts-no-access", 409),
     /// A project cannot go inside itself or one of its own sub-projects.

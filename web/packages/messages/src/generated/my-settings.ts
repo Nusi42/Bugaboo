@@ -3,7 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "setting.ui.example-moment": "Right now, a time looks like this: {moment}",
+  "setting.ui.example-moment": "Right now, a date and a time of day look like this: {moment}",
   "setting.ui.example-number": "A number looks like this: {number}",
   "setting.page.region-intro":
     "These choices are kept with you, so they follow you to every browser you sign in from.",

@@ -138,7 +138,6 @@ async fn cfg_06_a_value_the_setting_does_not_accept_is_refused_and_nothing_is_wr
             "start.page",
             text("https://evil.test/"),
         ),
-        (SettingsScope::Person, "region.time-zone", text("Nowhere")),
         (SettingsScope::Person, "shortcuts.keys", text("[]")),
         (SettingsScope::Person, "window.sizes", text("[800, 600]")),
     ];
@@ -174,6 +173,31 @@ async fn sec_13_a_list_of_hosts_with_an_address_in_it_is_refused_in_plain_words(
     )
     .await;
     assert!(fine.is_ok());
+    Ok(())
+}
+
+#[tokio::test]
+async fn m2_f72_the_server_refuses_a_time_zone_it_does_not_know_in_plain_words() -> Outcome {
+    let world = World::new().await?;
+    let events = world.store.event_count();
+    for (scope, value) in [
+        (SettingsScope::Person, "Europe/Atlantis"),
+        (SettingsScope::Organization, "Europe/Atlantis"),
+        (SettingsScope::Person, "Nowhere"),
+        (SettingsScope::Person, "europe/berlin"),
+    ] {
+        let code = refused(change(&world, scope, "region.time-zone", text(value)).await);
+        assert_eq!(code, ErrorCode::SettingUnknownTimeZone, "{value}");
+    }
+    assert_eq!(world.store.event_count(), events);
+    let known = change(
+        &world,
+        SettingsScope::Person,
+        "region.time-zone",
+        text("Europe/Berlin"),
+    )
+    .await;
+    assert!(known.is_ok());
     Ok(())
 }
 

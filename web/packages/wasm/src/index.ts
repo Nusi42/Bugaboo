@@ -10,14 +10,19 @@ import init, {
   change_sentence,
   file_sentence,
   initSync,
+  length_on_clock,
+  length_sentence,
   name_key,
   notification_sentences,
+  read_length,
   render,
   side_words,
 } from "../generated/bb_wasm.js";
 import type {
   Change as WordedChange,
   File as WordedFile,
+  LengthRead,
+  LengthTyped,
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
@@ -26,6 +31,8 @@ import type {
 export type {
   Change as WordedChange,
   File as WordedFile,
+  LengthRead,
+  LengthTyped,
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
@@ -54,6 +61,12 @@ export interface Wording {
   readonly notificationSentences: (notice: WordedNotice) => readonly Said[];
   /** One side of a change as people read it; `null` when the side holds no value. */
   readonly sideWords: (field: string, side: WordedSide) => Said | null;
+  /** A length of time a person typed (`1:30`, `1.5`, `90m`), read as the server reads it: the minutes, or the sentence of the mistake. */
+  readonly readLength: (typed: LengthTyped) => LengthRead;
+  /** A length of whole minutes on a clock, as a grid and a running timer show it: `1:30`. */
+  readonly lengthOnClock: (minutes: number) => string;
+  /** A length of whole minutes in a sentence: *1 hour 30 minutes*. */
+  readonly lengthSentence: (minutes: number) => Said;
 }
 
 /** Whether a value read from the answer of the module is words: a text, a list or a message. */
@@ -99,6 +112,23 @@ function saidIn(json: string): Said | null {
   return null;
 }
 
+/** The answer of the reader of lengths; anything else is a defect (see `broken`). */
+function lengthReadIn(json: string): LengthRead {
+  const parsed: unknown = JSON.parse(json);
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "minutes" in parsed &&
+    (typeof parsed.minutes === "number" || parsed.minutes === null) &&
+    "mistake" in parsed &&
+    (parsed.mistake === null || isSaid(parsed.mistake))
+  ) {
+    return { minutes: parsed.minutes, mistake: parsed.mistake };
+  }
+  broken(new Error("The reader of lengths of bb-core gave something that is no answer."));
+  return { minutes: null, mistake: null };
+}
+
 /** Asks the module; a refusal is a defect (see `broken`). */
 function ask(question: () => string): string {
   try {
@@ -117,6 +147,9 @@ const wording: Wording = {
     return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];
   },
   sideWords: (field, side) => saidIn(ask(() => side_words(JSON.stringify({ field, side })))),
+  readLength: (typed) => lengthReadIn(ask(() => read_length(JSON.stringify(typed)))),
+  lengthOnClock: (minutes) => length_on_clock(minutes),
+  lengthSentence: (minutes) => saidIn(length_sentence(minutes)) ?? "",
 };
 
 let loading: Promise<void> | undefined;

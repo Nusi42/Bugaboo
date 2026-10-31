@@ -541,6 +541,11 @@ export interface MessageArguments {
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
+  "time.length.hours": { hours: number };
+  "time.length.hours-and-minutes": { hours: string | number; minutes: string | number };
+  "time.length.minutes": { minutes: number };
+  "time.length.not-a-length": { decimal: string | number };
+  "time.length.too-long": { hours: string | number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };

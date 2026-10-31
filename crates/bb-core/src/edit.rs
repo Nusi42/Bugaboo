@@ -19,7 +19,7 @@ use crate::event::{EntityKind, EntityRef};
 use crate::id::{EditorId, LockToken, ProjectId, UserId};
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
-use crate::time::SECONDS_PER_DAY;
+use crate::time::days;
 
 /// How long a lock lasts after the last heartbeat, in seconds.
 pub const LEASE_SECONDS: i64 = 60;
@@ -64,7 +64,7 @@ pub const fn lease() -> SignedDuration {
 /// How long a draft is kept after its last change.
 #[must_use]
 pub const fn draft_keep() -> SignedDuration {
-    SignedDuration::from_secs(DRAFT_KEEP_DAYS * SECONDS_PER_DAY)
+    days(DRAFT_KEEP_DAYS)
 }
 
 /// The moment a lease that is renewed at `now` ends. `None` only for a moment so late that it

@@ -4470,6 +4470,7 @@ export interface components {
       | "assignment.conflict"
       | "setting.locked"
       | "setting.hosts-not-bare"
+      | "setting.unknown-time-zone"
       | "project.move-lifts-no-access"
       | "project.move-into-itself"
       | "project.too-deep"

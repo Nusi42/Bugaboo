@@ -148,8 +148,8 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
         .iter()
         .find(|mail| mail.to == "ada@example.test")
         .ok_or("Ada gets an e-mail")?;
-    let said = message::mail_date_time("2026-10-05, 4:30 PM", "Asia/Tokyo").render();
+    let said = message::mail_date_time("2026-10-05, 16:30", "Asia/Tokyo").render();
     assert!(ada.text.contains(&said), "{}", ada.text);
-    assert!(!ada.text.contains("7:30 AM"), "{}", ada.text);
+    assert!(!ada.text.contains("07:30"), "{}", ada.text);
     Ok(())
 }

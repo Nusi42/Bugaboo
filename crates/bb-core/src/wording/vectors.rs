@@ -8,15 +8,55 @@
 
 use serde_json::{Value, json};
 
-use super::{Region, list_said, typed_said};
-use crate::own_fields::FieldType;
+use jiff::Timestamp;
 
-/// The choices under *Region* that a server knows (not *device*), by the name the cases use.
-const REGIONS: [(&str, &str, &str, &str); 4] = [
-    ("usual", "year-month-day", "point", "UTC"),
-    ("german", "day-month-year", "comma", "Europe/Berlin"),
-    ("american", "month-day-year", "point", "America/Los_Angeles"),
-    ("french", "year-month-day", "space", "UTC"),
+use super::region::Choices;
+use super::{Region, length_sentence, list_said, typed_said};
+use crate::own_fields::FieldType;
+use crate::time::length::{self, DecimalMark, LengthWords, Minutes};
+
+/// The choices under *Region* that a server knows, by the name the cases use: the date format, the
+/// time of day, the number format and the zone. The date formats are fixed ones (a server does not
+/// know the device's); the time of day *device* follows them, which a server knows. Each date order
+/// is here with both clocks.
+const REGIONS: [(&str, &str, &str, &str, &str); 7] = [
+    ("usual", "year-month-day", "device", "point", "UTC"),
+    (
+        "german",
+        "day-month-year",
+        "device",
+        "comma",
+        "Europe/Berlin",
+    ),
+    (
+        "american",
+        "month-day-year",
+        "12-hour",
+        "point",
+        "America/Los_Angeles",
+    ),
+    ("french", "year-month-day", "device", "space", "UTC"),
+    (
+        "usual on 12 hours",
+        "year-month-day",
+        "12-hour",
+        "point",
+        "UTC",
+    ),
+    (
+        "german on 12 hours",
+        "day-month-year",
+        "12-hour",
+        "comma",
+        "Europe/Berlin",
+    ),
+    (
+        "american on 24 hours",
+        "month-day-year",
+        "24-hour",
+        "point",
+        "America/Los_Angeles",
+    ),
 ];
 
 /// A case: a name, the kind of the field, the value as the API gives it, and the region.
@@ -188,6 +228,24 @@ fn days_and_moments() -> Vec<Case> {
             || json!("2026-10-05T03:15:00Z"),
             "american",
         ),
+        (
+            "moment on 12 hours, year first",
+            "date-time",
+            || json!("2026-10-05T13:05:00Z"),
+            "usual on 12 hours",
+        ),
+        (
+            "moment on 12 hours, day first",
+            "date-time",
+            || json!("2026-10-05T13:05:00Z"),
+            "german on 12 hours",
+        ),
+        (
+            "moment on 24 hours, month first",
+            "date-time",
+            || json!("2026-10-05T23:30:00Z"),
+            "american on 24 hours",
+        ),
         ("not a moment", "date-time", || json!("later"), "usual"),
         ("short text", "text", || json!("hello"), "usual"),
         (
@@ -219,7 +277,85 @@ fn region_named(name: &str) -> Option<Region> {
     REGIONS
         .iter()
         .find(|(each, ..)| *each == name)
-        .map(|(_, date, number, zone)| Region::from_choices(Some(date), Some(number), Some(zone)))
+        .map(|(_, date, time, number, zone)| {
+            Region::from_choices(&Choices {
+                date_format: Some(date),
+                time_of_day: Some(time),
+                number_format: Some(number),
+                time_zone: Some(zone),
+                first_day: None,
+            })
+        })
+}
+
+/// The moments whose time of day the vectors check in every region: in the morning, after noon,
+/// and exactly at midnight.
+const TIMES: [&str; 3] = [MOMENT, "2026-10-05T13:05:00Z", "2026-10-05T00:00:00Z"];
+
+/// The times of day of [`TIMES`] in every region, as the screen shows them.
+fn times() -> Result<Vec<Value>, String> {
+    let mut all = Vec::new();
+    for (name, ..) in REGIONS {
+        let region = region_named(name).ok_or_else(|| format!("no region {name:?}"))?;
+        for moment in TIMES {
+            let at: Timestamp = moment
+                .parse()
+                .map_err(|_| format!("{moment:?} is no moment"))?;
+            all.push(json!({
+                "moment": moment,
+                "region": name,
+                "expected": region.time_of_day(at),
+            }));
+        }
+    }
+    Ok(all)
+}
+
+/// The lengths of time a person types that the vectors check, with the decimal mark of their
+/// number format: the forms of one length, the marks, the limit of an entry and mistakes.
+const LENGTHS: [(&str, DecimalMark); 16] = [
+    ("1:30", DecimalMark::Point),
+    ("1.5", DecimalMark::Point),
+    ("1,5", DecimalMark::Comma),
+    ("90m", DecimalMark::Point),
+    ("1h 30m", DecimalMark::Point),
+    ("2h", DecimalMark::Point),
+    ("2", DecimalMark::Comma),
+    ("1H 30M", DecimalMark::Point),
+    ("0.33", DecimalMark::Point),
+    ("0:05", DecimalMark::Point),
+    ("24:00", DecimalMark::Point),
+    ("24:01", DecimalMark::Point),
+    ("1,5", DecimalMark::Point),
+    ("30m 1h", DecimalMark::Point),
+    ("soon", DecimalMark::Comma),
+    ("", DecimalMark::Point),
+];
+
+/// The lengths that the vectors write on the clock, in minutes.
+const ON_CLOCK: [u32; 4] = [0, 5, 90, 1440];
+
+/// The lengths that the vectors write in a sentence, in minutes: none, one of each unit, many.
+const IN_SENTENCES: [u32; 7] = [0, 1, 42, 60, 61, 600, 2368];
+
+/// What the reader makes of each of [`LENGTHS`]: the minutes, or the sentence of the mistake.
+fn lengths() -> Vec<Value> {
+    LENGTHS
+        .iter()
+        .map(
+            |(text, mark)| match length::read(text, &LengthWords::of_catalog(*mark)) {
+                Ok(minutes) => {
+                    json!({"text": text, "mark": mark, "minutes": minutes, "mistake": null})
+                }
+                Err(mistake) => json!({
+                    "text": text,
+                    "mark": mark,
+                    "minutes": null,
+                    "mistake": mistake.said(*mark).render(),
+                }),
+            },
+        )
+        .collect()
 }
 
 /// The words of a value of a kind for a region, as the screen shows it: no name of a time zone.
@@ -236,10 +372,15 @@ fn words(kind: FieldType, value: &Value, region: &Region) -> Option<String> {
 pub fn value_words_file() -> Result<String, String> {
     let regions: serde_json::Map<String, Value> = REGIONS
         .iter()
-        .map(|(name, date, number, zone)| {
+        .map(|(name, date, time, number, zone)| {
             (
                 (*name).to_owned(),
-                json!({"dateFormat": date, "numberFormat": number, "timeZone": zone}),
+                json!({
+                    "dateFormat": date,
+                    "timeOfDay": time,
+                    "numberFormat": number,
+                    "timeZone": zone,
+                }),
             )
         })
         .collect();
@@ -269,11 +410,28 @@ pub fn value_words_file() -> Result<String, String> {
             json!({"names": names, "expected": expected})
         })
         .collect();
+    let clocks: Vec<Value> = ON_CLOCK
+        .iter()
+        .map(|minutes| json!({"minutes": minutes, "expected": Minutes::new(*minutes).on_clock()}))
+        .collect();
+    let sentences: Vec<Value> = IN_SENTENCES
+        .iter()
+        .map(|minutes| {
+            json!({
+                "minutes": minutes,
+                "expected": length_sentence(Minutes::new(*minutes)).render(),
+            })
+        })
+        .collect();
     let file = json!({
-        "about": "How the value of an own field is worded for a person. This file is written by `cargo xtask gen word-vectors` from crates/bb-core/src/wording/vectors.rs: the expected words are what the server writes. The browser test (web/app/src/shared/value-words.test.ts) reads it and checks that the screen gives the same words for the same value and the same choices under Region (ADR-0033, the amendment about value wording). A null expected means the value has no words for its kind. Only choices the server can know are here: not device.",
+        "about": "How the value of an own field, a time of day and a length of time are worded for a person, and how a typed length of time is read. This file is written by `cargo xtask gen word-vectors` from crates/bb-core/src/wording/vectors.rs: the expected words are what the server writes. The browser test (web/app/src/shared/value-words.test.ts) reads it and checks that the screen gives the same words for the same value and the same choices under Region, and that the reader of lengths in the module of the browser reads the same (ADR-0033, the amendment about value wording). A null expected means the value has no words for its kind. Only choices the server can know are here: no date format of the device (a time of day of the device follows the fixed date format).",
         "regions": regions,
         "cases": cases,
+        "times": times()?,
         "lists": lists,
+        "lengths": lengths(),
+        "clocks": clocks,
+        "sentences": sentences,
     });
     let pretty = serde_json::to_string_pretty(&file).map_err(|error| error.to_string())?;
     let mut text = collapse_names(&pretty);
