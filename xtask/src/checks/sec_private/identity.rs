@@ -11,6 +11,7 @@ use std::collections::BTreeSet;
 use anyhow::Context as _;
 
 use super::{Finding, Repo, Rule};
+use crate::checks::unpushed;
 
 /// The domain of the noreply addresses of GitHub.
 const NOREPLY_DOMAIN: &str = "users.noreply.github.com";
@@ -84,22 +85,14 @@ pub(crate) fn recorded_problems(repo: &Repo) -> Vec<String> {
 /// The commits on no remote with an author or a committer that is not public: one finding for
 /// each commit and role, naming the commit only.
 pub(super) fn unpushed_findings(repo: &Repo) -> anyhow::Result<Vec<Finding>> {
-    if repo
-        .git_bytes(&["rev-parse", "--verify", "--quiet", "HEAD"])
-        .is_err()
-    {
+    if !unpushed::has_commits(repo) {
         return Ok(Vec::new());
     }
     let listing = repo
-        .git_bytes(&[
-            "log",
-            "--format=%h%x1f%an%x1f%ae%x1f%cn%x1f%ce%x1e",
-            "--branches",
-            "--tags",
-            "HEAD",
-            "--not",
-            "--remotes",
-        ])
+        .git_bytes(&unpushed::log_arguments(
+            &["--format=%h%x1f%an%x1f%ae%x1f%cn%x1f%ce%x1e"],
+            &[],
+        ))
         .context("could not read the authors of the commits")?;
     let mut findings = Vec::new();
     let mut seen = BTreeSet::new();

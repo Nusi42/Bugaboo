@@ -4,6 +4,7 @@ use super::{
     BTreeMap, BTreeSet, Exemptions, Finding, Origin, PrivateWordRule, PrivateWords, Repo, finding,
     is_exempt, is_old_version, masked, scan_content, scan_name, scan_text,
 };
+use crate::checks::unpushed;
 
 /// The records of a Git listing that ends each record with the separator `0x1e`.
 pub(super) fn records(listing: &[u8]) -> Vec<String> {
@@ -23,10 +24,7 @@ pub(super) fn scan_history(
     exempt: &Exemptions,
     skipped: &str,
 ) -> anyhow::Result<Vec<Finding>> {
-    if repo
-        .git_bytes(&["rev-parse", "--verify", "--quiet", "HEAD"])
-        .is_err()
-    {
+    if !unpushed::has_commits(repo) {
         return Ok(Vec::new());
     }
     let commits = repo.git_bytes(&[
@@ -104,22 +102,12 @@ pub(super) struct Change {
     blob: String,
 }
 
-/// The files that the commits add or change on any branch or tag and on `HEAD`, without the
-/// commits a remote has already: a new branch, a second local branch and a clone are covered, and
-/// a repository without remotes yields its whole history.
+/// The files that the commits a push can add ([`unpushed`]) add or change.
 pub(super) fn unpushed_changes(repo: &Repo, skipped: &str) -> anyhow::Result<Vec<Change>> {
-    let raw = repo.git_paths_bytes(&[
-        "log",
-        "--raw",
-        "--no-renames",
-        "--no-abbrev",
-        "--format=%x1e%H",
-        "--branches",
-        "--tags",
-        "HEAD",
-        "--not",
-        "--remotes",
-    ])?;
+    let raw = repo.git_paths_bytes(&unpushed::log_arguments(
+        &["--raw", "--no-renames", "--no-abbrev", "--format=%x1e%H"],
+        &[],
+    ))?;
     let mut changes = Vec::new();
     let mut hash = String::new();
     for line in String::from_utf8_lossy(&raw).lines() {
