@@ -151,7 +151,7 @@ mod tests {
     fn in_theme(rule: &str) -> Vec<String> {
         let repo = crate::repo::Repo::discover().unwrap();
         let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
-        let file = ThemeFile::parse(&format!("{text}\n{rule}\n")).unwrap();
+        let file = ThemeFile::parse_base(&format!("{text}\n{rule}\n")).unwrap();
         theme_findings(&file)
             .into_iter()
             .map(|finding| finding.message)

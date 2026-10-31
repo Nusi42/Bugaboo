@@ -1,4 +1,4 @@
-//! THEME-ONLY: the look of the app lives in `design/theme.kdl` and nowhere else (ADR-0026).
+//! THEME-ONLY: the look of the app lives in the theme files of `design/` and nowhere else (ADR-0026).
 //!
 //! In the browser app and its packages there is
 //!

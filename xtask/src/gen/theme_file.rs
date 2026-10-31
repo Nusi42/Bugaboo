@@ -1,8 +1,10 @@
-//! `design/theme.kdl` as typed data (ADR-0026): the one theming file.
+//! `design/theme.kdl` and the files of `design/themes/` as typed data (ADR-0026).
 //!
-//! The generator, the contrast check and the style checks all read it through here, so the file
-//! has one reader. The file holds the themes, the tokens with their variants per mode on one line,
-//! the contrast rules, and the rules of the components (`part` rules that use tokens only).
+//! The generator, the contrast check and the style checks all read the theme through here, so the
+//! files have one reader. The base, `design/theme.kdl`, holds everything about how the app looks:
+//! the tokens with their variants per mode on one line, the contrast rules, and the rules of the
+//! components (`part` rules that use tokens only). Each built-in theme is a file of its own in
+//! `design/themes/`, named by its ID, that sets only the colors it changes over the base.
 
 use std::collections::BTreeSet;
 
@@ -14,10 +16,45 @@ use super::kdl_reader::{Document, Node};
 use crate::repo::Repo;
 
 mod builder;
+mod links;
+mod themes;
 use builder::Builder;
 
-/// Where the theme file lives, relative to the repository root.
+/// Where the base theme lives, relative to the repository root.
 pub(crate) const THEME_PATH: &str = "design/theme.kdl";
+/// The folder of the built-in themes: one file per theme, `<id>.kdl`, and nothing else.
+pub(crate) const THEMES_FOLDER: &str = "design/themes";
+/// The ending of a theme file.
+const THEME_FILE_ENDING: &str = ".kdl";
+
+/// Whether a file of the repository is one the theme is read from: the base or a theme file.
+pub(crate) fn is_theme_source(path: &str) -> bool {
+    path == THEME_PATH
+        || path
+            .strip_prefix(THEMES_FOLDER)
+            .and_then(|rest| rest.strip_prefix('/'))
+            .is_some_and(|name| name.ends_with(THEME_FILE_ENDING))
+}
+
+/// One file of `design/themes/`: where it is and what it says.
+pub(crate) struct ThemeSource {
+    pub(crate) path: String,
+    pub(crate) text: String,
+}
+
+/// The files of `design/themes/`, in name order.
+pub(crate) fn theme_sources(repo: &Repo) -> anyhow::Result<Vec<ThemeSource>> {
+    crate::docs::source::sorted_files(repo, THEMES_FOLDER, |_| true)?
+        .into_iter()
+        .map(|name| {
+            let path = format!("{THEMES_FOLDER}/{name}");
+            Ok(ThemeSource {
+                text: crate::source::read_text(repo, &path)?,
+                path,
+            })
+        })
+        .collect()
+}
 
 /// What a token is a value of. The word is the name of its line in the file.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -60,7 +97,7 @@ impl TokenKind {
             .map(|(_, kind)| *kind)
     }
 
-    /// The kinds that have a value for each theme.
+    /// The kinds that have a value for each theme: the only kinds a theme file may set.
     pub(crate) fn varies_by_theme(self) -> bool {
         matches!(self, Self::Color | Self::Shadow)
     }
@@ -68,9 +105,12 @@ impl TokenKind {
 
 /// One built-in theme.
 pub(crate) struct Theme {
+    /// The theme's ID: the name of its file.
     pub(crate) name: String,
     /// `light` or `dark`; decides the browser's own controls and scrollbars.
     pub(crate) kind: String,
+    /// Its file, `design/themes/<name>.kdl`, which a finding about the theme names.
+    pub(crate) path: String,
 }
 
 /// A choice that changes token values without changing the theme: spacing, text size, motion.
@@ -83,6 +123,19 @@ pub(crate) struct Variant {
     pub(crate) media: Option<String>,
 }
 
+/// The value of a color or a shadow in one theme, and where it is written.
+#[derive(Clone)]
+pub(crate) struct ThemeValue {
+    pub(crate) theme: String,
+    /// `#rrggbb`, a shadow, or `$other`: a color that names another color.
+    pub(crate) value: String,
+    /// The value when the device asks for more contrast (colors only).
+    pub(crate) more: Option<String>,
+    /// The file the value is written in: the base, or the theme's own file.
+    pub(crate) path: String,
+    pub(crate) line: usize,
+}
+
 /// One token: a name and its value in every mode, on one line of the file.
 pub(crate) struct Token {
     /// The CSS variable name without `--`.
@@ -90,10 +143,9 @@ pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     /// The value that is the same in every theme; `$other` names another token.
     pub(crate) same: Option<String>,
-    /// The value in each theme, in the order of the themes.
-    pub(crate) themes: Vec<(String, String)>,
-    /// The value in a theme when the device asks for more contrast.
-    pub(crate) more: Vec<(String, String)>,
+    /// A color or a shadow: the value in each theme, in the order of the themes. A theme whose file
+    /// does not set the token has the value of the base.
+    pub(crate) themes: Vec<ThemeValue>,
     /// The value while forced colors are on.
     pub(crate) forced: Option<String>,
     /// The value while a choice is on (the name of a [`Variant`]).
@@ -105,20 +157,23 @@ pub(crate) struct Token {
 }
 
 impl Token {
+    fn value_in(&self, theme: &str) -> Option<&ThemeValue> {
+        self.themes.iter().find(|value| value.theme == theme)
+    }
+
+    /// The value in a theme as it is written: `$other` when the token names another.
     pub(crate) fn in_theme(&self, theme: &str) -> Option<&str> {
-        self.themes
-            .iter()
-            .find(|(name, _)| name == theme)
-            .map(|(_, value)| value.as_str())
+        self.value_in(theme).map(|value| value.value.as_str())
+    }
+
+    /// The token's own value for more contrast in a theme, where it has one.
+    pub(crate) fn more_in(&self, theme: &str) -> Option<&str> {
+        self.value_in(theme)?.more.as_deref()
     }
 
     /// The value in a theme with more contrast: the token's own, where it has one.
     pub(crate) fn in_theme_with_more_contrast(&self, theme: &str) -> Option<&str> {
-        self.more
-            .iter()
-            .find(|(name, _)| name == theme)
-            .map(|(_, value)| value.as_str())
-            .or_else(|| self.in_theme(theme))
+        self.more_in(theme).or_else(|| self.in_theme(theme))
     }
 }
 
@@ -260,21 +315,39 @@ pub(crate) const FORCED_QUERY: &str = "(forced-colors: active)";
 pub(crate) const MORE_CONTRAST_QUERY: &str = "(prefers-contrast: more)";
 
 impl ThemeFile {
+    /// The base and every theme file of the repository.
     pub(crate) fn load(repo: &Repo) -> anyhow::Result<Self> {
-        let path = repo.path(THEME_PATH);
-        let text = std::fs::read_to_string(&path)
-            .with_context(|| format!("could not read {}", path.display()))?;
-        Self::parse(&crate::source::normalize(&text))
-            .with_context(|| format!("{THEME_PATH} is not valid"))
+        let base = crate::source::read_text(repo, THEME_PATH)?;
+        Self::parse(&base, &theme_sources(repo)?)
     }
 
-    pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
-        let document = Document::parse(text)?;
+    /// The base and the theme files, merged: every theme has every color, its own where its file
+    /// sets one and the base's where it does not. A problem names its file and its line.
+    pub(crate) fn parse(base: &str, themes: &[ThemeSource]) -> anyhow::Result<Self> {
         let mut builder = Builder::default();
-        for node in document.nodes() {
-            builder.add(node)?;
+        let mut read_base = || -> anyhow::Result<()> {
+            for node in Document::parse(base)?.nodes() {
+                builder.add(node)?;
+            }
+            Ok(())
+        };
+        read_base().with_context(|| format!("{THEME_PATH} is not valid"))?;
+        for source in themes {
+            builder
+                .add_theme(source)
+                .with_context(|| format!("{} is not valid", source.path))?;
         }
         builder.finish()
+    }
+
+    /// The color of a token in a theme, with a token that names another followed to its value.
+    pub(crate) fn color(&self, name: &str, theme: &str) -> Option<&str> {
+        links::follow(self, name, theme, links::Mode::Usual).ok()
+    }
+
+    /// The same with the colors that more contrast puts in place.
+    pub(crate) fn color_with_more_contrast(&self, name: &str, theme: &str) -> Option<&str> {
+        links::follow(self, name, theme, links::Mode::More).ok()
     }
 
     pub(crate) fn theme(&self, name: &str) -> Option<&Theme> {
@@ -391,7 +464,7 @@ impl ThemeFile {
 impl ThemeFile {
     fn validate(&self) -> anyhow::Result<()> {
         if self.themes.is_empty() {
-            bail!("there are no themes");
+            bail!("there are no themes: each is a file of {THEMES_FOLDER}/");
         }
         for theme in &self.themes {
             if theme.kind != "light" && theme.kind != "dark" {
@@ -409,7 +482,7 @@ impl ThemeFile {
         }
         self.validate_colors()?;
         self.validate_references()?;
-        Ok(())
+        links::check(self)
     }
 
     fn validate_colors(&self) -> anyhow::Result<()> {
@@ -472,6 +545,11 @@ impl ThemeFile {
                 .chain(token.forced.iter())
             {
                 unknown_in(value, token.line)?;
+            }
+            for value in &token.themes {
+                for text in std::iter::once(&value.value).chain(value.more.iter()) {
+                    unknown_in(text, value.line).with_context(|| value.path.clone())?;
+                }
             }
         }
         let mixin_names: BTreeSet<&str> = self
@@ -704,6 +782,14 @@ fn keyframes(node: Node<'_>) -> anyhow::Result<Keyframes> {
         frames,
         line: node.line(),
     })
+}
+
+#[cfg(test)]
+impl ThemeFile {
+    /// A base text with the theme files of the repository: for the tests that change the base.
+    pub(crate) fn parse_base(base: &str) -> anyhow::Result<Self> {
+        Self::parse(base, &theme_sources(&Repo::discover()?)?)
+    }
 }
 
 #[cfg(test)]

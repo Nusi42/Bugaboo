@@ -2,8 +2,10 @@
 //!
 //! Every text color is checked on every background color. The few combinations that are never
 //! used are written down, with the reason, in `design/theme.kdl` (the `contrast` line) (THM-03,
-//! UX-04). The check runs for every theme and for every mode that changes colors: the usual one,
-//! and the one for a device that asks for more contrast (THM-06).
+//! UX-04). The check runs for every theme file of `design/themes/` and for every mode that changes
+//! colors: the usual one, and the one for a device that asks for more contrast (THM-06). A color
+//! that names another is checked with the color it leads to, and a finding about a theme names the
+//! theme's file.
 
 use super::{Check, Context, Finding};
 use crate::generate::contrast_spec::DistinctSpec;
@@ -21,14 +23,14 @@ impl Check for StyContrast {
     }
 }
 
-/// The value of a color token in a theme.
+/// The value of a color token in a theme, with a color that names another followed to its value.
 fn color<'a>(file: &'a ThemeFile, name: &str, theme: &str) -> Option<&'a str> {
-    file.token(name)?.in_theme(theme)
+    file.color(name, theme)
 }
 
 /// The same, with the colors that more contrast replaces.
 fn color_with_more_contrast<'a>(file: &'a ThemeFile, name: &str, theme: &str) -> Option<&'a str> {
-    file.token(name)?.in_theme_with_more_contrast(theme)
+    file.color_with_more_contrast(name, theme)
 }
 
 fn evaluate(file: &ThemeFile) -> Vec<Finding> {
@@ -45,7 +47,7 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
             let ratio = contrast_ratio(text, background);
             if ratio < spec.min {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
                         "Theme {}: `{text_name}` on `{background_name}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change one of the two colors, or record why this pair is never used.",
                         theme.name, spec.min
@@ -99,7 +101,7 @@ fn hovered_findings(file: &ThemeFile) -> Vec<Finding> {
                 );
                 if ratio < min {
                     findings.push(Finding::at(
-                        THEME_PATH,
+                        &theme.path,
                         format!(
                             "Theme {}{mode}: `{}` on `{}` while it is hovered (brightened by {brightness}) has contrast {ratio:.2}:1; it needs {min:.1}:1. Change the fill or the text.",
                             theme.name, rule.text, rule.on
@@ -153,7 +155,7 @@ fn dimmed_findings(file: &ThemeFile) -> Vec<Finding> {
             };
             if sheet_ratio < least {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
                         "Theme {}: `{}` is {sheet_ratio:.2}:1 against the page under `{}`; the sheet needs {least:.1}:1 to stand out. Darken `{}`.",
                         theme.name, rule.sheet, rule.scrim, rule.scrim
@@ -163,7 +165,7 @@ fn dimmed_findings(file: &ThemeFile) -> Vec<Finding> {
             let text_ratio = ratio_of(dimmed_text, dimmed_page);
             if text_ratio > rule.max_text {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
                         "Theme {}: the text `{}` of the page under `{}` is still {text_ratio:.2}:1 against the page; behind a sheet it may be at most {:.1}:1. Darken `{}` or raise its opacity.",
                         theme.name, rule.text, rule.scrim, rule.max_text, rule.scrim
@@ -191,7 +193,7 @@ fn stronger_findings(file: &ThemeFile) -> Vec<Finding> {
                     let ratio = contrast_ratio(a, b);
                     if ratio < rule.min {
                         findings.push(Finding::at(
-                            THEME_PATH,
+                            &theme.path,
                             format!(
                                 "Theme {}: `{text}` on `{fill}` has contrast {ratio:.2}:1; the words of a row need {:.1}:1 there. Change one of the two colors.",
                                 theme.name, rule.min
@@ -248,7 +250,7 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
                         let ratio = ratio_of(luminance_of(fade(a, b, opacity)), luminance(b));
                         if ratio < lines.min {
                             findings.push(Finding::at(
-                                THEME_PATH,
+                                &theme.path,
                                 format!(
                                     "Theme {}{mode}: the line `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
                                     theme.name, lines.min
@@ -272,7 +274,7 @@ fn fade(color: &str, behind: &str, opacity: f64) -> [f64; 3] {
 
 /// For people whose device asks for more contrast (THM-06): the listed text reaches the higher
 /// ratio on its backgrounds and the listed lines are visible on the plain surfaces, with the
-/// colors that the `<theme>-more=` values of the tokens put in place.
+/// colors that the `more=` values of the tokens put in place.
 fn more_contrast_findings(file: &ThemeFile) -> Vec<Finding> {
     let more = &file.contrast.more;
     let mut findings = Vec::new();
@@ -287,10 +289,10 @@ fn more_contrast_findings(file: &ThemeFile) -> Vec<Finding> {
             let ratio = contrast_ratio(a, b);
             if ratio < min {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
-                        "Theme {} with more contrast: {what} `{first}` on `{second}` has contrast {ratio:.2}:1; it needs {min:.1}:1. Change its `{}-more=` value.",
-                        theme.name, theme.name
+                        "Theme {} with more contrast: {what} `{first}` on `{second}` has contrast {ratio:.2}:1; it needs {min:.1}:1. Change its `more=` value in the theme's file.",
+                        theme.name
                     ),
                 ));
             }
@@ -331,7 +333,7 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
             let ratio = contrast_ratio(a, b);
             if ratio < min {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
                         "Theme {}: `{first}` and `{second}` differ by only {ratio:.3}:1; they need {min:.2}:1 so the state stays visible.",
                         theme.name
@@ -359,7 +361,7 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
             let difference = color_difference(a, b);
             if difference < min {
                 findings.push(Finding::at(
-                    THEME_PATH,
+                    &theme.path,
                     format!(
                         "Theme {}: `{first}` and `{second}` differ in color by only {difference:.1} (delta E); they need {min:.1} to be told apart at a glance.",
                         theme.name
@@ -389,7 +391,7 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
                 let chroma = chroma_of(value);
                 if chroma > max {
                     findings.push(Finding::at(
-                        THEME_PATH,
+                        &theme.path,
                         format!(
                             "Theme {}: `{state}` has a hue of its own (chroma {chroma:.1}); it must be a neutral grey, at most {max:.1}.",
                             theme.name

@@ -72,7 +72,7 @@ pub(crate) const GENERATORS: [Generator; 14] = [
     },
     Generator {
         name: "theme",
-        help: "The style sheet, the TypeScript names and the Rust theme choices from design/theme.kdl.",
+        help: "The style sheet, the TypeScript names and the Rust theme choices from design/theme.kdl and the theme files of design/themes/.",
         paths: theme::output_paths,
         generate: |repo, _| theme::outputs(repo),
     },

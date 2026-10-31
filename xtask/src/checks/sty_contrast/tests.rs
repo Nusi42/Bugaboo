@@ -5,29 +5,33 @@ fn text() -> String {
     crate::source::read_text(&Repo::discover().unwrap(), THEME_PATH).unwrap()
 }
 
-/// The theme file with one value of a color token replaced: `key` is `dusk` or `dusk-more`.
+/// The theme with one value of a color token replaced: `key` is a theme (`dusk`) or its value
+/// for more contrast (`dusk-more`).
 fn with_value(token: &str, key: &str, value: &str) -> ThemeFile {
-    ThemeFile::parse(&text_with_value(&text(), token, key, value)).unwrap()
+    let mut file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    set_value(&mut file, token, key, value);
+    file
 }
 
-/// `text` with the value of a color token in one theme (or mode) written as `value`.
-fn text_with_value(text: &str, token: &str, key: &str, value: &str) -> String {
-    let start = text
-        .find(&format!("color \"{token}\""))
-        .expect("the token is in the file");
-    let line_end = text[start..].find('\n').map_or(text.len(), |at| start + at);
-    let line = &text[start..line_end];
-    let marker = format!(" {key}=\"");
-    let value_at = line.find(&marker).expect("the token has this mode") + marker.len();
-    let value_end = line[value_at..].find('"').expect("the value ends") + value_at;
-    let changed = format!(
-        "{}{}{}{}",
-        &text[..start + value_at],
-        value,
-        &line[value_end..],
-        &text[line_end..]
-    );
-    changed
+/// Writes the value of a color token in one theme (or mode) as `value`.
+fn set_value(file: &mut ThemeFile, token: &str, key: &str, value: &str) {
+    let (theme, more) = key
+        .strip_suffix("-more")
+        .map_or((key, false), |theme| (theme, true));
+    let slot = file
+        .tokens
+        .iter_mut()
+        .find(|known| known.name == token)
+        .expect("the token is in the file")
+        .themes
+        .iter_mut()
+        .find(|known| known.theme == theme)
+        .expect("the theme is a file of the theme folder");
+    if more {
+        slot.more = Some(value.to_owned());
+    } else {
+        value.clone_into(&mut slot.value);
+    }
 }
 
 fn messages(findings: &[Finding]) -> Vec<String> {
@@ -124,7 +128,7 @@ fn a_color_without_a_classification_is_rejected() {
         .map(|at| start + at)
         .expect("it has a reason");
     let bad = format!("{}    non-text \"border\" {}", &text[..start], &text[end..]);
-    let error = ThemeFile::parse(&bad).err().unwrap();
+    let error = ThemeFile::parse_base(&bad).err().unwrap();
     assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
 }
 
@@ -136,13 +140,10 @@ fn a_faded_line_is_checked_as_it_is_seen() {
     let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
     let raised = color(&file, "bg-raised", "dusk").expect("the token has a color");
     assert!(contrast_ratio("#686f80", raised) >= 2.0);
-    let faded = crate::generate::contrast_spec::with_faded_lines(&text_with_value(
-        &text(),
-        "fg-muted",
-        "dusk",
-        "#686f80",
-    ));
-    let findings = evaluate(&ThemeFile::parse(&faded).unwrap());
+    let mut faded =
+        ThemeFile::parse_base(&crate::generate::contrast_spec::with_faded_lines(&text())).unwrap();
+    set_value(&mut faded, "fg-muted", "dusk", "#686f80");
+    let findings = evaluate(&faded);
     assert!(
         findings
             .iter()
@@ -155,7 +156,7 @@ fn a_faded_line_is_checked_as_it_is_seen() {
 #[test]
 fn a_line_faded_by_something_that_is_no_opacity_is_a_finding_not_a_skip() {
     let mut file =
-        ThemeFile::parse(&crate::generate::contrast_spec::with_faded_lines(&text())).unwrap();
+        ThemeFile::parse_base(&crate::generate::contrast_spec::with_faded_lines(&text())).unwrap();
     let lines = file
         .contrast
         .plain_lines
@@ -490,7 +491,7 @@ fn the_page_behind_a_sheet_is_dimmed_so_the_sheet_stands_out_and_the_page_text_i
         "opacity \"opacity-scrim\" 0.4",
         1,
     );
-    let findings = evaluate(&ThemeFile::parse(&faint).unwrap());
+    let findings = evaluate(&ThemeFile::parse_base(&faint).unwrap());
     assert!(
         findings
             .iter()
@@ -508,7 +509,7 @@ fn a_distinct_rule_that_names_no_minimum_is_rejected() {
         "distinct reason=",
         1,
     );
-    let error = ThemeFile::parse(&bad).err().expect("it is rejected");
+    let error = ThemeFile::parse_base(&bad).err().expect("it is rejected");
     assert!(
         format!("{error:#}").contains("at least one minimum"),
         "{error:#}"

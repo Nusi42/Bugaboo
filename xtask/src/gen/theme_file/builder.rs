@@ -1,5 +1,6 @@
 //! Building the theme from the nodes of the KDL file.
 
+use super::themes::{BASE_THEME, MORE, theme_value};
 use super::*;
 
 #[derive(Default)]
@@ -16,6 +17,8 @@ pub(super) struct Builder {
     pub(super) contrast: Option<ContrastSpec>,
     pub(super) distinct: Vec<DistinctSpec>,
     pub(super) bold: Option<BoldSpec>,
+    /// The colors and shadows the theme files set: the name of the token and its value.
+    pub(super) theme_values: Vec<(String, ThemeValue)>,
 }
 
 impl Builder {
@@ -31,16 +34,10 @@ impl Builder {
                     preview: node.required_prop("preview")?,
                 });
             }
-            "themes" => {
-                for child in node.children() {
-                    if child.name() != "theme" {
-                        bail!("line {}: `themes` holds `theme` lines only", child.line());
-                    }
-                    self.themes.push(Theme {
-                        name: child.only_arg()?,
-                        kind: child.required_prop("kind")?,
-                    });
-                }
+            "themes" | "theme" => {
+                return Err(node.problem(format!(
+                    "the themes are the files of {THEMES_FOLDER}/, one `<id>.kdl` for each"
+                )));
             }
             "variants" => {
                 for child in node.children() {
@@ -170,23 +167,28 @@ impl Builder {
             .cloned()
             .ok_or_else(|| node.problem("needs a name"))?;
         let values = &args[1..];
-        let same = match (kind, values) {
-            (TokenKind::Color | TokenKind::Shadow, []) => None,
-            (TokenKind::Color | TokenKind::Shadow, _) => {
-                return Err(
-                    node.problem("has a value for each theme (`daylight=…`), not one value")
-                );
+        let (same, themes) = match (kind, values) {
+            (TokenKind::Color | TokenKind::Shadow, [one]) => (
+                None,
+                vec![ThemeValue {
+                    theme: BASE_THEME.to_owned(),
+                    value: theme_value(kind, node, one)?,
+                    more: None,
+                    path: THEME_PATH.to_owned(),
+                    line: node.line(),
+                }],
+            ),
+            (TokenKind::Font, families) if !families.is_empty() => {
+                (Some(font_stack(families)), Vec::new())
             }
-            (TokenKind::Font, families) if !families.is_empty() => Some(font_stack(families)),
-            (_, [one]) if kind != TokenKind::Font => Some(one.clone()),
+            (_, [one]) if kind != TokenKind::Font => (Some(one.clone()), Vec::new()),
             _ => return Err(node.problem("needs one value after its name")),
         };
         let mut token = Token {
             name,
             kind,
             same,
-            themes: Vec::new(),
-            more: Vec::new(),
+            themes,
             forced: None,
             variants: Vec::new(),
             run_time: false,
@@ -207,11 +209,15 @@ impl Builder {
                 self.mode_value(&mut token, node, &key, value)?;
             }
         }
-        self.check_token(&token, node)?;
+        if !token.variants.is_empty() && token.same.is_none() {
+            return Err(
+                node.problem("a choice can only change a token that is the same in every theme")
+            );
+        }
         Ok(token)
     }
 
-    /// Puts the value of one mode (`daylight=`, `dusk-more=`, `forced=`, `compact=`) in the token.
+    /// Puts the value of one mode (`more=`, `forced=`, `compact=`) in the token.
     pub(super) fn mode_value(
         &self,
         token: &mut Token,
@@ -219,13 +225,15 @@ impl Builder {
         key: &str,
         value: String,
     ) -> anyhow::Result<()> {
-        let value = if token.kind == TokenKind::Color && key != "forced" {
-            value.to_ascii_lowercase()
-        } else {
-            value
-        };
         check_text(node, &value)?;
-        if key == "forced" {
+        if key == MORE {
+            let base = token
+                .themes
+                .first_mut()
+                .filter(|_| token.kind == TokenKind::Color)
+                .ok_or_else(|| node.problem("only colors have a value for more contrast"))?;
+            base.more = Some(theme_value(TokenKind::Color, node, &value)?);
+        } else if key == "forced" {
             if token.kind == TokenKind::Color
                 && !SYSTEM_COLORS
                     .iter()
@@ -236,62 +244,18 @@ impl Builder {
                 )));
             }
             token.forced = Some(value);
-        } else if self.themes.iter().any(|theme| theme.name == key) {
-            token.themes.push((key.to_owned(), value));
-        } else if let Some(theme) = key
-            .strip_suffix("-more")
-            .filter(|theme| self.themes.iter().any(|known| known.name == *theme))
-        {
-            token.more.push((theme.to_owned(), value));
         } else if self.variants.iter().any(|variant| variant.name == key) {
             token.variants.push((key.to_owned(), value));
         } else {
             return Err(node.problem(format!(
-                "`{key}=` is not a mode: use a theme, `<theme>-more`, `forced` or a choice from `variants`"
+                "`{key}=` is not a mode: use `{MORE}`, `forced` or a choice from `variants` (a theme sets its colors in its own file)"
             )));
         }
         Ok(())
     }
 
-    pub(super) fn check_token(&self, token: &Token, node: Node<'_>) -> anyhow::Result<()> {
-        if token.kind.varies_by_theme() {
-            let names: Vec<&str> = token.themes.iter().map(|(name, _)| name.as_str()).collect();
-            let wanted: Vec<&str> = self
-                .themes
-                .iter()
-                .map(|theme| theme.name.as_str())
-                .collect();
-            if names != wanted {
-                return Err(node.problem(format!(
-                    "needs a value for each theme, in this order: {}",
-                    wanted.join(", ")
-                )));
-            }
-        } else if !token.themes.is_empty() || !token.more.is_empty() {
-            return Err(node.problem("only colors and shadows differ by theme"));
-        }
-        if token.kind == TokenKind::Color {
-            for (_, value) in token.themes.iter().chain(&token.more) {
-                let valid = value.len() == 7
-                    && value.starts_with('#')
-                    && value[1..].chars().all(|c| c.is_ascii_hexdigit());
-                if !valid {
-                    return Err(node.problem(format!("`{value}` must look like #rrggbb")));
-                }
-            }
-        }
-        if !token.more.is_empty() && token.kind != TokenKind::Color {
-            return Err(node.problem("only colors have a value for more contrast"));
-        }
-        if !token.variants.is_empty() && token.same.is_none() {
-            return Err(
-                node.problem("a choice can only change a token that is the same in every theme")
-            );
-        }
-        Ok(())
-    }
-
-    pub(super) fn finish(self) -> anyhow::Result<ThemeFile> {
+    pub(super) fn finish(mut self) -> anyhow::Result<ThemeFile> {
+        let tokens = self.merge_themes();
         let (default_light, default_dark) = self.defaults.context("`defaults` is missing")?;
         let file = ThemeFile {
             themes: self.themes,
@@ -299,7 +263,7 @@ impl Builder {
             default_dark,
             frame: self.frame.context("`frame` is missing")?,
             variants: self.variants,
-            tokens: self.tokens,
+            tokens,
             mixins: self.mixins,
             keyframes: self.keyframes,
             rules: self.rules,

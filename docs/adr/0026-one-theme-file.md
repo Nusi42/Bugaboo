@@ -50,6 +50,28 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 - **Cascadia Mono is first for code.** Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. This is accepted to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the `bold` list does not name.
 - **Measured, not assumed.** The width of the ID column still comes from `size-code-char`, a probe drawn in the code font of the computer, so it is right for Cascadia Mono, Consolas or the system monospace face alike.
 
+## Update (M6, theme files like the sister project)
+
+Decision of the maintainer (M6-Q1, M5-F167, M5-F121): the themes are handled the way the sister project handles them. Decisions 1, 2 and 6 read as follows; the rest stands.
+
+- **A base and one file per theme.** `design/theme.kdl` is the base theme, `default`: `defaults`, `frame`, `variants`, every token with its value and its `more=`, `forced=` and choice values, the `contrast`, `distinct` and `bold` rules, the mixins, keyframes, part rules and `docs` blocks. Its colors are those of Daylight, the light theme that starts. Each built-in theme is a file of `design/themes/`:
+
+  ```kdl
+  theme "dusk" extends="default" kind="dark" {
+      tokens {
+          color "bg-canvas" "#1d2027"
+          color "border" "#3b414d" more="#999ca2"
+      }
+  }
+  ```
+
+  A theme file sets **only the colors it changes** (`more=` is its color for a device that asks for more contrast), so no value is written twice: Daylight's file is empty, and a theme that sets no color looks like Daylight. A line of a theme replaces the base's color and its `more=` together; a color the theme does not set keeps both from the base. `forced=` and the choices stay on the line of the base.
+- **The file name is the theme's ID** (`dusk.kdl` is the theme `dusk`, and the file says `theme "dusk"` so that it reads on its own; the reader refuses a file whose two names differ). The list of themes is the list of files: there is no `themes` block. The files are read in name order and listed light themes first, each kind in name order, which is the order of `themeIds` in `tokens.ts`, of the choices in `themes.rs` and of the blocks of the sheet. A new built-in theme is one new file (and its name in the message catalog); `tokens.ts` and `themes.rs` follow without any other change.
+- **A token may name another token** (M5-F121): `color "hover-line" "$border-control"`. The sheet keeps the link as `var(--border-control)`, so the browser follows it in every theme and mode; a theme file may give the token a color of its own (the dark themes give the hover line a brighter one) or name a source as well (Midnight's `st-ns` names `fg-muted` and has its own `more=`). STY-CONTRAST reads the color the link leads to, in each theme and mode; a link to a name that is no color token, and a loop, are errors of `gen theme`.
+- **Shadows are the one other kind a theme sets.** Today the shadow of a raised surface differs in shape between the themes (a ring in Midnight, a deeper drop in the dark themes), not only in color, so a theme file may set a `shadow` as well as a `color`. A theme file that sets any other kind of token, names a token the base does not have, sets a token twice or extends anything but `default` is an error of `gen theme` that names the file and the line.
+- **One reader.** Only `cargo xtask gen theme` reads the files (`ThemeFile::load` in `xtask`); the tests of the pictures of the front page read the colors from the generated sheet, not from KDL. The content security policy stays `style-src 'self'`: the files are compiled at build time into the one static sheet, as decision 5 says.
+- **Checks.** STY-CONTRAST runs for every theme file and mode and names the theme's file in a finding; LINT-CSS and STY-TOKENS run again when a theme file changes; DOC-GENERATED compares the output of the base and the theme files.
+
 ## Consequences
 
 - A change of look is a change in one file, and the generated sheet shows it in the diff. A rule exists once: the focus ring, the muted text, the field label.

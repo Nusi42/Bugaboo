@@ -9,7 +9,7 @@ Read this before every task. The rules live in `docs/`; this file only says wher
 3. **[`docs/coding-standards.md`](docs/coding-standards.md), all of it.** These rules are the easiest to break:
    - §1: SSOT, DRY, ODR. This is a merge gate for existing and new code.
    - §2: commits (Conventional Commits in plain English, no jargon of the working process, no session lines or claude.ai links, only the `Co-Authored-By: Claude <model> <noreply@anthropic.com>` trailer, the public identity as author and committer), and no private information in Git.
-   - §3: Rust. §4: no literal text, design tokens only, all theming in `design/theme.kdl`.
+   - §3: Rust. §4: no literal text, design tokens only, all theming in the theme files of `design/`: the base `theme.kdl` and one color file per theme.
    - §5: dependencies. §7: zero warnings, never skip the hooks, never switch off a check.
 4. **[`docs/glossary.md`](docs/glossary.md):** the only allowed names for things.
 5. **The decision records** (`docs/adr/`) your package touches. Ports: ADR-0023. A new check: "Adding a rule" in [`docs/architecture/10-checks.md`](docs/architecture/10-checks.md).

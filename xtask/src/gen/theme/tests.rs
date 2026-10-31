@@ -150,7 +150,7 @@ fn rust_has_the_theme_choices_and_the_defaults() {
 fn a_part_rule_is_compiled_with_its_mixins_and_media() {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     let extra = "\nmixin \"m\" {\n  color \"$fg\"\n}\npart \"zz[variant=a]:hover\" \"zz[state=busy]\" {\n  use \"m\"\n  margin 0\n  forced {\n    color \"CanvasText\"\n  }\n}\n";
-    let file = ThemeFile::parse(&format!("{text}{extra}")).unwrap();
+    let file = ThemeFile::parse_base(&format!("{text}{extra}")).unwrap();
     let parts = parts_css(&file).unwrap();
     assert!(parts.contains("[data-part=\"zz\"][data-variant~=\"a\"]:hover,\n[data-part=\"zz\"][data-state~=\"busy\"] {\n  color: var(--fg);\n  margin: 0;\n}"), "{parts}");
     assert!(
@@ -163,7 +163,7 @@ fn a_part_rule_is_compiled_with_its_mixins_and_media() {
 fn file_with_device_choice_and_container() -> ThemeFile {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     let extra = "\nvariants {\n  variant \"zz-touch\" media=\"(pointer: coarse)\"\n}\ntokens {\n  size \"zz-height\" \"36px\" zz-touch=\"44px\"\n}\npart \"zz\" {\n  container \"(min-width: $bp-tablet)\" {\n    margin 0\n  }\n}\n";
-    ThemeFile::parse(&format!("{text}{extra}")).unwrap()
+    ThemeFile::parse_base(&format!("{text}{extra}")).unwrap()
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn only_the_marked_sizes_are_variables_the_code_may_set() {
         "color \"accent\" run-time=\"true\" ",
         1,
     );
-    assert!(ThemeFile::parse(&color).is_err());
+    assert!(ThemeFile::parse_base(&color).is_err());
 }
 
 #[test]
@@ -233,7 +233,7 @@ part \"zz\" {
   }
 }
 ";
-    let css = css(&ThemeFile::parse(&format!("{text}{extra}")).unwrap()).unwrap();
+    let css = css(&ThemeFile::parse_base(&format!("{text}{extra}")).unwrap()).unwrap();
     assert!(
         css.contains(
             "@supports (width: calc(1px * (2px / 1px))) {
@@ -252,7 +252,7 @@ fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
         "\nvariants {\n  variant \"zz\"\n}\n",
     ] {
         assert!(
-            ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+            ThemeFile::parse_base(&format!("{text}{extra}")).is_err(),
             "{extra}"
         );
     }
@@ -266,7 +266,7 @@ fn an_unknown_token_or_mixin_is_refused() {
         "\npart \"zz\" {\n  use \"nope\"\n}\n",
     ] {
         assert!(
-            ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+            ThemeFile::parse_base(&format!("{text}{extra}")).is_err(),
             "{extra}"
         );
     }

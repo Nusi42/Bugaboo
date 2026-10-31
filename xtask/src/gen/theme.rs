@@ -181,11 +181,7 @@ fn theme_declarations(
 ) {
     for token in &file.tokens {
         let value = if only_more {
-            token
-                .more
-                .iter()
-                .find(|(name, _)| name == theme)
-                .map(|(_, value)| value.as_str())
+            token.more_in(theme)
         } else {
             token.in_theme(theme)
         };
