@@ -226,7 +226,7 @@ Rules:
 | **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, team hours, staff hours, timesheets of others (in UI) |
 | **See working hours of others** | The organization permission to see other people's working hours. Nobody has it at the start, also not *Administrator* | — |
 | **Change working hours of others** | The organization permission to change other people's work days; when a change asks for a reason and who is told is in ADR-0035, decision 7 | — |
-| **Totals only**          | An organization setting: for people who may only see them, *Working hours of others* shows each person's week total and never days, starts, ends or breaks | aggregate mode (in UI) |
+| **Totals only**          | An organization setting: *Working hours of others* shows each person's week total only (what it hides and that it turns changes off: ADR-0035, decision 8) | aggregate mode (in UI) |
 | **HR**                   | The starting role with *See working hours of others* and *Change working hours of others*. Nobody has it at the start; an administrator gives it, usually to a group such as *Payroll* | human resources, personnel (as the role) |
 | **Usual work days**      | The days of the week a person normally works, for example Monday to Thursday | work pattern, schedule (in UI) |
 | **Work hours**           | How many hours a person works on a usual work day, from their work contract | capacity, FTE (in UI) |
@@ -326,6 +326,7 @@ Rules:
 | Control plane       | Our separate system that creates, updates, backs up and monitors served instances; it holds no customer data |
 | Operator            | Us, when running served instances; our staff have no default access to customer data |
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
+| Period (of a work day) | One stretch of work of a work day, from a start to an end; a day reopened after *End work day* has two. The screens have no word for it: they show the first start, the last end and *Breaks*, which include the gaps between periods (ADR-0035, decision 5) |
 | Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`); how work days and time entries use it is ADR-0035, decision 5 |
 | Starter fields      | Own fields that Bugaboo makes at the first start and on upgrade, like *Activity* and *Cost center* of time entries; found by a stable mark, never by their name, and changed by administrators like any own field |
 | Time spent port     | `TimeSpentStore`: how code outside the module of time entries reads minutes booked on issues, for the issues the caller passes or a compiled search finds, and one person's minutes per date (ADR-0035, decision 4) |

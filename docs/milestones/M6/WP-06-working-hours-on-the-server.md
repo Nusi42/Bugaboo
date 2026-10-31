@@ -13,11 +13,10 @@ Each person records when their work day started and ended and their breaks, as G
 
 ## What is decided (M6-Q8, Q9, Q10, Q11)
 
-- **A work day:** person, date (the person's day of its start, WP-03), the time zone it was recorded in, start, end (may be the next morning; at most 24 hours after the start), breaks (start and end each), the warnings, a version. *Start work day* makes it; *Start break*, *End break*, *End work day* add to it; any of them may be typed afterwards.
-- **A day left open** stays open; the next *Start work day* is refused with a structured answer that names the open day, and the screen asks for its end first.
-- **The rules are data** (`bb_core::working_time`): a preset (*Germany*, *No rules*) with numbers an administrator may change (registry settings at the organization level). Germany: at most 10 hours a day; 30 minutes of break after 6 hours, 45 after 9; a break counts only in parts of at least 15 minutes; at most 6 hours in a row without a break; 11 hours of rest between two days. One pure function: a day (and the day before it) → warnings. It runs once per change, inside the change, and its warnings are stored with the day.
-- **A past day** (any date before today in the person's zone) changes only with a reason (required, plain text, at most 500 characters), kept in the event with the old value. A change by another person needs *Change working hours of others* and sends the person a notification (in the app; by e-mail as their settings say, on at the start).
-- **Who sees:** one's own always. Another person's days need *See working hours of others* (organization permission, topic *Time*); changing them needs *Change working hours of others*. The starting role *HR* holds both and is given to nobody; *Administrator* does not include them; a person who may decide roles for the whole organization may give *HR* (ADR-0025 amendment M6). With *Totals only* on, the routes for others answer week totals only. Every gift or removal of these permissions and every change of a working-hours setting is in the security log.
+- **A work day, its periods and a day left open:** ADR-0035, decision 5 (with `WORK_DAY_HOURS_MAX`). The next *Start work day* after a day left open is refused with a structured answer that names the open day, and the screen asks for its end first.
+- **The rules as data:** ADR-0035, decision 6 (`bb_core::working_time`, one pure function: a day and the days next to it → warnings, run once per change, inside the change, stored with the day).
+- **Reasons, the old value, the notification:** ADR-0035, decision 7 (with `REASON_CHARS_MAX`).
+- **Who sees and who changes, *Totals only*, the security log:** ADR-0035, decision 8, and ADR-0025, amendment M6 (the permissions, the starting role *HR* and how it is given).
 - **The keep period:** an organization setting, 2 years in the Germany preset and never below it while that preset is chosen; the daily job `working-hours.delete-old` deletes days older than it, idempotently, also of removed people (legal hold until then, architecture §7).
 
 ## Tasks

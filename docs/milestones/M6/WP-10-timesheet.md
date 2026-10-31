@@ -18,7 +18,7 @@ A person sees and fills in their week in one grid: the work-day rows (*Start*, *
 - A change to a past day opens the reason window before it saves; the day shows *Changed* with its history (who, when, old and new, why).
 - Warnings are the sentences of WP-06 under their day, in the warning color, never as a block.
 - The footer: *Booked on issues* and *Working hours not booked on issues*, per day and for the week (the route of WP-06).
-- *Working hours of others*: a person picker (only for those with the permission), the work-day rows read only, or with *Change* when the person has *Change working hours of others* (with the reason window always, and the note that the person will be told); with *Totals only*, only the week totals. No list of people with numbers, no order by any number.
+- *Working hours of others*: as ADR-0035, decision 8 (the person picker, read only or with *Change*, *Totals only*), with the reason window of decision 7 and the note that the person will be told. No list of people with numbers, no order by any number.
 
 ## Tasks
 
