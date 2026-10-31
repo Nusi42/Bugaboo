@@ -3,7 +3,7 @@
   "info": {
     "title": "Bugaboo API",
     "description": "The API of Bugaboo. The browser app uses exactly this API. Every error is application/problem+json with a stable code and a message key.",
-    "version": "0.0.0"
+    "version": "0.3.0"
   },
   "paths": {
     "/api/v1/access-keys": {

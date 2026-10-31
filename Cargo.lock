@@ -423,11 +423,11 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "bb-ai"
-version = "0.0.0"
+version = "0.3.0"
 
 [[package]]
 name = "bb-api"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "base64ct",
@@ -465,11 +465,11 @@ dependencies = [
 
 [[package]]
 name = "bb-api-words"
-version = "0.0.0"
+version = "0.3.0"
 
 [[package]]
 name = "bb-app"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "base64ct",
  "bb-auth",
@@ -494,7 +494,7 @@ dependencies = [
 
 [[package]]
 name = "bb-auth"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "argon2 0.6.0",
  "base64ct",
@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "bb-core"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-macros",
  "jiff",
@@ -532,7 +532,7 @@ dependencies = [
 
 [[package]]
 name = "bb-dev-words"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-core",
  "serde",
@@ -541,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "bb-files"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "bb-core",
@@ -559,7 +559,7 @@ dependencies = [
 
 [[package]]
 name = "bb-jobs"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "tokio",
@@ -568,7 +568,7 @@ dependencies = [
 
 [[package]]
 name = "bb-load-check"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "bb-core",
@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "bb-macros"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "bb-markdown"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "html5ever",
  "proptest",
@@ -598,11 +598,11 @@ dependencies = [
 
 [[package]]
 name = "bb-mcp"
-version = "0.0.0"
+version = "0.3.0"
 
 [[package]]
 name = "bb-notify"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "bb-core",
@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "bb-policy"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-core",
  "bb-macros",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "bb-sample"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "bb-auth",
@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "bb-searchlang"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-core",
  "bb-searchlang",
@@ -663,7 +663,7 @@ dependencies = [
 
 [[package]]
 name = "bb-server"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "argon2 0.6.0",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "bb-store"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-app",
  "bb-core",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "bb-testing"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-dev-words",
  "sqlx",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "bb-wasm"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-core",
  "bb-markdown",
@@ -750,7 +750,7 @@ dependencies = [
 
 [[package]]
 name = "bb-wasm-search"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "bb-searchlang",
  "serde",
@@ -5588,7 +5588,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.0.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bb-api-words",
