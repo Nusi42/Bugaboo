@@ -139,7 +139,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   heights, layers or opacities. Only design tokens. Enforced by: STY-TOKENS, LINT-CSS.
 - **All theming lives in the theme files of `design/`: the base `theme.kdl` and one color file
   per theme** in `design/themes/` (ADR-0026): values are tokens, rules are `part` rules of the
-  base that use tokens only, and a theme file sets only the colors it changes. Components carry no style values and no class names: no `style=`,
+  base that use tokens only, and a theme file sets only the colors (and its shadow) it changes. Components carry no style values and no class names: no `style=`,
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.

@@ -13,49 +13,18 @@ use anyhow::{Context as _, bail};
 use super::bold_spec::BoldSpec;
 use super::contrast_spec::{ContrastSpec, DistinctSpec};
 use super::kdl_reader::{Document, Node};
+use super::theme_selector::is_name_char;
 use crate::repo::Repo;
 
 mod builder;
 mod links;
 mod themes;
 use builder::Builder;
+use themes::KINDS;
+pub(crate) use themes::{THEMES_FOLDER, ThemeSource, is_theme_source, theme_sources};
 
 /// Where the base theme lives, relative to the repository root.
 pub(crate) const THEME_PATH: &str = "design/theme.kdl";
-/// The folder of the built-in themes: one file per theme, `<id>.kdl`, and nothing else.
-pub(crate) const THEMES_FOLDER: &str = "design/themes";
-/// The ending of a theme file.
-const THEME_FILE_ENDING: &str = ".kdl";
-
-/// Whether a file of the repository is one the theme is read from: the base or a theme file.
-pub(crate) fn is_theme_source(path: &str) -> bool {
-    path == THEME_PATH
-        || path
-            .strip_prefix(THEMES_FOLDER)
-            .and_then(|rest| rest.strip_prefix('/'))
-            .is_some_and(|name| name.ends_with(THEME_FILE_ENDING))
-}
-
-/// One file of `design/themes/`: where it is and what it says.
-pub(crate) struct ThemeSource {
-    pub(crate) path: String,
-    pub(crate) text: String,
-}
-
-/// The files of `design/themes/`, in name order.
-pub(crate) fn theme_sources(repo: &Repo) -> anyhow::Result<Vec<ThemeSource>> {
-    crate::docs::source::sorted_files(repo, THEMES_FOLDER, |_| true)?
-        .into_iter()
-        .map(|name| {
-            let path = format!("{THEMES_FOLDER}/{name}");
-            Ok(ThemeSource {
-                text: crate::source::read_text(repo, &path)?,
-                path,
-            })
-        })
-        .collect()
-}
-
 /// What a token is a value of. The word is the name of its line in the file.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TokenKind {
@@ -345,7 +314,14 @@ impl ThemeFile {
         links::follow(self, name, theme, links::Mode::Usual).ok()
     }
 
-    /// The same with the colors that more contrast puts in place.
+    /// Where the color or shadow `name` of a theme is written: `file:line` of the theme's file, or of
+    /// the base where the theme keeps the base's value.
+    pub(crate) fn place_of(&self, name: &str, theme: &str) -> Option<String> {
+        let value = self.token(name)?.value_in(theme)?;
+        Some(format!("{}:{}", value.path, value.line))
+    }
+
+    /// The color of a token in a theme with the colors that more contrast puts in place.
     pub(crate) fn color_with_more_contrast(&self, name: &str, theme: &str) -> Option<&str> {
         links::follow(self, name, theme, links::Mode::More).ok()
     }
@@ -466,18 +442,13 @@ impl ThemeFile {
         if self.themes.is_empty() {
             bail!("there are no themes: each is a file of {THEMES_FOLDER}/");
         }
-        for theme in &self.themes {
-            if theme.kind != "light" && theme.kind != "dark" {
-                bail!("theme `{}` must be `light` or `dark`", theme.name);
-            }
-        }
-        for (what, name, kind) in [
-            ("light", &self.default_light, "light"),
-            ("dark", &self.default_dark, "dark"),
-        ] {
+        for (name, kind) in [&self.default_light, &self.default_dark]
+            .into_iter()
+            .zip(KINDS)
+        {
             match self.theme(name) {
                 Some(theme) if theme.kind == kind => {}
-                _ => bail!("the default {what} theme `{name}` is not a {kind} theme"),
+                _ => bail!("the default {kind} theme `{name}` is not a {kind} theme"),
             }
         }
         self.validate_colors()?;
@@ -594,7 +565,7 @@ pub(crate) fn references(value: &str) -> Vec<String> {
     while let Some(at) = rest.find('$') {
         let after = &rest[at + 1..];
         let length = after
-            .find(|c: char| !(c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'))
+            .find(|c: char| !is_name_char(c))
             .unwrap_or(after.len());
         if length > 0 {
             names.push(after[..length].to_owned());
@@ -612,7 +583,7 @@ pub(crate) fn substitute(value: &str) -> String {
         out.push_str(&rest[..at]);
         let after = &rest[at + 1..];
         let length = after
-            .find(|c: char| !(c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'))
+            .find(|c: char| !is_name_char(c))
             .unwrap_or(after.len());
         if length == 0 {
             out.push('$');
@@ -647,7 +618,7 @@ fn is_property(name: &str) -> bool {
     letters
         .next()
         .is_some_and(|first| first.is_ascii_lowercase())
-        && letters.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        && letters.all(is_name_char)
 }
 
 /// What would end a value and start another rule or comment in the style sheet.
@@ -782,14 +753,6 @@ fn keyframes(node: Node<'_>) -> anyhow::Result<Keyframes> {
         frames,
         line: node.line(),
     })
-}
-
-#[cfg(test)]
-impl ThemeFile {
-    /// A base text with the theme files of the repository: for the tests that change the base.
-    pub(crate) fn parse_base(base: &str) -> anyhow::Result<Self> {
-        Self::parse(base, &theme_sources(&Repo::discover()?)?)
-    }
 }
 
 #[cfg(test)]

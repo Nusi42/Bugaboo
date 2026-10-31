@@ -1,8 +1,8 @@
 // Bugaboo built-in theme: Midnight (dark).
 //
-// Colors only: everything else, and every color this file does not set, comes from the base,
-// design/theme.kdl, whose colors are Daylight's. `more=` is the color when the device asks for
-// more contrast. The file name is the theme's ID (ADR-0026).
+// Colors (and the shadow) only: everything else, and every color this file does not set,
+// comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
+// when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
 theme "midnight" extends="default" kind="dark" {
     tokens {
@@ -48,25 +48,25 @@ theme "midnight" extends="default" kind="dark" {
         color "cat1-fg" "#c487a2"
         color "cat2-bg" "#022e4f" more="#052c4b"
         color "cat2-fg" "#749bcd"
-        color "cat3-bg" "#002b15" more="#002b15"
+        color "cat3-bg" "#002b15"
         color "cat3-fg" "#6f9a7d"
         color "cat4-bg" "#532a01" more="#422305"
         color "cat4-fg" "#c99873"
-        color "cat5-bg" "#311f49" more="#311f49"
+        color "cat5-bg" "#311f49"
         color "cat5-fg" "#a289bc"
         color "cat6-bg" "#0a3e3a" more="#102f2c"
         color "cat6-fg" "#7daea8"
-        color "cat7-bg" "#4a160f" more="#4a160f"
+        color "cat7-bg" "#4a160f"
         color "cat7-fg" "#c58275"
         color "cat8-bg" "#403507" more="#332a0a"
         color "cat8-fg" "#b4a270"
-        color "cat9-bg" "#012631" more="#012631"
+        color "cat9-bg" "#012631"
         color "cat9-fg" "#5297b1"
         color "cat10-bg" "#2a3e0f" more="#222e10"
         color "cat10-fg" "#99ae78"
         color "cat11-bg" "#38393a" more="#2a2b2b"
         color "cat11-fg" "#a7a8aa"
-        color "cat12-bg" "#2c2009" more="#2c2009"
+        color "cat12-bg" "#2c2009"
         color "cat12-fg" "#9d8b73"
         shadow "shadow" "0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
     }

@@ -1,6 +1,6 @@
 //! Building the theme from the nodes of the KDL file.
 
-use super::themes::{BASE_THEME, MORE, theme_value};
+use super::themes::{BASE_THEME, MORE, same_more, theme_value};
 use super::*;
 
 #[derive(Default)]
@@ -232,7 +232,11 @@ impl Builder {
                 .first_mut()
                 .filter(|_| token.kind == TokenKind::Color)
                 .ok_or_else(|| node.problem("only colors have a value for more contrast"))?;
-            base.more = Some(theme_value(TokenKind::Color, node, &value)?);
+            let more = theme_value(TokenKind::Color, node, &value)?;
+            if more == base.value {
+                return Err(same_more(node));
+            }
+            base.more = Some(more);
         } else if key == "forced" {
             if token.kind == TokenKind::Color
                 && !SYSTEM_COLORS

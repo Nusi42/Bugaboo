@@ -98,7 +98,7 @@ fn cf_04_the_progress_bar_and_the_avatar_are_seen_in_all_four_themes() {
     // at 3:1 (WCAG 1.4.11). The initials of an avatar are text on the soft accent.
     let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
     for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
-        let value = |name: &str| color(&file, name, theme).expect("the token has a color");
+        let value = |name: &str| file.color(name, theme).expect("the token has a color");
         for surface in ["bg-canvas", "bg-surface", "bg-raised"] {
             let ratio = contrast_ratio(value("accent"), value(surface));
             assert!(ratio >= 3.0, "{theme}: accent on {surface} is {ratio:.2}:1");
@@ -138,7 +138,9 @@ fn a_faded_line_is_checked_as_it_is_seen() {
     // group): this color reaches 2:1 on the raised surface of Dusk as it is (2.56:1) and no longer
     // once it is faded (1.76:1), so only the fade makes the check find it.
     let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
-    let raised = color(&file, "bg-raised", "dusk").expect("the token has a color");
+    let raised = file
+        .color("bg-raised", "dusk")
+        .expect("the token has a color");
     assert!(contrast_ratio("#686f80", raised) >= 2.0);
     let mut faded =
         ThemeFile::parse_base(&crate::generate::contrast_spec::with_faded_lines(&text())).unwrap();
@@ -581,5 +583,43 @@ fn the_tint_of_not_started_is_a_neutral_grey_in_every_theme() {
             && f.message.contains("grey")),
         "{:?}",
         messages(&findings)
+    );
+}
+
+#[test]
+fn a_finding_points_at_the_line_that_sets_the_color_in_its_theme() {
+    // Dusk sets its category colors in its own file; Daylight keeps the base's scrim.
+    let findings = evaluate(&with_value("cat3-bg", "dusk", "#6a8f78"));
+    let finding = findings
+        .iter()
+        .find(|finding| finding.message.contains("`cat3-fg`"))
+        .expect("the pair is found");
+    let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    assert_eq!(
+        finding.location.as_deref(),
+        file.place_of("cat3-fg", "dusk").as_deref()
+    );
+    assert!(
+        finding
+            .location
+            .as_deref()
+            .is_some_and(|place| place.starts_with("design/themes/dusk.kdl:")),
+        "{:?}",
+        finding.location
+    );
+    let findings = evaluate(&with_value("scrim", "daylight", "#eef0f3"));
+    assert!(
+        findings
+            .iter()
+            .filter(|finding| finding.message.contains("Theme daylight"))
+            .all(|finding| finding
+                .location
+                .as_deref()
+                .is_some_and(|place| place.starts_with(&format!("{THEME_PATH}:")))),
+        "{:?}",
+        findings
+            .iter()
+            .map(|finding| &finding.location)
+            .collect::<Vec<_>>()
     );
 }

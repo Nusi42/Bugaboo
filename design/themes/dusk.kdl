@@ -1,8 +1,8 @@
 // Bugaboo built-in theme: Dusk (dark).
 //
-// Colors only: everything else, and every color this file does not set, comes from the base,
-// design/theme.kdl, whose colors are Daylight's. `more=` is the color when the device asks for
-// more contrast. The file name is the theme's ID (ADR-0026).
+// Colors (and the shadow) only: everything else, and every color this file does not set,
+// comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
+// when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
 theme "dusk" extends="default" kind="dark" {
     tokens {
@@ -43,29 +43,29 @@ theme "dusk" extends="default" kind="dark" {
         color "edge-high" "#f5b65b"
         color "hover-line" "#a0a8b6" more="#b0b4bb"
         color "scrim" "#101217"
-        color "cat1-bg" "#5e2943" more="#5e2943"
+        color "cat1-bg" "#5e2943"
         color "cat1-fg" "#d798b3"
-        color "cat2-bg" "#033e67" more="#033e67"
+        color "cat2-bg" "#033e67"
         color "cat2-fg" "#88aee1"
-        color "cat3-bg" "#034120" more="#034120"
+        color "cat3-bg" "#034120"
         color "cat3-fg" "#7bb28b"
         color "cat4-bg" "#5d3818" more="#543419"
         color "cat4-fg" "#daa984"
-        color "cat5-bg" "#422e59" more="#422e59"
+        color "cat5-bg" "#422e59"
         color "cat5-fg" "#b59ccf"
         color "cat6-bg" "#124d49" more="#19423f"
         color "cat6-fg" "#8ac3bd"
-        color "cat7-bg" "#561f1a" more="#561f1a"
+        color "cat7-bg" "#561f1a"
         color "cat7-fg" "#d18b81"
-        color "cat8-bg" "#433905" more="#433905"
+        color "cat8-bg" "#433905"
         color "cat8-fg" "#b7a771"
-        color "cat9-bg" "#003543" more="#003543"
+        color "cat9-bg" "#003543"
         color "cat9-fg" "#74a3b5"
         color "cat10-bg" "#364916" more="#324118"
         color "cat10-fg" "#aabd86"
         color "cat11-bg" "#454647" more="#3b3c3d"
         color "cat11-fg" "#b8b9bb"
-        color "cat12-bg" "#3b2e19" more="#3b2e19"
+        color "cat12-bg" "#3b2e19"
         color "cat12-fg" "#ac9a81"
         shadow "shadow" "0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059"
     }

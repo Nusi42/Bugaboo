@@ -6,24 +6,63 @@
 //! base's, so no value is written twice.
 
 use super::*;
+use crate::generate::theme_selector::is_word;
+
+/// The folder of the built-in themes: one file per theme, `<id>.kdl`, and nothing else.
+pub(crate) const THEMES_FOLDER: &str = "design/themes";
+/// The ending of a theme file.
+pub(super) const THEME_FILE_ENDING: &str = ".kdl";
+
+/// Whether a file of the repository is one the theme is read from: the base or a theme file.
+pub(crate) fn is_theme_source(path: &str) -> bool {
+    path == THEME_PATH
+        || path
+            .strip_prefix(THEMES_FOLDER)
+            .and_then(|rest| rest.strip_prefix('/'))
+            .is_some_and(|name| name.ends_with(THEME_FILE_ENDING))
+}
+
+/// One file of `design/themes/`: where it is and what it says.
+pub(crate) struct ThemeSource {
+    pub(crate) path: String,
+    pub(crate) text: String,
+}
+
+/// The files of `design/themes/`, in name order.
+pub(crate) fn theme_sources(repo: &Repo) -> anyhow::Result<Vec<ThemeSource>> {
+    crate::docs::source::sorted_files(repo, THEMES_FOLDER, |_| true)?
+        .into_iter()
+        .map(|name| {
+            let path = format!("{THEMES_FOLDER}/{name}");
+            Ok(ThemeSource {
+                text: crate::source::read_text(repo, &path)?,
+                path,
+            })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+impl ThemeFile {
+    /// A base text with the theme files of the repository: for the tests that change the base.
+    pub(crate) fn parse_base(base: &str) -> anyhow::Result<Self> {
+        Self::parse(base, &theme_sources(&Repo::discover()?)?)
+    }
+}
 
 /// The name that `extends=` gives the base, `design/theme.kdl`: the only theme a theme extends.
 pub(super) const BASE_THEME: &str = "default";
 /// The key of a color's value for a device that asks for more contrast.
 pub(super) const MORE: &str = "more";
-/// The kinds of theme, in the order the themes are listed in (light ones first).
-const KINDS: [&str; 2] = ["light", "dark"];
+/// The kinds of theme, in the order the themes are listed in (light ones first), which is also the
+/// order of the two themes that start (`defaults light= dark=`).
+pub(super) const KINDS: [&str; 2] = ["light", "dark"];
 
 /// The theme's ID: the name of its file without `.kdl`, in small letters, digits and `-`.
 fn theme_id(path: &str) -> anyhow::Result<&str> {
     let name = path.rsplit('/').next().unwrap_or(path);
     name.strip_suffix(THEME_FILE_ENDING)
-        .filter(|id| {
-            id.starts_with(|c: char| c.is_ascii_lowercase())
-                && id
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-        })
+        .filter(|id| is_word(id))
         .with_context(|| {
             format!(
                 "{THEMES_FOLDER}/ holds one file per theme, named by its ID in small letters (`dusk{THEME_FILE_ENDING}`), and nothing else"
@@ -42,12 +81,7 @@ pub(super) fn theme_value(kind: TokenKind, node: Node<'_>, value: &str) -> anyho
     let hex = value.len() == 7
         && value.starts_with('#')
         && value[1..].chars().all(|c| c.is_ascii_hexdigit());
-    let link = value.strip_prefix('$').is_some_and(|name| {
-        !name.is_empty()
-            && name
-                .chars()
-                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-    });
+    let link = value.strip_prefix('$').is_some_and(is_word);
     if hex || link {
         Ok(value)
     } else {
@@ -55,6 +89,13 @@ pub(super) fn theme_value(kind: TokenKind, node: Node<'_>, value: &str) -> anyho
             "`{value}` must look like #rrggbb, or name another color as `$name`"
         )))
     }
+}
+
+/// A `more=` that is the color itself: it says nothing, and only adds a line to the sheet.
+pub(super) fn same_more(node: Node<'_>) -> anyhow::Error {
+    node.problem(format!(
+        "`{MORE}=` is the color itself; leave it out, the color stays the same with more contrast"
+    ))
 }
 
 impl Builder {
@@ -153,11 +194,15 @@ impl Builder {
             }
             more = Some(theme_value(kind, node, &value)?);
         }
+        let value = theme_value(kind, node, &value)?;
+        if more.as_ref() == Some(&value) {
+            return Err(same_more(node));
+        }
         Ok((
             name,
             ThemeValue {
                 theme: theme.to_owned(),
-                value: theme_value(kind, node, &value)?,
+                value,
                 more,
                 path: path.to_owned(),
                 line: node.line(),

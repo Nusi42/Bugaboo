@@ -336,3 +336,42 @@ fn the_fonts_are_system_stacks_one_for_each_role_and_none_is_shipped() {
         "the sheet asks nobody to load a font"
     );
 }
+
+/// The block a theme has in the last `@media (prefers-contrast: more)`, where each theme is named.
+fn more_contrast_block(css: &str, theme: &str) -> String {
+    let media = css
+        .rfind("@media (prefers-contrast: more) {")
+        .expect("the sheet has the blocks of more contrast");
+    let start = media
+        + css[media..]
+            .find(&format!(":root[data-look=\"{theme}\"]"))
+            .expect("the theme has a block");
+    let end = start + css[start..].find('}').expect("the block ends");
+    css[start..end].to_owned()
+}
+
+#[test]
+fn thm_06_a_theme_restates_with_more_contrast_a_color_the_dark_theme_that_starts_changes() {
+    // The dark fallback of more contrast (`:root:not([data-theme="light"])`) weighs as much as the
+    // block of a theme and comes before it in the same media block: a theme that has no `more=` of
+    // its own for a color Dusk changes must say its own color again, or it shows Dusk's.
+    let file = file();
+    let css = css(&file).unwrap();
+    for theme in &file.themes {
+        let block = more_contrast_block(&css, &theme.name);
+        for token in file
+            .colors()
+            .filter(|token| token.more_in(&file.default_dark).is_some())
+        {
+            let own = token
+                .in_theme_with_more_contrast(&theme.name)
+                .expect("every theme has every color");
+            assert!(
+                block.contains(&format!("--{}: {};", token.name, substitute(own))),
+                "{}: `{}` is not said again with more contrast",
+                theme.name,
+                token.name
+            );
+        }
+    }
+}

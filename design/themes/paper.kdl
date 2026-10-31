@@ -1,8 +1,8 @@
 // Bugaboo built-in theme: Paper (light).
 //
-// Colors only: everything else, and every color this file does not set, comes from the base,
-// design/theme.kdl, whose colors are Daylight's. `more=` is the color when the device asks for
-// more contrast. The file name is the theme's ID (ADR-0026).
+// Colors (and the shadow) only: everything else, and every color this file does not set,
+// comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
+// when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
 theme "paper" extends="default" kind="light" {
     tokens {
@@ -41,7 +41,7 @@ theme "paper" extends="default" kind="light" {
         color "tint-done" "#cdeabf"
         color "edge-high" "#cb6300"
         color "scrim" "#2a2826"
-        color "cat1-bg" "#ffe1ef" more="#ffe1ef"
+        color "cat1-bg" "#ffe1ef"
         color "cat1-fg" "#83586e"
         color "cat2-bg" "#bdd8ff" more="#d0e4ff"
         color "cat2-fg" "#375b81"
@@ -54,11 +54,11 @@ theme "paper" extends="default" kind="light" {
         color "cat6-fg" "#2b6663"
         color "cat7-bg" "#ffc5c0" more="#ffdad6"
         color "cat7-fg" "#844541"
-        color "cat8-bg" "#ffe99c" more="#ffe99c"
+        color "cat8-bg" "#ffe99c"
         color "cat8-fg" "#736518"
         color "cat9-bg" "#91e2fd" more="#b2ecff"
         color "cat9-fg" "#016176"
-        color "cat10-bg" "#e9febe" more="#e9febe"
+        color "cat10-bg" "#e9febe"
         color "cat10-fg" "#60733c"
         color "cat11-bg" "#cdd5db" more="#dde3e7"
         color "cat11-fg" "#51575c"

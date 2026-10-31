@@ -1,6 +1,7 @@
 //! The theme files of `design/themes/`: what the reader takes and what it refuses (THM-01).
 
 use super::*;
+use crate::generate::theme_file::themes::THEME_FILE_ENDING;
 
 /// The base of the repository.
 fn base() -> String {
@@ -10,7 +11,7 @@ fn base() -> String {
 /// A theme file `design/themes/<id>.kdl` with these token lines.
 fn theme_file(id: &str, kind: &str, lines: &str) -> ThemeSource {
     ThemeSource {
-        path: format!("{THEMES_FOLDER}/{id}.kdl"),
+        path: format!("{THEMES_FOLDER}/{id}{THEME_FILE_ENDING}"),
         text: format!(
             "// A theme of the tests.\ntheme \"{id}\" extends=\"default\" kind=\"{kind}\" {{\n    tokens {{\n{lines}\n    }}\n}}\n"
         ),
@@ -53,7 +54,10 @@ fn thm_01_the_four_built_in_themes_are_the_files_of_the_theme_folder() {
     paths.sort();
     assert_eq!(files, paths, "every file is a theme and every theme a file");
     for theme in &file.themes {
-        assert_eq!(theme.path, format!("{THEMES_FOLDER}/{}.kdl", theme.name));
+        assert_eq!(
+            theme.path,
+            format!("{THEMES_FOLDER}/{}{THEME_FILE_ENDING}", theme.name)
+        );
     }
     // The base lists no theme of its own.
     assert!(!base().lines().any(|line| line.starts_with("themes")));
@@ -79,8 +83,9 @@ fn thm_01_the_base_has_the_colors_of_the_light_theme_that_starts_and_no_value_is
     for source in theme_sources(&repo).unwrap() {
         let id = source
             .path
-            .trim_start_matches("design/themes/")
-            .trim_end_matches(".kdl");
+            .trim_start_matches(THEMES_FOLDER)
+            .trim_start_matches('/')
+            .trim_end_matches(THEME_FILE_ENDING);
         for color in file.colors() {
             let own = color.themes.iter().find(|value| value.theme == id).unwrap();
             if own.path != source.path {
@@ -225,7 +230,7 @@ fn bad_example_a_theme_file_without_extends_is_refused() {
 fn bad_example_a_theme_file_that_does_not_keep_the_shape_is_refused() {
     // The name in the file is not the name of the file.
     let mut renamed = theme_file("harbor", "light", "");
-    renamed.path = format!("{THEMES_FOLDER}/haven.kdl");
+    renamed.path = format!("{THEMES_FOLDER}/haven{THEME_FILE_ENDING}");
     assert!(problem_with_theme(renamed).contains("the file name is the theme's ID"));
     // A file of the folder that is no theme file.
     let mut other = theme_file("harbor", "light", "");
@@ -312,4 +317,23 @@ fn good_example_a_fifth_theme_file_is_a_fifth_theme_in_the_names_and_the_setting
         changed("crates/bb-core/src/settings/themes.rs"),
         ["    Choice::new(\"harbor\", message::THEME_HARBOR),"]
     );
+}
+
+#[test]
+fn bad_example_a_value_for_more_contrast_that_is_the_value_itself_is_refused() {
+    // It says nothing: without `more=` the color is the same with more contrast.
+    let same = "        color \"fg\" \"#000000\" more=\"#000000\"";
+    let error = problem_with_theme(theme_file("harbor", "light", same));
+    assert!(error.contains("design/themes/harbor.kdl"), "{error}");
+    assert!(error.contains("leave it out"), "{error}");
+    let base = base().replacen(
+        "color \"fg-muted\" \"#565d6b\" more=\"#464c57\"",
+        "color \"fg-muted\" \"#565d6b\" more=\"#565d6b\"",
+        1,
+    );
+    let error = ThemeFile::parse_base(&base)
+        .err()
+        .map(|error| format!("{error:#}"))
+        .unwrap_or_default();
+    assert!(error.contains("leave it out"), "{error}");
 }
