@@ -28,6 +28,14 @@ impl TempDir {
         &self.path
     }
 
+    /// The build folder of a cargo project made here: its own, inside this folder. With the
+    /// `CARGO_TARGET_DIR` of the run, every example project called `demo` would share one build
+    /// and could find the results of another example there.
+    pub(crate) fn cargo_env(&self) -> [(&'static str, String); 1] {
+        let target = self.path.join("target");
+        [("CARGO_TARGET_DIR", target.to_string_lossy().into_owned())]
+    }
+
     /// Writes a file (creating folders) and returns its path.
     pub(crate) fn write(&self, relative: &str, contents: impl AsRef<[u8]>) -> PathBuf {
         let file = self.path.join(relative);

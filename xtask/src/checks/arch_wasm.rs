@@ -40,7 +40,7 @@ impl Check for ArchWasm {
         )?;
         let modules = MODULES.map(|module| module.crate_name);
         let packages: Vec<&str> = CRATES.iter().copied().chain(modules).collect();
-        findings.extend(check_packages(root, &packages)?);
+        findings.extend(check_packages(root, &packages, &[])?);
         Ok(findings)
     }
 }
@@ -81,12 +81,17 @@ fn versions_findings(tools_text: &str, lock_text: &str) -> anyhow::Result<Vec<Fi
     })
 }
 
-fn check_packages(root: &Path, packages: &[&str]) -> anyhow::Result<Vec<Finding>> {
+/// Checks the packages for WebAssembly; `env` is set for cargo besides the variables of the run.
+fn check_packages(
+    root: &Path,
+    packages: &[&str],
+    env: &[(&str, &str)],
+) -> anyhow::Result<Vec<Finding>> {
     let mut args = vec!["check", "--target", TARGET];
     for package in packages {
         args.extend(["-p", package]);
     }
-    let output = tools::run(Path::new("cargo"), &args, root)?;
+    let output = tools::run_with_env(Path::new("cargo"), &args, root, env)?;
     Ok(tools::findings_from(
         Ok(output),
         &format!(
@@ -100,6 +105,12 @@ fn check_packages(root: &Path, packages: &[&str]) -> anyhow::Result<Vec<Finding>
 mod tests {
     use super::*;
     use crate::testutil::TempDir;
+
+    /// The findings for the example project `demo` in `temp`, built in a folder of its own.
+    fn demo_findings(temp: &TempDir) -> Vec<Finding> {
+        let [(name, target)] = temp.cargo_env();
+        check_packages(temp.path(), &["demo"], &[(name, target.as_str())]).unwrap()
+    }
 
     const TOOL: &str = "[[tool]]
 name = \"wasm-bindgen\"
@@ -151,7 +162,7 @@ version = \"0.2.9\"
             "src/lib.rs",
             "use std::os::unix::fs::PermissionsExt as _;\n",
         );
-        assert!(!check_packages(temp.path(), &["demo"]).unwrap().is_empty());
+        assert!(!demo_findings(&temp).is_empty());
     }
 
     #[test]
@@ -162,6 +173,6 @@ version = \"0.2.9\"
             "src/lib.rs",
             "pub fn add(a: u32, b: u32) -> u32 {\n    a + b\n}\n",
         );
-        assert!(check_packages(temp.path(), &["demo"]).unwrap().is_empty());
+        assert!(demo_findings(&temp).is_empty());
     }
 }

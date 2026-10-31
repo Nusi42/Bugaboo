@@ -18,7 +18,7 @@ impl Check for LintRust {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        check_root(context.repo.root())
+        check_root(context.repo.root(), &[])
     }
 }
 
@@ -28,7 +28,9 @@ impl Check for LintRust {
 /// Clippy runs once per native target listed in `rust-toolchain.toml` (the single source), so
 /// code behind `#[cfg(unix)]` or `#[cfg(windows)]` is checked on every development machine.
 /// Checking needs no linker, so a Windows machine can check the Linux code and vice versa.
-fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
+/// Runs Clippy on the workspace at `root`; `build_env` is set for cargo besides the variables of
+/// the run.
+fn check_root(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<Vec<Finding>> {
     let mut findings = Vec::new();
     let host = host_target(root)?;
     for target in native_targets(root)? {
@@ -38,13 +40,16 @@ fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
             "--all-targets".to_owned(),
         ];
         let mut skipped = Vec::new();
-        let mut env: Vec<(String, String)> = Vec::new();
+        let mut env: Vec<(String, String)> = build_env
+            .iter()
+            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+            .collect();
         if let Some(target) = &target {
             args.extend(["--target".to_owned(), target.clone()]);
             if target != &host {
                 skipped = c_build_packages(root, target)?;
                 if !skipped.is_empty() {
-                    env = stand_in_compiler(target)?;
+                    env.extend(stand_in_compiler(target)?);
                 }
             }
         }
@@ -207,6 +212,12 @@ mod tests {
     use super::*;
     use crate::testutil::TempDir;
 
+    /// The findings for the example project in `temp`, built in a folder of its own.
+    fn demo_findings(temp: &TempDir) -> Vec<Finding> {
+        let [(name, target)] = temp.cargo_env();
+        check_root(temp.path(), &[(name, target.as_str())]).unwrap()
+    }
+
     const MANIFEST: &str =
         "[package]\nname = \"demo\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[workspace]\n";
 
@@ -215,7 +226,7 @@ mod tests {
         let temp = TempDir::new("lint-rust-bad");
         temp.write("Cargo.toml", MANIFEST);
         temp.write("src/main.rs", "fn main() {\n    let unused = 1;\n}\n");
-        assert!(!check_root(temp.path()).unwrap().is_empty());
+        assert!(!demo_findings(&temp).is_empty());
     }
 
     #[test]
@@ -256,6 +267,6 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
         let temp = TempDir::new("lint-rust-good");
         temp.write("Cargo.toml", MANIFEST);
         temp.write("src/main.rs", "fn main() {}\n");
-        assert!(check_root(temp.path()).unwrap().is_empty());
+        assert!(demo_findings(&temp).is_empty());
     }
 }

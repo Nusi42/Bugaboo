@@ -36,8 +36,10 @@ desktop.ini
 # Pinned external tools installed by `cargo xtask setup` (tools/dev/tools.toml)
 /.tools/
 
-# A work folder's own logs, notes, helper scripts and pictures (04-milestones, Working in a folder)
-/.work/
+# A work folder's own logs, notes, helper scripts and pictures (04-milestones, Working in a folder),
+# at every level: a test that runs cargo from the folder of its crate with a relative build folder
+# puts that build there, and the checks read only files that are not ignored.
+.work/
 
 # Browser app build output and test reports (WP-02)
 /test-results/

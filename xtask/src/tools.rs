@@ -164,6 +164,26 @@ pub(crate) struct Output {
     pub(crate) text: String,
 }
 
+/// The variable that names the build folder of cargo.
+const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
+
+/// The build folder of the run, made absolute when it is relative, for every program xtask starts.
+/// Cargo reads a relative `CARGO_TARGET_DIR` from the folder it runs in, and the compile-fail
+/// tests run cargo from the folder of their crate (trybuild must: it reads its cases from there),
+/// so a relative one would put a build inside each crate. Made absolute here, from the folder
+/// xtask was started in, as cargo read it for xtask itself, it is the same folder everywhere.
+/// None when the variable is not set or is absolute already.
+pub(crate) fn absolute_target_dir() -> Option<(&'static str, PathBuf)> {
+    let named = std::env::var_os(TARGET_DIR_VARIABLE)?;
+    let here = std::env::current_dir().ok()?;
+    target_dir_from(Path::new(&named), &here).map(|folder| (TARGET_DIR_VARIABLE, folder))
+}
+
+/// The build folder `named` from the folder `here`, when it is relative.
+fn target_dir_from(named: &Path, here: &Path) -> Option<PathBuf> {
+    (!named.is_absolute()).then(|| here.join(named))
+}
+
 /// Runs a program in `cwd` and collects its output.
 pub(crate) fn run(program: &Path, args: &[&str], cwd: &Path) -> anyhow::Result<Output> {
     run_with_env(program, args, cwd, &[])
@@ -178,6 +198,7 @@ pub(crate) fn run_with_env(
 ) -> anyhow::Result<Output> {
     let out = Command::new(program)
         .args(args)
+        .envs(absolute_target_dir())
         .envs(env.iter().copied())
         .current_dir(cwd)
         .output()
@@ -271,6 +292,20 @@ fn shorten(text: &str, lines: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_relative_build_folder_is_handed_on_from_where_xtask_started() {
+        let here = std::env::temp_dir().join("work");
+        assert_eq!(
+            target_dir_from(Path::new(".work/target"), &here),
+            Some(here.join(".work/target"))
+        );
+        // An absolute one is the same folder from anywhere, so it is left as it is.
+        assert_eq!(
+            target_dir_from(&here.join("target"), Path::new("elsewhere")),
+            None
+        );
+    }
 
     #[test]
     fn real_tool_list_parses_and_has_downloads_for_both_platforms() {

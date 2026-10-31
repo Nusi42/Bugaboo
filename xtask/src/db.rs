@@ -328,6 +328,7 @@ impl Cluster {
         }
         let ran = Command::new(program)
             .args(args)
+            .envs(tools::absolute_target_dir())
             .current_dir(root)
             .env(TEST_DATABASES_VARIABLE, DatabaseKind::names(","))
             .env(TEST_POSTGRES_URL_VARIABLE, self.url()?)

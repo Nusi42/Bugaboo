@@ -167,7 +167,10 @@ pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
         output::step_start(index + 1, steps.len(), step.name);
         let started = Instant::now();
         let mut command = Command::new(&step.program);
-        command.args(&step.args).current_dir(root);
+        command
+            .args(&step.args)
+            .envs(crate::tools::absolute_target_dir())
+            .current_dir(root);
         let passed = if let Some(name) = step.executable {
             // Cargo's messages are data for us; its readable diagnostics stay on stderr.
             let out = command
