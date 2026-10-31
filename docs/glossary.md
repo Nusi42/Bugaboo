@@ -129,12 +129,12 @@ Rules:
 
 | Say                      | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
-| **Timer**                | Start/stop clock on an issue                                       | stopwatch                          |
+| **Timer**                | Start/stop clock on an issue. One per person, kept on the server, so every device shows the same one and closing the browser does not stop it | stopwatch                          |
 | **Time entry**           | A recorded amount of time on an issue                              | worklog                            |
 | **Estimated time**       | How long it was expected to take                                   | original estimate                  |
 | **Time left**            | How long it still needs                                            | remaining estimate                 |
 | **Time spent**           | Total of all time entries                                          | logged work                        |
-| **Timesheet**            | Your week of time entries in a grid                                | —                                  |
+| **Timesheet**            | Your week in a grid: the *Work day* rows (start, end, breaks) and your time on issues, one row per issue | —                                  |
 | **Working hours**        | When you worked on a day: start, end and breaks. Separate from time on issues | attendance, time clock     |
 | **Work day**             | One day of working hours                                           | shift (unless the organization works in shifts) |
 | **Start work day / End work day** | Buttons that record when work starts and ends             | clock in, clock out, punch in      |
@@ -142,6 +142,16 @@ Rules:
 | **Working-time rules**   | Legal limits checked on working hours (for example at most 10 hours a day) | compliance engine        |
 | **Activity**             | What kind of work a time entry was: *Development, Testing, Documentation, Meetings, Support* | work type, category, task type |
 | **Cost center**          | The accounting unit that pays for the work (Kostenstelle)          | cost object, account code          |
+| **Switch issue**         | Start the timer on another issue while one runs: the time so far is saved on the first issue, with its defaults, without a window | swap timer, change task (in UI) |
+| **Change start time**    | Set when the running timer started: never in the future, never before the end of your last time entry | edit timer, adjust timer (in UI) |
+| **Throw away** (of a timer) | Stop the timer without saving any time                          | discard, cancel timer (in UI)      |
+| **Add time**             | Book a time entry by hand, with a date and a length, without a timer | log time, log work, manual entry (in UI) |
+| **Book time**            | The project permission to book your own time on an issue you can see, and to change and delete your own time entries | log time (in UI) |
+| **Billable**             | A mark on a time entry: time that can be charged to a customer. Shown only after an administrator switches it on | chargeable, invoiceable (in UI) |
+| **Booked on issues**     | The line of the timesheet with the time you booked on issues each day | logged (in UI)                  |
+| **Working hours not booked on issues** | The line of the timesheet with your working hours minus the time booked on issues each day, so gaps are easy to spot | idle time, unaccounted time (in UI) |
+| **Preset** (of the working-time rules) | A ready set of working-time rules an organization starts from: *Germany* (the German Working Hours Act) or *No rules*. Administrators may change each number | compliance profile (in UI) |
+| **Reason** (for a change of a past day) | What a person writes, in their own words, when they change a work day that is past; it stays in the history of the day with the old value | justification (in UI) |
 
 ## Documents
 
@@ -172,8 +182,8 @@ Rules:
 | Say                      | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Group**                | A set of people                                                    | team (as object)                   |
-| **Role**                 | A named set of permissions, given to people or groups for the whole organization or on a project. Every organization starts with *Administrator, Project lead, Team member, Contributor, Viewer, Guest* | — |
-| **Starting role**        | One of the six roles every organization starts with. It is a copy that can be renamed, changed or deleted | built-in role, default role, system role, predefined role (in UI) |
+| **Role**                 | A named set of permissions, given to people or groups for the whole organization or on a project. Every organization starts with *Administrator, Project lead, Team member, Contributor, Viewer, Guest, HR* | — |
+| **Starting role**        | One of the seven roles every organization starts with. It is a copy that can be renamed, changed or deleted | built-in role, default role, system role, predefined role (in UI) |
 | **Reset to the starting permissions** | Give a starting role back the permissions it had at the start | factory reset, restore defaults (in UI) |
 | **Who has which role**   | The list, for the whole organization or one project, of the people and groups and their role there. Rows from a parent project say so (*from ACME*) | role assignments, access control list, ACL (in UI) |
 | **Where it counts**      | Where a role given to someone applies: *Whole organization*, *Only this project*, or *This project and its sub-projects* | global, subtree, recursive (in UI) |
@@ -213,6 +223,11 @@ Rules:
 | **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |
 | **Work times**           | A person's usual work days, work hours, shares in projects and away times; also the kind of people information that says who may see them | availability, capacity (in UI) |
 | **Enter work times for others** | The permission to enter usual work days, work hours and away times for other people | — |
+| **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, employee monitoring, productivity, overtime score, ranking (in UI) |
+| **See working hours of others** | The organization permission to see other people's working hours. Nobody has it at the start, also not *Administrator* | — |
+| **Change working hours of others** | The organization permission to change other people's work days, always with a reason; the person is told | — |
+| **Totals only**          | An organization setting: *Working hours of others* shows each person's week total and never days, starts, ends or breaks | aggregate mode (in UI) |
+| **HR**                   | The starting role with *See working hours of others* and *Change working hours of others*. Nobody has it at the start; an administrator gives it to a group, for example *Payroll* | human resources, personnel (as the role) |
 | **Usual work days**      | The days of the week a person normally works, for example Monday to Thursday | work pattern, schedule (in UI) |
 | **Work hours**           | How many hours a person works on a usual work day, from their work contract | capacity, FTE (in UI) |
 | **Share in the project** | How much of a person's work hours belong to one project, for example 60 % | allocation, utilization (in UI) |
@@ -247,7 +262,8 @@ Rules:
 | **Not scheduled yet**    | The tray beside the timeline with the issues that have no dates yet | backlog (on the timeline)          |
 | **Appearance**           | The choices about how Bugaboo looks: theme, *Spacing* (*Comfortable* or *Compact*), *Larger text* and *Less motion* | display settings |
 | **Keyboard shortcuts**   | Keys that do something faster; every shortcut also has a button, and a person can choose their own keys | hotkeys, keybindings |
-| **Region**               | The choices about where you are: time zone, date format, number format and first day of the week | locale, localization, i18n (in UI) |
+| **Region**               | The choices about where you are: time zone, date format, *Time of day*, number format and first day of the week | locale, localization, i18n (in UI) |
+| **Time of day**          | The choice in *Region* of how a time is written: *24-hour (14:30)* or *12-hour (2:30 pm)*. Its default follows the date format | time format, clock format, AM/PM (in UI) |
 | **Start page**           | The page Bugaboo opens after you sign in                           | landing page, home screen (in UI)  |
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
 | **and**                  | The word between two names in a text for people (*Roles and permissions*, *E-mail and notifications*): never the sign & | & (in UI, a check refuses it) |
@@ -310,3 +326,6 @@ Rules:
 | Control plane       | Our separate system that creates, updates, backs up and monitors served instances; it holds no customer data |
 | Operator            | Us, when running served instances; our staff have no default access to customer data |
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
+| Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`). A work day belongs to the person's day it starts on and keeps its zone; a time entry's date is the person's day of its start (ADR-0035) |
+| Starter fields      | Own fields that Bugaboo makes at the first start and on upgrade, like *Activity* and *Cost center* of time entries; found by a stable mark, never by their name, and changed by administrators like any own field |
+| Time spent port     | `TimeSpentStore`: how code outside the module of time entries reads minutes booked on issues, for the issues the caller passes or a compiled search finds, and one person's minutes per date (ADR-0035, decision 4) |
