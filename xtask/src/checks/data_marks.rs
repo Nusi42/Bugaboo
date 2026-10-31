@@ -9,7 +9,9 @@
 //! A table is stored data too: every table of `bb-store` (an enum with a `Table` variant in
 //! `schema.rs` or in a file of `schema/`) must be named in the `stored_tables!` list with the entity it holds, and that
 //! entity must carry marks and be in the `entities!` list. A table that is created in a migration
-//! without being listed is found as well (ADR-0015, ADR-0003).
+//! without being listed is found as well (ADR-0015, ADR-0003). A table whose columns are those of
+//! another table's enum names that enum in brackets (`TimeEntryValueRow(FieldValueRow) => …`), and
+//! its columns are checked against that enum.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -45,6 +47,8 @@ const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
 /// each of its columns.
 struct ListedTable {
     table: String,
+    /// The enum whose columns the table shares, when it is not the table's own.
+    columns_of: Option<String>,
     entity: String,
     columns: Vec<(String, String)>,
 }
@@ -53,6 +57,9 @@ struct ListedTable {
 ///
 /// ```text
 /// Table => path::Entity {
+///     Column => field,
+/// },
+/// Table(ColumnsOf) => path::Entity {
 ///     Column => field,
 /// },
 /// ```
@@ -83,8 +90,17 @@ fn listed_tables(schema: &str) -> Vec<ListedTable> {
             }
         } else if let Some((table, rest)) = line.split_once("=>") {
             let entity = rest.trim().trim_end_matches('{').trim();
+            let table = table.trim();
+            let (table, columns_of) = match table.split_once('(') {
+                Some((table, columns_of)) => (
+                    table.trim(),
+                    Some(columns_of.trim_end_matches(')').trim().to_owned()),
+                ),
+                None => (table, None),
+            };
             tables.push(ListedTable {
-                table: table.trim().to_owned(),
+                table: table.to_owned(),
+                columns_of,
                 entity: entity
                     .rsplit("::")
                     .next()
@@ -273,6 +289,32 @@ fn migration_findings(listed: &[ListedTable], sources: &[crate::source::Source])
     findings
 }
 
+/// The columns of a listed table: its own variants, or those of the enum it names in brackets,
+/// which it may take only with no columns of its own (none, with a finding, otherwise).
+fn columns_of_entry<'a>(
+    entry: &ListedTable,
+    own: &'a Vec<String>,
+    enums: &'a [(String, Vec<String>)],
+    findings: &mut Vec<Finding>,
+) -> Option<&'a Vec<String>> {
+    let Some(columns_of) = &entry.columns_of else {
+        return Some(own);
+    };
+    match enums.iter().find(|(name, _)| name == columns_of) {
+        Some((_, shared)) if own.is_empty() => Some(shared),
+        _ => {
+            findings.push(Finding::at(
+                SCHEMA_PATH,
+                format!(
+                    "`{}` takes its columns from `{columns_of}`, so it has no columns of its own                      and `{columns_of}` is the enum of a table.",
+                    entry.table
+                ),
+            ));
+            None
+        }
+    }
+}
+
 fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Finding> {
     if !sources.iter().any(|(path, _)| path == SCHEMA_PATH) {
         return Vec::new();
@@ -295,8 +337,9 @@ fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Find
         .collect();
     let in_list: BTreeSet<&str> = model.listed.iter().map(String::as_str).collect();
     let mut findings = Vec::new();
-    for (table, variants) in table_enums(schema) {
-        let Some(entry) = listed.iter().find(|entry| entry.table == table) else {
+    let enums = table_enums(schema);
+    for (table, own) in &enums {
+        let Some(entry) = listed.iter().find(|entry| entry.table == *table) else {
             findings.push(Finding::at(
                 SCHEMA_PATH,
                 format!(
@@ -307,7 +350,10 @@ fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Find
             ));
             continue;
         };
-        for variant in &variants {
+        let Some(variants) = columns_of_entry(entry, own, &enums, &mut findings) else {
+            continue;
+        };
+        for variant in variants {
             if !entry.columns.iter().any(|(column, _)| column == variant) {
                 findings.push(Finding::at(
                     SCHEMA_PATH,
@@ -590,6 +636,70 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         assert!(all.contains("names the column `Event::Time`"), "{all}");
         assert!(
             all.contains("The column `Event::Moment` is not covered"),
+            "{all}"
+        );
+    }
+
+    /// The schema with a second table that takes the columns of `Event`; `own` are its own
+    /// variants besides `Table`.
+    fn schema_with_a_shared_table(own: &str) -> String {
+        SCHEMA_GOOD
+            .replace(
+                "macro_rules!",
+                &format!(
+                    "pub(crate) enum Copy {{
+    Table,
+{own}}}
+macro_rules!"
+                ),
+            )
+            .replace(
+                "    },
+}
+",
+                "    },
+    Copy(Event) => bb_core::event::DomainEvent {
+        Id => id,
+        Time => id,
+    },
+}
+",
+            )
+    }
+
+    #[test]
+    fn good_example_a_table_takes_the_columns_of_another_tables_enum() {
+        let found = table_findings(&schema_with_a_shared_table(""), MIGRATION_GOOD, LIST_GOOD);
+        assert!(found.is_empty(), "{found}");
+    }
+
+    #[test]
+    fn bad_example_a_table_with_shared_columns_is_checked_against_them() {
+        // A column the shared enum has not.
+        let schema = schema_with_a_shared_table("").replace(
+            "        Time => id,
+    },
+}
+",
+            "        Time => id,
+        Extra => id,
+    },
+}
+",
+        );
+        let all = table_findings(&schema, MIGRATION_GOOD, LIST_GOOD);
+        assert!(all.contains("names the column `Copy::Extra`"), "{all}");
+        // A table that has columns of its own besides the shared ones.
+        let all = table_findings(
+            &schema_with_a_shared_table(
+                "    Own,
+",
+            ),
+            MIGRATION_GOOD,
+            LIST_GOOD,
+        );
+        assert!(
+            all.contains("`Copy` takes its columns from `Event`"),
             "{all}"
         );
     }

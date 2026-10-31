@@ -111,7 +111,8 @@ pub(crate) enum FieldChoiceRow {
     RetiredAt,
 }
 
-/// The values of own fields (ADR-0006): one row per value, one typed column per kind.
+/// The values of own fields (ADR-0006): one row per value, one typed column per kind. The values
+/// of time entries have the same columns in `time_entry_value` ([`TimeEntryValueRow`](super::TimeEntryValueRow)).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum FieldValueRow {
     #[iden = "field_value"]

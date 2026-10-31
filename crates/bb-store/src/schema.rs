@@ -50,8 +50,19 @@ pub struct StoredTable {
 /// is the table's enum in this file, and the names before the other arrows are its variants, so
 /// a column that does not exist does not compile; DATA-MARKS requires that every variant has a
 /// line and that the field exists in the entity.
+/// The names of the columns, of the table's own enum or of the enum named in brackets whose
+/// columns the table shares.
+macro_rules! column_names {
+    ($table:ident; $($column:ident),+) => {
+        [$(sea_query::Iden::to_string(&$table::$column)),+]
+    };
+    ($table:ident, $columns:ident; $($column:ident),+) => {
+        [$(sea_query::Iden::to_string(&$columns::$column)),+]
+    };
+}
+
 macro_rules! stored_tables {
-    ($($table:ident => $entity:ty {
+    ($($table:ident $(($columns:ident))? => $entity:ty {
         $($column:ident => $field:ident),+ $(,)?
     }),+ $(,)?) => {
         /// The name of every table with the marks of the entity stored in it and the field
@@ -61,10 +72,10 @@ macro_rules! stored_tables {
             vec![$(StoredTable {
                 name: sea_query::Iden::to_string(&$table::Table),
                 marks: <$entity as bb_core::personal::Entity>::MARKS,
-                columns: vec![$((
-                    sea_query::Iden::to_string(&$table::$column),
-                    stringify!($field),
-                )),+],
+                columns: column_names!($table $(, $columns)?; $($column),+)
+                    .into_iter()
+                    .zip([$(stringify!($field)),+])
+                    .collect(),
             }),+]
         }
     };
@@ -432,7 +443,7 @@ stored_tables! {
         CreatedAt => created_at,
         Version => version,
     },
-    TimeEntryValueRow => bb_core::time::entry::TimeEntryValue {
+    TimeEntryValueRow(FieldValueRow) => bb_core::time::entry::TimeEntryValue {
         EntityKind => entity_kind,
         EntityId => entity_id,
         Field => field,

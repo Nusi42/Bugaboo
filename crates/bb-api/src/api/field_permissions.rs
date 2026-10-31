@@ -11,7 +11,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable};
-use bb_app::roles::SetFieldLevel;
+use bb_app::roles::{LevelsQuery, SetFieldLevel};
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
@@ -299,18 +299,28 @@ async fn change_field_permission(
     let issue_type = place.issue_type()?;
     let role = path_id::<RoleId>(&path.role)?;
     // A word of a field that left the catalogue is accepted and changes nothing, for a person who
-    // may decide the levels there (the table of the place is read for that judgement).
+    // may decide the levels there and a role that exists: the table of the place and the role's
+    // levels there are read for that judgement, so the answers are those of a level that is set.
     if super::is_retired_field(&path.field) {
-        auth.api()?
-            .field_permissions(
-                info,
-                FieldPermissionsQuery {
-                    session_token,
-                    project,
-                    issue_type,
-                },
-            )
-            .await?;
+        let api = auth.api()?;
+        api.field_permissions(
+            info.clone(),
+            FieldPermissionsQuery {
+                session_token: session_token.clone(),
+                project,
+                issue_type,
+            },
+        )
+        .await?;
+        api.role_levels(
+            info,
+            LevelsQuery {
+                session_token,
+                role,
+                project,
+            },
+        )
+        .await?;
         return Ok(done());
     }
     let field =

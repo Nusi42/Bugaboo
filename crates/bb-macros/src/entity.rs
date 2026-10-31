@@ -138,6 +138,7 @@ fn read_mark(entity: &Ident, field: &Ident, attrs: &[Attribute]) -> syn::Result<
 /// The marks of the field in the rows of some kinds of record (`#[personal_for(…)]`).
 fn read_kinds(attrs: &[Attribute]) -> syn::Result<Vec<TokenStream>> {
     let mut kinds = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
     for attr in attrs
         .iter()
         .filter(|attr| attr.path().is_ident("personal_for"))
@@ -169,6 +170,17 @@ fn read_kinds(attrs: &[Attribute]) -> syn::Result<Vec<TokenStream>> {
                 "`#[personal_for(...)]` needs `kind`, `category` and `basis`",
             ));
         };
+        // One kind has one mark: a second would leave it open which of the two counts.
+        if seen.contains(&kind.value()) {
+            return Err(syn::Error::new(
+                kind.span(),
+                format!(
+                    "the kind `{}` is given twice in `#[personal_for(...)]`; keep one mark for it",
+                    kind.value()
+                ),
+            ));
+        }
+        seen.push(kind.value());
         let category = word(&category, "Category");
         let basis = word(&basis, "Basis");
         kinds.push(quote_spanned! { kind.span() =>

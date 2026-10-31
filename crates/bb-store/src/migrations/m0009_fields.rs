@@ -8,7 +8,9 @@
 //! A value names its item by kind and ID, so the one table serves issues now and time entries,
 //! documents and releases later.
 
-use sea_query::{ColumnDef, ForeignKey, Index, Table};
+use sea_query::{
+    ColumnDef, DynIden, ForeignKey, Index, IntoIden as _, Table, TableCreateStatement,
+};
 
 use super::{Step, id_column};
 use crate::schema::{
@@ -142,36 +144,46 @@ fn choices() -> Vec<Step> {
     ]
 }
 
+/// The columns, the key and the reference of a table of values of own fields that `create` makes
+/// with the name `table`: `field_value` here, and `time_entry_value` (migration 31) with the same
+/// columns. The caller names the table in `create`, where DATA-MARKS reads it.
+pub(super) fn values_table(
+    create: &mut TableCreateStatement,
+    table: DynIden,
+) -> TableCreateStatement {
+    create
+        .col(ColumnDef::new(FieldValueRow::EntityKind).text().not_null())
+        .col(id_column(FieldValueRow::EntityId))
+        .col(id_column(FieldValueRow::Field))
+        .col(ColumnDef::new(FieldValueRow::ValueText).text())
+        .col(ColumnDef::new(FieldValueRow::ValueNumber).big_integer())
+        .col(ColumnDef::new(FieldValueRow::ValueDate).big_integer())
+        .col(ColumnDef::new(FieldValueRow::ValueRef).blob())
+        .col(
+            ColumnDef::new(FieldValueRow::Position)
+                .big_integer()
+                .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(FieldValueRow::EntityKind)
+                .col(FieldValueRow::EntityId)
+                .col(FieldValueRow::Field)
+                .col(FieldValueRow::Position),
+        )
+        .foreign_key(
+            ForeignKey::create()
+                .from(table, FieldValueRow::Field)
+                .to(FieldRow::Table, FieldRow::Id),
+        )
+        .to_owned()
+}
+
 fn values() -> Vec<Step> {
-    let mut steps = vec![Step::Table(
-        Table::create()
-            .table(FieldValueRow::Table)
-            .col(ColumnDef::new(FieldValueRow::EntityKind).text().not_null())
-            .col(id_column(FieldValueRow::EntityId))
-            .col(id_column(FieldValueRow::Field))
-            .col(ColumnDef::new(FieldValueRow::ValueText).text())
-            .col(ColumnDef::new(FieldValueRow::ValueNumber).big_integer())
-            .col(ColumnDef::new(FieldValueRow::ValueDate).big_integer())
-            .col(ColumnDef::new(FieldValueRow::ValueRef).blob())
-            .col(
-                ColumnDef::new(FieldValueRow::Position)
-                    .big_integer()
-                    .not_null(),
-            )
-            .primary_key(
-                Index::create()
-                    .col(FieldValueRow::EntityKind)
-                    .col(FieldValueRow::EntityId)
-                    .col(FieldValueRow::Field)
-                    .col(FieldValueRow::Position),
-            )
-            .foreign_key(
-                ForeignKey::create()
-                    .from(FieldValueRow::Table, FieldValueRow::Field)
-                    .to(FieldRow::Table, FieldRow::Id),
-            )
-            .to_owned(),
-    )];
+    let mut steps = vec![Step::Table(values_table(
+        Table::create().table(FieldValueRow::Table),
+        FieldValueRow::Table.into_iden(),
+    ))];
     for (name, column) in [
         ("field_value_by_number", FieldValueRow::ValueNumber),
         ("field_value_by_date", FieldValueRow::ValueDate),

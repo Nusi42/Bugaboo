@@ -44,18 +44,11 @@ pub(crate) enum StarterFieldRow {
     Field,
 }
 
-/// The values of the own fields of time entries (TIME-13): the columns of `field_value`, in a
-/// table of their own because every part of them is about a person's time.
+/// The values of the own fields of time entries (TIME-13), in a table of their own because every
+/// part of them is about a person's time. Its columns are those of `field_value`, named once by
+/// [`FieldValueRow`](super::FieldValueRow).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum TimeEntryValueRow {
     #[iden = "time_entry_value"]
     Table,
-    EntityKind,
-    EntityId,
-    Field,
-    ValueText,
-    ValueNumber,
-    ValueDate,
-    ValueRef,
-    Position,
 }

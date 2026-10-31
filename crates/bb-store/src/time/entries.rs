@@ -15,7 +15,7 @@ use super::{Answered, read_day, read_minutes, stored_day};
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId as _, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
-use crate::schema::{TimeEntryRow, TimeEntryValueRow};
+use crate::schema::{FieldValueRow, TimeEntryRow, TimeEntryValueRow};
 use crate::search::scalar;
 
 /// The microseconds in a minute: the end of an entry with a start is its start plus its length.
@@ -283,7 +283,7 @@ impl TimeStore for AuthStorage {
         let mut values = Query::delete();
         values
             .from_table(TimeEntryValueRow::Table)
-            .and_where(Expr::col(TimeEntryValueRow::EntityId).eq(id.stored()));
+            .and_where(Expr::col(FieldValueRow::EntityId).eq(id.stored()));
         transaction.execute(&values).await?;
         Ok(true)
     }

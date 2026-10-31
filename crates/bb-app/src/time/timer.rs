@@ -197,18 +197,24 @@ fn issue_cleared(running: &Running) -> FieldChange {
 
 /// The changes of the timer inside the event of the entry a stop or a switch saved, named as the
 /// timer's own (`timer_…`): so they do not read as the entry's (a `version` there would say the
-/// new entry counted up).
-fn as_the_timers(changes: Vec<FieldChange>) -> Vec<FieldChange> {
+/// new entry counted up). Each member is named here; one that is not is a defect of the program,
+/// not a member to guess a name for.
+fn as_the_timers(changes: Vec<FieldChange>) -> Result<Vec<FieldChange>, AppError> {
     changes
         .into_iter()
         .map(|mut change| {
             let name = match change.field.as_str() {
                 member::ISSUE | entry_member::TIMER_ISSUE => entry_member::TIMER_ISSUE,
                 member::STARTED_AT => entry_member::TIMER_STARTED_AT,
-                _ => entry_member::TIMER_VERSION,
+                bb_core::version::FIELD => entry_member::TIMER_VERSION,
+                other => {
+                    return Err(AppError::Internal(format!(
+                        "the timer's member `{other}` has no name in the event of an entry"
+                    )));
+                }
             };
             name.clone_into(&mut change.field);
-            change
+            Ok(change)
         })
         .collect()
 }
@@ -367,7 +373,7 @@ fn saving_event<S: AuthStore>(
     match &saving.entry {
         Some(made) => {
             let mut changes = made.changes();
-            changes.extend(as_the_timers(timer_changes));
+            changes.extend(as_the_timers(timer_changes)?);
             ctx.event(
                 by(actor.person.id),
                 entity(RecordKind::TimeEntry, made.entry.id),
@@ -639,5 +645,45 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(error) if S::is_aborted(&error) => Ok(()),
             other => other.map_err(|error| internal::<S>(&error)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_core::event::FieldChange;
+    use bb_core::version::counted_up;
+    use serde_json::json;
+
+    use super::{as_the_timers, entry_member, member};
+    use crate::auth::{AppError, set_to};
+
+    #[test]
+    fn time_01_the_timers_changes_in_the_event_of_an_entry_keep_their_own_names()
+    -> Result<(), AppError> {
+        let renamed = as_the_timers(vec![
+            set_to(member::ISSUE, json!("i")),
+            set_to(member::STARTED_AT, json!("s")),
+            counted_up(3),
+        ])?;
+        let fields: Vec<&str> = renamed.iter().map(|change| change.field.as_str()).collect();
+        assert_eq!(
+            fields,
+            [
+                entry_member::TIMER_ISSUE,
+                entry_member::TIMER_STARTED_AT,
+                entry_member::TIMER_VERSION
+            ]
+        );
+        // A member with no name of its own here is refused, not named as another one.
+        let warned = FieldChange {
+            field: member::WARNED_AT.to_owned(),
+            before: None,
+            after: Some(json!("w")),
+        };
+        assert!(matches!(
+            as_the_timers(vec![warned]),
+            Err(AppError::Internal(_))
+        ));
+        Ok(())
     }
 }

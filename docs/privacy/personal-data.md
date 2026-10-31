@@ -169,7 +169,9 @@ Defined in `crates/bb-core/src/event.rs`.
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                                                                |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                  | No            | –               | –                      | The ID of the event.                                                                                                                                                         |
-| `time`                                | No            | –               | –                      | When it happened.                                                                                                                                                            |
+| `time`                                | No            | –               | –                      | When it happened. For a timer or a time entry it is when a person started or stopped work (ADR-0035), so it is time at work there.                                           |
+| `time` (rows about a `time_entry`)    | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                                                                     |
+| `time` (rows about a `timer`)         | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                                                                     |
 | `actor`                               | Yes           | `activity`      | `legitimate_interests` | Who did it.                                                                                                                                                                  |
 | `channel`                             | No            | –               | –                      | Where the change came from.                                                                                                                                                  |
 | `entity`                              | No            | –               | –                      | The record it is about.                                                                                                                                                      |
@@ -304,18 +306,21 @@ One row of the history of an issue.
 
 Defined in `crates/bb-core/src/history.rs`.
 
-| Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                            |
-| ------------------------------------- | ------------- | --------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| `event`                               | No            | –               | –                      | The event the row was made from: a row is made once for each event and issue.                            |
-| `issue`                               | No            | –               | –                      | The issue whose history it belongs to.                                                                   |
-| `position`                            | No            | –               | –                      | The place of the event in the outbox, which is the order of the history.                                 |
-| `at`                                  | No            | –               | –                      | When it happened.                                                                                        |
-| `by`                                  | Yes           | `activity`      | `legitimate_interests` | Who did it; nobody for Bugaboo itself.                                                                   |
-| `kind`                                | No            | –               | –                      | What it is.                                                                                              |
-| `record`                              | No            | –               | –                      | The record the event is about: for a comment its ID, for a relation the relation.                        |
-| `record_kind`                         | No            | –               | –                      | The kind of record, as the event names it.                                                               |
-| `changes`                             | Yes           | `content`       | `legitimate_interests` | What changed. It can hold anything a person typed.                                                       |
-| `changes` (rows about a `time_entry`) | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about. |
+| Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                      |
+| ------------------------------------- | ------------- | --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `event`                               | No            | –               | –                      | The event the row was made from: a row is made once for each event and issue.                                                      |
+| `issue`                               | No            | –               | –                      | The issue whose history it belongs to.                                                                                             |
+| `position`                            | No            | –               | –                      | The place of the event in the outbox, which is the order of the history.                                                           |
+| `at`                                  | No            | –               | –                      | When it happened. For a timer or a time entry it is when a person started or stopped work (ADR-0035), so it is time at work there. |
+| `at` (rows about a `time_entry`)      | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                           |
+| `at` (rows about a `timer`)           | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                           |
+| `by`                                  | Yes           | `activity`      | `legitimate_interests` | Who did it; nobody for Bugaboo itself.                                                                                             |
+| `kind`                                | No            | –               | –                      | What it is.                                                                                                                        |
+| `record`                              | No            | –               | –                      | The record the event is about: for a comment its ID, for a relation the relation.                                                  |
+| `record_kind`                         | No            | –               | –                      | The kind of record, as the event names it.                                                                                         |
+| `changes`                             | Yes           | `content`       | `legitimate_interests` | What changed. It can hold anything a person typed.                                                                                 |
+| `changes` (rows about a `time_entry`) | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                           |
+| `changes` (rows about a `timer`)      | Yes           | `employee_time` | `contract`             | The same, in the rows about this kind of record; the person of that record is the one the data is about.                           |
 
 ### IndexedText
 

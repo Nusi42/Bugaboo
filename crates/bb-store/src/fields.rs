@@ -24,7 +24,7 @@ use crate::db::{Reader, Row, STATEMENT_ITEMS, StoredId as _, Transaction, to_mic
 use crate::error::StoreError;
 use crate::schema::{
     FieldChoiceRow, FieldIssueTypeRow, FieldProjectRow, FieldRow, FieldValueRow, IssueRow,
-    TimeEntryValueRow,
+    TimeEntryRow, TimeEntryValueRow,
 };
 
 /// The IDs of every own field, so that each has a level in an evaluation.
@@ -437,6 +437,28 @@ impl FieldStore for AuthStorage {
             .and_where(
                 Expr::col((FieldValueRow::Table, FieldValueRow::EntityKind))
                     .eq(RecordKind::Issue.code()),
+            );
+        for row in transaction.fetch_all(&select).await? {
+            projects.push(row.id::<ProjectId>(IssueRow::Project)?);
+        }
+        // The projects of the issues whose time entries hold a value.
+        let mut select = Query::select();
+        select
+            .distinct()
+            .column((IssueRow::Table, IssueRow::Project))
+            .from(TimeEntryValueRow::Table)
+            .inner_join(
+                TimeEntryRow::Table,
+                Expr::col((TimeEntryRow::Table, TimeEntryRow::Id))
+                    .equals((TimeEntryValueRow::Table, FieldValueRow::EntityId)),
+            )
+            .inner_join(
+                IssueRow::Table,
+                Expr::col((IssueRow::Table, IssueRow::Id))
+                    .equals((TimeEntryRow::Table, TimeEntryRow::Issue)),
+            )
+            .and_where(
+                Expr::col((TimeEntryValueRow::Table, FieldValueRow::Field)).eq(field.stored()),
             );
         for row in transaction.fetch_all(&select).await? {
             projects.push(row.id::<ProjectId>(IssueRow::Project)?);

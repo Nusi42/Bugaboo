@@ -543,6 +543,18 @@ async fn time_13_the_retired_words_of_activity_and_cost_center_are_accepted_and_
                 )
                 .await?;
             assert_eq!(set.status, StatusCode::NO_CONTENT, "{word}: {}", set.body);
+            // A role that does not exist is not found, as for a field that is in the catalogue.
+            let unknown = bb_core::id::RoleId::from_parts(rig.clock_now(), [9; 10])?;
+            let nowhere = format!("/api/v1/field-permissions/{unknown}/{word}");
+            let missing = ada
+                .send("PUT", &nowhere, Some(json!({"level": "hidden"})))
+                .await?;
+            assert_eq!(
+                missing.status,
+                StatusCode::NOT_FOUND,
+                "{word}: {}",
+                missing.body
+            );
         }
         // No answer names them.
         let table = ada.send("GET", "/api/v1/field-permissions", None).await?;

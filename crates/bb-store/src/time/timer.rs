@@ -3,12 +3,16 @@
 
 use bb_core::id::{FieldId, IssueId, UserId};
 use bb_core::time::entry::{Running, StarterField, StarterFieldMark, Timer};
-use bb_core::version::{FIRST_VERSION, Version};
+use bb_core::version::Version;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Query};
 
 use crate::db::{Row, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{StarterFieldRow, TimerRow};
+
+/// The version of a timer row that [`hold_time_of`] made and no use case wrote yet: it reads as no
+/// timer, and the first start writes over it (a start that raced the first *Add time* still wins).
+const HELD_VERSION: i64 = 0;
 
 /// The columns of a timer, in the order they are written.
 const TIMER_COLUMNS: [TimerRow; 6] = [
@@ -62,7 +66,8 @@ pub(super) async fn timer_in(
     select
         .columns(TIMER_COLUMNS)
         .from(TimerRow::Table)
-        .and_where(Expr::col(TimerRow::Person).eq(person.stored()));
+        .and_where(Expr::col(TimerRow::Person).eq(person.stored()))
+        .and_where(Expr::col(TimerRow::Version).ne(HELD_VERSION));
     transaction
         .fetch_optional(&select)
         .await?
@@ -71,8 +76,8 @@ pub(super) async fn timer_in(
         .transpose()
 }
 
-/// Writes a timer: a new row when `version` is none (false when the person has one), else the row
-/// that is still at `version` (false when it is not).
+/// Writes a timer: a new row when `version` is none (false when the person has one; a row only held
+/// is written over), else the row that is still at `version` (false when it is not).
 pub(super) async fn put_timer(
     transaction: &mut Transaction,
     timer: &Timer,
@@ -86,7 +91,14 @@ pub(super) async fn put_timer(
             .columns(TIMER_COLUMNS)
             .values(values)
             .map_err(|_| StoreError::Corrupt("a timer"))?
-            .on_conflict(OnConflict::column(TimerRow::Person).do_nothing().to_owned());
+            .on_conflict(
+                OnConflict::column(TimerRow::Person)
+                    .update_columns(TIMER_COLUMNS.into_iter().skip(1))
+                    .action_and_where(
+                        Expr::col((TimerRow::Table, TimerRow::Version)).eq(HELD_VERSION),
+                    )
+                    .to_owned(),
+            );
         return Ok(transaction.execute(&insert).await? > 0);
     };
     let mut update = Query::update();
@@ -100,10 +112,11 @@ pub(super) async fn put_timer(
     Ok(transaction.execute(&update).await? > 0)
 }
 
-/// Holds the timer row of a person until the change ends, making one that stands still when the
+/// Holds the timer row of a person until the change ends, making one at [`HELD_VERSION`] when the
 /// person has none (an upsert that writes the key again, which takes the lock of the row on
 /// PostgreSQL; SQLite has one writer anyway): the changes of one person's time come one after
-/// the other, so a count of their entries cannot be passed by two at once.
+/// the other, so a count of their entries cannot be passed by two at once. The row made here
+/// reads as no timer, so it needs no event.
 pub(super) async fn hold_time_of(
     transaction: &mut Transaction,
     person: UserId,
@@ -112,7 +125,7 @@ pub(super) async fn hold_time_of(
         person,
         running: None,
         changed_at: jiff::Timestamp::UNIX_EPOCH,
-        version: FIRST_VERSION,
+        version: HELD_VERSION,
     };
     let mut insert = Query::insert();
     insert

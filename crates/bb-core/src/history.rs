@@ -93,8 +93,11 @@ pub struct HistoryEntry {
     /// The place of the event in the outbox, which is the order of the history.
     #[not_personal]
     pub position: i64,
-    /// When it happened.
+    /// When it happened. For a timer or a time entry it is when a person started or stopped work
+    /// (ADR-0035), so it is time at work there.
     #[not_personal]
+    #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
+    #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
     pub at: Timestamp,
     /// Who did it; nobody for Bugaboo itself.
     #[personal(category = "activity", basis = "legitimate_interests")]
@@ -111,5 +114,6 @@ pub struct HistoryEntry {
     /// What changed. It can hold anything a person typed.
     #[personal(category = "content", basis = "legitimate_interests")]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
+    #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
     pub changes: Vec<FieldChange>,
 }

@@ -203,8 +203,11 @@ pub struct DomainEvent {
     /// The ID of the event.
     #[not_personal]
     pub id: EventId,
-    /// When it happened.
+    /// When it happened. For a timer or a time entry it is when a person started or stopped work
+    /// (ADR-0035), so it is time at work there.
     #[not_personal]
+    #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
+    #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
     pub time: Timestamp,
     /// Who did it.
     #[personal(category = "activity", basis = "legitimate_interests")]

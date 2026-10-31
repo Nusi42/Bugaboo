@@ -51,6 +51,7 @@ fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile() {
     cases.pass("tests/ui/marked.rs");
     cases.compile_fail("tests/ui/unmarked_field.rs");
     cases.compile_fail("tests/ui/two_marks.rs");
+    cases.compile_fail("tests/ui/kind_twice.rs");
     cases.compile_fail("tests/ui/missing_basis.rs");
     cases.compile_fail("tests/ui/unknown_category.rs");
     cases.compile_fail("tests/ui/not_a_struct.rs");

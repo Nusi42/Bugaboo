@@ -1,0 +1,5 @@
+error: the kind `timer` is given twice in `#[personal_for(...)]`; keep one mark for it
+ --> tests/ui/kind_twice.rs:7:27
+  |
+7 |     #[personal_for(kind = "timer", category = "activity", basis = "contract")]
+  |                           ^^^^^^^

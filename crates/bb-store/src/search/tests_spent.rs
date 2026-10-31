@@ -153,3 +153,103 @@ async fn time_01_a_person_has_one_timer_row() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn time_01_a_start_that_follows_the_first_add_time_still_starts_the_timer() -> TestResult {
+    each_database("time_held_timer_row", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let me = data.me;
+        // The first *Add time* holds the person's time: a row is made, and it is no timer.
+        ChangeStore::record_change(storage, &event(&mut data.source, 8), move |tx| {
+            Box::pin(async move { AuthStorage::hold_time_of(tx, me).await })
+        })
+        .await?;
+        assert_eq!(storage.timer(me).await?, None);
+        // A start that read no timer before the hold writes its new timer over the held row.
+        let started = Timer {
+            person: me,
+            running: Some(Running {
+                issue: data.issues[0].id,
+                started_at: at(10),
+                warned_at: None,
+            }),
+            changed_at: at(10),
+            version: FIRST_VERSION,
+        };
+        assert!(put(storage, &mut data.source, started.clone(), None).await?);
+        assert_eq!(storage.timer(me).await?, Some(started.clone()));
+        // A second hold keeps the timer as it is, and a second new timer is still refused.
+        ChangeStore::record_change(storage, &event(&mut data.source, 9), move |tx| {
+            Box::pin(async move { AuthStorage::hold_time_of(tx, me).await })
+        })
+        .await?;
+        assert!(!put(storage, &mut data.source, started.clone(), None).await?);
+        assert_eq!(storage.timer(me).await?, Some(started));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_13_field_usage_names_the_project_of_an_entry_that_holds_a_value() -> TestResult {
+    use bb_app::fields::{Definition, FieldStore as _};
+    use bb_core::event::{EntityKind, RecordKind};
+    use bb_core::id::{EntityId, FieldId};
+    use bb_core::own_fields::{FieldFor, FieldType, Look, OwnField, Rules, Scope};
+    use bb_core::own_fields_value::Cell;
+
+    each_database("time_field_usage", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let field = FieldId::generate(&mut data.source)?;
+        let kind = FieldType::Text;
+        let definition = Definition {
+            field: OwnField {
+                id: field,
+                name: "Work kind".to_owned(),
+                help: String::new(),
+                kind,
+                applies_to: FieldFor::TimeEntries,
+                rules: Rules::default(),
+                default_value: String::new(),
+                look: Look::starting(kind),
+                never_to_assistant: false,
+                position: 0,
+                retired_at: None,
+                version: FIRST_VERSION,
+            },
+            scope: Scope::default(),
+            choices: Vec::new(),
+        };
+        let booked = entry(&mut data.source, data.me, data.issues[0].id, (14, 30))?;
+        let entry_id = booked.id;
+        ChangeStore::record_change(storage, &event(&mut data.source, 7), move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_field(tx, &definition).await?;
+                AuthStorage::insert_time_entry(tx, &booked).await?;
+                let cells = [Cell {
+                    text: Some("Review".to_owned()),
+                    number: None,
+                    date: None,
+                    reference: None,
+                }];
+                AuthStorage::put_field_value(
+                    tx,
+                    EntityKind::from(RecordKind::TimeEntry),
+                    EntityId::from(entry_id),
+                    field,
+                    &cells,
+                )
+                .await
+            })
+        })
+        .await?;
+        // Only an entry holds a value: its issue's project uses the field.
+        assert_eq!(storage.projects_with_values(field).await?, [data.project]);
+        Ok(())
+    })
+    .await
+}
