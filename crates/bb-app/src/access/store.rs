@@ -79,6 +79,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// The keys of the starting roles that came after the others were made and are still
         /// to make on this server (the role *HR*, ADR-0025, amendment M6).
         fn starting_roles_due() -> Vec<bb_core::technical::TechnicalName> = starting_roles_due_in;
+        /// Whether a role carries the mark of the starting role with this key.
+        fn starting_role_there(key: bb_core::technical::TechnicalName) -> bool
+            = starting_role_there_in;
         /// One role with its permissions.
         fn role(id: RoleId) -> Option<RoleRecord> = role_in;
         /// The rows on a project (`Some`) or for the whole organization (`None`), in the order

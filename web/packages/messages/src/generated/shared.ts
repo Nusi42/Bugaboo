@@ -863,6 +863,8 @@ export const messages = {
     "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
   "notifications.work-day-changed": "{who} changed your work day of {date}",
   "notifications.work-day-reason": "Why: {reason}",
+  "error.working-hours.in-the-future":
+    "A work day records what has happened. Times later than now cannot be saved yet.",
 } as const;
 
 register(messages);

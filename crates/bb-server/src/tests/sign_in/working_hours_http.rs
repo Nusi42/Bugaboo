@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::perf_queries::{Counter, assert_as_many_statements, assert_same_statements};
-use super::rig::Rig;
+use super::rig::{PASSWORD, Rig};
 
 const MINE: &str = "/api/v1/me/work-days";
 const OLD: &str = "/api/v1/work-days/old";
@@ -95,7 +95,7 @@ async fn a_day(rig: &Rig, browser: &mut Browser, hours: i64) -> Result<Value, Fa
 }
 
 #[tokio::test]
-async fn time_08_start_break_end_make_one_work_day_with_its_totals() -> TestResult {
+async fn time_08_start_break_end_form_one_work_day_with_its_totals() -> TestResult {
     each_database("time_08_work_day_taps", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (_site, mut ada) = Site::start(&rig, &app).await?;
@@ -238,6 +238,22 @@ async fn time_10_a_past_day_changes_only_with_a_reason_and_keeps_the_old_value()
         assert_eq!(last["by"]["name"], "Ada Admin");
         // The first change, which made the day, has no times before it.
         assert_eq!(changes[0]["before"], Value::Null);
+        // Nothing that has not happened yet is recorded.
+        let tomorrow = "2027-01-16";
+        rig.clock.advance(1);
+        let ahead = ada
+            .send(
+                "PATCH",
+                &format!("{MINE}/{tomorrow}"),
+                Some(times(tomorrow, "08:00", "16:00", 0, Some("Planned"))),
+            )
+            .await?;
+        assert_eq!(
+            ahead.code(),
+            "working-hours.in-the-future",
+            "{}",
+            ahead.body
+        );
         Ok(())
     })
     .await
@@ -387,7 +403,8 @@ async fn time_12_totals_only_answers_week_totals_and_nothing_else() -> TestResul
     each_database("time_12_totals_only", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, _ada) = Site::start(&rig, &app).await?;
-        let (mut hana, _bob, bob_id) = hana_and_bob(&rig, &site).await?;
+        long_sessions(&rig).await?;
+        let (mut hana, mut bob, bob_id) = hana_and_bob(&rig, &site).await?;
         rig.set_organization_switch("working-hours.totals-only", true)
             .await?;
         let base = format!("/api/v1/people/{bob_id}/work-days");
@@ -401,6 +418,19 @@ async fn time_12_totals_only_answers_week_totals_and_nothing_else() -> TestResul
         assert_eq!(body["may_change"], false);
         assert_eq!(body["weeks"][0]["worked"], 480);
         assert!(body["weeks"][0].get("breaks").is_none());
+        // A stretch of one day reads the whole week: no day is told apart from its week.
+        let today_only = hana
+            .send("GET", &format!("{base}?from={TODAY}&to={TODAY}"), None)
+            .await?;
+        assert_eq!(ok(&today_only)?["weeks"], body["weeks"]);
+        // A day that runs counts as nothing until it ends, so nobody learns that Bob works now.
+        rig.clock.advance(HOUR);
+        ok(&start(&mut bob).await?)?;
+        rig.clock.advance(2 * HOUR);
+        let running = hana
+            .send("GET", &format!("{base}?from={TODAY}&to={TODAY}"), None)
+            .await?;
+        assert_eq!(ok(&running)?["weeks"], body["weeks"]);
         let change = hana
             .send(
                 "PATCH",
@@ -598,6 +628,106 @@ async fn perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_
         let (on_forty, forty_log) = counter.take_logged();
         assert_same_statements(&five_log, &forty_log);
         assert_as_many_statements(on_five, on_forty, DAYS_AT_MOST, "a longer stretch of days");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_12_an_access_key_never_reaches_its_owners_working_hours() -> TestResult {
+    each_database("time_12_key_and_own_days", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let ada_id = id_of_person(&rig, ADA_EMAIL).await?;
+        let made = ada
+            .send(
+                "PATCH",
+                &format!("{MINE}/{YESTERDAY}"),
+                Some(times(
+                    YESTERDAY,
+                    "07:00",
+                    "15:00",
+                    0,
+                    Some("Typed in afterwards"),
+                )),
+            )
+            .await?;
+        ok(&made)?;
+        let key = ada
+            .send(
+                "POST",
+                "/api/v1/access-keys",
+                Some(json!({"password": PASSWORD, "name": "Script", "choice": "everything"})),
+            )
+            .await?;
+        let secret = ok(&key)?["secret"].as_str().ok_or("no secret")?.to_owned();
+        // Neither by the address of one's own days nor by the address of the person.
+        let own = ada
+            .script(
+                "GET",
+                &format!("{MINE}?from={YESTERDAY}&to={TODAY}"),
+                None,
+                &secret,
+            )
+            .await?;
+        assert_eq!(own.code(), "auth.access-key-not-allowed", "{}", own.body);
+        let base = format!("/api/v1/people/{ada_id}/work-days");
+        let read = ada
+            .script(
+                "GET",
+                &format!("{base}?from={YESTERDAY}&to={TODAY}"),
+                None,
+                &secret,
+            )
+            .await?;
+        assert_eq!(read.status, StatusCode::NOT_FOUND, "{}", read.body);
+        let change = ada
+            .script(
+                "PATCH",
+                &format!("{base}/{YESTERDAY}"),
+                Some(times(YESTERDAY, "07:00", "18:00", 1, None)),
+                &secret,
+            )
+            .await?;
+        assert_eq!(change.status, StatusCode::NOT_FOUND, "{}", change.body);
+        let history = ada
+            .script("GET", &format!("{base}/{YESTERDAY}/history"), None, &secret)
+            .await?;
+        assert_eq!(history.status, StatusCode::NOT_FOUND);
+        // Not even when the owner holds *HR*: no key holds the permissions of working hours.
+        let hr = site.org.starting_roles().await?[StartingRole::Hr.code()];
+        site.org.give_everywhere(&site.org.admin, hr).await?;
+        let with_hr = ada
+            .script(
+                "GET",
+                &format!("{base}?from={YESTERDAY}&to={TODAY}"),
+                None,
+                &secret,
+            )
+            .await?;
+        assert_eq!(with_hr.status, StatusCode::NOT_FOUND);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_08_two_starts_at_the_same_moment_keep_one_work_day() -> TestResult {
+    each_database("time_08_two_starts", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let mut phone = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let (first, second) = tokio::join!(start(&mut ada), start(&mut phone));
+        let (first, second) = (first?, second?);
+        let started = [&first, &second]
+            .iter()
+            .filter(|reply| reply.status == StatusCode::OK)
+            .count();
+        assert_eq!(started, 1, "{} / {}", first.body, second.body);
+        let listed = mine(&mut ada, TODAY, TODAY).await?;
+        let listed_days = days(&listed);
+        assert_eq!(listed_days.len(), 1, "{}", listed.body);
+        assert_eq!(listed_days[0]["periods"].as_array().map(Vec::len), Some(1));
         Ok(())
     })
     .await

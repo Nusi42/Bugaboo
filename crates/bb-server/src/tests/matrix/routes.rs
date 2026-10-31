@@ -156,12 +156,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             {
                 Expect::NotFound
             } else if example.has(Quirk::HidesThePerson)
-                && ![
-                    Permission::SeeWorkingHoursOfOthers,
-                    Permission::ChangeWorkingHoursOfOthers,
-                ]
-                .iter()
-                .any(|known| held.permissions.contains(known))
+                && !bb_policy::OF_WORKING_HOURS
+                    .iter()
+                    .any(|known| held.permissions.contains(known))
             {
                 // Another person's working hours: nobody learns whose days exist (ADR-0035).
                 Expect::NotFound

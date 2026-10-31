@@ -93,11 +93,23 @@ impl Totals {
     /// time of the periods that is not work, and the time between the periods.
     #[must_use]
     pub fn of(times: &Times, now: Timestamp) -> Self {
-        let worked = worked(&pieces(times, Some(now)));
+        Self::until(times, Some(now))
+    }
+
+    /// The totals of what has ended: a period or a break that runs counts as nothing yet. What a
+    /// total that others read says, so it never tells whether the person works right now.
+    #[must_use]
+    pub fn ended(times: &Times) -> Self {
+        Self::until(times, None)
+    }
+
+    /// The totals with what runs counted until `until`, or as nothing without it.
+    fn until(times: &Times, until: Option<Timestamp>) -> Self {
+        let worked = worked(&pieces(times, until));
         let mut periods: Vec<Piece> = times
             .periods
             .iter()
-            .map(|period| (period.start, end_of(period, Some(now))))
+            .map(|period| (period.start, end_of(period, until)))
             .collect();
         periods.sort_unstable();
         let length = sum(periods

@@ -249,3 +249,13 @@ pub fn assignment_given(row: &Assignment) -> Vec<FieldChange> {
         set_to("applies_to", json!(row.applies_to.code())),
     ]
 }
+
+/// The text a change of an event sets `field` to, if it has one: the one reading of a member that
+/// the readers of events need.
+pub(crate) fn text_set<'a>(changes: &'a [FieldChange], field: &str) -> Option<&'a str> {
+    changes
+        .iter()
+        .find(|change| change.field == field)
+        .and_then(|change| change.after.as_ref())
+        .and_then(Value::as_str)
+}

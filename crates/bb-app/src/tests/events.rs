@@ -173,9 +173,7 @@ table! {
     "change_time_entry" => sti::change_time_entry_scenario,
     "delete_time_entry" => sti::delete_time_entry_scenario,
     "start_work_day" => swh::start_work_day_scenario,
-    "start_break" => swh::start_break_scenario,
-    "end_break" => swh::end_break_scenario,
-    "end_work_day" => swh::end_work_day_scenario,
+    "tap_work_day" => swh::tap_work_day_scenario,
     "change_work_day" => swh::change_work_day_scenario,
     "delete_old_work_days" => swh::delete_old_work_days_scenario,
 }

@@ -10,9 +10,8 @@ use super::scenarios::{Added, measured, text, token};
 use super::world::World;
 use crate::auth::AppError;
 use crate::working_hours::{
-    ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, EndBreak, EndWorkDay, StartBreak,
-    StartWorkDay, change_work_day, delete_old_work_days, end_break, end_work_day, start_break,
-    start_work_day,
+    ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, StartWorkDay, Tap, TapWorkDay,
+    change_work_day, delete_old_work_days, start_work_day, tap_work_day,
 };
 
 /// The administrator starts their work day; the clock moves on first, past the limit of one
@@ -59,63 +58,30 @@ pub(crate) async fn start_work_day_scenario(world: &World) -> Added {
     measured(&world.store, started(world)).await
 }
 
-pub(crate) async fn start_break_scenario(world: &World) -> Added {
-    let day = started(world).await.map_err(text)?;
+/// A tap on the day that runs, a minute later.
+async fn tapped(world: &World, version: i64, tap: Tap) -> Result<ChangedWorkDay, AppError> {
     world.clock.advance(60);
-    measured(
-        &world.store,
-        start_break(
-            &world.ctx(),
-            StartBreak {
-                session_token: token(world),
-                version: day.day.version,
-            },
-        ),
-    )
-    .await
-}
-
-pub(crate) async fn end_break_scenario(world: &World) -> Added {
-    let day = started(world).await.map_err(text)?;
-    world.clock.advance(60);
-    let on_break = start_break(
+    Ok(tap_work_day(
         &world.ctx(),
-        StartBreak {
+        TapWorkDay {
             session_token: token(world),
-            version: day.day.version,
+            version,
+            tap,
         },
     )
-    .await
-    .map_err(text)?
-    .into_value();
-    world.clock.advance(60);
-    measured(
-        &world.store,
-        end_break(
-            &world.ctx(),
-            EndBreak {
-                session_token: token(world),
-                version: on_break.day.version,
-            },
-        ),
-    )
-    .await
+    .await?
+    .into_value())
 }
 
-pub(crate) async fn end_work_day_scenario(world: &World) -> Added {
+pub(crate) async fn tap_work_day_scenario(world: &World) -> Added {
     let day = started(world).await.map_err(text)?;
-    world.clock.advance(60);
-    measured(
-        &world.store,
-        end_work_day(
-            &world.ctx(),
-            EndWorkDay {
-                session_token: token(world),
-                version: day.day.version,
-            },
-        ),
-    )
-    .await
+    let on_break = tapped(world, day.day.version, Tap::StartBreak)
+        .await
+        .map_err(text)?;
+    let back = tapped(world, on_break.day.version, Tap::EndBreak)
+        .await
+        .map_err(text)?;
+    measured(&world.store, tapped(world, back.day.version, Tap::End)).await
 }
 
 pub(crate) async fn change_work_day_scenario(world: &World) -> Added {

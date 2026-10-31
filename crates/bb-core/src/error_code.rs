@@ -247,6 +247,9 @@ error_codes! {
     /// The times do not make one work day: a break outside the work, two that overlap, a day
     /// longer than 24 hours or one that overlaps the day before or after it (ADR-0035, decision 5).
     NotAWorkDay => ("working-hours.not-a-work-day", 400),
+    /// A start, an end or a break of a work day lies after now: a day records what happened
+    /// (ADR-0035, decision 7).
+    WorkDayInTheFuture => ("working-hours.in-the-future", 400),
     /// A change of another person's work day, or of one's own past day, needs a reason in the
     /// person's own words (ADR-0035, decision 7).
     ReasonNeeded => ("working-hours.reason-needed", 400),

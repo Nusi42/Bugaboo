@@ -5,9 +5,13 @@
 use bb_core::time::day::date_of;
 use jiff::tz::TimeZone;
 
+use bb_core::technical::TechnicalName;
+use bb_policy::StartingRole;
+
 use super::scenarios::token;
 use super::scenarios_working_hours::{started, typed};
 use super::world::{Outcome, World};
+use crate::access::{CreateStartingRoles, create_starting_roles};
 use crate::context::Clock as _;
 use crate::working_hours::{BookedWeekQuery, booked_week};
 
@@ -51,6 +55,55 @@ async fn time_04_the_week_compares_the_working_hours_with_the_time_booked_on_iss
     assert_eq!(
         (free.worked.get(), free.booked.get(), free.not_booked),
         (0, 0, 0)
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_08_hr_is_created_once_on_a_server_whose_roles_were_made_before_it() -> Outcome {
+    let world = World::new().await?;
+    let hr = TechnicalName::new(StartingRole::Hr.code())?;
+    let is_hr = |record: &crate::access::RoleRecord| record.role.starting.as_ref() == Some(&hr);
+    // A server of before: its starting roles are made, HR is not, and the migration made HR due.
+    {
+        let mut shared = world.store.lock();
+        shared.state.roles.retain(|record| !is_hr(record));
+        shared.state.starting_roles_due.push(hr.clone());
+    }
+    let before = world.store.event_count();
+    // Two servers that start at the same moment.
+    let (first, second) = (world.ctx(), world.ctx());
+    let (one, two) = tokio::join!(
+        create_starting_roles(&first, CreateStartingRoles),
+        create_starting_roles(&second, CreateStartingRoles)
+    );
+    one?;
+    two?;
+    let made = world
+        .store
+        .read(|state| state.roles.iter().filter(|record| is_hr(record)).count());
+    assert_eq!(made, 1);
+    assert!(
+        world
+            .store
+            .read(|state| state.starting_roles_due.is_empty())
+    );
+    assert_eq!(
+        world.store.event_count() - before,
+        1,
+        "one event, of the one role"
+    );
+    // Another start makes nothing, and writes no event.
+    create_starting_roles(&world.ctx(), CreateStartingRoles).await?;
+    assert_eq!(world.store.event_count() - before, 1);
+    // A role that is there already when the row says it is due is not made twice.
+    world.store.lock().state.starting_roles_due.push(hr.clone());
+    create_starting_roles(&world.ctx(), CreateStartingRoles).await?;
+    assert_eq!(world.store.event_count() - before, 1);
+    assert!(
+        world
+            .store
+            .read(|state| state.starting_roles_due.is_empty())
     );
     Ok(())
 }

@@ -9,18 +9,8 @@ use jiff::civil::Date;
 use jiff::tz::TimeZone;
 use jiff::{SignedDuration, Timestamp};
 
-use super::{BREAKS_PER_DAY_MAX, WORK_DAY_HOURS_MAX};
-
-/// A tap on the day that runs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Tap {
-    /// *Start break*.
-    StartBreak,
-    /// *End break*.
-    EndBreak,
-    /// *End work day*: the break that runs ends too.
-    End,
-}
+use super::types::Tap;
+use super::{BREAKS_PER_DAY_MAX, FUTURE_SLACK_SECONDS, WORK_DAY_HOURS_MAX};
 
 /// The day after *Start work day* at `now`: a new day, or a new period of the day of the same
 /// date that was ended already.
@@ -78,6 +68,25 @@ fn inside(spell: &Span, period: &Span) -> bool {
         (None, Some(_)) => false,
     };
     starts_in && ends_in
+}
+
+/// Checks that nothing of a day lies after `now`, beyond [`FUTURE_SLACK_SECONDS`]: a record says
+/// what happened, never what is planned (TIME-10).
+///
+/// # Errors
+/// `working-hours.in-the-future` for a start or an end that lies later.
+pub(super) fn not_in_the_future(times: &Times, now: Timestamp) -> Result<(), ErrorCode> {
+    let latest = now + SignedDuration::from_secs(FUTURE_SLACK_SECONDS);
+    let moments = times
+        .periods
+        .iter()
+        .chain(&times.breaks)
+        .flat_map(|span| std::iter::once(span.start).chain(span.end));
+    if moments.into_iter().all(|moment| moment <= latest) {
+        Ok(())
+    } else {
+        Err(ErrorCode::WorkDayInTheFuture)
+    }
 }
 
 /// The times of a day as they are kept: periods and breaks in the order they started.
@@ -250,6 +259,33 @@ mod tests {
         assert_eq!(
             check(&Times::default(), monday(), &utc, None, None),
             Err(ErrorCode::NotAWorkDay)
+        );
+    }
+
+    #[test]
+    fn time_10_a_day_records_nothing_that_has_not_happened() {
+        let now = at("2026-10-05T12:00:00Z");
+        let until = |end: &str| day(&[("2026-10-05T08:00:00Z", Some(end))], &[]);
+        assert_eq!(
+            not_in_the_future(&until("2026-10-05T12:00:00Z"), now),
+            Ok(())
+        );
+        // A device clock a little ahead is no mistake.
+        assert_eq!(
+            not_in_the_future(&until("2026-10-05T12:01:00Z"), now),
+            Ok(())
+        );
+        assert_eq!(
+            not_in_the_future(&until("2026-10-05T12:01:01Z"), now),
+            Err(ErrorCode::WorkDayInTheFuture)
+        );
+        let later_break = day(
+            &[("2026-10-05T08:00:00Z", None)],
+            &[("2026-10-05T13:00:00Z", None)],
+        );
+        assert_eq!(
+            not_in_the_future(&later_break, now),
+            Err(ErrorCode::WorkDayInTheFuture)
         );
     }
 

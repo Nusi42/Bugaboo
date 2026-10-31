@@ -16,7 +16,9 @@ use crate::schema::{
     StartingRoleDueRow, StartingRolesMadeRow, WorkBreakRow, WorkDayRow, WorkPeriodRow,
 };
 
-/// The key of the starting role that came after the starting roles were first made.
+/// The key of the starting role that came after the starting roles were first made: the frozen code
+/// of `StartingRole::Hr`, written out because an applied migration never changes with the program
+/// (a test holds the two together).
 const HR: &str = "hr";
 
 pub(super) fn steps() -> Result<Vec<Step>, sea_query::error::Error> {
@@ -139,4 +141,59 @@ fn due_roles() -> Result<Vec<Step>, sea_query::error::Error> {
         ),
         Step::Seed(due),
     ])
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_policy::StartingRole;
+    use bb_testing::{TestResult, each_database};
+    use sea_query::{Expr, ExprTrait as _, Query};
+
+    use super::super::Database;
+    use super::*;
+    use crate::test_support::at;
+
+    #[test]
+    fn the_key_is_the_code_of_the_starting_role_hr() {
+        assert_eq!(HR, StartingRole::Hr.code());
+    }
+
+    // A server whose starting roles were made before HR existed gets HR due once; a new server
+    // gets nothing due, because its first start makes every starting role.
+    #[tokio::test]
+    async fn sec_08_migration_32_makes_hr_due_only_where_the_starting_roles_were_made() -> TestResult
+    {
+        each_database("migration_32_hr_due", async |db| {
+            let due = async |database: &Database| -> Result<usize, crate::error::StoreError> {
+                let mut select = Query::select();
+                select
+                    .column(StartingRoleDueRow::Key)
+                    .from(StartingRoleDueRow::Table)
+                    .and_where(Expr::col(StartingRoleDueRow::Key).eq(HR));
+                Ok(database.fetch_all(&select).await?.len())
+            };
+            let old = Database::connect(db.url()).await?;
+            old.migrate_until(30, at(0)).await?;
+            let mut made = Query::insert();
+            made.into_table(StartingRolesMadeRow::Table)
+                .columns([StartingRolesMadeRow::MadeAt])
+                .values_panic([Expr::val(1_i64)]);
+            old.execute(&made).await?;
+            old.migrate(at(1)).await?;
+            assert_eq!(due(&old).await?, 1);
+            Ok(())
+        })
+        .await?;
+        each_database("migration_32_nothing_due", async |db| {
+            let fresh = Database::connect(db.url()).await?;
+            fresh.migrate(at(0)).await?;
+            let mut select = Query::select();
+            select
+                .column(StartingRoleDueRow::Key)
+                .from(StartingRoleDueRow::Table);
+            assert!(fresh.fetch_all(&select).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
 }

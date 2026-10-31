@@ -32,7 +32,7 @@ Each person records when their work day started and ended and their breaks, as G
 ## Acceptance tests (write first)
 
 - TEST-WORKING-TIME: `time_09_ten_hours_and_a_minute_warns_and_is_still_recorded`, `time_09_breaks_under_fifteen_minutes_do_not_count`, `time_09_six_hours_in_a_row_without_a_break_warns`, `time_09_eleven_hours_of_rest_are_checked_against_the_day_before`, `time_09_no_rules_gives_no_warning`; property tests: a day across midnight, across the daylight-saving changes, in a zone east of UTC+12, a person who changed zone between two days.
-- `time_08_start_break_end_make_one_work_day_with_its_totals`.
+- `time_08_start_break_end_form_one_work_day_with_its_totals`.
 - `time_08_a_day_left_open_must_be_ended_before_the_next_starts`.
 - `time_10_a_past_day_changes_only_with_a_reason_and_keeps_the_old_value`.
 - `time_10_a_change_by_someone_else_tells_the_person`.

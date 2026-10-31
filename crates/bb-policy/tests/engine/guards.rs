@@ -282,12 +282,7 @@ fn sec_08_the_organization_state_is_made_from_rows_and_a_row_for_nobody_is_refus
 
 #[test]
 fn sec_02_a_person_who_decides_every_role_gives_hr_without_holding_its_permissions() {
-    let hr: BTreeSet<Permission> = [
-        Permission::SeeWorkingHoursOfOthers,
-        Permission::ChangeWorkingHoursOfOthers,
-    ]
-    .into_iter()
-    .collect();
+    let hr: BTreeSet<Permission> = bb_policy::OF_WORKING_HOURS.into_iter().collect();
     // The Administrator role holds neither, but both *Manage roles* and *Decide who has which
     // role*: it gives *HR* for the whole organization.
     let administrator: Vec<Permission> = Permission::ALL

@@ -277,20 +277,28 @@ impl WorkingHoursStore for AuthStorage {
         one_day(&mut self.database(), &select).await
     }
 
-    async fn work_day_events(&self, id: WorkDayId) -> Result<Vec<DomainEvent>, StoreError> {
+    async fn work_day_events(
+        &self,
+        id: WorkDayId,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, StoreError> {
         let mut select = Query::select();
         select
             .columns(event_columns())
             .from(Event::Table)
             .and_where(Expr::col(Event::EntityKind).eq(RecordKind::WorkDay.code()))
             .and_where(Expr::col(Event::EntityId).eq(id.stored()))
-            .order_by(Event::Id, Order::Asc);
-        self.database()
+            .order_by(Event::Id, Order::Desc)
+            .limit(limit);
+        let mut events = self
+            .database()
             .fetch_all(&select)
             .await?
             .iter()
             .map(read_event)
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?;
+        events.reverse();
+        Ok(events)
     }
 
     async fn old_work_days(&self, before: Date) -> Result<Vec<OldDays>, StoreError> {

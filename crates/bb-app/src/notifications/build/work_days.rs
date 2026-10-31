@@ -8,6 +8,7 @@ use serde_json::json;
 
 use super::{Hears, Keeps, Round, Subject};
 use crate::auth::{AppError, AuthStore, Ctx};
+use crate::event_members::text_set;
 use crate::member::work_day;
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -19,22 +20,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
-        let value_of = |field: &str| {
-            event
-                .changes
-                .iter()
-                .find(|change| change.field == field)
-                .and_then(|change| change.after.clone())
-        };
-        let Some(person) = value_of(work_day::PERSON)
-            .and_then(|value| value.as_str().and_then(|text| text.parse::<UserId>().ok()))
+        let Some(person) =
+            text_set(&event.changes, work_day::PERSON).and_then(|text| text.parse::<UserId>().ok())
         else {
             return Ok(());
         };
         let mut kept = vec![FieldChange {
             field: work_day::DATE.to_owned(),
             before: None,
-            after: value_of(work_day::DATE),
+            after: text_set(&event.changes, work_day::DATE).map(|date| json!(date)),
         }];
         if let Some(reason) = &event.reason {
             kept.push(FieldChange {

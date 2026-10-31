@@ -4477,7 +4477,7 @@ export interface components {
       periods: components["schemas"]["SpanBody"][];
       /**
        * @description Why, in the person's own words: needed for another person's day and for one's own past
-       *     day, at most 500 characters.
+       *     day, at most `REASON_CHARS_MAX` characters.
        */
       reason?: string | null;
       /**
@@ -5017,6 +5017,7 @@ export interface components {
       | "working-hours.break-running"
       | "working-hours.no-break-running"
       | "working-hours.not-a-work-day"
+      | "working-hours.in-the-future"
       | "working-hours.reason-needed"
       | "working-hours.week-totals-only"
       | "search.too-slow"
@@ -6706,7 +6707,7 @@ export interface components {
        * @description The keep period in force, in whole years.
        */
       keep_years: number;
-      /** @description How many of each person, in the order of their names, at most 500. */
+      /** @description How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`. */
       people: components["schemas"]["OldOfPersonBody"][];
       /**
        * Format: int64
@@ -8994,7 +8995,7 @@ export interface components {
     };
     /** @description The history of a work day, oldest change first. */
     WorkDayHistoryBody: {
-      /** @description The changes, at most 200 of the newest. */
+      /** @description The changes, at most the newest `HISTORY_CHANGES_MAX`. */
       changes: components["schemas"]["WorkDayChangeBody"][];
       /** @description Whether older changes were left out. */
       truncated: boolean;
@@ -9010,7 +9011,7 @@ export interface components {
       totals: components["schemas"]["TotalsBody"] | null;
       /** @description Whether *Totals only* hides the days. */
       totals_only: boolean;
-      /** @description Never true: a stretch longer than 62 days is refused, so nothing is cut off. */
+      /** @description Never true: a stretch longer than `RANGE_DAYS_MAX` days is refused, so nothing is cut off. */
       truncated: boolean;
       /** @description The time worked in each week of the stretch. */
       weeks: components["schemas"]["WeekBody"][];
@@ -14210,7 +14211,7 @@ export interface operations {
       query: {
         /** @description The first date (`2026-10-05`). */
         from: string;
-        /** @description The last date, at most 62 days after the first. */
+        /** @description The last date, less than `RANGE_DAYS_MAX` days after the first. */
         to: string;
       };
       header?: never;
@@ -14752,7 +14753,7 @@ export interface operations {
       query: {
         /** @description The first date (`2026-10-05`). */
         from: string;
-        /** @description The last date, at most 62 days after the first. */
+        /** @description The last date, less than `RANGE_DAYS_MAX` days after the first. */
         to: string;
       };
       header?: never;

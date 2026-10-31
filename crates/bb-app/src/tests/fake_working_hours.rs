@@ -113,14 +113,20 @@ impl WorkingHoursStore for FakeStore {
         Ok(self.read(|state| state.work_days.iter().find(|day| day.day.id == id).cloned()))
     }
 
-    async fn work_day_events(&self, id: WorkDayId) -> Result<Vec<DomainEvent>, FakeError> {
-        Ok(self
+    async fn work_day_events(
+        &self,
+        id: WorkDayId,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, FakeError> {
+        let all: Vec<DomainEvent> = self
             .lock()
             .events
             .iter()
             .filter(|event| about(event, &[id.into()]))
             .cloned()
-            .collect())
+            .collect();
+        let keep = usize::try_from(limit).unwrap_or(usize::MAX);
+        Ok(all[all.len().saturating_sub(keep)..].to_vec())
     }
 
     async fn old_work_days(&self, before: Date) -> Result<Vec<OldDays>, FakeError> {

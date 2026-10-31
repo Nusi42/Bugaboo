@@ -288,6 +288,17 @@ impl PolicyStore for FakeStore {
         Ok(super::fake_working_hours::due_roles(tx))
     }
 
+    async fn starting_role_there_in(
+        tx: &mut Tx,
+        key: bb_core::technical::TechnicalName,
+    ) -> Result<bool, FakeError> {
+        Ok(tx
+            .state
+            .roles
+            .iter()
+            .any(|record| record.role.starting.as_ref() == Some(&key)))
+    }
+
     async fn clear_starting_role_due(
         tx: &mut Tx,
         key: &bb_core::technical::TechnicalName,

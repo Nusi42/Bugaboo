@@ -153,10 +153,9 @@ use crate::workflows::{
 };
 use crate::working_hours::{
     BookedWeek, BookedWeekQuery, ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, DeletedWorkDays,
-    EndBreak, EndWorkDay, OldWorkDays, OldWorkDaysQuery, StartBreak, StartWorkDay, WorkDayHistory,
-    WorkDayHistoryQuery, WorkDaysPage, WorkDaysQuery, booked_week, change_work_day,
-    delete_old_work_days, end_break, end_work_day, old_work_days, start_break, start_work_day,
-    work_day_history, work_days,
+    OldWorkDays, OldWorkDaysQuery, StartWorkDay, TapWorkDay, WorkDayHistory, WorkDayHistoryQuery,
+    WorkDaysPage, WorkDaysQuery, booked_week, change_work_day, delete_old_work_days, old_work_days,
+    start_work_day, tap_work_day, work_day_history, work_days,
 };
 
 #[cfg(test)]
@@ -564,12 +563,8 @@ use_cases! {
     work_days(WorkDaysQuery) -> Authorized<WorkDaysPage>;
     /// *Start work day*.
     start_work_day(StartWorkDay) -> Authorized<ChangedWorkDay>;
-    /// *Start break*.
-    start_break(StartBreak) -> Authorized<ChangedWorkDay>;
-    /// *End break*.
-    end_break(EndBreak) -> Authorized<ChangedWorkDay>;
-    /// *End work day*.
-    end_work_day(EndWorkDay) -> Authorized<ChangedWorkDay>;
+    /// *Start break*, *End break* or *End work day*.
+    tap_work_day(TapWorkDay) -> Authorized<ChangedWorkDay>;
     /// New times of a work day, one's own or another person's.
     change_work_day(ChangeWorkDay) -> Authorized<ChangedWorkDay>;
     /// The history of a work day.

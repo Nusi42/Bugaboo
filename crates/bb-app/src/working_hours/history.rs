@@ -87,9 +87,11 @@ pub async fn work_day_history<S: AuthStore>(
         .await
         .map_err(failed)?
         .ok_or(ErrorCode::NotFound)?;
+    // One more than is shown, to know whether older changes are left out.
+    let wanted = u64::try_from(HISTORY_CHANGES_MAX + 1).unwrap_or(u64::MAX);
     let events = ctx
         .store()
-        .work_day_events(day.day.id)
+        .work_day_events(day.day.id, wanted)
         .await
         .map_err(failed)?;
     let skipped = events.len().saturating_sub(HISTORY_CHANGES_MAX);

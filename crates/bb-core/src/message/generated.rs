@@ -1062,6 +1062,10 @@ pub const ERROR_WORKING_HOURS_DAY_NOT_RUNNING: MessageKey =
 pub const ERROR_WORKING_HOURS_DAY_RUNNING: MessageKey =
     MessageKey::new("error.working-hours.day-running");
 
+/// The message `error.working-hours.in-the-future`.
+pub const ERROR_WORKING_HOURS_IN_THE_FUTURE: MessageKey =
+    MessageKey::new("error.working-hours.in-the-future");
+
 /// The message `error.working-hours.no-break-running`.
 pub const ERROR_WORKING_HOURS_NO_BREAK_RUNNING: MessageKey =
     MessageKey::new("error.working-hours.no-break-running");
@@ -12615,6 +12619,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.working-hours.day-running",
         "Your work day is running already.",
+    ),
+    (
+        "error.working-hours.in-the-future",
+        "A work day records what has happened. Times later than now cannot be saved yet.",
     ),
     (
         "error.working-hours.no-break-running",

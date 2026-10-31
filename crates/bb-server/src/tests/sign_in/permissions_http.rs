@@ -31,10 +31,7 @@ async fn sec_01_who_is_signed_in_answers_the_permissions_for_the_whole_organizat
         // Everything but the permissions of working hours, which an administrator gives with *HR*
         // (ADR-0035, decision 8).
         for permission in Permission::ALL {
-            let of_working_hours = matches!(
-                permission,
-                Permission::SeeWorkingHoursOfOthers | Permission::ChangeWorkingHoursOfOthers
-            );
+            let of_working_hours = bb_policy::OF_WORKING_HOURS.contains(permission);
             assert_eq!(
                 held.contains(&permission.code()),
                 !of_working_hours,

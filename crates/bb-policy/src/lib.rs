@@ -26,7 +26,9 @@ mod starting;
 mod tree;
 
 pub use bb_macros::Masked;
-pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, PermissionBits, Topic};
+pub use catalogue::{
+    Counts, Kind, NOT_FOR_KEYS, OF_WORKING_HOURS, Permission, PermissionBits, Topic,
+};
 pub use changers::{Changer, roles_that_change};
 pub use evaluate::{
     Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,

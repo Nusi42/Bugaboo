@@ -323,10 +323,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         StartingRole::Guest => {
             BTreeSet::from([SeeProjects, CreateIssues, ChangeOwnIssues, Comment])
         }
-        StartingRole::Hr => BTreeSet::from([
-            Permission::SeeWorkingHoursOfOthers,
-            Permission::ChangeWorkingHoursOfOthers,
-        ]),
+        StartingRole::Hr => BTreeSet::from(bb_policy::OF_WORKING_HOURS),
     }
 }
 

@@ -167,7 +167,7 @@ pub(crate) struct WorkDaysBody {
     totals_only: bool,
     /// Whether the reader may change the days.
     may_change: bool,
-    /// Never true: a stretch longer than 62 days is refused, so nothing is cut off.
+    /// Never true: a stretch longer than `RANGE_DAYS_MAX` days is refused, so nothing is cut off.
     truncated: bool,
 }
 
@@ -245,7 +245,7 @@ impl From<&WorkDayChange> for WorkDayChangeBody {
 /// The history of a work day, oldest change first.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WorkDayHistoryBody {
-    /// The changes, at most 200 of the newest.
+    /// The changes, at most the newest `HISTORY_CHANGES_MAX`.
     changes: Vec<WorkDayChangeBody>,
     /// Whether older changes were left out.
     truncated: bool,
@@ -330,7 +330,7 @@ pub(crate) struct OldWorkDaysBody {
     before: String,
     /// How many there are.
     total: u64,
-    /// How many of each person, in the order of their names, at most 500.
+    /// How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`.
     people: Vec<OldOfPersonBody>,
     /// Whether more people have old days than the list names.
     truncated: bool,
@@ -368,7 +368,7 @@ pub(crate) struct ChangeWorkDayBody {
     /// The breaks.
     breaks: Vec<SpanBody>,
     /// Why, in the person's own words: needed for another person's day and for one's own past
-    /// day, at most 500 characters.
+    /// day, at most `REASON_CHARS_MAX` characters.
     reason: Option<String>,
 }
 
@@ -391,7 +391,7 @@ impl ChangeWorkDayBody {
 pub(crate) struct RangeParams {
     /// The first date (`2026-10-05`).
     from: String,
-    /// The last date, at most 62 days after the first.
+    /// The last date, less than `RANGE_DAYS_MAX` days after the first.
     to: String,
 }
 

@@ -18,7 +18,7 @@ const RULES: &str = "crates/bb-core/src/working_time/tests.rs";
 const SERVER: &str = "crates/bb-server/src/tests/sign_in/working_hours_http.rs";
 
 /// What the work package and ADR-0035 name as proof, and where each test lives.
-pub(super) const REQUIRED: [Required; 19] = [
+pub(super) const REQUIRED: [Required; 22] = [
     Required::anywhere("time_09_ten_hours_and_a_minute_warns_and_is_still_recorded").within(RULES),
     Required::anywhere("time_09_breaks_under_fifteen_minutes_do_not_count").within(RULES),
     Required::anywhere("time_09_six_hours_in_a_row_without_a_break_warns").within(RULES),
@@ -36,7 +36,10 @@ pub(super) const REQUIRED: [Required; 19] = [
         "time_09_a_person_who_changed_zone_between_two_days_has_the_rest_of_the_moments",
     )
     .within(RULES),
-    Required::both("time_08_start_break_end_make_one_work_day_with_its_totals").within(SERVER),
+    Required::both("time_08_start_break_end_form_one_work_day_with_its_totals").within(SERVER),
+    Required::both("time_08_two_starts_at_the_same_moment_keep_one_work_day").within(SERVER),
+    Required::both("time_12_an_access_key_never_reaches_its_owners_working_hours").within(SERVER),
+    Required::both("priv_09_working_hours_are_in_no_search_list_or_order").within(SERVER),
     Required::both("time_08_a_day_left_open_must_be_ended_before_the_next_starts").within(SERVER),
     Required::both("time_10_a_past_day_changes_only_with_a_reason_and_keeps_the_old_value")
         .within(SERVER),

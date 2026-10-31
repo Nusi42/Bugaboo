@@ -324,22 +324,22 @@ reason = "The names a suggestion offers are a short list of plain names (at most
 [[exempt]]
 route = "GET /api/v1/me/work-days"
 property = "days"
-reason = "The work days of a stretch of at most 62 dates, one day a date: a longer stretch is refused, so the list is never cut (TIME-08, ADR-0035; M1-F44)."
+reason = "The work days of a stretch of at most `RANGE_DAYS_MAX` dates (`bb_app::working_hours`), one day a date: a longer stretch is refused, so the list is never cut (TIME-08, ADR-0035; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/me/work-days"
 property = "weeks"
-reason = "The weeks of a stretch of at most 62 dates: at most ten, and never cut (TIME-08; M1-F44)."
+reason = "The weeks of a stretch of at most `RANGE_DAYS_MAX` dates: a few, and never cut (TIME-08; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/people/{person}/work-days"
 property = "days"
-reason = "The work days of a stretch of at most 62 dates, one day a date: a longer stretch is refused, so the list is never cut (TIME-12, ADR-0035; M1-F44)."
+reason = "The work days of a stretch of at most `RANGE_DAYS_MAX` dates (`bb_app::working_hours`), one day a date: a longer stretch is refused, so the list is never cut (TIME-12, ADR-0035; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/people/{person}/work-days"
 property = "weeks"
-reason = "The weeks of a stretch of at most 62 dates: at most ten, and never cut (TIME-12; M1-F44)."
+reason = "The weeks of a stretch of at most `RANGE_DAYS_MAX` dates: a few, and never cut (TIME-12; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/me/work-days/booked"
@@ -349,14 +349,14 @@ reason = "The seven days of one week (TIME-04, ADR-0035, decision 4; M1-F44)."
 [[exempt]]
 route = "GET /api/v1/me/work-days/{date}/history"
 property = "changes"
-reason = "The changes of one work day, few by nature; at most the 200 newest, and the answer says when older ones were left out (TIME-10; M1-F44)."
+reason = "The changes of one work day, few by nature; at most the newest `HISTORY_CHANGES_MAX` (`bb_app::working_hours`), and the answer says when older ones were left out (TIME-10; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/people/{person}/work-days/{date}/history"
 property = "changes"
-reason = "The changes of one work day, few by nature; at most the 200 newest, and the answer says when older ones were left out (TIME-10; M1-F44)."
+reason = "The changes of one work day, few by nature; at most the newest `HISTORY_CHANGES_MAX` (`bb_app::working_hours`), and the answer says when older ones were left out (TIME-10; M1-F44)."
 
 [[exempt]]
 route = "GET /api/v1/work-days/old"
 property = "people"
-reason = "The people who have work days older than the keep period, at most 500; the answer says when more have them (PRIV-09, ADR-0035, decision 7; M1-F44)."
+reason = "The people who have work days older than the keep period, at most `OLD_PEOPLE_MAX` (`bb_app::working_hours`); the answer says when more have them (PRIV-09, ADR-0035, decision 7; M1-F44)."

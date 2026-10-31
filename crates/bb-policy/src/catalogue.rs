@@ -38,6 +38,14 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ChangeWorkingHoursOfOthers,
 ];
 
+/// The permissions of working hours: what the starting role *HR* holds, what nobody holds at the
+/// start, and what a person who decides every role gives without holding them (ADR-0025,
+/// amendment M6; ADR-0035, decision 8). Defined once, here.
+pub const OF_WORKING_HOURS: [Permission; 2] = [
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
+];
+
 /// Declares the permissions: one line per permission, with the key, topic, where it counts and
 /// kind. The sentence on the role page is the message `permission.<key>`. Everything else is made
 /// from this list.

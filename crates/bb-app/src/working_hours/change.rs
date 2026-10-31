@@ -26,8 +26,8 @@ use jiff::tz::TimeZone;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::{Value, json};
 
-use super::day::{Tap, check, in_order, started, tapped};
-use super::types::{ChangeWorkDay, ChangedWorkDay, EndBreak, EndWorkDay, StartBreak, StartWorkDay};
+use super::day::{check, in_order, not_in_the_future, started, tapped};
+use super::types::{ChangeWorkDay, ChangedWorkDay, StartWorkDay, Tap, TapWorkDay};
 use super::whose::Whose;
 use super::{CHANGES_PER_SECOND, REASON_CHARS_MAX};
 use crate::access::Actor;
@@ -93,6 +93,11 @@ const fn shortest_gap() -> SignedDuration {
     SignedDuration::from_millis(1000 / CHANGES_PER_SECOND)
 }
 
+/// The zone a stored day started in; UTC for a name the zone data no longer has.
+fn zone_of(name: &str) -> TimeZone {
+    zone::named(name).unwrap_or(TimeZone::UTC)
+}
+
 /// The zone of a name of the zone data, and the name; `None` for one the server does not know.
 fn named(name: &str) -> Option<(String, TimeZone)> {
     zone::named(name).map(|zone| (name.to_owned(), zone))
@@ -153,7 +158,9 @@ fn writing<S: AuthStore>(
             let after = S::work_day_after_in(transaction, person, date).await?;
             let before_times = before.as_ref().map(|found| &found.times);
             let after_times = after.as_ref().map(|found| &found.times);
-            if let Err(code) = check(&times, date, &zone, before_times, after_times) {
+            let checked = check(&times, date, &zone, before_times, after_times)
+                .and_then(|()| not_in_the_future(&times, now));
+            if let Err(code) = checked {
                 return Err(why.stop::<S>(code));
             }
             let rules = Rules::of(&S::setting_layers_in(transaction, None, None).await?);
@@ -320,7 +327,7 @@ pub async fn start_work_day<S: AuthStore>(
     let person = whose.person;
     let now = ctx.now();
     if let Some(open) = ctx.open_day(person).await? {
-        let zone = zone::named(&open.day.zone).unwrap_or(TimeZone::UTC);
+        let zone = zone_of(&open.day.zone);
         let runs_today = DaySpan::of(open.day.date, &zone).is_some_and(|span| span.holds(now));
         return Err(if runs_today {
             ErrorCode::WorkDayRunning.into()
@@ -352,48 +359,20 @@ pub async fn start_work_day<S: AuthStore>(
     finish.answer(written, failed::<S>, &whose)
 }
 
-/// *Start break*.
+/// A tap on the person's day that runs: *Start break*, *End break* or *End work day*, which ends
+/// the break that runs too.
 ///
 /// # Errors
-/// `working-hours.day-not-running`, `working-hours.break-running`, `limit.reached` for one break
-/// too many, and the structured conflict for a version the day no longer has.
-pub async fn start_break<S: AuthStore>(
+/// `working-hours.day-not-running`, `working-hours.break-running`, `working-hours.no-break-running`,
+/// `limit.reached` for one break too many, `working-hours.not-a-work-day` when the day would last
+/// longer than a work day may (the person says when it really ended instead), and the structured
+/// conflict for a version the day no longer has.
+pub async fn tap_work_day<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: StartBreak,
+    input: TapWorkDay,
 ) -> Result<Authorized<ChangedWorkDay>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let (whose, plan) = ctx.tap_plan(&actor, input.version, Tap::StartBreak).await?;
-    let (event, change, finish) = ctx.planned(&actor, plan)?;
-    let written = ctx.store().record_change(&event, change).await;
-    finish.answer(written, failed::<S>, &whose)
-}
-
-/// *End break*.
-///
-/// # Errors
-/// `working-hours.day-not-running`, `working-hours.no-break-running`, and the structured conflict.
-pub async fn end_break<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: EndBreak,
-) -> Result<Authorized<ChangedWorkDay>, AppError> {
-    let actor = ctx.session_actor(&input.session_token).await?;
-    let (whose, plan) = ctx.tap_plan(&actor, input.version, Tap::EndBreak).await?;
-    let (event, change, finish) = ctx.planned(&actor, plan)?;
-    let written = ctx.store().record_change(&event, change).await;
-    finish.answer(written, failed::<S>, &whose)
-}
-
-/// *End work day*: ends the break that runs too.
-///
-/// # Errors
-/// `working-hours.day-not-running`, `working-hours.not-a-work-day` when the day would last longer
-/// than a work day may (the person says when it really ended instead), and the structured conflict.
-pub async fn end_work_day<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: EndWorkDay,
-) -> Result<Authorized<ChangedWorkDay>, AppError> {
-    let actor = ctx.session_actor(&input.session_token).await?;
-    let (whose, plan) = ctx.tap_plan(&actor, input.version, Tap::End).await?;
+    let (whose, plan) = ctx.tap_plan(&actor, input.version, input.tap).await?;
     let (event, change, finish) = ctx.planned(&actor, plan)?;
     let written = ctx.store().record_change(&event, change).await;
     finish.answer(written, failed::<S>, &whose)
@@ -422,10 +401,7 @@ pub async fn change_work_day<S: AuthStore>(
         return Err(stale(actor.person.id, stored.as_ref()));
     }
     let (zone_name, zone) = match &stored {
-        Some(stored) => (
-            stored.day.zone.clone(),
-            zone::named(&stored.day.zone).unwrap_or(TimeZone::UTC),
-        ),
+        Some(stored) => (stored.day.zone.clone(), zone_of(&stored.day.zone)),
         None => ctx.zone_for(whose.person, None).await?,
     };
     if reason.is_none() && (!whose.own || is_past(input.date, &zone, ctx.now())) {

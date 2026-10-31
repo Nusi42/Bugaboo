@@ -27,7 +27,7 @@ mod types;
 mod whose;
 
 pub use booked::booked_week;
-pub use change::{change_work_day, end_break, end_work_day, start_break, start_work_day};
+pub use change::{change_work_day, start_work_day, tap_work_day};
 pub use history::work_day_history;
 pub use old::{delete_old_work_days, old_work_days};
 pub use read::work_days;
@@ -53,6 +53,10 @@ pub const HISTORY_CHANGES_MAX: usize = 200;
 
 /// The most people the count of old work days names: the answer says when more have old days.
 pub const OLD_PEOPLE_MAX: usize = 500;
+
+/// How far after now a typed moment may lie, in seconds: the clock of a device that is a little
+/// ahead. A moment later than that has not happened, so a day cannot record it.
+pub const FUTURE_SLACK_SECONDS: i64 = 60;
 
 /// The most dates one read of work days covers: two months, the longest stretch a timesheet shows.
 pub const RANGE_DAYS_MAX: i64 = 62;

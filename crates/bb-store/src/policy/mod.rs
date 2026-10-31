@@ -34,7 +34,7 @@ use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::LockClass;
 use crate::projects::{chain_of, insert_project, project_by_short_name, project_in};
-use crate::schema::{LegacyAdministratorRow, StartingRoleDueRow, StartingRolesMadeRow};
+use crate::schema::{LegacyAdministratorRow, RoleRow, StartingRoleDueRow, StartingRolesMadeRow};
 
 /// The IDs as a list of values to bind to a query.
 pub(crate) fn in_list<T: StoredId>(ids: &[T]) -> Vec<Vec<u8>> {
@@ -259,6 +259,19 @@ impl PolicyStore for AuthStorage {
 
     async fn lock_policy(transaction: &mut Transaction) -> Result<(), StoreError> {
         transaction.advisory_lock(LockClass::Policy, 0).await
+    }
+
+    async fn starting_role_there_in(
+        transaction: &mut Transaction,
+        key: TechnicalName,
+    ) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(RoleRow::Id)
+            .from(RoleRow::Table)
+            .and_where(Expr::col(RoleRow::Starting).eq(key.as_str()))
+            .limit(1);
+        Ok(transaction.fetch_optional(&select).await?.is_some())
     }
 
     async fn clear_starting_role_due(

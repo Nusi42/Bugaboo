@@ -29,6 +29,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
+use crate::event_members::text_set;
 use crate::files::is_listed;
 use crate::files::member as file_member;
 use crate::history::ChangeReader;
@@ -491,15 +492,10 @@ pub async fn read_notifications<S: AuthStore>(
 
 /// What a row about a changed work day says: its date and the reason, as the row keeps them.
 fn work_day_change_of(changes: &[FieldChange]) -> Option<NotificationWhat> {
-    let value_of = |field: &str| {
-        changes
-            .iter()
-            .find(|change| change.field == field)
-            .and_then(|change| change.after.as_ref())
-            .and_then(|value| value.as_str())
-    };
     Some(NotificationWhat::WorkDayChanged {
-        date: value_of(crate::member::work_day::DATE)?.parse().ok()?,
-        reason: value_of(crate::member::work_day::REASON).map(str::to_owned),
+        date: text_set(changes, crate::member::work_day::DATE)?
+            .parse()
+            .ok()?,
+        reason: text_set(changes, crate::member::work_day::REASON).map(str::to_owned),
     })
 }

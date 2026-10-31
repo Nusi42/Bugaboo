@@ -14,7 +14,7 @@ use bb_core::fields::Field;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::words;
 
-use crate::catalogue::Permission;
+use crate::catalogue::{OF_WORKING_HOURS, Permission};
 
 words! {
     /// One of the seven roles every organization starts with, in the starting order (which is also
@@ -97,12 +97,6 @@ const GUEST: [Permission; 4] = [
     Permission::Comment,
 ];
 
-/// *HR* sees and changes working hours and nothing of the work in projects (ADR-0035, decision 8).
-const HR: [Permission; 2] = [
-    Permission::SeeWorkingHoursOfOthers,
-    Permission::ChangeWorkingHoursOfOthers,
-];
-
 /// Field levels of a field, in the order of the roles of [`StartingRole::ALL`]. A `match` with no
 /// catch-all arm: a field without a row does not compile, so no field falls back to hidden. *HR*
 /// gives no work in projects, so every field is hidden for it.
@@ -173,14 +167,15 @@ impl StartingRole {
             Self::Administrator => Permission::ALL
                 .iter()
                 .copied()
-                .filter(|permission| !HR.contains(permission))
+                .filter(|permission| !OF_WORKING_HOURS.contains(permission))
                 .collect(),
             Self::ProjectLead => [&CONTRIBUTOR[..], &TEAM_MEMBER, &PROJECT_LEAD].concat(),
             Self::TeamMember => [&CONTRIBUTOR[..], &TEAM_MEMBER].concat(),
             Self::Contributor => CONTRIBUTOR.to_vec(),
             Self::Viewer => VIEWER.to_vec(),
             Self::Guest => GUEST.to_vec(),
-            Self::Hr => HR.to_vec(),
+            // Sees and changes working hours and nothing of the work in projects (ADR-0035).
+            Self::Hr => OF_WORKING_HOURS.to_vec(),
         }
     }
 
@@ -321,10 +316,7 @@ mod tests {
 
     #[test]
     fn time_12_hr_holds_the_permissions_of_working_hours_and_nobody_else_does() {
-        let hr = [
-            Permission::SeeWorkingHoursOfOthers,
-            Permission::ChangeWorkingHoursOfOthers,
-        ];
+        let hr = OF_WORKING_HOURS;
         assert_eq!(StartingRole::Hr.permissions(), hr.to_vec());
         for role in StartingRole::ALL.iter().copied() {
             if role != StartingRole::Hr {

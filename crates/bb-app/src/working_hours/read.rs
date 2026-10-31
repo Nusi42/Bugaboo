@@ -39,18 +39,19 @@ pub(super) fn checked_range(first: Date, last: Date) -> Result<(), AppError> {
     }
 }
 
-/// The time worked in each week of the stretch, in the order of the weeks.
-fn weeks_of(views: &[WorkDayView], first: Date, last: Date, region: &Region) -> Vec<WeekTotal> {
+/// The time worked in each week of the stretch, in the order of the weeks, from the totals of
+/// each date.
+fn weeks_of(days: &[(Date, Totals)], first: Date, last: Date, region: &Region) -> Vec<WeekTotal> {
     let mut weeks: Vec<WeekTotal> = Vec::new();
     let mut date = first;
     while date <= last {
         if let Some(week) = region.week_of(date)
             && weeks.last().is_none_or(|known| known.first != week.first())
         {
-            let worked: Totals = views
+            let worked: Totals = days
                 .iter()
-                .filter(|view| region.week_of(view.date) == Some(week))
-                .map(|view| view.totals)
+                .filter(|(day, _)| region.week_of(*day) == Some(week))
+                .map(|(_, totals)| *totals)
                 .sum();
             weeks.push(WeekTotal {
                 first: week.first(),
@@ -63,6 +64,18 @@ fn weeks_of(views: &[WorkDayView], first: Date, last: Date, region: &Region) -> 
         date = next;
     }
     weeks
+}
+
+/// The whole weeks of the person that the stretch touches: what *Totals only* reads, so a stretch
+/// of one day never tells the time of that day (ADR-0035, decision 8).
+fn whole_weeks(region: &Region, first: Date, last: Date) -> Result<(Date, Date), AppError> {
+    let start = region.week_of(first).map(|week| week.first());
+    let end = region
+        .week_of(last)
+        .and_then(|week| week.days().last().copied());
+    start
+        .zip(end)
+        .ok_or_else(|| ErrorCode::InvalidRequest.into())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -93,19 +106,35 @@ pub async fn work_days<S: AuthStore>(
     let whose = ctx.days_to_read(&actor, input.person).await?;
     checked_range(input.first, input.last)?;
     let now = ctx.now();
-    let views: Vec<WorkDayView> = ctx
-        .stored_days(whose.person, input.first, input.last)
-        .await?
-        .iter()
-        .map(|day| view_of(day, now))
-        .collect();
     let region = Region::of(&ctx.setting_layers_of(Some(whose.person)).await?);
-    let weeks = weeks_of(&views, input.first, input.last, &region);
     let totals_only = whose.totals_only();
+    let (first, last) = if totals_only {
+        whole_weeks(&region, input.first, input.last)?
+    } else {
+        (input.first, input.last)
+    };
+    let stored = ctx.stored_days(whose.person, first, last).await?;
+    let counted: Vec<(Date, Totals)> = stored
+        .iter()
+        .map(|day| {
+            let totals = if totals_only {
+                Totals::ended(&day.times)
+            } else {
+                Totals::of(&day.times, now)
+            };
+            (day.day.date, totals)
+        })
+        .collect();
+    let weeks = weeks_of(&counted, first, last, &region);
+    let views: Vec<WorkDayView> = if totals_only {
+        Vec::new()
+    } else {
+        stored.iter().map(|day| view_of(day, now)).collect()
+    };
     let page = WorkDaysPage {
         person: ctx.person_of(&whose).await?,
         totals: (!totals_only).then(|| views.iter().map(|view| view.totals).sum()),
-        days: if totals_only { Vec::new() } else { views },
+        days: views,
         weeks,
         totals_only,
         may_change: whose.may_change(),

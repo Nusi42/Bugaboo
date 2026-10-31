@@ -6,6 +6,7 @@
 use std::collections::BTreeSet;
 
 use axum::http::StatusCode;
+use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -714,11 +715,7 @@ fn iss_17_the_table_has_a_row_for_every_route_that_takes_a_version() -> TestResu
 async fn prepare_work_day(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
     // At most one change of a person's days a second.
     site.org.rig.clock.advance(1);
-    let me = read(ada, "/api/v1/auth/me").await?;
-    let base = match id {
-        "changeWorkDayOfPerson" => format!("/api/v1/people/{}/work-days", text_in(&me, "id")?),
-        _ => "/api/v1/me/work-days".to_owned(),
-    };
+    let base = "/api/v1/me/work-days".to_owned();
     let times = |date: &str| {
         json!({
             "periods": [{"start": format!("{date}T08:00:00Z"), "end": format!("{date}T16:00:00Z")}],
@@ -726,16 +723,35 @@ async fn prepare_work_day(id: &str, site: &Site<'_>, ada: &mut Browser) -> Resul
             "reason": "Typed in afterwards",
         })
     };
-    if let Some(date) = match id {
-        "changeMyWorkDay" => Some("2027-01-10"),
-        "changeWorkDayOfPerson" => Some("2027-01-09"),
-        _ => None,
-    } {
-        let mut first = times(date);
-        first["version"] = json!(0);
+    let first = |date: &str| {
+        let mut body = times(date);
+        body["version"] = json!(0);
+        body
+    };
+    if id == "changeMyWorkDay" {
+        let date = "2027-01-10";
         let path = format!("{base}/{date}");
-        let day = ok(&ada.send("PATCH", &path, Some(first)).await?)?.clone();
+        let day = ok(&ada.send("PATCH", &path, Some(first(date))).await?)?.clone();
         return Save::new("PATCH", path, times(date), &day["version"]);
+    }
+    if id == "changeWorkDayOfPerson" {
+        // Bob's day, which Ada changes once she holds *HR*.
+        let date = "2027-01-09";
+        let (mut bob, bob_id) = site
+            .person_called(StartingRole::TeamMember, "bob-days", "Bob Baker")
+            .await?;
+        let day = ok(&bob
+            .send("PATCH", &format!("{base}/{date}"), Some(first(date)))
+            .await?)?
+        .clone();
+        let hr = site.org.starting_roles().await?[StartingRole::Hr.code()];
+        site.org.give_everywhere(&site.org.admin, hr).await?;
+        return Save::new(
+            "PATCH",
+            format!("/api/v1/people/{bob_id}/work-days/{date}"),
+            times(date),
+            &day["version"],
+        );
     }
     // The day that runs: started once, and read as it is now.
     ada.send("POST", "/api/v1/me/work-days/start", Some(json!({})))

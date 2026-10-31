@@ -141,7 +141,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let person = person.unwrap_or(actor.person.id);
         Ok(Whose {
             person,
-            own: person == actor.person.id,
+            // A key never reaches its owner's own days: it is judged by the permissions of working
+            // hours like anybody else's, and no key holds them.
+            own: person == actor.person.id && actor.key.is_none(),
             evaluation: self.evaluation_of(actor, Place::Organization).await?,
             layers: self.setting_layers_of(None).await?,
         })

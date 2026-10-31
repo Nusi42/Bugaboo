@@ -5,8 +5,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::working_hours::{
-    BookedWeekQuery, ChangeWorkDay, EndBreak, EndWorkDay, StartBreak, StartWorkDay,
-    WorkDayHistoryQuery, WorkDaysQuery, read_date,
+    BookedWeekQuery, ChangeWorkDay, StartWorkDay, Tap, TapWorkDay, WorkDayHistoryQuery,
+    WorkDaysQuery, read_date,
 };
 use serde::Deserialize;
 use utoipa::ToSchema;
@@ -125,6 +125,30 @@ async fn start_work_day(
     answer_authorized(&day.map(|day| WorkDayBody::from(&day)))
 }
 
+/// A tap on the person's day that runs, at the version the person looked at.
+async fn tap(
+    auth: AuthHandle,
+    info: bb_app::auth::RequestInfo,
+    session_token: String,
+    body: Result<ApiJson<TapBody>, ApiError>,
+    tap: Tap,
+) -> Result<Response, ApiError> {
+    let read = body.map(|ApiJson(body)| body.version);
+    let version = auth.after_who_asks(&info, &session_token, read).await?;
+    let day = auth
+        .api()?
+        .tap_work_day(
+            info,
+            TapWorkDay {
+                session_token,
+                version,
+                tap,
+            },
+        )
+        .await?;
+    answer_authorized(&day.map(|day| WorkDayBody::from(&day)))
+}
+
 /// *Start break*.
 #[utoipa::path(
     post,
@@ -145,19 +169,7 @@ async fn start_break(
     Session(session_token): Session,
     body: Result<ApiJson<TapBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.map(|ApiJson(body)| body.version);
-    let version = auth.after_who_asks(&info, &session_token, read).await?;
-    let day = auth
-        .api()?
-        .start_break(
-            info,
-            StartBreak {
-                session_token,
-                version,
-            },
-        )
-        .await?;
-    answer_authorized(&day.map(|day| WorkDayBody::from(&day)))
+    tap(auth, info, session_token, body, Tap::StartBreak).await
 }
 
 /// *End break*.
@@ -180,19 +192,7 @@ async fn end_break(
     Session(session_token): Session,
     body: Result<ApiJson<TapBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.map(|ApiJson(body)| body.version);
-    let version = auth.after_who_asks(&info, &session_token, read).await?;
-    let day = auth
-        .api()?
-        .end_break(
-            info,
-            EndBreak {
-                session_token,
-                version,
-            },
-        )
-        .await?;
-    answer_authorized(&day.map(|day| WorkDayBody::from(&day)))
+    tap(auth, info, session_token, body, Tap::EndBreak).await
 }
 
 /// *End work day*: ends the break that runs too.
@@ -215,19 +215,7 @@ async fn end_work_day(
     Session(session_token): Session,
     body: Result<ApiJson<TapBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.map(|ApiJson(body)| body.version);
-    let version = auth.after_who_asks(&info, &session_token, read).await?;
-    let day = auth
-        .api()?
-        .end_work_day(
-            info,
-            EndWorkDay {
-                session_token,
-                version,
-            },
-        )
-        .await?;
-    answer_authorized(&day.map(|day| WorkDayBody::from(&day)))
+    tap(auth, info, session_token, body, Tap::End).await
 }
 
 /// New times of one's own work day, typed afterwards. A past day changes only with a reason, and

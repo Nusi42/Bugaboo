@@ -20,7 +20,7 @@ use std::fmt;
 use bb_core::access::Assignment;
 use bb_core::id::{GroupId, RoleId, UserId};
 
-use crate::catalogue::{Counts, Permission};
+use crate::catalogue::{Counts, OF_WORKING_HOURS, Permission};
 use crate::evaluate::{Evaluation, Place, RoleData};
 use crate::tree::Policy;
 
@@ -223,16 +223,11 @@ pub fn ensure_no_escalation(
     }
 }
 
-/// The permissions that a person who decides every role gives without holding them: nobody holds
-/// them at the start, so without the exception nobody could ever give *HR* (ADR-0025, amendment M6).
-pub const GIVEN_WITHOUT_HOLDING: [Permission; 2] = [
-    Permission::SeeWorkingHoursOfOthers,
-    Permission::ChangeWorkingHoursOfOthers,
-];
-
 /// Whether the person may give a role with `role` (its permissions): [`ensure_no_escalation`],
 /// except that a person who holds both *Manage roles* and *Decide who has which role* for the whole
-/// organization (the pair of the last-administrator rule) needs not hold [`GIVEN_WITHOUT_HOLDING`].
+/// organization (the pair of the last-administrator rule) needs not hold the permissions of
+/// working hours ([`OF_WORKING_HOURS`]): nobody holds them at the start, so without the exception
+/// nobody could ever give *HR* (ADR-0025, amendment M6).
 /// Adding those permissions to a role keeps the rule: only who holds them adds them.
 ///
 /// # Errors
@@ -245,7 +240,7 @@ pub fn ensure_may_give(held: &Evaluation, role: &BTreeSet<Permission>) -> Result
     let wanted: BTreeSet<Permission> = role
         .iter()
         .copied()
-        .filter(|permission| !(decides_every_role && GIVEN_WITHOUT_HOLDING.contains(permission)))
+        .filter(|permission| !(decides_every_role && OF_WORKING_HOURS.contains(permission)))
         .collect();
     ensure_no_escalation(held, &wanted)
 }

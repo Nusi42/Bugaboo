@@ -8872,7 +8872,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "The last date, at most 62 days after the first.",
+            "description": "The last date, less than `RANGE_DAYS_MAX` days after the first.",
             "required": true,
             "schema": {
               "type": "string"
@@ -9830,7 +9830,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "The last date, at most 62 days after the first.",
+            "description": "The last date, less than `RANGE_DAYS_MAX` days after the first.",
             "required": true,
             "schema": {
               "type": "string"
@@ -15814,7 +15814,7 @@
           },
           "reason": {
             "type": ["string", "null"],
-            "description": "Why, in the person's own words: needed for another person's day and for one's own past\nday, at most 500 characters."
+            "description": "Why, in the person's own words: needed for another person's day and for one's own past\nday, at most `REASON_CHARS_MAX` characters."
           },
           "version": {
             "type": "integer",
@@ -16742,6 +16742,7 @@
           "working-hours.break-running",
           "working-hours.no-break-running",
           "working-hours.not-a-work-day",
+          "working-hours.in-the-future",
           "working-hours.reason-needed",
           "working-hours.week-totals-only",
           "search.too-slow",
@@ -20355,7 +20356,7 @@
             "items": {
               "$ref": "#/components/schemas/OldOfPersonBody"
             },
-            "description": "How many of each person, in the order of their names, at most 500."
+            "description": "How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`."
           },
           "total": {
             "type": "integer",
@@ -24906,7 +24907,7 @@
             "items": {
               "$ref": "#/components/schemas/WorkDayChangeBody"
             },
-            "description": "The changes, at most 200 of the newest."
+            "description": "The changes, at most the newest `HISTORY_CHANGES_MAX`."
           },
           "truncated": {
             "type": "boolean",
@@ -24951,7 +24952,7 @@
           },
           "truncated": {
             "type": "boolean",
-            "description": "Never true: a stretch longer than 62 days is refused, so nothing is cut off."
+            "description": "Never true: a stretch longer than `RANGE_DAYS_MAX` days is refused, so nothing is cut off."
           },
           "weeks": {
             "type": "array",

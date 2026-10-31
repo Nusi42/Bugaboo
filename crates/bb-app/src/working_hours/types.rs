@@ -48,28 +48,25 @@ pub struct StartWorkDay {
     pub device_zone: Option<String>,
 }
 
-/// *Start break*.
-pub struct StartBreak {
-    /// The secret of the session of the request.
-    pub session_token: String,
-    /// The version of the day the person looked at.
-    pub version: i64,
+/// A tap on the day that runs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Tap {
+    /// *Start break*.
+    StartBreak,
+    /// *End break*.
+    EndBreak,
+    /// *End work day*: the break that runs ends too.
+    End,
 }
 
-/// *End break*.
-pub struct EndBreak {
+/// A tap on the person's day that runs: *Start break*, *End break* or *End work day*.
+pub struct TapWorkDay {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The version of the day the person looked at.
     pub version: i64,
-}
-
-/// *End work day*: ends the break that runs, if one does, and the day.
-pub struct EndWorkDay {
-    /// The secret of the session of the request.
-    pub session_token: String,
-    /// The version of the day the person looked at.
-    pub version: i64,
+    /// Which tap.
+    pub tap: Tap,
 }
 
 /// New times of a work day, typed afterwards: the person's own, or another person's.

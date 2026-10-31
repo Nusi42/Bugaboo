@@ -166,38 +166,26 @@ async fn create_the_roles_that_are_due<S: AuthStore>(ctx: &Ctx<'_, S>) -> Result
         .starting_roles_due()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    if due.is_empty() {
-        return Ok(());
-    }
-    let roles = ctx
-        .store()
-        .roles()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
     for key in due {
         let Some(starting) = StartingRole::from_code(key.as_str()) else {
             continue;
         };
-        let there = roles.iter().any(|record| {
-            record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.code())
-        });
         let new = ctx.new_starting_role(starting)?;
         let id = new.role.id;
-        let event = ctx.event(
-            Actor::System,
-            entity(RecordKind::Role, id),
-            vec![set_to(member::role::NAME, json!(new.role.name))],
-        )?;
+        let maker = ctx.event_maker(Actor::System);
+        // The event is made inside the change, and only when the role is made there: whether it
+        // is there already is judged after the lock, on what is stored.
         let made = ctx
             .store()
-            .record_change(&event, move |transaction| {
+            .record_changes(&[], move |transaction| {
                 Box::pin(async move {
                     S::lock_policy(transaction).await?;
                     // Another server that started at the same time may have made it already.
                     let due_now = S::starting_roles_due_in(transaction).await?;
                     if !due_now.contains(&key) {
-                        return Err(S::aborted());
+                        return Ok(false);
                     }
+                    let there = S::starting_role_there_in(transaction, key.clone()).await?;
                     if !there {
                         S::insert_role(
                             transaction,
@@ -207,24 +195,27 @@ async fn create_the_roles_that_are_due<S: AuthStore>(ctx: &Ctx<'_, S>) -> Result
                             &new.people,
                         )
                         .await?;
+                        let event = maker
+                            .create(
+                                entity(RecordKind::Role, id),
+                                vec![set_to(member::role::NAME, json!(new.role.name))],
+                            )
+                            .map_err(|_| S::aborted())?;
+                        S::append_follow_up_event(transaction, &event).await?;
                     }
                     S::clear_starting_role_due(transaction, &key).await?;
                     Ok(!there)
                 })
             })
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        if made {
+            ctx.note(
+                SecurityAction::RoleCreated,
+                None,
+                Some(entity(RecordKind::Role, id)),
+            )
             .await;
-        match made {
-            Ok(true) => {
-                ctx.note(
-                    SecurityAction::RoleCreated,
-                    None,
-                    Some(entity(RecordKind::Role, id)),
-                )
-                .await;
-            }
-            Ok(false) => {}
-            Err(error) if S::is_aborted(&error) => {}
-            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     }
     Ok(())

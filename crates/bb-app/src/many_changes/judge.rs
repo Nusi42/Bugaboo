@@ -202,6 +202,7 @@ fn reason_of(code: ErrorCode) -> SkipReason {
         | ErrorCode::BreakRunning
         | ErrorCode::NoBreakRunning
         | ErrorCode::NotAWorkDay
+        | ErrorCode::WorkDayInTheFuture
         | ErrorCode::ReasonNeeded
         | ErrorCode::TotalsOnly
         | ErrorCode::Internal
