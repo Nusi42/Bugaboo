@@ -127,7 +127,7 @@ The decisions are [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md), d
 3. In the same change, the **working-time rules** of the organization (the numbers of its preset, from the settings registry) are checked for the day and the days next to it. Broken rules become warnings stored with the day; nothing is blocked.
 4. A change that asks for a **reason** (ADR-0035, decision 7) carries it; the event keeps the old values and the reason, and when the person who changes it is not the person of the day, the notifications reader tells that person (ADR-0033).
 5. The page *Working hours of others* reads another person's days only for a holder of *See working hours of others*, as *Totals only* allows (ADR-0035, decision 8); a change there needs *Change working hours of others* and goes through steps 2 to 4.
-6. The daily job `working-hours.delete-old` deletes the work days older than the keep period (ADR-0035, decision 7), with their breaks and the events of their changes (ADR-0017, amendment M6).
+6. Nothing deletes a work day by itself. After the keep period an administrator deletes old work days from the settings page, with their breaks and the events of their changes (ADR-0035, decision 7).
 
 ## Removing a person (GDPR)
 

@@ -204,7 +204,7 @@ What each means in practice:
   - starting an issue timer while the work day hasn't started asks *"Start your work day too?"*;
   - shows hours worked today and this week, and the difference between working hours and time booked on issues.
 - **TIME-09 (M)** — **Working-time rules** as a preset per country, editable by admins. The Germany preset follows the Working Hours Act (ArbZG): at most 10 hours a day, breaks of 30 minutes after 6 hours and 45 after 9, and 11 hours of rest between days. Breaking a rule shows a plain warning; it never blocks recording, because the record must show what really happened.
-- **TIME-10 (M)** — **Trustworthy records**: changing a past work day requires a reason; the old value is kept in the history and the person is notified when someone else changes their record. Records are kept for the configured period (Germany preset: 2 years) and then deleted automatically (PRIV-05).
+- **TIME-10 (M)** — **Trustworthy records**: changing a past work day requires a reason; the old value is kept in the history and the person is notified when someone else changes their record. Records are kept at least for the configured period (Germany preset: 2 years); after it, an administrator deletes them, because only the organization can judge what it still needs (ADR-0035, decision 7).
 - **TIME-11 (V1)** — Export of working hours for payroll and HR (CSV; more formats L).
 - **TIME-12 (M)** — **Who sees working hours**: everyone sees their own. Others need the separate permission *See working hours of others*, granted per group or person. An option makes team reports show totals only, for organizations with a works-council agreement.
 

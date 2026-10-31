@@ -216,7 +216,7 @@ Rules:
 | **Setup code**           | The one-time code printed by the server for first setup            | setup token                        |
 | **Security log**         | The record of who changed what, which cannot be altered            | audit trail                        |
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
-| **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*) | anonymize, pseudonymize (in UI) |
+| **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*); the work days kept by law are the one exception (ADR-0035, decision 7) | anonymize, pseudonymize (in UI) |
 | **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("Someone (Team member)"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
 | **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
@@ -234,7 +234,7 @@ Rules:
 | **Public holidays**      | Days nobody in a region works, from a preset per country and, for Germany, per federal state | bank holidays (in UI) |
 | **Project members**      | The kind of people information for lists of who works in a project. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
-| **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically | retention policy                |
+| **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically; working hours are deleted only by an administrator after their keep period (ADR-0035, decision 7) | retention policy                |
 
 ## Settings and appearance
 

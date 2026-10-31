@@ -377,7 +377,7 @@ Consumers are idempotent and resume from their last position after a restart.
 - The marks generate: *Download my data*, the *Remove a person* plan, keep-and-delete jobs, the record of processing, and the data-flow map.
 - **Logs** hold IDs, never names or e-mail addresses; IP addresses are kept 7 days by default.
 - **Former users:** a removed person becomes a tombstone (`Former user K7Q2`); references stay valid, personal data is gone.
-- **Legal holds:** work days, with their breaks and the reasons of their changes, stay until the keep period (ADR-0035, decision 7) ends, even after a person is removed: *Remove a person* shows the person on them as *Former user* and leaves them to the daily job `working-hours.delete-old` (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with *Keep and delete rules* (M9).
+- **Legal holds:** work days, with their breaks and the reasons of their changes, stay at least for the keep period, even after a person is removed, and keep the person's name for the people who may see working hours; after it, an administrator deletes them (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with *Keep and delete rules* (M9).
 
 ## Search language (ADR-0005)
 

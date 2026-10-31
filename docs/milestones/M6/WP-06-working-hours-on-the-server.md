@@ -1,15 +1,15 @@
 # WP-06 — Working hours on the server
 
 **Wave 2 · Folder / branch:** `bugaboo.win3` / `WIN3`
-**Features:** TIME-08, TIME-09, TIME-10, TIME-12, PRIV-09. ADR-0035 §5 to §8, ADR-0025 amendment M6, ADR-0015, ADR-0017 (`working-hours.delete-old`), architecture §5 *Working hours* and §7 *Time*, *Legal holds*.
+**Features:** TIME-08, TIME-09, TIME-10, TIME-12, PRIV-09. ADR-0035 §5 to §8, ADR-0025 amendment M6, ADR-0015, architecture §5 *Working hours* and §7 *Time*, *Legal holds*.
 
 ## Goal
 
-Each person records when their work day started and ended and their breaks, as German law asks; the working-time rules of the organization are checked after every change and shown as plain warnings that never block; a past day changes only with a reason, the old value stays, and the person is told when someone else changed it; nobody else sees a person's working hours without the permission for it; old days are deleted when their keep period ends.
+Each person records when their work day started and ended and their breaks, as German law asks; the working-time rules of the organization are checked after every change and shown as plain warnings that never block; a past day changes only with a reason, the old value stays, and the person is told when someone else changed it; nobody else sees a person's working hours without the permission for it; old days are deleted only when an administrator says so, after their keep period.
 
 ## Owns
 
-`crates/bb-core/src/working_time/**` (the rules and the presets, pure), `crates/bb-app/src/working_hours/**`, `crates/bb-store/src/working_hours/**`, `crates/bb-api/src/api/working_hours*`, the settings of working hours in the registry, *See working hours of others* and *Change working hours of others* and the starting role *HR* in `bb-policy`, the notification kind of a changed work day, the daily job, its migrations (numbers from the lead), TEST-WORKING-TIME.
+`crates/bb-core/src/working_time/**` (the rules and the presets, pure), `crates/bb-app/src/working_hours/**`, `crates/bb-store/src/working_hours/**`, `crates/bb-api/src/api/working_hours*`, the settings of working hours in the registry, *See working hours of others* and *Change working hours of others* and the starting role *HR* in `bb-policy`, the notification kind of a changed work day, the deletion of old work days, its migrations (numbers from the lead), TEST-WORKING-TIME.
 
 ## What is decided (M6-Q8, Q9, Q10, Q11)
 
@@ -17,7 +17,7 @@ Each person records when their work day started and ended and their breaks, as G
 - **The rules as data:** ADR-0035, decision 6 (`bb_core::working_time`, one pure function: a day and the days next to it → warnings, run once per change, inside the change, stored with the day).
 - **Reasons, the old value, the notification:** ADR-0035, decision 7 (with `REASON_CHARS_MAX`).
 - **Who sees and who changes, *Totals only*, the security log:** ADR-0035, decision 8, and ADR-0025, amendment M6 (the permissions, the starting role *HR* and how it is given).
-- **The keep period and its job:** ADR-0035, decision 7, and ADR-0017, amendment M6 (also for removed people: the legal hold, architecture §7).
+- **The keep period, the explicit deletion and a removed person's name:** ADR-0035, decision 7 (also the legal hold, architecture §7). No job deletes working hours.
 
 ## Tasks
 
@@ -26,7 +26,7 @@ Each person records when their work day started and ended and their breaks, as G
 3. **Use cases and routes:** one's own (`GET /api/v1/me/work-days?from=&to=`, `POST …/start`, `…/break/start`, `…/break/end`, `…/end`, `PATCH /api/v1/me/work-days/{date}` with an optional reason), another's (`GET /api/v1/people/{id}/work-days?from=&to=`, `PATCH …/{date}` with a required reason), the history of a day (its events, old and new values, who and why, for the person and for those who may see). The totals of a day and a week (worked, breaks) come from one function used by every answer.
 4. **The difference to booked time:** a route answers, for one's own week, the working hours, the time booked on issues (through `TimeSpentStore`, the minutes of one person per date) and the difference per day; only for one's own week, never for another person.
 5. **The permissions and the role:** the two permissions with their sentences and kinds, the starting role *HR*, the amended no-escalation rule, the security-log entries.
-6. **The job:** `working-hours.delete-old`, daily (ADR-0017), with its idempotency test.
+6. **Old work days:** a route that counts the work days older than the keep period (for each person and in total) and one that deletes them (all, or one person's), declared with *Change organization settings*, with the security-log entry; a removed person's days keep the name (ADR-0035, decision 7).
 7. **Limits:** at most 20 breaks a day; at most one start a second; named constants.
 
 ## Acceptance tests (write first)
@@ -36,7 +36,8 @@ Each person records when their work day started and ended and their breaks, as G
 - `time_08_a_day_left_open_must_be_ended_before_the_next_starts`.
 - `time_10_a_past_day_changes_only_with_a_reason_and_keeps_the_old_value`.
 - `time_10_a_change_by_someone_else_tells_the_person`.
-- `time_10_days_older_than_the_keep_period_are_deleted_and_a_second_run_does_nothing`.
+- `priv_09_old_working_hours_are_deleted_only_when_an_administrator_says_so` (nothing is deleted without the route; the route deletes only days older than the keep period, with their events, and writes the security log).
+- `time_10_a_removed_persons_work_days_keep_the_name_for_those_who_may_see_working_hours`.
 - `time_12_without_the_permission_another_persons_days_answer_like_a_person_that_does_not_exist`.
 - `time_12_totals_only_answers_week_totals_and_nothing_else`.
 - `time_12_an_administrator_does_not_see_working_hours_until_given_hr`.

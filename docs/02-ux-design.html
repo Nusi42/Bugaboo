@@ -603,7 +603,7 @@ sort by priority, highest first</div>
       <li><b>A day left open stays open:</b> Bugaboo never ends a day by itself. The next <i>Start work day</i> first asks <i>"When did your work day on Thursday end?"</i>.</li>
       <li><b>On a phone</b> the timesheet shows one day at a time, with the week's totals on top and a tab for each day.</li>
       <li><b>Who sees it:</b> everyone sees their own working hours. Other people's are only on <i>Time › Working hours of others</i>, one person at a time, for people with <i>See working hours of others</i>; changing them there needs <i>Change working hours of others</i> (a reason and a notification, ADR-0035 §7). Both come with the starting role <i>HR</i>, which nobody has at the start and which an administrator gives (ADR-0035 §8). What <i>Totals only</i> hides, and that it turns changes off, is ADR-0035 §8. Working hours are never used for scores or rankings, and no list puts people in an order by their hours.</li>
-      <li><b>Kept for</b> the keep period (ADR-0035 §7), then deleted automatically (§5.7).</li>
+      <li><b>Kept for</b> at least the keep period (ADR-0035 §7); after it, an administrator deletes them on the settings page (§5.1). Nothing deletes them by itself.</li>
       <li><b>Which form of a length each screen uses</b> (the forms are in ADR-0033, amendment M6): the timesheet grid, its totals and a running timer use the grid form (<code>1:30</code>, <code>0:42</code>); <i>Details</i>, list columns, the totals of an issue or a project (<i>With sub-issues: 12h estimated · 9h 30m spent</i>) and short status lines (<i>6h 51m so far</i>) use the short form (<code>1h 30m</code>); warnings, windows and notifications, which are sentences, use the words (<i>10 hours 35 minutes</i>).</li>
       <li><b>A day reopened</b> after <i>End work day</i> (a second <i>Start work day</i> on the same date) stays one day: the timesheet shows its first start, its last end, and <i>Breaks</i> with the gap between the two stretches of work (for example start 8:05, end 18:10, breaks 1:40 with a gap 13:00–14:10), counted for the rules like any break (ADR-0035 §5).</li>
     </ul>
@@ -846,10 +846,11 @@ sort by priority, highest first</div>
         <tr><td><b>Rest between two work days</b></td><td class="mono">11h</td><td class="muted">Germany</td></tr>
       </tbody></table>
       <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px u-margin-top-10px"><div class="field"><label>Totals only</label><select><option>Off</option><option>On</option></select></div><div class="field"><label>Billable</label><select><option>Off</option><option>On</option></select></div></div>
-      <div class="muted u-font-size-11px--margin-top-8px">The keep period follows ADR-0035 §7. <i>Totals only</i>: see ADR-0035 §8. <i>Billable</i>: time entries get the box <i>Billable</i>.</div>
+      <div class="explain u-margin-top-10px"><b>Older than the keep period: 312 work days</b><br>Malik Weber 140 · Ana Brandt 98 · Former user K7Q2 74<br><span class="muted">Bugaboo deletes nothing by itself. Delete them when your organization no longer needs them.</span><div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Delete one person's…</span><span class="btn sm danger">Delete them</span></div></div>
+      <div class="muted u-font-size-11px--margin-top-8px">The keep period is a minimum (ADR-0035 §7). <i>Totals only</i>: see ADR-0035 §8. <i>Billable</i>: time entries get the box <i>Billable</i>.</div>
     </div></div></div></div>
     <ul>
-      <li><b>Working hours</b> (TIME-09, TIME-10, TIME-12): the preset (<i>Germany</i> or <i>No rules</i>) and each of its numbers, with <i>Reset to default</i> back to the preset's number; the keep period (ADR-0035 §7); <i>Totals only</i>; <i>Billable</i>. Who sees working hours is not a setting here: it is the starting role <i>HR</i> in <i>Who has which role</i> (§4.9).</li>
+      <li><b>Working hours</b> (TIME-09, TIME-10, TIME-12): the preset (<i>Germany</i> or <i>No rules</i>) and each of its numbers, with <i>Reset to default</i> back to the preset's number; the keep period (ADR-0035 §7), with how many work days are older than it, for each person and in total, and <i>Delete them</i> (all at once or for one person, after a confirmation in the page; only with <i>Change organization settings</i>, and in the security log); <i>Totals only</i>; <i>Billable</i>. Who sees working hours is not a setting here: it is the starting role <i>HR</i> in <i>Who has which role</i> (§4.9).</li>
       <li>The defaults of <i>Activity</i> and <i>Cost center</i> for time entries are set on the project (in its project settings) and on each issue (§4.4, <i>Accounting</i>); the lists themselves are in <i>Fields</i>, like every own field.</li>
     </ul>
 
@@ -958,14 +959,14 @@ sort by priority, highest first</div>
     <p>Bugaboo is built so an organization can run it in line with the GDPR. The organization running Bugaboo stays responsible; Bugaboo makes the right thing the easy thing.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Organization settings › Privacy › Keep and delete rules</div><div class="frame-body"><div class="scr">
       <table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Then</th><th>Why</th></tr></thead><tbody>
-        <tr><td><b>Working hours</b></td><td>2 years</td><td>Deleted</td><td class="muted">German working-time recording</td></tr>
+        <tr><td><b>Working hours</b></td><td>At least 2 years</td><td>An administrator deletes them</td><td class="muted">German working-time recording</td></tr>
         <tr><td><b>Time on issues</b></td><td>10 years</td><td>Deleted</td><td class="muted">Accounting; your organization sets the period</td></tr>
         <tr><td><b>Security log</b></td><td>1 year</td><td>Deleted</td><td class="muted">Finding and explaining security problems</td></tr>
         <tr><td><b>IP addresses in logs</b></td><td>7 days</td><td>Deleted</td><td class="muted">Stopping attacks on sign-in</td></tr>
         <tr><td><b>Notifications</b></td><td>90 days</td><td>Deleted</td><td class="muted">Not needed longer</td></tr>
         <tr><td><b>Trash</b></td><td>30 days</td><td>Deleted</td><td class="muted">Time to restore by mistake</td></tr>
       </tbody></table>
-      <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They are then deleted automatically.</span><div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
+      <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They keep the name Malik Weber for the people who may see working hours, and stay until an administrator deletes them.</span><div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
     </div></div></div></div>
     <ul>
       <li><b>Nothing extra is collected:</b> no tracking, no analytics, no outside scripts or fonts. Only the cookies needed to stay signed in, so there's no cookie banner.</li>
