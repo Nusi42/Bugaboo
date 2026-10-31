@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="title desc">
   <title id="title">Bugaboo</title>
-  <desc id="desc">The name Bugaboo, a self-hosted issue tracker for teams, next to what it does: issues that follow your own workflow from Not started through In progress to Done, and, planned, Gantt charts and AI agents that share its memory, all built for the GDPR. A bug sits beside the workflow; when the issue reaches Done it is shooed away with a boo, once.</desc>
+  <desc id="desc">The name Bugaboo, a self-hosted issue tracker and project management for teams of people and AI agents, next to what it does: issues that follow your own workflow from Not started through In progress to Done, and, planned, Gantt charts and AI agents that share its memory, all built for the GDPR. A bug sits beside the workflow; a person works on the issue while it is In progress, an agent with its agent mark takes it to Done, and with both of them there the bug is shooed away with a boo, once.</desc>
   <style>
     /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
        under the names of the tokens; a test (web/tooling/banner.test.ts) keeps them the same. */
@@ -37,9 +37,9 @@
     .glow { fill: var(--accent-soft); }
     .name { fill: var(--fg); font-size: 92px; font-weight: 700; letter-spacing: -2px; }
     .name tspan { fill: var(--accent); }
-    .line { fill: var(--fg-muted); font-size: 24px; }
+    .line { fill: var(--fg-muted); font-size: 21px; }
     .note { fill: var(--fg-muted); font-size: 18px; }
-    .ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 170; stroke-dashoffset: 55; transform: rotate(-90deg); transform-origin: 80px 258px; }
+    .ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 170; stroke-dashoffset: 55; transform: rotate(-90deg); transform-origin: 80px 264px; }
     .ring-track { fill: none; stroke: var(--border); stroke-width: 6; }
 
     /* The tiles of what Bugaboo does: a title, a short line under it, and a small drawing. */
@@ -66,6 +66,13 @@
     .shield { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
     .check { fill: none; stroke: var(--st-done); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
 
+    /* Who works on the issue: a person's round face with initials, as in the app, and an agent's face
+       with its agent mark, the spark of the AI agents tile. */
+    .face { fill: var(--accent-soft); stroke: var(--bg-raised); stroke-width: 3; }
+    .face-agent { fill: var(--bg-raised); stroke: var(--accent); stroke-width: 2; }
+    .initials { fill: var(--accent); font-size: 13px; font-weight: 600; }
+    .agent-mark { fill: var(--accent); stroke: var(--bg-raised); stroke-width: 1.5; stroke-linejoin: round; }
+
     .bug-body, .bug-head { fill: var(--accent); }
     .bug-spot { fill: var(--bg-raised); }
     .bug-leg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
@@ -73,8 +80,8 @@
     .boo-text { fill: var(--bg-raised); font-size: 30px; font-weight: 700; }
 
     /* One calm sequence that plays once and then rests. The tiles come in; a bug walks onto the
-       workflow; the issue moves from Not started through In progress to Done; at Done a big
-       "Boo!" pops up and the bug scurries off the card. Nothing blinks and no color changes: only
+       workflow; the issue moves from Not started through In progress to Done, a person turns up
+       on In progress and an agent on Done; at Done a big "Boo!" pops up and the bug scurries off the card. Nothing blinks and no color changes: only
        places, sizes and opacity move. */
     .tiles > g { animation: arrive 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
     .tiles > g:nth-of-type(2) { animation-delay: 250ms; }
@@ -84,6 +91,8 @@
     .legs { animation: legs 275ms 1000ms 8 ease-in-out both; transform-origin: 0 0; }
     .here { animation: advance 2400ms 3400ms ease-in-out both; }
     .done .fill { animation: fill 500ms 5600ms ease-out both; transform-origin: 966px 104px; }
+    .who { animation: fill 500ms 4300ms ease-out both; transform-origin: 892px 124px; }
+    .who-agent { animation-delay: 5400ms; transform-origin: 1070px 124px; }
     .bug { animation: shoo 1400ms 6300ms cubic-bezier(0.5, 0, 0.8, 0.6) both; }
     .boo { animation: boo 3200ms 5900ms ease-out both; transform-origin: 1150px 82px; }
 
@@ -96,20 +105,23 @@
     @keyframes boo { 0% { opacity: 0; transform: scale(0.4); } 12% { opacity: 1; transform: scale(1.12); } 20%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .tiles > g, .walk, .legs, .here, .done .fill, .bug, .boo { animation: none; }
+      .tiles > g, .walk, .legs, .here, .done .fill, .who, .bug, .boo { animation: none; }
       .boo { opacity: 0; }
+      .here { transform: translateX(360px); }
     }
   </style>
 
   <rect class="canvas" width="1280" height="320" rx="24"/>
   <circle class="glow" cx="1180" cy="20" r="150"/>
 
-  <text class="name" x="64" y="140">Bug<tspan>aboo</tspan></text>
-  <text class="line" x="68" y="184">A self-hosted issue tracker for teams.</text>
-  <circle class="ring-track" cx="80" cy="258" r="27"/>
-  <circle class="ring" cx="80" cy="258" r="27"/>
-  <text class="note" x="126" y="256">Time and working hours come next.</text>
-  <text class="note" x="126" y="280">Under development, before version 1.0.</text>
+  <text class="name" x="64" y="114">Bug<tspan>aboo</tspan></text>
+  <text class="line" x="68" y="156">A self-hosted issue tracker and</text>
+  <text class="line" x="68" y="182">project management for teams</text>
+  <text class="line" x="68" y="208">of people and AI agents.</text>
+  <circle class="ring-track" cx="80" cy="264" r="27"/>
+  <circle class="ring" cx="80" cy="264" r="27"/>
+  <text class="note" x="126" y="262">Time and working hours come next.</text>
+  <text class="note" x="126" y="286">Under development, before version 1.0.</text>
 
   <g class="tiles">
     <g>
@@ -135,6 +147,15 @@
         <text class="pill-text" x="982" y="109">Done</text>
       </g>
       <rect class="here" x="581" y="83" width="146" height="42" rx="21"/>
+      <g class="who">
+        <circle class="face" cx="892" cy="124" r="16"/>
+        <text class="initials" x="892" y="129" text-anchor="middle">AB</text>
+      </g>
+      <g class="who who-agent">
+        <circle class="face face-agent" cx="1070" cy="124" r="15"/>
+        <text class="initials" x="1070" y="129" text-anchor="middle">F</text>
+        <path class="agent-mark" d="M1084 101q1.6 7.4 9 9-7.4 1.6-9 9-1.6-7.4-9-9 7.4-1.6 9-9z"/>
+      </g>
       <g transform="translate(1150 104)">
         <g class="walk">
           <g class="bug">
