@@ -1985,7 +1985,15 @@ part "picker.options[variant=list]:has(picker.choice)" {
     use "ring-room-flush"
 }
 
-// A row of a list to pick from is as high as every row of a list (UX §7.4), not only as a control.
+// A list of rows that are buttons (a field to filter by, a person to assign) keeps rows of a control's height: it stands
+// in windows and sheets of the search, where rows of a list of things would push the box of words out of view on a
+// phone. The seven rows are the room inside, as for the list of radio buttons.
+part "picker.options[variant=list]:has(picker.choice)" "picker.options[variant=list]:has(picker.row)" {
+    max-height "calc($size-control * 7 + $size-option-gap * 6)"
+}
+
+// A row of a list to pick from with a radio button (a person to put into a group or to give a role to) is as high as
+// every row of a list of things (UX §7.4), not only as a control.
 part "picker.option[variant=list]" {
     display flex
     align-items center
@@ -2041,7 +2049,7 @@ part "picker.row" {
     align-items center
     justify-content space-between
     gap "$space-2 $space-3"
-    min-height "$size-row"
+    min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
 }
@@ -2058,7 +2066,7 @@ part "picker.choice" {
     justify-content flex-start
     gap "$space-3"
     width "100%"
-    min-height "$size-row"
+    min-height "$size-control"
     padding 0
     border 0
     border-radius "$r-ctl"

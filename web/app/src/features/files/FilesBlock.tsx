@@ -1,8 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, FileDrop, usePastedFiles, partOf, part } from "@bugaboo/ui";
+import { FileDrop, usePastedFiles, partOf, part } from "@bugaboo/ui";
 import { useId } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
+import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import { FileRows } from "./FileRows.tsx";
 import { useFileRules, useIssueFiles } from "./files.ts";
 import { TransferRows } from "./TransferRows.tsx";
@@ -30,7 +30,7 @@ export function FilesBlock({ readableId }: { readonly readableId: string }) {
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>
         {t("files.title")}
       </h2>
-      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
+      {list.isError ? <IssueReadProblem error={list.error} /> : null}
       {mayAdd ? (
         <FileDrop label={t("files.drop-place")} chooseLabel={t("files.upload")} onFiles={add}>
           <span>{t("files.drop")}</span>

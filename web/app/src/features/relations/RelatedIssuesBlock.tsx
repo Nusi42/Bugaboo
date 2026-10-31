@@ -1,8 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, ListGrid, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Button, ListGrid, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
+import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import { itemsOf } from "../../shared/paged.ts";
 import { AddRelation } from "./AddRelation.tsx";
 import { RelatedLine } from "./RelatedLine.tsx";
@@ -49,7 +49,7 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>
         {t("related-issues.title")}
       </h2>
-      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
+      {list.isError ? <IssueReadProblem error={list.error} /> : null}
       {related.length === 0 ? (
         <p {...partOf(part.muted)}>{t("related-issues.none")}</p>
       ) : (

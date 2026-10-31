@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, NameValueRow } from "@bugaboo/ui";
+import { NameValueRow } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
+import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import type { IssueBlockProps } from "../issues/index.ts";
 import { useIssueLabelsAndTags } from "./labels.ts";
 import { LabelsRow, TagsRow } from "./LabelsAndTagsParts.tsx";
@@ -11,7 +11,7 @@ import { useLabelChanges } from "./use-label-changes.ts";
 function Unread({ name, error }: { readonly name: string; readonly error: unknown }) {
   return (
     <NameValueRow name={name}>
-      <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>
+      <IssueReadProblem error={error} />
     </NameValueRow>
   );
 }

@@ -1,4 +1,3 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -16,6 +15,7 @@ import {
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import { itemsOf } from "../../shared/paged.ts";
 import { IssueRefLine } from "./IssueRefLine.tsx";
 import type { ShownIssue } from "./shown-issue.ts";
@@ -185,7 +185,7 @@ function Parts({
   parts,
   mayChange,
 }: {
-  readonly parts: readonly Schema<"IssueRef">[];
+  readonly parts: readonly ShownIssue[];
   readonly mayChange: boolean;
 }) {
   if (parts.length === 0) {
@@ -227,7 +227,7 @@ export function SubIssuesBlock({ readableId }: BlockProps) {
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>
         {t("sub-issues.title")}
       </h2>
-      {header.isError ? <Alert tone={alertTone.danger}>{messageOf(header.error)}</Alert> : null}
+      {header.isError ? <IssueReadProblem error={header.error} /> : null}
       {above === undefined || above === null ? null : (
         <PartOf above={above} readableId={readableId} mayChange={mayChange} />
       )}

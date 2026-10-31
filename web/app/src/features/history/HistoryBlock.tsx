@@ -1,8 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Tabs, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Tabs, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
+import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import { itemsOf } from "../../shared/paged.ts";
 import { ChangeEntry, NothingYet, WordsFailedNotice } from "./ChangeEntry.tsx";
 import { CommentComposer } from "./CommentComposer.tsx";
@@ -34,7 +34,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
   });
   return (
     <div {...partOf(part.stack)}>
-      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
+      {list.isError ? <IssueReadProblem error={list.error} /> : null}
       {groups.some((group) => group[0]?.kind !== "comment") ? <WordsFailedNotice /> : null}
       {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
       {groups.map((group, at) =>
