@@ -14,7 +14,7 @@ The lead combined each builder's branch with the lead's branch `WIN1` by a merge
 - **A builder brings in a newer `main` by rebasing** its own branch onto `origin/main` and pushes it again with `git push --force-with-lease origin WINn`. Only the builder's own `WINn` is ever force-pushed; `WIN1`, `main` and every branch on the public remote never are (review: which branch is pushed with force is the person's choice, not something the hook can tell).
 - **The merge commits already on `main` stay.** They were made before this decision and are already on every remote, so the check, which reads only what is on no remote, leaves them out; history is not rewritten.
 - **No merge subject.** A commit message never has the subject of a merge (`Merge …`); this replaces the `Merge <what it brought>` form of ADR-0038. Git's `Revert "..."` stays. Enforced by: GIT-COMMIT-MSG.
-- **The public side:** the ruleset of the public repository requires linear history on `main` ("Require linear history"), so GitHub refuses a merge commit as well (review: the setting lives on GitHub, not in the repository).
+- **The public side:** the ruleset of the public repository requires linear history on `main` ("Require linear history"), so GitHub refuses a merge commit as well. The maintainer is on the bypass list of the ruleset, as in the sister project, for a case that cannot wait; the master's own pushes never need it, because GIT-LINEAR refuses a merge commit before GitHub sees it (review: the setting lives on GitHub, not in the repository).
 
 ## Consequences
 
