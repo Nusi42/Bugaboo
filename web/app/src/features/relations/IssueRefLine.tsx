@@ -1,4 +1,4 @@
-import { StatusPill, partOf, part } from "@bugaboo/ui";
+import { IssueId, StatusPill, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { statusGroupOf, statusWordsOf } from "./ref-status.ts";
@@ -20,7 +20,9 @@ export function IssueRefLine({
   const word = statusWordsOf(issue);
   return (
     <span {...partOf(part.issueRef)}>
-      <strong {...partOf(part.strong)}>{issue.readable_id}</strong>
+      <strong {...partOf(part.strong)}>
+        <IssueId id={issue.readable_id} />
+      </strong>
       {issue.title === undefined || issue.title === null ? null : <span>{issue.title}</span>}
       {group === undefined || group === null || word === undefined ? null : (
         <StatusPill group={group} label={word} />

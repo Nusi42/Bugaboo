@@ -124,12 +124,12 @@ export {
   type StoreGetter,
 } from "./storage.ts";
 export { Announce } from "./Announce.tsx";
+export { IssueId } from "./IssueId.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export {
   PickerHint,
   PickerOption,
   PickerChoice,
-  PickerId,
   PickerRow,
   SearchPicker,
   type PickerMore,

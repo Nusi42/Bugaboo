@@ -164,8 +164,3 @@ export function PickerChoice({ label, accessibleName, children, onPick }: Picker
     </li>
   );
 }
-
-/** The ID of an issue in a row of a picker, in the font of IDs. */
-export function PickerId({ children }: { readonly children: ReactNode }) {
-  return <span {...partOf(part.pickerId)}>{children}</span>;
-}

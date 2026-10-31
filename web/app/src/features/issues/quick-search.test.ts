@@ -74,7 +74,7 @@ describe("cfg_08 an ID opens the issue", () => {
     });
     const found = await issuesSource.search("WEB-12", asker);
     expect(found).toEqual([
-      { id: "WEB-12", title: "Login fails", hint: "WEB-12", path: "/issues/WEB-12" },
+      { id: "WEB-12", title: "Login fails", issueId: "WEB-12", path: "/issues/WEB-12" },
     ]);
     expect(get).toHaveBeenCalledWith(ISSUE, { params: { path: { issue: "WEB-12" } } });
   });

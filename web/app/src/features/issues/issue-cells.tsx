@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { IssueTypeIcon, Link, StatusIcon, iconSize, type ListColumn } from "@bugaboo/ui";
+import { IssueId, IssueTypeIcon, Link, StatusIcon, iconSize, type ListColumn } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 /** What the first cells of every row of an issue are made of: the list, the slim list, the sub-issues. */
@@ -39,7 +39,7 @@ export function issueCells(
       group === undefined || group === null || statusWord === undefined ? undefined : (
         <StatusIcon group={group} size={iconSize.small} label={statusWord} />
       ),
-    key,
+    key: <IssueId id={key} />,
     type: type === undefined ? undefined : <IssueTypeIcon name={type.icon} label={type.name} />,
     title: (
       <>

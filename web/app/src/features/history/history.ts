@@ -141,15 +141,6 @@ export function useScrollTo<Element extends HTMLElement>(
   return element;
 }
 
-/**
- * The sentence of an item that is a relation; nothing for a change of a field or a file, whose
- * words come from the shared wording (`changeSentence`, `fileSentence`), which has to be loaded
- * first.
- */
-export function plainSentenceOf(entry: HistoryEntry): string | undefined {
-  return entry.kind === "relation" ? relationSentence(entry) : undefined;
-}
-
 /** The sentence of a relation that was added or taken away. */
 export function relationSentence(entry: HistoryEntry): string {
   const message =

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import {
   PickerChoice,
-  PickerId,
+  IssueId,
   SearchPicker,
   Skeleton,
   StatusPill,
@@ -51,7 +51,7 @@ export function IssueFinder({ language, onPick }: IssueFinderProps) {
               issue.label
             ) : (
               <>
-                <PickerId>{issue.issue.id}</PickerId>
+                <IssueId id={issue.issue.id} />
                 {issue.issue.title}
               </>
             )

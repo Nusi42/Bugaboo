@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { IssueId, partOf, part } from "@bugaboo/ui";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
 import { busyKeys, resultKey } from "./quick-search-collect.ts";
@@ -50,9 +50,9 @@ export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
                 {...partOf(part.quickSearchItem)}
               >
                 <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
-                {result.hint === undefined ? null : (
+                {result.hint === undefined && result.issueId === undefined ? null : (
                   <Text slot={descriptionSlot} {...partOf(part.hint)}>
-                    {result.hint}
+                    {result.issueId === undefined ? result.hint : <IssueId id={result.issueId} />}
                   </Text>
                 )}
               </ListBoxItem>

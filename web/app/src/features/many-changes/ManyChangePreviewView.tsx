@@ -1,6 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Icon, iconName, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Icon,
+  iconName,
+  IssueId,
+  partOf,
+  part,
+  type LongPreviewGroup,
+} from "@bugaboo/ui";
 import type { Wording } from "@bugaboo/wasm";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
@@ -71,7 +80,13 @@ function groupOf(row: ManyChangeRow, plain: string, wording: Wording): LongPrevi
     key: row.address,
     heading: (
       <>
-        <strong>{row.issue?.readable_id ?? t("many-changes.issue-unknown")}</strong>
+        <strong>
+          {row.issue === undefined || row.issue === null ? (
+            t("many-changes.issue-unknown")
+          ) : (
+            <IssueId id={row.issue.readable_id} />
+          )}
+        </strong>
         {skipped ? (
           <span {...partOf(part.row)}>
             <Icon name={iconName.close} />

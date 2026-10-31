@@ -9,6 +9,8 @@ export interface QuickShown {
   readonly title: string;
   /** A line under the title, such as where it sits. */
   readonly hint?: string;
+  /** The ID of the issue the result is, shown under the title in the font of IDs instead of a hint. */
+  readonly issueId?: string;
 }
 
 /** What opening a result does: it goes to an address of the app, or it runs an action. */

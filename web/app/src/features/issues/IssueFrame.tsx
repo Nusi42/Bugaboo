@@ -1,4 +1,4 @@
-import { Alert, alertTone, useLayout, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, IssueId, useLayout, partOf, part } from "@bugaboo/ui";
 
 import { SidePanel } from "../shell/index.ts";
 import { useMoreActions } from "./issue-actions.ts";
@@ -60,6 +60,7 @@ export function IssueFrame(props: IssueFrameProps) {
   return show === "panel" ? (
     <SidePanel
       title={blocks.readableId}
+      heading={<IssueId id={blocks.readableId} />}
       onClose={onClose}
       {...(closeLabel === undefined ? {} : { closeLabel })}
     >

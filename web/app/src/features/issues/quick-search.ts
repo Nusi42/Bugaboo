@@ -41,7 +41,7 @@ function resultOf(item: Line): QuickResult[] {
   const key = item.readable_id;
   const title = item.title;
   return typeof key === "string" && typeof title === "string"
-    ? [{ id: key, title, hint: key, path: issueAddress(key) }]
+    ? [{ id: key, title, issueId: key, path: issueAddress(key) }]
     : [];
 }
 

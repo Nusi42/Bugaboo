@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, IssueId, partOf, part } from "@bugaboo/ui";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { listText } from "../../shared/list-text.ts";
@@ -20,7 +20,11 @@ export function ChangePreviewView({ preview }: { readonly preview: Schema<"Chang
         label={t("preview.label")}
         groups={preview.issues.map((each) => ({
           key: each.issue.id,
-          heading: <strong>{each.issue.readable_id}</strong>,
+          heading: (
+            <strong>
+              <IssueId id={each.issue.readable_id} />
+            </strong>
+          ),
           lines: [
             {
               key: "names",

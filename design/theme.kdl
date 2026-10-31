@@ -686,6 +686,13 @@ mixin "ring" {
 }
 
 // Words that are less important than their neighbours.
+// An issue ID is in the code font wherever it is shown, and never breaks: the one rule for the font of an ID, which the
+// part `issue-id` and an ID inside a text written by people use (M5-F137).
+mixin "issue-id" {
+    font-family "$font-mono"
+    white-space nowrap
+}
+
 mixin "quiet-text" {
     color "$fg-muted"
     font-size "$fs-base"
@@ -2047,10 +2054,13 @@ part "picker.choice" {
     cursor pointer
 }
 
-part "picker.id" {
+// The ID of an issue (`WEB-142`), the one part every screen draws it with (UX §7.3, M5-F137).
+part "issue-id" {
+    use "issue-id"
+}
+
+part "picker.name issue-id" {
     margin-inline-end "$space-2"
-    font-family "$font-mono"
-    font-size "$fs-base"
 }
 
 part "picker.choice:hover picker.name" "picker.choice:focus-visible picker.name" {
@@ -2346,7 +2356,6 @@ part "list-row.cell[variant=type]" {
 part "list-row.cell[variant=key]" {
     flex none
     color "$fg-muted"
-    font-family "$font-mono"
 }
 
 part "list-row.cell[variant=title]" {
@@ -6059,6 +6068,11 @@ base "[data-part=markdown] [data-token]" {
     forced {
         text-decoration underline
     }
+}
+
+// An issue ID written in a text is drawn like every other ID (the `issue-id` mixin).
+base "[data-part=markdown] [data-kind=issue-id]" {
+    use "issue-id"
 }
 
 part "markdown.editor" {

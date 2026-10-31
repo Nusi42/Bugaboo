@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Link, partOf, part } from "@bugaboo/ui";
+import { IssueId, Link, partOf, part } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
@@ -29,7 +29,9 @@ export function NotificationGroups({ rows, onRead, readingId }: NotificationGrou
     >
       {group.issue === null || group.issue === undefined ? null : (
         <h3 {...partOf(part.notificationGroupHead)}>
-          <Link href={issueAddress(group.issue.readable_id)}>{group.issue.readable_id}</Link>
+          <Link href={issueAddress(group.issue.readable_id)}>
+            <IssueId id={group.issue.readable_id} />
+          </Link>
           {group.issue.title === undefined || group.issue.title === null ? null : (
             <span>{group.issue.title}</span>
           )}

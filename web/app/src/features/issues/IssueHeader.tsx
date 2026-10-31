@@ -6,6 +6,7 @@ import {
   IconButton,
   iconName,
   InPlaceText,
+  IssueId,
   IssueTypeIcon,
   type MenuAction,
   useLayout,
@@ -65,7 +66,7 @@ export function IssueHeader(props: IssueHeaderProps) {
         <CopyButton
           text={linkTo(key)}
           // The panel already shows the ID as its heading; the focus view shows it here.
-          label={show === "panel" ? t("issues.copy-link") : key}
+          label={show === "panel" ? t("issues.copy-link") : <IssueId id={key} />}
           name={t("issues.copy-link-of", { key })}
           copiedLabel={t("issues.link-copied")}
         />

@@ -1125,10 +1125,13 @@ textarea,
   cursor: pointer;
 }
 
-[data-part="picker.id"] {
-  margin-inline-end: var(--space-2);
+[data-part="issue-id"] {
   font-family: var(--font-mono);
-  font-size: var(--fs-base);
+  white-space: nowrap;
+}
+
+[data-part="picker.name"] [data-part="issue-id"] {
+  margin-inline-end: var(--space-2);
 }
 
 [data-part="picker.choice"]:hover [data-part="picker.name"],
@@ -1432,7 +1435,6 @@ textarea,
 [data-part="list-row.cell"][data-variant~="key"] {
   flex: none;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
 }
 
 [data-part="list-row.cell"][data-variant~="title"] {
@@ -5382,6 +5384,11 @@ textarea,
   [data-part="markdown"] [data-token] {
     text-decoration: underline;
   }
+}
+
+[data-part="markdown"] [data-kind="issue-id"] {
+  font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 [data-part="markdown.editor"] {

@@ -1,11 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { partOf, part, SentenceWithName } from "@bugaboo/ui";
+import { IssueId, partOf, part, SentenceWithName, SentenceWithValue } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { fileSentence } from "../../shared/file-sentence.ts";
 import { WithWording, WordingNotice } from "../../shared/with-wording.tsx";
-import { changeSentence, plainSentenceOf, useScrollTo } from "./history.ts";
+import { changeSentence, relationSentence, useScrollTo } from "./history.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation or the file. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
@@ -36,7 +36,11 @@ export function ChangeEntry({
       <ul {...partOf(part.list)}>
         {items.map((item) => (
           <li key={keyOf(item)} {...partOf(part.itemText)}>
-            {plainSentenceOf(item) ?? (
+            {item.kind === "relation" ? (
+              <SentenceWithValue sentence={relationSentence(item)} value={item.issue?.readable_id}>
+                {(id) => <IssueId id={id} />}
+              </SentenceWithValue>
+            ) : (
               <WithWording>
                 {(wording) =>
                   item.kind === "file" ? (
