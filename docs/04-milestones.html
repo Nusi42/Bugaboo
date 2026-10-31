@@ -22,7 +22,7 @@
 <h2 id="s1"><button class="sec" data-sec>§1</button>How we work</h2>
 <h3 id="s1-1"><button class="sec" data-sec>§1.1</button>Who does what</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Role</th><th>Who</th><th>Does</th></tr></thead><tbody>
-<tr><td><strong>Product owner</strong></td><td>You</td><td>Decide, try each milestone, comment on its review page, approve or ask for changes</td></tr>
+<tr><td><strong>Product owner</strong></td><td>The maintainer</td><td>Decide, try each milestone, comment on its review page, approve or ask for changes</td></tr>
 <tr><td><strong>Lead</strong></td><td>The main Claude session, high effort</td><td>Splits a milestone into work packages, starts builders and reviewers, merges, writes the milestone review page</td></tr>
 <tr><td><strong>Builders</strong></td><td>Implementation agents, medium effort</td><td>Build one work package each, in their own Git worktree, tests first</td></tr>
 <tr><td><strong>Reviewers</strong></td><td>Separate agents with a fresh context</td><td>Review every work package adversarially: code, security, UX, words</td></tr>
@@ -46,18 +46,18 @@
   rev -- "findings" --&gt; build
   rev -- "clean" --&gt; merge["Lead merges&lt;br/&gt;to main"]</pre>
 <ol>
-<li><strong>Where:</strong> each builder works in its own clone (<code>bugaboo.winN</code>, branch <code>WINn</code>, ADR-0024), outside OneDrive.</li>
+<li><strong>Where:</strong> each builder works in its own clone (<code>bugaboo.winN</code>, branch <code>WINn</code>, ADR-0024), outside the main checkout (<code>&lt;master&gt;</code>).</li>
 <li><strong>Build:</strong> the builder reads <code>CLAUDE.md</code>, the glossary, the coding standards and the relevant decision records; writes the acceptance tests; implements until they pass. Edit-time checks (Claude Code hooks) catch problems after every file.</li>
 <li><strong>Self-check:</strong> <code>cargo xtask check staged</code> and the package's tests are green before the branch is pushed; a branch with a red test is not pushed. A package that changes screens also takes its own screenshots and checks them against the ten rules of UX design §1.1 (alignment, padding, state colors) before it is pushed, and its report names the pictures it looked at (M4: a builder that looked at 5 of 270 pictures cost three more screen rounds). The builder reports the exact commands it ran and their results.</li>
 <li><strong>CI:</strong> <code>cargo xtask ci</code> in <code>bugaboo.win1</code>, on Windows and in WSL, both databases.</li>
-<li><strong>Review:</strong> at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review of their own from screenshots (four themes × computer and phone) compared with the UX design: the ten rules of §1.1 and the visual system of §7 (type sizes and weights, state colors, spacing); a UX finding blocks the merge like a failing test, because a screen gets no second first impression. Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.</li>
+<li><strong>Review:</strong> at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review of their own from screenshots (four themes × computer and phone) compared with the UX design: the ten rules of §1.1 and the visual system of §7 (type sizes and weights, state colors, spacing); a UX finding blocks the merge like a failing test, because a screen gets no second first impression (M5). Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.</li>
 <li><strong>Fix and merge:</strong> findings go back to the builder; every fix round, however small, gets its own SSOT/DRY/ODR gate check by a reviewer with a fresh context before it is merged, never by the lead or the builder who wrote it (M5: a round the lead merged without one, and a round the lead checked itself, each failed the gate when checked; WP-03 needed four rounds). The lead merges the builder's <code>WINn</code> branch into <code>WIN1</code>, runs <code>cargo xtask ci</code> again, and fast-forwards <code>main</code> in the master repository. <code>main</code> is always green.</li>
 </ol>
 <h3 id="s1-4"><button class="sec" data-sec>§1.4</button>Working in a folder</h3>
 <ul>
 <li><strong>Never build, install or run anything in the master repository</strong> (the checkout marked as the master, ADR-0039). Work only in your own folder <code>&lt;work root&gt;/bugaboo.winN</code>, on your branch <code>WINn</code> (ADR-0024).</li>
 <li>A builder's folder starts from <code>main</code>: <code>git fetch origin &amp;&amp; git checkout -B WINn origin/main</code>, then <code>cargo xtask setup</code> (pinned tools and Git hooks, coding-standards §7).</li>
-<li><strong>Nothing outside your folder.</strong> Logs, notes, helper scripts, pictures, servers' data and built programs stay inside <code>bugaboo.winN</code>, in its ignored <code>.work/</code> folder (pictures in <code>.work/screenshots/</code>). Never create files or folders next to the work folders in <code>the work root</code>, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into <code>.work/</code>. Delete what you no longer need before you report.</li>
+<li><strong>Nothing outside your folder.</strong> Logs, notes, helper scripts, pictures, servers' data and built programs stay inside <code>bugaboo.winN</code>, in its ignored <code>.work/</code> folder (pictures in <code>.work/screenshots/</code>). Never create files or folders next to the work folders in <code>&lt;work root&gt;</code>, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into <code>.work/</code>. Delete what you no longer need before you report.</li>
 <li><strong>Commit messages from a file.</strong> Write the message into a file in <code>.work/</code> and commit with <code>git commit -F .work/&lt;file&gt;</code>; a message piped into <code>git commit</code> has hung in a work folder (M4).</li>
 <li><strong>A newer <code>main</code> comes in by a merge:</strong> <code>git merge origin/main</code>. A branch that was pushed is never rebased or force-pushed (coding-standards §2), also not between review rounds (M5).</li>
 <li>Commit on your branch and push it to <code>origin</code> when the work package is done. Never push to <code>main</code>: only the lead moves it, by a fast-forward in the master.</li>
@@ -108,7 +108,7 @@
 <li><strong>Merge</strong> into <code>WIN1</code> with a subject of the form <code>Merge &lt;what it brought&gt;</code>, the only form the commit-message check accepts for a merge, in plain words without folder, branch or package names: <code>git merge --no-ff origin/WINn -m "Merge the search page"</code>. Then <code>cargo xtask ci</code>, push <code>WIN1</code>, and <code>git merge --ff-only WIN1</code> in the master.</li>
 <li><strong>"Can I close this session?"</strong> Answer with: running background agents and commands; uncommitted or unpushed work in each <code>bugaboo.winN</code> (<code>git status --short</code>, <code>git log origin/WINn..WINn</code>); <code>main</code> against <code>WIN1</code>; whether <code>STATUS.md</code> is current. Say "safe" only when all are clean, or when <code>STATUS.md</code> names exactly what a running builder will leave behind.</li>
 <li><strong>Memory</strong> lives in <code>bugaboo.win1/.claude/memory/</code> (ADR-0024). Commit memory changes with the next <code>STATUS.md</code> update.</li>
-<li><strong>The maintainer reviews on a phone:</strong> milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are private: keep them in the maintainer's list outside the repository, and name the page in the docs instead (coding-standards §2).</li>
+<li><strong>Reviews work on a phone:</strong> milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are not committed: keep them outside the repository, and name the page in the docs instead (coding-standards §2).</li>
 </ol>
 <h2 id="s2"><button class="sec" data-sec>§2</button>Overview</h2>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Milestone</th><th>Name</th><th>Phase</th><th>Features</th></tr></thead><tbody>
@@ -139,7 +139,7 @@
 </ul>
 <p><strong>Work packages (outline):</strong></p>
 <ul>
-<li>Work folders as in ADR-0024: the OneDrive repository is the master (<code>main</code>, never built in); <code>&lt;work root&gt;\bugaboo.win1</code> (branch <code>WIN1</code>) for the lead and integration, <code>bugaboo.win2</code> and up for builders</li>
+<li>Work folders as in ADR-0024: the main checkout is the master (<code>main</code>, never built in); <code>&lt;work root&gt;/bugaboo.win1</code> (branch <code>WIN1</code>) for the lead and integration, <code>bugaboo.win2</code> and up for builders</li>
 <li><code>main</code> kept green by the local CI runner (<code>cargo xtask ci</code>: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0037)</li>
 <li><code>.cargo/config.toml</code> with an optional, ignored <code>config.local.toml</code> for machine-specific settings; the BUILD-LOCATION guard</li>
 <li>Rust workspace with all crates as empty shells, dependency rules, <code>#![forbid(unsafe_code)]</code>, <code>rust-toolchain.toml</code></li>
@@ -275,7 +275,7 @@
 <li>Tags and labels; changing many issues at once with a preview</li>
 <li>Following issues</li>
 <li>Sample organization, part 2: about 10,000 issues, comments, relations, own fields</li>
-<li>The approved UX concept (2026-10-15): the UX design, theme tokens and shared parts, then the M3 screens in the new look</li>
+<li>The approved UX concept: the UX design, theme tokens and shared parts, then the M3 screens in the new look</li>
 </ul>
 <p><strong>Demo (exit):</strong> In the sample organization: create a bug as a Guest (short form) and as a Team member (full form), relate it to two issues, edit the description in two browsers at once (lock, Edit anyway, Compare and save).</p>
 <p><strong>Tests and checks added:</strong> TEST-EDIT-LOCKS; first TEST-CONCURRENT run (10 people) on both databases; ARCH-EVENTS, ARCH-VERSIONED, TEST-ISSUE-IDS, ARCH-WASM active.</p>

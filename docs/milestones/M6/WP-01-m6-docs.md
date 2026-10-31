@@ -1,4 +1,4 @@
-# WP-01 — Decision records, words, the security and privacy chapter, the UX gaps and the maintainer's answers
+# WP-01 — Decision records, words, security and privacy, UX gaps, the maintainer's answers
 
 **Wave 1 · Folder / branch:** `bugaboo.win1` / `WIN1` (lead)
 **Features:** all of M6, the docs they need (TIME-01, TIME-02, TIME-03, TIME-04, TIME-08, TIME-09, TIME-10, TIME-12, TIME-13, PRIV-09); ADR-0017, ADR-0025, ADR-0026, the new ADR-0035.
