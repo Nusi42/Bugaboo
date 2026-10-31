@@ -163,6 +163,8 @@ words! {
         Timer => "timer",
         /// The making of the starter fields of time entries (TIME-13).
         StarterFields => "starter_fields",
+        /// A work day of a person (TIME-08).
+        WorkDay => "work_day",
     }
 }
 

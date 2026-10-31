@@ -338,6 +338,8 @@ export interface MessageArguments {
   "notifications.mentioned": { who: string | number };
   "notifications.open-name": { what: string | number };
   "notifications.taken-over": { who: string | number };
+  "notifications.work-day-changed": { date: string | number; who: string | number };
+  "notifications.work-day-reason": { reason: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };

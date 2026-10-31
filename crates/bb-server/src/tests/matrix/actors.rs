@@ -323,6 +323,10 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         StartingRole::Guest => {
             BTreeSet::from([SeeProjects, CreateIssues, ChangeOwnIssues, Comment])
         }
+        StartingRole::Hr => BTreeSet::from([
+            Permission::SeeWorkingHoursOfOthers,
+            Permission::ChangeWorkingHoursOfOthers,
+        ]),
     }
 }
 
@@ -429,7 +433,9 @@ pub(super) fn sees(actor: Actor, project: Project) -> bool {
         Actor::ExactlyBoth(first, second) => {
             held_exactly_all(&[first, second]).contains(&Permission::SeeProjects)
         }
-        Actor::Role(_) | Actor::LeadOnParent | Actor::KeySeeOnly => true,
+        // *HR* gives no work in projects and sees none (ADR-0035, decision 8).
+        Actor::Role(role) => role_permissions(role).contains(&Permission::SeeProjects),
+        Actor::LeadOnParent | Actor::KeySeeOnly => true,
         Actor::LeadOnSiblingOnly => project == Project::Sibling,
         Actor::NoAccessOnTarget | Actor::NoAccessUnderLead => project != Project::Target,
     }

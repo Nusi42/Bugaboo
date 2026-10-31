@@ -192,3 +192,68 @@ reason = "Counts only issues the viewer may see and read: the groups are made by
 [[counting]]
 folder = "crates/bb-store/src/migrations/m0022_text_index.rs"
 reason = "The row number of the index of the text search: a row number that stays when a file is compacted, which the external-content table of SQLite needs. It is never shown, never in an answer and names no public record (ADR-0016)."
+
+[[exempt]]
+route = "GET /api/v1/me/work-days"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "POST /api/v1/me/work-days/start"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "POST /api/v1/me/work-days/break/start"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "POST /api/v1/me/work-days/break/end"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "POST /api/v1/me/work-days/end"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "PATCH /api/v1/me/work-days/{date}"
+property = "totals"
+reason = "The time the person worked and their breaks, summed from their own work days only: the person sees every day it counts (ADR-0035, decisions 5 and 8)."
+
+[[exempt]]
+route = "GET /api/v1/me/work-days"
+property = "totals_only"
+reason = "A yes-or-no, not a count: whether Totals only hides days the viewer would otherwise see; always no for one's own days (ADR-0035, decision 8)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-days"
+property = "totals"
+reason = "The sums of one person's work days for a holder of See working hours of others, who may see every day of that person (ADR-0035, decision 8); under Totals only the answer has the week totals and nothing else."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-days"
+property = "totals_only"
+reason = "A yes-or-no, not a count: whether Totals only hides the days of the person from the viewer, who may see them otherwise (ADR-0035, decision 8)."
+
+[[exempt]]
+route = "PATCH /api/v1/people/{person}/work-days/{date}"
+property = "totals"
+reason = "The sums of the one day the holder of Change working hours of others just changed, every part of which they may see (ADR-0035, decision 8)."
+
+[[exempt]]
+route = "GET /api/v1/work-days/old"
+property = "count"
+reason = "How many work days are older than the keep period, for each person and in total, for a holder of Change organization settings, who may see and delete every one of them: the settings page shows them so that deleting them is one step (ADR-0035, decision 7). No day is named."
+
+[[exempt]]
+route = "GET /api/v1/work-days/old"
+property = "total"
+reason = "How many work days are older than the keep period, for each person and in total, for a holder of Change organization settings, who may see and delete every one of them: the settings page shows them so that deleting them is one step (ADR-0035, decision 7). No day is named."
+
+[[exempt]]
+route = "DELETE /api/v1/work-days/old"
+property = "deleted"
+reason = "How many work days the holder of Change organization settings just deleted, all of which they may see counted on the settings page before (ADR-0035, decision 7)."

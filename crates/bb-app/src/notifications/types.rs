@@ -70,6 +70,13 @@ pub enum NotificationWhat {
         /// The name of the file, read from the file itself; none once the file is gone for good.
         name: Option<String>,
     },
+    /// Somebody else changed one of the person's work days (ADR-0035, decision 7).
+    WorkDayChanged {
+        /// The date of the day.
+        date: jiff::civil::Date,
+        /// Why, in the words of whoever changed it.
+        reason: Option<String>,
+    },
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.
     Plain,

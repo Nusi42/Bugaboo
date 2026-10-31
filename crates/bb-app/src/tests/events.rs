@@ -22,6 +22,7 @@ use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
 use super::scenarios_time as sti;
 use super::scenarios_workflows as sw;
+use super::scenarios_working_hours as swh;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -171,6 +172,12 @@ table! {
     "add_time" => sti::add_time_scenario,
     "change_time_entry" => sti::change_time_entry_scenario,
     "delete_time_entry" => sti::delete_time_entry_scenario,
+    "start_work_day" => swh::start_work_day_scenario,
+    "start_break" => swh::start_break_scenario,
+    "end_break" => swh::end_break_scenario,
+    "end_work_day" => swh::end_work_day_scenario,
+    "change_work_day" => swh::change_work_day_scenario,
+    "delete_old_work_days" => swh::delete_old_work_days_scenario,
 }
 
 #[test]

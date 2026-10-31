@@ -2422,6 +2422,152 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/work-days": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The person's own work days from `from` to `to`. */
+    get: operations["listMyWorkDays"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/booked": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One's own week: the working hours, the time booked on issues and the difference of each day.
+     *     Only for the person themselves.
+     */
+    get: operations["getMyBookedWeek"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/break/end": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *End break*. */
+    post: operations["endBreak"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/break/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *Start break*. */
+    post: operations["startBreak"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/end": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *End work day*: ends the break that runs too. */
+    post: operations["endWorkDay"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * *Start work day*: records the moment of the tap as the start of the person's day, or of a new
+     *     period of it. A day left open on another date is never ended here: the answer
+     *     `working-hours.day-left-open` names it (`open_day`), and the person says when it ended first.
+     */
+    post: operations["startWorkDay"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-days/{date}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * New times of one's own work day, typed afterwards. A past day changes only with a reason, and
+     *     the history of the day keeps the old times.
+     */
+    patch: operations["changeMyWorkDay"];
+    trace?: never;
+  };
+  "/api/v1/me/work-days/{date}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The history of one's own work day: every change with the old and the new times, who and why. */
+    get: operations["getMyWorkDayHistory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/notifications": {
     parameters: {
       query?: never;
@@ -2588,6 +2734,66 @@ export interface paths {
      *     e-mail address and correct their names*.
      */
     get: operations["getPerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/work-days": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Another person's work days from `from` to `to`. Needs *See working hours of others*; while
+     *     *Totals only* is on, the answer has the week totals and nothing else.
+     */
+    get: operations["listWorkDaysOfPerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/work-days/{date}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * New times of another person's work day, always with a reason. Needs *Change working hours of
+     *     others*; refused while *Totals only* is on. The person is told, with the reason.
+     */
+    patch: operations["changeWorkDayOfPerson"];
+    trace?: never;
+  };
+  "/api/v1/people/{person}/work-days/{date}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The history of another person's work day. Needs *See working hours of others*; refused while
+     *     *Totals only* is on.
+     */
+    get: operations["getWorkDayHistoryOfPerson"];
     put?: never;
     post?: never;
     delete?: never;
@@ -3593,6 +3799,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/work-days/old": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How many work days are older than the keep period, for each person and in total, counted now. */
+    get: operations["countOldWorkDays"];
+    put?: never;
+    post?: never;
+    /**
+     * *Delete them*: deletes the work days older than the keep period, of everybody or of one person,
+     *     with their breaks and the history of their changes. Every deletion is in the security log.
+     */
+    delete: operations["deleteOldWorkDays"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/workflows": {
     parameters: {
       query?: never;
@@ -3911,6 +4138,33 @@ export interface components {
       /** @description The codes. They are not stored in this form and cannot be shown again. */
       codes: string[];
     };
+    /** @description One day of one's own week compared with the time booked on issues, in whole minutes. */
+    BookedDayBody: {
+      /**
+       * Format: int32
+       * @description The time booked on issues.
+       */
+      booked: number;
+      /** @description The date. */
+      date: string;
+      /**
+       * Format: int64
+       * @description *Working hours not booked on issues*; below zero when more was booked than worked.
+       */
+      not_booked: number;
+      /**
+       * Format: int32
+       * @description The working hours.
+       */
+      worked: number;
+    };
+    /** @description One's own week compared with the time booked on issues. */
+    BookedWeekBody: {
+      /** @description The seven days, in order. */
+      days: components["schemas"]["BookedDayBody"][];
+      /** @description Never true: a week has seven days. */
+      truncated: boolean;
+    };
     /** @description The smallest and the largest value of a whole-number setting. */
     BoundsBody: {
       /**
@@ -4215,6 +4469,23 @@ export interface components {
           /** @enum {string} */
           shown: "project";
         };
+    /** @description New times of a work day. */
+    ChangeWorkDayBody: {
+      /** @description The breaks. */
+      breaks: components["schemas"]["SpanBody"][];
+      /** @description The periods of work. */
+      periods: components["schemas"]["SpanBody"][];
+      /**
+       * @description Why, in the person's own words: needed for another person's day and for one's own past
+       *     day, at most 500 characters.
+       */
+      reason?: string | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at; 0 for a date that has no work day yet.
+       */
+      version: number;
+    };
     /** @description One issue that a rename or a combine changes. */
     ChangedIssueBody: {
       /** @description The names it will have. */
@@ -4428,6 +4699,11 @@ export interface components {
        *     stands on; only for `search.invalid`.
        */
       mistakes?: components["schemas"]["MistakeBody"][] | null;
+      /**
+       * @description The date of the person's own work day that was never ended (`2026-10-05`); only for
+       *     `working-hours.day-left-open`, so the screen can ask when it ended.
+       */
+      open_day?: string | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
     /** @description The name of a copy. */
@@ -4505,6 +4781,14 @@ export interface components {
      * @enum {string}
      */
     DatabaseKind: "built-in" | "sqlite" | "postgres";
+    /** @description How many work days were deleted. */
+    DeletedBody: {
+      /**
+       * Format: int64
+       * @description The count.
+       */
+      deleted: number;
+    };
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -4727,6 +5011,14 @@ export interface components {
       | "edit.taken-over"
       | "edit.in-progress"
       | "search.invalid"
+      | "working-hours.day-left-open"
+      | "working-hours.day-running"
+      | "working-hours.day-not-running"
+      | "working-hours.break-running"
+      | "working-hours.no-break-running"
+      | "working-hours.not-a-work-day"
+      | "working-hours.reason-needed"
+      | "working-hours.week-totals-only"
       | "search.too-slow"
       | "rate-limit.exceeded"
       | "server.unavailable"
@@ -6333,12 +6625,16 @@ export interface components {
       part?: string | null;
       /** @description Whether the person has read it. */
       read: boolean;
+      /** @description The work day: why it was changed, in the words of whoever changed it. */
+      reason?: string | null;
       /** @description The end of a run: the ID of the run. */
       run?: string | null;
       /** @description The end of a run: whether it ended well. */
       run_done?: boolean | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
+      /** @description One of the person's work days that somebody else changed: its date (`2026-10-05`). */
+      work_day?: string | null;
     };
     /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long.
@@ -6351,7 +6647,8 @@ export interface components {
       | "followed-fields"
       | "run-ended"
       | "edit-notice"
-      | "long-timer";
+      | "long-timer"
+      | "work-day-changed";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}
@@ -6384,6 +6681,40 @@ export interface components {
        * @description The version the subject has now.
        */
       version: number;
+    };
+    /** @description The work days of one person that are older than the keep period. */
+    OldOfPersonBody: {
+      /**
+       * Format: int64
+       * @description How many of their days.
+       */
+      count: number;
+      /**
+       * @description The ID of the person, for *Delete them* of one person; left out when the reader does not
+       *     see the person by name.
+       */
+      id?: string | null;
+      /** @description The person, as the reader sees people in the settings of the organization. */
+      person: components["schemas"]["PersonRef"];
+    };
+    /** @description The work days older than the keep period. */
+    OldWorkDaysBody: {
+      /** @description The days with a date before this one are older than it. */
+      before: string;
+      /**
+       * Format: int64
+       * @description The keep period in force, in whole years.
+       */
+      keep_years: number;
+      /** @description How many of each person, in the order of their names, at most 500. */
+      people: components["schemas"]["OldOfPersonBody"][];
+      /**
+       * Format: int64
+       * @description How many there are.
+       */
+      total: number;
+      /** @description Whether more people have old days than the list names. */
+      truncated: boolean;
     };
     /** @description One condition of *Only if …*, in the same words as *Must be filled in*. */
     OnlyIfRuleBody: {
@@ -6850,7 +7181,9 @@ export interface components {
       | "manage-roles"
       | "change-organization-settings"
       | "see-status"
-      | "book-time";
+      | "book-time"
+      | "see-working-hours-of-others"
+      | "change-working-hours-of-others";
     /** @description One permission with *yes* or *no* and the reasons. */
     PermissionAnswerBody: {
       /** @description Whether the person has it here. */
@@ -7379,7 +7712,8 @@ export interface components {
       | "tag"
       | "time-entry"
       | "timer"
-      | "starter-fields";
+      | "starter-fields"
+      | "work-day";
     /** @description A record, by its kind and ID. */
     RecordRefBody: {
       /** @description The ID of the record. */
@@ -8168,6 +8502,13 @@ export interface components {
       kind: components["schemas"]["SettingSourceKind"];
       project?: components["schemas"]["ProjectRef"] | null;
     };
+    /** @description A stretch of a work day: a period of work or a break, its moments in UTC. */
+    SpanBody: {
+      /** @description When it ended; `null` while it runs. */
+      end: string | null;
+      /** @description When it started (RFC 3339). */
+      start: string;
+    };
     /** @description What a person has in one project. */
     StandingBody: {
       /** @description A *No access* holds the person back there. */
@@ -8176,6 +8517,14 @@ export interface components {
       roles: string[];
       /** @description The person sees the project. */
       sees: boolean;
+    };
+    /** @description What *Start work day* may say. */
+    StartBody: {
+      /**
+       * @description The time zone of the device (`Europe/Berlin`); it counts only when the person and the
+       *     organization chose none under *Region*.
+       */
+      device_zone?: string | null;
     };
     /** @description A new start of the running timer. */
     StartTimeBody: {
@@ -8348,6 +8697,14 @@ export interface components {
       /** @description The lock token to save with and to send with every heartbeat. */
       lock_token: string;
     };
+    /** @description The version of the day the person looked at, for a tap. */
+    TapBody: {
+      /**
+       * Format: int64
+       * @description The version of the day that runs: a stored day has at least the first version.
+       */
+      version: number;
+    };
     /** @description One of the person's own time entries. */
     TimeEntryItem: {
       /**
@@ -8411,11 +8768,31 @@ export interface components {
       /** @description The timer as it is now. */
       timer: components["schemas"]["TimerItem"];
     };
+    /** @description The periods and breaks of a day, as a change of it and as its history hold them. */
+    TimesBody: {
+      /** @description The breaks. */
+      breaks: components["schemas"]["SpanBody"][];
+      /** @description The periods of work. */
+      periods: components["schemas"]["SpanBody"][];
+    };
     /**
      * @description What a group of permissions is about.
      * @enum {string}
      */
     Topic: "projects" | "issues" | "work-settings" | "people" | "settings" | "time";
+    /** @description What a day or a week adds up to, in whole minutes. */
+    TotalsBody: {
+      /**
+       * Format: int32
+       * @description The breaks, the time between periods included.
+       */
+      breaks: number;
+      /**
+       * Format: int32
+       * @description The time worked.
+       */
+      worked: number;
+    };
     /** @description What *Try it* found. */
     TriedBody: {
       /** @description The status changes from there, each with the answer for the person. */
@@ -8516,6 +8893,23 @@ export interface components {
      * @enum {string}
      */
     ViewKind: "list";
+    /** @description A broken working-time rule of a day: which rule, its numbers in minutes, and its sentence. */
+    WarningBody: {
+      /** @description The rule and its numbers, in minutes (`{"rule": "long-day", "worked": 635, "most": 600}`). */
+      warning: Record<string, unknown>;
+      /** @description The sentence, as message keys with their words, which the screen writes from its catalog. */
+      words: Record<string, unknown>;
+    };
+    /** @description The time worked in one week. */
+    WeekBody: {
+      /** @description The first date of the week. */
+      first: string;
+      /**
+       * Format: int32
+       * @description The time worked, in whole minutes.
+       */
+      worked: number;
+    };
     /** @description Where a project would go. */
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
@@ -8558,6 +8952,68 @@ export interface components {
       code: string;
       /** @description The key of the message that names it. */
       message_key: string;
+    };
+    /** @description A work day. */
+    WorkDayBody: {
+      /** @description The breaks, in order. */
+      breaks: components["schemas"]["SpanBody"][];
+      /** @description Its date: the person's day of its first start. */
+      date: string;
+      /**
+       * @description The periods of work, in order. The screens show the first start, the last end and the
+       *     breaks; the time between periods counts as a break.
+       */
+      periods: components["schemas"]["SpanBody"][];
+      /** @description Whether a period or a break runs. */
+      runs: boolean;
+      /** @description What it adds up to; what runs counts until now. */
+      totals: components["schemas"]["TotalsBody"];
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+      /** @description The warnings of the working-time rules; never a reason to refuse anything. */
+      warnings: components["schemas"]["WarningBody"][];
+      /** @description The time zone it started in. */
+      zone: string;
+    };
+    /** @description One change of a work day. */
+    WorkDayChangeBody: {
+      after: components["schemas"]["TimesBody"] | null;
+      /**
+       * Format: date-time
+       * @description When.
+       */
+      at: string;
+      before: components["schemas"]["TimesBody"] | null;
+      /** @description Who changed it. */
+      by: components["schemas"]["PersonRef"];
+      /** @description Why, when a reason was given. */
+      reason: string | null;
+    };
+    /** @description The history of a work day, oldest change first. */
+    WorkDayHistoryBody: {
+      /** @description The changes, at most 200 of the newest. */
+      changes: components["schemas"]["WorkDayChangeBody"][];
+      /** @description Whether older changes were left out. */
+      truncated: boolean;
+    };
+    /** @description The work days of a stretch of dates. */
+    WorkDaysBody: {
+      /** @description The days with a record, by date; empty while *Totals only* hides them. */
+      days: components["schemas"]["WorkDayBody"][];
+      /** @description Whether the reader may change the days. */
+      may_change: boolean;
+      /** @description Whose days they are. */
+      person: components["schemas"]["PersonRef"];
+      totals: components["schemas"]["TotalsBody"] | null;
+      /** @description Whether *Totals only* hides the days. */
+      totals_only: boolean;
+      /** @description Never true: a stretch longer than 62 days is refused, so nothing is cut off. */
+      truncated: boolean;
+      /** @description The time worked in each week of the stretch. */
+      weeks: components["schemas"]["WeekBody"][];
     };
     /** @description What the editor shows for a place. */
     WorkflowEditorBody: {
@@ -13749,6 +14205,257 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  listMyWorkDays: {
+    parameters: {
+      query: {
+        /** @description The first date (`2026-10-05`). */
+        from: string;
+        /** @description The last date, at most 62 days after the first. */
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work days. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDaysBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getMyBookedWeek: {
+    parameters: {
+      query: {
+        /** @description A date of the week (`2026-10-05`). */
+        date: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The week. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BookedWeekBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  endBreak: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TapBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  startBreak: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TapBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  endWorkDay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TapBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  startWorkDay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeMyWorkDay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The date of the day (`2026-10-05`). */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeWorkDayBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getMyWorkDayHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The date of the day (`2026-10-05`). */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The history. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayHistoryBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listNotifications: {
     parameters: {
       query?: {
@@ -14032,6 +14739,114 @@ export interface operations {
         };
       };
       304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listWorkDaysOfPerson: {
+    parameters: {
+      query: {
+        /** @description The first date (`2026-10-05`). */
+        from: string;
+        /** @description The last date, at most 62 days after the first. */
+        to: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work days. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDaysBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeWorkDayOfPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+        /** @description The date of the day (`2026-10-05`). */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeWorkDayBody"];
+      };
+    };
+    responses: {
+      /** @description The day as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getWorkDayHistoryOfPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+        /** @description The date of the day (`2026-10-05`). */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The history. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkDayHistoryBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
@@ -16272,6 +17087,62 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  countOldWorkDays: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The count. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OldWorkDaysBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteOldWorkDays: {
+    parameters: {
+      query?: {
+        /** @description One person, by ID; everybody's when left out. */
+        person?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How many were deleted. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletedBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

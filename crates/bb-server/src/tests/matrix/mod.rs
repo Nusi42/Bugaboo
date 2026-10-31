@@ -25,5 +25,6 @@ mod examples_searches;
 mod examples_tags;
 mod examples_time;
 mod examples_workflows;
+mod examples_working_hours;
 mod record;
 mod routes;

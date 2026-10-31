@@ -52,6 +52,7 @@ mod testing;
 pub mod text_index;
 mod time;
 mod workflows;
+mod working_hours;
 
 pub use anchor::LogSeal;
 pub use auth::AuthStorage;

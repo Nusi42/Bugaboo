@@ -48,6 +48,7 @@ use crate::tags::TagStore;
 use crate::text_index::TextIndexStore;
 use crate::time::TimeStore;
 use crate::workflows::WorkflowStore;
+use crate::working_hours::WorkingHoursStore;
 
 /// A person with the password hash they sign in with.
 #[derive(Clone)]
@@ -353,6 +354,7 @@ pub trait AuthStore:
     + SavedSearchStore
     + SearchStore
     + TimeStore
+    + WorkingHoursStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

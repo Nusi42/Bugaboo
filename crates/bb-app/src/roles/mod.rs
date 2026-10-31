@@ -26,7 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
-use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_no_escalation};
+use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_may_give, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place, StartingRole};
 use serde_json::json;
 
@@ -535,7 +535,7 @@ pub async fn roles<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     if input.giveable {
-        records.retain(|record| ensure_no_escalation(&access, &record.permissions).is_ok());
+        records.retain(|record| ensure_may_give(&access, &record.permissions).is_ok());
     }
     let page = bb_core::paging::window(records.len(), input.cursor.as_deref(), input.limit)
         .ok_or(ErrorCode::InvalidRequest)?;

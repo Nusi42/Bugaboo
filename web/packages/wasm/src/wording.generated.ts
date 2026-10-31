@@ -82,6 +82,14 @@ export interface Renewal {
   readonly project?: string | null;
 }
 
+/** A work day of the reader that somebody else changed (ADR-0035, decision 7). */
+export interface WorkDayNotice {
+  /** The date of the day, already written the way the reader writes dates. */
+  readonly date: string;
+  /** Why, in the words of whoever changed it. */
+  readonly reason?: string | null;
+}
+
 /** What a notification says, with what the sentences need. */
 export interface Notice {
   /** What the notification is about. */
@@ -100,6 +108,8 @@ export interface Notice {
   readonly renewal?: Renewal | null;
   /** A file that was added, deleted or brought back; the notice names who did it. */
   readonly file?: FileChange | null;
+  /** A work day of the reader that somebody else changed. */
+  readonly work_day?: WorkDayNotice | null;
 }
 
 /** A length of time a person typed, as the browser hands it to the reader: the text, the person's *Number format* that says the decimal mark (the browser names the format of the device by the fixed one that writes the same mark), and the short words of the units from the browser's catalog, so the module carries no catalog of its own. */

@@ -819,9 +819,8 @@ pub const ROUTES: &[Route] = &[
 ];
 
 /// The routes that save long text, by operation ID: each takes the token of an edit lock besides the
-/// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
-/// The routes that save the description of an issue, the long text of an own field and the text of
-/// a comment.
+/// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`:
+/// the description of an issue, the long text of an own field and the text of a comment.
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
@@ -832,5 +831,6 @@ mod search_routes;
 #[cfg(test)]
 mod tests;
 mod time;
+mod working_hours;
 
 pub use lookup::{csrf_exempt, declared, rows};

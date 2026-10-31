@@ -100,6 +100,7 @@ export const notificationKindWords = [
   "run-ended",
   "edit-notice",
   "long-timer",
+  "work-day-changed",
 ] as const;
 
 /** Every word of `NotificationTab`, in the order the server lists them. */

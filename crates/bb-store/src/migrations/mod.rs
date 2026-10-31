@@ -60,6 +60,7 @@ mod m0028_person_setting_counter;
 mod m0029_notification_by_time;
 mod m0030_saved_search_spacing;
 mod m0031_time_entries;
+mod m0032_working_hours;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -310,6 +311,11 @@ const ALL: &[Definition] = &[
         version: 31,
         name: "time_entries",
         steps: || Ok(m0031_time_entries::steps()),
+    },
+    Definition {
+        version: 32,
+        name: "working_hours",
+        steps: m0032_working_hours::steps,
     },
 ];
 

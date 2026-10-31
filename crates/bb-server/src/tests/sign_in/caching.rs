@@ -199,6 +199,24 @@ fn with_query(template: &str, filled: &str, project: &str, project_id: &str) -> 
     }
 }
 
+/// A work day of the person on the date the routes that name one are asked about.
+async fn a_work_day(ada: &mut Browser) -> Result<(), Failure> {
+    let made = ada
+        .send(
+            "PATCH",
+            "/api/v1/me/work-days/2027-01-14",
+            Some(json!({
+                "version": 0,
+                "periods": [{"start": "2027-01-14T08:00:00Z", "end": "2027-01-14T16:00:00Z"}],
+                "breaks": [],
+                "reason": "Typed in afterwards",
+            })),
+        )
+        .await?;
+    assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+    Ok(())
+}
+
 /// A saved search of the person, for the routes that name one: its ID.
 async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
     id_of(
@@ -248,6 +266,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let search_id = a_saved_search(&mut ada).await?;
+        // A work day of the person, for the routes that name a date.
+        a_work_day(&mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -272,6 +292,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{search}", &search_id)
+                .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, project, &project_id);
             let filled = if template.ends_with("/status-changes") {

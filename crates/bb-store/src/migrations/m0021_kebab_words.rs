@@ -75,7 +75,10 @@ mod tests {
         }
         let new_notifications: Vec<&str> = NOTIFICATION_KINDS.iter().map(|pair| pair.1).collect();
         // A kind made after this migration was written with a hyphen from the start.
-        let made_later = [NotificationKind::LongTimer.code()];
+        let made_later = [
+            NotificationKind::LongTimer.code(),
+            NotificationKind::WorkDayChanged.code(),
+        ];
         let renamed: Vec<&str> = hyphenated::<NotificationKind>()
             .into_iter()
             .filter(|code| !made_later.contains(code))

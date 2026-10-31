@@ -804,6 +804,65 @@ export const messages = {
   "notifications.issue-ids-failed-hidden":
     "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
   "notifications.count-capped": "{max}+",
+  "permission.see-working-hours-of-others": "See other people's working hours",
+  "permission.change-working-hours-of-others":
+    "Change other people's work days, always with a reason",
+  "starting-role.hr": "HR",
+  "setting.working-hours.preset.name": "Working-time rules",
+  "setting.working-hours.preset.help":
+    "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",
+  "setting.working-hours.day-minutes-max.name": "Most work in a day (minutes)",
+  "setting.working-hours.day-minutes-max.help":
+    "A day with more work gets a warning. Germany: 600 minutes, which is 10 hours.",
+  "setting.working-hours.first-break-after-minutes.name": "First break after (minutes of work)",
+  "setting.working-hours.first-break-after-minutes.help":
+    "A day with more work than this needs the first break. Germany: 360 minutes, which is 6 hours.",
+  "setting.working-hours.first-break-minutes.name": "First break (minutes)",
+  "setting.working-hours.first-break-minutes.help":
+    "How long the breaks of such a day are together at least. Germany: 30 minutes.",
+  "setting.working-hours.second-break-after-minutes.name": "Longer break after (minutes of work)",
+  "setting.working-hours.second-break-after-minutes.help":
+    "A day with more work than this needs the longer break. Germany: 540 minutes, which is 9 hours.",
+  "setting.working-hours.second-break-minutes.name": "Longer break (minutes)",
+  "setting.working-hours.second-break-minutes.help":
+    "How long the breaks of such a day are together at least. Germany: 45 minutes.",
+  "setting.working-hours.shortest-break-minutes.name": "Shortest break that counts (minutes)",
+  "setting.working-hours.shortest-break-minutes.help":
+    "A shorter break does not count for the rules. Germany: 15 minutes.",
+  "setting.working-hours.in-a-row-minutes-max.name": "Most work in a row (minutes)",
+  "setting.working-hours.in-a-row-minutes-max.help":
+    "Work in a row longer than this, without a break that counts, gets a warning. Germany: 360 minutes, which is 6 hours.",
+  "setting.working-hours.rest-minutes-min.name": "Least rest between two work days (minutes)",
+  "setting.working-hours.rest-minutes-min.help":
+    "Less rest between the end of one work day and the start of the next gets a warning. Germany: 660 minutes, which is 11 hours.",
+  "setting.working-hours.keep-years.name": "Keep work days for (years)",
+  "setting.working-hours.keep-years.help":
+    "Work days are kept at least this many years from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+  "setting.working-hours.totals-only.name": "Totals only",
+  "setting.working-hours.totals-only.help":
+    "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",
+  "error.working-hours.day-left-open":
+    "Your last work day was never ended. Say when it ended, then start the new one.",
+  "error.working-hours.day-running": "Your work day is running already.",
+  "error.working-hours.day-not-running": "Your work day is not running. Start it first.",
+  "error.working-hours.break-running": "Your break is running already.",
+  "error.working-hours.no-break-running": "No break is running.",
+  "error.working-hours.not-a-work-day":
+    "These times are not one work day. Every break lies inside the work, nothing overlaps another day, and a day lasts 24 hours at most.",
+  "error.working-hours.reason-needed": "Say in a few words why this work day changes.",
+  "error.working-hours.week-totals-only":
+    "Only the week totals of other people are shown, so their work days cannot be changed. An administrator can turn Totals only off.",
+  "notification.kind.work-day-changed": "Somebody else changes one of your work days",
+  "setting.notifications.work-day-changed-in-app.name":
+    "Somebody changes your work day: in the app",
+  "setting.notifications.work-day-changed-in-app.help":
+    "Tells you under Notifications when somebody else changes one of your work days, with the reason they gave.",
+  "setting.notifications.work-day-changed-by-mail.name":
+    "Somebody changes your work day: by e-mail",
+  "setting.notifications.work-day-changed-by-mail.help":
+    "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
+  "notifications.work-day-changed": "{who} changed your work day of {date}",
+  "notifications.work-day-reason": "Why: {reason}",
 } as const;
 
 register(messages);

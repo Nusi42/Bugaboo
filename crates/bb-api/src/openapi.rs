@@ -71,7 +71,8 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own."),
         (name = "editing", description = "Edit locks, drafts and the check of what is on the screen: nobody loses text, and no change overwrites another unseen."),
         (name = "access", description = "What roles see (field permissions, who sees people) and what a person can do and why (check access)."),
-        (name = "saved-searches", description = "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows.")
+        (name = "saved-searches", description = "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows."),
+        (name = "working-hours", description = "Working hours: when a person worked, as the law asks; one's own, other people's for those who may see them, and the days older than the keep period.")
     )
 )]
 struct ApiDoc;

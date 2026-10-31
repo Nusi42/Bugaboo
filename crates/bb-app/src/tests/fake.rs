@@ -144,6 +144,8 @@ pub(crate) struct State {
     pub(crate) timers: Vec<bb_core::time::entry::Timer>,
     pub(crate) time_entries: Vec<bb_core::time::entry::TimeEntry>,
     pub(crate) starter_fields: Vec<bb_core::time::entry::StarterFieldMark>,
+    pub(crate) starting_roles_due: Vec<bb_core::technical::TechnicalName>,
+    pub(crate) work_days: Vec<bb_core::working_time::record::StoredDay>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

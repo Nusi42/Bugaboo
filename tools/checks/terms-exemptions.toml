@@ -124,3 +124,10 @@ reason = "The button of the Markdown editor that writes a web link into the text
 term = "link"
 at = ["userDocs/writing/markdown.md"]
 reason = "The Link button of the Markdown editor and the web addresses it writes into a text. Not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "make"
+at = [
+  "crates/bb-server/src/tests/sign_in/working_hours_http.rs#fn time_08_start_break_end_make_one_work_day_with_its_totals",
+]
+reason = "The name of an acceptance test of the work package: the taps together form one work day, the sense of \"make up\", not the creating of a record the glossary means."

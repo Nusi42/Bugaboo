@@ -60,6 +60,10 @@ pub(crate) struct ConflictProblem {
     /// stands on; only for `search.invalid`.
     #[serde(skip_serializing_if = "Option::is_none")]
     mistakes: Option<Vec<MistakeBody>>,
+    /// The date of the person's own work day that was never ended (`2026-10-05`); only for
+    /// `working-hours.day-left-open`, so the screen can ask when it ended.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    open_day: Option<String>,
 }
 
 /// One mistake in the text of a search (ADR-0005): what the browser needs to write the message in
@@ -91,17 +95,14 @@ impl From<&bb_app::search::Mistake> for MistakeBody {
 }
 
 impl ConflictProblem {
-    pub(crate) const fn new(
-        problem: Problem,
-        conflict: Option<ConflictBody>,
-        taken_over_by: Option<PersonRef>,
-        mistakes: Option<Vec<MistakeBody>>,
-    ) -> Self {
+    /// The problem with what the answer adds to it.
+    pub(crate) fn new(problem: Problem, extras: &crate::errors::Extras) -> Self {
         Self {
             problem,
-            conflict,
-            taken_over_by,
-            mistakes,
+            conflict: extras.conflict.as_deref().cloned(),
+            taken_over_by: extras.taken_over_by.as_deref().cloned(),
+            mistakes: extras.mistakes.as_deref().cloned(),
+            open_day: extras.open_day.clone(),
         }
     }
 }

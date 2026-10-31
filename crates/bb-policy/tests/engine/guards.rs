@@ -7,7 +7,7 @@ use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AssignmentId, GroupId, RoleId, SequentialIds, UserId};
 use bb_policy::guards::{
     Holder, OrganizationState, Refusal, RowForNobody, anybody_manages_roles,
-    ensure_a_manager_remains, ensure_no_escalation, role_managers,
+    ensure_a_manager_remains, ensure_may_give, ensure_no_escalation, role_managers,
 };
 use bb_policy::{Permission, Policy, RoleData};
 use jiff::Timestamp;
@@ -278,4 +278,35 @@ fn sec_08_the_organization_state_is_made_from_rows_and_a_row_for_nobody_is_refus
         policy.assignments.push(broken);
         assert_eq!(OrganizationState::of(&policy), Err(RowForNobody));
     }
+}
+
+#[test]
+fn sec_02_a_person_who_decides_every_role_gives_hr_without_holding_its_permissions() {
+    let hr: BTreeSet<Permission> = [
+        Permission::SeeWorkingHoursOfOthers,
+        Permission::ChangeWorkingHoursOfOthers,
+    ]
+    .into_iter()
+    .collect();
+    // The Administrator role holds neither, but both *Manage roles* and *Decide who has which
+    // role*: it gives *HR* for the whole organization.
+    let administrator: Vec<Permission> = Permission::ALL
+        .iter()
+        .copied()
+        .filter(|permission| !hr.contains(permission))
+        .collect();
+    let admin = held_at_organization(&administrator);
+    assert_eq!(ensure_may_give(&admin, &hr), Ok(()));
+    // Adding the permissions to a role keeps the rule: only who holds them adds them.
+    assert_eq!(ensure_no_escalation(&admin, &hr), Err(Refusal::TooMuch));
+    // Without both of the pair there is no exception.
+    let manages_only = held_at_organization(&[Permission::ManageRoles]);
+    assert_eq!(ensure_may_give(&manages_only, &hr), Err(Refusal::TooMuch));
+    let decides_only = held_at_organization(&[Permission::DecideRoles]);
+    assert_eq!(ensure_may_give(&decides_only, &hr), Err(Refusal::TooMuch));
+    // The exception is for these two permissions only.
+    let more: BTreeSet<Permission> = hr.iter().copied().chain([Permission::SeeStatus]).collect();
+    let pair = held_at_organization(&[Permission::ManageRoles, Permission::DecideRoles]);
+    assert_eq!(ensure_may_give(&pair, &hr), Ok(()));
+    assert_eq!(ensure_may_give(&pair, &more), Err(Refusal::TooMuch));
 }

@@ -430,6 +430,16 @@ pub struct Renewal {
     pub project: Option<String>,
 }
 
+/// A work day of the reader that somebody else changed (ADR-0035, decision 7).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkDayNotice {
+    /// The date of the day, already written the way the reader writes dates.
+    pub date: String,
+    /// Why, in the words of whoever changed it.
+    #[serde(default)]
+    pub reason: Option<String>,
+}
+
 /// What a notification says, with what the sentences need.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notice {
@@ -455,6 +465,9 @@ pub struct Notice {
     /// A file that was added, deleted or brought back; the notice names who did it.
     #[serde(default)]
     pub file: Option<FileChange>,
+    /// A work day of the reader that somebody else changed.
+    #[serde(default)]
+    pub work_day: Option<WorkDayNotice>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -489,6 +502,24 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
             (None, Some(false)) => Said::key(message::NOTIFICATIONS_RUN_FAILED),
             (None, _) => Said::key(message::NOTIFICATIONS_RUN_DONE),
         }),
+        NotificationKind::WorkDayChanged => {
+            let date = notice
+                .work_day
+                .as_ref()
+                .map_or_else(String::new, |day| day.date.clone());
+            let mut said = vec![said!(
+                message::notifications_work_day_changed,
+                Said::text(date),
+                who()
+            )];
+            if let Some(reason) = notice.work_day.as_ref().and_then(|day| day.reason.as_ref()) {
+                said.push(said!(
+                    message::notifications_work_day_reason,
+                    Said::text(reason.as_str())
+                ));
+            }
+            said
+        }
         NotificationKind::FollowedActivity | NotificationKind::FollowedFields => {
             if !notice.changes.is_empty() {
                 notice.changes.iter().map(change_sentence).collect()

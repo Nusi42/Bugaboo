@@ -76,6 +76,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// Whether the starting roles were made (they are made once; two servers that start
         /// together must not both make them).
         fn starting_roles_made() -> bool = starting_roles_made_in;
+        /// The keys of the starting roles that came after the others were made and are still
+        /// to make on this server (the role *HR*, ADR-0025, amendment M6).
+        fn starting_roles_due() -> Vec<bb_core::technical::TechnicalName> = starting_roles_due_in;
         /// One role with its permissions.
         fn role(id: RoleId) -> Option<RoleRecord> = role_in;
         /// The rows on a project (`Some`) or for the whole organization (`None`), in the order
@@ -132,6 +135,8 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn lock_policy() -> ();
         /// Marks the starting roles as made.
         fn mark_starting_roles_made(at: Timestamp) -> ();
+        /// Notes that a starting role that was due is made.
+        fn clear_starting_role_due(key: &bb_core::technical::TechnicalName) -> ();
         /// Forgets a person of the list of M1 administrators.
         fn delete_legacy_administrator(person: UserId) -> ();
         /// Adds a role with its permissions and its levels.

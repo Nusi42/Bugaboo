@@ -421,3 +421,61 @@ fn priv_12_a_role_label_is_shown_exactly_when_the_viewer_sees_roles_and_it_is_no
         assert!(!viewer.shows_role_label(PeopleKind::Authors, PeopleContext::Ordinary, me));
     }
 }
+
+#[test]
+fn time_10_a_removed_persons_work_days_keep_the_name_for_those_who_may_see_working_hours() {
+    let ana = UserId::from_random([3; 16]);
+    let former = FormerUser {
+        label: "K7Q2".to_owned(),
+    };
+    let removed = Target {
+        id: ana,
+        name: "Ana Archer",
+        role: None,
+        removed: Some(&former),
+    };
+    let named = PersonRef::Name {
+        id: ana,
+        name: "Ana Archer".to_owned(),
+    };
+    let mut world = World::new();
+    let hr = world.role("HR", &[Permission::SeeWorkingHoursOfOthers]);
+    world.give_everywhere(hr);
+    let holder = world.at_organization();
+    let kind = PeopleKind::TimeEntries;
+    // On *Working hours of others* the removed person keeps the name, for a holder of *See
+    // working hours of others* only.
+    assert_eq!(
+        resolve(&holder, kind, PeopleContext::WorkingHours, removed),
+        named
+    );
+    // Everywhere else the removed person is a *Former user* or *Someone*, as ever.
+    assert_ne!(
+        resolve(&holder, kind, PeopleContext::Ordinary, removed),
+        named
+    );
+    let mut others = World::new();
+    let admin = others.role(
+        "Administrator",
+        &[Permission::ManagePeople, Permission::ManageRoles],
+    );
+    others.give_everywhere(admin);
+    let administrator = others.at_organization();
+    assert_eq!(
+        resolve(&administrator, kind, PeopleContext::WorkingHours, removed),
+        PersonRef::Someone
+    );
+    // A person who is not removed is named there for the holder and for nobody else.
+    let present = Target {
+        removed: None,
+        ..removed
+    };
+    assert_eq!(
+        resolve(&holder, kind, PeopleContext::WorkingHours, present),
+        named
+    );
+    assert_eq!(
+        resolve(&administrator, kind, PeopleContext::WorkingHours, present),
+        PersonRef::Someone
+    );
+}

@@ -102,6 +102,8 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `change-organization-settings` | Settings | organization | Manage | Change organization settings |
 | `see-status` | Settings | organization | See | See how the server is doing |
 | `book-time` | Time | project | Change | Book their own time on the issues they see, and change and delete their own time entries |
+| `see-working-hours-of-others` | Time | organization | See | See other people's working hours |
+| `change-working-hours-of-others` | Time | organization | Manage | Change other people's work days, always with a reason |
 
 <!-- END GENERATED permission-catalogue -->
 
@@ -144,37 +146,39 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 
 <!-- BEGIN GENERATED starting-permissions by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
-| Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|
-| See the project and what is in it | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Create projects at the top level | ✓ | – | – | – | – | – |
-| Create sub-projects inside the project | ✓ | ✓ | – | – | – | – |
-| Move sub-projects into or out of the project | ✓ | ✓ | – | – | – | – |
-| Change the project's name, short name and settings | ✓ | ✓ | – | – | – | – |
-| See every issue of the project, not only the ones they reported | ✓ | ✓ | ✓ | ✓ | ✓ | – |
-| Create issues | ✓ | ✓ | ✓ | ✓ | – | ✓ |
-| Change anybody's issues, in the fields they may change | ✓ | ✓ | ✓ | – | – | – |
-| Change the issues they reported, in the fields they may change | ✓ | ✓ | ✓ | ✓ | – | ✓ |
-| Write comments on the issues they see | ✓ | ✓ | ✓ | ✓ | – | ✓ |
-| Delete issues into the trash | ✓ | ✓ | ✓ | – | – | – |
-| Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – |
-| Share saved searches with the project, or with a group they are in | ✓ | ✓ | ✓ | ✓ | ✓ | – |
-| Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
-| Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – |
-| Manage workflows: change statuses and status changes, and publish them | ✓ | ✓ | – | – | – | – |
-| Create, change and retire fields | ✓ | – | – | – | – | – |
-| Manage labels and tags, also rename and combine them | ✓ | ✓ | – | – | – | – |
-| Decide who has which role, including No access | ✓ | ✓ | – | – | – | – |
-| Decide which fields and which people information each role sees | ✓ | ✓ | – | – | – | – |
-| Check what other people can do, and why | ✓ | ✓ | – | – | – | – |
-| See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started | ✓ | – | – | – | – | – |
-| Invite people and take invitations back | ✓ | – | – | – | – | – |
-| Create, rename and delete groups and change who is in them | ✓ | – | – | – | – | – |
-| Create, change and delete roles | ✓ | – | – | – | – | – |
-| Change organization settings | ✓ | – | – | – | – | – |
-| See how the server is doing | ✓ | – | – | – | – | – |
-| Book their own time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – |
-| Two-step sign-in for everyone with this role | off | off | off | off | off | off |
+| Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest | HR |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| See the project and what is in it | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – |
+| Create projects at the top level | ✓ | – | – | – | – | – | – |
+| Create sub-projects inside the project | ✓ | ✓ | – | – | – | – | – |
+| Move sub-projects into or out of the project | ✓ | ✓ | – | – | – | – | – |
+| Change the project's name, short name and settings | ✓ | ✓ | – | – | – | – | – |
+| See every issue of the project, not only the ones they reported | ✓ | ✓ | ✓ | ✓ | ✓ | – | – |
+| Create issues | ✓ | ✓ | ✓ | ✓ | – | ✓ | – |
+| Change anybody's issues, in the fields they may change | ✓ | ✓ | ✓ | – | – | – | – |
+| Change the issues they reported, in the fields they may change | ✓ | ✓ | ✓ | ✓ | – | ✓ | – |
+| Write comments on the issues they see | ✓ | ✓ | ✓ | ✓ | – | ✓ | – |
+| Delete issues into the trash | ✓ | ✓ | ✓ | – | – | – | – |
+| Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – | – |
+| Share saved searches with the project, or with a group they are in | ✓ | ✓ | ✓ | ✓ | ✓ | – | – |
+| Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – | – |
+| Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – | – |
+| Manage workflows: change statuses and status changes, and publish them | ✓ | ✓ | – | – | – | – | – |
+| Create, change and retire fields | ✓ | – | – | – | – | – | – |
+| Manage labels and tags, also rename and combine them | ✓ | ✓ | – | – | – | – | – |
+| Decide who has which role, including No access | ✓ | ✓ | – | – | – | – | – |
+| Decide which fields and which people information each role sees | ✓ | ✓ | – | – | – | – | – |
+| Check what other people can do, and why | ✓ | ✓ | – | – | – | – | – |
+| See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started | ✓ | – | – | – | – | – | – |
+| Invite people and take invitations back | ✓ | – | – | – | – | – | – |
+| Create, rename and delete groups and change who is in them | ✓ | – | – | – | – | – | – |
+| Create, change and delete roles | ✓ | – | – | – | – | – | – |
+| Change organization settings | ✓ | – | – | – | – | – | – |
+| See how the server is doing | ✓ | – | – | – | – | – | – |
+| Book their own time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – | – |
+| See other people's working hours | – | – | – | – | – | – | ✓ |
+| Change other people's work days, always with a reason | – | – | – | – | – | – | ✓ |
+| Two-step sign-in for everyone with this role | off | off | off | off | off | off | off |
 
 <!-- END GENERATED starting-permissions -->
 
@@ -186,22 +190,22 @@ A Project lead holds these where the role is given, normally on their projects a
 
 C = *Can change*, S = *Can see*, H = *Hidden*.
 
-| Field | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|
-| Title | C | C | C | C | S | C |
-| Description | C | C | C | C | S | C |
-| Status | C | C | C | S | S | S |
-| Priority | C | C | C | S | S | S |
-| Assigned to | C | C | C | S | S | S |
-| Reported by | C | C | S | S | S | S |
-| Due date | C | C | C | S | S | H |
-| Labels | C | C | C | S | S | S |
-| Tags | C | C | C | C | S | S |
-| Planned for release | C | C | C | S | S | S |
-| Found in release | C | C | C | C | S | C |
-| Estimated time | C | C | C | S | S | H |
-| Time left | C | C | C | S | S | H |
-| Time spent | C | C | C | S | S | H |
+| Field | Administrator | Project lead | Team member | Contributor | Viewer | Guest | HR |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Title | C | C | C | C | S | C | H |
+| Description | C | C | C | C | S | C | H |
+| Status | C | C | C | S | S | S | H |
+| Priority | C | C | C | S | S | S | H |
+| Assigned to | C | C | C | S | S | S | H |
+| Reported by | C | C | S | S | S | S | H |
+| Due date | C | C | C | S | S | H | H |
+| Labels | C | C | C | S | S | S | H |
+| Tags | C | C | C | C | S | S | H |
+| Planned for release | C | C | C | S | S | S | H |
+| Found in release | C | C | C | C | S | C | H |
+| Estimated time | C | C | C | S | S | H | H |
+| Time left | C | C | C | S | S | H | H |
+| Time spent | C | C | C | S | S | H | H |
 
 <!-- END GENERATED starting-field-levels -->
 
@@ -213,18 +217,18 @@ A Contributor sees *Cost center* at the start, so the M2 exit demo can hide it. 
 
 N = *Names*, R = *Role only*, H = *Hidden*.
 
-| Kind of people information | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|
-| Assigned to | N | N | N | N | N | R |
-| Reported by | N | N | N | N | N | H |
-| Last changed by | N | N | N | N | N | R |
-| Authors of comments and history | N | N | N | N | N | R |
-| "… is editing" | N | N | N | N | N | H |
-| Followers | N | N | N | R | R | H |
-| Time entries | N | N | N | H | H | H |
-| Mentions | N | N | N | N | N | R |
-| Pictures of people | N | N | N | N | N | H |
-| Project members | N | N | N | R | R | H |
+| Kind of people information | Administrator | Project lead | Team member | Contributor | Viewer | Guest | HR |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Assigned to | N | N | N | N | N | R | H |
+| Reported by | N | N | N | N | N | H | H |
+| Last changed by | N | N | N | N | N | R | H |
+| Authors of comments and history | N | N | N | N | N | R | H |
+| "… is editing" | N | N | N | N | N | H | H |
+| Followers | N | N | N | R | R | H | H |
+| Time entries | N | N | N | H | H | H | H |
+| Mentions | N | N | N | N | N | R | H |
+| Pictures of people | N | N | N | N | N | H | H |
+| Project members | N | N | N | R | R | H | H |
 
 <!-- END GENERATED starting-people-levels -->
 

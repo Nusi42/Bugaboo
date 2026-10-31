@@ -18,6 +18,7 @@ mod format;
 mod layers;
 mod region;
 mod themes;
+pub mod working_hours;
 
 pub use catalog::*;
 pub use format::{Choice, DEVICE, Format, is_host};
@@ -40,8 +41,9 @@ words! {
     }
 }
 
-/// The topics whose settings change how people sign in or what keeps the organization safe.
-const SECURITY_TOPICS: [&str; 2] = ["security", "auth"];
+/// The topics whose settings change how people sign in or what keeps the organization safe, and the
+/// settings of working hours, whose every change is recorded (PRIV-09, ADR-0035, decision 8).
+const SECURITY_TOPICS: [&str; 3] = ["security", "auth", "working-hours"];
 
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -592,7 +594,10 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
     let extra: &[&SettingDefinition] = for_tests::ALL;
     #[cfg(not(any(test, feature = "test-settings")))]
     let extra: &[&SettingDefinition] = &[];
-    ALL.iter().copied().chain(extra.iter().copied())
+    ALL.iter()
+        .chain(working_hours::ALL)
+        .copied()
+        .chain(extra.iter().copied())
 }
 
 /// The registry entry for `key`, if there is one.

@@ -85,6 +85,8 @@ words! {
         /// The person's timer has run longer than the longest work day of the working-time rules
         /// (ADR-0035, decision 3); told once for each start.
         LongTimer => "long-timer",
+        /// Somebody else changed one of the person's work days (ADR-0035, decision 7).
+        WorkDayChanged => "work-day-changed",
     }
     messages label = "notification.kind."
 }
@@ -127,6 +129,9 @@ impl NotificationKind {
     /// value is the default of everybody; each person changes their own under *Customize*.
     #[must_use]
     pub const fn setting(self, via: Via) -> &'static Setting<Bool> {
+        use settings::working_hours::{
+            NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL, NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
+        };
         use settings::{
             NOTIFICATIONS_ASSIGNED_BY_MAIL, NOTIFICATIONS_ASSIGNED_IN_APP,
             NOTIFICATIONS_EDIT_NOTICE_BY_MAIL, NOTIFICATIONS_EDIT_NOTICE_IN_APP,
@@ -151,6 +156,8 @@ impl NotificationKind {
             (Self::EditNotice, Via::Mail) => &NOTIFICATIONS_EDIT_NOTICE_BY_MAIL,
             (Self::LongTimer, Via::App) => &NOTIFICATIONS_LONG_TIMER_IN_APP,
             (Self::LongTimer, Via::Mail) => &NOTIFICATIONS_LONG_TIMER_BY_MAIL,
+            (Self::WorkDayChanged, Via::App) => &NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
+            (Self::WorkDayChanged, Via::Mail) => &NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL,
         }
     }
 }
@@ -268,6 +275,7 @@ mod tests {
             (NotificationKind::RunEnded, (true, false)),
             (NotificationKind::EditNotice, (true, false)),
             (NotificationKind::LongTimer, (true, false)),
+            (NotificationKind::WorkDayChanged, (true, true)),
         ];
         assert_eq!(expected.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {

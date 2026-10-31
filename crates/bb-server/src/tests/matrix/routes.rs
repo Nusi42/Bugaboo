@@ -155,6 +155,16 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                     || ((example.has(Quirk::HidesUnseen) || on_the_target) && !held.sees()))
             {
                 Expect::NotFound
+            } else if example.has(Quirk::HidesThePerson)
+                && ![
+                    Permission::SeeWorkingHoursOfOthers,
+                    Permission::ChangeWorkingHoursOfOthers,
+                ]
+                .iter()
+                .any(|known| held.permissions.contains(known))
+            {
+                // Another person's working hours: nobody learns whose days exist (ADR-0035).
+                Expect::NotFound
             } else if example.has(Quirk::InTheTrash) || example.has(Quirk::TheirOwn) {
                 // Whoever may not take it out is not told that it is in the trash, and a record
                 // that is not the actor's own is not there for them.
@@ -262,6 +272,13 @@ impl<'a> Fixture<'a> {
             (short_name(Project::Sibling), sibling),
         ]);
         let roles = org.starting_roles().await?;
+        // Only who holds the permissions of working hours adds them to a role (ADR-0025, amendment
+        // M6): the administrator who makes the roles of the actors gives *HR* to themselves first.
+        let hr = roles
+            .get(StartingRole::Hr.code())
+            .copied()
+            .ok_or("no starting role HR")?;
+        org.give_everywhere(&org.admin, hr).await?;
         let places = [parent, target, sibling];
         let mut people = Vec::new();
         let mut keys = Vec::new();

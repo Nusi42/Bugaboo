@@ -115,6 +115,10 @@ words! {
         SettingChanged => "setting.changed",
         /// A setting that touches security went back to its default.
         SettingReset => "setting.reset",
+        /// An administrator deleted work days older than the keep period; the subject is the
+        /// person whose days they were, and the event of the deletion holds how many (PRIV-09,
+        /// ADR-0035, decision 7).
+        WorkDaysDeleted => "work_days.deleted",
         /// An administrator locked a setting that touches security.
         SettingLocked => "setting.locked",
         /// An administrator unlocked a setting that touches security.

@@ -94,6 +94,7 @@ pub(crate) mod test_sample_data;
 mod test_search_roundtrip;
 mod test_uploads;
 mod test_workflows;
+mod test_working_time;
 mod theme_only;
 mod txt_catalog;
 mod txt_dates;
@@ -263,6 +264,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_search_roundtrip::TestSearchRoundtrip),
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_uploads::TestUploads),
+        Box::new(test_working_time::TestWorkingTime),
         Box::new(perf_n1::PerfN1),
         Box::new(test_workflows::TestWorkflows),
         Box::new(txt_catalog::TxtCatalog),

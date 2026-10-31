@@ -1,5 +1,5 @@
-//! The starting roles (SEC-08, ADR-0025 decision 4, M2-Q5): the one definition of the six roles
-//! every organization starts with.
+//! The starting roles (SEC-08, ADR-0025 decision 4 and amendment M6, M2-Q5): the one definition of
+//! the seven roles every organization starts with.
 //!
 //! A system use case makes editable copies from it once, at the first start (never a migration);
 //! after that the definition is read only by *Reset to the starting permissions*. The permissions,
@@ -17,7 +17,7 @@ use bb_core::words;
 use crate::catalogue::Permission;
 
 words! {
-    /// One of the six roles every organization starts with, in the starting order (which is also
+    /// One of the seven roles every organization starts with, in the starting order (which is also
     /// the order for role labels). The word is the key that a copy keeps in its `starting` mark,
     /// also when it is renamed.
     pub enum StartingRole {
@@ -33,6 +33,9 @@ words! {
         Viewer => "viewer",
         /// Sees only what they reported, and sees people by role only.
         Guest => "guest",
+        /// Sees and changes other people's working hours, and nothing else (ADR-0035, decision 8).
+        /// Nobody has it at the start.
+        Hr => "hr",
     }
     messages name = "starting-role.";
 }
@@ -94,35 +97,44 @@ const GUEST: [Permission; 4] = [
     Permission::Comment,
 ];
 
+/// *HR* sees and changes working hours and nothing of the work in projects (ADR-0035, decision 8).
+const HR: [Permission; 2] = [
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
+];
+
 /// Field levels of a field, in the order of the roles of [`StartingRole::ALL`]. A `match` with no
-/// catch-all arm: a field without a row does not compile, so no field falls back to hidden.
-const fn field_levels(field: Field) -> [FieldLevel; 6] {
+/// catch-all arm: a field without a row does not compile, so no field falls back to hidden. *HR*
+/// gives no work in projects, so every field is hidden for it.
+const fn field_levels(field: Field) -> [FieldLevel; 7] {
     match field {
-        Field::Title | Field::Description | Field::FoundInRelease => [C, C, C, C, S, C],
+        Field::Title | Field::Description | Field::FoundInRelease => [C, C, C, C, S, C, H],
         Field::Status
         | Field::Priority
         | Field::AssignedTo
         | Field::Labels
-        | Field::PlannedForRelease => [C, C, C, S, S, S],
-        Field::ReportedBy => [C, C, S, S, S, S],
+        | Field::PlannedForRelease => [C, C, C, S, S, S, H],
+        Field::ReportedBy => [C, C, S, S, S, S, H],
         Field::DueDate | Field::EstimatedTime | Field::TimeLeft | Field::TimeSpent => {
-            [C, C, C, S, S, H]
+            [C, C, C, S, S, H, H]
         }
-        Field::Tags => [C, C, C, C, S, S],
+        Field::Tags => [C, C, C, C, S, S, H],
     }
 }
 
 /// *Who sees people* levels of a kind, in the order of the roles of [`StartingRole::ALL`]. A
-/// `match` with no catch-all arm, like [`field_levels`].
-const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 6] {
+/// `match` with no catch-all arm, like [`field_levels`]. *HR* sees every kind as *Hidden*.
+const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 7] {
     match kind {
         PeopleKind::AssignedTo
         | PeopleKind::LastChangedBy
         | PeopleKind::Authors
-        | PeopleKind::Mentions => [N, N, N, N, N, R],
-        PeopleKind::ReportedBy | PeopleKind::Editing | PeopleKind::Pictures => [N, N, N, N, N, O],
-        PeopleKind::Followers | PeopleKind::ProjectMembers => [N, N, N, R, R, O],
-        PeopleKind::TimeEntries => [N, N, N, O, O, O],
+        | PeopleKind::Mentions => [N, N, N, N, N, R, O],
+        PeopleKind::ReportedBy | PeopleKind::Editing | PeopleKind::Pictures => {
+            [N, N, N, N, N, O, O]
+        }
+        PeopleKind::Followers | PeopleKind::ProjectMembers => [N, N, N, R, R, O, O],
+        PeopleKind::TimeEntries => [N, N, N, O, O, O, O],
     }
 }
 
@@ -156,12 +168,19 @@ impl StartingRole {
     #[must_use]
     pub fn permissions(self) -> Vec<Permission> {
         match self {
-            Self::Administrator => Permission::ALL.to_vec(),
+            // Everything but the permissions of working hours: an administrator gives *HR* on
+            // purpose (ADR-0035, decision 8).
+            Self::Administrator => Permission::ALL
+                .iter()
+                .copied()
+                .filter(|permission| !HR.contains(permission))
+                .collect(),
             Self::ProjectLead => [&CONTRIBUTOR[..], &TEAM_MEMBER, &PROJECT_LEAD].concat(),
             Self::TeamMember => [&CONTRIBUTOR[..], &TEAM_MEMBER].concat(),
             Self::Contributor => CONTRIBUTOR.to_vec(),
             Self::Viewer => VIEWER.to_vec(),
             Self::Guest => GUEST.to_vec(),
+            Self::Hr => HR.to_vec(),
         }
     }
 
@@ -260,10 +279,11 @@ mod tests {
 
     #[test]
     fn qry_06_every_starting_role_but_guest_starts_with_share_searches_and_it_counts_in_projects() {
+        // *HR* gives no work in projects (ADR-0035, decision 8), so it shares nothing either.
         for role in StartingRole::ALL.iter().copied() {
             assert_eq!(
                 role.permissions().contains(&Permission::ShareSearches),
-                role != StartingRole::Guest,
+                !matches!(role, StartingRole::Guest | StartingRole::Hr),
                 "{role:?}"
             );
         }
@@ -297,5 +317,32 @@ mod tests {
             starting_own_field_level(&BTreeSet::new(), Permission::ChangeIssues),
             FieldLevel::Hidden
         );
+    }
+
+    #[test]
+    fn time_12_hr_holds_the_permissions_of_working_hours_and_nobody_else_does() {
+        let hr = [
+            Permission::SeeWorkingHoursOfOthers,
+            Permission::ChangeWorkingHoursOfOthers,
+        ];
+        assert_eq!(StartingRole::Hr.permissions(), hr.to_vec());
+        for role in StartingRole::ALL.iter().copied() {
+            if role != StartingRole::Hr {
+                for permission in hr {
+                    assert!(!role.permissions().contains(&permission), "{role:?}");
+                }
+            }
+        }
+        // It comes after *Guest*, gives no work in projects and sees nobody in projects.
+        assert_eq!(StartingRole::ALL.last(), Some(&StartingRole::Hr));
+        assert_eq!(StartingRole::Hr.hidden_fields().count(), Field::ALL.len());
+        for kind in PeopleKind::ALL.iter().copied() {
+            assert_eq!(StartingRole::Hr.people_level(kind), PeopleLevel::Hidden);
+        }
+        // Both count for the whole organization, and no access key holds them.
+        for permission in hr {
+            assert_eq!(permission.counts(), Counts::Organization);
+            assert!(!permission.keys_may_hold());
+        }
     }
 }

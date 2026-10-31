@@ -57,6 +57,14 @@ pub enum PeopleContext {
     /// A management screen (M2-Q3): people who manage see names, everybody else sees the
     /// people there by the kind *Project members*.
     Management,
+    /// *Working hours of others* (ADR-0035, decision 8): a holder of *See working hours of others*
+    /// sees the names of the people whose hours they may see, whatever *Who sees people* says
+    /// elsewhere, and a removed person's name too, which their work days keep (ADR-0035, decision
+    /// 7); nobody else sees anybody there.
+    WorkingHours,
+    /// The history of one's own work day and the notification of its change: whoever changed it
+    /// is named, so the person knows who changed their record and why (ADR-0035, decision 7).
+    OwnWorkDay,
 }
 
 /// The permissions that make a viewer a manager of people or roles at a place (M2-Q3).
@@ -97,6 +105,14 @@ impl Evaluation {
                     self.kind_level(PeopleKind::ProjectMembers)
                 }
             }
+            PeopleContext::WorkingHours => {
+                if self.allows(Permission::SeeWorkingHoursOfOthers) {
+                    PeopleLevel::Names
+                } else {
+                    PeopleLevel::Hidden
+                }
+            }
+            PeopleContext::OwnWorkDay => PeopleLevel::Names,
         }
     }
 
@@ -176,6 +192,13 @@ pub fn resolve(
     }
     let level = viewer.people_level(kind, context);
     if let Some(former) = target.removed {
+        // The one place a removed person keeps their name (ADR-0035, decision 7).
+        if context == PeopleContext::WorkingHours && level == PeopleLevel::Names {
+            return PersonRef::Name {
+                id: target.id,
+                name: target.name.to_owned(),
+            };
+        }
         return if level == PeopleLevel::Names {
             PersonRef::Former {
                 code: former.label.clone(),

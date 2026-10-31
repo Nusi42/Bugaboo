@@ -1046,6 +1046,38 @@ pub const ERROR_WORKFLOW_ONLY_IF: MessageKey = MessageKey::new("error.workflow.o
 pub const ERROR_WORKFLOW_STATUS_IN_USE: MessageKey =
     MessageKey::new("error.workflow.status-in-use");
 
+/// The message `error.working-hours.break-running`.
+pub const ERROR_WORKING_HOURS_BREAK_RUNNING: MessageKey =
+    MessageKey::new("error.working-hours.break-running");
+
+/// The message `error.working-hours.day-left-open`.
+pub const ERROR_WORKING_HOURS_DAY_LEFT_OPEN: MessageKey =
+    MessageKey::new("error.working-hours.day-left-open");
+
+/// The message `error.working-hours.day-not-running`.
+pub const ERROR_WORKING_HOURS_DAY_NOT_RUNNING: MessageKey =
+    MessageKey::new("error.working-hours.day-not-running");
+
+/// The message `error.working-hours.day-running`.
+pub const ERROR_WORKING_HOURS_DAY_RUNNING: MessageKey =
+    MessageKey::new("error.working-hours.day-running");
+
+/// The message `error.working-hours.no-break-running`.
+pub const ERROR_WORKING_HOURS_NO_BREAK_RUNNING: MessageKey =
+    MessageKey::new("error.working-hours.no-break-running");
+
+/// The message `error.working-hours.not-a-work-day`.
+pub const ERROR_WORKING_HOURS_NOT_A_WORK_DAY: MessageKey =
+    MessageKey::new("error.working-hours.not-a-work-day");
+
+/// The message `error.working-hours.reason-needed`.
+pub const ERROR_WORKING_HOURS_REASON_NEEDED: MessageKey =
+    MessageKey::new("error.working-hours.reason-needed");
+
+/// The message `error.working-hours.week-totals-only`.
+pub const ERROR_WORKING_HOURS_WEEK_TOTALS_ONLY: MessageKey =
+    MessageKey::new("error.working-hours.week-totals-only");
+
 /// The message `field-example.date`.
 pub const FIELD_EXAMPLE_DATE: MessageKey = MessageKey::new("field-example.date");
 
@@ -2912,6 +2944,10 @@ pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notificatio
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
 
+/// The message `notification.kind.work-day-changed`.
+pub const NOTIFICATION_KIND_WORK_DAY_CHANGED: MessageKey =
+    MessageKey::new("notification.kind.work-day-changed");
+
 /// The message `notifications.by-mail`.
 pub const NOTIFICATIONS_BY_MAIL: MessageKey = MessageKey::new("notifications.by-mail");
 
@@ -3176,6 +3212,10 @@ pub const PERMISSION_CHANGE_OWN_ISSUES: MessageKey =
 pub const PERMISSION_CHANGE_PROJECT_SETTINGS: MessageKey =
     MessageKey::new("permission.change-project-settings");
 
+/// The message `permission.change-working-hours-of-others`.
+pub const PERMISSION_CHANGE_WORKING_HOURS_OF_OTHERS: MessageKey =
+    MessageKey::new("permission.change-working-hours-of-others");
+
 /// The message `permission.check-access`.
 pub const PERMISSION_CHECK_ACCESS: MessageKey = MessageKey::new("permission.check-access");
 
@@ -3245,6 +3285,10 @@ pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-
 
 /// The message `permission.see-status`.
 pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
+
+/// The message `permission.see-working-hours-of-others`.
+pub const PERMISSION_SEE_WORKING_HOURS_OF_OTHERS: MessageKey =
+    MessageKey::new("permission.see-working-hours-of-others");
 
 /// The message `permission.share-searches`.
 pub const PERMISSION_SHARE_SEARCHES: MessageKey = MessageKey::new("permission.share-searches");
@@ -4949,6 +4993,22 @@ pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_HELP: MessageKey =
 pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.run-ended-in-app.name");
 
+/// The message `setting.notifications.work-day-changed-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.work-day-changed-by-mail.help");
+
+/// The message `setting.notifications.work-day-changed-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.work-day-changed-by-mail.name");
+
+/// The message `setting.notifications.work-day-changed-in-app.help`.
+pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.work-day-changed-in-app.help");
+
+/// The message `setting.notifications.work-day-changed-in-app.name`.
+pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.work-day-changed-in-app.name");
+
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
 
@@ -5146,6 +5206,94 @@ pub const SETTING_WINDOW_SIZES_HELP: MessageKey = MessageKey::new("setting.windo
 
 /// The message `setting.window.sizes.name`.
 pub const SETTING_WINDOW_SIZES_NAME: MessageKey = MessageKey::new("setting.window.sizes.name");
+
+/// The message `setting.working-hours.day-minutes-max.help`.
+pub const SETTING_WORKING_HOURS_DAY_MINUTES_MAX_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.day-minutes-max.help");
+
+/// The message `setting.working-hours.day-minutes-max.name`.
+pub const SETTING_WORKING_HOURS_DAY_MINUTES_MAX_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.day-minutes-max.name");
+
+/// The message `setting.working-hours.first-break-after-minutes.help`.
+pub const SETTING_WORKING_HOURS_FIRST_BREAK_AFTER_MINUTES_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.first-break-after-minutes.help");
+
+/// The message `setting.working-hours.first-break-after-minutes.name`.
+pub const SETTING_WORKING_HOURS_FIRST_BREAK_AFTER_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.first-break-after-minutes.name");
+
+/// The message `setting.working-hours.first-break-minutes.help`.
+pub const SETTING_WORKING_HOURS_FIRST_BREAK_MINUTES_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.first-break-minutes.help");
+
+/// The message `setting.working-hours.first-break-minutes.name`.
+pub const SETTING_WORKING_HOURS_FIRST_BREAK_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.first-break-minutes.name");
+
+/// The message `setting.working-hours.in-a-row-minutes-max.help`.
+pub const SETTING_WORKING_HOURS_IN_A_ROW_MINUTES_MAX_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.in-a-row-minutes-max.help");
+
+/// The message `setting.working-hours.in-a-row-minutes-max.name`.
+pub const SETTING_WORKING_HOURS_IN_A_ROW_MINUTES_MAX_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.in-a-row-minutes-max.name");
+
+/// The message `setting.working-hours.keep-years.help`.
+pub const SETTING_WORKING_HOURS_KEEP_YEARS_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.keep-years.help");
+
+/// The message `setting.working-hours.keep-years.name`.
+pub const SETTING_WORKING_HOURS_KEEP_YEARS_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.keep-years.name");
+
+/// The message `setting.working-hours.preset.help`.
+pub const SETTING_WORKING_HOURS_PRESET_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.preset.help");
+
+/// The message `setting.working-hours.preset.name`.
+pub const SETTING_WORKING_HOURS_PRESET_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.preset.name");
+
+/// The message `setting.working-hours.rest-minutes-min.help`.
+pub const SETTING_WORKING_HOURS_REST_MINUTES_MIN_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.rest-minutes-min.help");
+
+/// The message `setting.working-hours.rest-minutes-min.name`.
+pub const SETTING_WORKING_HOURS_REST_MINUTES_MIN_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.rest-minutes-min.name");
+
+/// The message `setting.working-hours.second-break-after-minutes.help`.
+pub const SETTING_WORKING_HOURS_SECOND_BREAK_AFTER_MINUTES_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.second-break-after-minutes.help");
+
+/// The message `setting.working-hours.second-break-after-minutes.name`.
+pub const SETTING_WORKING_HOURS_SECOND_BREAK_AFTER_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.second-break-after-minutes.name");
+
+/// The message `setting.working-hours.second-break-minutes.help`.
+pub const SETTING_WORKING_HOURS_SECOND_BREAK_MINUTES_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.second-break-minutes.help");
+
+/// The message `setting.working-hours.second-break-minutes.name`.
+pub const SETTING_WORKING_HOURS_SECOND_BREAK_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.second-break-minutes.name");
+
+/// The message `setting.working-hours.shortest-break-minutes.help`.
+pub const SETTING_WORKING_HOURS_SHORTEST_BREAK_MINUTES_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.shortest-break-minutes.help");
+
+/// The message `setting.working-hours.shortest-break-minutes.name`.
+pub const SETTING_WORKING_HOURS_SHORTEST_BREAK_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.shortest-break-minutes.name");
+
+/// The message `setting.working-hours.totals-only.help`.
+pub const SETTING_WORKING_HOURS_TOTALS_ONLY_HELP: MessageKey =
+    MessageKey::new("setting.working-hours.totals-only.help");
+
+/// The message `setting.working-hours.totals-only.name`.
+pub const SETTING_WORKING_HOURS_TOTALS_ONLY_NAME: MessageKey =
+    MessageKey::new("setting.working-hours.totals-only.name");
 
 /// The message `setup.answer-yes`.
 pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
@@ -5452,6 +5600,9 @@ pub const STARTING_ROLE_CONTRIBUTOR: MessageKey = MessageKey::new("starting-role
 
 /// The message `starting-role.guest`.
 pub const STARTING_ROLE_GUEST: MessageKey = MessageKey::new("starting-role.guest");
+
+/// The message `starting-role.hr`.
+pub const STARTING_ROLE_HR: MessageKey = MessageKey::new("starting-role.hr");
 
 /// The message `starting-role.project-lead`.
 pub const STARTING_ROLE_PROJECT_LEAD: MessageKey = MessageKey::new("starting-role.project-lead");
@@ -5791,6 +5942,13 @@ pub const WORKFLOWS_WHO_REPORTER: MessageKey = MessageKey::new("workflows.who-re
 
 /// The message `workflows.who-roles`.
 pub const WORKFLOWS_WHO_ROLES: MessageKey = MessageKey::new("workflows.who-roles");
+
+/// The message `working-time.preset.germany`.
+pub const WORKING_TIME_PRESET_GERMANY: MessageKey = MessageKey::new("working-time.preset.germany");
+
+/// The message `working-time.preset.no-rules`.
+pub const WORKING_TIME_PRESET_NO_RULES: MessageKey =
+    MessageKey::new("working-time.preset.no-rules");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -8719,6 +8877,30 @@ pub fn notifications_taken_over(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `notifications.work-day-changed`.
+#[must_use]
+pub fn notifications_work_day_changed(
+    date: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-day-changed"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `notifications.work-day-reason`.
+#[must_use]
+pub fn notifications_work_day_reason(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-day-reason"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `own.ask-text`.
 #[must_use]
 pub fn own_ask_text(lost: impl std::fmt::Display) -> Message {
@@ -11316,6 +11498,72 @@ pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `working-time.warning.long-day`.
+#[must_use]
+pub fn working_time_warning_long_day(
+    most: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-time.warning.long-day"),
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
+/// The message `working-time.warning.long-stretch`.
+#[must_use]
+pub fn working_time_warning_long_stretch(
+    most: impl std::fmt::Display,
+    shortest: impl std::fmt::Display,
+    stretch: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-time.warning.long-stretch"),
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("shortest", Value::Text(shortest.to_string())),
+            ("stretch", Value::Text(stretch.to_string())),
+        ],
+    )
+}
+
+/// The message `working-time.warning.short-break`.
+#[must_use]
+pub fn working_time_warning_short_break(
+    after: impl std::fmt::Display,
+    breaks: impl std::fmt::Display,
+    needed: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-time.warning.short-break"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("breaks", Value::Text(breaks.to_string())),
+            ("needed", Value::Text(needed.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
+/// The message `working-time.warning.short-rest`.
+#[must_use]
+pub fn working_time_warning_short_rest(
+    needed: impl std::fmt::Display,
+    rest: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-time.warning.short-rest"),
+        vec![
+            ("needed", Value::Text(needed.to_string())),
+            ("rest", Value::Text(rest.to_string())),
+        ],
+    )
+}
+
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.choice.everything", "Everything I can do"),
@@ -12351,6 +12599,38 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.workflow.status-in-use",
         "Some issues are still in a status that the workflow would no longer have. Choose where they go.",
+    ),
+    (
+        "error.working-hours.break-running",
+        "Your break is running already.",
+    ),
+    (
+        "error.working-hours.day-left-open",
+        "Your last work day was never ended. Say when it ended, then start the new one.",
+    ),
+    (
+        "error.working-hours.day-not-running",
+        "Your work day is not running. Start it first.",
+    ),
+    (
+        "error.working-hours.day-running",
+        "Your work day is running already.",
+    ),
+    (
+        "error.working-hours.no-break-running",
+        "No break is running.",
+    ),
+    (
+        "error.working-hours.not-a-work-day",
+        "These times are not one work day. Every break lies inside the work, nothing overlaps another day, and a day lasts 24 hours at most.",
+    ),
+    (
+        "error.working-hours.reason-needed",
+        "Say in a few words why this work day changes.",
+    ),
+    (
+        "error.working-hours.week-totals-only",
+        "Only the week totals of other people are shown, so their work days cannot be changed. An administrator can turn Totals only off.",
     ),
     ("field-example.date", "For example: Promised by"),
     ("field-example.date-time", "For example: Seen at"),
@@ -13784,6 +14064,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.run-ended",
         "Your change to many issues has ended",
     ),
+    (
+        "notification.kind.work-day-changed",
+        "Somebody else changes one of your work days",
+    ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
     ("notifications.commented", "{who} wrote a comment"),
@@ -13867,6 +14151,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} took over the editing. What you wrote is kept as your draft",
     ),
     ("notifications.title", "Notifications"),
+    (
+        "notifications.work-day-changed",
+        "{who} changed your work day of {date}",
+    ),
+    ("notifications.work-day-reason", "Why: {reason}"),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -14011,6 +14300,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Change the project's name, short name and settings",
     ),
     (
+        "permission.change-working-hours-of-others",
+        "Change other people's work days, always with a reason",
+    ),
+    (
         "permission.check-access",
         "Check what other people can do, and why",
     ),
@@ -14086,6 +14379,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See the project and what is in it",
     ),
     ("permission.see-status", "See how the server is doing"),
+    (
+        "permission.see-working-hours-of-others",
+        "See other people's working hours",
+    ),
     (
         "permission.share-searches",
         "Share saved searches with the project, or with a group they are in",
@@ -15690,6 +15987,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your change to many issues has ended: in the app",
     ),
     (
+        "setting.notifications.work-day-changed-by-mail.help",
+        "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.work-day-changed-by-mail.name",
+        "Somebody changes your work day: by e-mail",
+    ),
+    (
+        "setting.notifications.work-day-changed-in-app.help",
+        "Tells you under Notifications when somebody else changes one of your work days, with the reason they gave.",
+    ),
+    (
+        "setting.notifications.work-day-changed-in-app.name",
+        "Somebody changes your work day: in the app",
+    ),
+    (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",
     ),
@@ -15852,6 +16165,88 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
     ),
     ("setting.window.sizes.name", "Your window sizes"),
+    (
+        "setting.working-hours.day-minutes-max.help",
+        "A day with more work gets a warning. Germany: 600 minutes, which is 10 hours.",
+    ),
+    (
+        "setting.working-hours.day-minutes-max.name",
+        "Most work in a day (minutes)",
+    ),
+    (
+        "setting.working-hours.first-break-after-minutes.help",
+        "A day with more work than this needs the first break. Germany: 360 minutes, which is 6 hours.",
+    ),
+    (
+        "setting.working-hours.first-break-after-minutes.name",
+        "First break after (minutes of work)",
+    ),
+    (
+        "setting.working-hours.first-break-minutes.help",
+        "How long the breaks of such a day are together at least. Germany: 30 minutes.",
+    ),
+    (
+        "setting.working-hours.first-break-minutes.name",
+        "First break (minutes)",
+    ),
+    (
+        "setting.working-hours.in-a-row-minutes-max.help",
+        "Work in a row longer than this, without a break that counts, gets a warning. Germany: 360 minutes, which is 6 hours.",
+    ),
+    (
+        "setting.working-hours.in-a-row-minutes-max.name",
+        "Most work in a row (minutes)",
+    ),
+    (
+        "setting.working-hours.keep-years.help",
+        "Work days are kept at least this many years from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+    ),
+    (
+        "setting.working-hours.keep-years.name",
+        "Keep work days for (years)",
+    ),
+    (
+        "setting.working-hours.preset.help",
+        "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",
+    ),
+    ("setting.working-hours.preset.name", "Working-time rules"),
+    (
+        "setting.working-hours.rest-minutes-min.help",
+        "Less rest between the end of one work day and the start of the next gets a warning. Germany: 660 minutes, which is 11 hours.",
+    ),
+    (
+        "setting.working-hours.rest-minutes-min.name",
+        "Least rest between two work days (minutes)",
+    ),
+    (
+        "setting.working-hours.second-break-after-minutes.help",
+        "A day with more work than this needs the longer break. Germany: 540 minutes, which is 9 hours.",
+    ),
+    (
+        "setting.working-hours.second-break-after-minutes.name",
+        "Longer break after (minutes of work)",
+    ),
+    (
+        "setting.working-hours.second-break-minutes.help",
+        "How long the breaks of such a day are together at least. Germany: 45 minutes.",
+    ),
+    (
+        "setting.working-hours.second-break-minutes.name",
+        "Longer break (minutes)",
+    ),
+    (
+        "setting.working-hours.shortest-break-minutes.help",
+        "A shorter break does not count for the rules. Germany: 15 minutes.",
+    ),
+    (
+        "setting.working-hours.shortest-break-minutes.name",
+        "Shortest break that counts (minutes)",
+    ),
+    (
+        "setting.working-hours.totals-only.help",
+        "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",
+    ),
+    ("setting.working-hours.totals-only.name", "Totals only"),
     ("setup.answer-yes", "yes"),
     (
         "setup.ask.address",
@@ -16061,6 +16456,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("starting-role.administrator", "Administrator"),
     ("starting-role.contributor", "Contributor"),
     ("starting-role.guest", "Guest"),
+    ("starting-role.hr", "HR"),
     ("starting-role.project-lead", "Project lead"),
     ("starting-role.team-member", "Team member"),
     ("starting-role.viewer", "Viewer"),
@@ -16363,4 +16759,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),
+    ("working-time.preset.germany", "Germany"),
+    ("working-time.preset.no-rules", "No rules"),
+    (
+        "working-time.warning.long-day",
+        "{worked} worked. The rules allow {most} a day at most.",
+    ),
+    (
+        "working-time.warning.long-stretch",
+        "{stretch} of work in a row. The rules allow {most} at most before a break of at least {shortest}.",
+    ),
+    (
+        "working-time.warning.short-break",
+        "{worked} worked and only {breaks} of break. The rules ask for {needed} of break after {after} of work.",
+    ),
+    (
+        "working-time.warning.short-rest",
+        "Only {rest} of rest since the work day before. The rules ask for at least {needed}.",
+    ),
 ];

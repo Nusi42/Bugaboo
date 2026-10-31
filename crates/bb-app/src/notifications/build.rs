@@ -42,6 +42,8 @@ use crate::jobs::{JobKind, QueuedJob};
 use crate::member::{comment, follower, timer};
 use crate::outbox_reader::read_all;
 
+mod work_days;
+
 /// What one batch of events looks up once: people, their settings, the followers that lost
 /// access.
 struct Round {
@@ -293,6 +295,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::ChangeRun => self.run_event(round, event).await,
             RecordKind::Project => self.renewal_event(round, event).await,
             RecordKind::Attachment => self.file_event(round, event).await,
+            RecordKind::WorkDay => self.work_day_event(round, event).await,
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey

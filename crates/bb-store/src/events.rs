@@ -503,7 +503,7 @@ pub(crate) async fn append_events(
     Ok(())
 }
 
-fn event_columns() -> [Event; 9] {
+pub(crate) fn event_columns() -> [Event; 9] {
     [
         Event::Id,
         Event::Time,
@@ -517,7 +517,7 @@ fn event_columns() -> [Event; 9] {
     ]
 }
 
-fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
+pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
     let actor = match row.get::<String>(Event::ActorKind)?.as_str() {
         ACTOR_PERSON => Actor::Person(
             row.optional_id(Event::ActorId)?

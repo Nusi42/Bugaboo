@@ -7,7 +7,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
     each_database("sec_08_starting_roles", async |db| {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
-        // The six roles of architecture 7, in the starting order, as editable copies.
+        // The seven roles of architecture 7, in the starting order, as editable copies.
         let made = roles(&org).await?;
         let names: Vec<&str> = made.iter().map(|role| role.name.as_str()).collect();
         assert_eq!(
@@ -18,7 +18,8 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
                 "Team member",
                 "Contributor",
                 "Viewer",
-                "Guest"
+                "Guest",
+                "HR"
             ]
         );
         for (role, starting) in made.iter().zip(StartingRole::ALL) {
@@ -33,7 +34,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
         }
         // Another start makes nothing new: the roles are made once.
         create_starting_roles(&rig.services.ctx(Rig::info()), CreateStartingRoles).await?;
-        assert_eq!(roles(&org).await?.len(), 6);
+        assert_eq!(roles(&org).await?.len(), StartingRole::ALL.len());
 
         // A starting role can be renamed and changed like any role; its mark stays.
         let viewer = role_named(&org, "Viewer").await?;

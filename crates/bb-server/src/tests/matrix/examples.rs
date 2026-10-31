@@ -102,6 +102,10 @@ pub(super) enum Quirk {
     /// they see it and lack *Change issues*, and is changed otherwise. The matrix reads that from
     /// the answer, as a route that is let in says nothing else about the actor.
     SkipsWhatItMayNotChange,
+    /// The route is about another person's working hours: to an actor who may neither see nor
+    /// change them, the person answers like one that does not exist; an actor who may see them
+    /// and lacks the permission of the route is refused (ADR-0035, decision 8).
+    HidesThePerson,
 }
 
 /// One row of the table: a route and what is special about it.
@@ -556,6 +560,22 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[Quirk::AnIssueOfTheTarget, Quirk::TheirOwn],
     ),
     Example::with("listIssueTimeEntries", &[Quirk::AnIssueOfTheTarget]),
+    Example::route("listMyWorkDays"),
+    Example::route("startWorkDay"),
+    Example::route("startBreak"),
+    Example::route("endBreak"),
+    Example::route("endWorkDay"),
+    Example::route("changeMyWorkDay"),
+    Example::with("getMyWorkDayHistory", &[Quirk::NamesAMissingThing]),
+    Example::route("getMyBookedWeek"),
+    Example::with("listWorkDaysOfPerson", &[Quirk::HidesThePerson]),
+    Example::with("changeWorkDayOfPerson", &[Quirk::HidesThePerson]),
+    Example::with(
+        "getWorkDayHistoryOfPerson",
+        &[Quirk::HidesThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::route("countOldWorkDays"),
+    Example::route("deleteOldWorkDays"),
 ];
 
 /// The request of an example: the method, the address with its parts filled in, and a body that
@@ -618,6 +638,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_time::time_request(fixture, operation, browser).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_working_hours::working_hours_request(fixture, operation)? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

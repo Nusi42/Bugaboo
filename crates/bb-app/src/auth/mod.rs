@@ -151,6 +151,13 @@ use crate::workflows::{
     delete_workflow, project_statuses, publish_preview, publish_workflow, try_workflow,
     use_workflow, workflow_editor, workflows,
 };
+use crate::working_hours::{
+    BookedWeek, BookedWeekQuery, ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, DeletedWorkDays,
+    EndBreak, EndWorkDay, OldWorkDays, OldWorkDaysQuery, StartBreak, StartWorkDay, WorkDayHistory,
+    WorkDayHistoryQuery, WorkDaysPage, WorkDaysQuery, booked_week, change_work_day,
+    delete_old_work_days, end_break, end_work_day, old_work_days, start_break, start_work_day,
+    work_day_history, work_days,
+};
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
@@ -553,6 +560,26 @@ use_cases! {
     followers(FollowersQuery) -> Authorized<Followers>;
     /// Whether the person follows an issue.
     following(FollowingQuery) -> Authorized<FollowingState>;
+    /// The work days of a stretch of dates: one's own or another person's.
+    work_days(WorkDaysQuery) -> Authorized<WorkDaysPage>;
+    /// *Start work day*.
+    start_work_day(StartWorkDay) -> Authorized<ChangedWorkDay>;
+    /// *Start break*.
+    start_break(StartBreak) -> Authorized<ChangedWorkDay>;
+    /// *End break*.
+    end_break(EndBreak) -> Authorized<ChangedWorkDay>;
+    /// *End work day*.
+    end_work_day(EndWorkDay) -> Authorized<ChangedWorkDay>;
+    /// New times of a work day, one's own or another person's.
+    change_work_day(ChangeWorkDay) -> Authorized<ChangedWorkDay>;
+    /// The history of a work day.
+    work_day_history(WorkDayHistoryQuery) -> Authorized<WorkDayHistory>;
+    /// One's own week compared with the time booked on issues.
+    booked_week(BookedWeekQuery) -> Authorized<BookedWeek>;
+    /// How many work days are older than the keep period.
+    old_work_days(OldWorkDaysQuery) -> Authorized<OldWorkDays>;
+    /// Deletes the work days older than the keep period.
+    delete_old_work_days(DeleteOldWorkDays) -> Authorized<DeletedWorkDays>;
     /// Lists the saved searches a person made, or the ones shared with them.
     saved_searches(SearchesQuery) -> Authorized<SavedSearchPage>;
     /// Opens one saved search.

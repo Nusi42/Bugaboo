@@ -19,7 +19,12 @@ use super::time_http::{MY_ENTRIES, TIMER};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 37] = [
+const VERSIONED: [&str; 42] = [
+    "changeMyWorkDay",
+    "changeWorkDayOfPerson",
+    "startBreak",
+    "endBreak",
+    "endWorkDay",
     "changeSignUpPolicy",
     "changeMySetting",
     "saveComment",
@@ -112,6 +117,9 @@ async fn read(browser: &mut Browser, path: &str) -> Result<Value, Failure> {
 /// The record a route changes, made, and the save that is stale.
 async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
     match id {
+        "changeMyWorkDay" | "changeWorkDayOfPerson" | "startBreak" | "endBreak" | "endWorkDay" => {
+            prepare_work_day(id, site, ada).await
+        }
         "changeField" | "addChoice" | "reorderChoices" | "changeChoice" | "combineChoices" => {
             prepare_fields(id, ada).await
         }
@@ -700,4 +708,48 @@ fn iss_17_the_table_has_a_row_for_every_route_that_takes_a_version() -> TestResu
         "the routes with a version and the rows of the table"
     );
     Ok(())
+}
+
+/// The stale changes of a work day of Ada's: a day typed afterwards, or the day that runs.
+async fn prepare_work_day(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
+    // At most one change of a person's days a second.
+    site.org.rig.clock.advance(1);
+    let me = read(ada, "/api/v1/auth/me").await?;
+    let base = match id {
+        "changeWorkDayOfPerson" => format!("/api/v1/people/{}/work-days", text_in(&me, "id")?),
+        _ => "/api/v1/me/work-days".to_owned(),
+    };
+    let times = |date: &str| {
+        json!({
+            "periods": [{"start": format!("{date}T08:00:00Z"), "end": format!("{date}T16:00:00Z")}],
+            "breaks": [],
+            "reason": "Typed in afterwards",
+        })
+    };
+    if let Some(date) = match id {
+        "changeMyWorkDay" => Some("2027-01-10"),
+        "changeWorkDayOfPerson" => Some("2027-01-09"),
+        _ => None,
+    } {
+        let mut first = times(date);
+        first["version"] = json!(0);
+        let path = format!("{base}/{date}");
+        let day = ok(&ada.send("PATCH", &path, Some(first)).await?)?.clone();
+        return Save::new("PATCH", path, times(date), &day["version"]);
+    }
+    // The day that runs: started once, and read as it is now.
+    ada.send("POST", "/api/v1/me/work-days/start", Some(json!({})))
+        .await?;
+    let today = read(ada, "/api/v1/me/work-days?from=2027-01-15&to=2027-01-15").await?;
+    let tap = match id {
+        "startBreak" => "break/start",
+        "endBreak" => "break/end",
+        _ => "end",
+    };
+    Save::new(
+        "POST",
+        format!("{base}/{tap}"),
+        json!({}),
+        &today["days"][0]["version"],
+    )
 }

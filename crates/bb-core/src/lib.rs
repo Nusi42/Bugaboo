@@ -62,6 +62,7 @@ pub mod time;
 pub mod version;
 pub mod wording;
 pub mod workflow;
+pub mod working_time;
 
 pub use error_code::{ErrorCode, Problem};
 pub use event::DomainEvent;

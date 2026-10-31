@@ -160,9 +160,9 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
             }
         }
     }
-    // Every field for 6 roles at their own level, and for 6 roles 3 levels in 3 projects.
+    // Every field for 7 roles at their own level, and for 7 roles 3 levels in 3 projects.
     let fields = Field::ALL.len();
-    assert_eq!(rows, fields * 6 + fields * 6 * 3 * 3);
+    assert_eq!(rows, fields * 7 + fields * 7 * 3 * 3);
 }
 
 /// How the viewer sees a person of the kind, as the doc says.
@@ -273,8 +273,8 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
             }
         }
     }
-    // 10 kinds for 6 roles at their starting level, and for 3 levels in 3 projects.
-    assert_eq!(rows, 10 * 6 + 10 * 6 * 3 * 3);
+    // 10 kinds for 7 roles at their starting level, and for 3 levels in 3 projects.
+    assert_eq!(rows, 10 * 7 + 10 * 7 * 3 * 3);
 }
 
 #[test]

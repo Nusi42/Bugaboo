@@ -320,6 +320,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a work day of a person (TIME-08, ADR-0035, decision 5).
+    WorkDayId
+}
+
+define_ordered_id! {
     /// The ID of a file added to an issue or a comment (ATT-01).
     AttachmentId
 }
@@ -448,6 +453,7 @@ into_entity_id!(
     SavedSearchId,
     CommentId,
     TimeEntryId,
+    WorkDayId,
     AttachmentId,
     UploadId,
     TagId,

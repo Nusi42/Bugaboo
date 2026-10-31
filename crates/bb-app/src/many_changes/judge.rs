@@ -91,22 +91,21 @@ pub(super) struct Selection<'a> {
 /// The error, when it is no reason to skip one issue.
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     let reason = match &error {
+        // A busy database is a fact of the moment and not of the issue: the step fails and the
+        // queue tries it again.
+        _ if error.is_busy() => None,
         AppError::Stale(_) => Some(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.
-        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => reason_of(*code),
+        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Some(reason_of(*code)),
         _ => None,
     };
     reason.ok_or(error)
 }
 
-/// The reason an issue is left alone for a refusal of the single change; none for a busy database
-/// ([`AppError::is_busy`]), a fact of the moment and not of the issue: the step fails and the queue
-/// tries it again.
-fn reason_of(code: ErrorCode) -> Option<SkipReason> {
-    if AppError::Refused(code).is_busy() {
-        return None;
-    }
-    Some(match code {
+/// The reason an issue is left alone for a refusal of the single change; a busy database
+/// ([`AppError::is_busy`]) is caught before by [`skip_of`].
+fn reason_of(code: ErrorCode) -> SkipReason {
+    match code {
         ErrorCode::VersionChanged => SkipReason::ChangedSince,
         ErrorCode::NotFound => SkipReason::NotFound,
         ErrorCode::Forbidden => SkipReason::NotAllowed,
@@ -197,11 +196,18 @@ fn reason_of(code: ErrorCode) -> Option<SkipReason> {
         | ErrorCode::SearchInvalid
         | ErrorCode::SearchTooSlow
         | ErrorCode::TooManyRequests
-        | ErrorCode::Internal => SkipReason::NotValid,
-        // A busy database is no reason, caught above by `is_busy`; listed so that the match stays
-        // whole.
-        ErrorCode::Unavailable => return None,
-    })
+        | ErrorCode::WorkDayLeftOpen
+        | ErrorCode::WorkDayRunning
+        | ErrorCode::WorkDayNotRunning
+        | ErrorCode::BreakRunning
+        | ErrorCode::NoBreakRunning
+        | ErrorCode::NotAWorkDay
+        | ErrorCode::ReasonNeeded
+        | ErrorCode::TotalsOnly
+        | ErrorCode::Internal
+        // A busy database is caught by `skip_of`; listed so that the match stays whole.
+        | ErrorCode::Unavailable => SkipReason::NotValid,
+    }
 }
 
 /// A judged change turned into a reason to skip the issue, when the single change would have

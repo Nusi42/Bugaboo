@@ -42,6 +42,7 @@ pub mod text_index;
 pub mod time;
 mod walk;
 pub mod workflows;
+pub mod working_hours;
 
 #[cfg(test)]
 mod tests;

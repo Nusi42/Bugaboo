@@ -166,7 +166,8 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
         for role in StartingRole::ALL
             .iter()
             .copied()
-            .filter(|role| *role != StartingRole::Guest)
+            // *HR* sees no project, so no issue either (ADR-0035, decision 8).
+            .filter(|role| !matches!(role, StartingRole::Guest | StartingRole::Hr))
         {
             let (browser, _) = site
                 .person(role, &format!("{}-reader", role.code()))

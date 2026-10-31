@@ -43,6 +43,8 @@ pub struct ApiError {
     taken_over_by: Option<Arc<PersonRef>>,
     /// The mistakes of a search text, for `search.invalid`.
     mistakes: Option<Arc<Vec<MistakeBody>>>,
+    /// The date of the work day that was left open, for `working-hours.day-left-open`.
+    open_day: Option<String>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
@@ -55,6 +57,7 @@ pub(crate) struct Extras {
     pub(crate) conflict: Option<Arc<ConflictBody>>,
     pub(crate) taken_over_by: Option<Arc<PersonRef>>,
     pub(crate) mistakes: Option<Arc<Vec<MistakeBody>>>,
+    pub(crate) open_day: Option<String>,
 }
 
 impl ApiError {
@@ -69,7 +72,15 @@ impl ApiError {
             field: None,
             taken_over_by: None,
             mistakes: None,
+            open_day: None,
         }
+    }
+
+    /// Names the work day that was left open, on a `working-hours.day-left-open` answer.
+    #[must_use]
+    pub(crate) fn with_open_day(mut self, date: String) -> Self {
+        self.open_day = Some(date);
+        self
     }
 
     /// Names who took the editing over, on an `edit.taken-over` answer.
@@ -84,6 +95,7 @@ impl ApiError {
             conflict: self.conflict.clone(),
             taken_over_by: self.taken_over_by.clone(),
             mistakes: self.mistakes.clone(),
+            open_day: self.open_day.clone(),
         }
     }
 
@@ -162,13 +174,8 @@ fn problem_of(code: ErrorCode, field: Option<String>) -> Problem {
 fn problem_response(problem: &Problem, extras: &Extras) -> Response {
     // A `Problem` holds text and numbers only, so it always serializes; the empty body is what
     // a (impossible) failure would leave.
-    let body = serde_json::to_vec(&ConflictProblem::new(
-        problem.clone(),
-        extras.conflict.as_deref().cloned(),
-        extras.taken_over_by.as_deref().cloned(),
-        extras.mistakes.as_deref().cloned(),
-    ))
-    .unwrap_or_default();
+    let body =
+        serde_json::to_vec(&ConflictProblem::new(problem.clone(), extras)).unwrap_or_default();
     let mut response = Response::new(Body::from(body));
     *response.status_mut() = status_of(problem.code());
     let headers = response.headers_mut();

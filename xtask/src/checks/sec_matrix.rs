@@ -28,7 +28,7 @@ use bb_api_words::{marks, needs};
 use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::StartingRole;
+use bb_policy::{Permission, StartingRole};
 use serde_json::Value;
 
 use super::api_spec;
@@ -212,8 +212,14 @@ fn delivery_words(role: StartingRole) -> [(&'static str, &'static str); 3] {
     } else {
         words::SHOWN
     };
+    // A role that sees no project follows no issue, so it hears of none (*HR*, ADR-0035).
+    let heard = if role.permissions().contains(&Permission::SeeProjects) {
+        words::YES
+    } else {
+        words::NO
+    };
     [
-        ("heard", words::YES),
+        ("heard", heard),
         ("status", status),
         ("author", role.people_level(PeopleKind::Authors).code()),
     ]

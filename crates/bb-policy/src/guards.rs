@@ -8,7 +8,11 @@
 //! - **No escalation:** a person can add a permission to a role, or give a role, only when they
 //!   hold every permission of it at that place themselves. Enforced by: the tests
 //!   `sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role` and
-//!   `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`.
+//!   `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`. Giving has one exception, for the
+//!   permissions of working hours that nobody holds at the start (ADR-0025, amendment M6): a person
+//!   who holds both *Manage roles* and *Decide who has which role* for the whole organization gives
+//!   a role with them without holding them ([`ensure_may_give`]). Enforced by: the test
+//!   `sec_02_a_person_who_decides_every_role_gives_hr_without_holding_its_permissions`.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -19,6 +23,10 @@ use bb_core::id::{GroupId, RoleId, UserId};
 use crate::catalogue::{Counts, Permission};
 use crate::evaluate::{Evaluation, Place, RoleData};
 use crate::tree::Policy;
+
+/// The pair of the last-administrator rule: whoever holds both for the whole organization can
+/// manage roles and decide who has which role there.
+const MANAGE_AND_DECIDE: [Permission; 2] = [Permission::ManageRoles, Permission::DecideRoles];
 
 /// Why a change was refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -157,8 +165,9 @@ pub fn role_managers(state: &OrganizationState) -> BTreeSet<UserId> {
     }
     held.into_iter()
         .filter(|(_, permissions)| {
-            permissions.contains(&Permission::ManageRoles)
-                && permissions.contains(&Permission::DecideRoles)
+            MANAGE_AND_DECIDE
+                .iter()
+                .all(|permission| permissions.contains(permission))
         })
         .map(|(person, _)| person)
         .collect()
@@ -212,4 +221,31 @@ pub fn ensure_no_escalation(
     } else {
         Err(Refusal::TooMuch)
     }
+}
+
+/// The permissions that a person who decides every role gives without holding them: nobody holds
+/// them at the start, so without the exception nobody could ever give *HR* (ADR-0025, amendment M6).
+pub const GIVEN_WITHOUT_HOLDING: [Permission; 2] = [
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
+];
+
+/// Whether the person may give a role with `role` (its permissions): [`ensure_no_escalation`],
+/// except that a person who holds both *Manage roles* and *Decide who has which role* for the whole
+/// organization (the pair of the last-administrator rule) needs not hold [`GIVEN_WITHOUT_HOLDING`].
+/// Adding those permissions to a role keeps the rule: only who holds them adds them.
+///
+/// # Errors
+/// [`Refusal::TooMuch`] when a permission of the role is missing from the person.
+pub fn ensure_may_give(held: &Evaluation, role: &BTreeSet<Permission>) -> Result<(), Refusal> {
+    let decides_every_role = held.place() == Place::Organization
+        && MANAGE_AND_DECIDE
+            .iter()
+            .all(|permission| held.allows(*permission));
+    let wanted: BTreeSet<Permission> = role
+        .iter()
+        .copied()
+        .filter(|permission| !(decides_every_role && GIVEN_WITHOUT_HOLDING.contains(permission)))
+        .collect();
+    ensure_no_escalation(held, &wanted)
 }

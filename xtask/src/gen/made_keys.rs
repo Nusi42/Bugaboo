@@ -14,6 +14,7 @@ use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::readable_id::IdMode;
 use bb_core::time::entry::StarterField;
+use bb_core::working_time::Preset;
 use bb_policy::{Permission, StartingRole, Topic};
 
 /// A message that the word of an enum makes, and the word.
@@ -69,6 +70,13 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for mode in IdMode::ALL {
         keys.push(made("the mode of issue IDs", mode.code(), mode.name()));
+    }
+    for preset in Preset::ALL {
+        keys.push(made(
+            "the preset of the working-time rules",
+            preset.code(),
+            preset.name(),
+        ));
     }
     for level in FieldLevel::ALL {
         keys.push(made("the field level", level.code(), level.name()));

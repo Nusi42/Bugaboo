@@ -81,7 +81,8 @@ async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> Te
                 "Team member",
                 "Contributor",
                 "Viewer",
-                "Guest"
+                "Guest",
+                "HR"
             ],
             "the starting roles, in the order of roles"
         );

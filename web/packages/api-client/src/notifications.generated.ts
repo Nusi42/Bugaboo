@@ -21,6 +21,10 @@ export const notificationSettings = {
     app: "notifications.long-timer-in-app",
     mail: "notifications.long-timer-by-mail",
   },
+  "work-day-changed": {
+    app: "notifications.work-day-changed-in-app",
+    mail: "notifications.work-day-changed-by-mail",
+  },
 } as const;
 
 /** How many days a notification is kept before it is deleted. */

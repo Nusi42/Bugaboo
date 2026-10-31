@@ -8854,6 +8854,449 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/work-days": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "The person's own work days from `from` to `to`.",
+        "operationId": "listMyWorkDays",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The first date (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The last date, at most 62 days after the first.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The work days.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDaysBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/booked": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "One's own week: the working hours, the time booked on issues and the difference of each day.\nOnly for the person themselves.",
+        "operationId": "getMyBookedWeek",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "description": "A date of the week (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The week.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookedWeekBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/break/end": {
+      "post": {
+        "tags": ["working-hours"],
+        "summary": "*End break*.",
+        "operationId": "endBreak",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/break/start": {
+      "post": {
+        "tags": ["working-hours"],
+        "summary": "*Start break*.",
+        "operationId": "startBreak",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/end": {
+      "post": {
+        "tags": ["working-hours"],
+        "summary": "*End work day*: ends the break that runs too.",
+        "operationId": "endWorkDay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/start": {
+      "post": {
+        "tags": ["working-hours"],
+        "summary": "*Start work day*: records the moment of the tap as the start of the person's day, or of a new\nperiod of it. A day left open on another date is never ended here: the answer\n`working-hours.day-left-open` names it (`open_day`), and the person says when it ended first.",
+        "operationId": "startWorkDay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/{date}": {
+      "patch": {
+        "tags": ["working-hours"],
+        "summary": "New times of one's own work day, typed afterwards. A past day changes only with a reason, and\nthe history of the day keeps the old times.",
+        "operationId": "changeMyWorkDay",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "description": "The date of the day (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeWorkDayBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-days/{date}/history": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "The history of one's own work day: every change with the old and the new times, who and why.",
+        "operationId": "getMyWorkDayHistory",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "description": "The date of the day (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayHistoryBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/notifications": {
       "get": {
         "tags": ["notifications"],
@@ -9358,6 +9801,229 @@
         },
         "x-never-stored": true,
         "x-permission": "manage-people"
+      }
+    },
+    "/api/v1/people/{person}/work-days": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "Another person's work days from `from` to `to`. Needs *See working hours of others*; while\n*Totals only* is on, the answer has the week totals and nothing else.",
+        "operationId": "listWorkDaysOfPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The first date (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The last date, at most 62 days after the first.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The work days.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDaysBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-working-hours-of-others"
+      }
+    },
+    "/api/v1/people/{person}/work-days/{date}": {
+      "patch": {
+        "tags": ["working-hours"],
+        "summary": "New times of another person's work day, always with a reason. Needs *Change working hours of\nothers*; refused while *Totals only* is on. The person is told, with the reason.",
+        "operationId": "changeWorkDayOfPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "description": "The date of the day (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeWorkDayBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The day as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-working-hours-of-others"
+      }
+    },
+    "/api/v1/people/{person}/work-days/{date}/history": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "The history of another person's work day. Needs *See working hours of others*; refused while\n*Totals only* is on.",
+        "operationId": "getWorkDayHistoryOfPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "description": "The date of the day (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDayHistoryBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-working-hours-of-others"
       }
     },
     "/api/v1/permissions": {
@@ -13465,6 +14131,97 @@
         "x-permission": "by-record"
       }
     },
+    "/api/v1/work-days/old": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "How many work days are older than the keep period, for each person and in total, counted now.",
+        "operationId": "countOldWorkDays",
+        "responses": {
+          "200": {
+            "description": "The count.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OldWorkDaysBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      },
+      "delete": {
+        "tags": ["working-hours"],
+        "summary": "*Delete them*: deletes the work days older than the keep period, of everybody or of one person,\nwith their breaks and the history of their changes. Every deletion is in the security log.",
+        "operationId": "deleteOldWorkDays",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "query",
+            "description": "One person, by ID; everybody's when left out.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many were deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/workflows": {
       "get": {
         "tags": ["workflows"],
@@ -14338,6 +15095,52 @@
           }
         }
       },
+      "BookedDayBody": {
+        "type": "object",
+        "description": "One day of one's own week compared with the time booked on issues, in whole minutes.",
+        "required": ["date", "worked", "booked", "not_booked"],
+        "properties": {
+          "booked": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The time booked on issues.",
+            "minimum": 0
+          },
+          "date": {
+            "type": "string",
+            "description": "The date."
+          },
+          "not_booked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "*Working hours not booked on issues*; below zero when more was booked than worked."
+          },
+          "worked": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The working hours.",
+            "minimum": 0
+          }
+        }
+      },
+      "BookedWeekBody": {
+        "type": "object",
+        "description": "One's own week compared with the time booked on issues.",
+        "required": ["days", "truncated"],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookedDayBody"
+            },
+            "description": "The seven days, in order."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Never true: a week has seven days."
+          }
+        }
+      },
       "BoundsBody": {
         "type": "object",
         "description": "The smallest and the largest value of a whole-number setting.",
@@ -14990,6 +15793,36 @@
         ],
         "description": "A value in a change, as the person may see it."
       },
+      "ChangeWorkDayBody": {
+        "type": "object",
+        "description": "New times of a work day.",
+        "required": ["version", "periods", "breaks"],
+        "properties": {
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The breaks."
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The periods of work."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why, in the person's own words: needed for another person's day and for one's own past\nday, at most 500 characters."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at; 0 for a date that has no work day yet."
+          }
+        }
+      },
       "ChangedIssueBody": {
         "type": "object",
         "description": "One issue that a rename or a combine changes.",
@@ -15415,6 +16248,10 @@
                 },
                 "description": "The mistakes of the text of a search, each with the key of its message and the bytes it\nstands on; only for `search.invalid`."
               },
+              "open_day": {
+                "type": ["string", "null"],
+                "description": "The date of the person's own work day that was never ended (`2026-10-05`); only for\n`working-hours.day-left-open`, so the screen can ask when it ended."
+              },
               "taken_over_by": {
                 "oneOf": [
                   {
@@ -15555,6 +16392,19 @@
         "type": "string",
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
+      },
+      "DeletedBody": {
+        "type": "object",
+        "description": "How many work days were deleted.",
+        "required": ["deleted"],
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The count.",
+            "minimum": 0
+          }
+        }
       },
       "Direction": {
         "type": "string",
@@ -15886,6 +16736,14 @@
           "edit.taken-over",
           "edit.in-progress",
           "search.invalid",
+          "working-hours.day-left-open",
+          "working-hours.day-running",
+          "working-hours.day-not-running",
+          "working-hours.break-running",
+          "working-hours.no-break-running",
+          "working-hours.not-a-work-day",
+          "working-hours.reason-needed",
+          "working-hours.week-totals-only",
           "search.too-slow",
           "rate-limit.exceeded",
           "server.unavailable",
@@ -19358,6 +20216,10 @@
             "type": "boolean",
             "description": "Whether the person has read it."
           },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "The work day: why it was changed, in the words of whoever changed it."
+          },
           "run": {
             "type": ["string", "null"],
             "description": "The end of a run: the ID of the run."
@@ -19369,6 +20231,10 @@
           "text": {
             "type": ["string", "null"],
             "description": "A comment: the text, in Markdown."
+          },
+          "work_day": {
+            "type": ["string", "null"],
+            "description": "One of the person's work days that somebody else changed: its date (`2026-10-05`)."
           }
         }
       },
@@ -19382,7 +20248,8 @@
           "followed-fields",
           "run-ended",
           "edit-notice",
-          "long-timer"
+          "long-timer",
+          "work-day-changed"
         ]
       },
       "NotificationTab": {
@@ -19445,6 +20312,60 @@
             "type": "integer",
             "format": "int64",
             "description": "The version the subject has now."
+          }
+        }
+      },
+      "OldOfPersonBody": {
+        "type": "object",
+        "description": "The work days of one person that are older than the keep period.",
+        "required": ["person", "count"],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many of their days.",
+            "minimum": 0
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the person, for *Delete them* of one person; left out when the reader does not\nsee the person by name."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, as the reader sees people in the settings of the organization."
+          }
+        }
+      },
+      "OldWorkDaysBody": {
+        "type": "object",
+        "description": "The work days older than the keep period.",
+        "required": ["keep_years", "before", "total", "people", "truncated"],
+        "properties": {
+          "before": {
+            "type": "string",
+            "description": "The days with a date before this one are older than it."
+          },
+          "keep_years": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The keep period in force, in whole years."
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OldOfPersonBody"
+            },
+            "description": "How many of each person, in the order of their names, at most 500."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many there are.",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether more people have old days than the list names."
           }
         }
       },
@@ -20472,7 +21393,9 @@
           "manage-roles",
           "change-organization-settings",
           "see-status",
-          "book-time"
+          "book-time",
+          "see-working-hours-of-others",
+          "change-working-hours-of-others"
         ]
       },
       "PermissionAnswerBody": {
@@ -21507,7 +22430,8 @@
           "tag",
           "time-entry",
           "timer",
-          "starter-fields"
+          "starter-fields",
+          "work-day"
         ]
       },
       "RecordRefBody": {
@@ -23001,6 +23925,21 @@
           }
         }
       },
+      "SpanBody": {
+        "type": "object",
+        "description": "A stretch of a work day: a period of work or a break, its moments in UTC.",
+        "required": ["start", "end"],
+        "properties": {
+          "end": {
+            "type": ["string", "null"],
+            "description": "When it ended; `null` while it runs."
+          },
+          "start": {
+            "type": "string",
+            "description": "When it started (RFC 3339)."
+          }
+        }
+      },
       "StandingBody": {
         "type": "object",
         "description": "What a person has in one project.",
@@ -23020,6 +23959,16 @@
           "sees": {
             "type": "boolean",
             "description": "The person sees the project."
+          }
+        }
+      },
+      "StartBody": {
+        "type": "object",
+        "description": "What *Start work day* may say.",
+        "properties": {
+          "device_zone": {
+            "type": ["string", "null"],
+            "description": "The time zone of the device (`Europe/Berlin`); it counts only when the person and the\norganization chose none under *Region*."
           }
         }
       },
@@ -23353,6 +24302,19 @@
           }
         }
       },
+      "TapBody": {
+        "type": "object",
+        "description": "The version of the day the person looked at, for a tap.",
+        "required": ["version"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the day that runs: a stored day has at least the first version.",
+            "minimum": 1
+          }
+        }
+      },
       "TimeEntryItem": {
         "type": "object",
         "description": "One of the person's own time entries.",
@@ -23464,10 +24426,50 @@
           }
         }
       },
+      "TimesBody": {
+        "type": "object",
+        "description": "The periods and breaks of a day, as a change of it and as its history hold them.",
+        "required": ["periods", "breaks"],
+        "properties": {
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The breaks."
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The periods of work."
+          }
+        }
+      },
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
         "enum": ["projects", "issues", "work-settings", "people", "settings", "time"]
+      },
+      "TotalsBody": {
+        "type": "object",
+        "description": "What a day or a week adds up to, in whole minutes.",
+        "required": ["worked", "breaks"],
+        "properties": {
+          "breaks": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The breaks, the time between periods included.",
+            "minimum": 0
+          },
+          "worked": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The time worked.",
+            "minimum": 0
+          }
+        }
       },
       "TriedBody": {
         "type": "object",
@@ -23686,6 +24688,38 @@
         "description": "The kind of view a saved search is shown as. Other kinds come with their views.",
         "enum": ["list"]
       },
+      "WarningBody": {
+        "type": "object",
+        "description": "A broken working-time rule of a day: which rule, its numbers in minutes, and its sentence.",
+        "required": ["warning", "words"],
+        "properties": {
+          "warning": {
+            "type": "object",
+            "description": "The rule and its numbers, in minutes (`{\"rule\": \"long-day\", \"worked\": 635, \"most\": 600}`)."
+          },
+          "words": {
+            "type": "object",
+            "description": "The sentence, as message keys with their words, which the screen writes from its catalog."
+          }
+        }
+      },
+      "WeekBody": {
+        "type": "object",
+        "description": "The time worked in one week.",
+        "required": ["first", "worked"],
+        "properties": {
+          "first": {
+            "type": "string",
+            "description": "The first date of the week."
+          },
+          "worked": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The time worked, in whole minutes.",
+            "minimum": 0
+          }
+        }
+      },
       "WhereToBody": {
         "type": "object",
         "description": "Where a project would go.",
@@ -23768,6 +24802,163 @@
           "message_key": {
             "type": "string",
             "description": "The key of the message that names it."
+          }
+        }
+      },
+      "WorkDayBody": {
+        "type": "object",
+        "description": "A work day.",
+        "required": ["date", "zone", "periods", "breaks", "totals", "warnings", "runs", "version"],
+        "properties": {
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The breaks, in order."
+          },
+          "date": {
+            "type": "string",
+            "description": "Its date: the person's day of its first start."
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanBody"
+            },
+            "description": "The periods of work, in order. The screens show the first start, the last end and the\nbreaks; the time between periods counts as a break."
+          },
+          "runs": {
+            "type": "boolean",
+            "description": "Whether a period or a break runs."
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TotalsBody",
+            "description": "What it adds up to; what runs counts until now."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WarningBody"
+            },
+            "description": "The warnings of the working-time rules; never a reason to refuse anything."
+          },
+          "zone": {
+            "type": "string",
+            "description": "The time zone it started in."
+          }
+        }
+      },
+      "WorkDayChangeBody": {
+        "type": "object",
+        "description": "One change of a work day.",
+        "required": ["at", "by", "reason", "before", "after"],
+        "properties": {
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimesBody",
+                "description": "The times after."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "at": {
+            "type": "string",
+            "description": "When.",
+            "format": "date-time"
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimesBody",
+                "description": "The times before; `null` for the change that made the day."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who changed it."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why, when a reason was given."
+          }
+        }
+      },
+      "WorkDayHistoryBody": {
+        "type": "object",
+        "description": "The history of a work day, oldest change first.",
+        "required": ["changes", "truncated"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkDayChangeBody"
+            },
+            "description": "The changes, at most 200 of the newest."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether older changes were left out."
+          }
+        }
+      },
+      "WorkDaysBody": {
+        "type": "object",
+        "description": "The work days of a stretch of dates.",
+        "required": ["person", "days", "totals", "weeks", "totals_only", "may_change", "truncated"],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkDayBody"
+            },
+            "description": "The days with a record, by date; empty while *Totals only* hides them."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the reader may change the days."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Whose days they are."
+          },
+          "totals": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TotalsBody",
+                "description": "What the days add up to; `null` while *Totals only* hides it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totals_only": {
+            "type": "boolean",
+            "description": "Whether *Totals only* hides the days."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Never true: a stretch longer than 62 days is refused, so nothing is cut off."
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekBody"
+            },
+            "description": "The time worked in each week of the stretch."
           }
         }
       },
@@ -24098,6 +25289,10 @@
     {
       "name": "saved-searches",
       "description": "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows."
+    },
+    {
+      "name": "working-hours",
+      "description": "Working hours: when a person worked, as the law asks; one's own, other people's for those who may see them, and the days older than the keep period."
     }
   ]
 }

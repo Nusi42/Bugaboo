@@ -142,3 +142,11 @@ pub(crate) enum StartingRolesMadeRow {
     Table,
     MadeAt,
 }
+
+/// The starting roles that came after the others were made, still to make once (migration 32).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum StartingRoleDueRow {
+    #[iden = "starting_role_due"]
+    Table,
+    Key,
+}

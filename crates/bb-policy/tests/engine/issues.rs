@@ -20,7 +20,11 @@ fn with(role: StartingRole) -> World {
 #[test]
 fn iss_01_a_guest_sees_only_the_issues_they_reported_and_everybody_else_sees_them_all() {
     let other = somebody_else();
-    for role in StartingRole::ALL {
+    // *HR* gives no work in projects (ADR-0035, decision 8): it sees no issue at all.
+    for role in StartingRole::ALL
+        .iter()
+        .filter(|role| **role != StartingRole::Hr)
+    {
         let world = with(*role);
         let held = world.at(world.web);
         let own = world.person;

@@ -42,7 +42,7 @@ const NOTIFICATIONS_LIST: &str = "notifications";
 
 /// The fields of an item of the list that can be asked for. An item holds only the ones that
 /// belong to what it says.
-const NOTIFICATION_FIELDS: [FieldSpec; 17] = [
+const NOTIFICATION_FIELDS: [FieldSpec; 19] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("at"),
@@ -60,6 +60,8 @@ const NOTIFICATION_FIELDS: [FieldSpec; 17] = [
     FieldSpec::by_default("file_event"),
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("change"),
+    FieldSpec::by_default("work_day"),
+    FieldSpec::by_default("reason"),
 ];
 
 /// One item of the list of notifications.
@@ -113,6 +115,12 @@ pub(crate) struct NotificationEntry {
     /// A change: the field that changed, with what it was and what it is now.
     #[serde(skip_serializing_if = "Option::is_none")]
     change: Option<FieldChangeBody>,
+    /// One of the person's work days that somebody else changed: its date (`2026-10-05`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    work_day: Option<String>,
+    /// The work day: why it was changed, in the words of whoever changed it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reason: Option<String>,
 }
 
 impl Masked for NotificationEntry {}
@@ -137,6 +145,8 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         file_event: None,
         file_name: None,
         change: None,
+        work_day: None,
+        reason: None,
     }
 }
 
@@ -181,6 +191,12 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             let mut entry = start(item);
             entry.file_event = Some(*event);
             entry.file_name.clone_from(name);
+            vec![entry]
+        }
+        NotificationWhat::WorkDayChanged { date, reason } => {
+            let mut entry = start(item);
+            entry.work_day = Some(date.to_string());
+            entry.reason.clone_from(reason);
             vec![entry]
         }
         NotificationWhat::Plain => vec![start(item)],
@@ -481,6 +497,8 @@ mod tests {
             file_event: Some(FileEvent::Added),
             file_name: Some(String::new()),
             change: Some(FieldChangeBody::blank()),
+            work_day: Some(String::new()),
+            reason: Some(String::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&NOTIFICATION_FIELDS, &item);
     }

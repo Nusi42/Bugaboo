@@ -315,7 +315,8 @@ fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
     Ok(())
 }
 
-/// The six starting roles with the mix of the plan of the people, and the two custom roles.
+/// Every starting role with the mix of the plan of the people (a role outside the mix, HR, is
+/// there and held by nobody), and the two custom roles.
 fn the_roles(dump: &Value) -> Result<(), Failure> {
     let mut roles: BTreeMap<&str, (bool, u64)> = BTreeMap::new();
     for role in members(dump, "roles")? {
@@ -333,12 +334,12 @@ fn the_roles(dump: &Value) -> Result<(), Failure> {
         let wanted = ROLE_MIX
             .iter()
             .find(|(known, _)| *known == role)
-            .map(|(_, count)| *count);
+            .map_or(0, |(_, count)| *count);
         assert_eq!(
             roles
                 .get(name)
                 .map(|(_, held)| usize::try_from(*held).unwrap_or(0)),
-            wanted,
+            Some(wanted),
             "{name}"
         );
     }

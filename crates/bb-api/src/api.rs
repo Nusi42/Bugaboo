@@ -81,6 +81,7 @@ mod tags;
 mod time;
 mod time_entries;
 mod workflows;
+mod working_hours;
 
 pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
@@ -179,6 +180,7 @@ where
         .merge(history::routes())
         .merge(follow::routes())
         .merge(saved_searches::routes())
+        .merge(working_hours::routes())
         .merge(notifications::routes())
         .merge(handles::routes())
         .merge(people::routes())

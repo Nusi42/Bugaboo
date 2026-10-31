@@ -46,6 +46,13 @@ pub enum AppError {
     /// The text of a search cannot be run: every mistake in it, with where it is and a message key
     /// (`search.mistake.*`), for the person to read (ADR-0005).
     Mistakes(Vec<bb_searchlang::Mistake>),
+    /// The person's last work day was never ended (`working-hours.day-left-open`): the answer
+    /// names its date, and the person says when it ended first (ADR-0035, decision 5). Only the
+    /// person's own day is ever named.
+    DayLeftOpen {
+        /// The date of the day that was left open.
+        date: jiff::civil::Date,
+    },
     /// Something failed inside the server. The text is for the log only.
     Internal(String),
 }
@@ -61,6 +68,7 @@ impl AppError {
             Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
             Self::TakenOver { .. } => Some(ErrorCode::EditTakenOver),
             Self::Mistakes(_) => Some(ErrorCode::SearchInvalid),
+            Self::DayLeftOpen { .. } => Some(ErrorCode::WorkDayLeftOpen),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -122,6 +130,9 @@ impl fmt::Display for AppError {
             ),
             Self::Limited { retry_after } => {
                 write!(formatter, "limited for {retry_after} seconds")
+            }
+            Self::DayLeftOpen { .. } => {
+                write!(formatter, "refused: {}", ErrorCode::WorkDayLeftOpen)
             }
             Self::Internal(cause) => write!(formatter, "failed inside the server: {cause}"),
         }

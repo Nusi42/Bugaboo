@@ -21,6 +21,7 @@ mod system;
 mod text_index;
 mod time;
 mod work;
+mod working_hours;
 
 pub(crate) use access::*;
 pub(crate) use comments::*;
@@ -32,6 +33,7 @@ pub(crate) use system::*;
 pub(crate) use text_index::*;
 pub(crate) use time::*;
 pub(crate) use work::*;
+pub(crate) use working_hours::*;
 
 /// A table with the entity stored in it.
 #[derive(Debug)]
@@ -642,6 +644,28 @@ stored_tables! {
     StartingRolesMadeRow => bb_core::access::StartingRolesMade {
         MadeAt => made_at,
     },
+    StartingRoleDueRow => bb_core::access::StartingRoleDue {
+        Key => key,
+    },
+    WorkDayRow => bb_core::working_time::record::WorkDay {
+        Id => id,
+        Person => person,
+        Date => date,
+        Zone => zone,
+        Warnings => warnings,
+        UpdatedAt => updated_at,
+        Version => version,
+    },
+    WorkPeriodRow => bb_core::working_time::record::WorkPeriod {
+        Day => day,
+        Start => start,
+        End => end,
+    },
+    WorkBreakRow => bb_core::working_time::record::WorkBreak {
+        Day => day,
+        Start => start,
+        End => end,
+    },
     AccessKeyRow => bb_core::access_key::AccessKey {
         Id => id,
         Owner => owner,
@@ -747,42 +771,4 @@ stored_tables! {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
-
-    use super::*;
-
-    #[test]
-    fn every_table_has_its_own_name_and_every_column_a_marked_field() {
-        let tables = tables();
-        let names: HashSet<&str> = tables.iter().map(|table| table.name.as_str()).collect();
-        assert_eq!(names.len(), tables.len());
-        assert!(names.contains("setting"));
-        assert!(names.contains("security_log_checkpoint"));
-        for table in &tables {
-            assert!(!table.marks.fields().is_empty(), "{}", table.name);
-            let fields: HashSet<&str> = table
-                .marks
-                .fields()
-                .iter()
-                .map(bb_core::personal::FieldMark::name)
-                .collect();
-            for (column, field) in &table.columns {
-                assert!(
-                    fields.contains(field),
-                    "{}.{column} points to the field `{field}`, which the entity does not have",
-                    table.name
-                );
-            }
-            // Every field of the entity is stored in some column.
-            let stored: HashSet<&str> = table.columns.iter().map(|(_, field)| *field).collect();
-            for field in &fields {
-                assert!(
-                    stored.contains(field),
-                    "{}: `{field}` is not stored",
-                    table.name
-                );
-            }
-        }
-    }
-}
+mod tests;

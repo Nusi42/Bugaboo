@@ -4,8 +4,10 @@
 //! `bb-policy`, with an event and a security-log entry (never in a migration); after that the
 //! definition is read only by *Reset to the starting permissions*. The same use case gives every
 //! person who was an administrator in M1 the Administrator role for the whole organization, one
-//! change, one event and one log entry each. It runs at every start and does only what is still
-//! to do, so it can be stopped half way and run again.
+//! change, one event and one log entry each. A starting role that came later (*HR*, ADR-0025,
+//! amendment M6) is made once on a server whose roles were made before it, when its migration left
+//! a row that says so. It runs at every start and does only what is still to do, so it can be
+//! stopped half way and run again.
 
 use bb_core::access::{AppliesTo, Assignment, Role};
 use bb_core::event::{Actor, RecordKind};
@@ -20,6 +22,7 @@ use serde_json::json;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, change_failed, changed, entity, fixed_entity, internal, set_to,
 };
+use crate::member;
 
 /// Makes the starting roles if they were not made yet, and gives the people who were
 /// administrators in M1 their role. There is nothing to say: it only does what is left.
@@ -150,7 +153,81 @@ pub async fn create_starting_roles<S: AuthStore>(
             Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     }
+    create_the_roles_that_are_due(ctx).await?;
     give_the_old_administrators_their_role(ctx).await
+}
+
+/// Makes the starting roles that came after the others were made, once each: a role that has
+/// the mark of its starting role already is not made again, and the row that said it was due goes
+/// in the same change.
+async fn create_the_roles_that_are_due<S: AuthStore>(ctx: &Ctx<'_, S>) -> Result<(), AppError> {
+    let due = ctx
+        .store()
+        .starting_roles_due()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    if due.is_empty() {
+        return Ok(());
+    }
+    let roles = ctx
+        .store()
+        .roles()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    for key in due {
+        let Some(starting) = StartingRole::from_code(key.as_str()) else {
+            continue;
+        };
+        let there = roles.iter().any(|record| {
+            record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.code())
+        });
+        let new = ctx.new_starting_role(starting)?;
+        let id = new.role.id;
+        let event = ctx.event(
+            Actor::System,
+            entity(RecordKind::Role, id),
+            vec![set_to(member::role::NAME, json!(new.role.name))],
+        )?;
+        let made = ctx
+            .store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    S::lock_policy(transaction).await?;
+                    // Another server that started at the same time may have made it already.
+                    let due_now = S::starting_roles_due_in(transaction).await?;
+                    if !due_now.contains(&key) {
+                        return Err(S::aborted());
+                    }
+                    if !there {
+                        S::insert_role(
+                            transaction,
+                            &new.role,
+                            &new.permissions,
+                            &new.fields,
+                            &new.people,
+                        )
+                        .await?;
+                    }
+                    S::clear_starting_role_due(transaction, &key).await?;
+                    Ok(!there)
+                })
+            })
+            .await;
+        match made {
+            Ok(true) => {
+                ctx.note(
+                    SecurityAction::RoleCreated,
+                    None,
+                    Some(entity(RecordKind::Role, id)),
+                )
+                .await;
+            }
+            Ok(false) => {}
+            Err(error) if S::is_aborted(&error) => {}
+            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
+        }
+    }
+    Ok(())
 }
 
 /// The ID of the role that is the copy of the starting role `starting`, made again from the

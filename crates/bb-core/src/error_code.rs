@@ -233,6 +233,26 @@ error_codes! {
     /// The text of a search cannot be run: the answer lists the mistakes in it, each with the key of
     /// its message and where it is (ADR-0005).
     SearchInvalid => ("search.invalid", 400),
+    /// The person's last work day was never ended: the answer names its date (`open_day`), and
+    /// the person says when it ended before a new one starts (ADR-0035, decision 5).
+    WorkDayLeftOpen => ("working-hours.day-left-open", 409),
+    /// The work day runs already.
+    WorkDayRunning => ("working-hours.day-running", 409),
+    /// No work day runs, so there is nothing to take a break from or to end.
+    WorkDayNotRunning => ("working-hours.day-not-running", 409),
+    /// A break runs already.
+    BreakRunning => ("working-hours.break-running", 409),
+    /// No break runs, so there is none to end.
+    NoBreakRunning => ("working-hours.no-break-running", 409),
+    /// The times do not make one work day: a break outside the work, two that overlap, a day
+    /// longer than 24 hours or one that overlaps the day before or after it (ADR-0035, decision 5).
+    NotAWorkDay => ("working-hours.not-a-work-day", 400),
+    /// A change of another person's work day, or of one's own past day, needs a reason in the
+    /// person's own words (ADR-0035, decision 7).
+    ReasonNeeded => ("working-hours.reason-needed", 400),
+    /// *Totals only* is on: other people's days are shown as week totals only and are not changed
+    /// (ADR-0035, decision 8).
+    TotalsOnly => ("working-hours.week-totals-only", 403),
     /// A search took longer than the time a search may take (SEC-17, architecture §7 *Search
     /// limits*); the person narrows it down.
     SearchTooSlow => ("search.too-slow", 503),

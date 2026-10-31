@@ -282,6 +282,15 @@ pub struct StartingRolesMade {
     pub made_at: Timestamp,
 }
 
+/// A starting role that came after the starting roles were made, still to be made once on this
+/// server (the role *HR*, ADR-0025, amendment M6): the next start makes it and takes the row away.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct StartingRoleDue {
+    /// The key of the starting role.
+    #[not_personal]
+    pub key: TechnicalName,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

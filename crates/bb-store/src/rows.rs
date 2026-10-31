@@ -6,7 +6,7 @@ use bb_core::id::{
     FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
     LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
     RelationKindId, RoleId, SavedSearchId, SessionId, TagId, TimeEntryId, UploadId, UserId,
-    WorkflowId,
+    WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -144,6 +144,7 @@ stored_ids!(
     RelationKindId => "a kind of relation ID",
     RoleId => "a role ID",
     SavedSearchId => "a saved search ID",
+    WorkDayId => "a work day ID",
     SessionId => "a session ID",
     UserId => "a person ID",
     WorkflowId => "a workflow ID",

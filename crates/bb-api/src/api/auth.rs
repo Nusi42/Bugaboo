@@ -122,6 +122,9 @@ impl From<AppError> for ApiError {
             AppError::Limited { retry_after } => {
                 Self::new(ErrorCode::TooManyRequests).with_retry_after(retry_after)
             }
+            AppError::DayLeftOpen { date } => {
+                Self::new(ErrorCode::WorkDayLeftOpen).with_open_day(date.to_string())
+            }
             AppError::Internal(cause) => Self::internal(&cause),
         }
     }

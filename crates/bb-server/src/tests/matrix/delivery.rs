@@ -49,11 +49,17 @@ impl Delivered {
         Self {
             entry,
             role,
-            heard: true,
+            heard: follows_issues(role),
             status_shown: role.field_level(Field::Status) != FieldLevel::Hidden,
             author: role.people_level(PeopleKind::Authors),
         }
     }
+}
+
+/// Whether a person with the role can follow an issue at all: *HR* sees no project, so it follows
+/// nothing and hears of no issue (ADR-0035, decision 8).
+fn follows_issues(role: StartingRole) -> bool {
+    role.permissions().contains(&Permission::SeeProjects)
 }
 
 /// A change of the status that the person may follow: the issue is made by the recipient when they
@@ -100,6 +106,10 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
     let mut everyone = Vec::new();
     for role in StartingRole::ALL.iter().copied() {
         let (mut person, _) = site.person(role, role.code()).await?;
+        if !follows_issues(role) {
+            everyone.push(in_the_app(role, &mut person).await?);
+            continue;
+        }
         let issue = issue_of(&site, &mut ada, role, &mut person).await?;
         rig.clock.advance(5);
         let version = version_of(&mut ada, &issue).await?;

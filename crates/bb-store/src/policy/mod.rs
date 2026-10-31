@@ -20,6 +20,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
+use bb_core::technical::TechnicalName;
 use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
 use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, Policy};
@@ -33,7 +34,7 @@ use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::LockClass;
 use crate::projects::{chain_of, insert_project, project_by_short_name, project_in};
-use crate::schema::{LegacyAdministratorRow, StartingRolesMadeRow};
+use crate::schema::{LegacyAdministratorRow, StartingRoleDueRow, StartingRolesMadeRow};
 
 /// The IDs as a list of values to bind to a query.
 pub(crate) fn in_list<T: StoredId>(ids: &[T]) -> Vec<Vec<u8>> {
@@ -95,6 +96,25 @@ impl PolicyStore for AuthStorage {
 
     async fn starting_roles_made_in(transaction: &mut Transaction) -> Result<bool, StoreError> {
         starting_roles_made(transaction).await
+    }
+
+    async fn starting_roles_due_in(
+        transaction: &mut Transaction,
+    ) -> Result<Vec<TechnicalName>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(StartingRoleDueRow::Key)
+            .from(StartingRoleDueRow::Table)
+            .order_by(StartingRoleDueRow::Key, Order::Asc);
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                TechnicalName::new(&row.get::<String>(StartingRoleDueRow::Key)?)
+                    .map_err(|_| StoreError::Corrupt("the key of a starting role"))
+            })
+            .collect()
     }
 
     async fn role_in(
@@ -239,6 +259,17 @@ impl PolicyStore for AuthStorage {
 
     async fn lock_policy(transaction: &mut Transaction) -> Result<(), StoreError> {
         transaction.advisory_lock(LockClass::Policy, 0).await
+    }
+
+    async fn clear_starting_role_due(
+        transaction: &mut Transaction,
+        key: &TechnicalName,
+    ) -> Result<(), StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(StartingRoleDueRow::Table)
+            .and_where(Expr::col(StartingRoleDueRow::Key).eq(key.as_str()));
+        transaction.execute(&delete).await.map(|_| ())
     }
 
     async fn mark_starting_roles_made(

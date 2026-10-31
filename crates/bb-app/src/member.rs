@@ -137,6 +137,24 @@ pub(crate) mod label_group {
 }
 
 /// The members of a saved search (QRY-06).
+/// The members of a work day (ADR-0035, decision 7): the times before and after hold the old
+/// value of every change; the reason is the reason of the event.
+pub(crate) mod work_day {
+    /// Whose day it is.
+    pub(crate) const PERSON: &str = "person";
+    /// Its date.
+    pub(crate) const DATE: &str = "date";
+    /// Its periods and breaks.
+    pub(crate) const TIMES: &str = "times";
+    /// The reason, in a notification of a change by somebody else (the event holds it as its
+    /// reason).
+    pub(crate) const REASON: &str = "reason";
+    /// How many old work days of a person were deleted (an event about the person).
+    pub(crate) const DELETED: &str = "work_days_deleted";
+    /// The days with a date before this one were older than the keep period.
+    pub(crate) const BEFORE: &str = "work_days_before";
+}
+
 pub(crate) mod saved_search {
     pub(crate) const NAME: &str = "name";
     pub(crate) const TEXT: &str = "text";

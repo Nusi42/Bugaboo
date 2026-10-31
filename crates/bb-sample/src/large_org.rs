@@ -357,7 +357,7 @@ fn assign(org: &mut Org, families: &[Family], first_new: usize, random: &mut See
                 rows.direct.push((index, role, None));
                 org.everywhere.push(index);
             }
-            StartingRole::Viewer => rows.direct.push((index, role, None)),
+            StartingRole::Viewer | StartingRole::Hr => rows.direct.push((index, role, None)),
             StartingRole::ProjectLead => {
                 if let Some((_, parent)) = family_of(random) {
                     rows.direct.push((index, role, Some(parent)));

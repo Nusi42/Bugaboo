@@ -282,6 +282,20 @@ impl PolicyStore for FakeStore {
         Ok(())
     }
 
+    async fn starting_roles_due_in(
+        tx: &mut Tx,
+    ) -> Result<Vec<bb_core::technical::TechnicalName>, FakeError> {
+        Ok(super::fake_working_hours::due_roles(tx))
+    }
+
+    async fn clear_starting_role_due(
+        tx: &mut Tx,
+        key: &bb_core::technical::TechnicalName,
+    ) -> Result<(), FakeError> {
+        tx.state.starting_roles_due.retain(|due| due != key);
+        Ok(())
+    }
+
     async fn delete_legacy_administrator(tx: &mut Tx, person: UserId) -> Result<(), FakeError> {
         tx.state
             .legacy_administrators

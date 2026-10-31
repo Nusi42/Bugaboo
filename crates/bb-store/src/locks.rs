@@ -57,6 +57,9 @@ pub(crate) enum LockClass {
     /// Making saved searches and sharing them (key: four bytes of the maker's ID): two changes of
     /// one person at the same moment cannot both pass the limits of searches and of shares.
     SavedSearches = 12,
+    /// The work days of one person (key: four bytes of the person's ID): two changes of one
+    /// person's days at the same moment are judged one after the other on what is stored.
+    WorkDays = 13,
 }
 
 impl LockClass {
@@ -78,6 +81,7 @@ impl LockClass {
             Self::IssueFiles => 9,
             Self::TextIndex => 10,
             Self::SavedSearches => 11,
+            Self::WorkDays => 12,
         }
     }
 }

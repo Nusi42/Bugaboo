@@ -54,6 +54,19 @@ export const settingKeys = {
   mailUsername: "mail.username",
   mailFrom: "mail.from",
   mailShort: "mail.short",
+  workingHoursPreset: "working-hours.preset",
+  workingHoursDayMinutesMax: "working-hours.day-minutes-max",
+  workingHoursFirstBreakAfterMinutes: "working-hours.first-break-after-minutes",
+  workingHoursFirstBreakMinutes: "working-hours.first-break-minutes",
+  workingHoursSecondBreakAfterMinutes: "working-hours.second-break-after-minutes",
+  workingHoursSecondBreakMinutes: "working-hours.second-break-minutes",
+  workingHoursShortestBreakMinutes: "working-hours.shortest-break-minutes",
+  workingHoursInARowMinutesMax: "working-hours.in-a-row-minutes-max",
+  workingHoursRestMinutesMin: "working-hours.rest-minutes-min",
+  workingHoursKeepYears: "working-hours.keep-years",
+  workingHoursTotalsOnly: "working-hours.totals-only",
+  notificationsWorkDayChangedInApp: "notifications.work-day-changed-in-app",
+  notificationsWorkDayChangedByMail: "notifications.work-day-changed-by-mail",
 } as const;
 
 /** The key of a setting of the registry. */
@@ -72,6 +85,7 @@ export const settingChoices = {
   regionFirstDay: ["device", "monday", "sunday", "saturday"],
   issuesIdMode: ["random", "counting"],
   mailSecurity: ["starttls", "tls", "off"],
+  workingHoursPreset: ["germany", "no-rules"],
 } as const;
 
 /** What a person who chose nothing gets, for every setting of the registry. */
@@ -128,6 +142,19 @@ export const settingDefaults = {
   mailUsername: "",
   mailFrom: "",
   mailShort: false,
+  workingHoursPreset: "germany",
+  workingHoursDayMinutesMax: 600,
+  workingHoursFirstBreakAfterMinutes: 360,
+  workingHoursFirstBreakMinutes: 30,
+  workingHoursSecondBreakAfterMinutes: 540,
+  workingHoursSecondBreakMinutes: 45,
+  workingHoursShortestBreakMinutes: 15,
+  workingHoursInARowMinutesMax: 360,
+  workingHoursRestMinutesMin: 660,
+  workingHoursKeepYears: 2,
+  workingHoursTotalsOnly: false,
+  notificationsWorkDayChangedInApp: true,
+  notificationsWorkDayChangedByMail: true,
 } as const;
 
 /** One of the choices of a setting, like `"device"` for `appearanceMode`. */

@@ -16,8 +16,9 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// and single permissions (decisions on access keys and M3-Q6): a key cannot invite people,
 /// change who has which role or change the settings of the organization (which could switch off
 /// the two-step requirement, open signing up or change how long sessions last), take over
-/// somebody's editing, or change issue types, layouts, fields, labels and tags. These stay in the
-/// app, where the person is signed in. Defined once, here
+/// somebody's editing, change issue types, layouts, fields, labels and tags, or read or change other
+/// people's working hours (ADR-0025, amendment M6). These stay in the app, where the person is
+/// signed in. Defined once, here
 /// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 pub const NOT_FOR_KEYS: &[Permission] = &[
@@ -33,6 +34,8 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageFields,
     Permission::ManageLabels,
     Permission::ManageWorkflows,
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
 ];
 
 /// Declares the permissions: one line per permission, with the key, topic, where it counts and
@@ -135,6 +138,10 @@ permissions! {
     /// Book one's own time on the issues one sees, and change and delete one's own time entries
     /// (ADR-0035, decision 2).
     BookTime => ("book-time", Time, Project, Change),
+    /// See other people's working hours on *Working hours of others* (ADR-0035, decision 8).
+    SeeWorkingHoursOfOthers => ("see-working-hours-of-others", Time, Organization, See),
+    /// Change other people's work days, always with a reason (ADR-0035, decision 7).
+    ChangeWorkingHoursOfOthers => ("change-working-hours-of-others", Time, Organization, Manage),
 }
 
 words_in_api!(Permission, "One permission of the catalogue.");

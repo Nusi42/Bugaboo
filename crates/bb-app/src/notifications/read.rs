@@ -201,9 +201,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(None);
         };
-        let by = match row.by {
-            Some(person) => Some(self.notification_person(reading, &held, person).await?),
-            None => None,
+        let by = match (row.by, row.kind) {
+            // Whoever changed the person's own work day is named to them (ADR-0035, decision 7).
+            (Some(person), NotificationKind::WorkDayChanged) => Some(
+                self.person_ref(
+                    &held,
+                    PeopleKind::Authors,
+                    PeopleContext::OwnWorkDay,
+                    person,
+                )
+                .await?,
+            ),
+            (Some(person), _) => Some(self.notification_person(reading, &held, person).await?),
+            (None, _) => None,
         };
         Ok(Some(NotificationItem {
             id: row.id,
@@ -265,6 +275,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             // The kind says it all; the row names the issue the timer runs on.
             NotificationKind::LongTimer => Ok(issue.map(|_| NotificationWhat::Plain)),
+            NotificationKind::WorkDayChanged => Ok(work_day_change_of(&row.changes)),
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,
                 // Only a run that says it is done ended well: one that failed, one that was
@@ -476,4 +487,19 @@ pub async fn read_notifications<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     Ok(Done)
+}
+
+/// What a row about a changed work day says: its date and the reason, as the row keeps them.
+fn work_day_change_of(changes: &[FieldChange]) -> Option<NotificationWhat> {
+    let value_of = |field: &str| {
+        changes
+            .iter()
+            .find(|change| change.field == field)
+            .and_then(|change| change.after.as_ref())
+            .and_then(|value| value.as_str())
+    };
+    Some(NotificationWhat::WorkDayChanged {
+        date: value_of(crate::member::work_day::DATE)?.parse().ok()?,
+        reason: value_of(crate::member::work_day::REASON).map(str::to_owned),
+    })
 }

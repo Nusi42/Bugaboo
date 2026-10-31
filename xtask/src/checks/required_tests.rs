@@ -62,7 +62,7 @@ impl Required {
 
 /// Every check that holds a list of required tests, by ID: DOC-PROVEN-BY reads the lists to see that
 /// a test the docs cite as proof is required by the check they cite.
-pub(super) fn lists() -> [(&'static str, &'static [Required]); 7] {
+pub(super) fn lists() -> [(&'static str, &'static [Required]); 8] {
     use super::Check as _;
     [
         (
@@ -86,6 +86,10 @@ pub(super) fn lists() -> [(&'static str, &'static [Required]); 7] {
             &super::test_edit_locks::REQUIRED,
         ),
         (super::perf_n1::PerfN1.id(), &super::perf_n1::REQUIRED),
+        (
+            super::test_working_time::TestWorkingTime.id(),
+            &super::test_working_time::REQUIRED,
+        ),
         (
             super::arch_lock_order::ArchLockOrder.id(),
             &super::arch_lock_order::REQUIRED,

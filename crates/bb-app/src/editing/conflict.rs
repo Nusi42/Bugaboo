@@ -21,7 +21,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, Re
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
     FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
-    RelationKindId, RoleId, SavedSearchId, TagId, TimeEntryId, UserId, WorkflowId,
+    RelationKindId, RoleId, SavedSearchId, TagId, TimeEntryId, UserId, WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -288,6 +288,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|entry| entry.person == stale.viewer)
             .map(|entry| entry.version),
+            // Only a person who may change the day was told it is stale (`working_hours`).
+            RecordKind::WorkDay => found(WorkDayId::from_bytes(bytes).ok(), |id| {
+                store.work_day_by_id(id)
+            })
+            .await
+            .map_err(failed)?
+            .map(|stored| stored.day.version),
             _ => return self.version_by_kind(stale).await,
         };
         Ok(version)

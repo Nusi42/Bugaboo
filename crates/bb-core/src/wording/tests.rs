@@ -162,7 +162,29 @@ fn notice(kind: NotificationKind) -> Notice {
         run_done: None,
         renewal: None,
         file: None,
+        work_day: None,
     }
+}
+
+#[test]
+fn time_10_a_changed_work_day_names_who_the_date_and_the_reason() {
+    let mut changed = notice(NotificationKind::WorkDayChanged);
+    changed.work_day = Some(WorkDayNotice {
+        date: "2027-01-14".to_owned(),
+        reason: Some("Badge log says 16:00".to_owned()),
+    });
+    assert_eq!(
+        sentences(&changed),
+        [
+            "Ana changed your work day of 2027-01-14",
+            "Why: Badge log says 16:00"
+        ]
+    );
+    changed.work_day = Some(WorkDayNotice {
+        date: "2027-01-14".to_owned(),
+        reason: None,
+    });
+    assert_eq!(sentences(&changed).len(), 1);
 }
 
 fn sentences(notice: &Notice) -> Vec<String> {
