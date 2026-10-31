@@ -14,10 +14,8 @@ pub const DEAD_PAYLOAD_KEEP_DAYS: i64 = 30;
 /// The moment before which the payload of a dead job is too old to keep, at `now`.
 #[must_use]
 pub fn dead_payload_cutoff(now: Timestamp) -> Option<Timestamp> {
-    now.checked_sub(jiff::SignedDuration::from_secs(
-        DEAD_PAYLOAD_KEEP_DAYS * crate::time::SECONDS_PER_DAY,
-    ))
-    .ok()
+    now.checked_sub(crate::time::days(DEAD_PAYLOAD_KEEP_DAYS))
+        .ok()
 }
 
 words! {

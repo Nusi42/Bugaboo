@@ -5,7 +5,9 @@
 
 use serde_json::Value;
 
+use crate::error_code::ErrorCode;
 use crate::message::MessageKey;
+use crate::time::zone;
 
 /// One value a setting with a fixed list can have, and the words that name it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -49,11 +51,6 @@ const SHORTCUT_SEQUENCE_LONGEST: usize = 40;
 /// The most forms whose window size is remembered, and the largest side of a window in pixels.
 const WINDOWS_MOST: usize = 64;
 const WINDOW_SIDE_LARGEST: u64 = 10_000;
-/// The longest time zone name and the longest part of one, in characters.
-const ZONE_LONGEST: usize = 64;
-const ZONE_PART_LONGEST: usize = 32;
-/// The most parts a time zone name has (`America/Argentina/Buenos_Aires`).
-const ZONE_PARTS_MOST: usize = 3;
 
 /// What kind of text a setting holds. Anything but [`Format::Free`] is checked when the value is
 /// stored.
@@ -63,7 +60,7 @@ pub enum Format {
     Free,
     /// One of a fixed list.
     Choices(&'static [Choice]),
-    /// `device`, or a time zone of the IANA list (`Europe/Berlin`, `UTC`).
+    /// `device`, or a time zone of the list the server carries (`Europe/Berlin`, `UTC`).
     TimeZone,
     /// The address of a page of the app: starts with one slash and never names another website: no
     /// `//` anywhere, no `..` segment, no encoded slash, backslash or dot.
@@ -96,6 +93,21 @@ impl Format {
         }
     }
 
+    /// The answer to a value this format does not accept: a plain sentence where one says what to
+    /// do instead, otherwise an invalid request (the screen offers only values it accepts).
+    #[must_use]
+    pub const fn refusal(self) -> ErrorCode {
+        match self {
+            Self::TimeZone => ErrorCode::SettingUnknownTimeZone,
+            Self::Hosts => ErrorCode::SettingHostsNotBare,
+            Self::Free
+            | Self::Choices(_)
+            | Self::PageAddress
+            | Self::ShortcutKeys
+            | Self::WindowSizes => ErrorCode::InvalidRequest,
+        }
+    }
+
     /// The choices, for the format that has a list.
     #[must_use]
     pub const fn choices(self) -> &'static [Choice] {
@@ -111,20 +123,10 @@ impl Format {
     }
 }
 
+/// `device`, or a zone of the list the server carries ([`zone::named`]): a name only shaped like
+/// one (`Europe/Atlantis`) is refused (M2-F72).
 fn is_time_zone(text: &str) -> bool {
-    if text == DEVICE || text == "UTC" {
-        return true;
-    }
-    let parts: Vec<&str> = text.split('/').collect();
-    text.len() <= ZONE_LONGEST
-        && (2..=ZONE_PARTS_MOST).contains(&parts.len())
-        && parts.iter().all(|part| {
-            part.starts_with(|c: char| c.is_ascii_alphabetic())
-                && part.len() <= ZONE_PART_LONGEST
-                && part
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '+'))
-        })
+    text == DEVICE || zone::named(text).is_some()
 }
 
 /// Percent-encoded characters that change what an address means once something decodes it: a
@@ -255,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn cfg_04_a_time_zone_is_device_utc_or_a_name_of_the_iana_list() {
+    fn m2_f72_a_time_zone_is_device_or_a_zone_the_server_knows() {
         for good in [
             "device",
             "UTC",
@@ -269,6 +271,8 @@ mod tests {
         for bad in [
             "",
             "Berlin",
+            "Europe/Atlantis",
+            "europe/berlin",
             "/Europe/Berlin",
             "Europe/",
             "Europe//Berlin",
@@ -280,6 +284,10 @@ mod tests {
         ] {
             assert!(!Format::TimeZone.accepts(bad), "{bad}");
         }
+        assert_eq!(
+            Format::TimeZone.refusal(),
+            ErrorCode::SettingUnknownTimeZone
+        );
     }
 
     #[test]

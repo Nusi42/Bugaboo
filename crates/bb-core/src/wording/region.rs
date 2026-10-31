@@ -1,15 +1,16 @@
-//! How a day, a moment and a number are written for a reader of an e-mail: the part of the wording
-//! that depends on what a person chose under *Region*. The screen writes the same with `Intl`
-//! (`web/app/src/shared/format.ts`), because its choice *device* uses what the browser does, which
-//! the server cannot run; the two are held together by the vectors in
+//! How a date, a moment, a time of day and a number are written for a reader of an e-mail: the part
+//! of the wording that depends on what a person chose under *Region*. The screen writes the same
+//! with `Intl` (`web/app/src/shared/format.ts`), because its choice *device* uses what the browser
+//! does, which the server cannot run; the two are held together by the vectors in
 //! `tools/testdata/value-words.json`, which `cargo xtask gen word-vectors` writes from this code
 //! (ADR-0033, the amendment about value wording).
 //!
 //! The screen writes days, moments and numbers the way the person chose under *Region*, and lets
 //! the browser fill in what the person left on *device*. A server does not know the device, so an
 //! e-mail takes what the organization chose for that setting, and the usual way (year, month, day;
-//! a point before decimals; UTC) when the organization chose nothing either. A moment is followed
-//! by the name of its time zone, because an e-mail is read away from the screen.
+//! a clock of 24 hours; a point before decimals; UTC; weeks from Monday) when the organization chose
+//! nothing either. A moment is followed by the name of its time zone, because an e-mail is read away
+//! from the screen.
 
 use jiff::Timestamp;
 use jiff::civil::Date;
@@ -20,16 +21,18 @@ use crate::message;
 use crate::own_fields::FieldType;
 use crate::settings::{
     DATE_FORMAT_DAY_MONTH_YEAR, DATE_FORMAT_MONTH_DAY_YEAR, DEVICE, Layers, NUMBER_FORMAT_COMMA,
-    NUMBER_FORMAT_SPACE, REGION_DATE_FORMAT, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, Setting, Text,
+    NUMBER_FORMAT_SPACE, REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT,
+    REGION_TIME_OF_DAY, REGION_TIME_ZONE, Setting, TIME_OF_DAY_12_HOUR, Text,
 };
+use crate::time::day::{FirstDay, Week};
+use crate::time::length::DecimalMark;
+use crate::time::zone::{self, UTC};
 
 const HOURS_ON_A_CLOCK: i8 = 12;
 /// The digits in a group of a big number.
 const GROUP: usize = 3;
 /// How many decimals a number is written with at the most (as the browser writes it).
 const DECIMALS_MOST: usize = 3;
-/// The zone of a person and an organization who chose none.
-const UTC: &str = "UTC";
 
 /// In which order a day is written; the values of the setting *Date format*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -39,20 +42,47 @@ enum DateOrder {
     YearMonthDay,
 }
 
+/// The clock a time of day is written on; the values of the setting *Time of day*.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Clock {
+    /// `14:30`: what every fixed date format starts with, so what a server writes for *device*.
+    TwentyFour,
+    /// `2:30 PM`.
+    Twelve,
+}
+
 /// The marks of a number: between groups of digits, and before the decimals.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct NumberMarks {
     group: &'static str,
-    decimal: &'static str,
+    decimal: DecimalMark,
+}
+
+/// The values of the settings of *Region*, as a server knows them: `None` is *device* with nothing
+/// to take its place.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Choices<'a> {
+    /// *Date format*.
+    pub date_format: Option<&'a str>,
+    /// *Time of day*.
+    pub time_of_day: Option<&'a str>,
+    /// *Number format*.
+    pub number_format: Option<&'a str>,
+    /// *Time zone*.
+    pub time_zone: Option<&'a str>,
+    /// *First day of the week*.
+    pub first_day: Option<&'a str>,
 }
 
 /// What the person chose under *Region* that an e-mail can follow.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Region {
     dates: DateOrder,
+    clock: Clock,
     numbers: NumberMarks,
     zone_name: String,
     zone: TimeZone,
+    first_day: FirstDay,
 }
 
 /// The value of a setting of *Region* for an e-mail: the person's, or the organization's where the
@@ -74,51 +104,85 @@ impl Region {
         &self.zone
     }
 
+    /// The day a week of the person starts on.
+    #[must_use]
+    pub const fn first_day(&self) -> FirstDay {
+        self.first_day
+    }
+
+    /// The week of the person that `date` is in, by their *First day of the week* (see
+    /// [`Week::of`]).
+    #[must_use]
+    pub fn week_of(&self, date: Date) -> Option<Week> {
+        Week::of(date, self.first_day)
+    }
+
+    /// The mark before the decimals of a number, also of a length of time typed in hours.
+    #[must_use]
+    pub const fn decimal_mark(&self) -> DecimalMark {
+        self.numbers.decimal
+    }
+
     /// What the layers of a person say.
     #[must_use]
     pub fn of(layers: &Layers) -> Self {
-        Self::from_choices(
-            chosen(layers, &REGION_DATE_FORMAT).as_deref(),
-            chosen(layers, &REGION_NUMBER_FORMAT).as_deref(),
-            chosen(layers, &REGION_TIME_ZONE).as_deref(),
-        )
+        let [
+            date_format,
+            time_of_day,
+            number_format,
+            time_zone,
+            first_day,
+        ] = [
+            &REGION_DATE_FORMAT,
+            &REGION_TIME_OF_DAY,
+            &REGION_NUMBER_FORMAT,
+            &REGION_TIME_ZONE,
+            &REGION_FIRST_DAY,
+        ]
+        .map(|setting| chosen(layers, setting));
+        Self::from_choices(&Choices {
+            date_format: date_format.as_deref(),
+            time_of_day: time_of_day.as_deref(),
+            number_format: number_format.as_deref(),
+            time_zone: time_zone.as_deref(),
+            first_day: first_day.as_deref(),
+        })
     }
 
-    /// The region for the values of the three settings; `None` is *device* with nothing to take
-    /// its place. A zone that the time-zone data does not know counts as none.
+    /// The region for the values of the settings. A zone that the server does not know counts as
+    /// none.
     #[must_use]
-    pub fn from_choices(
-        date_format: Option<&str>,
-        number_format: Option<&str>,
-        time_zone: Option<&str>,
-    ) -> Self {
-        let dates = match date_format {
+    pub fn from_choices(choices: &Choices<'_>) -> Self {
+        let dates = match choices.date_format {
             Some(DATE_FORMAT_DAY_MONTH_YEAR) => DateOrder::DayMonthYear,
             Some(DATE_FORMAT_MONTH_DAY_YEAR) => DateOrder::MonthDayYear,
             _ => DateOrder::YearMonthDay,
         };
-        let numbers = match number_format {
-            Some(NUMBER_FORMAT_COMMA) => NumberMarks {
-                group: ".",
-                decimal: ",",
-            },
-            Some(NUMBER_FORMAT_SPACE) => NumberMarks {
-                group: "\u{202F}",
-                decimal: ",",
-            },
-            _ => NumberMarks {
-                group: ",",
-                decimal: ".",
-            },
+        // *device* follows the date format, and a server writes every date in a fixed format.
+        let clock = match choices.time_of_day {
+            Some(TIME_OF_DAY_12_HOUR) => Clock::Twelve,
+            _ => Clock::TwentyFour,
         };
-        let (zone_name, zone) = time_zone
-            .and_then(|name| TimeZone::get(name).ok().map(|zone| (name.to_owned(), zone)))
+        let group = match choices.number_format {
+            Some(NUMBER_FORMAT_COMMA) => ".",
+            Some(NUMBER_FORMAT_SPACE) => "\u{202F}",
+            _ => ",",
+        };
+        let numbers = NumberMarks {
+            group,
+            decimal: DecimalMark::of_number_format(choices.number_format),
+        };
+        let (zone_name, zone) = choices
+            .time_zone
+            .and_then(|name| zone::named(name).map(|zone| (name.to_owned(), zone)))
             .unwrap_or_else(|| (UTC.to_owned(), TimeZone::UTC));
         Self {
             dates,
+            clock,
             numbers,
             zone_name,
             zone,
+            first_day: FirstDay::of_choice(choices.first_day),
         }
     }
 
@@ -132,7 +196,7 @@ impl Region {
                 Some(self.number(number))
             }
             (FieldType::Date, Value::String(day)) => {
-                day.parse::<Date>().ok().map(|day| self.day(day))
+                day.parse::<Date>().ok().map(|day| self.date(day))
             }
             (FieldType::DateTime, Value::String(moment)) => {
                 moment.parse::<Timestamp>().ok().map(|at| self.moment(at))
@@ -153,7 +217,9 @@ impl Region {
         })
     }
 
-    fn day(&self, date: Date) -> String {
+    /// A date in the person's order: `05.10.2026`, `10/05/2026` or `2026-10-05`.
+    #[must_use]
+    pub fn date(&self, date: Date) -> String {
         let (year, month, day) = (date.year(), date.month(), date.day());
         match self.dates {
             DateOrder::DayMonthYear => format!("{day:02}.{month:02}.{year:04}"),
@@ -162,22 +228,34 @@ impl Region {
         }
     }
 
-    /// A day and a time of day in the zone of the person, as the screen writes them: the day in
-    /// the person's order, the time on a clock of twelve hours.
-    fn moment(&self, moment: Timestamp) -> String {
+    /// The time of day of a moment in the person's zone, on the person's clock: `09:30` or
+    /// `9:30 AM`.
+    #[must_use]
+    pub fn time_of_day(&self, moment: Timestamp) -> String {
         let zoned = moment.to_zoned(self.zone.clone());
-        let hour = zoned.hour();
-        let on_clock = match hour % HOURS_ON_A_CLOCK {
-            0 => HOURS_ON_A_CLOCK,
-            hour => hour,
-        };
-        let minute = format!("{:02}", zoned.minute());
-        let time = if hour < HOURS_ON_A_CLOCK {
-            message::mail_time_am(on_clock, minute)
-        } else {
-            message::mail_time_pm(on_clock, minute)
-        };
-        format!("{}, {}", self.day(zoned.date()), time.render())
+        let (hour, minute) = (zoned.hour(), format!("{:02}", zoned.minute()));
+        match self.clock {
+            Clock::TwentyFour => message::mail_time_24(format!("{hour:02}"), minute).render(),
+            Clock::Twelve => {
+                let on_clock = match hour % HOURS_ON_A_CLOCK {
+                    0 => HOURS_ON_A_CLOCK,
+                    hour => hour,
+                };
+                if hour < HOURS_ON_A_CLOCK {
+                    message::mail_time_am(on_clock, minute).render()
+                } else {
+                    message::mail_time_pm(on_clock, minute).render()
+                }
+            }
+        }
+    }
+
+    /// A date and a time of day in the person's zone, as the screen writes them: the date in the
+    /// person's order, the time on the person's clock.
+    #[must_use]
+    pub fn moment(&self, moment: Timestamp) -> String {
+        let date = moment.to_zoned(self.zone.clone()).date();
+        format!("{}, {}", self.date(date), self.time_of_day(moment))
     }
 
     fn number(&self, number: &serde_json::Number) -> String {
@@ -196,7 +274,10 @@ impl Region {
         if decimals.is_empty() {
             format!("{sign}{grouped}")
         } else {
-            format!("{sign}{grouped}{}{decimals}", self.numbers.decimal)
+            format!(
+                "{sign}{grouped}{}{decimals}",
+                self.numbers.decimal.character()
+            )
         }
     }
 }
@@ -243,127 +324,4 @@ fn rounded_half_up(written: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::*;
-    use crate::settings::{OrganizationValue, SettingValue};
-
-    fn layers(person: &[(&str, &str)], organization: &[(&str, &str)]) -> Layers {
-        let mut layers = Layers::default();
-        for (key, value) in person {
-            layers
-                .person
-                .insert((*key).to_owned(), SettingValue::Text((*value).to_owned()));
-        }
-        for (key, value) in organization {
-            layers.organization.insert(
-                (*key).to_owned(),
-                OrganizationValue {
-                    value: SettingValue::Text((*value).to_owned()),
-                    locked: false,
-                },
-            );
-        }
-        layers
-    }
-
-    const MOMENT: &str = "2026-10-05T07:30:00Z";
-
-    fn moment_in(layers: &Layers) -> Option<String> {
-        Region::of(layers).worded_for_mail(FieldType::DateTime, &json!(MOMENT))
-    }
-
-    #[test]
-    fn m4_f140_a_moment_is_in_the_zone_of_the_person_and_names_it() {
-        let own = layers(
-            &[
-                ("region.time-zone", "Europe/Berlin"),
-                ("region.date-format", "day-month-year"),
-            ],
-            &[],
-        );
-        assert_eq!(
-            moment_in(&own).as_deref(),
-            Some("05.10.2026, 9:30 AM (Europe/Berlin)")
-        );
-    }
-
-    #[test]
-    fn m4_f140_a_person_on_device_gets_the_zone_of_the_organization() {
-        let on_device = layers(
-            &[("region.time-zone", "device")],
-            &[("region.time-zone", "Europe/Berlin")],
-        );
-        assert_eq!(
-            moment_in(&on_device).as_deref(),
-            Some("2026-10-05, 9:30 AM (Europe/Berlin)")
-        );
-        // Nothing chosen by the person gives the same.
-        let nothing = layers(&[], &[("region.time-zone", "Europe/Berlin")]);
-        assert_eq!(moment_in(&nothing), moment_in(&on_device));
-    }
-
-    #[test]
-    fn m4_f140_where_nobody_chose_a_zone_it_is_utc() {
-        assert_eq!(
-            moment_in(&layers(&[], &[])).as_deref(),
-            Some("2026-10-05, 7:30 AM (UTC)")
-        );
-        // A name the time-zone data does not know counts as none.
-        assert_eq!(
-            moment_in(&layers(&[("region.time-zone", "Mars/Olympus")], &[])).as_deref(),
-            Some("2026-10-05, 7:30 AM (UTC)")
-        );
-    }
-
-    #[test]
-    fn m4_f140_the_zone_data_follows_summer_time() {
-        let berlin = Region::from_choices(None, None, Some("Europe/Berlin"));
-        let winter = berlin.worded(FieldType::DateTime, &json!("2026-12-05T07:30:00Z"));
-        assert_eq!(winter.as_deref(), Some("2026-12-05, 8:30 AM"));
-    }
-
-    #[test]
-    fn a_number_is_rounded_half_up_on_its_digits() {
-        let usual = Region::from_choices(None, None, None);
-        let said = |number: f64| usual.worded(FieldType::Decimal, &json!(number));
-        assert_eq!(said(0.0625).as_deref(), Some("0.063"));
-        assert_eq!(said(0.9996).as_deref(), Some("1"));
-        assert_eq!(said(-0.0625).as_deref(), Some("-0.063"));
-    }
-
-    #[test]
-    fn the_hours_of_a_moment_are_on_a_clock_of_twelve() {
-        let usual = Region::from_choices(None, None, None);
-        let at = |moment: &str| usual.worded(FieldType::DateTime, &json!(moment));
-        assert_eq!(
-            at("2026-10-05T00:00:00Z").as_deref(),
-            Some("2026-10-05, 12:00 AM")
-        );
-        assert_eq!(
-            at("2026-10-05T12:05:00Z").as_deref(),
-            Some("2026-10-05, 12:05 PM")
-        );
-        assert_eq!(
-            at("2026-10-05T13:05:00Z").as_deref(),
-            Some("2026-10-05, 1:05 PM")
-        );
-    }
-
-    #[test]
-    fn the_two_fixed_orders_of_a_day_are_written_with_their_marks() {
-        let day = |date: &str| {
-            Region::from_choices(Some(date), None, None)
-                .worded(FieldType::Date, &json!("2026-10-05"))
-        };
-        assert_eq!(
-            day(DATE_FORMAT_DAY_MONTH_YEAR).as_deref(),
-            Some("05.10.2026")
-        );
-        assert_eq!(
-            day(DATE_FORMAT_MONTH_DAY_YEAR).as_deref(),
-            Some("10/05/2026")
-        );
-    }
-}
+mod tests;

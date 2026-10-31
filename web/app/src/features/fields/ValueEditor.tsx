@@ -1,14 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { Checkbox, SelectField, Switch, TextField, partOf, part, fieldKind } from "@bugaboo/ui";
-import { useState, type ReactNode } from "react";
+import { Checkbox, SelectField, Switch, partOf, part } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { boxWords, labelOf } from "./box-words.ts";
 import type { OwnField, KindWord, Sent } from "./fields.ts";
 import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
-import { SaveForm } from "./SaveForm.tsx";
-import { useSynced } from "./use-synced.ts";
-import { isUnchanged, sentFrom, textOf, type Kept } from "./value-text.ts";
+import { DurationEditor, TextEditor } from "./TextEditor.tsx";
 
 export type { Sent } from "./fields.ts";
 
@@ -42,58 +40,6 @@ export interface ValueEditorProps {
 /** The choices a person can pick: those not retired, and the ones the value has now. */
 function pickable(field: OwnField, current: readonly string[]) {
   return field.choices.filter((choice) => !choice.retired || current.includes(choice.id));
-}
-
-/** A box for the kinds of value a person types: text, numbers and lengths of time. */
-function TextEditor({
-  field,
-  value,
-  onCommit,
-  problem,
-  isPending = false,
-  live = false,
-  inRow = false,
-}: ValueEditorProps) {
-  const [text, setText] = useSynced(textOf(field, value));
-  const [local, setLocal] = useState<string | undefined>();
-  const [kept, setKept] = useState<Kept | undefined>();
-  const commit = (typed: string): void => {
-    const shown = textOf(field, value);
-    // A box that is left without a change is not a change, also before the page has read the
-    // value it sent.
-    if (inRow && isUnchanged(typed, shown, kept)) {
-      return;
-    }
-    const sent = sentFrom(field, typed);
-    setLocal("problem" in sent ? sent.problem : undefined);
-    if ("value" in sent) {
-      setKept({ from: shown, text: typed });
-      onCommit(sent.value);
-    }
-  };
-  return (
-    <SaveForm
-      name={field.name}
-      isPending={isPending}
-      live={live}
-      inRow={inRow}
-      onSubmit={() => {
-        commit(text);
-      }}
-    >
-      <TextField
-        {...boxWords(field, local ?? problem, inRow)}
-        kind={field.kind === "long-text" ? fieldKind.multiline : fieldKind.text}
-        value={text}
-        onChange={(typed) => {
-          setText(typed);
-          if (live) {
-            commit(typed);
-          }
-        }}
-      />
-    </SaveForm>
-  );
 }
 
 function YesNoEditor({ field, value, onCommit, inRow = false }: ValueEditorProps) {
@@ -167,7 +113,7 @@ const editors: Readonly<Record<KindWord, (props: ValueEditorProps) => ReactNode>
   "web-address": TextEditor,
   "whole-number": TextEditor,
   decimal: TextEditor,
-  duration: TextEditor,
+  duration: DurationEditor,
   "yes-no": YesNoEditor,
   date: MomentEditor,
   "date-time": MomentEditor,

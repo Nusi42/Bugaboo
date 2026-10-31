@@ -1,5 +1,8 @@
 import { startWording } from "@bugaboo/wasm";
 
+import { lengthTyped, type LengthReader } from "./length.ts";
+import { deviceRegion } from "./region.ts";
+
 import moduleAsData from "../../../packages/wasm/generated/bb_wasm_bg.wasm?inline";
 
 const BASE64_MARK = ";base64,";
@@ -15,3 +18,7 @@ function bytesOf(address: string): Uint8Array<ArrayBuffer> {
  * module comes inline, so no test reads a file. `cargo xtask wasm` builds the module first.
  */
 export const testWording = startWording(() => bytesOf(moduleAsData));
+
+/** The one reader of lengths without a bound, for a person whose numbers have a point before the decimals. */
+export const testLengthReader: LengthReader = (text) =>
+  testWording.readLength(lengthTyped(text, { ...deviceRegion, numberFormat: "point" }));

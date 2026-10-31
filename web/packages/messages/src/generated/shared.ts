@@ -106,6 +106,11 @@ export const messages = {
   "setting.region.date-format.day-month-year": "Day, month, year (31.12.2026)",
   "setting.region.date-format.month-day-year": "Month, day, year (12/31/2026)",
   "setting.region.date-format.year-month-day": "Year, month, day (2026-12-31)",
+  "setting.region.time-of-day.name": "Time of day",
+  "setting.region.time-of-day.help":
+    "How times of day are written. Match my device follows the date format: with the date format Match my device, the clock of your device; with any other date format, 24-hour.",
+  "setting.region.time-of-day.twenty-four-hours": "24-hour (14:30)",
+  "setting.region.time-of-day.twelve-hours": "12-hour (2:30 PM)",
   "setting.region.number-format.name": "Number format",
   "setting.region.number-format.help": "How big numbers and decimals are written.",
   "setting.region.number-format.point": "1,234.5",
@@ -268,6 +273,8 @@ export const messages = {
   "error.access.cannot-lift":
     "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
+  "error.setting.unknown-time-zone":
+    "Bugaboo does not know this time zone. Pick one from the list.",
   "error.setting.hosts-not-bare":
     "Write only the host names, like images.example.com, without https:// and without a path.",
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
@@ -540,6 +547,12 @@ export const messages = {
   "fields.projects-more": "Show more projects",
   "fields.yes": "Yes",
   "fields.no": "No",
+  "time.length.hours": "{hours, plural, one {# hour} other {# hours}}",
+  "time.length.minutes": "{minutes, plural, one {# minute} other {# minutes}}",
+  "time.length.hours-and-minutes": "{hours} {minutes}",
+  "time.length.not-a-length": "Type a length of time like 1:30, {decimal} or 1h 30m.",
+  "time.length.zero": "A time entry is at least 1 minute.",
+  "time.length.too-long": "One entry is at most {hours} hours.",
   "field-example.text": "For example: Customer name",
   "field-example.long-text": "For example: Notes",
   "field-example.whole-number": "For example: Affected users",

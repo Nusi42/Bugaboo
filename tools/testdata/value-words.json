@@ -1,25 +1,47 @@
 {
-  "about": "How the value of an own field is worded for a person. This file is written by `cargo xtask gen word-vectors` from crates/bb-core/src/wording/vectors.rs: the expected words are what the server writes. The browser test (web/app/src/shared/value-words.test.ts) reads it and checks that the screen gives the same words for the same value and the same choices under Region (ADR-0033, the amendment about value wording). A null expected means the value has no words for its kind. Only choices the server can know are here: not device.",
+  "about": "How the value of an own field, a time of day and a length of time are worded for a person, and how a typed length of time is read. This file is written by `cargo xtask gen word-vectors` from crates/bb-core/src/wording/vectors.rs: the expected words are what the server writes. The browser test (web/app/src/shared/value-words.test.ts) reads it and checks that the screen gives the same words for the same value and the same choices under Region, and that the reader of lengths in the module of the browser reads the same (ADR-0033, the amendment about value wording). A null expected means the value has no words for its kind. Only choices the server can know are here: no date format of the device (a time of day of the device follows the fixed date format).",
   "regions": {
     "usual": {
       "dateFormat": "year-month-day",
+      "timeOfDay": "device",
       "numberFormat": "point",
       "timeZone": "UTC"
     },
     "german": {
       "dateFormat": "day-month-year",
+      "timeOfDay": "device",
       "numberFormat": "comma",
       "timeZone": "Europe/Berlin"
     },
     "american": {
       "dateFormat": "month-day-year",
+      "timeOfDay": "12-hour",
       "numberFormat": "point",
       "timeZone": "America/Los_Angeles"
     },
     "french": {
       "dateFormat": "year-month-day",
+      "timeOfDay": "device",
       "numberFormat": "space",
       "timeZone": "UTC"
+    },
+    "usual on 12 hours": {
+      "dateFormat": "year-month-day",
+      "timeOfDay": "12-hour",
+      "numberFormat": "point",
+      "timeZone": "UTC"
+    },
+    "german on 12 hours": {
+      "dateFormat": "day-month-year",
+      "timeOfDay": "12-hour",
+      "numberFormat": "comma",
+      "timeZone": "Europe/Berlin"
+    },
+    "american on 24 hours": {
+      "dateFormat": "month-day-year",
+      "timeOfDay": "24-hour",
+      "numberFormat": "point",
+      "timeZone": "America/Los_Angeles"
     }
   },
   "cases": [
@@ -245,49 +267,49 @@
       "kind": "date-time",
       "value": "2026-10-05T07:30:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 7:30 AM"
+      "expected": "2026-10-05, 07:30"
     },
     {
       "name": "moment in Berlin in summer",
       "kind": "date-time",
       "value": "2026-10-05T07:30:00Z",
       "region": "german",
-      "expected": "05.10.2026, 9:30 AM"
+      "expected": "05.10.2026, 09:30"
     },
     {
       "name": "moment in Berlin in winter",
       "kind": "date-time",
       "value": "2026-12-05T07:30:00Z",
       "region": "german",
-      "expected": "05.12.2026, 8:30 AM"
+      "expected": "05.12.2026, 08:30"
     },
     {
       "name": "moment that is the next day in Berlin",
       "kind": "date-time",
       "value": "2026-10-05T23:30:00Z",
       "region": "german",
-      "expected": "06.10.2026, 1:30 AM"
+      "expected": "06.10.2026, 01:30"
     },
     {
       "name": "moment at noon",
       "kind": "date-time",
       "value": "2026-10-05T12:05:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 12:05 PM"
+      "expected": "2026-10-05, 12:05"
     },
     {
       "name": "moment at midnight",
       "kind": "date-time",
       "value": "2026-10-05T00:00:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 12:00 AM"
+      "expected": "2026-10-05, 00:00"
     },
     {
       "name": "moment in the morning on a 12-hour clock",
       "kind": "date-time",
       "value": "2026-10-05T09:07:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 9:07 AM"
+      "expected": "2026-10-05, 09:07"
     },
     {
       "name": "moment that is the day before in Los Angeles",
@@ -295,6 +317,27 @@
       "value": "2026-10-05T03:15:00Z",
       "region": "american",
       "expected": "10/04/2026, 8:15 PM"
+    },
+    {
+      "name": "moment on 12 hours, year first",
+      "kind": "date-time",
+      "value": "2026-10-05T13:05:00Z",
+      "region": "usual on 12 hours",
+      "expected": "2026-10-05, 1:05 PM"
+    },
+    {
+      "name": "moment on 12 hours, day first",
+      "kind": "date-time",
+      "value": "2026-10-05T13:05:00Z",
+      "region": "german on 12 hours",
+      "expected": "05.10.2026, 3:05 PM"
+    },
+    {
+      "name": "moment on 24 hours, month first",
+      "kind": "date-time",
+      "value": "2026-10-05T23:30:00Z",
+      "region": "american on 24 hours",
+      "expected": "10/05/2026, 16:30"
     },
     {
       "name": "not a moment",
@@ -318,6 +361,183 @@
       "expected": "https://example.com"
     }
   ],
+  "times": [
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "usual",
+      "expected": "07:30"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "usual",
+      "expected": "12:00"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "usual",
+      "expected": "13:05"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "usual",
+      "expected": "23:59"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "usual",
+      "expected": "00:00"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "german",
+      "expected": "09:30"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "german",
+      "expected": "14:00"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "german",
+      "expected": "15:05"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "german",
+      "expected": "01:59"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "german",
+      "expected": "02:00"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "american",
+      "expected": "12:30 AM"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "american",
+      "expected": "5:00 AM"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "american",
+      "expected": "6:05 AM"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "american",
+      "expected": "4:59 PM"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "american",
+      "expected": "5:00 PM"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "french",
+      "expected": "07:30"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "french",
+      "expected": "12:00"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "french",
+      "expected": "13:05"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "french",
+      "expected": "23:59"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "french",
+      "expected": "00:00"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "usual on 12 hours",
+      "expected": "7:30 AM"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "usual on 12 hours",
+      "expected": "12:00 PM"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "usual on 12 hours",
+      "expected": "1:05 PM"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "usual on 12 hours",
+      "expected": "11:59 PM"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "usual on 12 hours",
+      "expected": "12:00 AM"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "german on 12 hours",
+      "expected": "9:30 AM"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "german on 12 hours",
+      "expected": "2:00 PM"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "german on 12 hours",
+      "expected": "3:05 PM"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "german on 12 hours",
+      "expected": "1:59 AM"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "german on 12 hours",
+      "expected": "2:00 AM"
+    },
+    {
+      "moment": "2026-10-05T07:30:00Z",
+      "region": "american on 24 hours",
+      "expected": "00:30"
+    },
+    {
+      "moment": "2026-10-05T12:00:00Z",
+      "region": "american on 24 hours",
+      "expected": "05:00"
+    },
+    {
+      "moment": "2026-10-05T13:05:00Z",
+      "region": "american on 24 hours",
+      "expected": "06:05"
+    },
+    {
+      "moment": "2026-10-05T23:59:00Z",
+      "region": "american on 24 hours",
+      "expected": "16:59"
+    },
+    {
+      "moment": "2026-10-05T00:00:00Z",
+      "region": "american on 24 hours",
+      "expected": "17:00"
+    }
+  ],
   "lists": [
     {
       "names": [],
@@ -338,6 +558,391 @@
     {
       "names": ["Ana", "Ben", "Cem", "Dee"],
       "expected": "Ana, Ben, Cem, and Dee"
+    }
+  ],
+  "changes": [
+    {
+      "change": {
+        "who": "Ben",
+        "field": "code",
+        "field_name": "Code",
+        "before": {
+          "shown": "text",
+          "text": "007"
+        },
+        "after": {
+          "shown": "text",
+          "text": "0815"
+        }
+      },
+      "expected": "Ben changed Code from 007 to 0815"
+    },
+    {
+      "change": {
+        "who": "Ben",
+        "field": "code",
+        "field_name": "Code",
+        "before": null,
+        "after": {
+          "shown": "text",
+          "text": "+5"
+        }
+      },
+      "expected": "Ben set Code: +5"
+    }
+  ],
+  "lengths": [
+    {
+      "text": "40h",
+      "mark": "point",
+      "read": {
+        "minutes": 2400,
+        "short": "40h",
+        "grid": "40:00",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "One entry is at most 24 hours."
+      }
+    },
+    {
+      "text": "0",
+      "mark": "point",
+      "read": {
+        "minutes": 0,
+        "short": "0m",
+        "grid": "0:00",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "A time entry is at least 1 minute."
+      }
+    },
+    {
+      "text": "1İ",
+      "mark": "point",
+      "read": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      }
+    },
+    {
+      "text": "1:30",
+      "mark": "point",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "1.5",
+      "mark": "point",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "1,5",
+      "mark": "comma",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "90m",
+      "mark": "point",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "1h 30m",
+      "mark": "point",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "2h",
+      "mark": "point",
+      "read": {
+        "minutes": 120,
+        "short": "2h",
+        "grid": "2:00",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 120,
+        "short": "2h",
+        "grid": "2:00",
+        "mistake": null
+      }
+    },
+    {
+      "text": "2",
+      "mark": "comma",
+      "read": {
+        "minutes": 120,
+        "short": "2h",
+        "grid": "2:00",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 120,
+        "short": "2h",
+        "grid": "2:00",
+        "mistake": null
+      }
+    },
+    {
+      "text": "1H 30M",
+      "mark": "point",
+      "read": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 90,
+        "short": "1h 30m",
+        "grid": "1:30",
+        "mistake": null
+      }
+    },
+    {
+      "text": "0.33",
+      "mark": "point",
+      "read": {
+        "minutes": 20,
+        "short": "20m",
+        "grid": "0:20",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 20,
+        "short": "20m",
+        "grid": "0:20",
+        "mistake": null
+      }
+    },
+    {
+      "text": "0:05",
+      "mark": "point",
+      "read": {
+        "minutes": 5,
+        "short": "5m",
+        "grid": "0:05",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 5,
+        "short": "5m",
+        "grid": "0:05",
+        "mistake": null
+      }
+    },
+    {
+      "text": "24:00",
+      "mark": "point",
+      "read": {
+        "minutes": 1440,
+        "short": "24h",
+        "grid": "24:00",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": 1440,
+        "short": "24h",
+        "grid": "24:00",
+        "mistake": null
+      }
+    },
+    {
+      "text": "24:01",
+      "mark": "point",
+      "read": {
+        "minutes": 1441,
+        "short": "24h 1m",
+        "grid": "24:01",
+        "mistake": null
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "One entry is at most 24 hours."
+      }
+    },
+    {
+      "text": "1,5",
+      "mark": "point",
+      "read": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      }
+    },
+    {
+      "text": "30m 1h",
+      "mark": "point",
+      "read": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      }
+    },
+    {
+      "text": "soon",
+      "mark": "comma",
+      "read": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1,5 or 1h 30m."
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1,5 or 1h 30m."
+      }
+    },
+    {
+      "text": "",
+      "mark": "point",
+      "read": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      },
+      "entry": {
+        "minutes": null,
+        "short": null,
+        "grid": null,
+        "mistake": "Type a length of time like 1:30, 1.5 or 1h 30m."
+      }
+    }
+  ],
+  "clocks": [
+    {
+      "minutes": 0,
+      "expected": "0:00"
+    },
+    {
+      "minutes": 5,
+      "expected": "0:05"
+    },
+    {
+      "minutes": 90,
+      "expected": "1:30"
+    },
+    {
+      "minutes": 1440,
+      "expected": "24:00"
+    }
+  ],
+  "sentences": [
+    {
+      "minutes": 0,
+      "expected": "0 minutes"
+    },
+    {
+      "minutes": 1,
+      "expected": "1 minute"
+    },
+    {
+      "minutes": 42,
+      "expected": "42 minutes"
+    },
+    {
+      "minutes": 60,
+      "expected": "1 hour"
+    },
+    {
+      "minutes": 61,
+      "expected": "1 hour 1 minute"
+    },
+    {
+      "minutes": 600,
+      "expected": "10 hours"
+    },
+    {
+      "minutes": 2368,
+      "expected": "39 hours 28 minutes"
     }
   ]
 }

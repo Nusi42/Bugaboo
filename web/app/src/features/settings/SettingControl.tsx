@@ -1,3 +1,4 @@
+import { timeZones } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   ChoiceGroup,
@@ -13,6 +14,7 @@ import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
+import { deviceTimeZone } from "../../shared/region.ts";
 import { controlKindOf, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -26,19 +28,11 @@ export interface SettingControlProps {
   readonly onChange: (value: SettingValue) => void;
 }
 
-/** The time zones of this browser, for the person to choose from; the first is the device's own. */
-function timeZoneChoices(
-  current: string,
-): readonly { readonly value: string; readonly label: string }[] {
-  const names = new Set<string>([
-    ...Intl.supportedValuesOf("timeZone"),
-    "UTC",
-    ...(current === "device" ? [] : [current]),
-  ]);
-  const device = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** The time zones the server knows (M2-F72), for the person to choose from; the first is the device's own. */
+function timeZoneChoices(): readonly { readonly value: string; readonly label: string }[] {
   return [
-    { value: "device", label: t("setting.ui.device-zone", { zone: device }) },
-    ...[...names].toSorted().map((name) => ({ value: name, label: name })),
+    { value: "device", label: t("setting.ui.device-zone", { zone: deviceTimeZone() }) },
+    ...timeZones.map((name) => ({ value: name, label: name })),
   ];
 }
 
@@ -125,7 +119,7 @@ export function SettingControl({ setting, onChange, help, source }: SettingContr
     return (
       <SelectField
         label={wordsOf(setting.name_key)}
-        choices={timeZoneChoices(value)}
+        choices={timeZoneChoices()}
         value={value}
         onChange={onChange}
       />

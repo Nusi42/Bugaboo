@@ -26,23 +26,27 @@ use crate::issue::Priority;
 use crate::message::{self, Message, MessageKey};
 use crate::notification::NotificationKind;
 use crate::own_fields::FieldType;
-use crate::time::{MINUTES_PER_HOUR, SECONDS_PER_MINUTE};
+use crate::time::length::{self, DecimalMark, LengthWords};
+use crate::time::{MINUTES_PER_HOUR, Minutes};
 use crate::workflow::starter::STARTERS;
 
 pub mod region;
 pub mod vectors;
 
-pub use region::Region;
+pub use region::{Choices, Region};
 
-/// Some words: a text, words that follow each other, or a message of the catalog with the words
-/// for its placeholders. In JSON a text is a string, words that follow each other are a list, and
-/// a message is an object with its `key` and its `args` (`word_types.rs` writes the browser's type
-/// from this declaration).
+/// Some words: a text, a count, words that follow each other, or a message of the catalog with the
+/// words for its placeholders. In JSON a text is a string, a count a number, words that follow each
+/// other are a list, and a message is an object with its `key` and its `args` (`word_types.rs`
+/// writes the browser's type from this declaration).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum Said {
     /// Text that is not in the catalog: a name, a number, a text of a person.
     Text(String),
+    /// A count that a plural of the catalog chooses its words by (`# hours`). Only a real count is
+    /// one: a text of digits (`0815`) stays a text.
+    Count(u32),
     /// Words that follow each other without anything between them.
     Parts(Vec<Said>),
     /// A message of the catalog; the browser looks `key` up in its catalog.
@@ -88,7 +92,7 @@ impl Said {
 
     /// A message with the words for its placeholders, in the order of the message function's
     /// parameters (the typed function of the catalog gave `message` its names).
-    fn with(message: &Message, values: Vec<Self>) -> Self {
+    pub(crate) fn with(message: &Message, values: Vec<Self>) -> Self {
         let names = message.arguments().iter().map(|(name, _)| *name);
         Self::Message {
             key: message.key(),
@@ -101,11 +105,18 @@ impl Said {
     pub fn render(&self) -> String {
         match self {
             Self::Text(text) => text.clone(),
+            Self::Count(count) => count.to_string(),
             Self::Parts(parts) => parts.iter().map(Self::render).collect(),
             Self::Message { key, args } => Message::with_arguments(
                 *key,
                 args.iter()
-                    .map(|(name, said)| (*name, message::Value::Text(said.render())))
+                    .map(|(name, said)| {
+                        let value = match said {
+                            Self::Count(count) => message::Value::Number(i64::from(*count)),
+                            _ => message::Value::Text(said.render()),
+                        };
+                        (*name, value)
+                    })
                     .collect(),
             )
             .render(),
@@ -163,18 +174,21 @@ pub fn word_of(field: Option<Field>, text: &str) -> Said {
     known.map_or_else(|| Said::text(text), Said::key)
 }
 
-/// Seconds as "2h 5m", "45m" or "0m": whole minutes; a part of a second is dropped like the rest of
-/// a minute.
-fn duration_said(seconds: f64) -> Said {
-    let (per_minute, per_hour) = (f64::from(SECONDS_PER_MINUTE), f64::from(MINUTES_PER_HOUR));
-    let minutes_all = (seconds / per_minute).floor();
-    let hours = (minutes_all / per_hour).floor();
-    let minutes = minutes_all - hours * per_hour;
+/// A length of time in a field, a column or a short status line: "2h 5m", "45m" or "0m" (ADR-0033,
+/// amendment M6). A length has three written forms and this writer makes all of them: this one,
+/// [`length_sentence`] in sentences, and [`Minutes::on_clock`] (`2:05`) in a grid and on a running
+/// timer.
+#[must_use]
+pub fn length_said(length: Minutes) -> Said {
+    let (hours, minutes) = (
+        length.get() / MINUTES_PER_HOUR,
+        length.get() % MINUTES_PER_HOUR,
+    );
     let hour = Said::key(message::FIELDS_UNIT_HOUR);
     let minute = Said::key(message::FIELDS_UNIT_MINUTE);
-    if hours == 0.0 {
+    if hours == 0 {
         Said::Parts(vec![Said::text(minutes.to_string()), minute])
-    } else if minutes == 0.0 {
+    } else if minutes == 0 {
         Said::Parts(vec![Said::text(hours.to_string()), hour])
     } else {
         Said::Parts(vec![
@@ -185,6 +199,38 @@ fn duration_said(seconds: f64) -> Said {
             minute,
         ])
     }
+}
+
+/// A length of time in a sentence: "42 minutes", "10 hours", "39 hours 28 minutes", each unit in
+/// the singular or the plural (see [`length_said`]).
+#[must_use]
+pub fn length_sentence(length: Minutes) -> Said {
+    let (hours, minutes) = (
+        length.get() / MINUTES_PER_HOUR,
+        length.get() % MINUTES_PER_HOUR,
+    );
+    let count = Said::Count;
+    let hours_said = Said::with(&message::time_length_hours(0), vec![count(hours)]);
+    let minutes_said = Said::with(&message::time_length_minutes(0), vec![count(minutes)]);
+    match (hours, minutes) {
+        (0, _) => minutes_said,
+        (_, 0) => hours_said,
+        _ => said!(
+            message::time_length_hours_and_minutes,
+            hours_said,
+            minutes_said
+        ),
+    }
+}
+
+/// The whole minutes in seconds of the API (a length of an own field): the rest of a minute and a
+/// part of a second are dropped; `None` for a negative number or one too long to count.
+fn minutes_in(seconds: f64) -> Option<Minutes> {
+    if seconds < 0.0 {
+        return None;
+    }
+    let whole = jiff::SignedDuration::try_from_secs_f64(seconds).ok()?;
+    Minutes::from_seconds(whole.as_secs())
 }
 
 /// The words of a value of an own field. `worded` is the words of a number, a day or a moment in
@@ -199,10 +245,9 @@ pub fn typed_said(kind: FieldType, value: &Value, worded: Option<&str>) -> Optio
         } else {
             message::FIELDS_NO
         })),
-        (FieldType::Duration, Value::Number(seconds)) => seconds
-            .as_f64()
-            .filter(|seconds| *seconds >= 0.0)
-            .map(duration_said),
+        (FieldType::Duration, Value::Number(seconds)) => {
+            seconds.as_f64().and_then(minutes_in).map(length_said)
+        }
         (FieldType::WholeNumber | FieldType::Decimal, Value::Number(_))
         | (FieldType::Date | FieldType::DateTime, Value::String(_)) => worded.map(Said::text),
         (FieldType::WholeNumber | FieldType::Decimal, Value::String(text)) => {
@@ -454,6 +499,67 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
                 one(Said::key(message::NOTIFICATIONS_NEWS))
             }
         }
+    }
+}
+
+/// A length of time a person typed, as the browser hands it to the reader: the text, the person's
+/// *Number format* that says the decimal mark (the browser names the format of the device by the
+/// fixed one that writes the same mark), and the short words of the units from the browser's
+/// catalog, so the module carries no catalog of its own.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct LengthTyped {
+    /// What the person typed.
+    pub text: String,
+    /// A value of the setting *Number format*.
+    pub number_format: String,
+    /// The text of `fields.unit-hour`.
+    pub hour_unit: String,
+    /// The text of `fields.unit-minute`.
+    pub minute_unit: String,
+}
+
+/// What the reader of lengths made of a typed text ([`length::read`]): the minutes, or the
+/// sentence that says what is wrong and how to write it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct LengthRead {
+    /// The whole minutes, when the text is a length of one entry.
+    pub minutes: Option<u32>,
+    /// What is wrong with the text, when it is none.
+    pub mistake: Option<Said>,
+}
+
+/// Reads a typed length of time without a bound (an own field), for the browser.
+#[must_use]
+pub fn length_read(typed: &LengthTyped) -> LengthRead {
+    read_typed(typed, length::read)
+}
+
+/// Reads a typed length of one time entry, with its bound, for the browser.
+#[must_use]
+pub fn time_entry_read(typed: &LengthTyped) -> LengthRead {
+    read_typed(typed, length::read_time_entry)
+}
+
+/// What a reader of [`length`] makes of a typed length, with the sentence of a mistake.
+fn read_typed(
+    typed: &LengthTyped,
+    read: fn(&str, &LengthWords<'_>) -> Result<Minutes, length::LengthMistake>,
+) -> LengthRead {
+    let mark = DecimalMark::of_number_format(Some(&typed.number_format));
+    let words = LengthWords {
+        mark,
+        hour: &typed.hour_unit,
+        minute: &typed.minute_unit,
+    };
+    match read(&typed.text, &words) {
+        Ok(minutes) => LengthRead {
+            minutes: Some(minutes.get()),
+            mistake: None,
+        },
+        Err(mistake) => LengthRead {
+            minutes: None,
+            mistake: Some(mistake.said(mark)),
+        },
     }
 }
 

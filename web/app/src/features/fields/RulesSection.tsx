@@ -1,68 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { wholeNumberIn } from "../../shared/number.ts";
 import { Alert, alertTone, Card, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { durationText } from "../../shared/own-value-text.ts";
+import { WithLengthReader, type LengthReader } from "../../shared/with-length-reader.tsx";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
+import { boxOf, countOf, storedOf } from "./rule-values.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
-import {
-  bound,
-  boundDay,
-  dayBound,
-  type Bound,
-  decimalToMillionths,
-  durationSeconds,
-  millionthsToDecimal,
-} from "./value-text.ts";
-
-/** Whether the bounds of the field are days (a *Date* or a *Date and time*). */
-function isDated(field: OwnField): boolean {
-  return field.kind === "date" || field.kind === "date-time";
-}
-
-/** The lowest or highest value in a box, as people write it for this kind. */
-function boxOf(field: OwnField, stored: number | null | undefined): string {
-  if (stored === undefined || stored === null) {
-    return "";
-  }
-  if (isDated(field)) {
-    return boundDay(field.kind, stored);
-  }
-  if (field.kind === "decimal") {
-    return millionthsToDecimal(stored);
-  }
-  return field.kind === "duration" ? durationText(stored) : String(stored);
-}
-
-/** What a box means in the unit the API stores; `null` for an empty box, `undefined` for text that is none. */
-function storedOf(field: OwnField, text: string, end: Bound): number | null | undefined {
-  const trimmed = text.trim();
-  if (trimmed === "") {
-    return null;
-  }
-  if (isDated(field)) {
-    return dayBound(field.kind, trimmed, end);
-  }
-  if (field.kind === "decimal") {
-    return decimalToMillionths(trimmed);
-  }
-  if (field.kind === "duration") {
-    return durationSeconds(trimmed);
-  }
-  return wholeNumberIn(trimmed) ?? undefined;
-}
-
-/** A count of characters or values in a box: a whole number, or nothing. */
-function countOf(text: string): number | null | undefined {
-  const trimmed = text.trim();
-  if (trimmed === "") {
-    return null;
-  }
-  return /^\d+$/u.test(trimmed) ? Number(trimmed) : undefined;
-}
+import { bound } from "./value-text.ts";
 
 interface Shape {
   /** The kind has a range of values. */
@@ -85,12 +31,18 @@ export function RulesSection({ field }: { readonly field: OwnField }) {
         const ranged = traits.includes("range");
         const pattern = traits.includes("text");
         const counted = pattern || traits.includes("many");
-        return ranged || counted ? (
-          <RulesForm
-            field={field}
-            shape={{ ranged, counted, pattern, dated: traits.includes("dated") }}
-          />
-        ) : null;
+        const shape = { ranged, counted, pattern, dated: traits.includes("dated") };
+        if (!ranged && !counted) {
+          return null;
+        }
+        // The bounds of a length of time are read by the one reader, whose module loads here.
+        return field.kind === "duration" ? (
+          <WithLengthReader>
+            {(readLength) => <RulesForm field={field} shape={shape} readLength={readLength} />}
+          </WithLengthReader>
+        ) : (
+          <RulesForm field={field} shape={shape} />
+        );
       }}
     </QueryGate>
   );
@@ -119,9 +71,14 @@ function boxesOf(field: OwnField): Boxes {
 }
 
 /** The rules the boxes say, or `undefined` when one box holds text that is no number. */
-function rulesOf(field: OwnField, boxes: Boxes, shape: Shape): Record<string, unknown> | undefined {
-  const lowest = shape.ranged ? storedOf(field, boxes.min, bound.lowest) : null;
-  const highest = shape.ranged ? storedOf(field, boxes.max, bound.highest) : null;
+function rulesOf(
+  field: OwnField,
+  boxes: Boxes,
+  shape: Shape,
+  readLength: LengthReader | undefined,
+): Record<string, unknown> | undefined {
+  const lowest = shape.ranged ? storedOf(field, boxes.min, bound.lowest, readLength) : null;
+  const highest = shape.ranged ? storedOf(field, boxes.max, bound.highest, readLength) : null;
   const fewest = shape.counted ? countOf(boxes.shortest) : null;
   const most = shape.counted ? countOf(boxes.longest) : null;
   if (lowest === undefined || highest === undefined || fewest === undefined || most === undefined) {
@@ -209,12 +166,19 @@ function RuleBoxes({ shape, ...rest }: BoxesProps & { readonly shape: Shape }) {
   );
 }
 
-function RulesForm({ field, shape }: { readonly field: OwnField; readonly shape: Shape }) {
+interface RulesFormProps {
+  readonly field: OwnField;
+  readonly shape: Shape;
+  /** The one reader of typed lengths, for the bounds of a length of time. */
+  readonly readLength?: LengthReader;
+}
+
+function RulesForm({ field, shape, readLength }: RulesFormProps) {
   const [boxes, setBoxes] = useState(boxesOf(field));
   const [problem, setProblem] = useState<string | undefined>();
   const change = useChangeField();
   const submit = () => {
-    const rules = rulesOf(field, boxes, shape);
+    const rules = rulesOf(field, boxes, shape, readLength);
     setProblem(rules === undefined ? t("fields.rules-not-a-number") : undefined);
     if (rules !== undefined) {
       change.mutate(fieldChange(field, { rules }));

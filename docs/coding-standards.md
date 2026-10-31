@@ -139,6 +139,13 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - Formatted by **oxfmt**; linted by **oxlint** with type-aware **tsgolint** rules; type-checked by `tsc` (TypeScript 7).
 - **No hard-coded user-facing text:** JSX text, `aria-*`, `title`, `alt` and `placeholder`
   values must come from the message catalog. Enforced by: TXT-LITERAL.
+- **Dates and times through the shared helpers:** a date, a moment, a time of day and a length of
+  time on a screen are written by the shared helpers of `web/app/src/shared/` and `web/packages/`,
+  from the person's *Region*: no `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`,
+  `toLocaleDateString`, `toLocaleTimeString` or `toLocaleString` of a date anywhere else in `web/`
+  (tests and tools excluded: they may work out what they expect another way). Enforced by:
+  TXT-DATES. A length of time written by hand (`${hours}h`) is not something a check can see:
+  review.
 - **No hard-coded styles:** no hex/rgb colors, pixel magic numbers, durations, weights, line
   heights, layers or opacities. Only design tokens. Enforced by: STY-TOKENS, LINT-CSS.
 - **All theming lives in the theme files of `design/`: the base `theme.kdl` and one color file

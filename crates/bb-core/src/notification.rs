@@ -13,7 +13,7 @@ use crate::event::FieldChange;
 use crate::id::{CommentId, EntityId, EventId, IssueId, NotificationId, UserId};
 use crate::personal::Entity;
 use crate::settings::{self, Bool, Setting};
-use crate::time::SECONDS_PER_DAY;
+use crate::time::days;
 
 /// The name of the outbox consumer that builds the notifications (ADR-0007): its place in the
 /// outbox is kept under this name.
@@ -50,7 +50,7 @@ pub const AT_ONCE_MAX: usize = 100;
 /// How long a notification is kept.
 #[must_use]
 pub const fn keep() -> jiff::SignedDuration {
-    jiff::SignedDuration::from_secs(KEEP_DAYS * SECONDS_PER_DAY)
+    days(KEEP_DAYS)
 }
 
 /// The moment before which a notification is too old to keep, at `now`.

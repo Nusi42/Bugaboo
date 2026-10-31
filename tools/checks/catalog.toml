@@ -224,10 +224,10 @@ status = "active"
 id = "TXT-DATES"
 title = "Dates, moments, times of day and lengths of time on a screen are written only by the shared helpers, from the person's Region"
 rule = "coding-standards §4, ADR-0033 (amendment M6), UX-07"
-tool = "xtask (no Intl.DateTimeFormat, toLocaleDateString, toLocaleTimeString or toLocaleString of a date in web/ outside the shared helpers of web/app/src/shared/ and web/packages/)"
+tool = "xtask (no Intl.DateTimeFormat, Intl.RelativeTimeFormat, toLocaleDateString, toLocaleTimeString or toLocaleString of a date in web/ outside the shared helpers of web/app/src/shared/ and web/packages/; tests, end-to-end tests and tools excluded)"
 when = ["edit", "commit", "ci"]
 files = ["web/**/*.{ts,tsx}"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "STY-TOKENS"

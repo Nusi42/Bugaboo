@@ -37,7 +37,9 @@
 //! - the table of *Customize* and the numbers that the texts of notifications, signing up and
 //!   handles say are read as Rust source into `src/notifications.generated.ts`;
 //! - the name of the Trusted Types policy (`crates/bb-api-words`) is read as Rust source and
-//!   written as `src/browser.generated.ts`.
+//!   written as `src/browser.generated.ts`;
+//! - the time zones the server knows (`bb_core::time::zone`, linked) are written as
+//!   `src/time-zones.generated.ts`.
 //!
 //! TypeScript and JSON go through the formatter (`oxfmt`), so the generated files already look
 //! the way FMT-TS wants them.
@@ -58,6 +60,7 @@ use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
 mod request_time;
+mod time_zones;
 mod web_constants;
 
 /// The OpenAPI document, relative to the repository root.
@@ -95,6 +98,8 @@ pub(crate) const APP_PATHS_PATH: &str = "web/packages/api-client/src/app-paths.g
 /// What the texts of notifications, signing up and handles say: numbers and the table of *Customize*.
 pub(crate) const NOTIFICATIONS_PATH: &str =
     "web/packages/api-client/src/notifications.generated.ts";
+/// The time zones the server knows.
+pub(crate) const TIME_ZONES_PATH: &str = "web/packages/api-client/src/time-zones.generated.ts";
 /// The user docs page.
 pub(crate) const COOKIES_PAGE: &str = "userDocs/cookies.md";
 
@@ -121,6 +126,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         BROWSER_NAMES_PATH,
         APP_PATHS_PATH,
         NOTIFICATIONS_PATH,
+        TIME_ZONES_PATH,
         COOKIES_PAGE,
         web_constants::user_pages::SEARCH_LIMITS_PAGE,
         web_constants::user_pages::NOTIFICATION_NUMBERS_PAGE,
@@ -215,6 +221,10 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
                 NOTIFICATIONS_PATH,
                 &web_constants::notifications(&sources, &spec)?,
             )?,
+        ),
+        Generated::new(
+            TIME_ZONES_PATH,
+            format_with_oxfmt(repo, TIME_ZONES_PATH, &time_zones::time_zones())?,
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ];

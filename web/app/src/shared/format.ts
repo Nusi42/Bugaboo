@@ -14,9 +14,44 @@ export function zoneOf(region: Region): { readonly timeZone?: string } {
   return region.timeZone === "device" ? {} : { timeZone: region.timeZone };
 }
 
+/** The clocks of `Intl`: 24 hours and 12 hours. */
+const hourCycles = { "24-hour": "h23", "12-hour": "h12" } as const;
+
+/** The clock of this device: what its own language writes a time of day with. */
+function deviceHourCycle(): Intl.DateTimeFormatOptions["hourCycle"] {
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hourCycle;
+}
+
+/**
+ * The clock option of `Intl` for the person's *Time of day* (CFG-04). The choice *device* follows
+ * the date format: the device's clock while the date format is the device's, 24 hours with any
+ * date format the person fixed, as the server writes it.
+ */
+function clockOf(region: Region): Intl.DateTimeFormatOptions {
+  if (region.timeOfDay !== "device") {
+    return { hourCycle: hourCycles[region.timeOfDay] };
+  }
+  const cycle = region.dateFormat === "device" ? deviceHourCycle() : hourCycles["24-hour"];
+  return cycle === undefined ? {} : { hourCycle: cycle };
+}
+
+/** The time of day of a moment (milliseconds since 1970) in the person's zone, on the person's clock. */
+function timeOfDayOf(moment: number, region: Region): string {
+  return new Intl.DateTimeFormat(locale, {
+    ...zoneOf(region),
+    ...clockOf(region),
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(moment);
+}
+
+/**
+ * How the device's own date format writes a moment and a date: the date is the same in both, so a
+ * column and a chip of one day agree (M5-F137).
+ */
 const dateStyles = {
   dateTime: { dateStyle: "medium", timeStyle: "short" },
-  date: { dateStyle: "long" },
+  date: { dateStyle: "medium" },
 } as const;
 
 /** A space that does not break the line, and a hyphen that does not (U+00A0, U+2011). */
@@ -121,29 +156,30 @@ export function formatDateTime(moment: string, region: Region = currentRegion())
   const date = new Date(moment).getTime();
   if (region.dateFormat === "device") {
     return unbroken(
-      new Intl.DateTimeFormat(locale, { ...dateStyles.dateTime, ...zoneOf(region) }).format(date),
+      new Intl.DateTimeFormat(locale, {
+        ...dateStyles.dateTime,
+        ...zoneOf(region),
+        ...clockOf(region),
+      }).format(date),
     );
   }
-  const time = new Intl.DateTimeFormat(locale, {
-    ...zoneOf(region),
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-  return unbroken(`${numeric(date, region)}, ${time}`);
+  return unbroken(`${numeric(date, region)}, ${timeOfDayOf(date, region)}`);
 }
 
-/** The time of day of a moment from the server, in the person's time zone: "10:42". */
+/** The time of day of a moment from the server, in the person's time zone and on their clock: "10:42" or "10:42 AM". */
 export function formatTime(moment: string, region: Region = currentRegion()): string {
-  return unbroken(
-    new Intl.DateTimeFormat(locale, {
-      ...zoneOf(region),
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(moment).getTime()),
-  );
+  return unbroken(timeOfDayOf(new Date(moment).getTime(), region));
 }
 
-/** A day from the server as people write it: "October 5, 2026". */
+/** The decimal mark of this device's own numbers, by the fixed *Number format* that writes it. */
+export function deviceDecimalFormat(): "point" | "comma" {
+  const mark = new Intl.NumberFormat()
+    .formatToParts(1.5)
+    .find((part: Readonly<Intl.NumberFormatPart>) => part.type === "decimal")?.value;
+  return mark === "," ? "comma" : "point";
+}
+
+/** A day from the server as people write it: "Oct 5, 2026". */
 export function formatDate(moment: string, region: Region = currentRegion()): string {
   const date = new Date(moment).getTime();
   if (region.dateFormat === "device") {

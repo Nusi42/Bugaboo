@@ -35,6 +35,16 @@ fn a_change_is_changed_set_cleared_or_a_long_text() {
 }
 
 #[test]
+fn ntf_02_digits_of_a_text_stay_as_they_were_written() {
+    let said = change_sentence(&change("code", Some(word("007")), Some(word("0815")))).render();
+    assert_eq!(said, "Ben changed Priority from 007 to 0815");
+    assert_eq!(
+        change_sentence(&change("code", None, Some(word("+5")))).render(),
+        "Ben set Priority: +5"
+    );
+}
+
+#[test]
 fn an_assignment_from_nobody_says_who_assigned_it_to_whom() {
     let people = |names: &[&str]| Side::People {
         people: names.iter().map(|name| (*name).to_owned()).collect(),

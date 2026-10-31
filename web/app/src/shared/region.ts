@@ -13,6 +13,8 @@ import { oneOf, textOf } from "./setting-values.ts";
 
 /** How dates are written, as the setting says it. */
 export type DateFormat = SettingChoice<"regionDateFormat">;
+/** On which clock a time of day is written, as the setting says it. */
+export type TimeOfDay = SettingChoice<"regionTimeOfDay">;
 /** How big numbers and decimals are written, as the setting says it. */
 export type NumberFormat = SettingChoice<"regionNumberFormat">;
 /** The day a week starts on, as the setting says it. */
@@ -23,6 +25,8 @@ export interface Region {
   /** A time zone name like `Europe/Berlin`, or `device` for the one of this device. */
   readonly timeZone: string;
   readonly dateFormat: DateFormat;
+  /** `device` follows the date format: the device's clock with the device's date format, 24 hours with a fixed one. */
+  readonly timeOfDay: TimeOfDay;
   readonly numberFormat: NumberFormat;
   readonly firstDay: FirstDay;
 }
@@ -31,14 +35,15 @@ export interface Region {
 export const deviceRegion: Region = {
   timeZone: settingDefaults.regionTimeZone,
   dateFormat: settingDefaults.regionDateFormat,
+  timeOfDay: settingDefaults.regionTimeOfDay,
   numberFormat: settingDefaults.regionNumberFormat,
   firstDay: settingDefaults.regionFirstDay,
 };
 
 /**
- * Whether this browser knows the time zone. The server only checks that a name is shaped like one
- * (it has no list of zones), so a name this browser does not know is left out here: the times then
- * show in the zone of the device and the page does not break.
+ * Whether this browser knows the time zone. The server takes only the zones of its list
+ * (`timeZones`), but a browser may be older than that list, so a name this browser does not know is
+ * left out here: the times then show in the zone of the device and the page does not break.
  */
 export function isKnownTimeZone(name: string): boolean {
   try {
@@ -52,6 +57,11 @@ export function isKnownTimeZone(name: string): boolean {
   }
 }
 
+/** The time zone of this device, by its name. */
+export function deviceTimeZone(): string {
+  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 /** The region the settings describe. */
 export function regionOf(settings?: MySettings): Region {
   const zone = textOf(settings, settingKeys.regionTimeZone, settingDefaults.regionTimeZone);
@@ -62,6 +72,11 @@ export function regionOf(settings?: MySettings): Region {
       settingChoices.regionDateFormat,
       textOf(settings, settingKeys.regionDateFormat, settingDefaults.regionDateFormat),
       settingDefaults.regionDateFormat,
+    ),
+    timeOfDay: oneOf(
+      settingChoices.regionTimeOfDay,
+      textOf(settings, settingKeys.regionTimeOfDay, settingDefaults.regionTimeOfDay),
+      settingDefaults.regionTimeOfDay,
     ),
     numberFormat: oneOf(
       settingChoices.regionNumberFormat,
@@ -97,6 +112,7 @@ export function setRegion(next: Region): void {
   const same =
     next.timeZone === now.timeZone &&
     next.dateFormat === now.dateFormat &&
+    next.timeOfDay === now.timeOfDay &&
     next.numberFormat === now.numberFormat &&
     next.firstDay === now.firstDay;
   if (!same) {

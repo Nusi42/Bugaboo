@@ -156,6 +156,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::AssignmentConflict
             | ErrorCode::SettingLocked
             | ErrorCode::SettingHostsNotBare
+            | ErrorCode::SettingUnknownTimeZone
             | ErrorCode::MoveLiftsNoAccess
             | ErrorCode::MoveIntoItself
             | ErrorCode::ProjectTooDeep

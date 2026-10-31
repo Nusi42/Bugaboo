@@ -984,6 +984,10 @@ pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
 /// The message `error.setting.locked`.
 pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
 
+/// The message `error.setting.unknown-time-zone`.
+pub const ERROR_SETTING_UNKNOWN_TIME_ZONE: MessageKey =
+    MessageKey::new("error.setting.unknown-time-zone");
+
 /// The message `error.tag.not-here`.
 pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
@@ -1281,9 +1285,6 @@ pub const FIELDS_NO_ICON: MessageKey = MessageKey::new("fields.no-icon");
 
 /// The message `fields.not-a-decimal`.
 pub const FIELDS_NOT_A_DECIMAL: MessageKey = MessageKey::new("fields.not-a-decimal");
-
-/// The message `fields.not-a-duration`.
-pub const FIELDS_NOT_A_DURATION: MessageKey = MessageKey::new("fields.not-a-duration");
 
 /// The message `fields.not-a-whole-number`.
 pub const FIELDS_NOT_A_WHOLE_NUMBER: MessageKey = MessageKey::new("fields.not-a-whole-number");
@@ -4958,6 +4959,22 @@ pub const SETTING_REGION_NUMBER_FORMAT_POINT: MessageKey =
 pub const SETTING_REGION_NUMBER_FORMAT_SPACE: MessageKey =
     MessageKey::new("setting.region.number-format.space");
 
+/// The message `setting.region.time-of-day.help`.
+pub const SETTING_REGION_TIME_OF_DAY_HELP: MessageKey =
+    MessageKey::new("setting.region.time-of-day.help");
+
+/// The message `setting.region.time-of-day.name`.
+pub const SETTING_REGION_TIME_OF_DAY_NAME: MessageKey =
+    MessageKey::new("setting.region.time-of-day.name");
+
+/// The message `setting.region.time-of-day.twelve-hours`.
+pub const SETTING_REGION_TIME_OF_DAY_TWELVE_HOURS: MessageKey =
+    MessageKey::new("setting.region.time-of-day.twelve-hours");
+
+/// The message `setting.region.time-of-day.twenty-four-hours`.
+pub const SETTING_REGION_TIME_OF_DAY_TWENTY_FOUR_HOURS: MessageKey =
+    MessageKey::new("setting.region.time-of-day.twenty-four-hours");
+
 /// The message `setting.region.time-zone.help`.
 pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
     MessageKey::new("setting.region.time-zone.help");
@@ -5408,6 +5425,9 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
+
+/// The message `time.length.zero`.
+pub const TIME_LENGTH_ZERO: MessageKey = MessageKey::new("time.length.zero");
 
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
@@ -8270,6 +8290,18 @@ pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail.time-24`.
+#[must_use]
+pub fn mail_time_24(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.time-24"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
+    )
+}
+
 /// The message `mail.time-am`.
 #[must_use]
 pub fn mail_time_am(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
@@ -10706,6 +10738,57 @@ pub fn theme_device_resolved(
     )
 }
 
+/// The message `time.length.hours`.
+#[must_use]
+pub fn time_length_hours(hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.hours"),
+        vec![("hours", Value::Number(hours))],
+    )
+}
+
+/// The message `time.length.hours-and-minutes`.
+#[must_use]
+pub fn time_length_hours_and_minutes(
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.hours-and-minutes"),
+        vec![
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
+    )
+}
+
+/// The message `time.length.minutes`.
+#[must_use]
+pub fn time_length_minutes(minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.minutes"),
+        vec![("minutes", Value::Number(minutes))],
+    )
+}
+
+/// The message `time.length.not-a-length`.
+#[must_use]
+pub fn time_length_not_a_length(decimal: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.not-a-length"),
+        vec![("decimal", Value::Text(decimal.to_string()))],
+    )
+}
+
+/// The message `time.length.too-long`.
+#[must_use]
+pub fn time_length_too_long(hours: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.too-long"),
+        vec![("hours", Value::Text(hours.to_string()))],
+    )
+}
+
 /// The message `tls.generate-failed`.
 #[must_use]
 pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
@@ -12037,6 +12120,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "An administrator locked this setting, so it cannot be changed here.",
     ),
     (
+        "error.setting.unknown-time-zone",
+        "Bugaboo does not know this time zone. Pick one from the list.",
+    ),
+    (
         "error.tag.not-here",
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
     ),
@@ -12224,10 +12311,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "fields.not-a-decimal",
         "Type a number, with a point for the decimal part.",
-    ),
-    (
-        "fields.not-a-duration",
-        "Type a length of time like 1h 30m.",
     ),
     ("fields.not-a-whole-number", "Type a whole number."),
     ("fields.not-found", "This field is not here."),
@@ -13274,6 +13357,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.test-text",
         "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
     ),
+    ("mail.time-24", "{hour}:{minute}"),
     ("mail.time-am", "{hour}:{minute} AM"),
     ("mail.time-pm", "{hour}:{minute} PM"),
     (
@@ -15401,6 +15485,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.number-format.point", "1,234.5"),
     ("setting.region.number-format.space", "1 234,5"),
     (
+        "setting.region.time-of-day.help",
+        "How times of day are written. Match my device follows the date format: with the date format Match my device, the clock of your device; with any other date format, 24-hour.",
+    ),
+    ("setting.region.time-of-day.name", "Time of day"),
+    (
+        "setting.region.time-of-day.twelve-hours",
+        "12-hour (2:30 PM)",
+    ),
+    (
+        "setting.region.time-of-day.twenty-four-hours",
+        "24-hour (14:30)",
+    ),
+    (
         "setting.region.time-zone.help",
         "The time zone for the times you see. Match my device uses the time zone of your device.",
     ),
@@ -15454,7 +15551,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.device-zone", "Match my device ({zone})"),
     (
         "setting.ui.example-moment",
-        "Right now, a time looks like this: {moment}",
+        "Right now, a date and a time of day look like this: {moment}",
     ),
     (
         "setting.ui.example-number",
@@ -15731,6 +15828,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme.legend", "Theme"),
     ("theme.midnight", "Midnight"),
     ("theme.paper", "Paper"),
+    (
+        "time.length.hours",
+        "{hours, plural, one {# hour} other {# hours}}",
+    ),
+    ("time.length.hours-and-minutes", "{hours} {minutes}"),
+    (
+        "time.length.minutes",
+        "{minutes, plural, one {# minute} other {# minutes}}",
+    ),
+    (
+        "time.length.not-a-length",
+        "Type a length of time like 1:30, {decimal} or 1h 30m.",
+    ),
+    (
+        "time.length.too-long",
+        "One entry is at most {hours} hours.",
+    ),
+    ("time.length.zero", "A time entry is at least 1 minute."),
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",

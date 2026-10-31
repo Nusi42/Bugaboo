@@ -11,6 +11,7 @@ import {
   formatSince,
   formatTime,
   isCalendarDay,
+  plainWords,
   splitUptime,
 } from "./format.ts";
 import { deviceRegion, setRegion, type Region } from "./region.ts";
@@ -34,7 +35,7 @@ describe("ops_08 formatting for the status page", () => {
   });
 
   it("writes a day the way people say it", () => {
-    expect(formatDate("2026-10-05T12:00:00Z")).toBe("October\u00A05,\u00A02026");
+    expect(formatDate("2026-10-05T12:00:00Z")).toBe("Oct\u00A05,\u00A02026");
   });
 });
 
@@ -78,8 +79,50 @@ describe("ux_a4 a date or a time never wraps", () => {
 
   it("keeps the numbers as they were", () => {
     expect(formatDateTime("2026-10-18T01:16:00Z", region("year-month-day"))).toBe(
-      "2026\u201110\u201118,\u00A01:16\u00A0AM",
+      "2026\u201110\u201118,\u00A001:16",
     );
+  });
+});
+
+/** The time of day of 13:16 UTC for a region, with plain spaces. */
+function at(region: Partial<Region>): string {
+  return plainWords(
+    formatTime("2026-10-18T13:16:00Z", { ...deviceRegion, timeZone: "UTC", ...region }),
+  );
+}
+
+/** 13:16 on the clock of 12 hours. */
+const twelve = /^1:16\sPM$/u;
+
+/** 13:16 on the clock of this device. */
+function onTheDevicesClock(): RegExp {
+  const device = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions();
+  return device.hourCycle === "h23" || device.hourCycle === "h24" ? /^13:16$/u : twelve;
+}
+
+describe("cfg_04_the_time_of_day_follows_the_region_and_its_default_follows_the_date_format", () => {
+  it("starts every fixed date format on 24 hours", () => {
+    for (const dateFormat of ["year-month-day", "day-month-year", "month-day-year"] as const) {
+      expect(at({ dateFormat })).toBe("13:16");
+    }
+  });
+
+  it("writes the clock the person chose, whatever the date format", () => {
+    expect(at({ dateFormat: "day-month-year", timeOfDay: "12-hour" })).toMatch(twelve);
+    expect(at({ dateFormat: "device", timeOfDay: "24-hour" })).toBe("13:16");
+  });
+
+  it("takes the clock of the device with the date format of the device", () => {
+    expect(at({ dateFormat: "device" })).toMatch(onTheDevicesClock());
+  });
+
+  it("writes the date and the time together on one clock", () => {
+    const german: Region = {
+      ...deviceRegion,
+      timeZone: "Europe/Berlin",
+      dateFormat: "day-month-year",
+    };
+    expect(plainWords(formatDateTime("2026-10-18T13:16:00Z", german))).toBe("18.10.2026, 15:16");
   });
 });
 

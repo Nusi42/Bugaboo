@@ -1,31 +1,52 @@
 import { decimalWholeDigits } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
+import { t } from "@bugaboo/messages";
+
 import { wholeNumberIn } from "../../shared/number.ts";
+import { testLengthReader } from "../../shared/wording-testing.ts";
+import { field } from "./fields-testing.ts";
 import { formatNumber } from "../../shared/format.ts";
 import { durationText, ownValueText } from "../../shared/own-value-text.ts";
 import {
   bound,
   boundDay,
   dayBound,
-  durationSeconds,
+  sentFrom,
   isDecimalText,
   decimalToMillionths,
   millionthsToDecimal,
   wordsOfLines,
 } from "./value-text.ts";
 
+const reader = testLengthReader;
+const duration = field({
+  id: "hours",
+  kind: "duration",
+  look: "plain-text",
+  name: "Hours logged",
+  choices: [],
+  rules: {},
+});
+
 describe("value-text", () => {
   it("cf_01_a_length_of_time_is_written_in_hours_and_minutes_and_read_back", () => {
     expect(durationText(5400)).toBe("1h 30m");
     expect(durationText(7200)).toBe("2h");
     expect(durationText(2700)).toBe("45m");
-    expect(durationSeconds("1h 30m")).toBe(5400);
-    expect(durationSeconds("90m")).toBe(5400);
-    expect(durationSeconds("2h")).toBe(7200);
-    expect(durationSeconds("45")).toBe(2700);
-    expect(durationSeconds("soon")).toBeUndefined();
-    expect(durationSeconds("")).toBeUndefined();
+    // A length is read by the one reader of `bb-core`; a bare number is hours, like `1.5`.
+    expect(sentFrom(duration, "1h 30m", reader)).toEqual({ value: 5400 });
+    expect(sentFrom(duration, "90m", reader)).toEqual({ value: 5400 });
+    expect(sentFrom(duration, "1.5", reader)).toEqual({ value: 5400 });
+    expect(sentFrom(duration, "2", reader)).toEqual({ value: 7200 });
+    // A length of an own field may be longer than one time entry.
+    expect(sentFrom(duration, "40h", reader)).toEqual({ value: 144_000 });
+    expect(sentFrom(duration, "", reader)).toEqual({ value: null });
+    expect(sentFrom(duration, "soon", reader)).toEqual({
+      problem: "Type a length of time like 1:30, 1.5 or 1h 30m.",
+    });
+    // Without the module there is no reader, and the box says so.
+    expect(sentFrom(duration, "2h")).toEqual({ problem: t("common.words-failed") });
   });
 
   it("cf_01_numbers_are_checked_before_they_are_sent", () => {
@@ -67,11 +88,7 @@ describe("ownValueText", () => {
 
 describe("value-text digits", () => {
   it("cf_01_a_number_with_too_many_digits_is_none", () => {
-    expect(durationSeconds("999999999")).toBe(999_999_999 * 60);
-    expect(durationSeconds("1000000000")).toBeUndefined();
-    expect(durationSeconds("1000000000h")).toBeUndefined();
-    expect(durationSeconds("1h 1000000000m")).toBeUndefined();
-    expect(durationSeconds(`1${"0".repeat(400)}`)).toBeUndefined();
+    expect(sentFrom(duration, `1${"0".repeat(400)}`, reader)).toHaveProperty("problem");
     expect(decimalToMillionths("123456789.5")).toBe(123_456_789_500_000);
     // The server keeps a decimal in an i64 of millionths: 13 whole digits are its limit, and a
     // stored 1,234,567,890.5 can be saved again.
