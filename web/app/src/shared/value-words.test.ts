@@ -82,6 +82,38 @@ function numberFormatOf(mark: string): Region["numberFormat"] {
   );
 }
 
+/** A side of a change of the vectors, which are words of a text. */
+interface TextSide {
+  readonly shown: string;
+  readonly text: string;
+}
+
+/** A side of a change of the vectors as the module reads it; the vectors hold only texts. */
+function textSideOf(
+  side: TextSide | null,
+): { readonly shown: "text"; readonly text: string } | null {
+  if (side !== null && side.shown !== "text") {
+    throw new Error(
+      `The vectors name a side shown as ${side.shown}, which this test does not read.`,
+    );
+  }
+  return side === null ? null : { shown: "text", text: side.text };
+}
+
+/** A change of the vectors: who, the field, and the two sides. */
+interface VectorChange {
+  readonly who: string;
+  readonly field: string;
+  readonly field_name: string;
+  readonly before: TextSide | null;
+  readonly after: TextSide | null;
+}
+
+/** A change of the vectors, as the module reads it. */
+function changeOf(change: VectorChange) {
+  return { ...change, before: textSideOf(change.before), after: textSideOf(change.after) };
+}
+
 /** What the screen makes of an answer of a reader: the minutes, the short form and the grid form it writes them in, or the sentence of the mistake. */
 function shownOf(
   read: ReturnType<typeof testWording.readLength>,
@@ -121,7 +153,7 @@ describe("time_04 the browser reads a typed length the way the server does", () 
 describe("ntf_02 the digits of a text stay as they were written, on the screen and in the e-mail", () => {
   for (const vector of vectors.changes) {
     it(`writes ${vector.expected}`, () => {
-      expect(renderSaid(testWording.changeSentence(vector.change))).toBe(vector.expected);
+      expect(renderSaid(testWording.changeSentence(changeOf(vector.change)))).toBe(vector.expected);
     });
   }
 });
