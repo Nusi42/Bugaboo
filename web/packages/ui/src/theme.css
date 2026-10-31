@@ -103,6 +103,7 @@
   --size-details-room: calc(var(--size-details) + var(--gap-details));
   --size-reading: 75ch;
   --size-main: 780px;
+  --inset-section-line: var(--space-6);
   --size-sheet-share: 85%;
   --size-side-panel: 30rem;
   --size-bar-sheet: 80dvh;
@@ -5687,6 +5688,18 @@ textarea,
   gap: var(--space-5);
   min-width: 0;
   max-width: var(--size-main);
+}
+
+[data-part="issue-main.section"]:empty {
+  display: none;
+}
+
+[data-part="issue-main.section"] ~ [data-part="issue-main.section"]::before {
+  content: "";
+  display: block;
+  margin-inline: var(--inset-section-line);
+  margin-block-end: var(--space-5);
+  border-top: var(--border-width) solid var(--border);
 }
 
 [data-part="issue-details"] {

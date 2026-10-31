@@ -209,6 +209,9 @@ tokens {
     size "size-details-room" "calc($size-details + $gap-details)"
     size "size-reading" "75ch"
     size "size-main" "780px"
+    // The thin line between two sections of the main column of an issue stands in this far from each side, so it
+    // separates the sections without closing them into boxes (UX §4.4).
+    size "inset-section-line" "$space-6"
     size "size-sheet-share" "85%"
     // A panel at the end of the screen, beside the page (the help of the search bar): about 30 rem.
     size "size-side-panel" "30rem"
@@ -5489,6 +5492,21 @@ part "issue-main" {
     max-width "$size-main"
 }
 
+// One section of the main column (the description, a long text, the sub-issues, the related issues, the files, the
+// history). A block that has nothing to show leaves its section empty, and it takes no room.
+part "issue-main.section:empty" {
+    display none
+}
+
+// A thin line between two sections, inset from both sides, so the column reads as sections and not as one block
+// (UX §4.4). The Details have none: they are one panel of their own.
+part "issue-main.section ~ issue-main.section::before" {
+    content "\"\""
+    display block
+    margin-inline "$inset-section-line"
+    margin-block-end "$space-5"
+    border-top "$border-width solid $border"
+}
 
 // Details on wide screens keep their own scroll bar, so long details never push the description away.
 part "issue-details" {

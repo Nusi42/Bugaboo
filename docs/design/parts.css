@@ -4776,6 +4776,18 @@ textarea,
   max-width: var(--size-main);
 }
 
+[data-part="issue-main.section"]:empty {
+  display: none;
+}
+
+[data-part="issue-main.section"] ~ [data-part="issue-main.section"]::before {
+  content: "";
+  display: block;
+  margin-inline: var(--inset-section-line);
+  margin-block-end: var(--space-5);
+  border-top: var(--border-width) solid var(--border);
+}
+
 [data-part="issue-details"] {
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
