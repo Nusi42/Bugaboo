@@ -1,6 +1,6 @@
 # ADR-0026: One theme file for everything about how the app looks
 
-Status: **Accepted** · 2026-10-08 · replaces the styling part of [ADR-0010](0010-design-tokens.md)
+Status: **Accepted** · 2026-10-08 · replaces the styling part of [ADR-0010](0010-design-tokens.md) · amended in M6: a base file and one file of colors per theme (decision M6-Q1)
 
 ## Context
 
@@ -49,6 +49,16 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 - **One token per role, the sister project's roles.** `font-ui` is the text of the app (rows, fields, buttons, menus); `font-display` the titles and section headings, that is the parts the `bold` list names with the roles `issue-title`, `title` and `section` (STY-BOLD finds a rule of such a part that makes it bold without the display face); `font-reader` what a person reads at length (a description, a comment, the help of the search); `font-mono` code, issue IDs, the search language and time values. Every rule that sets a family names one of the four.
 - **Cascadia Mono is first for code.** Its regular weight draws with about a third more ink than the text face (M5 exit F-A1 measured 491 against 367 units for one line of 14 px), so code and IDs read a little heavier than the words around them. This is accepted to keep the sister project's stack exactly; STY-BOLD no longer refuses a font by its name, and it still refuses any bold weight the `bold` list does not name.
 - **Measured, not assumed.** The width of the ID column still comes from `size-code-char`, a probe drawn in the code font of the computer, so it is right for Cascadia Mono, Consolas or the system monospace face alike.
+
+## Amendment (M6, theme files like the sister project)
+
+The maintainer decided M6-Q1 (M5-F167, M5-F121) by taking the recommendation as written. It changes decision 1 (one file) and decision 2 (the four theme values on the line of a token); everything else stays. WP-02 writes the details of the syntax into this amendment when it builds it.
+
+- **A base file and theme files.** `design/theme.kdl` is the base theme `default`: every token with its base value, the choices (*Compact*, *Larger text*, *Less motion*), more contrast, forced colors, the contrast rules, the mixins, the keyframes, the part rules and the design pages. The base holds the colors of *Daylight*, the default light theme.
+- **One file per built-in theme** in `design/themes/` (`daylight.kdl`, `paper.kdl`, `dusk.kdl`, `midnight.kdl`), each `theme "dusk" extends="default" kind="dark" { … }` with colors only (the colors of shadows too; the shape of a shadow stays in the base). A theme file sets only the colors it changes, so no color is written twice. The file name is the theme's ID; the list of themes is the files and is written nowhere else (decision 6 then reads the folder).
+- **A token may name another token** (M5-F121): `color "hover-line" "$border-control"`, as the sister project's values do, so `hover-line` and `st-ns` name their source instead of repeating its value. A loop or an unknown name is an error of `gen theme`.
+- **The look does not change.** The generated sheets are the same byte for byte before and after the split, apart from the two tokens of M5-F121; the pictures in the four themes prove it.
+- Wherever the rules said "`design/theme.kdl`" for all of the look, they now say "the theme files in `design/`" (coding-standards §4, `CLAUDE.md`).
 
 ## Consequences
 

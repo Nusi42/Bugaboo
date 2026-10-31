@@ -95,6 +95,23 @@ Every change of roles (permissions, two-step switch, name, reset), groups (made,
 
 The registry's `changed_by` (ADR-0018) maps to the catalogue: *Administrators* → *Change organization settings*; *Project leads* → *Change project settings* on that project; *Each person* → only their own value. Enforced by: ARCH-SETTINGS, and the test `cfg_06_only_administrators_change_organization_values_and_each_person_only_their_own` (WP-07).
 
+## Amendment (M6, the permissions of time and the starting role *HR*)
+
+The maintainer decided M6-Q4 and M6-Q10 by taking the recommendations as written; [ADR-0035](0035-time-on-issues-and-working-hours.md) (decisions 2 and 8) says why. What changes here:
+
+- **The topic *Time*** joins the catalogue (decision 1) with three permissions, each with its sentence, kind and starting values in the same change as its routes:
+
+  | Permission | Counts | Kind | Starting roles that have it |
+  |------------|--------|------|-----------------------------|
+  | *Book time*: book one's own time on an issue one can see, and change and delete one's own entries | project | *Change* | *Administrator, Project lead, Team member, Contributor* |
+  | *See working hours of others* | organization | *See* | *HR* only |
+  | *Change working hours of others*: with a reason, and the person is told | organization | *Manage* | *HR* only |
+
+- **The seventh starting role, *HR*,** holds *See working hours of others* and *Change working hours of others* and nothing else; it comes after *Guest* in the order of roles. Like every starting role it is a copy made once at the first start (and on the upgrade of an existing server), with *Reset to the starting permissions* (decision 4). **Nobody has it at the start, and the *Administrator* role does not include either permission.** The glossary's *Role* and *Starting role* name seven roles from then on.
+- **How an administrator gives it.** An administrator gives *HR* to a group (for example *Payroll*) for the whole organization, in *Who has which role*. The no-escalation rule (decision 6) is loosened for exactly these two permissions: a person who holds *Decide who has which role* for the whole organization may give a role that holds them, also without holding them. The reason: a person who decides roles for the whole organization can give themselves any role anyway, so the rule would only make them give *HR* to themselves first. Adding the two permissions to a role (*Manage roles*) keeps the rule: only a person who holds them adds them.
+- **Keys.** *See working hours of others* and *Change working hours of others* join the list of what no key holds (decision 8, `NOT_FOR_KEYS`): reading or changing other people's working hours stays in the app, where the person is signed in.
+- **The security log.** A gift or a removal of *HR* is a change of permissions like any other (decision 9); what else of time goes into the security log is in ADR-0035, decision 8.
+
 ## Consequences
 
 - WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, *No access* and two access keys.
