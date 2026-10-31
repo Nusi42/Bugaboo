@@ -92,9 +92,9 @@ async fn create_saved_search(
     Session(session_token): Session,
     body: Result<ApiJson<NewSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.and_then(|ApiJson(body)| {
+    let read = body.map(|ApiJson(body)| {
         let presentation = body.presentation.map(Presentation::from);
-        Ok((body.name, body.search_text, presentation))
+        (body.name, body.search_text, presentation)
     });
     let (name, text, presentation) = auth.after_who_asks(&info, &session_token, read).await?;
     let made = auth
