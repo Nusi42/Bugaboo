@@ -2,7 +2,6 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea, layoutOf } from "./support/layout.ts";
 import { signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { resolved } from "./support/styles.ts";
@@ -44,12 +43,14 @@ test("ux_7_4 the buttons of a notification are as high as a control", async ({ p
 });
 
 test("ux_7_4 Put in and Take out are as high as a control", async ({ page }) => {
-  test.skip(layoutOf(page) === "phone", "the panel of a group is for a computer");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.groups);
-  await page.getByRole("button", { name: "Backend", exact: true }).click();
+  await page
+    .getByRole("list", { name: t("groups.list"), exact: true })
+    .getByRole("link", { name: "Backend", exact: true })
+    .click();
   const least = await controlHeight(page);
-  const panel = itemArea(page, "Backend");
+  const panel = page.getByRole("main");
   await expect(panel).toBeVisible();
   const takeOut = panel.getByRole("button", { name: t("groups.remove"), exact: false });
   const putIn = panel.getByRole("button", { name: t("groups.add"), exact: false });

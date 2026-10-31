@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { FieldValue, partOf, part } from "@bugaboo/ui";
+import { FieldValue, IssueId, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { ownValueText } from "../../shared/own-value-text.ts";
@@ -28,19 +28,15 @@ function isPerson(value: unknown): value is Person {
   return typeof memberOf(value, "shown") === "string";
 }
 
-/** One thing a person, group or issue value names, as the server resolved it for this viewer. */
+/** The person or group a value names, as the server resolved it for this viewer; an issue is drawn by its ID. */
 function referenceText(value: unknown): string {
   if (typeof value === "object" && value !== null) {
     if (isPerson(value)) {
       return personName(value);
     }
     const name = memberOf(value, "name");
-    const key = memberOf(value, "readable_id");
     if (typeof name === "string") {
       return name;
-    }
-    if (typeof key === "string") {
-      return key;
     }
   }
   return t("fields.hidden-reference");
@@ -111,6 +107,27 @@ function viewReference({ field, value }: ViewProps): ReactNode {
   return <FieldValue look={field.look} text={referenceText(value)} />;
 }
 
+/** The ID of the issue a value names, when the viewer may see it. */
+function issueIdOf(value: unknown): string | undefined {
+  const key =
+    typeof value === "object" && value !== null ? memberOf(value, "readable_id") : undefined;
+  return typeof key === "string" ? key : undefined;
+}
+
+/** An issue a value names: its ID, drawn as every ID is (M5-F137), or the words for one the viewer may not see. */
+function IssueReference({ field, value }: ViewProps) {
+  const key = issueIdOf(value);
+  return key === undefined ? (
+    <FieldValue look={field.look} text={referenceText(value)} />
+  ) : (
+    <IssueId id={key} />
+  );
+}
+
+function viewIssue(props: ViewProps): ReactNode {
+  return <IssueReference {...props} />;
+}
+
 function viewReferences({ field, value }: ViewProps): ReactNode {
   return Array.isArray(value) ? (
     <span {...partOf(part.row)}>
@@ -137,7 +154,7 @@ const views: Readonly<Record<KindWord, (props: ViewProps) => ReactNode>> = {
   "pick-several": viewPickSeveral,
   person: viewReference,
   group: viewReference,
-  issue: viewReference,
+  issue: viewIssue,
   people: viewReferences,
 };
 

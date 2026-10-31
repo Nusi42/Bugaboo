@@ -14,7 +14,7 @@ import {
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
-import { ColorChoice } from "../../shared/ColorChoice.tsx";
+import { LabelColorChoice } from "./LabelColorChoice.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import {
   NO_GROUP,
@@ -74,7 +74,7 @@ export function CreateLabelForm({ groups, inGroupsOnly = false }: CreateLabelFor
         value={name}
         onChange={setName}
       />
-      <ColorChoice legend={t("labels.field-new-color")} value={color} onChange={setColor} />
+      <LabelColorChoice legend={t("labels.field-new-color")} value={color} onChange={setColor} />
       <SelectField
         label={t("labels.field-label-group")}
         choices={choices}

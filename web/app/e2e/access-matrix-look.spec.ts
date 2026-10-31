@@ -114,7 +114,11 @@ test("ux_5 the table shades its right edge while roles are hidden, and not at it
   await page.goto(paths.fieldPermissions);
   const scroll = partIn(page, "access.scroll");
   await expect(scroll).toBeVisible();
-  // Columns are hidden at the end: its shadow shows, the one at the start does not.
+  // The table opens on Guest, as Who sees people does (M5-F135); back at its start, columns are hidden at the end: its
+  // shadow shows, the one at the start does not.
+  await scroll.evaluate((node) => {
+    node.scrollLeft = 0;
+  });
   await expect.poll(() => shadowsOf(scroll)).toEqual({ start: 0, end: 1 });
   await scroll.evaluate((node) => {
     node.scrollLeft = node.scrollWidth;

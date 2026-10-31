@@ -239,3 +239,28 @@ export async function check(
   await page.getByLabel(t("check-access.person-search")).fill(person.name);
   await page.getByRole("radio", { name: person.name }).check();
 }
+
+/** What stands for the list of kinds while the start of a sentence of the preview is worked out. */
+const KINDS_HERE = "";
+
+/** The start of each sentence of the preview of *Who sees people*, before the kinds it names. */
+const previewStarts = {
+  names: t("people-visibility.preview-names", { kinds: KINDS_HERE }),
+  "role-only": t("people-visibility.preview-role-only", {
+    kinds: KINDS_HERE,
+    example: t("person.role-inside", { role: t("starting-role.team-member") }),
+  }),
+  hidden: t("people-visibility.preview-hidden", {
+    kinds: KINDS_HERE,
+    someone: t("person.someone-inside"),
+  }),
+} as const;
+
+/**
+ * The line of the preview under *Who sees people* for one level: the sentence that names the kinds of people
+ * information the chosen role has at that level (PRIV-12, M5-F135).
+ */
+export function peoplePreviewLine(page: Page, level: keyof typeof previewStarts): Locator {
+  const start = previewStarts[level].split(KINDS_HERE)[0] ?? "";
+  return page.locator('[data-part="access.preview-line"]').filter({ hasText: start });
+}

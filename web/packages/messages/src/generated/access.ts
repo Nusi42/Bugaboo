@@ -23,15 +23,14 @@ export const messages = {
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "field-permissions.table-name": "Which level each role has for each field",
   "people-visibility.intro":
-    "For each role and each kind of people information, choose whether people are shown by name, by their role only ({example}) or not at all (Someone).",
-  "people-visibility.intro-example": "a Team member",
+    "For each role and each kind of people information, choose whether people are shown by name, by their role only, as {example}, or not at all, as {someone}.",
   "people-visibility.intro-project":
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "people-visibility.table-name": "How each role sees each kind of people information",
-  "people-visibility.who-names": "Ana",
-  "people-visibility.example-assigned": "Assigned to {who}",
-  "people-visibility.example-comment": "Comment by {who}",
-  "people-visibility.example-editing": "{who} is editing the description",
+  "people-visibility.preview-names": "Sees people by their names in {kinds}.",
+  "people-visibility.preview-role-only":
+    "Sees people by their role only, as {example}, in {kinds}.",
+  "people-visibility.preview-hidden": "Sees people as {someone}, without their role, in {kinds}.",
   "check-access.intro":
     "Choose a person and where to look. You read what they can do there, every field and how they see people, each with the reason.",
   "check-access.person-search": "Search for a person",

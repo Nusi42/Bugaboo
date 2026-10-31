@@ -59,6 +59,8 @@ export const messages = {
   "groups.intro":
     "A group is a set of people. Give a role to a group, and everybody in it has that role.",
   "groups.list": "Groups",
+  "groups.search": "Search groups",
+  "groups.nothing": "No group found. Try another word.",
   "groups.none-yet": "There are no groups yet. Create the first one below.",
   "groups.more": "Show more groups",
   "groups.create-title": "Create a group",

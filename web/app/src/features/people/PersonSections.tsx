@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Card, LinkRow, partOf, part } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -17,16 +17,11 @@ export function Groups({ line }: { readonly line: PersonLine }) {
       {line.groups.length === 0 ? (
         <p {...partOf(part.muted)}>{t("person.groups-none", { name: line.name })}</p>
       ) : (
-        <ul {...partOf(part.list)} aria-label={t("person.groups")}>
+        <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("person.groups")}>
           {line.groups.map((group) => (
-            <li key={group.id} {...partOf(part.item)}>
-              <span {...partOf(part.rowMain)}>
-                <Link row href={groupAddress(group.id)}>
-                  {group.name}
-                </Link>
-              </span>
-              <RowChevron />
-            </li>
+            <LinkRow key={group.id} href={groupAddress(group.id)}>
+              {group.name}
+            </LinkRow>
           ))}
         </ul>
       )}
@@ -66,24 +61,17 @@ export function HeldRoles({ roles, none, cut }: HeldRolesProps) {
       {roles.length === 0 ? (
         <p {...partOf(part.muted)}>{none}</p>
       ) : (
-        <ul {...partOf(part.list)} aria-label={t("person.roles")}>
+        <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("person.roles")}>
           {roles.map((held) => {
             const where = changedAt(held.place);
-            return (
-              <li key={held.id} {...partOf(part.item)}>
-                {where === undefined ? (
-                  <span {...partOf(part.itemTitle)}>{heldText(held)}</span>
-                ) : (
-                  <>
-                    <span {...partOf(part.rowMain)}>
-                      <Link row href={where}>
-                        {heldText(held)}
-                      </Link>
-                    </span>
-                    <RowChevron />
-                  </>
-                )}
+            return where === undefined ? (
+              <li key={held.id} {...partOf(part.item, { variants: ["row"] })}>
+                <span {...partOf(part.itemTitle)}>{heldText(held)}</span>
               </li>
+            ) : (
+              <LinkRow key={held.id} href={where}>
+                {heldText(held)}
+              </LinkRow>
             );
           })}
         </ul>

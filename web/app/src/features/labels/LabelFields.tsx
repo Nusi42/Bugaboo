@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { SelectField, TextField } from "@bugaboo/ui";
 
-import { ColorChoice } from "../../shared/ColorChoice.tsx";
+import { LabelColorChoice } from "./LabelColorChoice.tsx";
 import { groupChoices, type Label, type LabelGroup } from "./labels.ts";
 
 export interface LabelFieldsProps {
@@ -25,7 +25,7 @@ export function LabelFields(props: LabelFieldsProps) {
         value={props.name}
         onChange={props.onName}
       />
-      <ColorChoice
+      <LabelColorChoice
         legend={t("labels.field-color", { name: props.label.name })}
         value={props.color}
         onChange={props.onColor}

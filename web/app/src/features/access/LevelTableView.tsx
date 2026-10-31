@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, SaveStatus, SelectField, useLayout, partOf, part } from "@bugaboo/ui";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import { QueryGate } from "../shell/index.ts";
+import { LevelPreview } from "./LevelPreview.tsx";
 import { LevelsMatrix, type LevelsViewProps } from "./LevelsMatrix.tsx";
 import { rank, type LevelTable } from "./levels.ts";
 import { RoleLevels } from "./RoleLevels.tsx";
@@ -14,8 +15,8 @@ export interface LevelTableViewProps<Subject extends string, Level extends strin
   "table" | "onChange"
 > {
   readonly levels: LevelsOf<Subject, Level>;
-  /** What follows the table, for the role that is chosen: the preview of what the role sees. */
-  readonly preview: (table: LevelTable<Subject, Level>, role: string) => ReactNode;
+  /** The sentence of the preview under the table for a level, which names the fields or kinds the role has there. */
+  readonly sentence: (level: Level, subjects: string) => string;
 }
 
 /**
@@ -55,7 +56,7 @@ function TableBody<Subject extends string, Level extends string>({
   computer,
   role,
   onChoose,
-  preview,
+  sentence,
   ...view
 }: TableBodyProps<Subject, Level>) {
   const hasRoles = table.roles.length > 0;
@@ -64,22 +65,33 @@ function TableBody<Subject extends string, Level extends string>({
       {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
       {table.roles.length === 0 ? <p {...partOf(part.muted)}>{t("access.no-roles")}</p> : null}
       {hasCeiling(table) ? <p {...partOf(part.muted)}>{t("access.ceiling")}</p> : null}
-      <SaveStatus state={edits.saveState} labels={saveLabels()} />
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       {hasRoles ? (
-        <SelectField
-          label={t("common.choose-role")}
-          choices={table.roles.map((known) => ({ value: known.id, label: known.name }))}
-          value={role}
-          onChange={onChoose}
-        />
+        // *Saving…* and *Saved* stand at the end of the line of the chooser's label, room it always has: nothing moves
+        // when they come, and they take no line of their own (M5-F135).
+        <div {...partOf(part.accessChooser)}>
+          <SelectField
+            label={t("common.choose-role")}
+            choices={table.roles.map((known) => ({ value: known.id, label: known.name }))}
+            value={role}
+            onChange={onChoose}
+          />
+          <SaveStatus state={edits.saveState} labels={saveLabels()} />
+        </div>
       ) : null}
       {computer ? (
         <LevelsMatrix table={table} onChange={edits.change} chosen={role} {...view} />
       ) : (
         <RoleLevels table={table} role={role} onChange={edits.change} {...view} />
       )}
-      {hasRoles ? preview(table, role) : null}
+      {hasRoles ? (
+        <LevelPreview
+          table={table}
+          role={role}
+          subjectName={view.subjectName}
+          sentence={sentence}
+        />
+      ) : null}
     </div>
   );
 }

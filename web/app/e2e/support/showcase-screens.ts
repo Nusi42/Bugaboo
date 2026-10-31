@@ -7,6 +7,7 @@ import {
   openPeople,
   openMovePreview,
   openQuickSearch,
+  openQuickSearchIssue,
   openTree,
   secondStep,
 } from "./showcase-opens.ts";
@@ -229,5 +230,12 @@ export const screens: readonly Screen[] = [
     "teamMember",
     "One issue as a Team member sees it",
     at(issueAddress(ISSUE)),
+  ),
+  // Added after the others so the numbers of the pictures before it stay.
+  screen(
+    "quick-search-issue",
+    "administrator",
+    "Quick search finding an issue by its ID",
+    openQuickSearchIssue,
   ),
 ];

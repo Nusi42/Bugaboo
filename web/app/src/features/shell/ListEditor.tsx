@@ -3,6 +3,7 @@ import { RowChevron, SearchField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
+import { foundByName } from "../../shared/found-by-name.ts";
 import { ItemScreen } from "./item-screen.tsx";
 import { SidePanel } from "./SidePanel.tsx";
 
@@ -96,7 +97,7 @@ export function ListEditor({
   none,
 }: ListEditorProps) {
   const [query, setQuery] = useState("");
-  const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const shown = foundByName(rows, query);
   const open = rows.find((row) => row.key === openKey);
   // A phone shows one thing at a time: the open item is a screen of its own (the page hides the rest), and Back closes it.
   // The list stays in the page, hidden, so the focus can go back to the row that was opened.

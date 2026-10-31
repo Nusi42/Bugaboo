@@ -1638,11 +1638,17 @@ pub const GROUPS_MORE: MessageKey = MessageKey::new("groups.more");
 /// The message `groups.none-yet`.
 pub const GROUPS_NONE_YET: MessageKey = MessageKey::new("groups.none-yet");
 
+/// The message `groups.nothing`.
+pub const GROUPS_NOTHING: MessageKey = MessageKey::new("groups.nothing");
+
 /// The message `groups.remove`.
 pub const GROUPS_REMOVE: MessageKey = MessageKey::new("groups.remove");
 
 /// The message `groups.roles-cut`.
 pub const GROUPS_ROLES_CUT: MessageKey = MessageKey::new("groups.roles-cut");
+
+/// The message `groups.search`.
+pub const GROUPS_SEARCH: MessageKey = MessageKey::new("groups.search");
 
 /// The message `groups.used-nothing`.
 pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing");
@@ -3072,16 +3078,9 @@ pub const PEOPLE_LEVEL_NAMES: MessageKey = MessageKey::new("people-level.names")
 /// The message `people-level.role-only`.
 pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.role-only");
 
-/// The message `people-visibility.intro-example`.
-pub const PEOPLE_VISIBILITY_INTRO_EXAMPLE: MessageKey =
-    MessageKey::new("people-visibility.intro-example");
-
 /// The message `people-visibility.table-name`.
 pub const PEOPLE_VISIBILITY_TABLE_NAME: MessageKey =
     MessageKey::new("people-visibility.table-name");
-
-/// The message `people-visibility.who-names`.
-pub const PEOPLE_VISIBILITY_WHO_NAMES: MessageKey = MessageKey::new("people-visibility.who-names");
 
 /// The message `people.intro`.
 pub const PEOPLE_INTRO: MessageKey = MessageKey::new("people.intro");
@@ -8686,39 +8685,18 @@ pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `people-visibility.example-assigned`.
-#[must_use]
-pub fn people_visibility_example_assigned(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("people-visibility.example-assigned"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `people-visibility.example-comment`.
-#[must_use]
-pub fn people_visibility_example_comment(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("people-visibility.example-comment"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `people-visibility.example-editing`.
-#[must_use]
-pub fn people_visibility_example_editing(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("people-visibility.example-editing"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
 /// The message `people-visibility.intro`.
 #[must_use]
-pub fn people_visibility_intro(example: impl std::fmt::Display) -> Message {
+pub fn people_visibility_intro(
+    example: impl std::fmt::Display,
+    someone: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
         MessageKey::new("people-visibility.intro"),
-        vec![("example", Value::Text(example.to_string()))],
+        vec![
+            ("example", Value::Text(example.to_string())),
+            ("someone", Value::Text(someone.to_string())),
+        ],
     )
 }
 
@@ -8728,6 +8706,45 @@ pub fn people_visibility_intro_project(project: impl std::fmt::Display) -> Messa
     Message::with_arguments(
         MessageKey::new("people-visibility.intro-project"),
         vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `people-visibility.preview-hidden`.
+#[must_use]
+pub fn people_visibility_preview_hidden(
+    kinds: impl std::fmt::Display,
+    someone: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people-visibility.preview-hidden"),
+        vec![
+            ("kinds", Value::Text(kinds.to_string())),
+            ("someone", Value::Text(someone.to_string())),
+        ],
+    )
+}
+
+/// The message `people-visibility.preview-names`.
+#[must_use]
+pub fn people_visibility_preview_names(kinds: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people-visibility.preview-names"),
+        vec![("kinds", Value::Text(kinds.to_string()))],
+    )
+}
+
+/// The message `people-visibility.preview-role-only`.
+#[must_use]
+pub fn people_visibility_preview_role_only(
+    example: impl std::fmt::Display,
+    kinds: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people-visibility.preview-role-only"),
+        vec![
+            ("example", Value::Text(example.to_string())),
+            ("kinds", Value::Text(kinds.to_string())),
+        ],
     )
 }
 
@@ -12606,6 +12623,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "groups.none-yet",
         "There are no groups yet. Create the first one below.",
     ),
+    ("groups.nothing", "No group found. Try another word."),
     ("groups.remove", "Take out"),
     ("groups.remove-name", "Take out {name} from the group"),
     ("groups.removed", "{name} is out of the group {group}."),
@@ -12617,6 +12635,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "groups.roles-none",
         "{name} has no role in the places you decide about.",
     ),
+    ("groups.search", "Search groups"),
     ("groups.used", "Used {places}."),
     (
         "groups.used-nothing",
@@ -13779,20 +13798,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people-level.hidden", "Hidden"),
     ("people-level.names", "Names"),
     ("people-level.role-only", "Role only"),
-    ("people-visibility.example-assigned", "Assigned to {who}"),
-    ("people-visibility.example-comment", "Comment by {who}"),
-    (
-        "people-visibility.example-editing",
-        "{who} is editing the description",
-    ),
     (
         "people-visibility.intro",
-        "For each role and each kind of people information, choose whether people are shown by name, by their role only ({example}) or not at all (Someone).",
+        "For each role and each kind of people information, choose whether people are shown by name, by their role only, as {example}, or not at all, as {someone}.",
     ),
-    ("people-visibility.intro-example", "a Team member"),
     (
         "people-visibility.intro-project",
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
+    ),
+    (
+        "people-visibility.preview-hidden",
+        "Sees people as {someone}, without their role, in {kinds}.",
+    ),
+    (
+        "people-visibility.preview-names",
+        "Sees people by their names in {kinds}.",
+    ),
+    (
+        "people-visibility.preview-role-only",
+        "Sees people by their role only, as {example}, in {kinds}.",
     ),
     (
         "people-visibility.project-title",
@@ -13802,7 +13826,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "people-visibility.table-name",
         "How each role sees each kind of people information",
     ),
-    ("people-visibility.who-names", "Ana"),
     (
         "people.in-groups",
         "{count, plural, one {In the group {groups}} other {In the groups {groups}}}",
@@ -14207,7 +14230,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-kinds.search", "Search kinds of relation"),
     (
         "roles.actions-intro",
-        "Copy this role to start a new one from it, or delete it. A starting role can also be reset to the permissions it started with.",
+        "What can be done with the role as a whole: copy it, delete it, or reset a starting role to the permissions it started with.",
     ),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),

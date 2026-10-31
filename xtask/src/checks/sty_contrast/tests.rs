@@ -690,4 +690,13 @@ fn the_squares_of_neighbouring_choices_are_told_apart() {
         "{:?}",
         messages(&findings)
     );
+    // The Coral of the first try in Dusk (#ff8a80) was 38.8 from Pink and looked like it: Pink and Coral need 40.
+    let findings = evaluate(&with_value("cat7-mark", "dusk", "#ff8a80"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("Theme dusk")
+            && f.message.contains("`cat1-mark`")
+            && f.message.contains("`cat7-mark`")),
+        "{:?}",
+        messages(&findings)
+    );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import { Announce } from "./Announce.tsx";
 import { Button } from "./Button.tsx";
@@ -9,8 +9,8 @@ const COPIED_FOR_MS = 3000;
 export interface CopyButtonProps {
   /** What is put on the clipboard. */
   readonly text: string;
-  /** What the button says: words, or an issue ID in its own font. */
-  readonly label: ReactNode;
+  /** What the button says. */
+  readonly label: string;
   /** What the button is called for screen readers when the text alone does not say what it does. */
   readonly name?: string;
   /** What the button says, and a screen reader announces, for a moment after it copied. */

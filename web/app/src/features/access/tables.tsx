@@ -1,19 +1,12 @@
-import { t } from "@bugaboo/messages";
+import { t, type MessageKey } from "@bugaboo/messages";
 import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { roleName, someoneName } from "../../shared/person.ts";
 import { IssueTypeChooser } from "../issue-types/index.ts";
-import { FieldsPreview } from "./FieldsPreview.tsx";
 import { LevelTableView } from "./LevelTableView.tsx";
-import type {
-  FieldKeyCode,
-  FieldLevelCode,
-  LevelTable,
-  PeopleKindKey,
-  PeopleLevelCode,
-} from "./levels.ts";
-import { PeoplePreview } from "./PeoplePreview.tsx";
+import type { FieldKeyCode, FieldLevelCode, PeopleLevelCode } from "./levels.ts";
 import { useFieldPermissions, usePeopleVisibility } from "./use-levels.ts";
 
 /** *More options* of the field permissions: the issue type whose levels the table shows (ADR-0027). */
@@ -45,14 +38,30 @@ function fieldName(field: FieldKeyCode, name: string | null | undefined): string
   return fieldNameOf({ code: field, name });
 }
 
-/** What a person with the chosen role sees of the fields, under the table. */
-function fieldsPreview(table: LevelTable<FieldKeyCode, FieldLevelCode>, role: string) {
-  return <FieldsPreview table={table} role={role} fieldName={fieldName} />;
+/** The sentence of each level of a field, which names the fields the role has at that level. */
+const fieldSentenceOf = {
+  "can-change": "field-permissions.preview-can-change",
+  "can-see": "field-permissions.preview-can-see",
+  hidden: "field-permissions.preview-hidden",
+} as const satisfies Readonly<Record<FieldLevelCode, MessageKey>>;
+
+/** What a role sees of the fields at a level, in a sentence of the preview. */
+function fieldSentence(level: FieldLevelCode, fields: string): string {
+  return t(fieldSentenceOf[level], { fields });
 }
 
-/** What a person with the chosen role sees of people, under the table. */
-function peoplePreview(table: LevelTable<PeopleKindKey, PeopleLevelCode>, role: string) {
-  return <PeoplePreview table={table} role={role} />;
+/** What a role sees of people in the kinds at a level, in a sentence of the preview (the words of the glossary). */
+function peopleSentence(level: PeopleLevelCode, kinds: string): string {
+  if (level === "names") {
+    return t("people-visibility.preview-names", { kinds });
+  }
+  if (level === "role-only") {
+    return t("people-visibility.preview-role-only", {
+      kinds,
+      example: roleName("inside", t("starting-role.team-member")),
+    });
+  }
+  return t("people-visibility.preview-hidden", { kinds, someone: someoneName("inside") });
 }
 
 /** The field permissions of a place: the whole organization, or a project (an ID). */
@@ -82,7 +91,7 @@ export function FieldPermissionsTable({ project }: { readonly project?: string }
         levelName={(level) => t(`field-level.${level}`)}
         subjectHeading={t("access.field")}
         tableName={t("field-permissions.table-name")}
-        preview={fieldsPreview}
+        sentence={fieldSentence}
       />
     </div>
   );
@@ -98,7 +107,7 @@ export function PeopleVisibilityTable({ project }: { readonly project?: string }
       levelName={(level) => t(`people-level.${level}`)}
       subjectHeading={t("access.kind")}
       tableName={t("people-visibility.table-name")}
-      preview={peoplePreview}
+      sentence={peopleSentence}
     />
   );
 }

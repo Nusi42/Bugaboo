@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
-import { itemArea, nothing, onThisLayout } from "./support/layout.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import {
   expectOfferClearOfControls,
   expectOfferInThePageColumn,
@@ -39,9 +39,14 @@ test("ux_04 the offer to undo on a page without Details stands in the middle, wi
       await openFromMenu(page, t("nav.groups"));
       await page.getByLabel(t("groups.field-name"), { exact: true }).fill(groupName);
       await page.getByRole("button", { name: t("groups.create"), exact: true }).click();
-      await page.getByRole("button", { name: groupName, exact: true }).click();
-      const panel = itemArea(page, groupName);
+      await page
+        .getByRole("list", { name: t("groups.list"), exact: true })
+        .getByRole("link", { name: groupName, exact: true })
+        .click();
+      // The card where the people were put in: the offer must not cover what was just used.
+      const panel = page.getByRole("region", { name: t("groups.members"), exact: true });
       await panel.getByRole("searchbox", { name: t("groups.add-search") }).fill("builder");
+      await panel.getByRole("radio", { name: bob.name, exact: true }).check();
       await panel.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
       await expect(
         page.getByText(t("groups.added", { name: bob.name, group: groupName })),

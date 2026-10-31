@@ -50,9 +50,10 @@ describe("cf_04 a value is shown in the look of its field", () => {
     expect(
       shown(field({ kind: "group", look: "plain-text" }), { id: "g", name: "Core" }),
     ).toContain("Core");
+    // An issue is named by its ID, in the part every ID is drawn with (M5-F137).
     expect(
       shown(field({ kind: "issue", look: "plain-text" }), { id: "i", readable_id: "WEB-1" }),
-    ).toContain("WEB-1");
+    ).toContain('data-part="issue-id">WEB-1<');
     expect(shown(field({ kind: "issue", look: "plain-text" }), 7)).toContain(
       t("fields.hidden-reference"),
     );

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Link, RowChevron, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Alert, alertTone, LinkRow, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { detailsText } from "../../shared/list-text.ts";
@@ -13,13 +13,12 @@ export function RoleList() {
   return (
     <div {...partOf(part.stack)}>
       {roles.isError ? <Alert tone={alertTone.danger}>{messageOf(roles.error)}</Alert> : null}
-      <ul {...partOf(part.list)} aria-label={t("roles.list")}>
+      <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("roles.list")}>
         {lines.map((role) => (
-          <li key={role.id} {...partOf(part.item)}>
-            <span {...partOf(part.rowMain)}>
-              <Link row href={roleAddress(role.id)}>
-                {role.name}
-              </Link>
+          <LinkRow
+            key={role.id}
+            href={roleAddress(role.id)}
+            details={
               <span {...partOf(part.muted)}>
                 {detailsText(
                   [
@@ -28,9 +27,10 @@ export function RoleList() {
                   ].filter((word) => word !== null),
                 )}
               </span>
-            </span>
-            <RowChevron />
-          </li>
+            }
+          >
+            {role.name}
+          </LinkRow>
         ))}
       </ul>
       <ShowMoreOf label={t("roles.more")} list={roles} />

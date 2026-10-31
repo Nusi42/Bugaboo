@@ -42,7 +42,25 @@ function SwitchButton({ show, onSwitch }: Pick<IssueHeaderProps, "show" | "onSwi
 }
 
 /**
- * The top of an issue (UX §4.4): its type, its ID that copies a link, the title that is changed
+ * The ID of the issue, as every ID is drawn, and the button that copies its address. The panel already shows the ID as
+ * its heading, so only the focus view shows it here.
+ */
+function IdAndAddress({ issueKey, show }: { readonly issueKey: string; readonly show: IssueShow }) {
+  return (
+    <>
+      {show === "panel" ? null : <IssueId id={issueKey} />}
+      <CopyButton
+        text={linkTo(issueKey)}
+        label={t("issues.copy-link")}
+        name={t("issues.copy-link-of", { key: issueKey })}
+        copiedLabel={t("issues.link-copied")}
+      />
+    </>
+  );
+}
+
+/**
+ * The top of an issue (UX §4.4): its type, its ID, the button that copies its address, the title that is changed
  * where it stands, *More* and the way to open it in the other view. The panel has its own *Close*.
  */
 export function IssueHeader(props: IssueHeaderProps) {
@@ -63,13 +81,7 @@ export function IssueHeader(props: IssueHeaderProps) {
             </>
           )}
         </span>
-        <CopyButton
-          text={linkTo(key)}
-          // The panel already shows the ID as its heading; the focus view shows it here.
-          label={show === "panel" ? t("issues.copy-link") : <IssueId id={key} />}
-          name={t("issues.copy-link-of", { key })}
-          copiedLabel={t("issues.link-copied")}
-        />
+        <IdAndAddress issueKey={key} show={show} />
         <div {...partOf(part.issueHeadActions)}>
           {phone ? null : <SwitchButton show={show} onSwitch={onSwitch} />}
           {/* A phone has *More* in the bar of actions under the page: one is enough. */}

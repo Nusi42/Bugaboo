@@ -5,8 +5,7 @@ import {
   Button,
   buttonLook,
   Card,
-  Link,
-  RowChevron,
+  LinkRow,
   partOf,
   part,
   ShowMoreOf,
@@ -25,15 +24,13 @@ function SubProjectList({ project }: { readonly project: string }) {
     <>
       <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("projects.sub-projects")}>
         {linesOf(list.data?.pages).map((line) => (
-          <li key={line.id} {...partOf(part.item, { variants: ["spread", "wrap"] })}>
-            <span {...partOf(part.rowMain)}>
-              <Link row href={projectAddress(line.shortName)}>
-                {line.name}
-              </Link>
-              <span {...partOf(part.projectsShort)}>{line.shortName}</span>
-            </span>
-            <RowChevron />
-          </li>
+          <LinkRow
+            key={line.id}
+            href={projectAddress(line.shortName)}
+            details={<span {...partOf(part.projectsShort)}>{line.shortName}</span>}
+          >
+            {line.name}
+          </LinkRow>
         ))}
       </ul>
       <ShowMoreOf label={t("projects.sub-projects-more")} list={list} />

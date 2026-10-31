@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, LinkRow, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { fieldAddress } from "../../shared/paths.ts";
@@ -24,17 +24,15 @@ export function FieldsPage() {
             page.fields.length === 0 ? (
               <p {...partOf(part.muted)}>{t("fields.nothing")}</p>
             ) : (
-              <ul {...partOf(part.list)} aria-label={t("fields.list")}>
+              <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("fields.list")}>
                 {page.fields.map((field) => (
-                  <li key={field.id} {...partOf(part.item)}>
-                    <span {...partOf(part.rowMain)}>
-                      <Link row href={fieldAddress(field.id)}>
-                        {field.name}
-                      </Link>
-                      <span {...partOf(part.muted)}>{detailsOf(field)}</span>
-                    </span>
-                    <RowChevron />
-                  </li>
+                  <LinkRow
+                    key={field.id}
+                    href={fieldAddress(field.id)}
+                    details={<span {...partOf(part.muted)}>{detailsOf(field)}</span>}
+                  >
+                    {field.name}
+                  </LinkRow>
                 ))}
               </ul>
             )

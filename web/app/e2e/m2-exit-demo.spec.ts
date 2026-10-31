@@ -2,7 +2,14 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { paths, projectAddress, addressInProject } from "../src/shared/paths.ts";
-import { around, check, levelList, pickLevel, roleName } from "./support/access.ts";
+import {
+  around,
+  check,
+  levelList,
+  peoplePreviewLine,
+  pickLevel,
+  roleName,
+} from "./support/access.ts";
 import {
   closeTheSheet,
   findsNoneOf,
@@ -124,8 +131,7 @@ async function hideNames(page: Page): Promise<void> {
   // A Guest sees who is assigned by role only, as the starting rules say.
   await expect(assigned).toHaveValue("role-only");
   await pickLevel(assigned, page, t("people-level.hidden"));
-  const who = t("person.someone");
-  await expect(sentence(page, t("people-visibility.example-assigned", { who }))).toBeVisible();
+  await expect(peoplePreviewLine(page, "hidden")).toContainText(t("people-kind.assigned-to"));
   await good(page, "03-hide-names");
   await seeFromTheSideOfAGuest(page);
 }

@@ -298,6 +298,100 @@ async fn sec_02_the_page_of_a_group_lists_the_roles_the_viewer_decides_about() -
             "project-and-sub-projects"
         );
         assert_eq!(page.body["used_by"]["projects"], 1);
+        assert_eq!(page.body["truncated"], false);
+
+        // Somebody who manages groups and decides no role anywhere sees the group, and none of its rows.
+        let groups_only = org
+            .create(
+                "/api/v1/roles",
+                json!({"name": "Groups only", "permissions": ["manage-groups"], "two_step": false}),
+            )
+            .await?;
+        let (mut gina, gina_id) = org.person("Gina Groups", "gina@example.test").await?;
+        org.create(
+            "/api/v1/assignments",
+            json!({"who": {"person": gina_id}, "role": groups_only}),
+        )
+        .await?;
+        let seen = gina
+            .send("GET", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(seen.status, StatusCode::OK, "{}", seen.body);
+        assert_eq!(seen.body["roles"], json!([]));
+
+        // Somebody who decides roles in ACME only sees the row of ACME, not the one of the whole organization.
+        let decides = org
+            .create(
+                "/api/v1/roles",
+                json!({"name": "Decides here", "permissions": ["decide-roles"], "two_step": false}),
+            )
+            .await?;
+        let (mut paul, paul_id) = org.person("Paul Project", "paul@example.test").await?;
+        org.create(
+            "/api/v1/assignments",
+            json!({"who": {"person": paul_id}, "role": groups_only}),
+        )
+        .await?;
+        org.create(
+            &format!("/api/v1/projects/{acme}/assignments"),
+            json!({"who": {"person": paul_id}, "role": decides, "applies_to": "project"}),
+        )
+        .await?;
+        let seen = paul
+            .send("GET", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(seen.status, StatusCode::OK, "{}", seen.body);
+        let places: Vec<&str> = seen.body["roles"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| row["place"]["short_name"].as_str())
+            .collect();
+        assert_eq!(places, ["ACME"]);
+        assert_eq!(seen.body["roles"].as_array().map(Vec::len), Some(1));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_the_page_of_a_group_cuts_its_roles_at_the_cap_and_says_so() -> TestResult {
+    each_database("sec_02_http_group_page_cut", async |db| {
+        let mut org = start(db).await?;
+        let viewer = org.role_named("Viewer").await?;
+        let group = org
+            .create("/api/v1/groups", json!({"name": "Everywhere"}))
+            .await?;
+        let cap = bb_app::people::GROUP_ROLES_MAX;
+        // One row for the whole organization and one in each of as many projects as the cap: one more than it.
+        org.create(
+            "/api/v1/assignments",
+            json!({"who": {"group": group}, "role": viewer}),
+        )
+        .await?;
+        for at in 0..cap {
+            let short = format!("P{at}");
+            let project = org
+                .create(
+                    "/api/v1/projects",
+                    json!({"short_name": short, "name": short}),
+                )
+                .await?;
+            org.create(
+                &format!("/api/v1/projects/{project}/assignments"),
+                json!({"who": {"group": group}, "role": viewer, "applies_to": "project"}),
+            )
+            .await?;
+        }
+        let page = org
+            .ada
+            .send("GET", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.body);
+        assert_eq!(page.body["roles"].as_array().map(Vec::len), Some(cap));
+        assert_eq!(page.body["truncated"], true);
+        // The whole organization comes first, so it is never the row the cap cuts off.
+        assert_eq!(page.body["roles"][0]["place"]["kind"], "organization");
         Ok(())
     })
     .await

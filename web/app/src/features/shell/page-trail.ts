@@ -7,6 +7,8 @@ import { createRegistry } from "./registry.ts";
 /** One step of *where you are*: what it is called and where it goes. */
 export interface TrailStep {
   readonly label: string;
+  /** The label is the ID of an issue, drawn as every ID is (M5-F137). */
+  readonly issueId?: boolean;
   /** An address of the app. */
   readonly href: string;
 }

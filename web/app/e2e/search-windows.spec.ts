@@ -216,7 +216,7 @@ test("qry_01 a row of the issue finder is the mono ID on the first line of the t
   await expect(row).toBeVisible();
   // The ID is in the mono font; the status is a pill with its word; the ID stands on the first line of the title, which is
   // written out on more lines where it is long (M5 exit F-A7).
-  const id = row.locator('[data-part="picker.id"]');
+  const id = row.locator('[data-part="issue-id"]');
   await expect(id).toHaveCSS("font-family", /mono/iu);
   await expect(row.getByText("Open", { exact: true })).toBeVisible();
   const [idBox, nameBox] = await Promise.all([

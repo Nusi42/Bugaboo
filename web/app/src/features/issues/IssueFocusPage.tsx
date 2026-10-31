@@ -32,7 +32,7 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
   // Where you are: the projects above it, the project, then the issue, as on every project page.
   const found = useProject(project);
   const last = useMemo(
-    (): readonly TrailStep[] => [{ label: here, href: issueAddress(here) }],
+    (): readonly TrailStep[] => [{ label: here, href: issueAddress(here), issueId: true }],
     [here],
   );
   useProjectTrail(found.isPlaceholderData ? undefined : found.data, last);

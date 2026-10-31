@@ -344,11 +344,11 @@ export interface MessageArguments {
   "passkeys.last-used": { when: string | number };
   "passkeys.remove-name": { name: string | number };
   "passkeys.remove-title": { name: string | number };
-  "people-visibility.example-assigned": { who: string | number };
-  "people-visibility.example-comment": { who: string | number };
-  "people-visibility.example-editing": { who: string | number };
-  "people-visibility.intro": { example: string | number };
+  "people-visibility.intro": { example: string | number; someone: string | number };
   "people-visibility.intro-project": { project: string | number };
+  "people-visibility.preview-hidden": { kinds: string | number; someone: string | number };
+  "people-visibility.preview-names": { kinds: string | number };
+  "people-visibility.preview-role-only": { example: string | number; kinds: string | number };
   "people-visibility.project-title": { project: string | number };
   "people.in-groups": { count: number; groups: string | number };
   "person.former": { label: string | number };

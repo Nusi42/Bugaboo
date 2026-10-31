@@ -5,6 +5,7 @@ import {
   Icon,
   iconName,
   iconSize,
+  IssueId,
   type LayoutMode,
   partOf,
   part,
@@ -40,6 +41,11 @@ function useGoBack(trail: readonly TrailStep[] | undefined): () => void {
   };
 }
 
+/** The words of a step: an issue ID is drawn by the part of IDs. */
+function StepLabel({ step }: { readonly step: TrailStep }) {
+  return step.issueId === true ? <IssueId id={step.label} /> : step.label;
+}
+
 /** Where you are, as links up: `My settings › Appearance`, or the projects above a project. */
 function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
   return (
@@ -51,12 +57,12 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
             <li key={step.href} {...partOf(part.topBarCrumb)}>
               {last ? (
                 <span aria-current={ariaCurrent.page} {...partOf(part.strong)}>
-                  {step.label}
+                  <StepLabel step={step} />
                 </span>
               ) : (
                 <>
                   <Link href={step.href} {...partOf(part.topBarUp)}>
-                    {step.label}
+                    <StepLabel step={step} />
                   </Link>
                   <Icon name={iconName.next} size={iconSize.small} />
                 </>
@@ -84,6 +90,7 @@ export function TopBar({ layout }: TopBarProps) {
   const place = placeAt(pathname);
   const phone = layout === "phone";
   const steps = set ?? stepsOfScreens(pathname);
+  const last = steps.at(-1);
   // A page with a trail of its own has a screen above it, which *Back* leads to.
   const hasUp = set === undefined ? place?.parent !== null && place !== undefined : true;
   return (
@@ -105,7 +112,9 @@ export function TopBar({ layout }: TopBarProps) {
         </Button>
       ) : null}
       {phone ? (
-        <span {...partOf(part.topBarTitle)}>{steps.at(-1)?.label ?? t("app.name")}</span>
+        <span {...partOf(part.topBarTitle)}>
+          {last === undefined ? t("app.name") : <StepLabel step={last} />}
+        </span>
       ) : (
         <Trail steps={steps} />
       )}

@@ -109,7 +109,8 @@
   --size-bar-sheet: 80dvh;
   --size-bar-ticked: 40dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
-  --size-option-gap: var(--space-1);
+  --size-matrix-names: calc(192px * var(--text-scale));
+  --size-option-gap: var(--space-2);
   --size-body-gap: var(--space-4);
   --size-page-gutter: var(--space-4);
   --size-dock-gap: var(--space-3);
@@ -217,10 +218,10 @@
   --cat1-mark: #c2306f;
   --cat2-mark: #2f62d9;
   --cat3-mark: #2e8a3e;
-  --cat4-mark: #c9560a;
+  --cat4-mark: #b86200;
   --cat5-mark: #8e44c9;
   --cat6-mark: #0f8a84;
-  --cat7-mark: #e04a5a;
+  --cat7-mark: #d9523a;
   --cat8-mark: #a18000;
   --cat9-mark: #2b8dc4;
   --cat10-mark: #6a9410;
@@ -297,10 +298,10 @@
     --cat1-mark: #f05a9e;
     --cat2-mark: #7a9cff;
     --cat3-mark: #3fbf6a;
-    --cat4-mark: #f5893a;
+    --cat4-mark: #f59a2a;
     --cat5-mark: #b57cf0;
     --cat6-mark: #33c4b8;
-    --cat7-mark: #ff8a80;
+    --cat7-mark: #ff6f4f;
     --cat8-mark: #e7c03a;
     --cat9-mark: #4cb8f0;
     --cat10-mark: #a2d23c;
@@ -377,10 +378,10 @@
   --cat1-mark: #f05a9e;
   --cat2-mark: #7a9cff;
   --cat3-mark: #3fbf6a;
-  --cat4-mark: #f5893a;
+  --cat4-mark: #f59a2a;
   --cat5-mark: #b57cf0;
   --cat6-mark: #33c4b8;
-  --cat7-mark: #ff8a80;
+  --cat7-mark: #ff6f4f;
   --cat8-mark: #e7c03a;
   --cat9-mark: #4cb8f0;
   --cat10-mark: #a2d23c;
@@ -457,10 +458,10 @@
   --cat1-mark: #c2306f;
   --cat2-mark: #2f62d9;
   --cat3-mark: #2e8a3e;
-  --cat4-mark: #c9560a;
+  --cat4-mark: #b86200;
   --cat5-mark: #8e44c9;
   --cat6-mark: #0f8a84;
-  --cat7-mark: #e04a5a;
+  --cat7-mark: #d9523a;
   --cat8-mark: #a18000;
   --cat9-mark: #2b8dc4;
   --cat10-mark: #6a9410;
@@ -537,10 +538,10 @@
   --cat1-mark: #c2306f;
   --cat2-mark: #2f62d9;
   --cat3-mark: #2e8a3e;
-  --cat4-mark: #c9560a;
+  --cat4-mark: #b86200;
   --cat5-mark: #8e44c9;
   --cat6-mark: #0f8a84;
-  --cat7-mark: #e04a5a;
+  --cat7-mark: #d9523a;
   --cat8-mark: #a18000;
   --cat9-mark: #2b8dc4;
   --cat10-mark: #6a9410;
@@ -617,10 +618,10 @@
   --cat1-mark: #f05a9e;
   --cat2-mark: #7a9cff;
   --cat3-mark: #3fbf6a;
-  --cat4-mark: #f5893a;
+  --cat4-mark: #f59a2a;
   --cat5-mark: #b57cf0;
   --cat6-mark: #33c4b8;
-  --cat7-mark: #ff8a80;
+  --cat7-mark: #ff6f4f;
   --cat8-mark: #e7c03a;
   --cat9-mark: #4cb8f0;
   --cat10-mark: #a2d23c;
@@ -697,10 +698,10 @@
   --cat1-mark: #f05a9e;
   --cat2-mark: #7a9cff;
   --cat3-mark: #3fbf6a;
-  --cat4-mark: #f5893a;
+  --cat4-mark: #f59a2a;
   --cat5-mark: #b57cf0;
   --cat6-mark: #33c4b8;
-  --cat7-mark: #ff8a80;
+  --cat7-mark: #ff6f4f;
   --cat8-mark: #e7c03a;
   --cat9-mark: #4cb8f0;
   --cat10-mark: #a2d23c;
@@ -1968,7 +1969,7 @@ textarea,
   flex-direction: column;
   gap: var(--size-option-gap);
   box-sizing: content-box;
-  max-height: calc(var(--size-control) * 7 + var(--size-option-gap) * 6);
+  max-height: calc(var(--size-row) * 7 + var(--size-option-gap) * 6);
   scroll-padding: var(--ring-room);
   margin-block: 0;
   padding: var(--ring-room);
@@ -1998,7 +1999,7 @@ textarea,
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  min-height: var(--size-control);
+  min-height: var(--size-row);
   cursor: pointer;
   padding: 0 var(--space-2);
   border-radius: var(--r-ctl);
@@ -2060,7 +2061,7 @@ textarea,
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-3);
-  min-height: var(--size-control);
+  min-height: var(--size-row);
   padding: 0 var(--space-2);
   border-radius: var(--r-ctl);
 }
@@ -2075,7 +2076,7 @@ textarea,
   justify-content: flex-start;
   gap: var(--space-3);
   width: 100%;
-  min-height: var(--size-control);
+  min-height: var(--size-row);
   padding: 0;
   border: 0;
   border-radius: var(--r-ctl);
@@ -2089,7 +2090,9 @@ textarea,
 
 [data-part="issue-id"] {
   font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
   white-space: nowrap;
+  color: var(--fg-muted);
 }
 
 [data-part="picker.name"] [data-part="issue-id"] {
@@ -3584,6 +3587,12 @@ textarea,
   padding: var(--space-1) var(--space-3);
 }
 
+[data-part="item"][data-variant~="row"] {
+  box-sizing: border-box;
+  min-height: var(--size-row);
+  padding: var(--space-1) var(--space-3);
+}
+
 [data-part="item"][data-variant~="wrap"] {
   overflow-wrap: anywhere;
 }
@@ -3805,10 +3814,6 @@ textarea,
 [data-part="save-status"] {
   color: var(--fg-muted);
   font-size: var(--fs-base);
-}
-
-[data-part="save-status"]:empty {
-  position: absolute;
 }
 
 [data-part="save-status"][data-state~="not-saved"] {
@@ -4099,6 +4104,16 @@ textarea,
   color: var(--fg);
 }
 
+[data-part="access.chooser"] {
+  position: relative;
+}
+
+[data-part="access.chooser"] [data-part="save-status"] {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+}
+
 [data-part="access.subheading"] {
   margin: 0;
   font-size: var(--fs-md);
@@ -4111,7 +4126,7 @@ textarea,
   overflow-x: auto;
   container-type: inline-size;
   scroll-snap-type: x proximity;
-  scroll-padding-inline-start: var(--size-matrix-cell);
+  scroll-padding-inline-start: var(--size-matrix-names);
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
@@ -4146,7 +4161,7 @@ textarea,
     animation-timeline: scroll(nearest inline);
     animation-name: cue-in;
     animation-range: 0% var(--space-3);
-    inset-inline-start: var(--size-matrix-cell);
+    inset-inline-start: var(--size-matrix-names);
   }
 }
 
@@ -4186,8 +4201,8 @@ textarea,
     min-width: max(
       var(--size-matrix-cell),
       calc(
-        (100cqw - var(--size-matrix-cell)) /
-          max(1, round(down, (100cqw - var(--size-matrix-cell)) / var(--size-matrix-cell), 1))
+        (100cqw - var(--size-matrix-names)) /
+          max(1, round(down, (100cqw - var(--size-matrix-names)) / var(--size-matrix-cell), 1))
       )
     );
   }
@@ -4212,11 +4227,11 @@ textarea,
   font-size: var(--fs-ui);
   line-height: var(--lh-body);
   font-weight: var(--weight-regular);
-  min-width: var(--size-matrix-cell);
+  min-width: var(--size-matrix-names);
 }
 
 [data-part="access.matrix-cell"][data-variant~="head"]:first-child {
-  min-width: var(--size-matrix-cell);
+  min-width: var(--size-matrix-names);
   inset-inline-start: 0;
   z-index: var(--z-raised);
 }
@@ -6360,6 +6375,7 @@ textarea,
 
 [data-part="markdown"] [data-kind="issue-id"] {
   font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
   white-space: nowrap;
 }
 

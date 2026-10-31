@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
+import { roleName, someoneName } from "../../shared/person.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { CheckAccessView } from "./CheckAccessView.tsx";
 import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
@@ -15,11 +16,17 @@ export function FieldPermissionsPage() {
   );
 }
 
-/** The introduction of *Who sees people*: its example of a role stays on one line. */
+/**
+ * The introduction of *Who sees people*: its example of a role, in the words of the glossary (*Someone (Team member)*),
+ * stays on one line with its brackets.
+ */
 function PeopleVisibilityIntro() {
-  const example = t("people-visibility.intro-example");
+  const example = roleName("inside", t("starting-role.team-member"));
   return (
-    <SentenceWithValue sentence={t("people-visibility.intro", { example })} value={example}>
+    <SentenceWithValue
+      sentence={t("people-visibility.intro", { example, someone: someoneName("inside") })}
+      value={example}
+    >
       {(value) => <span {...partOf(part.unbrokenWord)}>{value}</span>}
     </SentenceWithValue>
   );

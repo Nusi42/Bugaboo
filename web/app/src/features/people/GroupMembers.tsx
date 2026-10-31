@@ -21,9 +21,9 @@ function MemberList({ group, changes }: ListProps) {
       {members.isSuccess && people.length === 0 ? (
         <p {...partOf(part.muted)}>{t("groups.members-none")}</p>
       ) : (
-        <ul {...partOf(part.list)} aria-label={t("groups.members")}>
+        <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("groups.members")}>
           {people.map((person) => (
-            <li key={person.id} {...partOf(part.item)}>
+            <li key={person.id} {...partOf(part.item, { variants: ["row"] })}>
               <span {...partOf(part.itemTitle)}>{person.name}</span>
               <Button
                 aria-label={t("groups.remove-name", { name: person.name })}

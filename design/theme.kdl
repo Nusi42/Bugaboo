@@ -220,8 +220,11 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
+    // The column of the names of a matrix (a field, a kind of people information): the longest kind ("Authors of comments
+    // and history") takes at most two lines, and both tables have the same column of names (M5-F135).
+    size "size-matrix-names" "calc(192px * $text-scale)"
     // The gap between the rows of a list in a picker: the box, its height and the lines at its ends use it.
-    size "size-option-gap" "$space-1"
+    size "size-option-gap" "$space-2"
     // The gap between the things in the body of the question Move: the shadow lines at its ends take it back.
     size "size-body-gap" "$space-4"
     // The room between the edge of the screen or of a column and what stands in the page: the same for the page, and for
@@ -391,10 +394,10 @@ tokens {
     color "cat1-mark" "#c2306f"
     color "cat2-mark" "#2f62d9"
     color "cat3-mark" "#2e8a3e"
-    color "cat4-mark" "#c9560a"
+    color "cat4-mark" "#b86200"
     color "cat5-mark" "#8e44c9"
     color "cat6-mark" "#0f8a84"
-    color "cat7-mark" "#e04a5a"
+    color "cat7-mark" "#d9523a"
     color "cat8-mark" "#a18000"
     color "cat9-mark" "#2b8dc4"
     color "cat10-mark" "#6a9410"
@@ -561,8 +564,15 @@ distinct min-delta-e-between-states=15 min-delta-e-against-surfaces=7.5 reason="
 
 // The squares of labels are told apart at a glance in every theme: no Coral close to Pink, the case of the pale fills of
 // the light themes (M5-F149). Their ratio to the surfaces is the `fills` rule of the contrast rules.
-distinct min-delta-e-between-states=25 reason="The squares of the twelve label colors differ from each other by at least 25 (delta E), in every theme (M5-F149)." {
+distinct min-delta-e-between-states=26 reason="The squares of the twelve label colors differ from each other by at least 26 (delta E), in every theme (M5-F149)." {
     states "cat1-mark" "cat2-mark" "cat3-mark" "cat4-mark" "cat5-mark" "cat6-mark" "cat7-mark" "cat8-mark" "cat9-mark" "cat10-mark" "cat11-mark" "cat12-mark"
+    surfaces "bg-raised"
+}
+
+// Pink and Coral are neighbours on the color wheel and looked alike in Dusk and Midnight at 38 (delta E): Coral leans
+// to orange, and the two stand further apart than any other pair must (M5-F149, review of the squares).
+distinct min-delta-e-between-states=40 reason="The squares of Pink and Coral, the two neighbours that looked alike, differ by at least 40 (delta E), in every theme (M5-F149)." {
+    states "cat1-mark" "cat7-mark"
     surfaces "bg-raised"
 }
 
@@ -685,14 +695,15 @@ mixin "ring" {
     }
 }
 
-// Words that are less important than their neighbours.
-// An issue ID is in the code font wherever it is shown, and never breaks: the one rule for the font of an ID, which the
-// part `issue-id` and an ID inside a text written by people use (M5-F137).
+// An issue ID is in the code font and the regular weight wherever it is shown, also in a heading, and never breaks: the
+// one rule for the look of an ID, which the part `issue-id` and an ID inside a text written by people use (M5-F137).
 mixin "issue-id" {
     font-family "$font-mono"
+    font-weight "$weight-regular"
     white-space nowrap
 }
 
+// Words that are less important than their neighbours.
 mixin "quiet-text" {
     color "$fg-muted"
     font-size "$fs-base"
@@ -1164,7 +1175,7 @@ part "muted" "card.intro" {
     line-height "$lh-body"
 }
 
-// Short texts of one to three lines (an introduction, a line of a preview, the title of an answer) are balanced, so a
+// Short texts of one to three lines (a line of a preview, the title of an answer) are balanced, so a
 // last line is never one word alone ("in turn.", "description", "back"), where the `pretty` of the page still left one
 // at some widths. The help of a box is a hint and is balanced by `control-hint`. The words of a switch keep the
 // `pretty` of the page: balanced, a label that nearly fits one line ("Two-step sign-in for everybody") was cut in two
@@ -1172,7 +1183,6 @@ part "muted" "card.intro" {
 part "access.preview-line" "access.subheading" {
     text-wrap balance
 }
-
 
 // Words for screen readers only: the name of a column that holds only an icon.
 part "visually-hidden" {
@@ -1948,7 +1958,7 @@ part "picker.options[variant=list]" {
     gap "$size-option-gap"
     // The seven rows are the room inside; the padding for the ring is around them, so the last row has room below it.
     box-sizing content-box
-    max-height "calc($size-control * 7 + $size-option-gap * 6)"
+    max-height "calc($size-row * 7 + $size-option-gap * 6)"
     use "ring-room"
     list-style none
     overflow-y auto
@@ -1975,8 +1985,13 @@ part "picker.options[variant=list]:has(picker.choice)" {
     use "ring-room-flush"
 }
 
+// A row of a list to pick from is as high as every row of a list (UX §7.4), not only as a control.
 part "picker.option[variant=list]" {
-    use "touch-row"
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-row"
+    cursor pointer
     padding 0 "$space-2"
     border-radius "$r-ctl"
 }
@@ -2026,7 +2041,7 @@ part "picker.row" {
     align-items center
     justify-content space-between
     gap "$space-2 $space-3"
-    min-height "$size-control"
+    min-height "$size-row"
     padding 0 "$space-2"
     border-radius "$r-ctl"
 }
@@ -2043,7 +2058,7 @@ part "picker.choice" {
     justify-content flex-start
     gap "$space-3"
     width "100%"
-    min-height "$size-control"
+    min-height "$size-row"
     padding 0
     border 0
     border-radius "$r-ctl"
@@ -2055,9 +2070,11 @@ part "picker.choice" {
     cursor pointer
 }
 
-// The ID of an issue (`WEB-142`), the one part every screen draws it with (UX §7.3, M5-F137).
+// The ID of an issue (`WEB-142`), the one part every screen draws it with (UX §7.3, M5-F137): the look of the mixin, in
+// the quiet color, the same in a list, a heading, the top bar and a notification.
 part "issue-id" {
     use "issue-id"
+    color "$fg-muted"
 }
 
 part "picker.name issue-id" {
@@ -3566,6 +3583,14 @@ part "item[variant=slim]" {
     padding "$space-1 $space-3"
 }
 
+// A row of a list of things: one height for a row with a mouse and one with touch (UX §7.4), the words in its middle,
+// whether it opens a page or holds a button (a group, a role, a person in a group).
+part "item[variant=row]" {
+    box-sizing border-box
+    min-height "$size-row"
+    padding "$space-1 $space-3"
+}
+
 part "item[variant=wrap]" {
     overflow-wrap anywhere
 }
@@ -3774,12 +3799,6 @@ part "or-divider::before" "or-divider::after" {
 // hint must not reach it.
 part "save-status" {
     use "quiet-text"
-}
-
-// Before the first change the region says nothing and takes no room in a stack: it stays on the page, so screen
-// readers still hear *Saved* when it comes, but leaves no second gap (the large gap above *Choose a role*, M5-F135).
-part "save-status:empty" {
-    position absolute
 }
 
 // Red means something did not happen (R4); a change that is not saved yet only says so.
@@ -4047,6 +4066,18 @@ part "settings.locked-value" {
 
 // The title of an answer of *Check access* (a permission, a field): the name of a row, regular weight (UX §7.3:
 // bold is for the heading of a section, not for the title of every line).
+// *Choose a role* of a table of levels, with *Saving…* and *Saved* at the end of the line of its label: the label line
+// is there anyway, so nothing moves when the status comes and it needs no line of its own (M5-F135).
+part "access.chooser" {
+    position relative
+}
+
+part "access.chooser save-status" {
+    position absolute
+    inset-block-start 0
+    inset-inline-end 0
+}
+
 part "access.subheading" {
     margin 0
     font-size "$fs-md"
@@ -4063,7 +4094,7 @@ part "access.scroll" {
     container-type inline-size
     // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
     scroll-snap-type "x proximity"
-    scroll-padding-inline-start "$size-matrix-cell"
+    scroll-padding-inline-start "$size-matrix-names"
     border "$border-width solid $border-subtle"
     border-radius "$r-ctl"
     background "$bg-surface"
@@ -4089,7 +4120,7 @@ part "access.scroll::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-inline"
         use "edge-from-start"
-        inset-inline-start "$size-matrix-cell"
+        inset-inline-start "$size-matrix-names"
     }
 }
 
@@ -4110,7 +4141,7 @@ part "access.matrix-cell" {
     // its least width above (then a column may be cut at the edge): a variable in a line that such a browser cannot
     // compute would drop the line to nothing, not to the line before, so the browser is asked first, with plain numbers.
     supports "(width: calc(1px * round(down, 5px / 2px, 1)))" {
-        min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
+        min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-names) / max(1, round(down, (100cqw - $size-matrix-names) / $size-matrix-cell, 1))))"
     }
     padding "$space-2 $space-3"
     scroll-snap-align start
@@ -4138,11 +4169,11 @@ part "access.matrix-cell[variant=row]" {
     font-size "$fs-ui"
     line-height "$lh-body"
     font-weight "$weight-regular"
-    min-width "$size-matrix-cell"
+    min-width "$size-matrix-names"
 }
 
 part "access.matrix-cell[variant=head]:first-child" {
-    min-width "$size-matrix-cell"
+    min-width "$size-matrix-names"
     inset-inline-start 0
     z-index "$z-raised"
 }

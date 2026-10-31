@@ -6,10 +6,13 @@ import {
   Icon,
   iconName,
   iconSize,
+  LabelMark,
   partOf,
   part,
   type ChoiceColorName,
 } from "@bugaboo/ui";
+
+import { colorChoiceLook, type ColorChoiceLook } from "./color-choice-look.ts";
 
 const colorChoices = choiceColorWords.map((word) => ({
   value: word,
@@ -22,6 +25,8 @@ export interface ColorChoiceProps {
   /** The chosen color; none while nothing is chosen (a new label gets the next color in turn). */
   readonly value: ChoiceColorName | undefined;
   readonly onChange: (color: ChoiceColorName) => void;
+  /** How each color is shown; a fill unless said otherwise. */
+  readonly look?: ColorChoiceLook;
 }
 
 /**
@@ -29,7 +34,12 @@ export interface ColorChoiceProps {
  * grid of a choice group. The chosen one has a ring and a tick, so it is told by more than its color (also under
  * forced colors). The color of a choice of an own field, of a tag and of a label is chosen here, the same way.
  */
-export function ColorChoice({ legend, value, onChange }: ColorChoiceProps) {
+export function ColorChoice({
+  legend,
+  value,
+  onChange,
+  look = colorChoiceLook.fill,
+}: ColorChoiceProps) {
   return (
     <ChoiceGroup
       legend={legend}
@@ -37,10 +47,15 @@ export function ColorChoice({ legend, value, onChange }: ColorChoiceProps) {
       value={value}
       look={choiceGroupLook.grid}
       renderLabel={(color) => (
-        <span {...partOf(part.fieldSwatch, { variants: [color.value] })}>
+        <span
+          {...partOf(part.fieldSwatch, {
+            variants: [look === colorChoiceLook.fill && color.value],
+          })}
+        >
           <span {...partOf(part.fieldSwatchTick)}>
             <Icon name={iconName.check} size={iconSize.small} />
           </span>
+          {look === colorChoiceLook.square ? <LabelMark color={color.value} /> : null}
           {color.label}
         </span>
       )}

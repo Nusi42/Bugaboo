@@ -11,6 +11,7 @@ import {
   lea,
   levelList,
   createPeopleWithRoles,
+  peoplePreviewLine,
   pickLevel,
   projectIdOf,
   roleId,
@@ -156,22 +157,13 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
   const preview = t("access.preview-heading", { role: roleName.guest });
   await expect(page.getByRole("heading", { name: preview })).toBeVisible();
-  const asRole = t("person.role-inside", { role: t("starting-role.team-member") });
-  await expect(
-    page.getByText(t("people-visibility.example-assigned", { who: asRole })),
-  ).toBeVisible();
+  await expect(peoplePreviewLine(page, "role-only")).toContainText(t("people-kind.assigned-to"));
 
   const assigned = await levelList(page, t("people-kind.assigned-to"), roleName.guest);
   await pickLevel(assigned, page, t("people-level.hidden"));
-  await expect(
-    page.getByText(t("people-visibility.example-assigned", { who: t("person.someone") })),
-  ).toBeVisible();
+  await expect(peoplePreviewLine(page, "hidden")).toContainText(t("people-kind.assigned-to"));
   await pickLevel(assigned, page, t("people-level.names"));
-  await expect(
-    page.getByText(
-      t("people-visibility.example-assigned", { who: t("people-visibility.who-names") }),
-    ),
-  ).toBeVisible();
+  await expect(peoplePreviewLine(page, "names")).toContainText(t("people-kind.assigned-to"));
 });
 
 test("sec_03 checking Ana's access in Website reads as a sentence with its reasons", async ({

@@ -20,12 +20,11 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
   await signIn(page, ada);
   await page.goto(paths.labels);
   await page.getByLabel(t("labels.field-label-name"), { exact: true }).fill("backend");
-  await page
-    .getByRole("group", { name: t("labels.field-new-color"), exact: true })
-    .getByRole("radio", { name: picked, exact: true })
-    .check();
-  // The color of the square, as the theme gives it (M5-F149).
+  const colors = page.getByRole("group", { name: t("labels.field-new-color"), exact: true });
+  await colors.getByRole("radio", { name: picked, exact: true }).check();
+  // The color of the square, as the theme gives it (M5-F149). The choice shows the square the label will have.
   const square = await resolved(page, "background-color", "var(--cat7-mark)");
+  await expect(partIn(colors, "label-mark", "cat7")).toHaveCSS("background-color", square);
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();
   await expect(page.getByText(t("labels.label-created", { name: "backend" }))).toBeVisible();
   const row = page
@@ -34,7 +33,7 @@ test("tag_02 a label is created with the color chosen in its form", async ({ pag
   // The list shows the label with a small square in its color before its name (UX §7.5).
   const mark = partIn(row, "label-mark", "cat7");
   await expect(mark).toBeVisible();
-  // The square is the clear color of its own, not the pale fill of the swatch it was chosen from (M5-F149).
+  // The square is the clear color of its own, the one the choice showed, not a pale fill (M5-F149).
   await expect(mark).toHaveCSS("background-color", square);
   await row.click();
   await expect(

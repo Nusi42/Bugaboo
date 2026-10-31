@@ -9,6 +9,7 @@ import {
   lea,
   levelList,
   createPeopleWithRoles,
+  peoplePreviewLine,
   pickLevel,
   projectIdOf,
   roleId,
@@ -75,9 +76,7 @@ test("what roles see at phone width", async ({ page, server }) => {
 
   await page.goto(paths.peopleVisibility);
   await levelList(page, t("people-kind.assigned-to"), roleName.guest);
-  await expect(
-    page.getByText(t("people-visibility.example-assigned", { who: t("person.someone") })),
-  ).toBeVisible();
+  await expect(peoplePreviewLine(page, "hidden")).toContainText(t("people-kind.assigned-to"));
   await shotWhole(page, "62-people-visibility", MILESTONE);
 
   await page.goto(addressInProject(paths.projectSettings, "ACME"));

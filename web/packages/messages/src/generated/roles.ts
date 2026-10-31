@@ -29,7 +29,7 @@ export const messages = {
     "{count, plural, =0 {Everybody with this role has set up a second step.} one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
   "roles.actions-title": "More about this role",
   "roles.actions-intro":
-    "Copy this role to start a new one from it, or delete it. A starting role can also be reset to the permissions it started with.",
+    "What can be done with the role as a whole: copy it, delete it, or reset a starting role to the permissions it started with.",
   "roles.reset": "Reset to the starting permissions",
   "roles.reset-help":
     "This is a starting role. You can give it back the permissions it had at the start.",

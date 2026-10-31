@@ -108,6 +108,7 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
 
   // Put Bob in: the picker finds him by name and says he is in afterwards.
   await page.getByRole("searchbox", { name: t("groups.add-search") }).fill("builder");
+  await page.getByRole("radio", { name: bob.name, exact: true }).check();
   await page.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
   const members = page.getByRole("list", { name: t("groups.members"), exact: true });
   await expect(members.getByText(bob.name)).toBeVisible();

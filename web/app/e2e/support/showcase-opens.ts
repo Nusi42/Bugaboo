@@ -6,7 +6,7 @@ import { addressWith, sendPassword } from "./flows.ts";
 import { layoutOf } from "./layout.ts";
 import { openMove, tree } from "./projects.ts";
 import { sampleWithCodeApp } from "./sample.ts";
-import { PROJECT, showcaseNames, SUB_PROJECT, type ShowcaseIds } from "./showcase-sample.ts";
+import { ISSUE, PROJECT, showcaseNames, SUB_PROJECT, type ShowcaseIds } from "./showcase-sample.ts";
 import { type Needs, type Screen } from "./showcase.ts";
 import { addressInProject, paths, projectAddress } from "../../src/shared/paths.ts";
 
@@ -88,6 +88,15 @@ export async function openQuickSearch({ page }: Needs): Promise<void> {
   await expect(page.getByRole("option").first()).toBeVisible();
 }
 
+/** Quick search with an issue found by its ID, which the result shows under the title in the font of IDs. */
+export async function openQuickSearchIssue({ page }: Needs): Promise<void> {
+  await page.goto(paths.home);
+  await expectPage(page);
+  await page.keyboard.press("Control+k");
+  await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill(ISSUE);
+  await expect(page.getByRole("option").locator('[data-part="issue-id"]').first()).toBeVisible();
+}
+
 /** *Check access* at an address (the whole organization, or a project) with the answer for the person of the pictures. */
 export function checkAccessAt(address: string): Screen["open"] {
   return async ({ page }: Needs) => {
@@ -135,6 +144,8 @@ export async function openPeople({ page }: Needs): Promise<void> {
   await page.goto(paths.people);
   await expectPage(page);
   await takeBackInvitationsOf(page, NEW_COLLEAGUE);
+  await page.reload();
+  await expectPage(page);
 }
 
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
@@ -144,6 +155,9 @@ export async function openInvitation({ page }: Needs): Promise<void> {
   const email = NEW_COLLEAGUE;
   // An invitation of an earlier theme is taken back first, so every theme shows the same list (M5 exit, O11).
   await takeBackInvitationsOf(page, email);
+  // The note that an invitation was taken back is left by the theme before only: the page is read again without it.
+  await page.reload();
+  await expectPage(page);
   await page.getByRole("textbox", { name: t("field.email"), exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create"), exact: true }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();
