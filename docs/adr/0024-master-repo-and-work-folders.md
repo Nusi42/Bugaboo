@@ -14,7 +14,7 @@ The repository lives in a folder that a sync service (OneDrive or similar) keeps
   - `bugaboo.win2`, `bugaboo.win3`, …, branches `WIN2`, `WIN3`, …: one per builder agent working in parallel. Each starts from `main`, pushes its branch when its work package is done, and is reset to `main` for the next one.
 - **Integration:** in `win1`: fetch `WINn`, merge, run `cargo xtask ci`; push `WIN1`; in the master: `git merge --ff-only WIN1`. `main` therefore only ever moves to states that passed CI.
 - **Build folders** stay inside each work folder (they are outside the synced folder already). Machine-specific overrides go into `.cargo/config.local.toml`, which the committed `.cargo/config.toml` includes optionally (works on stable Cargo) and Git ignores.
-- **Guard:** `cargo xtask` refuses to build, test or install anything when it runs inside a synced folder, with a message pointing to the work folders.
+- **Guard:** `cargo xtask` refuses to build, test or install anything in a checkout marked as the master, with a message pointing to the work folders (marked explicitly, not by its path: Amendment, ADR-0039).
 - **Later:** when the repository moves to the public remote (`<public remote>`), it becomes `origin` for the work folders and the master becomes one more clone; nothing else changes.
 
 ## Consequences
@@ -39,6 +39,11 @@ The repository lives in a folder that a sync service (OneDrive or similar) keeps
 ## Amendment (M3 WP-10)
 
 - **The browsers of the end-to-end tests.** `cargo xtask setup` also runs the pinned Playwright's `install` for Chromium and WebKit (the phone project in WebKit, M2-F12). Which revision of each browser is installed is decided by the Playwright version in `package-lock.json`, so the versions are pinned like the other tools. Playwright keeps the browsers in one cache of the user (`ms-playwright`), shared by all work folders, and skips what is there; they are the one thing `setup` does not put into `.tools/`, because each copy is several hundred megabytes.
+
+## Amendment (ADR-0039)
+
+- **The master is marked, not detected.** `BUGABOO_CHECKOUT_ROLE=master` in `.env.local` (written by `cargo xtask guard-master`) replaces every test of the path for a folder name. The edit hook, the build guard and the refusing `rustc-wrapper` read that mark; the tracked batch file is gone. A synced folder, such as OneDrive, may still be a good place for the master, and is nothing special to the tooling.
+- **Only the master pushes to the public remote** (`git -C <master> push github main`); work folders push only to the master. See ADR-0039.
 
 ## Enforced by
 

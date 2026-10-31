@@ -46,7 +46,7 @@ flowchart LR
 
 ### Working in a folder
 
-- **Never build, install or run anything in the master repository** (`<master>`, which may live in a synced folder). Work only in your own folder `<work root>/bugaboo.winN`, on your branch `WINn` (ADR-0024).
+- **Never build, install or run anything in the master repository** (the checkout marked as the master, ADR-0039). Work only in your own folder `<work root>/bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - A builder's folder starts from `main`: `git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup` (pinned tools and Git hooks, coding-standards §7).
 - **Nothing outside your folder.** Logs, notes, helper scripts, pictures, servers' data and built programs stay inside `bugaboo.winN`, in its ignored `.work/` folder (pictures in `.work/screenshots/`). Never create files or folders next to the work folders in `<work root>`, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into `.work/`. Delete what you no longer need before you report.
 - **Commit messages from a file.** Write the message into a file in `.work/` and commit with `git commit -F .work/<file>`; a message piped into `git commit` has hung in a work folder (M4).
@@ -138,7 +138,7 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Work folders as in ADR-0024: the main checkout is the master (`main`, never built in); `<work root>/bugaboo.win1` (branch `WIN1`) for the lead and integration, `bugaboo.win2` and up for builders
-- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0035)
+- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0037)
 - `.cargo/config.toml` with an optional, ignored `config.local.toml` for machine-specific settings; the BUILD-LOCATION guard
 - Rust workspace with all crates as empty shells, dependency rules, `#![forbid(unsafe_code)]`, `rust-toolchain.toml`
 - `cargo xtask`: check runner reading `tools/checks/catalog.toml`; `cargo xtask setup` installs all tools on Windows, Linux and WSL
@@ -678,8 +678,8 @@ A session can end at any time, and a new one starts in the master and continues 
 
 ## Decisions
 
-- **Git host:** the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0035): `cargo xtask ci` on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.
-- **Master and work folders (ADR-0024):** the main checkout is the master and is never built in; it may live in a folder that a sync service watches. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` never touch the synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`.
+- **Git host:** the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0037): `cargo xtask ci` on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.
+- **The master and work folders (ADR-0024, ADR-0039):** the master (marked with `BUGABOO_CHECKOUT_ROLE=master`) is never built in. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` stay out of the master, which may sit in a synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`. Only the master pushes to the public remote: `git -C <master> push github main`.
 
 ## Open questions
 

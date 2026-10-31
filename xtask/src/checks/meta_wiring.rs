@@ -14,17 +14,17 @@ const SETTINGS_FILE: &str = "settings.json";
 /// Which command each Git hook runs.
 const GIT_HOOKS: [(&str, &str); 3] = [
     ("pre-commit", "cargo xtask check staged"),
-    ("pre-push", "cargo xtask check push"),
+    ("pre-push", "cargo xtask check push {1} {2}"),
     ("commit-msg", "cargo xtask check commit-msg {1}"),
 ];
 
 /// The only command the Claude Code `PostToolUse` hook runs. The session (and every agent it
-/// starts) may run in the master repository, so the command decides from the EDITED FILE, not
-/// from `$CLAUDE_PROJECT_DIR`: it finds the nearest folder above the file that has `.git` and
-/// `xtask/Cargo.toml`, skips files in OneDrive and files outside any work folder, and runs that
-/// work folder's own `cargo xtask hook post-edit` (ADR-0024). It needs no build before the
-/// OneDrive test, so nothing is ever compiled in the master.
-const POST_EDIT: &str = r#"in=$(cat); f=$(printf '%s' "$in" | sed -n 's/.*"\(file_path\|notebook_path\)" *: *"\([^"]*\)".*/\2/p' | head -n 1 | tr '\134' '/' | sed 's#//*#/#g'); [ -n "$f" ] || exit 0; d=$(dirname "$f"); while [ ! -f "$d/xtask/Cargo.toml" ] || [ ! -e "$d/.git" ]; do p=$(dirname "$d"); [ "$p" = "$d" ] && exit 0; d=$p; done; case "$d" in *OneDrive*) exit 0;; esac; cd "$d" && printf '%s' "$in" | cargo xtask hook post-edit"#;
+/// starts) may run in the master, so the command decides from the EDITED FILE, not from
+/// `$CLAUDE_PROJECT_DIR`: it finds the nearest folder above the file that has `.git` and
+/// `xtask/Cargo.toml`, skips a folder whose `.env.local` marks it as the master (ADR-0039) and
+/// files outside any checkout, and runs that checkout's own `cargo xtask hook post-edit`. It needs
+/// no build before the test of the mark, so nothing is ever compiled in the master.
+const POST_EDIT: &str = r#"in=$(cat); f=$(printf '%s' "$in" | sed -n 's/.*"\(file_path\|notebook_path\)" *: *"\([^"]*\)".*/\2/p' | head -n 1 | tr '\134' '/' | sed 's#//*#/#g'); [ -n "$f" ] || exit 0; d=$(dirname "$f"); while [ ! -f "$d/xtask/Cargo.toml" ] || [ ! -e "$d/.git" ]; do p=$(dirname "$d"); [ "$p" = "$d" ] && exit 0; d=$p; done; grep -qs '^BUGABOO_CHECKOUT_ROLE=master' "$d/.env.local" && exit 0; cd "$d" && printf '%s' "$in" | cargo xtask hook post-edit"#;
 
 /// The tools whose use triggers the `PostToolUse` hook.
 const POST_EDIT_MATCHER: &str = "Edit|Write|MultiEdit|NotebookEdit";
@@ -259,7 +259,7 @@ pre-commit:
 pre-push:
   commands:
     check:
-      run: cargo xtask check push
+      run: cargo xtask check push {1} {2}
 commit-msg:
   commands:
     check:
@@ -280,7 +280,7 @@ commit-msg:
     #[test]
     fn bad_example() {
         let lefthook = LEFTHOOK
-            .replace("check staged", "check push")
+            .replace("check staged", "check push {1} {2}")
             .replace(
                 "cargo xtask check commit-msg",
                 "cargo fmt --check && cargo xtask check commit-msg",
@@ -290,7 +290,7 @@ commit-msg:
         let text: Vec<&str> = found.iter().map(|f| f.message.as_str()).collect();
         let has = |needle: &str| text.iter().any(|m| m.contains(needle));
         assert!(has(
-            "`cargo xtask check push` is called here, but only `cargo xtask check staged`"
+            "`cargo xtask check push {1} {2}` is called here, but only `cargo xtask check staged`"
         ));
         assert!(has("`cargo fmt --check` is called here"));
         assert!(has("`post-merge` is not one of the wired hooks"));

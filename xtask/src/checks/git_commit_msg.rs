@@ -1,5 +1,5 @@
 //! GIT-COMMIT-MSG: commit messages follow Conventional Commits and read as a public history
-//! (coding-standards §2, ADR-0036).
+//! (coding-standards §2, ADR-0038).
 //!
 //! `cargo xtask check commit-msg <file>` is what the Git `commit-msg` hook calls. As a catalogue
 //! check it looks at the messages of every commit that is on this branch but not on `main`.

@@ -10,16 +10,7 @@ allow-print-in-tests = true
 allow-dbg-in-tests = true
 
 # Product names that are not code; ".." keeps Clippy's built-in list.
-doc-valid-idents = [
-  "OpenAPI",
-  "WebAssembly",
-  "PostgreSQL",
-  "SQLite",
-  "TypeScript",
-  "OneDrive",
-  "GitHub",
-  "..",
-]
+doc-valid-idents = ["OpenAPI", "WebAssembly", "PostgreSQL", "SQLite", "TypeScript", "GitHub", ".."]
 disallowed-methods = [
   { path = "std::fs::read", reason = "ARCH-PURE: this crate does no I/O and never reaches the file system; the caller passes it in" },
   { path = "std::fs::read_to_string", reason = "ARCH-PURE: this crate does no I/O and never reaches the file system; the caller passes it in" },

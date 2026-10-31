@@ -857,9 +857,9 @@ status = "active"
 
 [[check]]
 id = "BUILD-LOCATION"
-title = "Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root"
-rule = "ADR-0024"
-tool = "xtask (path check before every build, test, dev and install command)"
+title = "Nothing is built, installed or tested in a checkout that is marked as the master (BUGABOO_CHECKOUT_ROLE=master in .env.local); without the mark a plain clone builds, tests and commits as it is"
+rule = "ADR-0039"
+tool = "xtask (reads the mark before every build, test, dev and install command; `cargo xtask guard-master` writes it)"
 when = ["edit", "commit", "ci"]
 files = ["*"]
 status = "active"
@@ -867,7 +867,7 @@ status = "active"
 [[check]]
 id = "GIT-COMMIT-MSG"
 title = "Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge <what it brought>`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process"
-rule = "coding-standards §2, ADR-0036"
+rule = "coding-standards §2, ADR-0038"
 tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: the messages of the commits not on main, merges included)"
 when = ["push", "ci"]
 files = ["*"]

@@ -547,7 +547,7 @@ tls/         the generated certificate and its key
 setup-code.txt   the setup code of a server without a console (dead once an account exists; deleted by the change that makes the first administrator, and again at the next start)</code></pre>
 <p>Folders that Bugaboo creates are readable by their owner only: mode <code>0700</code> on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode <code>0600</code> on Linux. <code>keys/</code> and <code>tls/</code> are checked on <strong>every start</strong> and made private again if someone loosened them (Windows: the access list is reset to the running account, found by its SID, not its name). Certificate and key are written as new files and renamed into place (key first, certificate second), and a key that does not belong to the certificate is replaced. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when <code>tls_names</code> changes. <strong>While the server runs</strong> (follow-up M1-F03) a timer looks at the certificate every hour: a generated certificate with under 30 days left is renewed, and an own certificate (<code>tls_mode = "files"</code>) is read again and used when its files hold another one. The new certificate is swapped into the settings of the listener, so connections that start from then on get it and nothing restarts; open connections keep the one they started with. Files that cannot be used (half a copy, a key of another certificate) are reported in the log and the old certificate keeps serving until the next look. The status page shows the end of the certificate it serves now. <strong>The rest of an existing folder is only looked at</strong> (follow-up M1-F65): at every start Bugaboo checks the data folder itself, the database file (and the files SQLite keeps next to it), <code>files/</code>, <code>backups/</code> and the setup code file, and reports what other accounts on this computer can open, in the log and on the console, and the status page shows it with the same words. Too open means: on Linux a group or world permission bit is set; on Windows the access list gives something to everybody, to all users or to all signed-in accounts. A part whose rights cannot be read (the system tool fails or its answer cannot be understood) is reported as <em>unknown</em>, never as private. The status page looks on a thread of its own and keeps the answer for a minute. A folder that a person made or moved keeps its rights, because making it private could lock out the account that backs it up (the backup command is OPS-06, M9). The built-in database file is made with mode <code>0600</code> before SQLite opens it, so a default install reports nothing. Enforced by: tests <code>sec_16_…</code> and <code>sec_10_…</code> (<code>sec_10_a_certificate_near_its_end_is_renewed_without_a_restart</code> with a clock that is moved on, <code>sec_10_an_own_certificate_that_changed_is_served_after_the_next_look</code>, <code>ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now</code>; <code>sec_16_a_too_open_data_folder_is_reported_at_start</code> and its Windows form, <code>sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open</code>).</p>
 <h4>One file per system (OPS-01, DIST-01)</h4>
-<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines (there is no hosted CI, ADR-0035). Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
+<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines (there is no hosted CI, ADR-0037). Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
 <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Served: we run it (hosted by Bugaboo)</h3>
 <pre class="mermaid">flowchart TB
   subgraph eu["EU data centre"]
@@ -1303,8 +1303,8 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>TEST-CONCURRENT</code></td><td>Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained</td><td>architecture §11, ADR-0019</td><td>xtask (the browser scenarios of ten Playwright contexts, the invariants test on both databases and the short run of `cargo xtask load` in ci are there and not switched off); the runs themselves: Playwright, the Rust tests and `cargo xtask load --people 10`, short in ci, `--nightly` for 30 minutes</td><td>ci · nightly</td></tr>
 <tr><td><code>TEST-CONNECTIONS</code></td><td>A run of the browser tests never leaves more connections in TIME_WAIT and CLOSE_WAIT than the limit, so the computer never runs out of ports</td><td>architecture §11</td><td>xtask (the Playwright reporter `web/tooling/connection-guard.ts` is in the config, fails the run, and its limit is one named number; tests are run again only in the speed project); the count itself: the reporter, during `cargo xtask ci`</td><td>ci · nightly</td></tr>
 <tr><td><code>PLAN-TRACE</code></td><td>Every M and V1 feature is in exactly one milestone, MVP features only in MVP milestones, and every work package names its features</td><td>04-milestones.md</td><td>xtask (parses the feature list, the milestones and docs/milestones/**)</td><td>commit · ci</td></tr>
-<tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root</td><td>ADR-0024</td><td>xtask (path check before every build, test, dev and install command)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge &lt;what it brought&gt;`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process</td><td>coding-standards §2, ADR-0036</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: the messages of the commits not on main, merges included)</td><td>push · ci</td></tr>
+<tr><td><code>BUILD-LOCATION</code></td><td>Nothing is built, installed or tested in a checkout that is marked as the master (BUGABOO_CHECKOUT_ROLE=master in .env.local); without the mark a plain clone builds, tests and commits as it is</td><td>ADR-0039</td><td>xtask (reads the mark before every build, test, dev and install command; `cargo xtask guard-master` writes it)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>GIT-COMMIT-MSG</code></td><td>Commit messages follow Conventional Commits in plain English: a lower-case imperative subject of at most 72 characters, merges as `Merge &lt;what it brought&gt;`, only the Co-Authored-By trailer of Claude, no claude.ai link, no jargon of the working process</td><td>coding-standards §2, ADR-0038</td><td>xtask (commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: the messages of the commits not on main, merges included)</td><td>push · ci</td></tr>
 <tr><td><code>GIT-FILES</code></td><td>No large binaries and no CRLF line endings committed</td><td>coding-standards §7</td><td>xtask</td><td>commit · ci</td></tr>
 <tr><td><code>META-CATALOG</code></td><td>Every check in this catalogue is implemented in xtask, and every implemented check is in this catalogue</td><td>architecture §10</td><td>xtask self-test</td><td>commit · ci</td></tr>
 <tr><td><code>META-FIXTURES</code></td><td>Every check has a 'bad' example that must fail and a 'good' example that must pass</td><td>architecture §10</td><td>xtask self-test over tools/checks/fixtures/&lt;ID&gt;/</td><td>ci</td></tr>
@@ -2265,7 +2265,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li><strong><code>cargo xtask</code></strong> is the single entry point: <code>cargo xtask check staged</code>, <code>check all</code>, <code>gen …</code>, <code>release …</code>. It's Rust, so it runs wherever the code builds.</li>
 <li><strong>lefthook</strong> runs <code>check staged</code> on commit, <code>check push</code> on push and the commit-message check; <code>cargo xtask setup</code> installs it and the hooks.</li>
 <li><strong>Claude Code hooks</strong> (<code>.claude/settings.json</code>) run the relevant checks after each file edit, so agents get immediate feedback.</li>
-<li><strong>The full local run</strong> (<code>cargo xtask ci</code>) runs <code>check all</code> plus slow checks (benchmarks, end-to-end, SBOM). There is no hosted CI (ADR-0035).</li>
+<li><strong>The full local run</strong> (<code>cargo xtask ci</code>) runs <code>check all</code> plus slow checks (benchmarks, end-to-end, SBOM). There is no hosted CI (ADR-0037).</li>
 <li><strong>Rust:</strong> <code>rustfmt</code> formats, <code>clippy</code> lints (warnings are errors, selected pedantic lints on).</li>
 <li><strong>TypeScript 7:</strong> <strong>oxfmt</strong> formats; <strong>oxlint</strong> lints, with <strong>oxlint-tsgolint</strong> for type-aware rules. tsgolint is built on typescript-go, the TypeScript 7 compiler itself, so it understands TypeScript 7 exactly. <code>tsc</code> (TypeScript 7) does the type check.</li>
 <li><strong>CSS:</strong> stylelint enforces "tokens only"; formatting by oxfmt (or Biome, if oxfmt doesn't cover CSS at setup time).</li>
@@ -2688,7 +2688,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </li>
 <li><strong>Integration:</strong> in <code>win1</code>: fetch <code>WINn</code>, merge, run <code>cargo xtask ci</code>; push <code>WIN1</code>; in the master: <code>git merge --ff-only WIN1</code>. <code>main</code> therefore only ever moves to states that passed CI.</li>
 <li><strong>Build folders</strong> stay inside each work folder (they are outside OneDrive already). Machine-specific overrides go into <code>.cargo/config.local.toml</code>, which the committed <code>.cargo/config.toml</code> includes optionally (works on stable Cargo) and Git ignores.</li>
-<li><strong>Guard:</strong> <code>cargo xtask</code> refuses to build, test or install anything when it runs inside a synced folder, with a message pointing to the work folders.</li>
+<li><strong>Guard:</strong> <code>cargo xtask</code> refuses to build, test or install anything in a checkout marked as the master, with a message pointing to the work folders (marked explicitly, not by its path: Amendment, ADR-0039).</li>
 <li><strong>Later:</strong> when the repository moves to GitHub, GitHub becomes <code>origin</code> for the work folders and the master becomes one more clone; nothing else changes.</li>
 </ul>
 <h4>Consequences</h4>
@@ -2713,6 +2713,11 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h4>Amendment (M3 WP-10)</h4>
 <ul>
 <li><strong>The browsers of the end-to-end tests.</strong> <code>cargo xtask setup</code> also runs the pinned Playwright's <code>install</code> for Chromium and WebKit (the phone project in WebKit, M2-F12). Which revision of each browser is installed is decided by the Playwright version in <code>package-lock.json</code>, so the versions are pinned like the other tools. Playwright keeps the browsers in one cache of the user (<code>ms-playwright</code>), shared by all work folders, and skips what is there; they are the one thing <code>setup</code> does not put into <code>.tools/</code>, because each copy is several hundred megabytes.</li>
+</ul>
+<h4>Amendment (ADR-0039)</h4>
+<ul>
+<li><strong>The master is marked, not detected.</strong> <code>BUGABOO_CHECKOUT_ROLE=master</code> in <code>.env.local</code> (written by <code>cargo xtask guard-master</code>) replaces every test of the path for a folder name. The edit hook, the build guard and the refusing <code>rustc-wrapper</code> read that mark; the tracked batch file is gone. A synced folder, such as OneDrive, may still be a good place for the master, and is nothing special to the tooling.</li>
+<li><strong>Only the master pushes to the public remote</strong> (<code>git -C &lt;master&gt; push github main</code>); work folders push only to the master. See ADR-0039.</li>
 </ul>
 <h4>Enforced by</h4>
 <p>BUILD-LOCATION and META-WIRING (see <code>tools/checks/catalog.toml</code>); the recovery steps by review.</p>
@@ -3526,8 +3531,8 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
 
-<!-- 0035-no-hosted-ci.md -->
-<h3 id="adr-0035"><button class="sec" data-sec>§13.35</button>ADR-0035: No hosted CI; verification is local</h3>
+<!-- 0037-no-hosted-ci.md -->
+<h3 id="adr-0037"><button class="sec" data-sec>§13.35</button>ADR-0037: No hosted CI; verification is local</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The repository had a workflow file for a hosted CI service, prepared for the day the code moves to a public Git host. Hosted runners cost money on private repositories, repeat what the development computer already runs, and need a second place where the commands are listed and kept in step with the first.</p>
@@ -3551,8 +3556,8 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h4>Enforced by</h4>
 <p>META-WIRING (hooks call only xtask); the rest by review.</p>
 
-<!-- 0036-public-identity-and-commit-messages.md -->
-<h3 id="adr-0036"><button class="sec" data-sec>§13.36</button>ADR-0036: Public identity and plain commit messages</h3>
+<!-- 0038-public-identity-and-commit-messages.md -->
+<h3 id="adr-0038"><button class="sec" data-sec>§13.36</button>ADR-0038: Public identity and plain commit messages</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The history of the repository is published with it. Until now commits carried the identity Git found on the machine, the working vocabulary of the project (folder and branch names, work packages, milestone codes), session lines of the tool that wrote them, and merges in a form that named a branch and a package. None of that tells a reader of the public history what changed, and some of it is private.</p>
@@ -3578,6 +3583,33 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 </ul>
 <h4>Enforced by</h4>
 <p>SEC-PRIVATE (identity, private list, memory-note key) and GIT-COMMIT-MSG (message rules).</p>
+
+<!-- 0039-explicit-master-and-publishing-from-it.md -->
+<h3 id="adr-0039"><button class="sec" data-sec>§13.37</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-01</p>
+<h4>Context</h4>
+<p>ADR-0024 keeps a master checkout that never builds, and recognised it by a path segment (a folder whose name starts with <code>OneDrive</code>). That is one person's setup, not the project's: anyone who clones into a synced folder would be locked out of building, and the master would be undetectable anywhere else. Publishing was also open: any checkout could push anywhere, and the public remote is reached from exactly one place.</p>
+<h4>Decision</h4>
+<ul>
+<li><strong>The master is marked, never guessed.</strong> A checkout is the master only when <code>BUGABOO_CHECKOUT_ROLE=master</code> is set in the environment or in the ignored file <code>.env.local</code> at its root. <code>cargo xtask guard-master</code> writes it, from a work folder (the master builds nothing): the <code>.env.local</code> mark, a <code>pre-push</code> hook in <code>.git/bugaboo-hooks/</code> together with <code>core.hooksPath</code> pointing there (so the hook runs whatever other hook folder is configured), and a program for Cargo's <code>rustc-wrapper</code> in <code>.cargo/config.local.toml</code>, so even a plain <code>cargo build</code> stops. Without the mark a plain clone builds, tests and commits as it is. The edit hook of Claude Code reads the same mark.</li>
+<li><strong>Only the master publishes.</strong> A work folder pushes only to a remote that is a path (the master); only the master pushes to a remote on the network (the public one): <code>git -C &lt;master&gt; push github main</code>. One tested function, <code>publish::plan</code>, decides from the role and the URL of the remote (a path or a network address): a work folder to a path runs the checks of a push; the master to the network runs only the checks that build nothing (SEC-PRIVATE on the commits to push and on every tracked file, DEP-LICENSES); every other combination is refused with a message that names the master command. <code>main</code> only moves to a commit that passed the full run in a work folder, so the master does not repeat it.</li>
+<li><strong>The master's hook uses a program built elsewhere.</strong> The hook calls the xtask program of the work folder that ran <code>guard-master</code>; if that program is gone, the hook says to run the command again.</li>
+<li><strong>Placeholders.</strong> Rule texts name the master as <code>&lt;master&gt;</code> and the folder of the work folders as <code>&lt;work root&gt;</code>; the concrete paths are the maintainer's own setup, kept outside the repository.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>No path decides anything; the old guard for <code>OneDrive</code> folders and the tracked Windows batch file are gone, the build-refusing program is written per master.</li>
+<li>When the xtask program that the hook calls moves or is deleted, <code>guard-master</code> is run again.</li>
+<li>ADR-0024 is amended: its guard and its hook rule now follow this record.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Keep detecting by path:</strong> locks out other people's setups. Rejected.</li>
+<li><strong>Publish from a work folder (the earlier flow):</strong> the public remote would be reachable from every checkout and needs the full checks repeated by the hook. Rejected.</li>
+<li><strong>A tracked hook script for the master:</strong> a second place to keep current, and a file type without a linter. The hook is written by the command instead.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>BUILD-LOCATION (the mark is read before every build, test and install command); META-WIRING (the pre-push command of lefthook and the edit hook); the pre-push plan by its tests in <code>xtask/src/publish.rs</code> and <code>xtask/src/main.rs</code>.</p>
 
 
   </main>

@@ -1,4 +1,4 @@
-//! The public identity of a work folder (ADR-0036): `cargo xtask setup` copies it into the local
+//! The public identity of a work folder (ADR-0038): `cargo xtask setup` copies it into the local
 //! Git configuration of the folder, so the hooks accept the commits made there.
 //!
 //! The identity comes from the first of: the one the folder already has (when it is public), the

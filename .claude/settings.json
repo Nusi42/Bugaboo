@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "in=$(cat); f=$(printf '%s' \"$in\" | sed -n 's/.*\"\\(file_path\\|notebook_path\\)\" *: *\"\\([^\"]*\\)\".*/\\2/p' | head -n 1 | tr '\\134' '/' | sed 's#//*#/#g'); [ -n \"$f\" ] || exit 0; d=$(dirname \"$f\"); while [ ! -f \"$d/xtask/Cargo.toml\" ] || [ ! -e \"$d/.git\" ]; do p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && exit 0; d=$p; done; case \"$d\" in *OneDrive*) exit 0;; esac; cd \"$d\" && printf '%s' \"$in\" | cargo xtask hook post-edit",
+            "command": "in=$(cat); f=$(printf '%s' \"$in\" | sed -n 's/.*\"\\(file_path\\|notebook_path\\)\" *: *\"\\([^\"]*\\)\".*/\\2/p' | head -n 1 | tr '\\134' '/' | sed 's#//*#/#g'); [ -n \"$f\" ] || exit 0; d=$(dirname \"$f\"); while [ ! -f \"$d/xtask/Cargo.toml\" ] || [ ! -e \"$d/.git\" ]; do p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && exit 0; d=$p; done; grep -qs '^BUGABOO_CHECKOUT_ROLE=master' \"$d/.env.local\" && exit 0; cd \"$d\" && printf '%s' \"$in\" | cargo xtask hook post-edit",
             "timeout": 120
           }
         ]

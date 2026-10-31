@@ -8,7 +8,7 @@ pre-commit:
 pre-push:
   commands:
     checks:
-      run: cargo xtask check push
+      run: cargo xtask check push {1} {2}
 
 commit-msg:
   commands:

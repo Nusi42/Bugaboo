@@ -1,4 +1,4 @@
-# ADR-0036: Public identity and plain commit messages
+# ADR-0038: Public identity and plain commit messages
 
 Status: **Accepted** · 2026-11-01
 

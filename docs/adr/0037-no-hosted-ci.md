@@ -1,4 +1,4 @@
-# ADR-0035: No hosted CI; verification is local
+# ADR-0037: No hosted CI; verification is local
 
 Status: **Accepted** · 2026-11-01
 
