@@ -1,18 +1,19 @@
-//! The time zones the server knows, as a constant for the browser client (M2-F72): the names of
-//! the zone data that `bb-core` carries (`bb_core::time::zone::names`, which xtask links with the
-//! feature `zone-data`), so the browser offers exactly the zones the server accepts.
+//! The time zones a person is offered, as a constant for the browser client (M2-F72): the zones of
+//! the areas of the world in the zone data that `bb-core` carries
+//! (`bb_core::time::zone::offered_names`, which xtask links with the feature `zone-data`). The
+//! server accepts every one of them, and the other names it knows too.
 
 use super::TS_HEADER;
 
 /// The browser client's list of zones.
 pub(super) fn time_zones() -> String {
-    let names = bb_core::time::zone::names()
+    let names = bb_core::time::zone::offered_names()
         .iter()
         .map(|name| format!("{name:?}"))
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "{TS_HEADER}/** The time zones the server knows (M2-F72): the setting *Time zone* takes one of these or `device`. */
+        "{TS_HEADER}/** The time zones a person is offered (M2-F72): the setting *Time zone* takes one of these or `device`. */
 export const timeZones: readonly string[] = [{names}];
 "
     )

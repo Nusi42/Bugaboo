@@ -12,7 +12,7 @@ When you create a field you choose what kind of information it holds. The kind c
 | Web address | An address that starts with http or https | Customer page |
 | Date | A day | Promised by |
 | Date and time | A day and a time | Seen at |
-| Duration | A length of time, typed like `1h 30m` | Time to fix |
+| Duration | A length of time, typed like `1h 30m`, `90m`, `1:30` or `1.5` (hours, with the decimal mark of your number format); a number alone is hours | Time to fix |
 | Pick one | One choice of a list | Severity |
 | Pick several | Several choices of a list | Platforms |
 | Person | One person | Tester |

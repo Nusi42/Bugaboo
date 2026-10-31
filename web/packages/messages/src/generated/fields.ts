@@ -87,7 +87,6 @@ export const messages = {
   "fields.hidden-reference": "Not shown",
   "fields.not-a-whole-number": "Type a whole number.",
   "fields.not-a-decimal": "Type a number, with a point for the decimal part.",
-  "fields.not-a-duration": "Type a length of time like 1h 30m.",
   "fields.time-of-day": "Time (hours and minutes, like 14:30)",
   "fields.nothing-picked": "Nothing picked",
   "fields.take-away": "Take away",

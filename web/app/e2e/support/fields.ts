@@ -2,6 +2,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { giveRole, createGroup, roleName } from "./access.ts";
 import { bob, createAdmin, createPerson, ownId } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
+import { readIssue } from "./issues.ts";
 import { createProject } from "./projects.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
@@ -37,6 +38,22 @@ export async function readFields(session: ApiSession): Promise<readonly Schema<"
 /** A field of the organization by its name, read through the API. */
 export async function fieldOf(session: ApiSession, name: string): Promise<Schema<"FieldBody">> {
   return fieldNamed(await readFields(session), name);
+}
+
+/** Writes the value of an own field of an issue, through the API, as the person of the session. */
+export async function setOwnValue(
+  session: ApiSession,
+  key: string,
+  field: string,
+  value: unknown,
+): Promise<void> {
+  const { issue } = await readIssue(session, { key });
+  dataOf(
+    await session.client.PATCH("/api/v1/issues/{issue}", {
+      params: { path: { issue: key } },
+      body: { version: issue.version ?? 1, fields: { [field]: value } },
+    }),
+  );
 }
 
 /** Makes an own field for issues, through the API; the field as the server made it. */

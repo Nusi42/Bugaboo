@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 
@@ -59,6 +59,14 @@ export async function comment(session: ApiSession, issue: string, text: string):
     }),
   );
   return made.id;
+}
+
+/** Tells the person of the session in the app of every change of a field on issues they follow. */
+export async function hearOfFieldChanges(session: ApiSession): Promise<void> {
+  await session.client.PUT("/api/v1/me/settings/{key}", {
+    params: { path: { key: settingKeys.notificationsFollowedFieldsInApp } },
+    body: { value: true },
+  });
 }
 
 /** Makes the person of the session follow an issue. */

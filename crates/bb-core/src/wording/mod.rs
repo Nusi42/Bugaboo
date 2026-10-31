@@ -35,15 +35,18 @@ pub mod vectors;
 
 pub use region::{Choices, Region};
 
-/// Some words: a text, words that follow each other, or a message of the catalog with the words
-/// for its placeholders. In JSON a text is a string, words that follow each other are a list, and
-/// a message is an object with its `key` and its `args` (`word_types.rs` writes the browser's type
-/// from this declaration).
+/// Some words: a text, a count, words that follow each other, or a message of the catalog with the
+/// words for its placeholders. In JSON a text is a string, a count a number, words that follow each
+/// other are a list, and a message is an object with its `key` and its `args` (`word_types.rs`
+/// writes the browser's type from this declaration).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum Said {
     /// Text that is not in the catalog: a name, a number, a text of a person.
     Text(String),
+    /// A count that a plural of the catalog chooses its words by (`# hours`). Only a real count is
+    /// one: a text of digits (`0815`) stays a text.
+    Count(u32),
     /// Words that follow each other without anything between them.
     Parts(Vec<Said>),
     /// A message of the catalog; the browser looks `key` up in its catalog.
@@ -102,24 +105,23 @@ impl Said {
     pub fn render(&self) -> String {
         match self {
             Self::Text(text) => text.clone(),
+            Self::Count(count) => count.to_string(),
             Self::Parts(parts) => parts.iter().map(Self::render).collect(),
             Self::Message { key, args } => Message::with_arguments(
                 *key,
                 args.iter()
-                    .map(|(name, said)| (*name, value_of(said.render())))
+                    .map(|(name, said)| {
+                        let value = match said {
+                            Self::Count(count) => message::Value::Number(i64::from(*count)),
+                            _ => message::Value::Text(said.render()),
+                        };
+                        (*name, value)
+                    })
                     .collect(),
             )
             .render(),
         }
     }
-}
-
-/// The value of a placeholder from its words: a whole number counts for a plural (`# hours`), and
-/// is written the same as its text everywhere else.
-fn value_of(words: String) -> message::Value {
-    words
-        .parse()
-        .map_or(message::Value::Text(words), message::Value::Number)
 }
 
 /// What ends a sentence of Bugaboo in a line of an e-mail: the screen says it without.
@@ -207,7 +209,7 @@ pub fn length_sentence(length: Minutes) -> Said {
         length.get() / MINUTES_PER_HOUR,
         length.get() % MINUTES_PER_HOUR,
     );
-    let count = |number: u32| Said::text(number.to_string());
+    let count = Said::Count;
     let hours_said = Said::with(&message::time_length_hours(0), vec![count(hours)]);
     let minutes_said = Said::with(&message::time_length_minutes(0), vec![count(minutes)]);
     match (hours, minutes) {
@@ -224,10 +226,11 @@ pub fn length_sentence(length: Minutes) -> Said {
 /// The whole minutes in seconds of the API (a length of an own field): the rest of a minute and a
 /// part of a second are dropped; `None` for a negative number or one too long to count.
 fn minutes_in(seconds: f64) -> Option<Minutes> {
-    // A floored number of seconds that a length can have is written as plain digits, so its text
-    // reads as a whole number; anything larger is no length.
-    let whole: i64 = seconds.floor().to_string().parse().ok()?;
-    Minutes::from_seconds(whole)
+    if seconds < 0.0 {
+        return None;
+    }
+    let whole = jiff::SignedDuration::try_from_secs_f64(seconds).ok()?;
+    Minutes::from_seconds(whole.as_secs())
 }
 
 /// The words of a value of an own field. `worded` is the words of a number, a day or a moment in
@@ -525,16 +528,30 @@ pub struct LengthRead {
     pub mistake: Option<Said>,
 }
 
-/// Reads a typed length of time, for the browser.
+/// Reads a typed length of time without a bound (an own field), for the browser.
 #[must_use]
 pub fn length_read(typed: &LengthTyped) -> LengthRead {
+    read_typed(typed, length::read)
+}
+
+/// Reads a typed length of one time entry, with its bound, for the browser.
+#[must_use]
+pub fn time_entry_read(typed: &LengthTyped) -> LengthRead {
+    read_typed(typed, length::read_time_entry)
+}
+
+/// What a reader of [`length`] makes of a typed length, with the sentence of a mistake.
+fn read_typed(
+    typed: &LengthTyped,
+    read: fn(&str, &LengthWords<'_>) -> Result<Minutes, length::LengthMistake>,
+) -> LengthRead {
     let mark = DecimalMark::of_number_format(Some(&typed.number_format));
     let words = LengthWords {
         mark,
         hour: &typed.hour_unit,
         minute: &typed.minute_unit,
     };
-    match length::read(&typed.text, &words) {
+    match read(&typed.text, &words) {
         Ok(minutes) => LengthRead {
             minutes: Some(minutes.get()),
             mistake: None,

@@ -16,7 +16,7 @@ A day begins at midnight in your time zone. On the day the clocks change for sum
 ## Time of day
 
 - "24-hour (14:30)" or "12-hour (2:30 PM)" writes every time of day on that clock.
-- "Like the date format" is the usual choice: with the date format "Match my device" you get the clock of your device, and with any other date format you get 24-hour.
+- "Match my device" follows the date format: with the date format "Match my device" you get the clock of your device, and with any other date format you get 24-hour.
 
 Every date and time of day in Bugaboo, in lists, on the page of an issue, in the history, in notifications and in e-mails, is written with these choices.
 

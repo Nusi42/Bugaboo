@@ -118,7 +118,7 @@ function joined(result: string | readonly string[]): string {
  * `t()` reports. The words are checked by the Rust side, which builds them from the typed
  * messages of the same catalog.
  */
-export function textByKey(key: string, values: Readonly<Record<string, string>>): string {
+export function textByKey(key: string, values: Readonly<Record<string, string | number>>): string {
   if (!isMessageKey(key)) {
     return missing(key);
   }

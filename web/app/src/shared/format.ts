@@ -5,8 +5,7 @@ import {
   secondsPerHour,
   secondsPerMinute,
 } from "@bugaboo/api-client";
-import { locale, t } from "@bugaboo/messages";
-import type { LengthTyped } from "@bugaboo/wasm";
+import { locale } from "@bugaboo/messages";
 
 import { currentRegion, numberLocales, type Region } from "./region.ts";
 
@@ -173,25 +172,11 @@ export function formatTime(moment: string, region: Region = currentRegion()): st
 }
 
 /** The decimal mark of this device's own numbers, by the fixed *Number format* that writes it. */
-function deviceDecimalFormat(): "point" | "comma" {
+export function deviceDecimalFormat(): "point" | "comma" {
   const mark = new Intl.NumberFormat()
     .formatToParts(1.5)
     .find((part: Readonly<Intl.NumberFormatPart>) => part.type === "decimal")?.value;
   return mark === "," ? "comma" : "point";
-}
-
-/**
- * A length of time a person typed, as the reader of `bb-core` takes it (through `bb-wasm`): with the
- * *Number format* whose decimal mark `1,5` is read with (the device's named by the fixed one that
- * writes its mark) and the short words of the units of the catalog.
- */
-export function lengthTyped(text: string, region: Region = currentRegion()): LengthTyped {
-  return {
-    text,
-    number_format: region.numberFormat === "device" ? deviceDecimalFormat() : region.numberFormat,
-    hour_unit: t("fields.unit-hour"),
-    minute_unit: t("fields.unit-minute"),
-  };
 }
 
 /** A day from the server as people write it: "Oct 5, 2026". */

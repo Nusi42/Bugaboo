@@ -96,14 +96,24 @@ pub fn side_words(side: &str) -> Result<String, JsError> {
     .map_err(|e| JsError::new(&e))
 }
 
-/// Reads a length of time a person typed, as the server reads it (`bb_core::time::length`): the
-/// minutes, or the sentence of the mistake, as JSON.
+/// Reads a length of time a person typed, as the server reads it (`bb_core::time::length`), without
+/// a bound (an own field): the minutes, or the sentence of the mistake, as JSON.
 ///
 /// # Errors
 /// The text is not a typed length as `bb_core::wording::LengthTyped` reads it.
 #[wasm_bindgen]
 pub fn read_length(typed: &str) -> Result<String, JsError> {
     answer(typed, wording::length_read).map_err(|e| JsError::new(&e))
+}
+
+/// Reads a length of one time entry a person typed, with the bound of an entry (see
+/// [`read_length`]).
+///
+/// # Errors
+/// The text is not a typed length as `bb_core::wording::LengthTyped` reads it.
+#[wasm_bindgen]
+pub fn read_time_entry(typed: &str) -> Result<String, JsError> {
+    answer(typed, wording::time_entry_read).map_err(|e| JsError::new(&e))
 }
 
 /// A length of whole minutes in a sentence, as the server words it (`bb_core::wording`): message

@@ -1286,9 +1286,6 @@ pub const FIELDS_NO_ICON: MessageKey = MessageKey::new("fields.no-icon");
 /// The message `fields.not-a-decimal`.
 pub const FIELDS_NOT_A_DECIMAL: MessageKey = MessageKey::new("fields.not-a-decimal");
 
-/// The message `fields.not-a-duration`.
-pub const FIELDS_NOT_A_DURATION: MessageKey = MessageKey::new("fields.not-a-duration");
-
 /// The message `fields.not-a-whole-number`.
 pub const FIELDS_NOT_A_WHOLE_NUMBER: MessageKey = MessageKey::new("fields.not-a-whole-number");
 
@@ -4962,10 +4959,6 @@ pub const SETTING_REGION_NUMBER_FORMAT_POINT: MessageKey =
 pub const SETTING_REGION_NUMBER_FORMAT_SPACE: MessageKey =
     MessageKey::new("setting.region.number-format.space");
 
-/// The message `setting.region.time-of-day.device`.
-pub const SETTING_REGION_TIME_OF_DAY_DEVICE: MessageKey =
-    MessageKey::new("setting.region.time-of-day.device");
-
 /// The message `setting.region.time-of-day.help`.
 pub const SETTING_REGION_TIME_OF_DAY_HELP: MessageKey =
     MessageKey::new("setting.region.time-of-day.help");
@@ -5432,6 +5425,9 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
+
+/// The message `time.length.zero`.
+pub const TIME_LENGTH_ZERO: MessageKey = MessageKey::new("time.length.zero");
 
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
@@ -12316,10 +12312,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "fields.not-a-decimal",
         "Type a number, with a point for the decimal part.",
     ),
-    (
-        "fields.not-a-duration",
-        "Type a length of time like 1h 30m.",
-    ),
     ("fields.not-a-whole-number", "Type a whole number."),
     ("fields.not-found", "This field is not here."),
     (
@@ -15492,10 +15484,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.number-format.name", "Number format"),
     ("setting.region.number-format.point", "1,234.5"),
     ("setting.region.number-format.space", "1 234,5"),
-    ("setting.region.time-of-day.device", "Like the date format"),
     (
         "setting.region.time-of-day.help",
-        "How times of day are written. Like the date format uses the clock of your device while the date format matches your device, and 24-hour with any other date format.",
+        "How times of day are written. Match my device follows the date format: with the date format Match my device, the clock of your device; with any other date format, 24-hour.",
     ),
     ("setting.region.time-of-day.name", "Time of day"),
     (
@@ -15854,6 +15845,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "time.length.too-long",
         "One entry is at most {hours} hours.",
     ),
+    ("time.length.zero", "A time entry is at least 1 minute."),
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",

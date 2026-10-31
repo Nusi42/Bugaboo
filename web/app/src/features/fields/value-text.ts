@@ -8,54 +8,16 @@ import {
   decimalParts,
   decimalWholeDigits,
   msPerDay,
-  secondsPerHour,
   secondsPerMinute,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { dayNumbersOf, isCalendarDay } from "../../shared/format.ts";
+import type { LengthReader } from "../../shared/length.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
+import { renderSaid } from "../../shared/said.ts";
 import { durationText } from "../../shared/own-value-text.ts";
 import type { OwnField, Sent } from "./fields.ts";
-
-/**
- * The most digits of a number a person types in a length of time. With nine digits the seconds
- * (nine digits of hours) stay far under the largest whole number a JavaScript number holds, so
- * nothing is rounded on its way. A decimal has its own limit, the server's (`decimalWholeDigits`).
- */
-const MOST_DIGITS = 9;
-
-/** A unit as it is written in a pattern. */
-function escaped(unit: string): string {
-  return unit.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
-}
-
-/** The pattern of a length of time typed with the units of the person's language. */
-function durationPattern(): RegExp {
-  const [hour, minute] = [escaped(t("fields.unit-hour")), escaped(t("fields.unit-minute"))];
-  const digits = String.raw`(\d{1,${MOST_DIGITS}})`;
-  return new RegExp(
-    String.raw`^\s*(?:${digits}\s*${hour})?\s*(?:${digits}\s*${minute})?\s*$`,
-    "iu",
-  );
-}
-
-/**
- * The seconds of a length of time typed as "1h 30m", "90m" or "2h"; a plain number is minutes.
- * `undefined` for text that is none, so the screen can say so.
- */
-export function durationSeconds(text: string): number | undefined {
-  const trimmed = text.trim();
-  if (new RegExp(String.raw`^\d{1,${MOST_DIGITS}}$`, "u").test(trimmed)) {
-    return Number(trimmed) * secondsPerMinute;
-  }
-  const found = durationPattern().exec(trimmed);
-  if (trimmed === "" || found === null) {
-    return undefined;
-  }
-  const [, hours, minutes] = found;
-  return Number(hours ?? 0) * secondsPerHour + Number(minutes ?? 0) * secondsPerMinute;
-}
 
 /** Whether the text is a decimal number as the API takes it: digits, an optional sign and point. */
 export function isDecimalText(text: string): boolean {
@@ -65,10 +27,36 @@ export function isDecimalText(text: string): boolean {
   ).test(text.trim());
 }
 
-/** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
+/** A typed length of time as the seconds the API stores; `undefined` for text that is none, or without the reader. */
+export function durationStored(text: string, readLength?: LengthReader): number | undefined {
+  const sent = durationSent(text, readLength);
+  return "value" in sent && typeof sent.value === "number" ? sent.value : undefined;
+}
+
+/** A typed length of time as the seconds the API stores, or the reader's sentence of the mistake. */
+function durationSent(
+  text: string,
+  readLength: LengthReader | undefined,
+): { readonly value: Sent } | { readonly problem: string } {
+  if (readLength === undefined) {
+    return { problem: t("common.words-failed") };
+  }
+  const { minutes, mistake } = readLength(text);
+  if (minutes !== null) {
+    return { value: minutes * secondsPerMinute };
+  }
+  return { problem: mistake === null ? t("common.words-failed") : renderSaid(mistake) };
+}
+
+/**
+ * What the text of a box means for the API, or a sentence that says why it cannot be sent. A length
+ * of time is read by the one reader of `bb-core` (`readLength`, from the module the editor loads);
+ * without it a length cannot be read, and the box says the words could not be loaded.
+ */
 export function sentFrom(
   field: OwnField,
   text: string,
+  readLength?: LengthReader,
 ): { readonly value: Sent } | { readonly problem: string } {
   const trimmed = text.trim();
   if (trimmed === "") {
@@ -82,8 +70,7 @@ export function sentFrom(
     return isDecimalText(trimmed) ? { value: trimmed } : { problem: t("fields.not-a-decimal") };
   }
   if (field.kind === "duration") {
-    const seconds = durationSeconds(trimmed);
-    return seconds === undefined ? { problem: t("fields.not-a-duration") } : { value: seconds };
+    return durationSent(trimmed, readLength);
   }
   return { value: trimmed };
 }

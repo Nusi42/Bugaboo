@@ -15,6 +15,7 @@ import init, {
   name_key,
   notification_sentences,
   read_length,
+  read_time_entry,
   render,
   side_words,
 } from "../generated/bb_wasm.js";
@@ -63,6 +64,8 @@ export interface Wording {
   readonly sideWords: (field: string, side: WordedSide) => Said | null;
   /** A length of time a person typed (`1:30`, `1.5`, `90m`), read as the server reads it: the minutes, or the sentence of the mistake. */
   readonly readLength: (typed: LengthTyped) => LengthRead;
+  /** A length of one time entry a person typed: as `readLength`, at least a minute and at most a day. */
+  readonly readTimeEntry: (typed: LengthTyped) => LengthRead;
   /** A length of whole minutes on a clock, as a grid and a running timer show it: `1:30`. */
   readonly lengthOnClock: (minutes: number) => string;
   /** A length of whole minutes in a sentence: *1 hour 30 minutes*. */
@@ -71,7 +74,7 @@ export interface Wording {
 
 /** Whether a value read from the answer of the module is words: a text, a list or a message. */
 function isSaid(value: unknown): value is Said {
-  if (typeof value === "string") {
+  if (typeof value === "string" || typeof value === "number") {
     return true;
   }
   if (Array.isArray(value)) {
@@ -148,6 +151,7 @@ const wording: Wording = {
   },
   sideWords: (field, side) => saidIn(ask(() => side_words(JSON.stringify({ field, side })))),
   readLength: (typed) => lengthReadIn(ask(() => read_length(JSON.stringify(typed)))),
+  readTimeEntry: (typed) => lengthReadIn(ask(() => read_time_entry(JSON.stringify(typed)))),
   lengthOnClock: (minutes) => length_on_clock(minutes),
   lengthSentence: (minutes) => saidIn(length_sentence(minutes)) ?? "",
 };

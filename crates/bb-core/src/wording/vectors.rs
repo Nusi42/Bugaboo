@@ -11,7 +11,9 @@ use serde_json::{Value, json};
 use jiff::Timestamp;
 
 use super::region::Choices;
-use super::{Region, length_sentence, list_said, typed_said};
+use super::{
+    Change, Region, Side, change_sentence, length_said, length_sentence, list_said, typed_said,
+};
 use crate::own_fields::FieldType;
 use crate::time::length::{self, DecimalMark, LengthWords, Minutes};
 
@@ -288,9 +290,15 @@ fn region_named(name: &str) -> Option<Region> {
         })
 }
 
-/// The moments whose time of day the vectors check in every region: in the morning, after noon,
-/// and exactly at midnight.
-const TIMES: [&str; 3] = [MOMENT, "2026-10-05T13:05:00Z", "2026-10-05T00:00:00Z"];
+/// The moments whose time of day the vectors check in every region: in the morning, exactly at
+/// noon, after noon, a minute before midnight, and exactly at midnight.
+const TIMES: [&str; 5] = [
+    MOMENT,
+    "2026-10-05T12:00:00Z",
+    "2026-10-05T13:05:00Z",
+    "2026-10-05T23:59:00Z",
+    "2026-10-05T00:00:00Z",
+];
 
 /// The times of day of [`TIMES`] in every region, as the screen shows them.
 fn times() -> Result<Vec<Value>, String> {
@@ -313,7 +321,10 @@ fn times() -> Result<Vec<Value>, String> {
 
 /// The lengths of time a person types that the vectors check, with the decimal mark of their
 /// number format: the forms of one length, the marks, the limit of an entry and mistakes.
-const LENGTHS: [(&str, DecimalMark); 16] = [
+const LENGTHS: [(&str, DecimalMark); 19] = [
+    ("40h", DecimalMark::Point),
+    ("0", DecimalMark::Point),
+    ("1İ", DecimalMark::Point),
     ("1:30", DecimalMark::Point),
     ("1.5", DecimalMark::Point),
     ("1,5", DecimalMark::Comma),
@@ -335,26 +346,64 @@ const LENGTHS: [(&str, DecimalMark); 16] = [
 /// The lengths that the vectors write on the clock, in minutes.
 const ON_CLOCK: [u32; 4] = [0, 5, 90, 1440];
 
+/// The changes whose sentence the vectors check: values of digits that are texts, not counts.
+fn changes() -> Vec<Value> {
+    let text = |text: &str| Side::Text {
+        text: text.to_owned(),
+    };
+    [
+        (Some(text("007")), Some(text("0815"))),
+        (None, Some(text("+5"))),
+    ]
+    .into_iter()
+    .map(|(before, after)| {
+        let change = Change {
+            who: "Ben".to_owned(),
+            field: "code".to_owned(),
+            field_name: "Code".to_owned(),
+            before,
+            after,
+        };
+        json!({"change": change, "expected": change_sentence(&change).render()})
+    })
+    .collect()
+}
+
 /// The lengths that the vectors write in a sentence, in minutes: none, one of each unit, many.
 const IN_SENTENCES: [u32; 7] = [0, 1, 42, 60, 61, 600, 2368];
 
-/// What the reader makes of each of [`LENGTHS`]: the minutes, or the sentence of the mistake.
+/// What a reader made of a typed length: the minutes and the two short forms the writer gives
+/// back (`1h 30m`, `1:30`), or the sentence of the mistake.
+fn read_as(read: Result<Minutes, length::LengthMistake>, mark: DecimalMark) -> Value {
+    match read {
+        Ok(minutes) => json!({
+            "minutes": minutes,
+            "short": length_said(minutes).render(),
+            "grid": minutes.on_clock(),
+            "mistake": null,
+        }),
+        Err(mistake) => json!({
+            "minutes": null,
+            "short": null,
+            "grid": null,
+            "mistake": mistake.said(mark).render(),
+        }),
+    }
+}
+
+/// What the reader makes of each of [`LENGTHS`], without a bound and as one time entry.
 fn lengths() -> Vec<Value> {
     LENGTHS
         .iter()
-        .map(
-            |(text, mark)| match length::read(text, &LengthWords::of_catalog(*mark)) {
-                Ok(minutes) => {
-                    json!({"text": text, "mark": mark, "minutes": minutes, "mistake": null})
-                }
-                Err(mistake) => json!({
-                    "text": text,
-                    "mark": mark,
-                    "minutes": null,
-                    "mistake": mistake.said(*mark).render(),
-                }),
-            },
-        )
+        .map(|(text, mark)| {
+            let words = LengthWords::of_catalog(*mark);
+            json!({
+                "text": text,
+                "mark": mark,
+                "read": read_as(length::read(text, &words), *mark),
+                "entry": read_as(length::read_time_entry(text, &words), *mark),
+            })
+        })
         .collect()
 }
 
@@ -429,6 +478,7 @@ pub fn value_words_file() -> Result<String, String> {
         "cases": cases,
         "times": times()?,
         "lists": lists,
+        "changes": changes(),
         "lengths": lengths(),
         "clocks": clocks,
         "sentences": sentences,

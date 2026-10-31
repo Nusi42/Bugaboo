@@ -44,24 +44,45 @@ fn time_04_decimals_of_an_hour_round_to_the_nearest_minute() {
     assert_eq!(minutes("0.125", DecimalMark::Point), Ok(8));
 }
 
+fn entry(text: &str) -> Result<u32, LengthMistake> {
+    read_time_entry(text, &LengthWords::of_catalog(DecimalMark::Point)).map(Minutes::get)
+}
+
 #[test]
-fn time_04_one_entry_is_at_most_a_day() {
-    assert_eq!(minutes("24:00", DecimalMark::Point), Ok(1440));
-    assert_eq!(minutes("24h", DecimalMark::Point), Ok(1440));
-    for text in ["24:01", "25", "1441m", "24h 1m", "999999999h"] {
-        assert_eq!(
-            minutes(text, DecimalMark::Point),
-            Err(LengthMistake::TooLong),
-            "{text}"
-        );
+fn time_04_one_time_entry_is_at_least_a_minute_and_at_most_a_day() {
+    assert_eq!(entry("24:00"), Ok(1440));
+    assert_eq!(entry("24h"), Ok(1440));
+    assert_eq!(entry("0:01"), Ok(1));
+    for text in ["24:01", "25", "1441m", "24h 1m", "999999h"] {
+        assert_eq!(entry(text), Err(LengthMistake::TooLong), "{text}");
     }
+    for text in ["0", "0:00", "0m", "0.001"] {
+        assert_eq!(entry(text), Err(LengthMistake::Zero), "{text}");
+    }
+    assert_eq!(
+        LengthMistake::Zero.said(DecimalMark::Point).render(),
+        "A time entry is at least 1 minute."
+    );
+}
+
+#[test]
+fn time_04_the_reader_has_no_bound_of_its_own() {
+    // A length of an own field may be longer than a day, and zero is a length.
+    assert_eq!(minutes("40h", DecimalMark::Point), Ok(2400));
+    assert_eq!(minutes("999999h", DecimalMark::Point), Ok(59_999_940));
+    assert_eq!(minutes("0", DecimalMark::Point), Ok(0));
+    // Only a length too long to count is no length.
+    assert_eq!(
+        minutes("999999999h", DecimalMark::Point),
+        Err(LengthMistake::NotALength)
+    );
 }
 
 #[test]
 fn time_04_anything_else_is_a_plain_mistake() {
     for text in [
         "", "soon", "1:3", "1:60", "1:300", ":30", "1.5m", "30m 1h", "1h 2h", "1h 30", "-1", "1.",
-        "h", "1 h m", "1:30h", "1e3", "١",
+        "h", "1 h m", "1:30h", "1e3", "١", "1İ",
     ] {
         assert_eq!(
             minutes(text, DecimalMark::Point),

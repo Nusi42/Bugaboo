@@ -67,7 +67,7 @@ pub const TIME_OF_DAY_12_HOUR: &str = "12-hour";
 /// The choices of *Time of day*. The first follows the date format: the clock of the device when
 /// the date format is the device's, 24 hours with any date format the person fixed.
 pub(super) const TIME_OF_DAY_CHOICES: &[Choice] = &[
-    Choice::new("device", message::SETTING_REGION_TIME_OF_DAY_DEVICE),
+    Choice::new("device", message::THEME_DEVICE),
     Choice::new(
         TIME_OF_DAY_24_HOUR,
         message::SETTING_REGION_TIME_OF_DAY_TWENTY_FOUR_HOURS,

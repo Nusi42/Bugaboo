@@ -108,8 +108,7 @@ export const messages = {
   "setting.region.date-format.year-month-day": "Year, month, day (2026-12-31)",
   "setting.region.time-of-day.name": "Time of day",
   "setting.region.time-of-day.help":
-    "How times of day are written. Like the date format uses the clock of your device while the date format matches your device, and 24-hour with any other date format.",
-  "setting.region.time-of-day.device": "Like the date format",
+    "How times of day are written. Match my device follows the date format: with the date format Match my device, the clock of your device; with any other date format, 24-hour.",
   "setting.region.time-of-day.twenty-four-hours": "24-hour (14:30)",
   "setting.region.time-of-day.twelve-hours": "12-hour (2:30 PM)",
   "setting.region.number-format.name": "Number format",
@@ -552,6 +551,7 @@ export const messages = {
   "time.length.minutes": "{minutes, plural, one {# minute} other {# minutes}}",
   "time.length.hours-and-minutes": "{hours} {minutes}",
   "time.length.not-a-length": "Type a length of time like 1:30, {decimal} or 1h 30m.",
+  "time.length.zero": "A time entry is at least 1 minute.",
   "time.length.too-long": "One entry is at most {hours} hours.",
   "field-example.text": "For example: Customer name",
   "field-example.long-text": "For example: Notes",

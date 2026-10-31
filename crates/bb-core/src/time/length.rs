@@ -138,8 +138,10 @@ impl DecimalMark {
 pub enum LengthMistake {
     /// The text is no length of time.
     NotALength,
-    /// The length is longer than one entry may be.
+    /// The length is longer than one time entry may be.
     TooLong,
+    /// A time entry of no time.
+    Zero,
 }
 
 impl LengthMistake {
@@ -157,6 +159,7 @@ impl LengthMistake {
                     (TIME_ENTRY_MINUTES_MAX.get() / MINUTES_PER_HOUR).to_string(),
                 )],
             ),
+            Self::Zero => Said::key(message::TIME_LENGTH_ZERO),
         }
     }
 }
@@ -254,18 +257,28 @@ impl LengthWords<'static> {
     }
 }
 
+/// The rest of `text` after `word` at its start, whatever the capitals; `None` when it does not
+/// start with the word (or the word is empty).
+fn after_word<'t>(text: &'t str, word: &str) -> Option<&'t str> {
+    if word.is_empty() {
+        return None;
+    }
+    let mut rest = text.chars();
+    for expected in word.chars() {
+        let found = rest.next()?;
+        if !found.to_lowercase().eq(expected.to_lowercase()) {
+            return None;
+        }
+    }
+    Some(rest.as_str())
+}
+
 /// A unit at the start of `text` (after spaces): whether it is hours, and the rest.
 fn unit<'t>(text: &'t str, words: &LengthWords<'_>) -> Option<(bool, &'t str)> {
     let text = text.trim_start();
-    let lower = text.to_lowercase();
-    let starts = |word: &str| {
-        let word = word.to_lowercase();
-        (!word.is_empty() && lower.starts_with(&word)).then(|| text.get(word.len()..))
-    };
-    if let Some(rest) = starts(words.hour) {
-        return rest.map(|rest| (true, rest));
-    }
-    starts(words.minute).and_then(|rest| rest.map(|rest| (false, rest)))
+    after_word(text, words.hour)
+        .map(|rest| (true, rest))
+        .or_else(|| after_word(text, words.minute).map(|rest| (false, rest)))
 }
 
 /// `1.5`, `2`, `90m`, `1h 30m`, `1.5h`: a bare number of hours, or numbers each with a unit, hours
@@ -292,24 +305,45 @@ fn in_units(text: &str, words: &LengthWords<'_>) -> Option<u64> {
         .flatten()
 }
 
-/// The minutes of a length of time a person typed for one entry, or what is wrong with it.
+/// The minutes of a length of time a person typed, or what is wrong with it: the one reader of
+/// typed lengths, without a bound (a length of an own field may be longer than a day; zero is a
+/// length, and the caller decides).
 ///
 /// # Errors
-/// [`LengthMistake::NotALength`] for text that is no length of time in any of the forms,
-/// [`LengthMistake::TooLong`] for a length longer than [`TIME_ENTRY_MINUTES_MAX`].
+/// [`LengthMistake::NotALength`] for text that is no length of time in any of the forms, or one too
+/// long to count.
 pub fn read(text: &str, words: &LengthWords<'_>) -> Result<Minutes, LengthMistake> {
     let text = text.trim();
-    let minutes = if text.contains(':') {
+    if text.contains(':') {
         on_clock(text)
     } else {
         in_units(text, words)
     }
-    .ok_or(LengthMistake::NotALength)?;
-    u32::try_from(minutes)
-        .ok()
-        .map(Minutes::new)
-        .filter(|minutes| *minutes <= TIME_ENTRY_MINUTES_MAX)
-        .ok_or(LengthMistake::TooLong)
+    .and_then(|minutes| u32::try_from(minutes).ok())
+    .map(Minutes::new)
+    .ok_or(LengthMistake::NotALength)
+}
+
+/// The bound of one time entry: at least a minute, at most [`TIME_ENTRY_MINUTES_MAX`].
+///
+/// # Errors
+/// [`LengthMistake::Zero`] for no time, [`LengthMistake::TooLong`] for more than a day.
+pub fn time_entry(length: Minutes) -> Result<Minutes, LengthMistake> {
+    if length == Minutes::default() {
+        Err(LengthMistake::Zero)
+    } else if length > TIME_ENTRY_MINUTES_MAX {
+        Err(LengthMistake::TooLong)
+    } else {
+        Ok(length)
+    }
+}
+
+/// A length typed for one time entry: [`read`], then the bound of [`time_entry`].
+///
+/// # Errors
+/// What [`read`] and [`time_entry`] refuse.
+pub fn read_time_entry(text: &str, words: &LengthWords<'_>) -> Result<Minutes, LengthMistake> {
+    read(text, words).and_then(time_entry)
 }
 
 #[cfg(test)]

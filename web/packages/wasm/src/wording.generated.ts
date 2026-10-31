@@ -2,9 +2,10 @@
 
 import type { Schema } from "@bugaboo/api-client";
 
-/** Some words: a text, words that follow each other, or a message of the catalog with the words for its placeholders. In JSON a text is a string, words that follow each other are a list, and a message is an object with its `key` and its `args` (`word_types.rs` writes the browser's type from this declaration). */
+/** Some words: a text, a count, words that follow each other, or a message of the catalog with the words for its placeholders. In JSON a text is a string, a count a number, words that follow each other are a list, and a message is an object with its `key` and its `args` (`word_types.rs` writes the browser's type from this declaration). */
 export type Said =
   | string
+  | number
   | readonly Said[]
   | {
       /** The key of the message. */

@@ -1,11 +1,11 @@
-import { fieldTypeWords, settingChoices } from "@bugaboo/api-client";
-import type { LengthRead } from "@bugaboo/wasm";
+import { fieldTypeWords, secondsPerMinute, settingChoices } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import vectors from "../../../../tools/testdata/value-words.json";
-import { formatTime, lengthTyped, plainWords } from "./format.ts";
+import { formatTime, plainWords } from "./format.ts";
+import { lengthTyped } from "./length.ts";
 import { listText } from "./list-text.ts";
-import { ownValueText } from "./own-value-text.ts";
+import { durationText, ownValueText } from "./own-value-text.ts";
 import { deviceRegion, type Region } from "./region.ts";
 import { renderSaid } from "./said.ts";
 import { testWording } from "./wording-testing.ts";
@@ -82,19 +82,28 @@ function numberFormatOf(mark: string): Region["numberFormat"] {
   );
 }
 
-/** The sentence of a mistake of the reader, as the screen shows it; `null` for none. */
-function mistakeText(read: LengthRead): string | null {
-  return read.mistake === null ? null : renderSaid(read.mistake);
+/** What the screen makes of an answer of a reader: the minutes, the short form and the grid form it writes them in, or the sentence of the mistake. */
+function shownOf(
+  read: ReturnType<typeof testWording.readLength>,
+): Record<string, string | number | null> {
+  const { minutes, mistake } = read;
+  return {
+    minutes,
+    short: minutes === null ? null : durationText(minutes * secondsPerMinute),
+    grid: minutes === null ? null : testWording.lengthOnClock(minutes),
+    mistake: mistake === null ? null : renderSaid(mistake),
+  };
 }
 
 describe("time_04 the browser reads a typed length the way the server does", () => {
   for (const vector of vectors.lengths) {
     it(`reads ${JSON.stringify(vector.text)} with the ${vector.mark} mark`, () => {
-      const read = testWording.readLength(
-        lengthTyped(vector.text, { ...deviceRegion, numberFormat: numberFormatOf(vector.mark) }),
-      );
-      expect(read.minutes).toBe(vector.minutes);
-      expect(mistakeText(read)).toBe(vector.mistake);
+      const typed = lengthTyped(vector.text, {
+        ...deviceRegion,
+        numberFormat: numberFormatOf(vector.mark),
+      });
+      expect(shownOf(testWording.readLength(typed))).toEqual(vector.read);
+      expect(shownOf(testWording.readTimeEntry(typed))).toEqual(vector.entry);
     });
   }
   for (const vector of vectors.sentences) {
@@ -105,6 +114,14 @@ describe("time_04 the browser reads a typed length the way the server does", () 
   for (const vector of vectors.clocks) {
     it(`writes ${vector.minutes} minutes on the clock`, () => {
       expect(testWording.lengthOnClock(vector.minutes)).toBe(vector.expected);
+    });
+  }
+});
+
+describe("ntf_02 the digits of a text stay as they were written, on the screen and in the e-mail", () => {
+  for (const vector of vectors.changes) {
+    it(`writes ${vector.expected}`, () => {
+      expect(renderSaid(testWording.changeSentence(vector.change))).toBe(vector.expected);
     });
   }
 });
