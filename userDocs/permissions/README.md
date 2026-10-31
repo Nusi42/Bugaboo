@@ -16,4 +16,4 @@ A **role** says what a person may do. Two more settings say what each role *sees
 - A level you set in a project counts in the projects inside it, until one of them sets its own. Every level says where it comes from: *Set for this project*, *From Acme Corporation*, or *The role's own level*.
 - You can set a level only up to your own. Levels above it are greyed out.
 - A project you may not see is never named. Where a reason would name it, you read *a project you cannot see*.
-- On a phone, the table of roles by fields turns into a list: choose a role, then read and change its levels one under the other.
+- Both tables choose a role the same way: **Choose a role** marks its column and shows, under the table, what that role sees. On a phone, the table turns into a list of the chosen role's levels one under the other.

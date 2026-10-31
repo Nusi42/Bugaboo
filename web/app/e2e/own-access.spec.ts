@@ -5,7 +5,6 @@ import { type Page } from "@playwright/test";
 import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { itemArea } from "./support/layout.ts";
 import { createProject } from "./support/projects.ts";
 import { rowOfPerson } from "./support/rows.ts";
 import { addToGroup, giveGroupRole, giveRole, createGroup, roleName } from "./support/access.ts";
@@ -99,8 +98,11 @@ test("sec_08 taking yourself out of the group that gives you the way asks first"
 }) => {
   await signIn(page, ada);
   await page.goto(paths.groups);
-  await page.getByRole("button", { name: "Admins", exact: true }).click();
-  const panel = itemArea(page, "Admins");
+  await page
+    .getByRole("list", { name: t("groups.list"), exact: true })
+    .getByRole("link", { name: "Admins", exact: true })
+    .click();
+  const panel = page.getByRole("main");
   await panel.getByRole("button", { name: t("groups.remove-name", { name: ada.name }) }).click();
   const dialog = await question(page, "own.lost-decide-roles");
   await dialog.getByRole("button", { name: t("own.ask-keep"), exact: true }).click();
@@ -115,7 +117,7 @@ test("sec_08 taking yourself out of the group that gives you the way asks first"
     .click();
   const again = await question(page, "own.lost-decide-roles");
   await again.getByRole("button", { name: t("own.ask-keep"), exact: true }).click();
-  await expect(panel.getByRole("heading", { name: "Admins" })).toBeVisible();
+  await expect(panel.getByRole("heading", { level: 1, name: "Admins" })).toBeAttached();
 });
 
 test("sec_08 No access on yourself in a project you lead asks first", async ({ page }) => {

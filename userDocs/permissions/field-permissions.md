@@ -12,6 +12,8 @@ The fields are the built-in ones: Title, Description, Status, Priority, Assigned
 
 *Field permissions* in *Organization settings*, below "People", shows the roles as columns and the fields as rows. Each cell is a list of the three levels. The level you pick is the role's own level; it counts everywhere unless a project says otherwise.
 
+**Choose a role** above the table works as on *Who sees people*: it marks the column of that role, scrolls it into view, and under the table the page says what the role sees: the fields it can change, the ones it can only see, and the ones that do not exist for it. The page opens on Guest.
+
 ## For one project
 
 On *Project settings*, open the tab *Field permissions*. Change a cell to set a level for this project and the projects inside it. The cell then says *Set for this project* and offers **Reset**, which takes the setting away so the level from higher up counts again. A cell you did not change says where its level comes from, for example *From Acme Corporation*.

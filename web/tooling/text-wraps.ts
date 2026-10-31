@@ -5,9 +5,11 @@
  */
 export const pageWrap = "pretty";
 
-/** The parts that are balanced: the introduction of a card, a line of a preview, an answer title, the hints. */
+/**
+ * The parts that are balanced: a line of a preview, an answer title, the hints. The introduction of a card is not: it
+ * wraps like the page and fills its card, so every page's help is as wide as the next (M5-F135).
+ */
 export const balancedParts = [
-  "card.intro",
   "access.preview-line",
   "access.subheading",
   "field.description",

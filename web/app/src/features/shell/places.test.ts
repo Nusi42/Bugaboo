@@ -73,6 +73,7 @@ describe("ux_01 the screens that exist", () => {
     expect(visible(["manage-invitations"])).toContain(paths.people);
     expect(visible(["manage-invitations"])).not.toContain(paths.status);
     expect(visible(["manage-groups"])).toContain(paths.groups);
+    expect(visible(["manage-groups"])).toContain(paths.group);
     expect(visible(["manage-groups"])).not.toContain(paths.roles);
     expect(visible(["decide-roles"])).toContain(paths.roles);
     expect(visible(["manage-roles"])).toContain(paths.role);

@@ -1572,6 +1572,12 @@ pub const FOLLOWERS_REASON_REPORTED: MessageKey = MessageKey::new("followers.rea
 /// The message `followers.stop`.
 pub const FOLLOWERS_STOP: MessageKey = MessageKey::new("followers.stop");
 
+/// The message `groups.actions-intro`.
+pub const GROUPS_ACTIONS_INTRO: MessageKey = MessageKey::new("groups.actions-intro");
+
+/// The message `groups.actions-title`.
+pub const GROUPS_ACTIONS_TITLE: MessageKey = MessageKey::new("groups.actions-title");
+
 /// The message `groups.add`.
 pub const GROUPS_ADD: MessageKey = MessageKey::new("groups.add");
 
@@ -1590,6 +1596,9 @@ pub const GROUPS_ADD_SEARCH: MessageKey = MessageKey::new("groups.add-search");
 /// The message `groups.add-title`.
 pub const GROUPS_ADD_TITLE: MessageKey = MessageKey::new("groups.add-title");
 
+/// The message `groups.back`.
+pub const GROUPS_BACK: MessageKey = MessageKey::new("groups.back");
+
 /// The message `groups.create`.
 pub const GROUPS_CREATE: MessageKey = MessageKey::new("groups.create");
 
@@ -1605,14 +1614,14 @@ pub const GROUPS_DELETE: MessageKey = MessageKey::new("groups.delete");
 /// The message `groups.field-name`.
 pub const GROUPS_FIELD_NAME: MessageKey = MessageKey::new("groups.field-name");
 
-/// The message `groups.gone`.
-pub const GROUPS_GONE: MessageKey = MessageKey::new("groups.gone");
-
 /// The message `groups.in-already`.
 pub const GROUPS_IN_ALREADY: MessageKey = MessageKey::new("groups.in-already");
 
 /// The message `groups.intro`.
 pub const GROUPS_INTRO: MessageKey = MessageKey::new("groups.intro");
+
+/// The message `groups.list`.
+pub const GROUPS_LIST: MessageKey = MessageKey::new("groups.list");
 
 /// The message `groups.members`.
 pub const GROUPS_MEMBERS: MessageKey = MessageKey::new("groups.members");
@@ -1629,14 +1638,11 @@ pub const GROUPS_MORE: MessageKey = MessageKey::new("groups.more");
 /// The message `groups.none-yet`.
 pub const GROUPS_NONE_YET: MessageKey = MessageKey::new("groups.none-yet");
 
-/// The message `groups.nothing`.
-pub const GROUPS_NOTHING: MessageKey = MessageKey::new("groups.nothing");
-
 /// The message `groups.remove`.
 pub const GROUPS_REMOVE: MessageKey = MessageKey::new("groups.remove");
 
-/// The message `groups.search`.
-pub const GROUPS_SEARCH: MessageKey = MessageKey::new("groups.search");
+/// The message `groups.roles-cut`.
+pub const GROUPS_ROLES_CUT: MessageKey = MessageKey::new("groups.roles-cut");
 
 /// The message `groups.used-nothing`.
 pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing");
@@ -3582,6 +3588,9 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
+
+/// The message `roles.actions-intro`.
+pub const ROLES_ACTIONS_INTRO: MessageKey = MessageKey::new("roles.actions-intro");
 
 /// The message `roles.actions-title`.
 pub const ROLES_ACTIONS_TITLE: MessageKey = MessageKey::new("roles.actions-title");
@@ -5807,6 +5816,15 @@ pub fn access_origin_from(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `access.preview-heading`.
+#[must_use]
+pub fn access_preview_heading(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access.preview-heading"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
 /// The message `access.reset-label`.
 #[must_use]
 pub fn access_reset_label(
@@ -6540,6 +6558,33 @@ pub fn field_permissions_intro_project(project: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The message `field-permissions.preview-can-change`.
+#[must_use]
+pub fn field_permissions_preview_can_change(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("field-permissions.preview-can-change"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
+/// The message `field-permissions.preview-can-see`.
+#[must_use]
+pub fn field_permissions_preview_can_see(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("field-permissions.preview-can-see"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
+/// The message `field-permissions.preview-hidden`.
+#[must_use]
+pub fn field_permissions_preview_hidden(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("field-permissions.preview-hidden"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
 /// The message `field-permissions.project-title`.
 #[must_use]
 pub fn field_permissions_project_title(project: impl std::fmt::Display) -> Message {
@@ -6991,6 +7036,15 @@ pub fn groups_removed(group: impl std::fmt::Display, name: impl std::fmt::Displa
             ("group", Value::Text(group.to_string())),
             ("name", Value::Text(name.to_string())),
         ],
+    )
+}
+
+/// The message `groups.roles-none`.
+#[must_use]
+pub fn groups_roles_none(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.roles-none"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -8674,15 +8728,6 @@ pub fn people_visibility_intro_project(project: impl std::fmt::Display) -> Messa
     Message::with_arguments(
         MessageKey::new("people-visibility.intro-project"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `people-visibility.preview-heading`.
-#[must_use]
-pub fn people_visibility_preview_heading(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("people-visibility.preview-heading"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -11260,6 +11305,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-from", "From {project}"),
     ("access.origin-here", "Set for this project"),
     ("access.origin-unset", "Nothing set, so it is hidden"),
+    ("access.preview-heading", "What {role} sees"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
     (
@@ -12190,6 +12236,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("field-permissions.more-options", "More options"),
+    ("field-permissions.preview-can-change", "Changes {fields}."),
+    (
+        "field-permissions.preview-can-see",
+        "Sees, but cannot change, {fields}.",
+    ),
+    (
+        "field-permissions.preview-hidden",
+        "Never sees {fields}: for this role they do not exist.",
+    ),
     (
         "field-permissions.project-title",
         "Field permissions in {project}",
@@ -12505,6 +12560,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("followers.reason-commented", "You commented on it"),
     ("followers.reason-reported", "You reported it"),
     ("followers.stop", "Stop following"),
+    (
+        "groups.actions-intro",
+        "Deleting the group takes away every role and every No access it was given. The people in it keep their accounts and the roles they have in other ways.",
+    ),
+    ("groups.actions-title", "More about this group"),
     ("groups.add", "Put in"),
     ("groups.add-list", "People you can put into the group"),
     ("groups.add-more", "Show more people"),
@@ -12513,6 +12573,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("groups.add-search", "Search people by name"),
     ("groups.add-title", "Put people into the group"),
     ("groups.added", "{name} is in the group {group}."),
+    ("groups.back", "All groups"),
     ("groups.create", "Create the group"),
     (
         "groups.create-intro",
@@ -12531,12 +12592,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("groups.delete-title", "Delete the group {name}?"),
     ("groups.field-name", "Name of the group"),
-    ("groups.gone", "This group does not exist any more."),
     ("groups.in-already", "In the group"),
     (
         "groups.intro",
         "A group is a set of people. Give a role to a group, and everybody in it has that role.",
     ),
+    ("groups.list", "Groups"),
     ("groups.members", "People in the group"),
     ("groups.members-more", "Show more people"),
     ("groups.members-none", "Nobody is in this group yet."),
@@ -12545,11 +12606,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "groups.none-yet",
         "There are no groups yet. Create the first one below.",
     ),
-    ("groups.nothing", "No group found. Try another word."),
     ("groups.remove", "Take out"),
     ("groups.remove-name", "Take out {name} from the group"),
     ("groups.removed", "{name} is out of the group {group}."),
-    ("groups.search", "Search groups"),
+    (
+        "groups.roles-cut",
+        "The group has more roles than this page lists. The first ones are shown; Who has which role lists them all.",
+    ),
+    (
+        "groups.roles-none",
+        "{name} has no role in the places you decide about.",
+    ),
     ("groups.used", "Used {places}."),
     (
         "groups.used-nothing",
@@ -13727,7 +13794,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "people-visibility.intro-project",
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
-    ("people-visibility.preview-heading", "What {role} sees"),
     (
         "people-visibility.project-title",
         "Who sees people in {project}",
@@ -14139,6 +14205,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("relation-kinds.retired", "Retired"),
     ("relation-kinds.search", "Search kinds of relation"),
+    (
+        "roles.actions-intro",
+        "Copy this role to start a new one from it, or delete it. A starting role can also be reset to the permissions it started with.",
+    ),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
     ("roles.applies.project", "Only this project"),
@@ -14177,9 +14247,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Choose the role that takes its place: everybody who has this role gets the other one, in the same place and with the same reach. This cannot be taken back.",
     ),
     ("roles.field-name", "Name of the role"),
-    ("roles.from-hidden", "from a project you cannot see"),
-    ("roles.from-organization", "from the whole organization"),
-    ("roles.from-project", "from {name}"),
+    ("roles.from-hidden", "From a project you cannot see"),
+    ("roles.from-organization", "From the whole organization"),
+    ("roles.from-project", "From {name}"),
     ("roles.held", "{role} in {place}"),
     (
         "roles.intro",
@@ -14219,7 +14289,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("roles.reset-title", "Reset {name}?"),
     (
         "roles.second-step-gap",
-        "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
+        "{count, plural, =0 {Everybody with this role has set up a second step.} one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
     ),
     ("roles.start-copy", "A copy of {name}"),
     ("roles.start-empty", "An empty role"),

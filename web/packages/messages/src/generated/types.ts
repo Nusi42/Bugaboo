@@ -73,6 +73,7 @@ export interface MessageArguments {
   "access-keys.row.projects-some": { names: string | number };
   "access.cell-label": { role: string | number; subject: string | number };
   "access.origin-from": { project: string | number };
+  "access.preview-heading": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
   "assignments.change-here-name": { who: string | number };
   "assignments.picked": { name: string | number };
@@ -146,6 +147,9 @@ export interface MessageArguments {
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
   "field-permissions.intro-project": { project: string | number };
+  "field-permissions.preview-can-change": { fields: string | number };
+  "field-permissions.preview-can-see": { fields: string | number };
+  "field-permissions.preview-hidden": { fields: string | number };
   "field-permissions.project-title": { project: string | number };
   "field.unknown-name": { field: string | number };
   "fields.choice-color": { name: string | number };
@@ -193,6 +197,7 @@ export interface MessageArguments {
   "groups.delete-title": { name: string | number };
   "groups.remove-name": { name: string | number };
   "groups.removed": { group: string | number; name: string | number };
+  "groups.roles-none": { name: string | number };
   "groups.used": { places: string | number };
   "groups.used-projects": { count: number };
   "handle.changed": { handle: string | number };
@@ -344,7 +349,6 @@ export interface MessageArguments {
   "people-visibility.example-editing": { who: string | number };
   "people-visibility.intro": { example: string | number };
   "people-visibility.intro-project": { project: string | number };
-  "people-visibility.preview-heading": { role: string | number };
   "people-visibility.project-title": { project: string | number };
   "people.in-groups": { count: number; groups: string | number };
   "person.former": { label: string | number };

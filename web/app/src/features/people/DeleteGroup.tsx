@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, Card, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import { useNavigate } from "@tanstack/react-router";
 
 import { api } from "../../shared/api.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";
 import { messageOf } from "../../shared/errors.ts";
+import { paths } from "../../shared/paths.ts";
 import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
 
@@ -51,5 +53,21 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
         />
       </div>
     </div>
+  );
+}
+
+/** *More about this group*: what deleting it does, and *Delete the group*, which leads back to the list. */
+export function GroupActions({ group, members }: Omit<DeleteGroupProps, "onDeleted">) {
+  const navigate = useNavigate();
+  return (
+    <Card heading={t("groups.actions-title")} intro={t("groups.actions-intro")}>
+      <DeleteGroup
+        group={group}
+        members={members}
+        onDeleted={() => {
+          void navigate({ to: paths.groups });
+        }}
+      />
+    </Card>
   );
 }

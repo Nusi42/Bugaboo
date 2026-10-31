@@ -8,7 +8,7 @@ Each row shows the name and the e-mail address, and, as far as you may see it, t
 
 Press a name to open the page of that person. It shows when the account was created, the groups, and the roles they have in the whole organization and in the projects where you decide who has which role. A role in a project you may not know about is not listed at all.
 
-You cannot change a person's roles on their page: change them where the rows are, in [Groups](groups.md) and in [Who has which role](who-has-which-role.md).
+Each role opens the list where it is changed: *Roles and permissions* for the whole organization, *Who has which role* in the settings of the project for a project. You cannot change a person's roles on their page: change them where the rows are, in [Groups](groups.md) and in [Who has which role](who-has-which-role.md).
 
 ## Invitations
 

@@ -73,7 +73,7 @@ test("the pages of people, groups and roles", async ({ page }) => {
   await shoot(page, "51-person", MILESTONE);
 
   await page.goto(groupAddress(groupId));
-  await expect(page.getByRole("heading", { level: 2, name: "Backend" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Backend" })).toBeVisible();
   await shoot(page, "52-groups", MILESTONE);
 
   await page.goto(roleAddress(roleId));

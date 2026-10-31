@@ -10,7 +10,7 @@ The kinds are: Assigned to, Reported by, Last changed by, Authors of comments an
 
 ## Reading the effect
 
-Under the table, the page shows what the chosen role sees, in three short lines, for example "Assigned to a Team member", "Comment by a Team member" and "A Team member is editing the description". Choose another role in the list above the lines to see theirs. A Guest starts without names for most kinds.
+Under the table, the page shows what the chosen role sees, in three short lines, for example "Assigned to a Team member", "Comment by a Team member" and "A Team member is editing the description". Choose another role in **Choose a role** above the table to see theirs: it also marks the role's column in the table, the same way as on *Field permissions*. A Guest starts without names for most kinds.
 
 ## For the whole organization and for a project
 

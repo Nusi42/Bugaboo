@@ -5,7 +5,8 @@ import { ada, bob, cleo, createAdmin, createPerson } from "./support/accounts.ts
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
-import { itemArea, onThisLayout } from "./support/layout.ts";
+import { onThisLayout, pageBackOf } from "./support/layout.ts";
+import { inOrder } from "./support/sequence.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // People and Groups (SEC-02, PRIV-12, WP-11): the list of people (a searchable list that draws only
@@ -88,6 +89,13 @@ test("sec_02 People, a person and Groups are good in every theme", async ({ page
   await expectGoodInEveryLook(page);
 });
 
+/** The link of a row of a list that opens the page of a thing. */
+function rowLink(page: Page, list: string, name: string) {
+  return page
+    .getByRole("list", { name: list, exact: true })
+    .getByRole("link", { name, exact: true });
+}
+
 test("sec_02 a group is made, people are put into it and taken out with Undo", async ({ page }) => {
   await signIn(page, ada);
   await openFromMenu(page, t("nav.groups"));
@@ -95,24 +103,22 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
   await page.getByLabel(t("groups.field-name"), { exact: true }).fill("Backend");
   await page.getByRole("button", { name: t("groups.create"), exact: true }).click();
   await expect(page.getByText(t("groups.created", { name: "Backend" }))).toBeVisible();
-  await page.getByRole("button", { name: "Backend", exact: true }).click();
-  const panel = itemArea(page, "Backend");
-  await expect(panel).toBeVisible();
-  await expect(panel.getByText(t("groups.members-none"))).toBeVisible();
+  await rowLink(page, t("groups.list"), "Backend").click();
+  await expect(page.getByText(t("groups.members-none"))).toBeVisible();
 
   // Put Bob in: the picker finds him by name and says he is in afterwards.
-  await panel.getByRole("searchbox", { name: t("groups.add-search") }).fill("builder");
-  await panel.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
-  const members = panel.getByRole("list", { name: t("groups.members"), exact: true });
+  await page.getByRole("searchbox", { name: t("groups.add-search") }).fill("builder");
+  await page.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
+  const members = page.getByRole("list", { name: t("groups.members"), exact: true });
   await expect(members.getByText(bob.name)).toBeVisible();
-  await expect(panel.getByText(t("groups.in-already"))).toBeVisible();
+  await expect(page.getByText(t("groups.in-already"), { exact: true })).toBeVisible();
   await expect(
     page.getByText(t("groups.added", { name: bob.name, group: "Backend" })),
   ).toBeVisible();
 
   // Take him out at once, and take that back with Undo.
-  await panel.getByRole("button", { name: t("groups.remove-name", { name: bob.name }) }).click();
-  await expect(panel.getByText(t("groups.members-none"))).toBeVisible();
+  await page.getByRole("button", { name: t("groups.remove-name", { name: bob.name }) }).click();
+  await expect(page.getByText(t("groups.members-none"))).toBeVisible();
   // The offers wait one under the other: the latest one is the one that was just made.
   await page
     .getByRole("button", { name: t("common.undo"), exact: true })
@@ -122,14 +128,57 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
   await expectGoodInEveryLook(page);
 });
 
+test("sec_02 a group opens as a page like a person and a role", async ({ page }) => {
+  await signIn(page, ada);
+  const opened = [
+    {
+      list: paths.people,
+      open: () => peopleList(page).getByRole("option", { name: /^Bob Builder/u }),
+      name: bob.name,
+      back: t("person.back"),
+    },
+    {
+      list: paths.groups,
+      open: () => rowLink(page, t("groups.list"), "Backend"),
+      name: "Backend",
+      back: t("groups.back"),
+    },
+    {
+      list: paths.roles,
+      open: () => rowLink(page, t("roles.list"), "Viewer"),
+      name: "Viewer",
+      back: t("roles.back"),
+    },
+  ] as const;
+  await inOrder(
+    opened.map((each) => async () => {
+      await page.goto(each.list);
+      await each.open().click();
+      // A page of its own: its own address, its name as the title, no panel beside the list, and Back to the list.
+      await expect(page).not.toHaveURL(addressEndingAt(each.list));
+      await expect(page.getByRole("heading", { level: 1, name: each.name })).toBeAttached();
+      await expect(page.getByRole("complementary")).toHaveCount(0);
+      await pageBackOf(page, each.back).click();
+      await expect(page).toHaveURL(addressEndingAt(each.list));
+    }),
+  );
+  // The page of the group lists the people in it and the roles it was given.
+  await page.goto(paths.groups);
+  await rowLink(page, t("groups.list"), "Backend").click();
+  await expect(page.getByRole("list", { name: t("groups.members"), exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: t("person.roles"), exact: true })).toBeVisible();
+  await expect(page.getByText(t("groups.roles-none", { name: "Backend" }))).toBeVisible();
+  await expectGoodInEveryLook(page);
+});
+
 test("sec_02 a group is deleted after a dialog that says what happens", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(paths.groups);
-  await page.getByRole("button", { name: "Backend", exact: true }).click();
-  const panel = itemArea(page, "Backend");
-  await panel.getByRole("button", { name: t("groups.delete-name", { name: "Backend" }) }).click();
+  await rowLink(page, t("groups.list"), "Backend").click();
+  await page.getByRole("button", { name: t("groups.delete-name", { name: "Backend" }) }).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog.getByText(t("groups.delete-text", { members: 1 }))).toBeVisible();
   await dialog.getByRole("button", { name: t("groups.delete"), exact: true }).click();
+  await expect(page).toHaveURL(addressEndingAt(paths.groups));
   await expect(page.getByText(t("groups.none-yet"))).toBeVisible();
 });

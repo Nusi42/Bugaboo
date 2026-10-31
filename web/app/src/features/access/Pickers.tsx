@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { PickerOption, pickerLook, SearchPicker } from "@bugaboo/ui";
+import { PickerOption, SearchPicker } from "@bugaboo/ui";
 
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { peopleOf, placesOf, usePeopleToCheck, useProjectsToChoose } from "./use-check.ts";
@@ -22,7 +22,6 @@ export function PersonPicker({ project, value, onChange }: PersonPickerProps) {
   const people = peopleOf(found.data?.pages);
   return (
     <SearchPicker
-      look={pickerLook.boxed}
       legend={t("check-access.person-list")}
       searchLabel={t("check-access.person-search")}
       listLabel={t("check-access.person-list")}
@@ -60,7 +59,6 @@ export function PlacePicker({ value, onChange }: PlacePickerProps) {
   const places = placesOf(found.data?.pages);
   return (
     <SearchPicker
-      look={pickerLook.boxed}
       legend={t("check-access.place-legend")}
       searchLabel={t("check-access.place-search")}
       listLabel={t("check-access.place-list")}

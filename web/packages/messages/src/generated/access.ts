@@ -6,6 +6,7 @@ export const messages = {
   "access.field": "Field",
   "access.kind": "Kind of people information",
   "access.cell-label": "{subject} for {role}",
+  "access.preview-heading": "What {role} sees",
   "access.scrolls": "Scroll sideways to see the other roles.",
   "access.origin-here": "Set for this project",
   "access.origin-from": "From {project}",
@@ -27,7 +28,6 @@ export const messages = {
   "people-visibility.intro-project":
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "people-visibility.table-name": "How each role sees each kind of people information",
-  "people-visibility.preview-heading": "What {role} sees",
   "people-visibility.who-names": "Ana",
   "people-visibility.example-assigned": "Assigned to {who}",
   "people-visibility.example-comment": "Comment by {who}",
@@ -89,6 +89,9 @@ export const messages = {
   "check-access.show-every-kind": "Show every kind",
   "check-access.group-the-same": "Group those with the same reason",
   "field-permissions.more-options": "More options",
+  "field-permissions.preview-can-change": "Changes {fields}.",
+  "field-permissions.preview-can-see": "Sees, but cannot change, {fields}.",
+  "field-permissions.preview-hidden": "Never sees {fields}: for this role they do not exist.",
   "field-permissions.fewer-options": "Fewer options",
   "field-permissions.type-chooser": "Levels for",
   "field-permissions.type-help":

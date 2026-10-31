@@ -1,6 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
 
 import {
+  groupRoute,
   groupsRoute,
   peopleRoute,
   personRoute,
@@ -104,6 +105,7 @@ const routeTree = rootRoute.addChildren([
       peopleRoute,
       personRoute,
       groupsRoute,
+      groupRoute,
       rolesRoute,
       roleRoute,
       issueTypesRoute,

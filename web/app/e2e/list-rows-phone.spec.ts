@@ -9,8 +9,8 @@ import { inOrder } from "./support/sequence.ts";
 import { boxOf } from "./support/windows.ts";
 import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 
-// M5 exit, package O: a row of a list on a phone that has only its name (a group, an issue type with its icon before the
-// name, a kind of relation) is one line, and the line is in the middle of the row.
+// M5 exit, package O: a row of a list on a phone that has only its name (an issue type with its icon before the name, a
+// kind of relation) is one line, and the line is in the middle of the row.
 
 test.use({ sample: true });
 
@@ -18,7 +18,7 @@ test("ux_5 a row with only its name is one line in the middle of the row", async
   test.skip(layoutOf(page) !== "phone", "the rows of a computer have their own look");
   await signIn(page, sampleAdministrator());
   await inOrder(
-    [paths.groups, paths.issueTypes, paths.relationKinds].map((address) => async () => {
+    [paths.issueTypes, paths.relationKinds].map((address) => async () => {
       await page.goto(address);
       const row = await boxOf(partIn(page, "list-editor.open").first());
       const name = await boxOf(partIn(page, "list-editor.name").first());

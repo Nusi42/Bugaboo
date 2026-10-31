@@ -30,7 +30,7 @@ test("ux_7_3 the title of an issue and the intro of a page leave no word alone o
   await page.goto(paths.region);
   const intro = page.getByText(t("setting.page.region-intro"), { exact: true });
   await expect(intro).toBeVisible();
-  // The intro is a card introduction, a short text: balanced (UX §5.1, L3), as the theme says once.
+  // The intro is a card introduction: it wraps like the page and fills its card (M5-F135), as the theme says once.
   await expect(intro).toHaveAttribute("data-part", "card.intro");
   expect(await wrapOf(intro)).toBe(wrapOfPart("card.intro"));
 });

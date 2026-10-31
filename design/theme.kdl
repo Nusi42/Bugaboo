@@ -1169,9 +1169,10 @@ part "muted" "card.intro" {
 // at some widths. The help of a box is a hint and is balanced by `control-hint`. The words of a switch keep the
 // `pretty` of the page: balanced, a label that nearly fits one line ("Two-step sign-in for everybody") was cut in two
 // at the hyphen of "sign-in".
-part "card.intro" "access.preview-line" "access.subheading" {
+part "access.preview-line" "access.subheading" {
     text-wrap balance
 }
+
 
 // Words for screen readers only: the name of a column that holds only an icon.
 part "visually-hidden" {
@@ -3744,6 +3745,11 @@ part "icon" {
     width "$size-icon"
     height "$size-icon"
 }
+// The icon before the name of a group in a row of *Who has which role*: it stands on the line of the name.
+part "item.title icon" {
+    margin-inline-end "$space-2"
+    vertical-align middle
+}
 
 part "icon[variant=small]" {
     width "$size-icon-small"
@@ -3768,6 +3774,12 @@ part "or-divider::before" "or-divider::after" {
 // hint must not reach it.
 part "save-status" {
     use "quiet-text"
+}
+
+// Before the first change the region says nothing and takes no room in a stack: it stays on the page, so screen
+// readers still hear *Saved* when it comes, but leaves no second gap (the large gap above *Choose a role*, M5-F135).
+part "save-status:empty" {
+    position absolute
 }
 
 // Red means something did not happen (R4); a change that is not saved yet only says so.
@@ -4351,9 +4363,13 @@ part "projects.details" {
     overflow-wrap break-word
 }
 
+// The short name of a project, in one font and one place wherever a row shows it: in the code font, the quiet color,
+// at the end of the line of the name, before the chevron (M5-F135).
 part "projects.short" {
     flex "0 0 auto"
     min-width "$size-col-short"
+    color "$fg-muted"
+    font-family "$font-mono"
 }
 
 part "projects.place" {
@@ -4418,9 +4434,12 @@ part "long-preview.group-head" {
     overflow-wrap anywhere
 }
 
+// The lines under a group are set in by their room, not by bullets: a list of one line (*Loses access.*) needs no
+// bullet to say that it is a list (M5-F135).
 part "long-preview.lines" {
     use "quiet-column"
     padding-inline-start "$space-4"
+    list-style none
 }
 
 // ───────────── Tags and labels, and changing many issues ─────────────
@@ -5833,8 +5852,6 @@ part "list-editor.open[variant=columns] list-editor.details" "list-editor.open[v
 part "list-editor.open[variant=columns] projects.short" {
     grid-column 2
     grid-row 1
-    color "$fg-muted"
-    font-family "$font-mono"
 }
 
 part "list-editor.open[variant=columns] projects.place" {

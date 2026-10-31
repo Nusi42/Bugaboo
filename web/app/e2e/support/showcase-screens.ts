@@ -120,7 +120,7 @@ export const screens: readonly Screen[] = [
   organization("groups", "the groups", at(paths.groups)),
   organization(
     "group",
-    "one group open in the side panel, with its members",
+    "the page of one group, with its members and its roles",
     at((ids) => groupAddress(ids.group)),
   ),
   organization(

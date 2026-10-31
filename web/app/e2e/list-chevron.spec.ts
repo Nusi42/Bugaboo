@@ -33,7 +33,7 @@ function chevronOf(row: Locator): Promise<{ count: number; fromEnd: number; alon
 }
 
 const lists = [
-  { address: paths.groups, rows: "[data-part='list-editor.open']" },
+  { address: paths.groups, rows: "li[data-part='item']" },
   { address: paths.labels, rows: "[data-part='list-editor.open']" },
   { address: paths.issueTypes, rows: "[data-part='list-editor.open']" },
   { address: paths.relationKinds, rows: "[data-part='list-editor.open']" },

@@ -37,6 +37,15 @@ const organizationTopics: readonly Place[] = [
     listed: true,
   },
   {
+    // A group's page is reached from the list of groups, like the page of a person or a role.
+    path: paths.group,
+    name: "nav.groups",
+    icon: iconName.groups,
+    parent: paths.groups,
+    anyOf: ["manage-groups"],
+    listed: false,
+  },
+  {
     path: paths.roles,
     name: "nav.roles",
     icon: iconName.roles,

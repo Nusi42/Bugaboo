@@ -5,7 +5,7 @@ import { usePageTitle } from "../../shared/use-page.ts";
 import { paths } from "../../shared/paths.ts";
 import { NotFoundPage, QueryGate, useItemTrail } from "../shell/index.ts";
 import { lineOf, usePerson } from "./people.ts";
-import { Facts, Groups, Roles } from "./PersonSections.tsx";
+import { Facts, Groups, HeldRoles } from "./PersonSections.tsx";
 
 /**
  * The page of one person (SEC-02): their address, when they came, the groups they are in and the
@@ -27,7 +27,10 @@ export function PersonPage({ id }: { readonly id: string }) {
         <div {...partOf(part.stack)}>
           <Facts line={person.line} since={person.since} />
           <Groups line={person.line} />
-          <Roles line={person.line} />
+          <HeldRoles
+            roles={person.line.roles}
+            none={t("person.roles-none", { name: person.line.name })}
+          />
         </div>
       )}
     </QueryGate>

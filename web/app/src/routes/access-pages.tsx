@@ -1,4 +1,4 @@
-import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 import { paths, routeParam } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
@@ -16,6 +16,7 @@ const ProjectRolesScreen = lazyRouteComponent(
 const PeopleScreen = lazyRouteComponent(() => import("../features/people/index.ts"), "PeoplePage");
 const PersonScreen = lazyRouteComponent(() => import("../features/people/index.ts"), "PersonPage");
 const GroupsScreen = lazyRouteComponent(() => import("../features/people/index.ts"), "GroupsPage");
+const GroupScreen = lazyRouteComponent(() => import("../features/people/index.ts"), "GroupPage");
 const RolesScreen = lazyRouteComponent(() => import("../features/roles/index.ts"), "RolesPage");
 const RoleScreen = lazyRouteComponent(() => import("../features/roles/index.ts"), "RolePage");
 
@@ -46,29 +47,29 @@ export const personRoute = createRoute({
   },
 });
 
-/** *Organization settings › Groups*: the address says which group is open in the side panel. */
+/** *Organization settings › Groups*: the groups, each a row that opens its page. */
 export const groupsRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.groups,
-  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
-    open: typeof search["open"] === "string" ? search["open"] : undefined,
-  }),
   loader: loadsScreen(GroupsScreen),
   component: function Groups() {
-    const { open } = useSearch({ strict: false });
-    const navigate = useNavigate();
     return (
       <OnlyWith path={paths.groups}>
-        <GroupsScreen
-          open={open}
-          onOpen={(id: string) => {
-            void navigate({ to: paths.groups, search: { open: id } });
-          }}
-          onClose={() => {
-            void navigate({ to: paths.groups, search: {} });
-          }}
-        />
+        <GroupsScreen />
       </OnlyWith>
+    );
+  },
+});
+
+/** The page of one group, `/settings/groups/<ID>`. */
+export const groupRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.group,
+  loader: loadsScreen(GroupScreen),
+  component: function Group() {
+    const id = useAddressPart(routeParam.group);
+    return (
+      <OnlyWith path={paths.group}>{id === undefined ? null : <GroupScreen id={id} />}</OnlyWith>
     );
   },
 });

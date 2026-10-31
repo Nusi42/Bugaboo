@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Button, partOf, part } from "@bugaboo/ui";
+import { Button, Icon, iconName, partOf, part } from "@bugaboo/ui";
 
 import { appliesToText, placeText, roleText } from "../../shared/access-words.ts";
+import { detailsText } from "../../shared/list-text.ts";
 import type { RowLine } from "./assignments.ts";
 
 export interface AssignmentRowProps {
@@ -20,16 +21,18 @@ function fromText(row: RowLine): string {
   return t(row.place.kind === "organization" ? "roles.from-organization" : "roles.from-hidden");
 }
 
-/** What the row says, in one line: the role (or *No access*) and where it counts. */
+/**
+ * What the row says, in one line of facts that each start a sentence: the role (or *No access*), where it counts, and
+ * for a row from above where it comes from.
+ */
 function whatText(row: RowLine): string {
   // A row that comes from the whole organization counts everywhere: saying so twice says nothing more.
-  if (row.inherited && row.place.kind === "organization") {
-    return `${roleText(row.role)} · ${fromText(row)}`;
-  }
-  const where = row.inherited
-    ? `${appliesToText(row.appliesTo)}, ${fromText(row)}`
-    : appliesToText(row.appliesTo);
-  return `${roleText(row.role)} · ${where}`;
+  const fromEverywhere = row.inherited && row.place.kind === "organization";
+  return detailsText([
+    roleText(row.role),
+    ...(fromEverywhere ? [] : [appliesToText(row.appliesTo)]),
+    ...(row.inherited ? [fromText(row)] : []),
+  ]);
 }
 
 /** The way to take a row away; the page asks first when it would take the person's own way to manage roles. */
@@ -57,7 +60,11 @@ export function AssignmentRow({ row, onRemove, onChangeHere }: AssignmentRowProp
   return (
     <li {...partOf(part.item)}>
       <span {...partOf(part.itemText)}>
-        <span {...partOf(part.itemTitle)}>{who}</span>
+        <span {...partOf(part.itemTitle)}>
+          {/* A group is a set of people, and does not look like one person (M5-F135). */}
+          {row.who.kind === "group" ? <Icon name={iconName.groups} /> : null}
+          {who}
+        </span>
         <span {...partOf(row.role === null ? part.rolesNoAccess : part.muted)}>
           {whatText(row)}
         </span>

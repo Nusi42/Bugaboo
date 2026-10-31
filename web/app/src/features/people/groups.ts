@@ -1,4 +1,4 @@
-import { type Schema, dataOf } from "@bugaboo/api-client";
+import { type ReadonlyDeep, type Schema, dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -54,11 +54,11 @@ export function useGroups() {
   });
 }
 
-/** One group with what it is used for. */
+/** One group with what it is used for and its roles. */
 export function useGroup(id: string) {
   return useQuery({
     queryKey: queryKeys.groups.one(id),
-    queryFn: async () =>
+    queryFn: async (): Promise<ReadonlyDeep<Schema<"GroupDetailBody">>> =>
       dataOf(
         await api.client.GET("/api/v1/groups/{group}", {
           params: { path: { group: id } },

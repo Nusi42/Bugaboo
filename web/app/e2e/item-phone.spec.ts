@@ -9,12 +9,12 @@ import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
 import { paths } from "../src/shared/paths.ts";
 
-// M5 exit, package O: on a phone an item of any list (a group, an issue type, a kind of relation) opens as a screen of
-// its own, like a person: its name in the bar, Back to the list, and no card inside a card with a close button of its own.
+// M5 exit, package O: on a phone an item of any list (an issue type, a kind of relation) opens as a screen of its own,
+// like a person and a group: its name in the bar, Back to the list, and no card inside a card with a close button of its own.
 
 test.use({ sample: true });
 
-const lists = [paths.groups, paths.issueTypes, paths.relationKinds];
+const lists = [paths.issueTypes, paths.relationKinds];
 
 test("ux_5 on a phone an item of a list opens as its own screen with its name in the bar", async ({
   page,

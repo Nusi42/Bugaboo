@@ -18,6 +18,13 @@ export function issueBackOf(page: Page): Locator {
     : page.getByRole("button", { name: t("focus.back"), exact: true });
 }
 
+/** *Back* of a page of one thing (a person, a group, a role): its link above the title, or *Back* of the top bar on a phone. */
+export function pageBackOf(page: Page, label: string): Locator {
+  return layoutOf(page) === "phone"
+    ? page.getByRole("banner").getByRole("button", { name: t("shell.back"), exact: true })
+    : page.getByRole("link", { name: label, exact: true });
+}
+
 /**
  * *More* of an open issue: the one in its header, or on a phone the one of the bar of actions under
  * the page, the only one a phone has (UX §4.4, L1); not the *More* of the main menu.

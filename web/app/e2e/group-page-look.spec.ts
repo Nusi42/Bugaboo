@@ -3,7 +3,6 @@ import { type Locator } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { shadowsOf } from "./support/windows.ts";
@@ -45,12 +44,13 @@ function roomBelowTheLastRow(list: Locator): Promise<number> {
 }
 
 test("ux_5 the list of people to put in shows whole rows at its start", async ({ page }) => {
-  test.skip(layoutOf(page) !== "computer", "the panel is for a computer");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.groups);
-  await page.getByRole("button", { name: "Backend", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Backend" });
-  const list = partIn(panel, "picker.options").last();
+  await page
+    .getByRole("list", { name: t("groups.list"), exact: true })
+    .getByRole("link", { name: "Backend", exact: true })
+    .click();
+  const list = partIn(page.getByRole("main"), "picker.options").last();
   await expect(list).toBeVisible();
   expect(await rowsCutAtTheEnd(list), "rows cut by the lower edge of the list").toBe(0);
   expect(await roomBelowTheLastRow(list), "room under the last whole row").toBeGreaterThanOrEqual(

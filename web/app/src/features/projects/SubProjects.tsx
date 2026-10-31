@@ -30,7 +30,7 @@ function SubProjectList({ project }: { readonly project: string }) {
               <Link row href={projectAddress(line.shortName)}>
                 {line.name}
               </Link>
-              <span {...partOf(part.muted)}>{line.shortName}</span>
+              <span {...partOf(part.projectsShort)}>{line.shortName}</span>
             </span>
             <RowChevron />
           </li>

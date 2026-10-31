@@ -28,6 +28,7 @@ export const paths = {
   people: "/settings/people",
   person: "/settings/people/$person",
   groups: "/settings/groups",
+  group: "/settings/groups/$group",
   issueTypes: "/settings/issue-types",
   layouts: "/settings/layouts",
   workflows: "/settings/workflows",
@@ -69,6 +70,7 @@ export type Path = (typeof paths)[keyof typeof paths];
 export const routeParam = {
   project: "project",
   person: "person",
+  group: "group",
   role: "role",
   field: "field",
   issue: "issue",
@@ -155,9 +157,9 @@ export function personAddress(id: string): string {
   return filled(paths.person, routeParam.person, id);
 }
 
-/** The address of *Groups* with one group open, `/settings/groups?open=<ID>`. */
+/** The address of the page of a group, `/settings/groups/<ID>`. */
 export function groupAddress(id: string): string {
-  return `${paths.groups}?open=${encodeURIComponent(id)}`;
+  return filled(paths.group, routeParam.group, id);
 }
 
 /** The address of *Kinds of relation* with one kind open, `/settings/relation-kinds?open=<ID>`. */

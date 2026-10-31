@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 
 import {
   fieldAddress,
+  groupAddress,
   paths,
   personAddress,
   projectAddress,
@@ -39,9 +40,10 @@ import { sendPassword, signIn } from "./support/flows.ts";
 
 /** The link of an invitation that nobody has used. */
 let invitationLink = "";
-/** The IDs of a person and of a role, for the pages of one. */
+/** The IDs of a person, a role and a group, for the pages of one. */
 let somebody = "";
 let someRole = "";
+let someGroup = "";
 let someField = "";
 let someIssue = "";
 let someSearch = "";
@@ -64,6 +66,9 @@ test.use({
             choices: [{ name: "Minor" }, { name: "Major" }],
           },
         }),
+      ).id;
+      someGroup = dataOf(
+        await admin.client.POST("/api/v1/groups", { body: { name: "Backend" } }),
       ).id;
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
@@ -168,6 +173,7 @@ const visits: readonly Visit[] = [
   { address: paths.people, open: signedIn(paths.people), guest: false },
   { address: paths.person, open: signedInAt(() => personAddress(somebody)), guest: false },
   { address: paths.groups, open: signedIn(paths.groups), guest: false },
+  { address: paths.group, open: signedInAt(() => groupAddress(someGroup)), guest: false },
   { address: paths.issueTypes, open: signedIn(paths.issueTypes), guest: false },
   { address: paths.relationKinds, open: signedIn(paths.relationKinds), guest: false },
   { address: paths.labels, open: signedIn(paths.labels), guest: false },

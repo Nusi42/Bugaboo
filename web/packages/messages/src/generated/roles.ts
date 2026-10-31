@@ -26,8 +26,10 @@ export const messages = {
   "roles.two-step-help":
     "People with this role must set up a code app or a passkey before they can do anything else.",
   "roles.second-step-gap":
-    "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
+    "{count, plural, =0 {Everybody with this role has set up a second step.} one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
   "roles.actions-title": "More about this role",
+  "roles.actions-intro":
+    "Copy this role to start a new one from it, or delete it. A starting role can also be reset to the permissions it started with.",
   "roles.reset": "Reset to the starting permissions",
   "roles.reset-help":
     "This is a starting role. You can give it back the permissions it had at the start.",
@@ -56,9 +58,9 @@ export const messages = {
   "roles.used-projects":
     "{count, plural, one {in # project you can see} other {in # projects you can see}}",
   "roles.used-nothing": "Nobody has this role in a place you can see.",
-  "roles.from-project": "from {name}",
-  "roles.from-organization": "from the whole organization",
-  "roles.from-hidden": "from a project you cannot see",
+  "roles.from-project": "From {name}",
+  "roles.from-organization": "From the whole organization",
+  "roles.from-hidden": "From a project you cannot see",
   "assignments.title-organization": "Who has which role in the whole organization",
   "assignments.intro-organization":
     "The people and groups with a role in the whole organization. A role given here counts in every project.",

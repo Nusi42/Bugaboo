@@ -4,8 +4,15 @@ import { useState } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
 import { IssueTypeChooser } from "../issue-types/index.ts";
+import { FieldsPreview } from "./FieldsPreview.tsx";
 import { LevelTableView } from "./LevelTableView.tsx";
-import type { LevelTable, PeopleKindKey, PeopleLevelCode } from "./levels.ts";
+import type {
+  FieldKeyCode,
+  FieldLevelCode,
+  LevelTable,
+  PeopleKindKey,
+  PeopleLevelCode,
+} from "./levels.ts";
 import { PeoplePreview } from "./PeoplePreview.tsx";
 import { useFieldPermissions, usePeopleVisibility } from "./use-levels.ts";
 
@@ -33,6 +40,21 @@ function TypeOptions({
   );
 }
 
+/** What a field is called: an own field by its name, a field of the catalogue by its message. */
+function fieldName(field: FieldKeyCode, name: string | null | undefined): string {
+  return fieldNameOf({ code: field, name });
+}
+
+/** What a person with the chosen role sees of the fields, under the table. */
+function fieldsPreview(table: LevelTable<FieldKeyCode, FieldLevelCode>, role: string) {
+  return <FieldsPreview table={table} role={role} fieldName={fieldName} />;
+}
+
+/** What a person with the chosen role sees of people, under the table. */
+function peoplePreview(table: LevelTable<PeopleKindKey, PeopleLevelCode>, role: string) {
+  return <PeoplePreview table={table} role={role} />;
+}
+
 /** The field permissions of a place: the whole organization, or a project (an ID). */
 export function FieldPermissionsTable({ project }: { readonly project?: string }) {
   const [more, setMore] = useState(false);
@@ -56,18 +78,14 @@ export function FieldPermissionsTable({ project }: { readonly project?: string }
       {more ? <TypeOptions type={issueType} onChange={setIssueType} /> : null}
       <LevelTableView
         levels={levels}
-        subjectName={(field, name) => fieldNameOf({ code: field, name })}
+        subjectName={fieldName}
         levelName={(level) => t(`field-level.${level}`)}
         subjectHeading={t("access.field")}
         tableName={t("field-permissions.table-name")}
+        preview={fieldsPreview}
       />
     </div>
   );
-}
-
-/** What a person with the chosen role sees of people, under the table. */
-function preview(table: LevelTable<PeopleKindKey, PeopleLevelCode>, role: string) {
-  return <PeoplePreview table={table} role={role} />;
 }
 
 /** *Who sees people* of a place: the whole organization, or a project (an ID). */
@@ -80,9 +98,7 @@ export function PeopleVisibilityTable({ project }: { readonly project?: string }
       levelName={(level) => t(`people-level.${level}`)}
       subjectHeading={t("access.kind")}
       tableName={t("people-visibility.table-name")}
-      preferredRole={t("starting-role.guest")}
-      previewsRole
-      after={preview}
+      preview={peoplePreview}
     />
   );
 }

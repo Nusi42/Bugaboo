@@ -2,9 +2,10 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 // What the pictures of the showcase paint over (M4-F24): the few screens that show a moment the
-// server made when the test ran (a date and time, how long the server runs), a secret (the link of
-// an invitation) or the hash of the security log, which is new in every run. Everything else on
-// these screens is in the picture, and every other screen is taken as it is.
+// server made when the test ran (a date and time, how long the server runs) or the hash of the security log, which is
+// new in every run. The link of an invitation is not painted over: it is written with a secret of x, so the picture
+// shows the link as people see it (M5-F135). Everything else on these screens is in the picture, and every other
+// screen is taken as it is.
 
 /** A date as people write it, in any of the formats of the sample. */
 const DATE = /\d{1,2}[./-]\d{1,2}[./-]\d{4}/u;
@@ -63,12 +64,7 @@ const SCREENS_WITH_NEWS: ReadonlySet<string> = new Set([
 /** The places of the screen that are painted over in its picture; none for most screens. */
 export function maskOf(slug: string, page: Page): readonly Locator[] {
   return SCREENS_WITH_NEWS.has(slug)
-    ? [
-        page.getByText(DATE),
-        page.getByText(RUNNING),
-        page.getByText(INVITATION_LINK),
-        page.getByText(LOG_HASH),
-      ]
+    ? [page.getByText(DATE), page.getByText(RUNNING), page.getByText(LOG_HASH)]
     : [];
 }
 

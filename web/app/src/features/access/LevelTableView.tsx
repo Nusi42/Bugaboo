@@ -14,20 +14,17 @@ export interface LevelTableViewProps<Subject extends string, Level extends strin
   "table" | "onChange"
 > {
   readonly levels: LevelsOf<Subject, Level>;
-  /** The name of the role the table opens on a phone, if it has a role of that name; else the first role. */
-  readonly preferredRole?: string;
-  /**
-   * The table has something to show for the chosen role (a preview), so a computer has the chooser of a role too;
-   * else the chooser is only for phones and tablets.
-   */
-  readonly previewsRole?: boolean;
-  /** What follows the table, for the role that is chosen: a preview. */
-  readonly after?: (table: LevelTable<Subject, Level>, role: string) => ReactNode;
+  /** What follows the table, for the role that is chosen: the preview of what the role sees. */
+  readonly preview: (table: LevelTable<Subject, Level>, role: string) => ReactNode;
 }
 
-/** The role the table opens on: the preferred one by name, else the first. */
-function firstRole(table: LevelTable<string, string>, preferred: string | undefined): string {
-  const named = table.roles.find((role) => role.name === preferred);
+/**
+ * The role the table opens on: Guest, the one that sees least, whose preview tells most, if the table has a role of
+ * that name; else the first.
+ */
+function firstRole(table: LevelTable<string, string>): string {
+  const guest = t("starting-role.guest");
+  const named = table.roles.find((role) => role.name === guest);
   return named?.id ?? table.roles[0]?.id ?? "";
 }
 
@@ -40,7 +37,7 @@ function hasCeiling<Subject extends string, Level extends string>(
 
 interface TableBodyProps<Subject extends string, Level extends string>
   extends
-    Omit<LevelTableViewProps<Subject, Level>, "levels" | "preferredRole">,
+    Omit<LevelTableViewProps<Subject, Level>, "levels">,
     Pick<LevelsOf<Subject, Level>, "edits"> {
   readonly table: LevelTable<Subject, Level>;
   readonly computer: boolean;
@@ -48,18 +45,20 @@ interface TableBodyProps<Subject extends string, Level extends string>
   readonly onChoose: (role: string) => void;
 }
 
-/** The table once it is there: notes about it, the chooser of a role, the matrix or the list. */
+/**
+ * The table once it is there: notes about it, *Choose a role*, the matrix (the column of the chosen role marked) or the
+ * list of the chosen role, and the preview of what that role sees. Both tables of levels choose a role this way.
+ */
 function TableBody<Subject extends string, Level extends string>({
   table,
   edits,
   computer,
   role,
   onChoose,
-  previewsRole = false,
-  after,
+  preview,
   ...view
 }: TableBodyProps<Subject, Level>) {
-  const showChooser = table.roles.length > 0 && (!computer || previewsRole);
+  const hasRoles = table.roles.length > 0;
   return (
     <div {...partOf(part.stack)}>
       {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
@@ -67,7 +66,7 @@ function TableBody<Subject extends string, Level extends string>({
       {hasCeiling(table) ? <p {...partOf(part.muted)}>{t("access.ceiling")}</p> : null}
       <SaveStatus state={edits.saveState} labels={saveLabels()} />
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
-      {showChooser ? (
+      {hasRoles ? (
         <SelectField
           label={t("common.choose-role")}
           choices={table.roles.map((known) => ({ value: known.id, label: known.name }))}
@@ -76,16 +75,11 @@ function TableBody<Subject extends string, Level extends string>({
         />
       ) : null}
       {computer ? (
-        <LevelsMatrix
-          table={table}
-          onChange={edits.change}
-          chosen={previewsRole ? role : undefined}
-          {...view}
-        />
+        <LevelsMatrix table={table} onChange={edits.change} chosen={role} {...view} />
       ) : (
         <RoleLevels table={table} role={role} onChange={edits.change} {...view} />
       )}
-      {table.roles.length > 0 && after !== undefined ? after(table, role) : null}
+      {hasRoles ? preview(table, role) : null}
     </div>
   );
 }
@@ -97,7 +91,6 @@ function TableBody<Subject extends string, Level extends string>({
  */
 export function LevelTableView<Subject extends string, Level extends string>({
   levels,
-  preferredRole,
   ...view
 }: LevelTableViewProps<Subject, Level>) {
   const computer = useLayout() === "computer";
@@ -111,9 +104,7 @@ export function LevelTableView<Subject extends string, Level extends string>({
           table={shown}
           edits={edits}
           computer={computer}
-          role={
-            shown.roles.find((known) => known.id === chosen)?.id ?? firstRole(shown, preferredRole)
-          }
+          role={shown.roles.find((known) => known.id === chosen)?.id ?? firstRole(shown)}
           onChoose={setChosen}
         />
       )}

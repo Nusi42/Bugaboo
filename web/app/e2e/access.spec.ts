@@ -154,7 +154,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   await admin.dispose();
   await signIn(page, ada);
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
-  const preview = t("people-visibility.preview-heading", { role: roleName.guest });
+  const preview = t("access.preview-heading", { role: roleName.guest });
   await expect(page.getByRole("heading", { name: preview })).toBeVisible();
   const asRole = t("person.role-inside", { role: t("starting-role.team-member") });
   await expect(

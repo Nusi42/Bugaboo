@@ -1,49 +1,50 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Link, partOf, part, RowChevron, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { groupAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ListEditor, type ListRow } from "../shell/index.ts";
-import { GroupEditor } from "./GroupEditor.tsx";
 import { groupLinesOf, useGroups } from "./groups.ts";
 import { CreateGroupForm } from "./CreateGroupForm.tsx";
 
-export interface GroupsPageProps {
-  /** The ID of the group that is open in the side panel, from the address. */
-  readonly open: string | undefined;
-  readonly onOpen: (id: string) => void;
-  readonly onClose: () => void;
+/** The groups, each a row that opens the page of the group, as the rows of the roles open theirs. */
+function GroupList() {
+  const list = useGroups();
+  const lines = groupLinesOf(list.data?.pages);
+  return (
+    <div {...partOf(part.stack)}>
+      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
+      {list.isSuccess && lines.length === 0 ? (
+        <p {...partOf(part.muted)}>{t("groups.none-yet")}</p>
+      ) : (
+        <ul {...partOf(part.list)} aria-label={t("groups.list")}>
+          {lines.map((group) => (
+            <li key={group.id} {...partOf(part.item)}>
+              <span {...partOf(part.rowMain)}>
+                <Link row href={groupAddress(group.id)}>
+                  {group.name}
+                </Link>
+              </span>
+              <RowChevron />
+            </li>
+          ))}
+        </ul>
+      )}
+      <ShowMoreOf label={t("groups.more")} list={list} />
+    </div>
+  );
 }
 
 /**
- * *Organization settings › Groups* (SEC-02): the groups as a searchable list, where one opens next
- * to it to change its name and who is in it; and the form that makes a group.
+ * *Organization settings › Groups* (SEC-02): the groups, each opening a page of its own like a person and a role, and
+ * the form that makes a group.
  */
-export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
+export function GroupsPage() {
   usePageTitle(t("nav.groups"));
-  const list = useGroups();
-  const rows: readonly ListRow[] = groupLinesOf(list.data?.pages).map((group) => ({
-    key: group.id,
-    name: group.name,
-    editor: <GroupEditor id={group.id} onDeleted={onClose} />,
-  }));
   return (
     <div {...partOf(part.stack)}>
       <Card heading={t("nav.groups")} level={1} intro={t("groups.intro")}>
-        {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
-        {list.isSuccess && rows.length === 0 ? (
-          <p {...partOf(part.muted)}>{t("groups.none-yet")}</p>
-        ) : (
-          <ListEditor
-            rows={rows}
-            searchLabel={t("groups.search")}
-            nothing={t("groups.nothing")}
-            openKey={open}
-            onOpen={onOpen}
-            onClose={onClose}
-          />
-        )}
-        <ShowMoreOf label={t("groups.more")} list={list} />
+        <GroupList />
       </Card>
       <Card heading={t("groups.create-title")} intro={t("groups.create-intro")}>
         <CreateGroupForm />

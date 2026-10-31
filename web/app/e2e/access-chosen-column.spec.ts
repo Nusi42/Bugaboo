@@ -6,7 +6,7 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { levelList, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
+import { layoutOf, onThisLayout } from "./support/layout.ts";
 import { ariaCurrent, partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
@@ -77,4 +77,44 @@ test("priv_12 the chosen role's column of Who sees people is in view and marked 
     "aria-current",
     ariaCurrent.chosen,
   );
+});
+
+/** On a computer the column of the chosen role is marked and in view; a phone and a tablet show that role alone. */
+function markedWhereColumnsShow(page: Page, role: string): Promise<void> {
+  return onThisLayout(page, {
+    computer: () => expectChosenInView(page, role),
+    tablet: () => Promise.resolve(),
+    phone: () => Promise.resolve(),
+  });
+}
+
+/** The table opens on Guest, and choosing Administrator moves the mark and the preview to Administrator. */
+async function choosesARole(page: Page, address: string): Promise<void> {
+  await page.goto(address);
+  const chooser = page.getByLabel(t("common.choose-role"), { exact: true });
+  await expect(chooser, address).toBeVisible();
+  // Both open on Guest, and the preview speaks of Guest.
+  await expect(
+    page.getByRole("heading", { name: t("access.preview-heading", { role: roleName.guest }) }),
+    address,
+  ).toBeVisible();
+  await markedWhereColumnsShow(page, roleName.guest);
+  await chooser.selectOption({ label: roleName.administrator });
+  await expect(
+    page.getByRole("heading", {
+      name: t("access.preview-heading", { role: roleName.administrator }),
+    }),
+    address,
+  ).toBeVisible();
+  await markedWhereColumnsShow(page, roleName.administrator);
+}
+
+test("priv_12 who sees people and field permissions choose a role the same way", async ({
+  page,
+}) => {
+  // M5-F135: one pattern for both tables. Every role is a column (on a computer), and *Choose a role* marks the column
+  // of the chosen role and shows the preview of what that role sees, on a computer and on a phone alike.
+  await signIn(page, ada);
+  await choosesARole(page, paths.fieldPermissions);
+  await choosesARole(page, paths.peopleVisibility);
 });
