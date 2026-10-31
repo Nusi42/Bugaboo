@@ -21,7 +21,7 @@ The columns of *Estimated time* and *Time left* on the issue in `bb-store` and t
 
 1. **Store and change** *Estimated time* and *Time left* (the change of one field, many issues at once through the existing run, the history).
 2. **The worked-out *Time left*** in one place (`bb-core`), used by the issue answer, the list and the search.
-3. **Totals** of an issue with its sub-issues and of a project with its sub-projects, through the search compiler, on both databases; the issue page and the project page show them with their words (*"With sub-issues: 12 h estimated · 9 h 30 min spent"*).
+3. **Totals** of an issue with its sub-issues and of a project with its sub-projects, through the search compiler, on both databases; the issue page and the project page show them with their words (*"With sub-issues: 12h estimated · 9h 30m spent"*).
 4. **Search:** `estimated time`, `time left` and `time spent` as fields of the search language (the words and the minutes of ADR-0005, decision 10), sortable and usable in *Group by* only as ranges, never as a list of people; a reader who may not read the field gets the answer of an unknown field.
 5. **Columns:** the three fields in *Customize › Columns* of the list, written by the length helper of WP-03.
 6. **Speed:** the totals of a project on 1 M issues within the issue-page budget of PERF-01 (WP-12 measures it nightly; this package adds the scenario).

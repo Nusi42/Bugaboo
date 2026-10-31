@@ -41,7 +41,7 @@ A person's time on issues is kept on the server: one running timer that every de
 - `priv_09_a_reader_without_names_for_time_entries_sees_someone_and_never_a_name`.
 - `priv_09_a_reader_who_may_not_read_time_spent_gets_no_lengths`.
 - `priv_09_no_time_route_orders_or_ranks_people` (reads the generated API description: no route of time takes an order by person or by a total).
-- SEC-MATRIX: the entry points `timer` and `time-entries`, every role, both databases.
+- SEC-MATRIX: the routes of the timer and of time entries, every role, both databases.
 
 ## Checks
 

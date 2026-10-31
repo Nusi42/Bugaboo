@@ -314,7 +314,7 @@
 <h4>bb-dev-words</h4>
 <p>The words that the developer tools, the tests and <code>xtask</code> share, written once: the databases Bugaboo runs on (<code>DatabaseKind</code>: <code>sqlite</code>, <code>postgres</code>) and the variables that tell the test harness what to do (<code>BB_TEST_DATABASES</code>, <code>BB_TEST_POSTGRES_URL</code>, <code>BB_DB_PARITY_FILE</code>), the passwords and the address of the sign-in tests (<code>accounts</code>), and the schema of <code>tools/dev/sample.json</code> (<code>sample::Layout</code>), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on <code>bb-core</code> (for the message catalogue), <code>serde</code> and <code>serde_json</code> only, so <code>bb-testing</code>, <code>bb-sample</code>, <code>xtask</code> and the tests of <code>bb-app</code> and <code>bb-server</code> can import it without pulling in the store or the use cases.</p>
 <h4>bb-ai and bb-mcp</h4>
-<p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
+<p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, book time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
 <h4>bb-sample</h4>
 <p>The sample-organization generator (architecture §11): a library and a small program that <code>cargo xtask dataset sample</code> runs as a process, so <code>xtask</code> does not link the store or the use cases (it imports only <code>bb-api-words</code>, <code>bb-core</code>, <code>bb-dev-words</code> and <code>bb-policy</code>, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into <code>bugaboo</code> until <em>Try it out</em> (OPS-12), and never shipped before then.</p>
 <ul>
@@ -460,12 +460,14 @@
 <li><strong>Checking versions:</strong> every 30 s and on focus, the browser asks (<code>POST /versions/check</code>, up to 50 records) for the current versions of what's on screen; a newer version by someone else shows <em>"Ben changed this after you"</em>.</li>
 </ul>
 <h3 id="s5-6"><button class="sec" data-sec>§5.6</button>Working hours</h3>
+<p>The decisions are <a href="#adr-0035">ADR-0035</a>, decisions 5 to 8; this is how a work day moves through the server (<code>bb-app::working_hours</code>, the rules in <code>bb_core::working_time</code>).</p>
 <ol>
-<li><em>Start work day</em> creates a work-day record for today (person, start time, time zone).</li>
-<li>Breaks and the end are added the same way, or typed in later.</li>
-<li>The <strong>working-time rules</strong> of the organization's preset are checked after every change. Broken rules become warnings stored with the day; nothing is blocked.</li>
-<li>Changing a day in the past requires a reason. The event log keeps the old value; the person is notified if someone else changed it.</li>
-<li>A daily job deletes work days older than the keep-and-delete rule allows.</li>
+<li><em>Start work day</em> creates a work-day record for the person's day of now (the person, the start, the time zone of the person), or reopens that day with a new period when it was ended already (ADR-0035, decision 5). If the person's last work day was never ended, the browser first asks when it ended, and that answer is a change of a past day (step 4) before the new day starts.</li>
+<li><em>Start break</em>, <em>End break</em> and <em>End work day</em> add to the same record; the timesheet's <em>Work day</em> rows take the same values typed later. Every change is a command with a version and an event (ARCH-VERSIONED, ARCH-EVENTS).</li>
+<li>In the same change, the <strong>working-time rules</strong> of the organization (the numbers of its preset, from the settings registry) are checked for the day and the days next to it. Broken rules become warnings stored with the day; nothing is blocked.</li>
+<li>A change that asks for a <strong>reason</strong> (ADR-0035, decision 7) carries it; the event keeps the old values and the reason, and when the person who changes it is not the person of the day, the notifications reader tells that person (ADR-0033).</li>
+<li>The page <em>Working hours of others</em> reads another person's days only for a holder of <em>See working hours of others</em>, as <em>Totals only</em> allows (ADR-0035, decision 8); a change there needs <em>Change working hours of others</em> and goes through steps 2 to 4.</li>
+<li>The daily job <code>working-hours.delete-old</code> deletes the work days older than the keep period (ADR-0035, decision 7), with their breaks and the events of their changes (ADR-0017, amendment M6).</li>
 </ol>
 <h3 id="s5-7"><button class="sec" data-sec>§5.7</button>Removing a person (GDPR)</h3>
 <ol>
@@ -884,7 +886,7 @@ Place  = "organization" | ProjectRef | "hidden"                                 
 <li><strong>Own fields</strong> (ADR-0006): one <code>field_value</code> table with typed columns (text, number, date, reference) and indexes per type; used by issues, time entries, work days, documents, releases and projects.</li>
 <li><strong>Relations:</strong> one table for every kind, including timeline dependencies; sub-issues use a parent column, shown as <em>part of</em> on the map.</li>
 <li><strong>Files:</strong> content-addressed blobs (SHA-256), referenced by attachments and document versions; deleted when nothing references them and no keep rule applies.</li>
-<li><strong>Time:</strong> all timestamps in UTC; each work day stores the person's time zone so "day" means their day.</li>
+<li><strong>Time:</strong> all timestamps in UTC. <strong>The person's day</strong> is the date a moment falls on in the person's time zone, worked out in one place (<code>bb_core::time</code>); each work day stores its zone. The rules that use it are <a href="#adr-0035">ADR-0035</a>, decision 5.</li>
 <li><strong>Versions:</strong> every changeable entity has a <code>version</code> number for optimistic locking.</li>
 <li><strong>Advisory locks (the order):</strong> a check that a program makes before it writes (a name is free, a limit is not reached, an issue still has a status) holds a lock from the check to the end of the change. A change that takes more than one lock takes them in this order and no other: the migration lock, then <strong>Policy</strong>, <strong>TagsAndLabels</strong>, <strong>Workflows</strong>, <strong>IssueCodes</strong> (one per project), and then the rest by their numbers (<strong>IssueParents</strong>, <strong>IssueRelations</strong>, <strong>Handles</strong>, <strong>Uploads</strong>, <strong>IssueFiles</strong>); <code>LockClass</code> in <code>bb-store</code> is the one home of the classes and of the order. Two changes that take two locks in different orders can wait for each other (more so behind a change that takes the Workflows lock alone, which waits for every shared holder and is waited for by every new one). SQLite takes no advisory lock (its single writer already serializes), so a wrong order would show only as a PostgreSQL deadlock under load; every transaction therefore records the highest class it took, on both databases, and in debug and test builds refuses a lower one with an error. The SQL of a lock is written in one file (<code>db.rs</code>), so no lock passes the guard unseen. A rule that rests on a program check under a lock (the unique names of types and groups, the limits of a place, since the <code>offer</code> table has no unique key) is part of this order. Enforced by: ARCH-LOCK-ORDER.</li>
 <li><strong>Edit locks:</strong> <code>edit_lock</code> rows (what, who, session, token, expires at) for long text and admin editors; private drafts in <code>edit_draft</code>; both deleted when no longer needed (ADR-0019).</li>
@@ -912,7 +914,7 @@ Place  = "organization" | ProjectRef | "hidden"                                 
 <li>The marks generate: <em>Download my data</em>, the <em>Remove a person</em> plan, keep-and-delete jobs, the record of processing, and the data-flow map.</li>
 <li><strong>Logs</strong> hold IDs, never names or e-mail addresses; IP addresses are kept 7 days by default.</li>
 <li><strong>Former users:</strong> a removed person becomes a tombstone (<code>Former user K7Q2</code>); references stay valid, personal data is gone.</li>
-<li><strong>Legal holds:</strong> working hours stay until their keep period ends, even after a person is removed.</li>
+<li><strong>Legal holds:</strong> work days, with their breaks and the reasons of their changes, stay until the keep period (ADR-0035, decision 7) ends, even after a person is removed: <em>Remove a person</em> shows the person on them as <em>Former user</em> and leaves them to the daily job <code>working-hours.delete-old</code> (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with <em>Keep and delete rules</em> (M9).</li>
 </ul>
 <h3 id="s7-6"><button class="sec" data-sec>§7.6</button>Search language (ADR-0005)</h3>
 <p>One grammar, written once in Rust (<code>bb-searchlang</code>) and used by the server and, as its own WebAssembly module (<code>bb-wasm-search</code>), by the browser. The words are English and the same in every language of the app, so a shared search works for everyone. A field is written as the glossary names it, in lower case with spaces (<code>assigned to</code>, <code>status group</code>), and the values of the built-in lists in display case (<code>priority is High</code>); the old one-word form (<code>assignedTo</code>, <code>statusGroup</code>) still reads and is shown in the new words (ADR-0005, decision 11); the caller passes the <strong>readable fields</strong> (the fields this person may read), and a field outside them is as unknown as one that does not exist.</p>
@@ -1241,6 +1243,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components</td><td>UX-07, coding-standards §4</td><td>oxlint (react/jsx-no-literals, one configuration with LINT-TS): JSX text and the string values of aria-*, title, alt and placeholder</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match; every area imports its part; no setting help writes its bounds</td><td>UX-07, ADR-0028</td><td>xtask (parses messages/en.json and code references; the entry of every feature with a message part imports it)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs, API names or the names the code declares</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>TXT-DATES</code></td><td>Dates, moments, times of day and lengths of time on a screen are written only by the shared helpers, from the person's Region</td><td>coding-standards §4, ADR-0033 (amendment M6), UX-07</td><td>xtask (no Intl.DateTimeFormat, toLocaleDateString, toLocaleTimeString or toLocaleString of a date in web/ outside the shared helpers of web/app/src/shared/ and web/packages/)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file</td><td>ADR-0010, ADR-0026</td><td>xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; colors are the tokens of the base and the theme files of design/themes/; sizes are LINT-CSS, styles from code are THEME-ONLY)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-PARTS</code></td><td>Every part that design/theme.kdl styles is a part that some component has</td><td>ADR-0026</td><td>xtask (the part names of the rules of design/theme.kdl against the part names written in web/**/*.{ts,tsx}: a rule for a part no component has styles nothing)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-BOLD</code></td><td>Bold only where UX §7.3 allows it: a rule of the app sets the bold weight only if the bold list of the theme file names it</td><td>UX §7.3, ADR-0026</td><td>xtask (reads design/theme.kdl: every rule and mixin of the app that sets a bold weight, against the one `bold` list; a listed selector that no rule makes bold fails too, and so does a bold title or heading not drawn in the display face)</td><td>edit · commit · ci</td></tr>
@@ -1275,6 +1278,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>ARCH-NO-COUNTERS</code></td><td>No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items</td><td>ADR-0021, PRIV-13</td><td>xtask (finds counting columns, sequences and count-plus-one numbers in product code, and count properties in the answers of the generated API description, unless tools/checks/counter-exemptions.toml names them with a reason)</td><td>commit · ci</td></tr>
 <tr><td><code>TEST-ISSUE-IDS</code></td><td>Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes</td><td>ADR-0021</td><td>xtask (the unit, property and two-database tests of the rules about issue IDs exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
 <tr><td><code>TEST-WORKFLOWS</code></td><td>Every rule of a status change (Who can do it, Only if, Must be filled in, Ask for) is decided by one judge and tested on both databases</td><td>ADR-0031</td><td>xtask (the unit, property and two-database tests of the workflow rules exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
+<tr><td><code>TEST-WORKING-TIME</code></td><td>The working-time rules, the person's day and the records of work days are tested by name: day boundaries, daylight-saving changes, zones, rest across days, a day that ends after midnight, a past day without a reason</td><td>ADR-0035, TIME-08, TIME-09, TIME-10</td><td>xtask (the unit and property tests of the working-time rules and of the person's day exist by name and are not switched off; the two-database tests of work days run through each_database)</td><td>ci</td></tr>
 <tr><td><code>TEST-UPLOADS</code></td><td>Uploads are checked from their content and limited; downloads re-check access; previews never take the server down</td><td>ADR-0032</td><td>xtask (the upload security tests exist by name and are not switched off: wrong type, SVG, HTML, too large, blocked type, a decompression bomb, a broken PDF, a huge picture, a link after access ended, a link for one person and five minutes; the suites are crates/bb-server/src/tests/sign_in/files_http.rs on both databases, crates/bb-server/tests/preview.rs with the real child process, and crates/bb-files)</td><td>ci</td></tr>
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
 <tr><td><code>SEC-PRIVATE</code></td><td>Nothing private about the maintainer in Git: no profile paths with an account name, no session IDs or links, no session key in a memory note, no links to published pages, no account or computer names, no private words, and only public identities as author and committer</td><td>coding-standards §2</td><td>xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg &lt;file&gt;`, which also reads the author and committer about to be recorded; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, what the commits not on a remote add, and their authors and committers; reads the optional private list ~/.config/bugaboo/private-words.txt, or the file named by BUGABOO_PRIVATE_WORDS, with words, several words and e-mail addresses per entry; exemptions in tools/checks/private-exemptions.toml)</td><td>commit · push · ci</td></tr>
@@ -1317,7 +1321,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>95 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>97 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -1553,9 +1557,9 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h2 id="s12"><button class="sec" data-sec>§12</button>Security: threat model and personal-data flows</h2>
 <p>Part of the security and data-flow documentation (COMP-07) for the CRA technical file and for customers' own risk assessments. It covers what is built so far and grows with every milestone: each milestone review checks that new entry points appear here.</p>
 <p>The method is STRIDE per trust boundary (boundaries from <a href="#s2">Context</a>). Every threat names the mitigation and what proves it: a check from the catalogue (<code>tools/checks/catalog.toml</code>), a test, or <em>review</em> when a person decides.</p>
-<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M4 built, M5 planned)</h3>
+<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M5 built, M6 planned)</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>In scope now</th><th>Comes later (own section then)</th></tr></thead><tbody>
-<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3)</td><td>Attachments, mail and workflows (M4; threats below), search and lists (M5; threats below, planned), MCP and the assistant (M8), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
+<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5)</td><td>Time on issues and working hours (M6; threats below, planned), MCP and the assistant (M8), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
 </tbody></table>
 </div>
 <h3 id="s12-2"><button class="sec" data-sec>§12.2</button>Attack surface</h3>
@@ -1732,6 +1736,21 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td>Information disclosure</td><td>The names route lists people by their first letters, 20 at a time, including people of projects the person cannot open</td><td><strong>Accepted risk</strong> (ADR-0005, decision 9): the names are those the person may name by <em>Who sees people</em> for the person fields; where that setting is at organization level a person may already see every name, so listing by start gives nothing more than the setting allows. A person who is shown no names is offered only themselves, and a person who exists looks the same as one who does not</td><td><code>qry_05_a_person_who_is_shown_no_names_is_offered_no_one_and_a_missing_name_looks_the_same</code></td></tr>
 </tbody></table>
 </div>
+<h4>Time and working hours (M6)</h4>
+<p>M6 stores what people spent their time on and when they worked (<a href="#adr-0035">ADR-0035</a>). Working hours are sensitive employee data (PRIV-09): the main threat is that somebody learns about another person's time without the permission for it, by any way out of the server. Each row names the check that proves it; the packages add the test names (<span title="../milestones/M6/README.md in the repository">M6 plan</span>).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Information disclosure</td><td>A person reads another person's working hours (work days, breaks, warnings, reasons, totals) through a page, a total, a count, a history, a notification, an e-mail, an export or a search (PRIV-09, PRIV-13)</td><td>Working hours leave their module only for the person themselves and, on <em>Working hours of others</em>, for a holder of <em>See working hours of others</em>, as <em>Totals only</em> allows (ADR-0035, decision 8). A notification about a day goes to the person of the day only; no search field, export or list reads work days (ADR-0035, decision 8)</td><td>SEC-MATRIX (the routes of work days and of <em>Working hours of others</em> for every starting role, <em>HR</em> included, and with <em>Totals only</em> on; the notifications and e-mail channels); the tests of WP-06 and WP-10</td></tr>
+<tr><td>Information disclosure</td><td>A person learns another person's time on issues through the time entries of an issue, <em>Time spent</em>, a total of an issue or a project, the history or a search (PRIV-12, PRIV-13)</td><td>A time entry shows its person only as <em>Who sees people</em> allows (the kind <em>Time entries</em>) and its length only to a reader of <em>Time spent</em>; totals count only the issues the reader sees and the fields they read, by the compiled search; the port of time spent reads only the issues the use case passes (ADR-0035, decision 4)</td><td>SEC-MATRIX (the routes of the timer and of time entries, <em>Time spent</em> and the totals under field levels and visibility), ARCH-PERSON-REF, ARCH-DB-PARITY; the tests of WP-05 and WP-07</td></tr>
+<tr><td>Information disclosure</td><td>A list, a search or an export orders or ranks people by a number of time, or an AI tool reads working hours (PRIV-09, COMP-10)</td><td>No route of time takes an order by person or by a total; grouping by person gives no length per person; the tool registry has no tool that reaches working hours (ADR-0035, decision 9; ADR-0013)</td><td>SEC-MATRIX, ARCH-AI-TOOLS; the tests of WP-05 and WP-06</td></tr>
+<tr><td>Tampering</td><td>A person changes another person's work day without <em>Change working hours of others</em></td><td>The use case judges the permission for the whole organization before every change of another person's day; the routes declare it</td><td>ARCH-PERMS, SEC-MATRIX (the routes of <em>Working hours of others</em> that change a day, for every starting role); the tests of WP-06</td></tr>
+<tr><td>Repudiation</td><td>A work day is changed without a reason, the old value is lost, or the person is not told (TIME-10)</td><td>A change that asks for a reason (ADR-0035, decision 7) is refused without one; its event keeps the old values and the reason, which the history of the day shows; a change by somebody else notifies the person of the day</td><td>TEST-WORKING-TIME, ARCH-EVENTS; the tests of WP-06</td></tr>
+<tr><td>Repudiation</td><td>A day left open is ended by the server, so the record shows an end that nobody gave</td><td>Nothing ends a day by itself; the next <em>Start work day</em> asks the person (ADR-0035, decision 5)</td><td>TEST-WORKING-TIME</td></tr>
+<tr><td>Elevation of privilege</td><td>A person gives themselves, or a group they are in, <em>See working hours of others</em> or <em>Change working hours of others</em></td><td>Only a person who holds both <em>Manage roles</em> and <em>Decide who has which role</em> for the whole organization gives <em>HR</em> without holding its permissions, and only one who holds the permissions adds them to a role; no access key holds them (ADR-0025, amendment M6). Such a person can give <em>HR</em> to themselves: <strong>accepted risk</strong> (below), recorded in the security log with every gift and removal</td><td>ARCH-PERMS, SEC-MATRIX; <code>sec_15_every_change_of_permissions_is_in_the_security_log</code>; the tests of WP-06</td></tr>
+<tr><td>Tampering</td><td>Two devices start two timers, or one work day is saved twice, so time is counted twice</td><td>One timer per person and one work day per person and date (ADR-0035, decisions 3 and 5)</td><td>TEST-CONCURRENT ("Timers and working hours start and stop at the same time", both databases), ARCH-VERSIONED</td></tr>
+<tr><td>Tampering</td><td>The note of a time entry or the reason of a change carries script that runs for another reader</td><td>Notes and reasons are plain text, shown as text and never as HTML; an e-mail writes them like any other text (ADR-0033)</td><td>SEC-RICHTEXT; the tests of WP-05 and WP-06</td></tr>
+<tr><td>Denial of service</td><td>Many timers, starts or entries slow the server for everyone</td><td>The limits of ADR-0035, decisions 1, 3 and 5 (named constants of WP-05 and WP-06), and pages with cursors on every list</td><td>PERF-N1, PERF-BENCH (the timesheet week and the totals of a project on 1 M issues); the tests of WP-05 and WP-06</td></tr>
+</tbody></table>
+</div>
 <h4>Boundary 4 (operator ↔ data) and the host</h4>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
 <tr><td>Information disclosure</td><td>Stored secrets read from a database copy or backup</td><td>Envelope encryption with XChaCha20-Poly1305; the master key lives outside the database</td><td>secrets tests (WP-05)</td></tr>
@@ -1759,6 +1778,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td>A security-log entry that cannot be written (the anchor file or the database fails) is reported in the server log but does not undo or refuse the sign-in. The server counts the entries it could not write since it started, and the status page warns when the count is above zero (<code>sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written</code>); the status page and <code>bugaboo security-log verify</code> also name a database that lacks the newest entries that the anchor file knows of (a restore from an older backup, lost writes or a cut-off end) and say what to check (<code>sec_15_the_status_page_warns_when_the_anchor_is_ahead</code>)</td><td>A sign-in that fails because the log is full would let anybody who can fill the disk lock everybody out</td><td>The decision stays (M1-F40, done in M2 WP-04)</td></tr>
 <tr><td><em>Check access</em> tells a checker that a role comes from <em>a project you can't see</em>, so they learn that such a project exists above, never its name or anything in it</td><td>A sentence that leaves the row out would explain a decision wrongly; only people who can check access at that place see it (ADR-0025, decision 12)</td><td>When restricted projects need more (SEC-05, V1)</td></tr>
 <tr><td>The version of a move preview is a digest of the tree, who has which role and the levels the roles set, so somebody who keeps asking for the preview of a project they see can tell that something changed in a project they cannot see</td><td>The preview is what <em>Show, then do</em> needs and a stale one is refused; the digest is opaque and names nothing, no count and no place, and the person only learns that the preview is old (ADR-0025, decision 12)</td><td>When restricted projects need more (SEC-05, V1)</td></tr>
+<tr><td>A person who holds both <em>Manage roles</em> and <em>Decide who has which role</em> for the whole organization can give themselves <em>HR</em> and so read and change everybody's working hours</td><td>Nobody holds the two permissions at the start, so without the exception nobody could give <em>HR</em>; an administrator holds every other permission and so can give every other role already. The gift is in the security log, and the people whose hours are read are not told of each reading (ADR-0025, amendment M6)</td><td>When the security log can tell named people of such a gift (M9)</td></tr>
 <tr><td>People with <em>Decide who has which role</em> from above keep it on a project where they have <em>No access</em>, and see its name and short name there</td><td>Otherwise a project lead could shut the administrators out for good (ADR-0025, decision 6)</td><td>—</td></tr>
 <tr><td>The child that makes a preview holds the rights of the server account: protection is the separation of the process and the limits on memory, time and pixels, not a sandbox. A memory-safety bug in <code>image</code>, <code>hayro</code> or <code>vello_cpu</code> (they use <code>unsafe</code> inside, though our code does not) lets a crafted file run code in the child, which can then read the keys and the database of the server account and reach the network</td><td>The libraries are pure Rust with only the gif, jpeg, png and webp decoders compiled in, and the child reads its input from standard input with limits; a sandbox needs system calls that code without <code>unsafe</code> cannot make today. The row of denial of service above says what the limits stop (crashes and bombs), not a compromise. On a small host, five previews at once may use 5 GiB of heap</td><td>M4-F121 (landlock or seccomp on Linux, a separate user, a restricted token on Windows once a safe crate exists)</td></tr>
 <tr><td>A person who may change their handle can learn once for each change whether one handle is taken (<code>name.taken</code>, or the handle of a group or a role), because a free handle is changed at once and starts the 7-day clock; a few refused tries are allowed first</td><td>Handles are made from names, so a guess is cheap, but the limits leave a person at most 20 answers <em>taken</em> in a day (<code>TAKEN_ANSWERS_PER_DAY</code>, counted per person, reserved in one step so parallel tries cannot pass the last one, after which every handle gets the same <em>try again later</em>) and, for each change, one more. The day is a fixed window from the first answer counted, so a person can get up to about 40 across the turn of a day; each server process counts for itself and a restart forgets the count, so with several processes the bound is 20 a day for each process; the refused tries of a minute only pace it. A person who never changed their handle has no 7-day clock, so the bound is 20 a day without end, for each account; the handle is shown wherever a mention is, and a mention follows <em>Who sees people</em></td><td>When a handle is judged apart from the rest of the person's data</td></tr>
@@ -1882,6 +1902,45 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </tbody></table>
 </div>
 <p>The delete and export paths for a person are M9 work and are named in the follow-ups: the bytes of files M4-F52, the handles M4-F64, notifications and files in the export M4-F93. Until then, <em>Remove a person</em> (PRIV-04) is not built.</p>
+<h3 id="s12-7"><button class="sec" data-sec>§12.7</button>Personal data in M6</h3>
+<p>M6 adds the time of people: what they spent it on (time entries and the timer) and when they worked (work days and breaks). Both are employee data that German law and the GDPR treat with care (PRIV-09); the decisions are in <a href="#adr-0035">ADR-0035</a>. The marks below are decided here; WP-05 and WP-06 write them on their entities, and <code>cargo xtask gen privacy</code> lists them on the generated page <code>docs/privacy/personal-data.md</code>. Enforced by: DATA-MARKS.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Entity (package)</th><th>Field</th><th>Personal data</th><th>Category</th><th>Legal basis</th></tr></thead><tbody>
+<tr><td>Work day (WP-06)</td><td>person</td><td>yes</td><td><code>identity</code></td><td><code>legal_obligation</code></td></tr>
+<tr><td>Work day (WP-06)</td><td>date, periods (start, end), time zone, the warnings of the rules</td><td>yes</td><td><code>employee_time</code></td><td><code>legal_obligation</code></td></tr>
+<tr><td>Break (WP-06)</td><td>start, end</td><td>yes</td><td><code>employee_time</code></td><td><code>legal_obligation</code></td></tr>
+<tr><td>Event of a change of a past day (WP-06)</td><td>the reason, the old values</td><td>yes</td><td><code>employee_time</code></td><td><code>legal_obligation</code></td></tr>
+<tr><td>Time entry (WP-05)</td><td>person</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Time entry (WP-05)</td><td>issue, date, start (from a timer), length, note, <em>Billable</em>, the values of <em>Activity</em>, <em>Cost center</em> and other own fields</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Timer (WP-05)</td><td>person</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Timer (WP-05)</td><td>issue, start, the mark of a long timer</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Working-time settings (WP-06, WP-11)</td><td>preset, rules, keep period, <em>Totals only</em>, <em>Billable</em></td><td>no</td><td>–</td><td>–</td></tr>
+</tbody></table>
+</div>
+<pre class="mermaid">flowchart LR
+  person(["Person"])
+  hr(["Holder of See working hours of others&lt;br/&gt;(the role HR)"])
+  subgraph bb["Bugaboo"]
+    timer["Timer&lt;br/&gt;person, issue, start"]
+    entries["Time entries&lt;br/&gt;person, issue, date, length,&lt;br/&gt;note, Activity, Cost center"]
+    days["Work days and breaks&lt;br/&gt;person, date, start, end,&lt;br/&gt;zone, warnings"]
+    reasons["Reasons and old values&lt;br/&gt;(events of past days)"]
+    notes["Notification to the person&lt;br/&gt;when somebody else changed a day"]
+    seclog["Security log&lt;br/&gt;gifts of HR, changes of the settings"]
+  end
+  person -- "starts, stops" --&gt; timer --&gt; entries
+  person -- "records" --&gt; days
+  hr -- "reads (as ADR-0035, decision 8 allows)" --&gt; days
+  hr -- "changes, with a reason" --&gt; reasons --&gt; notes --&gt; person
+  days --&gt; reasons
+  hr -.-&gt; seclog</pre>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th><th>Where it goes</th></tr></thead><tbody>
+<tr><td>Work days and breaks, with their warnings</td><td>Recording working time as German law asks, and checking it against the working-time rules</td><td>Art. 6(1)(c) GDPR, legal obligation: ArbZG §16 (2) and § 3 (2) no. 1 ArbSchG as the Federal Labour Court reads it (1 ABR 22/21, 2022)</td><td>The keep period (ADR-0035, decision 7); then the daily job deletes them. A legal hold after <em>Remove a person</em> (architecture §7, <em>Legal holds</em>)</td><td>The person; holders of <em>See working hours of others</em>, as ADR-0035, decision 8 allows. Never into a search, an export or an AI tool in M6</td></tr>
+<tr><td>Reasons of changes and the old values</td><td>Trustworthy records (TIME-10)</td><td>(c) legal obligation</td><td>With their day</td><td>As the day; the notification of a change by somebody else goes to the person of the day only</td></tr>
+<tr><td>Time entries (length, date, note, accounting fields)</td><td>Accounting of work on issues, billing</td><td>(b) contract</td><td>No rule of their own in M6; 10 years with <em>Keep and delete rules</em> (PRIV-05, M9)</td><td>The person; others as <em>Who sees people</em> (the kind <em>Time entries</em>) and the field levels (<em>Time spent</em>) allow; the totals count only what the reader sees</td></tr>
+<tr><td>The running timer</td><td>Keeping the time on every device until it is saved</td><td>(b) contract</td><td>Until it is stopped or thrown away</td><td>The person only; the long-timer notification goes to the person</td></tr>
+</tbody></table>
+</div>
+<p>Nothing about time leaves the server, except the e-mail of a notification to the person themselves when they keep e-mail on (ADR-0033). No outside service and no AI reads working hours (COMP-10).</p>
 
 <h2 id="s13"><button class="sec" data-sec>§13</button>Decision records</h2>
 <p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.</p>
@@ -2395,6 +2454,16 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <ul>
 <li><strong>Statistics of the database.</strong> <code>statistics.refresh</code> is a daily job, queued at every start like the others: on SQLite it runs SQLite's own <code>ANALYZE</code> of each table that SQLite reports out of date (it has rows and no statistics yet, or grew or shrank tenfold), one table at a time, and writes an empty table down as empty; otherwise it does nothing. PostgreSQL keeps its own statistics, and the job does nothing there. It writes no event: it changes no data. Idempotent: a second round finds nothing out of date (<code>adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_nothing</code>, both databases).</li>
 </ul>
+<h4>Amendment (M6, time and working hours)</h4>
+<ul>
+<li><strong>Kinds of M6</strong> (<a href="#adr-0035">ADR-0035</a>):
+<ul>
+<li><code>working-hours.delete-old</code> is a daily kind, queued at every start like the others: it deletes the work days (with their breaks and the events of their changes) whose date is older than the keep period (ADR-0035, decision 7). Idempotent: a second round finds nothing older.</li>
+<li><code>timers.long-running</code> is not daily: it is queued once for each timer, when the timer starts, for its start plus the longest day of the working-time rules (ADR-0035, decision 3). It marks the timer and queues the one notification; a timer that was stopped, switched or thrown away before then leaves it nothing to do, and a timer that was already marked is not told twice. A <em>Change start time</em> queues the job of the new start; the job of the old start finds a start that differs from its payload and does nothing.</li>
+</ul>
+</li>
+<li><strong>The statistics after the start round</strong> (M5-F168). <code>statistics.refresh</code> is no longer part of the round of jobs that every start queues at once: on SQLite its <code>ANALYZE</code> held the write lock of a large table for up to 9.7 s while the first people signed in. Its first round runs later than the start round, and a write of upkeep that meets SQLite's busy answer is tried again instead of failing; the busy timeout of the other writers stays as it is. WP-04 writes the numbers (when the first round runs, how often a write is tried again) into this amendment when it builds them.</li>
+</ul>
 
 <!-- 0018-settings-registry.md -->
 <h3 id="adr-0018"><button class="sec" data-sec>§13.18</button>ADR-0018: One settings registry drives storage, API and dialogs</h3>
@@ -2639,6 +2708,10 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </ul>
 <h4>Enforced by</h4>
 <p>ARCH-PERSON-REF, SEC-MATRIX (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M6, the names on <em>Working hours of others</em>)</h4>
+<ul>
+<li>On the page <em>Working hours of others</em> (<a href="#adr-0035">ADR-0035</a>, decision 8), a holder of <em>See working hours of others</em> sees the names of the people whose working hours they may see, whatever the levels of <em>Who sees people</em> are elsewhere: the page exists to read one named person's hours. It is a place of its own for <code>PersonRef</code>, which <code>bb-policy</code> resolves there to <em>Names</em> for a holder of the permission, in the same way as the places where people who manage see names (ADR-0025, decision 11). Everywhere else, a time entry and its person follow the kind <em>Time entries</em> as before.</li>
+</ul>
 
 <!-- 0023-dev-ports-and-test-setup.md -->
 <h3 id="adr-0023"><button class="sec" data-sec>§13.23</button>ADR-0023: Development ports and test setup</h3>
@@ -2809,6 +2882,31 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </ul>
 <h5>14. Who may change a setting</h5>
 <p>The registry's <code>changed_by</code> (ADR-0018) maps to the catalogue: <em>Administrators</em> → <em>Change organization settings</em>; <em>Project leads</em> → <em>Change project settings</em> on that project; <em>Each person</em> → only their own value. Enforced by: ARCH-SETTINGS, and the test <code>cfg_06_only_administrators_change_organization_values_and_each_person_only_their_own</code> (WP-07).</p>
+<h4>Amendment (M6, the permissions of time and the starting role <em>HR</em>)</h4>
+<p>The maintainer decided M6-Q4 and M6-Q10 by taking the recommendations as written; <a href="#adr-0035">ADR-0035</a> (decisions 2 and 8) says why. What changes here:</p>
+<ul>
+<li>
+<p><strong>The topic <em>Time</em></strong> joins the catalogue (decision 1) with three permissions, each with its sentence, kind and starting values in the same change as its routes:</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Permission</th><th>Counts</th><th>Kind</th><th>Starting roles that have it</th></tr></thead><tbody>
+<tr><td><em>Book time</em>: book one's own time on an issue one can see, and change and delete one's own entries</td><td>project</td><td><em>Change</em></td><td><em>Administrator, Project lead, Team member, Contributor</em></td></tr>
+<tr><td><em>See working hours of others</em></td><td>organization</td><td><em>See</em></td><td><em>HR</em> only</td></tr>
+<tr><td><em>Change working hours of others</em> (when it asks for a reason: ADR-0035, decision 7)</td><td>organization</td><td><em>Manage</em></td><td><em>HR</em> only</td></tr>
+</tbody></table>
+</div>
+</li>
+<li>
+<p><strong>The seventh starting role, <em>HR</em>,</strong> holds <em>See working hours of others</em> and <em>Change working hours of others</em> and nothing else; it comes after <em>Guest</em> in the order of roles. Like every starting role it is a copy made once at the first start (and on the upgrade of an existing server), with <em>Reset to the starting permissions</em> (decision 4). <strong>Nobody has it at the start, and the <em>Administrator</em> role does not include either permission.</strong> The glossary's <em>Role</em> and <em>Starting role</em> name seven roles from then on.</p>
+</li>
+<li>
+<p><strong>How an administrator gives it.</strong> An administrator gives <em>HR</em> for the whole organization in <em>Who has which role</em>, to a group (for example <em>Payroll</em>) or to a person, like any role (decision 2). The no-escalation rule (decision 6) gets one exception, for exactly these two permissions: a person who holds <strong>both</strong> <em>Manage roles</em> and <em>Decide who has which role</em> for the whole organization (the pair of the last-administrator rule) may give a role that holds them without holding them. The reason: nobody holds the two permissions at the start, so without the exception nobody could ever give <em>HR</em>. Such a person can therefore give <em>HR</em> to themselves; that is an accepted risk, and the gift is in the security log (architecture §12). Adding the two permissions to a role keeps the rule: only a person who holds them adds them.</p>
+</li>
+<li>
+<p><strong>Keys.</strong> <em>See working hours of others</em> and <em>Change working hours of others</em> join the list of what no key holds (decision 8, <code>NOT_FOR_KEYS</code>), which grows from twelve entries to fourteen: reading or changing other people's working hours stays in the app, where the person is signed in.</p>
+</li>
+<li>
+<p><strong>The security log.</strong> A gift or a removal of <em>HR</em> is a change of permissions like any other (decision 9); what else of time goes into the security log is in ADR-0035, decision 8.</p>
+</li>
+</ul>
 <h4>Consequences</h4>
 <ul>
 <li>WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, <em>No access</em> and two access keys.</li>
@@ -2912,7 +3010,7 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
         color "border" "#3b414d" more="#999ca2"
     }
 }</code></pre>
-<p>A theme file sets <strong>only the colors it changes</strong> (<code>more=</code> is its color for a device that asks for more contrast), so no value is written twice: Daylight's file is empty, and a theme that sets no color looks like Daylight. A line of a theme replaces the base's color and its <code>more=</code> together; a color the theme does not set keeps both from the base. A <code>more=</code> that is the color itself says nothing and is refused. With more contrast, a theme's block says again every color that the dark theme that starts changes there (the dark fallback of the device weighs as much as the theme's block and comes before it), so a theme never shows Dusk's color for more contrast. <code>forced=</code> and the choices stay on the line of the base.</p>
+<p>A theme file sets <strong>only the colors it changes</strong> (<code>more=</code> is its color for a device that asks for more contrast), so no value is written twice: Daylight's file is empty, and a theme that sets no color looks like Daylight. A line of a theme replaces the base's color and its <code>more=</code> together; a color the theme does not set keeps both from the base. A <code>more=</code> that is the color itself says nothing and is refused. With more contrast, a theme's block says again every color that the dark theme that starts changes there (the dark fallback of the device weighs as much as the theme's own block and comes after the theme's usual block, so a color its more-contrast block left out would be Dusk's), so a theme never shows Dusk's color for more contrast. <code>forced=</code> and the choices stay on the line of the base.</p>
 </li>
 <li>
 <p><strong>The file name is the theme's ID</strong> (<code>dusk.kdl</code> is the theme <code>dusk</code>, and the file says <code>theme "dusk"</code> so that it reads on its own; the reader refuses a file whose two names differ). The list of themes is the list of files: there is no <code>themes</code> block. The files are read in name order and listed light themes first, each kind in name order, which is the order of <code>themeIds</code> in <code>tokens.ts</code>, of the choices in <code>themes.rs</code> and of the blocks of the sheet. A new built-in theme is one new file (and its name in the message catalog); <code>tokens.ts</code> and <code>themes.rs</code> follow without any other change.</p>
@@ -3508,6 +3606,13 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li><strong>The types of the input and the output</strong> of the module are generated from the Rust structs (<code>cargo xtask gen word-types</code> writes <code>web/packages/wasm/src/wording.generated.ts</code>, DOC-GENERATED holds it), and the module refuses an input it cannot read with an error that the app throws in development and under test, so a mismatch is found at once and not shown as empty words.</li>
 <li><strong>The input of the module</strong> is built by each side from its own data (the API items of the browser, the shaped notifications of the server): the names of people, the name of a field and, for a number, a day or a moment, the words of the region. Mapping a data shape to that input is not wording.</li>
 </ul>
+<h4>Amendment (M6, the time of day and lengths of time)</h4>
+<p>The maintainer decided M6-Q2 (M5-F137) by taking the recommendation as written. It changes what the vectors of the wording amendment hold; the approval of the two implementations stays as it is, and no new exception is added.</p>
+<ul>
+<li><strong><em>Region</em> has a fourth choice, <em>Time of day</em>:</strong> <em>24-hour (14:30)</em> or <em>12-hour (2:30 PM)</em>. Its default follows the date format: <em>Match my device</em> takes the device's clock, and every fixed date format starts with <em>24-hour</em>. A server does not know the device, so an e-mail takes the organization's choice for a person who left it on the device, like the other choices of <em>Region</em>.</li>
+<li><strong>One writer for each kind of value.</strong> A date, a moment (a date and a time of day), a time of day and a length of time are written from the person's <em>Region</em> by one helper each: <code>bb_core::wording</code> for e-mails and the lazy parts, and the synchronous helpers of <code>web/app/src/shared/</code> for the screens that cannot wait for the module. So a date written day first never stands beside a 12-hour clock unless the person chose both, and the timer and the timesheet write their times the same way. The writer of lengths has three forms, written here only: the grid form <code>1:30</code> (a grid and a running timer), the short form <code>1h 30m</code> (a field, a list column, a short status line, a history line) and the words <code>1 hour 30 minutes</code> (a sentence: a warning, a window, a notification, an e-mail), for people who do not read abbreviations. UX §4.9 lists which screen uses which. The rule for the screens is written in coding-standards §4 (TXT-DATES); the two implementations are held together by DOC-GENERATED and the browser test of the vectors, as before.</li>
+<li><strong>What the vectors hold from M6:</strong> both clocks with every fixed date order (day first, month first, year first), the moments around midnight and noon in each, and the lengths of time that the one reader of <code>bb_core::time</code> reads (<code>1:30</code>, <code>1.5</code>, <code>1,5</code> with a decimal comma, <code>90m</code>) with what the writer gives back for each. <code>cargo xtask gen word-vectors</code> writes them from Rust, as before.</li>
+</ul>
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
 
@@ -3571,8 +3676,185 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
 
+<!-- 0035-time-on-issues-and-working-hours.md -->
+<h3 id="adr-0035"><button class="sec" data-sec>§13.35</button>ADR-0035: Time on issues and working hours</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-31 · refines TIME-01, TIME-02, TIME-03, TIME-04, TIME-08, TIME-09, TIME-10, TIME-12, TIME-13, PRIV-09, <a href="#adr-0006">ADR-0006</a>, <a href="#adr-0015">ADR-0015</a>, <a href="#adr-0022">ADR-0022</a> and <a href="#adr-0025">ADR-0025</a>; decisions M6-Q3…Q11</p>
+<h4>Context</h4>
+<p>M6 lets people record two things about their time. The first is what they spent it on: a timer or a typed length on an issue, with <em>Activity</em> and <em>Cost center</em> for accounting (TIME-01, TIME-02, TIME-13). The second is when they worked: the start, the end and the breaks of each day, which German law asks every employer to record (TIME-08; the Federal Labour Court's ruling of 2022), checked against the working-time rules (TIME-09) and kept as a record that can be trusted (TIME-10).</p>
+<p>Both are about employees, so they meet the rules that exist already: working time is sensitive employee data (PRIV-09), nothing scores or ranks people (COMP-10, ADR-0013), people are shown only as <em>Who sees people</em> allows (PRIV-12, ADR-0022), and a total never tells about something the reader cannot see (PRIV-13). Every stored field is marked <code>employee_time</code> (ADR-0015). Usual work days, away times and public holidays for planning are something else and come in M7 (ADR-0030); M6 neither reads nor writes them.</p>
+<p>The maintainer answered M6-Q3 to M6-Q11 by taking every recommendation of the <span title="../milestones/M6/README.md in the repository">M6 plan</span>. This record writes those answers down, so the packages that build the server and the screens read one source.</p>
+<h4>Decision</h4>
+<p><strong>Two records, kept apart on purpose.</strong> A <em>time entry</em> says what time was spent on, for accounting: a person, an issue, a date, a length, a note and the fields of accounting. A <em>work day</em> says when a person worked, for the law: a start, an end, breaks and the person's time zone. They live in two modules (<code>bb-app::time</code> and <code>bb-app::working_hours</code>, each with its own tables) and never derive one from the other: a timer does not start a work day by itself, and a work day books no time on an issue. The timesheet shows both and compares them (<em>Booked on issues</em>, <em>Working hours not booked on issues</em>), and that comparison is the only place where they meet. Enforced by: review: a reviewer of the two server packages checks that neither module writes the other's tables or makes a record from the other's, and that the comparison reads time spent only through <code>TimeSpentStore</code> (decision 4).</p>
+<h5>1. Time entries, <em>Activity</em>, <em>Cost center</em> and <em>Billable</em> (M6-Q3, M6-Q7)</h5>
+<ul>
+<li>A <strong>time entry</strong> holds its person, its issue, its date, its length in whole minutes (1 to <code>TIME_ENTRY_MINUTES_MAX</code>, 1,440; the constant is defined once in <code>bb_core::time</code>, where the one reader of typed lengths refuses more than it, and <code>bb-app::time</code> reuses it), an optional note (plain text, at most <code>TIME_NOTE_CHARS_MAX</code>, 2,000 characters, shown as text and never as HTML), <em>Billable</em> and the values of its own fields in <code>field_value</code> (ADR-0006). It has a version, and every change is a command with its event (ARCH-EVENTS, ARCH-VERSIONED).</li>
+<li><strong>Its start.</strong> An entry saved from a timer (by <em>Stop</em> or <em>Switch issue</em>) also stores its start, the moment the timer started, and its date is the person's day of that start (decision 5). An entry made with <em>Add time</em> has a typed date and no start.</li>
+<li><strong>Limits.</strong> A person makes at most <code>TIME_ENTRIES_PER_DAY_MAX</code> (200) time entries a day. The other constants of decisions 1 and 3 are defined once in <code>bb-app::time</code> (WP-05) with their messages. Enforced by: review (a reviewer checks that the routes use the named constants and nothing else), backed by the tests of WP-05.</li>
+<li><strong>The length is read and written once.</strong> A typed length (<code>1:30</code>, <code>1.5</code>, <code>90m</code>) is read by the one reader of <code>bb_core::time</code>, and a length is written by the one writer of the wording (ADR-0033, amendment M6). Enforced by: TXT-DATES on screens, and review: no second reader of typed lengths exists.</li>
+<li><strong><em>Activity</em> and <em>Cost center</em> are starter fields:</strong> own fields of time entries that Bugaboo makes at the first start and on the upgrade of an existing server, like the starting workflow. Administrators rename, change or remove them like any own field (CF-08). They are not built-in fields: they leave the field catalogue of <code>bb-core</code>.
+<ul>
+<li>Bugaboo finds each by a <strong>stable mark</strong> on the field (its starter key, <code>activity</code> or <code>cost-center</code>), never by its name, so a renamed <em>Activity</em> still fills the <em>Stop timer</em> window (the lesson of M5-F43). Enforced by: review (no code compares the name of a field with a word), backed by the test <code>time_13_activity_and_cost_center_are_found_by_their_mark_after_a_rename</code> of WP-05.</li>
+<li><em>Activity</em> is a <em>Pick one</em> list with <em>Development, Testing, Documentation, Meetings, Support</em>. <em>Cost center</em> is a <em>Pick one</em> list whose choices have a number and a name (<em>4100 Product development</em>), sorted by the number; it starts empty.</li>
+<li><strong>The default of an entry</strong> is the value on its issue, then on its project, then on the projects above (the nearest wins). Neither field is required at the start; an administrator can make either required, and an entry without a required value is refused with a sentence that names the field.</li>
+</ul>
+</li>
+<li><em><strong>Billable</strong></em> ("time that can be charged to a customer") is a yes-or-no on a time entry. Whether it is offered is an organization setting, off at the start; an administrator switches it on in <em>Organization settings › Work › Working hours</em>, and only then do the <em>Stop timer</em> window, <em>Add time</em> and the timesheet show the box. Switching it off hides the box and keeps the values stored.</li>
+</ul>
+<h5>2. Who books time: <em>Book time</em> (M6-Q4)</h5>
+<ul>
+<li>A new project permission, <em><strong>Book time</strong></em>: book one's own time on an issue one can see. The starting roles from <em>Contributor</em> up have it; <em>Viewer</em> and <em>Guest</em> do not. Its row in the catalogue (topic <em>Time</em>, kind, starting values) is in ADR-0025, amendment M6.</li>
+<li>It also covers changing and deleting one's own entries. Nobody changes or deletes another person's entries in M6; that is TIME-06 (1.0).</li>
+<li>Enforced by: ARCH-PERMS (every route of time declares it or <code>own-account</code>), SEC-MATRIX (the routes of the timer and of time entries for every starting role).</li>
+</ul>
+<h5>3. The timer (M6-Q5)</h5>
+<ul>
+<li><strong>One running timer per person, kept on the server.</strong> Every device shows the same timer, and closing the browser does not stop it. The store holds at most one timer for a person (a unique key on the person), so two devices that start at once get one timer and one refusal with the conflict. Enforced by: TEST-CONCURRENT ("Timers and working hours start and stop at the same time", architecture §11), backed by the test <code>time_01_one_person_has_one_running_timer_on_every_device</code> of WP-05.</li>
+<li><strong>What a person does with it:</strong> <em>Start</em> (on an issue the person can see and book on), <em>Stop</em>, <em><strong>Switch issue</strong></em>, <em><strong>Change start time</strong></em> and <em><strong>Throw away</strong></em> (saves nothing). A person starts or switches at most <code>TIMER_CHANGES_PER_SECOND</code> (1) times a second.</li>
+<li><em><strong>Change start time</strong></em> takes a moment that is never in the future and never before the end of the person's last time entry <strong>that has a start</strong> (decision 1). Entries made with <em>Add time</em> have no start and do not bound it.</li>
+<li><em><strong>Switch issue</strong></em> is starting a timer on another issue while one runs: the time so far is saved as a time entry with the defaults of its issue, without a window, and the new timer starts. Two cases differ:
+<ul>
+<li>when a field that is required (<em>Activity</em>, <em>Cost center</em> or another own field) has no default on that issue, <em>Switch issue</em> opens the <em>Stop timer</em> window for the running entry instead of saving it silently, and the new timer starts when that entry is saved; when the person closes the window without saving, the old timer keeps running and no new one starts;</li>
+<li>when the timer ran for less than a minute, nothing is saved, the new timer starts, and the person is told in one sentence (<em>"Less than a minute on WEB-142, so no time was saved."</em>).</li>
+</ul>
+</li>
+<li><em><strong>Stop</strong></em> opens the <em>Stop timer</em> window: the note, <em>Activity</em> and <em>Cost center</em> filled in from the issue, and <em>Billable</em> while it is on.</li>
+<li><strong>Whole minutes.</strong> A timer is saved as whole minutes, rounded down. Under one minute nothing is saved, and the window says so.</li>
+<li><strong>A timer longer than one entry can be.</strong> When a timer has run longer than <code>TIME_ENTRY_MINUTES_MAX</code> (1,440 minutes), <em>Stop timer</em> asks the person to change the start time first and saves nothing until the length fits; Bugaboo never cuts the time by itself.</li>
+<li><strong>The long-timer warning.</strong> A timer that runs longer than the longest day of the organization's working-time rules (10 hours in the preset <em>Germany</em>, and 10 hours with <em>No rules</em>) shows a warning on the timer and sends the person one notification, by the job <code>timers.long-running</code> (how it is queued and when it does nothing: ADR-0017, amendment M6).</li>
+<li><strong>The work day and the timer</strong> stay two records: starting a timer while the work day has not started asks <em>"Start your work day too?"</em>, and <em>End work day</em> while a timer runs asks <em>"Stop the timer on WEB-142 too?"</em>. Neither starts or ends anything without the person's answer.</li>
+</ul>
+<h5>4. <em>Estimated time</em>, <em>Time left</em>, totals and the port of time spent (M6-Q6)</h5>
+<ul>
+<li>
+<p><em><strong>Estimated time</strong></em> and <em><strong>Time left</strong></em> are lengths in minutes stored on the issue and changed like any field (a version, an event, the history, field levels). <em><strong>Time spent</strong></em> is the total of the issue's time entries; it is read, never typed.</p>
+</li>
+<li>
+<p><strong>The worked-out <em>Time left</em>.</strong> While nobody has typed <em>Time left</em>, it is <em>Estimated time</em> minus <em>Time spent</em>, never below zero, and the screens show it in the quiet style of a value worked out. A typed value counts until it is cleared. It is worked out in one place, in <code>bb-core</code>.</p>
+</li>
+<li>
+<p><strong>Totals.</strong> An issue shows its own numbers and, when it has sub-issues, the totals with them (every level below). A project shows the totals of its issues and its sub-projects.</p>
+</li>
+<li>
+<p><strong>A total counts only what the reader may see:</strong> only the issues the reader sees and only the fields the reader may read, by the same compiled search that gives the list (ADR-0004), so a total never tells about a hidden issue or a hidden field (PRIV-13). Enforced by: SEC-MATRIX (the totals under each starting role), ARCH-DB-PARITY (the same totals on both databases).</p>
+</li>
+<li>
+<p><strong>One definition of time spent in SQL.</strong> The minutes spent on an issue (the sum of the lengths of its time entries) are written once, as one expression of the search compiler in <code>bb-store</code> (<code>search/</code>), which the field <em>Time spent</em> of the search language uses. <code>spent_on_issues</code> and <code>spent_on_search</code> of the port below reuse that expression and write no second sum. Enforced by: ARCH-DB-PARITY (the same numbers on both databases), and review: a second sum of time entries anywhere in <code>bb-store</code> is a finding.</p>
+</li>
+<li>
+<p><strong>The worked-out <em>Time left</em> in a search</strong> (to filter, sort or show it as a column) is one SQL expression of the compiler too. It is the second place of the rule of <code>bb-core</code>, so it is held to it like the approved pair of ADR-0033 (coding-standards §1): <code>cargo xtask gen time-vectors</code> writes <code>tools/testdata/time-left.json</code> from <code>bb-core</code> (estimate, time spent, a typed value or none, and the answer), DOC-GENERATED fails when the file differs from the code, and the test <code>time_03_the_compiled_time_left_matches_the_vectors</code> runs every case through the compiler on both databases. WP-07 adds the generator and the test.</p>
+</li>
+<li>
+<p><strong>The port of time spent, <code>TimeSpentStore</code>,</strong> in <code>crates/bb-app/src/time/spent.rs</code>, is how everything outside the module of time entries reads time spent. WP-05 implements it in <code>bb-store</code>; the totals (WP-07) and the timesheet's comparison with working hours (WP-06, WP-10) read it, and their tests use a fake of it until the store has it. Its shape:</p>
+<pre><code>/// The minutes booked on issues, for the readers outside the module of time entries.
+pub trait TimeSpentStore: ChangeStore + 'static {
+    /// The minutes booked on each issue of `issues`, one row for each, `Minutes(0)` for an
+    /// issue without entries. Reads only the issues in the list.
+    fn spent_on_issues(
+        &amp;self,
+        issues: &amp;[IssueId],
+    ) -&gt; impl Future&lt;Output = Result&lt;Vec&lt;(IssueId, Minutes)&gt;, Self::Error&gt;&gt; + Send;
+
+    /// The sum of the minutes booked on the issues that `request` finds: the compiled search
+    /// of the list, with the reader's sight and fields in it, in one statement. Like
+    /// `search_count`, it ignores `after` and `limit`.
+    fn spent_on_search(
+        &amp;self,
+        request: &amp;SearchRequest,
+    ) -&gt; impl Future&lt;Output = Result&lt;Minutes, SearchFailure&gt;&gt; + Send;
+
+    /// The minutes `person` booked on each date from `first` to `last` (both included), by
+    /// the date of each entry; a date without entries is left out.
+    fn booked_per_date(
+        &amp;self,
+        person: UserId,
+        first: Date,
+        last: Date,
+    ) -&gt; impl Future&lt;Output = Result&lt;Vec&lt;(Date, Minutes)&gt;, Self::Error&gt;&gt; + Send;
+}</code></pre>
+<p><code>Minutes</code> is the whole minutes of <code>bb_core::time</code> (the type of lengths, coding-standards §3), <code>Date</code> is <code>jiff::civil::Date</code>, and <code>SearchRequest</code> and <code>SearchFailure</code> are those of <code>bb-app::search</code>. <code>SearchRequest.me</code> is only what <code>me</code> means in the search text, never the reader whose rights count: those are in <code>sight</code> and <code>fields</code>.</p>
+</li>
+<li>
+<p><strong>The port decides nothing.</strong> It never reads an issue the caller did not pass: <code>spent_on_issues</code> reads the rows of the listed issues and no other, <code>spent_on_search</code> reads the issues the compiled search finds, whose visibility predicates the use case put into the request, and <code>booked_per_date</code> reads one person's own entries. Which issues a reader may see, whether they may read <em>Time spent</em>, and whose dates they may read are decided by the use case with the policy engine before it calls the port. <code>booked_per_date</code> is called for the person themselves only: <em>Working hours of others</em> shows no time on issues in M6 (decision 8). Enforced by: ARCH-AUTHZ-ONLY (only the use case turns what the port answers into an answer), SEC-MATRIX (the totals), and review: the port's methods take no person who reads.</p>
+</li>
+</ul>
+<h5>5. Work days and the person's day (M6-Q9)</h5>
+<ul>
+<li>A <strong>work day</strong> holds its person, its date, its periods of work (each a start and an end, none while it runs; the first start is the start of the day), its breaks (each with a start and an end), its time zone, the warnings of the working-time rules (decision 6) and a version. All moments are stored in UTC (architecture §7, <em>Time</em>). From the first start to the last end a work day lasts at most <code>WORK_DAY_HOURS_MAX</code> (24 hours), a constant that WP-06 defines once in <code>bb-app::working_hours</code>.</li>
+<li><strong>Periods and breaks.</strong> The time between two periods of a day is a break: the <em>Breaks</em> value of a day is its breaks plus those gaps, and a gap counts for the rules only in parts of at least the shortest break that counts, like any break (15 minutes in the preset <em>Germany</em>; the number is a rule of decision 6, a setting of the registry, and is written nowhere else). The screens show a day as its first start, its last end and its <em>Breaks</em>; they have no word for a period.</li>
+<li><strong>The person's day.</strong> The date of a moment for a person is the date it falls on in the person's time zone (<code>bb_core::time</code>, the one answer; across the changes of daylight-saving time a day has 23 or 25 hours). A work day belongs to the date it starts on in the person's zone and may end the next morning; it keeps the zone it started in, so moving to another zone later never moves a past day. A time entry's date is the person's day of its start. Enforced by: TEST-WORKING-TIME (day boundaries, daylight-saving changes, zones, a day that ends after midnight).</li>
+<li><em>Start work day</em>, <em>Start break</em>, <em>End break</em> and <em>End work day</em> record the moment of the tap; the timesheet's <em>Work day</em> rows take the same values typed afterwards.</li>
+<li><strong>A day left open stays open.</strong> A work day that was never ended is not ended by Bugaboo: the record has to show what really happened (TIME-10). The next <em>Start work day</em> first asks <em>"When did your work day on Thursday end?"</em>, and the answer is a change of a past day (decision 7). Enforced by: TEST-WORKING-TIME (no job and no use case ends a day without the person's answer).</li>
+<li><strong>One work day per person and date.</strong> The store holds at most one work day for a person and a date (a unique key). A second <em>Start work day</em> on the same date after <em>End work day</em> reopens that day with a new period on it; it never makes a second day. Two days of one person never overlap, and a break lies inside its day. Two devices that start a day at once get one work day and one refusal with the conflict. Changes of work days are limited for each person by a named constant that WP-06 defines in <code>bb-app::working_hours</code>. Enforced by: TEST-CONCURRENT, ARCH-VERSIONED, TEST-WORKING-TIME (the second start on a date reopens the day).</li>
+</ul>
+<h5>6. The working-time rules as data (M6-Q8)</h5>
+<ul>
+<li><strong>Rules are data, never code.</strong> The organization has one set of rules, made from a <strong>preset</strong> and stored as settings in the registry (ADR-0018): a number for each rule, which administrators may change. M6 has two presets:
+<ul>
+<li><em><strong>Germany</strong></em> (ArbZG): at most 10 hours of work a day (§3); a break of 30 minutes after 6 hours of work and of 45 minutes after 9 hours (§4); a break counts only in parts of at least 15 minutes, and nobody works more than 6 hours in a row without such a part (§4, the two details of M6-Q8); at least 11 hours of rest between the end of one work day and the start of the next (§5).</li>
+<li><em><strong>No rules</strong></em>: nothing is checked, and the long-timer warning uses 10 hours.</li>
+</ul>
+</li>
+<li>Sundays, public holidays and the average over six months are not checked in M6 (public holidays come with M7, ADR-0030).</li>
+<li><strong>Checked after every change, never a block.</strong> After every change of a work day the rules are checked for that day and for the days next to it (the rest between two days crosses midnight), with the rules in force at that change. A broken rule becomes a <strong>warning stored with the day</strong> (which rule, and the numbers that broke it), shown in plain sentences on the timesheet. Recording is never refused because of a rule, because the record has to show what really happened (TIME-09). A later change of the rules does not rewrite the warnings of days nobody changed. Enforced by: TEST-WORKING-TIME (the unit and property tests of every rule of the preset <em>Germany</em>, rest across days included).</li>
+<li>The rules are worked out in one pure place, <code>bb_core::working_time</code>, from the moments and the zone of the days; the store and the screens hold no copy of them (<code>bb-core</code> does no I/O, ARCH-PURE).</li>
+</ul>
+<h5>7. Past days, reasons and the keep period (M6-Q9, M6-Q11)</h5>
+<ul>
+<li><strong>When a change needs a reason.</strong> A <strong>reason</strong> in the person's own words (plain text, at most <code>REASON_CHARS_MAX</code>, 500 characters, a constant that WP-06 defines once in <code>bb-app::working_hours</code>) is asked for, and the change is refused without one:
+<ul>
+<li>for <strong>any change of another person's work day</strong>, past or today;</li>
+<li>for a change of <strong>one's own past day</strong>. A day is past from the next day on, in the zone of the day.
+A change is a new or changed start, end, period or break, or the end of a day left open.</li>
+</ul>
+</li>
+<li><strong>The old value is kept.</strong> The event of the change carries the old values and the reason, and the history of the day shows both.</li>
+<li><strong>The person is told.</strong> When somebody else changes a person's day, the person gets a notification in the app, and by e-mail if they keep that on (ADR-0033). The notification names who changed what, with the reason, and goes to that person only.</li>
+<li>Enforced by: ARCH-EVENTS (every change of a work day writes its event), TEST-WORKING-TIME (a change of another person's day, or of one's own past day, without a reason is refused; a change by somebody else notifies the person).</li>
+<li><strong>The keep period.</strong> Work days, their breaks and the reasons of their changes are kept for a number of whole years from their date, an organization setting. The preset <em>Germany</em> keeps them 2 years (ArbZG §16 (2)); with that preset the number cannot be set below 2 years. This is the one place of that rule; the other documents name it as "the keep period (ADR-0035, decision 7)". The daily job <code>working-hours.delete-old</code> (ADR-0017, amendment M6) deletes the days that are older. It deletes the events of those days too, so the old values and the reasons do not outlive the day (events follow the keep-and-delete rules, ADR-0007). Enforced by: ARCH-SETTINGS (the lower bound is the registry's), and review: a reviewer checks that the job's delete covers the events of the day.</li>
+<li><strong>Time entries keep no rule of their own in M6.</strong> Their 10 years come with the table of <em>Keep and delete rules</em> (PRIV-05, M9).</li>
+<li><em><strong>Remove a person</strong></em> (PRIV-04, M9) keeps the person's work days until their keep period ends, with the person shown as <em>Former user</em>; it does not delete them early, because the law asks for them (architecture §7, <em>Legal holds</em>).</li>
+</ul>
+<h5>8. Who sees working hours (M6-Q10)</h5>
+<ul>
+<li><strong>One's own, always.</strong> Every person sees and records their own working hours and time entries.</li>
+<li><strong>Others only with a permission.</strong> Two new organization permissions: <em><strong>See working hours of others</strong></em> and <em><strong>Change working hours of others</strong></em>. A new starting role, <em><strong>HR</strong></em>, holds both; nobody has it at the start, the <em>Administrator</em> role does not include either, and an administrator gives <em>HR</em> to a group (for example <em>Payroll</em>). The rows in the catalogue, the role, and how a person who decides roles for the whole organization gives it, are in ADR-0025, amendment M6.</li>
+<li><em><strong>Working hours of others</strong></em> is the one place that shows another person's working hours: a person picker, then that person's week in the timesheet's work-day rows, read only, or with <em>Change</em> for a holder of <em>Change working hours of others</em> (every change with a reason, decision 7), both as <em>Totals only</em> allows (below). It shows no time on issues.</li>
+<li><strong>Names on that page.</strong> A holder of <em>See working hours of others</em> sees the names of the people whose hours they may see there, whatever <em>Who sees people</em> says elsewhere, like the people who manage see names in <em>Organization settings</em> (ADR-0025, decision 11; ADR-0022, amendment M6). The page's answers carry each person as <code>PersonRef</code>, which <code>bb-policy</code> resolves for this place to <em>Names</em> when the reader holds the permission; no raw person data leaves the use case. Enforced by: ARCH-PERSON-REF.</li>
+<li><em><strong>Totals only</strong></em> (an organization setting, off at the start): while it is on, <em>Working hours of others</em> shows each person's total of the week and nothing else (no days, no starts, ends or breaks, no warnings), for every reader, holders of <em>See working hours of others</em> and of <em>Change working hours of others</em> alike. Because a change needs the day, <strong><em>Totals only</em> turns changes of other people's days off while it is on</strong>: a holder of <em>Change working hours of others</em> reads the totals and changes nothing. The team reports of 1.0 obey it too. This is the one place of that rule; the other documents point to "ADR-0035, decision 8".</li>
+<li><strong>Time entries of others.</strong> A list of another person's time entries waits for TIME-06 (1.0); on an issue, the entries of others show as <em>Who sees people</em> allows.</li>
+<li><strong><em>HR</em>'s starting levels</strong>, like every starting role's (ADR-0025, decision 4): every field <em>Hidden</em> and every kind of people information <em>Hidden</em>, because <em>HR</em> gives no work in projects; a person who also holds another role gets that role's levels, the most open one counting. The generated tables of architecture §7 show <em>HR</em> when WP-06 adds it to the definition in <code>bb-policy</code>.</li>
+<li><strong>Nowhere else.</strong> No other page, total, count, history, notification, e-mail, export or search tells a person about another's working hours. A time entry of another person shows only as <em>Who sees people</em> and the field levels allow (the kind <em>Time entries</em>; <em>Time spent</em> as a field). Enforced by: SEC-MATRIX (the routes of work days and of <em>Working hours of others</em> for every starting role, <em>HR</em> included, and with <em>Totals only</em> on), ARCH-PERSON-REF.</li>
+<li><strong>Every gift and every removal</strong> of these two permissions, and every change of the working-time settings (the preset, a rule, the keep period, <em>Totals only</em>, <em>Billable</em>), is written to the security log (PRIV-09: "changes to these settings are recorded"). Enforced by: ARCH-EVENTS, and the generated test <code>sec_15_every_change_of_permissions_is_in_the_security_log</code> of ADR-0025, decision 9, which covers the new permissions.</li>
+</ul>
+<h5>9. No scores, no rankings, no AI</h5>
+<ul>
+<li><strong>No route, export, search or list orders, ranks or compares people by a number of time</strong>: not by working hours, not by time booked, not by warnings, not by <em>Time spent</em>. A list of people is in the order of their names, and a total of a person is shown for that person alone. Grouping by person in the search language never gives a length per person.</li>
+<li><strong>No AI tool reads working hours.</strong> The tool registry has no tool that reads work days, breaks, warnings or the totals of a person, and none that reads another person's time entries (ADR-0013, COMP-10).</li>
+<li>Enforced by: SEC-MATRIX (no route of time takes an order by person or by a total), ARCH-AI-TOOLS (no tool reaches the use cases of working hours), and the tests <code>priv_09_…</code> of WP-05 and WP-06.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>New tables for timers, time entries, work days and breaks, each column with its personal-data mark (DATA-MARKS); the values of own fields of time entries in <code>field_value</code>. Every column that says something about a person's time is <code>employee_time</code> (architecture §12, <em>Personal data in M6</em>).</li>
+<li>New permissions in the catalogue (<em>Book time</em>, <em>See working hours of others</em>, <em>Change working hours of others</em>), a new topic <em>Time</em> and a new starting role <em>HR</em> (ADR-0025, amendment M6).</li>
+<li>New settings in the registry: the preset and each number of the working-time rules, the keep period, <em>Totals only</em> and <em>Billable</em>, all on <em>Organization settings › Work › Working hours</em> (UX §5.1).</li>
+<li>Two new kinds of job (ADR-0017, amendment M6), two new notification kinds (a long timer; a day changed by somebody else), two new checks, TEST-WORKING-TIME and TXT-DATES, and a generated file of vectors for the worked-out <em>Time left</em> (<code>tools/testdata/time-left.json</code>, decision 4), the second approved pair of coding-standards §1.</li>
+<li><em>Activity</em> and <em>Cost center</em> leave the field catalogue of <code>bb-core</code>, so the generated table of fields in architecture §7 loses their rows when WP-05 builds them as starter fields.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>One record for both (time entries carry the start and end of the day):</strong> a person who books two hours on an issue has not said when they worked, and a day's working hours are not the sum of what was booked on issues. The law asks for the second, accounting for the first. Rejected.</li>
+<li><strong>Ending a day left open by itself at midnight or after 10 hours:</strong> the record would show something that did not happen. Rejected (TIME-10).</li>
+<li><strong>Refusing a day that breaks a rule:</strong> a person who worked 11 hours could not record it, and the record would lie. Rejected (TIME-09).</li>
+<li><strong>Giving <em>See working hours of others</em> to the <em>Administrator</em> role:</strong> the people who set up the server would see everybody's working hours without anyone deciding it. Rejected; an administrator gives <em>HR</em> on purpose, and the security log records it.</li>
+<li><strong>A timer that lives in the browser:</strong> two devices would run two timers, and a closed browser would lose the time. Rejected (TIME-01).</li>
+<li><strong><em>Activity</em> and <em>Cost center</em> as built-in fields:</strong> an organization could not rename or remove them (TIME-13). Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>TEST-WORKING-TIME, TXT-DATES, TEST-CONCURRENT, SEC-MATRIX, ARCH-PERMS, ARCH-PERSON-REF, ARCH-AUTHZ-ONLY, ARCH-AI-TOOLS, ARCH-EVENTS, ARCH-VERSIONED, ARCH-SETTINGS, ARCH-PURE, ARCH-DB-PARITY and DATA-MARKS (see <code>tools/checks/catalog.toml</code>), backed by the named tests of WP-05, WP-06 and WP-07, and review where the decisions say so.</p>
+<!-- COMP-10 checked: nothing ranks, evaluates or compares people by time; no AI tool reads working hours or other people's time entries. -->
+
 <!-- 0036-license.md -->
-<h3 id="adr-0036"><button class="sec" data-sec>§13.35</button>ADR-0036: License: AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement</h3>
+<h3 id="adr-0036"><button class="sec" data-sec>§13.36</button>ADR-0036: License: AGPL-3.0-or-later, other terms from the maintainer, a contributor agreement</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-31</p>
 <h4>Context</h4>
 <p>Bugaboo is about to be published. The license of the code was open (the feature list said "decide later"). What is wanted:</p>
@@ -3605,7 +3887,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>DEP-LICENSES (the allow list has no GPL family, npm included, with cargo deny and <code>deny.toml</code>), review for the agreement in pull requests.</p>
 
 <!-- 0037-no-hosted-ci.md -->
-<h3 id="adr-0037"><button class="sec" data-sec>§13.36</button>ADR-0037: No hosted CI; verification is local</h3>
+<h3 id="adr-0037"><button class="sec" data-sec>§13.37</button>ADR-0037: No hosted CI; verification is local</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The repository had a workflow file for a hosted CI service, prepared for the day the code moves to a public Git host. Hosted runners cost money on private repositories, repeat what the development computer already runs, and need a second place where the commands are listed and kept in step with the first.</p>
@@ -3630,7 +3912,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>META-WIRING (hooks call only xtask); the rest by review.</p>
 
 <!-- 0038-public-identity-and-commit-messages.md -->
-<h3 id="adr-0038"><button class="sec" data-sec>§13.37</button>ADR-0038: Public identity and plain commit messages</h3>
+<h3 id="adr-0038"><button class="sec" data-sec>§13.38</button>ADR-0038: Public identity and plain commit messages</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>The history of the repository is published with it. Until now commits carried the identity Git found on the machine, the working vocabulary of the project (folder and branch names, work packages, milestone codes), session lines of the tool that wrote them, and merges in a form that named a branch and a package. None of that tells a reader of the public history what changed, and some of it is private.</p>
@@ -3658,7 +3940,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>SEC-PRIVATE (identity, private list, memory-note key) and GIT-COMMIT-MSG (message rules).</p>
 
 <!-- 0039-explicit-master-and-publishing-from-it.md -->
-<h3 id="adr-0039"><button class="sec" data-sec>§13.38</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
+<h3 id="adr-0039"><button class="sec" data-sec>§13.39</button>ADR-0039: Explicit master configuration; only the master publishes</h3>
 <p>Status: <strong>Accepted</strong> · 2026-11-01</p>
 <h4>Context</h4>
 <p>ADR-0024 keeps a master checkout that never builds, and recognised it by a path segment (a folder whose name starts with <code>OneDrive</code>). That is one person's setup, not the project's: anyone who clones into a synced folder would be locked out of building, and the master would be undetectable anywhere else. Publishing was also open: any checkout could push anywhere, and the public remote is reached from exactly one place.</p>
@@ -3685,7 +3967,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <p>BUILD-LOCATION (the mark is read before every build, test and install command); META-WIRING (the pre-push command of lefthook and the edit hook); the pre-push plan by its tests in <code>xtask/src/publish.rs</code> and <code>xtask/src/main.rs</code>.</p>
 
 <!-- 0040-version-numbers.md -->
-<h3 id="adr-0040"><button class="sec" data-sec>§13.39</button>ADR-0040: Version numbers follow the plan</h3>
+<h3 id="adr-0040"><button class="sec" data-sec>§13.40</button>ADR-0040: Version numbers follow the plan</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-31</p>
 <h4>Context</h4>
 <p>Bugaboo is published before it is finished. Its version number should tell a reader how far it is, and it should not be chosen by feeling. The plan already measures progress: <span title="../04-milestones.md in the repository">04-milestones</span> lists every milestone with the number of features it brings, and a finished milestone gets a tag <code>mN-done</code>.</p>

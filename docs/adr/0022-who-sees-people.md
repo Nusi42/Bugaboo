@@ -26,3 +26,7 @@ Names of people appear in many places: reported by, assigned to, last changed by
 ## Enforced by
 
 ARCH-PERSON-REF, SEC-MATRIX (see `tools/checks/catalog.toml`).
+
+## Amendment (M6, the names on *Working hours of others*)
+
+- On the page *Working hours of others* ([ADR-0035](0035-time-on-issues-and-working-hours.md), decision 8), a holder of *See working hours of others* sees the names of the people whose working hours they may see, whatever the levels of *Who sees people* are elsewhere: the page exists to read one named person's hours. It is a place of its own for `PersonRef`, which `bb-policy` resolves there to *Names* for a holder of the permission, in the same way as the places where people who manage see names (ADR-0025, decision 11). Everywhere else, a time entry and its person follow the kind *Time entries* as before.
