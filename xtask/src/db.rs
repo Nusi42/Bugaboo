@@ -33,6 +33,10 @@ const TOOL: &str = "postgresql";
 const PORT_KEY: &str = "postgres";
 const USER: &str = "bugaboo";
 const HOST: &str = "127.0.0.1";
+/// The database every cluster has, where the tools make and drop the others.
+const MAINTENANCE_DATABASE: &str = "postgres";
+/// Makes the statistics of every table from all its rows and clears what writing them left.
+const VACUUM_ANALYZE: &str = "VACUUM ANALYZE";
 const DATA_DIR: &str = "pg-data";
 const PASSWORD_FILE: &str = "pg-password";
 const LOG_FILE: &str = "pg-data.log";
@@ -362,9 +366,15 @@ impl Cluster {
     /// Runs one SQL statement as the owner of the cluster, in the maintenance database, and
     /// returns what it printed (one value per line, no headers).
     fn psql(&self, sql: &str) -> anyhow::Result<String> {
+        self.psql_in(MAINTENANCE_DATABASE, sql)
+    }
+
+    /// Runs one SQL statement as the owner of the cluster in the database `database`, outside a
+    /// transaction block, and returns what it printed (one value per line, no headers).
+    fn psql_in(&self, database: &str, sql: &str) -> anyhow::Result<String> {
         let out = Command::new(self.program("psql")?)
             .args(["-h", HOST, "-p", &self.port.to_string(), "-U", USER])
-            .args(["-d", "postgres", "-X", "-A", "-t", "-c", sql])
+            .args(["-d", database, "-X", "-A", "-t", "-c", sql])
             .env("PGPASSWORD", self.password()?)
             .stdin(Stdio::null())
             .output()
@@ -402,9 +412,7 @@ impl Postgres<'_> {
     /// An empty database called `name` (letters, digits and underscores; an old one of the same
     /// name is thrown away) and the address that opens it.
     pub(crate) fn empty_database(&self, name: &str) -> anyhow::Result<String> {
-        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
-        }
+        checked_name(name)?;
         self.cluster
             .psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
         self.cluster.psql(&format!("CREATE DATABASE \"{name}\""))?;
@@ -419,9 +427,7 @@ impl Postgres<'_> {
 impl Postgres<'_> {
     /// The address that opens the database `name`, which must be there (it is not made or emptied).
     pub(crate) fn url_of(&self, name: &str) -> anyhow::Result<String> {
-        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
-        }
+        checked_name(name)?;
         Ok(database_url(
             &self.cluster.password()?,
             self.cluster.port,
@@ -459,15 +465,30 @@ impl Postgres<'_> {
         Ok(())
     }
 
+    /// Makes the statistics of the database `name` from every row and clears what the writing of its
+    /// rows left behind (`VACUUM ANALYZE`), so a measurement on it never starts on a database whose
+    /// planner has no statistics yet (architecture §11, "Large dataset").
+    pub(crate) fn vacuum_analyze(&self, name: &str) -> anyhow::Result<()> {
+        checked_name(name)?;
+        self.cluster.psql_in(name, VACUUM_ANALYZE).map(|_| ())
+    }
+
     /// Throws the database `name` away, when there is one.
     pub(crate) fn drop_database(&self, name: &str) -> anyhow::Result<()> {
-        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
-        }
+        checked_name(name)?;
         self.cluster
             .psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))
             .map(|_| ())
     }
+}
+
+/// A name of a database that the tools make: letters, digits and underscores only, so it can stand
+/// in the text of a statement.
+fn checked_name(name: &str) -> anyhow::Result<()> {
+    if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        bail!("`{name}` is no name for a database: use letters, digits and underscores.");
+    }
+    Ok(())
 }
 
 /// Runs `work` with the throwaway PostgreSQL running: it is started when it is not running, and
@@ -552,9 +573,9 @@ fn database_url(password: &str, port: u16, database: &str) -> String {
     format!("postgres://{USER}:{password}@{HOST}:{port}/{database}")
 }
 
-/// The address of the maintenance database `postgres`.
+/// The address of the maintenance database.
 fn connection_url(password: &str, port: u16) -> String {
-    database_url(password, port, "postgres")
+    database_url(password, port, MAINTENANCE_DATABASE)
 }
 
 /// The server settings: loopback only, this port, no Unix socket, and no waiting for the disk
