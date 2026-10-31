@@ -4,7 +4,7 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget, Spacing};
+use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget};
 use bb_policy::StartingRole;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -33,7 +33,6 @@ pub(crate) fn a_presentation() -> Presentation {
                 width: None,
             },
         ],
-        spacing: Spacing::of("compact").unwrap_or_default(),
         group_by: Some("statusGroup".to_owned()),
         ..Presentation::default()
     }

@@ -2833,7 +2833,7 @@ part "list-nothing" {
     text-align center
 }
 
-// The controls above the list: Group by, Spacing, Customize.
+// The controls above the list: Group by and Customize.
 part "list-options" {
     display flex
     flex-wrap wrap
@@ -2841,7 +2841,7 @@ part "list-options" {
     gap "$space-3" "$space-5"
 }
 
-// The labels of Group by and Spacing stand on one line (R1); the button stands level with the controls.
+// The button stands level with the control of Group by, not with its label.
 part "list-options button" {
     align-self flex-end
 }
@@ -3468,12 +3468,6 @@ part "row.end" {
 part "row[variant=inline]" {
     flex-wrap nowrap
     align-items flex-start
-}
-
-// A row that does not wrap: its items stay together and the row is as wide as they are (Spacing and Customize).
-part "row[variant=nowrap]" {
-    flex-wrap nowrap
-    align-items flex-end
 }
 
 // A row whose items are as high as the row.

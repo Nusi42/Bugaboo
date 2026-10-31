@@ -1,17 +1,19 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { projectIssuesAddress, savedSearchAddress } from "../src/shared/paths.ts";
+import { paths, projectIssuesAddress, savedSearchAddress } from "../src/shared/paths.ts";
 import { projectIdOf, signedInAdmin } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
-import { inViewChoices, prepareLook, rowOf } from "./support/list-look.ts";
+import { grid, inViewChoices, listFrame, prepareLook, rowOf } from "./support/list-look.ts";
 import { type Instance } from "./support/server.ts";
 
 // What a list keeps (UX §4.2, QRY-06): a saved search keeps the view it was changed to, and
-// *Remove all filters* on a project's list that has a text of its own shows everything.
+// *Remove all filters* on a project's list that has a text of its own shows everything. How close
+// together the rows are is no part of it: every list follows the person's Spacing (ADR-0034,
+// amendment).
 
 let listId = "";
 
@@ -60,7 +62,9 @@ test("qry_06 a saved search keeps a change of its view with Save", async ({ page
   await page.goto(savedSearchAddress(listId));
   await expect(page.getByRole("heading", { level: 1, name: "Only critical" })).toBeVisible();
   await inViewChoices(page, async (scope) => {
-    await scope.getByRole("radio", { name: t("appearance.spacing.compact") }).check();
+    await scope
+      .getByLabel(t("issues.group-by"), { exact: true })
+      .selectOption({ label: t("issue-field.priority") });
   });
   await page.getByRole("button", { name: t("search.save-changes"), exact: true }).click();
   await expect(page.getByRole("button", { name: t("search.save-changes") })).toHaveCount(0);
@@ -70,6 +74,35 @@ test("qry_06 a saved search keeps a change of its view with Save", async ({ page
       params: { path: { search: listId } },
     }),
   );
-  expect(kept.presentation.spacing).toBe("compact");
+  expect(kept.presentation.group_by).toBe("priority");
+  expect(kept.presentation).not.toHaveProperty("spacing");
   await admin.dispose();
+});
+
+test("thm_06 every list follows Spacing in My settings › Appearance, and an old address's spacing is ignored", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.appearance);
+  await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await page.goto(projectIssuesAddress("WEB"));
+  await expect(grid(page)).toBeVisible();
+  await expect(listFrame(page)).toHaveAttribute("data-variant", /compact/u);
+  // Neither the list nor its Filters sheet has a Spacing of its own.
+  await inViewChoices(page, async (scope) => {
+    await expect(scope.getByText(t("issues.group-by"), { exact: true })).toBeVisible();
+    await expect(scope.getByText(t("appearance.spacing.legend"), { exact: true })).toHaveCount(0);
+  });
+  // A saved search follows it too.
+  await page.goto(savedSearchAddress(listId));
+  await expect(page.getByRole("heading", { level: 1, name: "Only critical" })).toBeVisible();
+  await expect(listFrame(page)).toHaveAttribute("data-variant", /compact/u);
+  // Back to Comfortable: an address written before, which still says Compact, opens Comfortable.
+  await page.goto(paths.appearance);
+  await page.getByRole("radio", { name: t("appearance.spacing.comfortable"), exact: true }).check();
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await page.goto(`${projectIssuesAddress("WEB")}?spacing=compact`);
+  await expect(grid(page)).toBeVisible();
+  await expect(listFrame(page)).not.toHaveAttribute("data-variant", /compact/u);
 });

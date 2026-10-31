@@ -3,10 +3,9 @@ import { pixelsOf, part, partOf } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { GridList, ListLayout, Virtualizer } from "react-aria-components";
 
-import type { SearchSpacing } from "../../shared/search-address.ts";
+import { useCompact } from "./use-compact.ts";
 
 export interface ListScrollProps {
-  readonly spacing: SearchSpacing;
   /** The list is being read again: a screen reader is told it is busy. */
   readonly busy: boolean;
   readonly children: ReactNode;
@@ -20,8 +19,8 @@ const keepsHeadersOutOfTheSelection = { disabledBehavior: "selection" } as const
  * real rows as they appear, so the height asked for here only makes the first guess of the scroll
  * bar a little off.
  */
-export function ListScroll({ spacing, busy, children }: ListScrollProps) {
-  const guess = pixelsOf(spacing === "compact" ? "size-row-compact" : "size-row");
+export function ListScroll({ busy, children }: ListScrollProps) {
+  const guess = pixelsOf(useCompact() ? "size-row-compact" : "size-row");
   return (
     <Virtualizer layout={ListLayout} layoutOptions={{ estimatedRowSize: guess }}>
       <GridList

@@ -12,8 +12,8 @@ import {
 import { readSearch, searchLocation } from "./search-address.ts";
 import { testSearchLanguage } from "./search-language-testing.ts";
 
-const project = builtInView({ everywhere: false, spacing: "comfortable" });
-const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
+const project = builtInView({ everywhere: false });
+const everywhere = builtInView({ everywhere: true });
 
 /** The words the person may read; a word is told from another by the language module's own rule. */
 const readable = ["id", "story points", "assigned to", "status group"];
@@ -25,7 +25,6 @@ describe("a list saved with the words of the old language (D3)", () => {
   const old = {
     columns: ["id", "storyPoints", "assignedTo"],
     widths: { storyPoints: 120 },
-    spacing: "comfortable",
     groupBy: "statusGroup",
   } as const;
 
@@ -33,7 +32,6 @@ describe("a list saved with the words of the old language (D3)", () => {
     expect(viewInWords(old, now)).toEqual({
       columns: ["id", "story points", "assigned to"],
       widths: { "story points": 120 },
-      spacing: "comfortable",
       groupBy: "status group",
     });
   });
@@ -57,7 +55,6 @@ describe("a list saved with the words of the old language (D3)", () => {
       {
         view: "list",
         columns: [{ field: "reportedBy", width: 90 }],
-        spacing: "compact",
         group_by: "statusGroup",
       },
       project,
@@ -78,7 +75,8 @@ describe("the view of a list that the address and the defaults give (UX 2.1, 4.2
       "changed",
     ]);
     expect(project.groupBy).toBe("status group");
-    expect(project.spacing).toBe("comfortable");
+    // How close together the rows are is no part of a list: it is the person's *Spacing*.
+    expect(project).not.toHaveProperty("spacing");
     expect(project.widths).toEqual({});
   });
 
@@ -90,15 +88,24 @@ describe("the view of a list that the address and the defaults give (UX 2.1, 4.2
   it("takes from the address what it says and from the defaults what it leaves out", () => {
     const state = readSearch({
       pathname: "/p/WEB/issues",
-      search: { cols: "id,title", widths: "title:300", spacing: "compact", group: "priority" },
+      search: { cols: "id,title", widths: "title:300", group: "priority" },
     });
     expect(viewOf(state, project)).toEqual({
       columns: ["id", "title"],
       widths: { title: 300 },
-      spacing: "compact",
       groupBy: "priority",
     });
     expect(viewOf(readSearch({ search: {} }), project)).toEqual(project);
+  });
+
+  it("opens an old address that still says the spacing, and ignores the spacing", () => {
+    const state = readSearch({
+      pathname: "/p/WEB/issues",
+      search: { cols: "id,title", spacing: "compact" },
+    });
+    expect(state).not.toHaveProperty("spacing");
+    expect(viewOf(state, project)).toEqual({ ...project, columns: ["id", "title"] });
+    expect(searchLocation(state).search).toEqual({ cols: "id,title" });
   });
 
   it("reads the word of no grouping as no grouping", () => {
@@ -118,7 +125,6 @@ describe("the view written back into the address", () => {
         ...project,
         columns: ["id", "title"],
         widths: { title: 300 },
-        spacing: "compact",
         groupBy: null,
       },
       project,
@@ -127,7 +133,6 @@ describe("the view written back into the address", () => {
       s: "status is Open",
       cols: "id,title",
       widths: "title:300",
-      spacing: "compact",
       group: noGrouping,
     });
   });
@@ -142,7 +147,6 @@ describe("the view as a saved search keeps it", () => {
   const view = {
     columns: ["id", "title"],
     widths: { title: 300 },
-    spacing: "compact",
     groupBy: "priority",
   } as const;
 
@@ -153,7 +157,6 @@ describe("the view as a saved search keeps it", () => {
         { field: "id", width: null },
         { field: "title", width: 300 },
       ],
-      spacing: "compact",
       group_by: null,
     });
   });
@@ -164,5 +167,10 @@ describe("the view as a saved search keeps it", () => {
     expect(viewFromPresentation({ ...saved, columns: [] }, everywhere).columns).toEqual(
       everywhere.columns,
     );
+  });
+
+  it("opens a saved search kept with a spacing before the spacing was the person's alone, and ignores it", () => {
+    const old = { ...presentationOf(view), spacing: "compact" };
+    expect(viewFromPresentation(old, project)).toEqual(view);
   });
 });

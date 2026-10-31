@@ -1,5 +1,6 @@
 //! Saved searches (QRY-06, CFG-02, ADR-0034): a name, the canonical search text, how the results
-//! are shown, the person who made it, and whom it is shared with.
+//! are shown, the person who made it, and whom it is shared with. How close together the rows are
+//! is not kept: every list follows the person's setting *Spacing* (ADR-0034, amendment).
 //!
 //! A saved search is private when it is made. The text is the one canonical text of the search
 //! language (ADR-0005, amendment M5): the tree never crosses the wire and is never stored. How the
@@ -12,7 +13,6 @@ use serde::Serialize;
 use crate::fields::ID_WORD;
 use crate::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use crate::personal::{Entity, NotPersonal};
-use crate::settings::{APPEARANCE_SPACING, DefaultValue};
 
 /// The most columns one saved search shows.
 pub const COLUMNS_MAX: usize = 40;
@@ -45,55 +45,6 @@ words_in_api!(
     "The kind of view a saved search is shown as. Other kinds come with their views."
 );
 
-/// How close together the rows are: *Comfortable* or *Compact*. It is one of the choices of the
-/// setting *Spacing* (`appearance.spacing`), which the registry of settings holds once, and the
-/// starting value is the default of that setting.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub struct Spacing(&'static str);
-
-// One of the words of the registry, never text a person wrote.
-impl NotPersonal for Spacing {}
-
-impl Spacing {
-    /// The spacing a choice of the setting stands for; `None` for text that is none of them.
-    #[must_use]
-    pub fn of(code: &str) -> Option<Self> {
-        APPEARANCE_SPACING
-            .definition()
-            .format()
-            .choices()
-            .iter()
-            .find(|choice| choice.value() == code)
-            .map(|choice| Self(choice.value()))
-    }
-
-    /// The choice, as stored and as written in the API.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        self.0
-    }
-
-    /// Every spacing there is, in the order of the setting.
-    pub fn all() -> impl Iterator<Item = Self> {
-        APPEARANCE_SPACING
-            .definition()
-            .format()
-            .choices()
-            .iter()
-            .map(|choice| Self(choice.value()))
-    }
-}
-
-impl Default for Spacing {
-    /// The default of the setting: what the list is without a choice.
-    fn default() -> Self {
-        match APPEARANCE_SPACING.definition().default() {
-            DefaultValue::Text(code) => Self::of(code).unwrap_or(Self("")),
-            DefaultValue::Bool(_) | DefaultValue::Integer(_) => Self(""),
-        }
-    }
-}
-
 /// One column of a list: the field by its search word and, when the person dragged it, its width.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Column {
@@ -111,19 +62,16 @@ pub struct Presentation {
     pub view: ViewKind,
     /// The columns, in order.
     pub columns: Vec<Column>,
-    /// How close together the rows are.
-    pub spacing: Spacing,
     /// The field the rows are grouped by, by its search word.
     pub group_by: Option<String>,
 }
 
 impl Default for Presentation {
-    /// A list with the columns of the project's list, *Comfortable*, not grouped.
+    /// A list with the columns of the project's list, not grouped.
     fn default() -> Self {
         Self {
             view: ViewKind::List,
             columns: Vec::new(),
-            spacing: Spacing::default(),
             group_by: None,
         }
     }
@@ -169,7 +117,6 @@ impl Presentation {
                     width: column.width.and_then(|width| u32::try_from(width).ok()),
                 })
                 .collect(),
-            spacing: search.spacing,
             group_by: search.group_by.clone(),
         }
     }
@@ -220,9 +167,6 @@ pub struct SavedSearch {
     /// The kind of view.
     #[not_personal]
     pub view: ViewKind,
-    /// How close together the rows are.
-    #[not_personal]
-    pub spacing: Spacing,
     /// The field the rows are grouped by, by its search word.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub group_by: Option<String>,
@@ -365,21 +309,11 @@ mod tests {
     }
 
     #[test]
-    fn qry_06_the_starting_presentation_is_a_comfortable_list_with_the_columns_of_the_project() {
+    fn qry_06_the_starting_presentation_is_a_list_with_the_columns_of_the_project() {
         let starting = Presentation::default();
         assert_eq!(starting.view, ViewKind::List);
-        assert_eq!(starting.spacing.code(), "comfortable");
         assert!(starting.columns.is_empty() && starting.group_by.is_none());
         assert!(starting.is_valid());
-    }
-
-    #[test]
-    fn qry_06_spacing_is_a_choice_of_the_setting_and_nothing_else() {
-        let words: Vec<&str> = Spacing::all().map(Spacing::code).collect();
-        assert_eq!(words, ["comfortable", "compact"]);
-        assert_eq!(Spacing::of("compact").map(Spacing::code), Some("compact"));
-        assert_eq!(Spacing::of("cosy"), None);
-        assert_eq!(Spacing::default().code(), "comfortable");
     }
 
     #[test]
@@ -403,7 +337,6 @@ mod tests {
     fn qry_06_a_presentation_is_kept_as_rows_and_read_back_in_order() {
         let presentation = Presentation {
             columns: vec![column("title", Some(300)), column("status", None)],
-            spacing: Spacing::of("compact").unwrap(),
             group_by: Some("statusGroup".to_owned()),
             ..Presentation::default()
         };
@@ -421,7 +354,6 @@ mod tests {
             text: String::new(),
             maker: UserId::generate(&mut ids),
             view: presentation.view,
-            spacing: presentation.spacing,
             group_by: presentation.group_by.clone(),
             created_at: Timestamp::UNIX_EPOCH,
             updated_at: Timestamp::UNIX_EPOCH,

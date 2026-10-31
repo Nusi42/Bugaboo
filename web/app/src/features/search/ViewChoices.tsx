@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { ChoiceGroup, SelectField, part, partOf } from "@bugaboo/ui";
+import { SelectField } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { notGroupable } from "../../shared/list-columns.ts";
 import { noGrouping, type ListView } from "../../shared/list-view.ts";
-import { searchSpacings } from "../../shared/search-address.ts";
 import type { SearchFieldsAnswer } from "./search-fields.ts";
 
 /** How the results of a search are shown, and the way to change it. */
@@ -15,7 +14,7 @@ export interface ListViewControl {
 
 export interface ViewChoicesProps extends ListViewControl {
   readonly fields: SearchFieldsAnswer;
-  /** What stands with *Spacing*, on the same line (the button *Customize* on a computer). */
+  /** What stands after *Group by* (the button *Customize* on a computer). */
   readonly end?: ReactNode;
 }
 
@@ -27,8 +26,9 @@ function groupChoicesOf(fields: SearchFieldsAnswer) {
 }
 
 /**
- * *Group by* any field the person may read, and *Spacing* (UX section 4.2): above the list on a
- * computer, in the *Filters* sheet on a phone (M5 exit decision D2).
+ * *Group by* any field the person may read (UX section 4.2): above the list on a computer, in the
+ * *Filters* sheet on a phone (M5 exit decision D2). *Spacing* is no choice of a list: every screen
+ * follows the person's *Spacing* in *My settings › Appearance* (ADR-0034, amendment).
  */
 export function ViewChoices({ view, fields, onView, end }: ViewChoicesProps) {
   return (
@@ -44,20 +44,7 @@ export function ViewChoices({ view, fields, onView, end }: ViewChoicesProps) {
           onView({ ...view, groupBy: value === noGrouping ? null : value });
         }}
       />
-      <div {...partOf(part.row, { variants: ["nowrap"] })}>
-        <ChoiceGroup
-          legend={t("appearance.spacing.legend")}
-          choices={searchSpacings.map((word) => ({
-            value: word,
-            label: t(`appearance.spacing.${word}`),
-          }))}
-          value={view.spacing}
-          onChange={(spacing) => {
-            onView({ ...view, spacing });
-          }}
-        />
-        {end}
-      </div>
+      {end}
     </>
   );
 }

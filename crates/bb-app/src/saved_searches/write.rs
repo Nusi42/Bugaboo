@@ -144,7 +144,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             text,
             maker: actor.person.id,
             view: presentation.view,
-            spacing: presentation.spacing,
             group_by: presentation.group_by.clone(),
             created_at: now,
             updated_at: now,
@@ -322,7 +321,6 @@ pub async fn change_search<S: AuthStore>(
             .await?;
     }
     search.view = presentation.view;
-    search.spacing = presentation.spacing;
     search.group_by = presentation.group_by.clone();
     let columns = presentation.rows(search.id);
     let changes = events::changed((&before, &stored.columns), (&search, &columns));

@@ -20,7 +20,6 @@ export {
   validateSearch,
   type HistoryStep,
   type SearchLocation,
-  type SearchSpacing,
   type SearchState,
 } from "../../shared/search-address.ts";
 export { withGroupFilter } from "../../shared/with-filter.ts";

@@ -136,6 +136,46 @@ mod test_support {
         database.execute(&insert).await.map(|_| ())
     }
 
+    /// A saved search written the way migration 24 made the row, with the `spacing` that migration
+    /// 30 takes away: what a test of either migration starts from. The IDs are as stored.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_saved_search(
+        database: &Database,
+        (id, maker): (Vec<u8>, Vec<u8>),
+        spacing: &str,
+    ) -> Result<(), crate::StoreError> {
+        use crate::schema::{Retired, SavedSearchRow};
+        use sea_query::{Expr, IntoIden as _, Query};
+
+        let mut insert = Query::insert();
+        insert
+            .into_table(SavedSearchRow::Table)
+            .columns([
+                SavedSearchRow::Id.into_iden(),
+                SavedSearchRow::Name.into_iden(),
+                SavedSearchRow::Text.into_iden(),
+                SavedSearchRow::Maker.into_iden(),
+                SavedSearchRow::View.into_iden(),
+                Retired::Spacing.into_iden(),
+                SavedSearchRow::CreatedAt.into_iden(),
+                SavedSearchRow::UpdatedAt.into_iden(),
+                SavedSearchRow::Version.into_iden(),
+            ])
+            .values([
+                Expr::val(id),
+                Expr::val("Open bugs"),
+                Expr::val("status is open"),
+                Expr::val(maker),
+                Expr::val("list"),
+                Expr::val(spacing),
+                Expr::val(1_i64),
+                Expr::val(1_i64),
+                Expr::val(1_i64),
+            ])
+            .map_err(|_| crate::StoreError::Corrupt("a saved search"))?;
+        database.execute(&insert).await.map(|_| ())
+    }
+
     /// A person written the way the first migrations knew them (id, name, e-mail, creation): what
     /// a test of a migration that touches a person's own rows starts from.
     #[cfg(test)]

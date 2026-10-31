@@ -46,7 +46,6 @@ pub(super) fn made(search: &SavedSearch, columns: &[SearchColumn]) -> Vec<FieldC
         set_to(member::NAME, json!(search.name)),
         set_to(member::TEXT, json!(search.text)),
         set_to(member::VIEW, json!(search.view.code())),
-        set_to(member::SPACING, json!(search.spacing.code())),
         set_to(member::COLUMNS, columns_json(columns)),
     ];
     if let Some(field) = &search.group_by {
@@ -65,11 +64,6 @@ pub(super) fn changed(
         difference(member::NAME, json!(was.name), json!(now.name)),
         difference(member::TEXT, json!(was.text), json!(now.text)),
         difference(member::VIEW, json!(was.view.code()), json!(now.view.code())),
-        difference(
-            member::SPACING,
-            json!(was.spacing.code()),
-            json!(now.spacing.code()),
-        ),
         difference(
             member::COLUMNS,
             columns_json(was_columns),

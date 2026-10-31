@@ -6720,14 +6720,16 @@ export interface components {
           /** @enum {string} */
           kind: "hidden";
         };
-    /** @description How the results of a saved search are shown. */
+    /**
+     * @description How the results of a saved search are shown. How close together the rows are is not part of
+     *     it: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a
+     *     `spacing` an older client still sends is not read.
+     */
     PresentationRef: {
       /** @description The columns, in order. None at all means the columns of the project's list. */
       columns: components["schemas"]["ColumnBody"][];
       /** @description The field the rows are grouped by, by its search word. */
       group_by: string | null;
-      /** @description How close together the rows are: a choice of the setting `appearance.spacing`. */
-      spacing: string;
       /** @description The kind of view. M5 shows the kind `list`. */
       view: components["schemas"]["ViewKind"];
     };

@@ -38,7 +38,7 @@ When you change an open saved search, "Save" (your own) or "Save a copy" (somebo
 
 ## The list
 
-The list under the search bar is the list of the project too: the same filters, the same columns. **Customize** chooses the columns, their order and width and the spacing; a column is sorted by pressing its name. **Group by** puts the issues in groups, for example by status group or by who they are assigned to, each with its count; a group folds with its arrow. The count line says how many issues the search finds among those you may read and how many are shown. Tick issues to change many at once.
+The list under the search bar is the list of the project too: the same filters, the same columns. **Customize** chooses the columns, their order and width; a column is sorted by pressing its name. **Group by** puts the issues in groups, for example by status group or by who they are assigned to, each with its count; a group folds with its arrow. The count line says how many issues the search finds among those you may read and how many are shown. Tick issues to change many at once.
 
 A project can show a saved search as its list: its filters and columns are what you see when you open the project, until you change them.
 

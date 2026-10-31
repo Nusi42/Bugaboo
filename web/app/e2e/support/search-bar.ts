@@ -36,7 +36,7 @@ export async function openBar(page: Page): Promise<void> {
 }
 
 /**
- * Where Group by and Spacing are: above the list on a computer, in the sheet of the Filters on a
+ * Where Group by is: above the list on a computer, in the sheet of the Filters on a
  * phone (D2). Opens the sheet where it is needed, does what `act` says in it, and closes it again.
  */
 export async function inViewChoices(

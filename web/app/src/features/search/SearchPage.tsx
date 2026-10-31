@@ -24,8 +24,8 @@ export interface SearchPageProps {
 /**
  * The *Search* page (UX design section 2.1): the search bar over every project the person sees.
  * The search is in the address, so back and forward work and a shared address opens the same
- * search for anyone who may see it. The columns, the spacing and the grouping are in the address
- * too, and *Save search* keeps them with the text.
+ * search for anyone who may see it. The columns and the grouping are in the address too, and
+ * *Save search* keeps them with the text.
  */
 export function SearchPage({ state, onState, results, phoneStart }: SearchPageProps) {
   usePageTitle(t("search.page.title"));

@@ -234,7 +234,7 @@ Rules:
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
-| **Spacing**              | How close together things are on screen: *Comfortable* or *Compact* | density (in UI) |
+| **Spacing**              | How close together things are on screen: *Comfortable* or *Compact*. A setting of the person (*My settings › Appearance*) that every screen follows; a list or a saved search has none of its own | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
 | **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |
 | **Window**               | Where a form opens on a computer: it can be minimized, maximized, resized; on a phone it is a full screen | modal, popup (in UI) |

@@ -106,8 +106,9 @@ test("qry_03 on a phone the body of the Filters sheet scrolls under a shadow abo
   await openBar(page);
   const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
   const body = partIn(sheet, "search-bar").first();
-  await expect(sheet.getByText(t("appearance.spacing.legend"), { exact: true })).toBeAttached();
-  // Group by and Spacing do not fit at this height: the body scrolls, and says so with the shared shadow.
+  const groupBy = sheet.getByText(t("issues.group-by"), { exact: true });
+  await expect(groupBy).toBeAttached();
+  // The filters and Group by do not fit at this height: the body scrolls, and says so with the shared shadow.
   await expect
     .poll(() => body.evaluate((node) => node.scrollHeight > node.clientHeight + 1))
     .toBe(true);
@@ -116,9 +117,9 @@ test("qry_03 on a phone the body of the Filters sheet scrolls under a shadow abo
     node.scrollTop = node.scrollHeight;
   });
   await expect.poll(() => shadowsOf(body)).toEqual({ start: 1, end: 0 });
-  const spacing = sheet.getByText(t("appearance.spacing.legend"), { exact: true });
-  const [bodyBox, spacingBox] = await Promise.all([boxOf(body), boxOf(spacing)]);
-  expect(spacingBox.y + spacingBox.height).toBeLessThanOrEqual(bodyBox.y + bodyBox.height);
+  const groupByField = sheet.getByLabel(t("issues.group-by"), { exact: true });
+  const [bodyBox, groupByBox] = await Promise.all([boxOf(body), boxOf(groupByField)]);
+  expect(groupByBox.y + groupByBox.height).toBeLessThanOrEqual(bodyBox.y + bodyBox.height);
   // The foot is told from what scrolls above it by the divider of a window's foot.
   const foot = partIn(sheet, "bottom-sheet.actions");
   await expect(foot).toHaveCSS(

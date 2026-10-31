@@ -22,7 +22,7 @@ export interface SearchBarProps {
   readonly onStale?: (stale: boolean) => void;
   /** Buttons for what is done with the search (*Save search*, *Share*, *Help*), at the end. */
   readonly actions?: ReactNode;
-  /** How the results are shown: on a phone *Group by* and *Spacing* are in the sheet of the filters (D2). */
+  /** How the results are shown: on a phone *Group by* is in the sheet of the filters (D2). */
   readonly listView?: ListViewControl;
   /** What a phone shows in the row of its one button, before it: *New issue* and *Legend* of a list. */
   readonly phoneStart?: ReactNode;

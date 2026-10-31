@@ -7,6 +7,7 @@ import { ListHeader } from "./ListHeader.tsx";
 import { ListResults } from "./ListResults.tsx";
 import type { LoadedProps } from "./results-props.ts";
 import { Selected } from "./Selected.tsx";
+import { useCompact } from "./use-compact.ts";
 import { useRoom } from "./use-row-keys.ts";
 
 export interface ListColumnProps {
@@ -38,7 +39,7 @@ export function ListColumn({
   const column = useRef<HTMLDivElement>(null);
   const getBox = useCallback(() => column.current, []);
   useRoom(getBox, onRoom);
-  const compact = view.spacing === "compact";
+  const compact = useCompact();
   const specs: readonly ListColumnSpec[] = [
     ...(ticks && !phone ? [selectSpec] : []),
     ...words.map((word) => ({ column: cellOf(word), width: dragged[word] ?? view.widths[word] })),
