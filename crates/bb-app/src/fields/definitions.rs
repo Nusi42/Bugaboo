@@ -1,12 +1,13 @@
 //! The definitions of the own fields for a request: read once, and forgotten with every write of
-//! a definition, so a read after a write in the same request sees the write.
+//! a definition or a project (with what the request read of the projects), so a read after a write
+//! in the same request sees the write.
 
 use std::sync::Arc;
 
 use bb_core::event::DomainEvent;
 
 use super::types::Definition;
-use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
+use crate::auth::{AppError, AuthStore, Ctx, KnownProjects, internal, locked};
 use crate::ports::{BoxFuture, ChangeStore};
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -26,9 +27,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(found)
     }
 
-    /// Writes a change of a field, a scope or a choice with its event. The one way to write a
-    /// definition: the definitions the request has read are dropped with the write (also when it
-    /// fails), so no use case has to remember to.
+    /// Writes a change of a field, a scope, a choice or a project with its event. The one way to
+    /// write a definition or a project: the definitions and the projects the request has read are
+    /// dropped with the write (also when it fails), so no use case has to remember to.
     pub(crate) async fn record_change<'a, T: Send + 'a>(
         &'a self,
         event: &'a DomainEvent,
@@ -40,6 +41,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<T, <S as ChangeStore>::Error> {
         let written = self.store().record_change(event, change).await;
         *locked(&self.known.field_catalogue) = None;
+        *locked(&self.known.projects) = KnownProjects::default();
         written
     }
 }

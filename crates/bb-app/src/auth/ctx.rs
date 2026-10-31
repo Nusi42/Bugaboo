@@ -260,8 +260,19 @@ pub(crate) struct Known {
     /// The definitions of the own fields with their scopes and choices, read once for the request;
     /// a use case that changes a definition writes through `Ctx::record_change` of the fields, which drops them.
     pub(crate) field_catalogue: Mutex<Option<Arc<Vec<crate::fields::Definition>>>>,
+    /// What the request read of the projects; a use case that changes a project writes through
+    /// `Ctx::record_change`, which drops it. Boxed, so a context that never asks costs a pointer.
+    pub(crate) projects: Box<Mutex<KnownProjects>>,
     /// The groups people are in, for the rule *Who can do it* of a status change.
     pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
+}
+
+/// The projects that the short names of issue addresses named, and the chains of projects, read
+/// once for the request (every issue of a selection of many asks for them).
+#[derive(Default)]
+pub(crate) struct KnownProjects {
+    pub(crate) by_address: HashMap<bb_core::project::ShortName, Option<crate::projects::Found>>,
+    pub(crate) chains: HashMap<bb_core::id::ProjectId, Vec<bb_core::id::ProjectId>>,
 }
 
 /// The services plus the request, which is what a use case takes.

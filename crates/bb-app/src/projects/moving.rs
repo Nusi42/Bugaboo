@@ -402,44 +402,43 @@ pub async fn move_project<S: AuthStore>(
     let why = Why::default();
     let stopped = why.clone();
     let (events, now_at) = (ctx.event_maker(by(person)), ctx.now());
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                S::lock_policy(transaction).await?;
-                // Everything is judged again on what is stored now, after the lock: who has
-                // which role, the tree, and what the person looked at.
-                let Some(now) = S::project_in(transaction, id).await? else {
-                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                };
-                let projects = S::project_tree_in(transaction).await?;
-                let policy = S::policy_in(transaction).await?;
-                let judged = judge(&policy, &projects, &now, to);
-                let asked = MoveRequest {
-                    person,
-                    key: key.as_ref(),
-                    project: id,
-                    to,
-                };
-                check_move(&policy, &judged.tree, &asked)
-                    .map_err(|refusal| stopped.stop::<S>(code_of(refusal)))?;
-                // The rule of M2-F23: a move lifts no *No access*. It comes before the look at
-                // the preview, so no preview, stale or made up, gets around it.
-                if !judged.preview.lifts.is_empty() {
-                    return Err(stopped.stop::<S>(ErrorCode::MoveLiftsNoAccess));
-                }
-                if judged.version != expected {
-                    return Err(stopped.stop::<S>(ErrorCode::MovePreviewChanged));
-                }
-                if !S::move_project(transaction, id, to, Version::new(now.version)).await? {
-                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                }
-                // The issues in it now follow another workflow: those whose status it lacks
-                // start again in its starting status, with their history.
-                restart_moved_in::<S>(transaction, &events, id, now_at).await
-            })
+    ctx.record_change(&event, move |transaction| {
+        Box::pin(async move {
+            S::lock_policy(transaction).await?;
+            // Everything is judged again on what is stored now, after the lock: who has
+            // which role, the tree, and what the person looked at.
+            let Some(now) = S::project_in(transaction, id).await? else {
+                return Err(stopped.stop::<S>(ErrorCode::NotFound));
+            };
+            let projects = S::project_tree_in(transaction).await?;
+            let policy = S::policy_in(transaction).await?;
+            let judged = judge(&policy, &projects, &now, to);
+            let asked = MoveRequest {
+                person,
+                key: key.as_ref(),
+                project: id,
+                to,
+            };
+            check_move(&policy, &judged.tree, &asked)
+                .map_err(|refusal| stopped.stop::<S>(code_of(refusal)))?;
+            // The rule of M2-F23: a move lifts no *No access*. It comes before the look at
+            // the preview, so no preview, stale or made up, gets around it.
+            if !judged.preview.lifts.is_empty() {
+                return Err(stopped.stop::<S>(ErrorCode::MoveLiftsNoAccess));
+            }
+            if judged.version != expected {
+                return Err(stopped.stop::<S>(ErrorCode::MovePreviewChanged));
+            }
+            if !S::move_project(transaction, id, to, Version::new(now.version)).await? {
+                return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+            }
+            // The issues in it now follow another workflow: those whose status it lacks
+            // start again in its starting status, with their history.
+            restart_moved_in::<S>(transaction, &events, id, now_at).await
         })
-        .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+    })
+    .await
+    .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
     ctx.note(
         SecurityAction::ProjectMoved,
         Some(actor.person.id),

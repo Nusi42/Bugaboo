@@ -176,53 +176,52 @@ pub async fn change_project<S: AuthStore>(
     let retired_at = ctx.now();
     let own_writes = plan.own.writes();
     let kind = EntityKind::from(RecordKind::Project);
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                S::lock_policy(transaction).await?;
-                // Everything below is judged on what is stored now: somebody may have changed
-                // the project, or taken the short name, since the request began.
-                let Some(now) = S::project_in(transaction, id).await? else {
-                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                };
-                if now.version != version {
-                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                }
-                if renames {
-                    match S::short_name_owner_in(transaction, &short_name).await? {
-                        Some(owner) if owner != id => {
-                            return Err(stopped.stop::<S>(ErrorCode::NameTaken));
-                        }
-                        // The project takes back a short name it had before.
-                        Some(_) => S::delete_project_alias(transaction, &short_name).await?,
-                        None => {}
+    ctx.record_change(&event, move |transaction| {
+        Box::pin(async move {
+            S::lock_policy(transaction).await?;
+            // Everything below is judged on what is stored now: somebody may have changed
+            // the project, or taken the short name, since the request began.
+            let Some(now) = S::project_in(transaction, id).await? else {
+                return Err(stopped.stop::<S>(ErrorCode::NotFound));
+            };
+            if now.version != version {
+                return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+            }
+            if renames {
+                match S::short_name_owner_in(transaction, &short_name).await? {
+                    Some(owner) if owner != id => {
+                        return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                     }
-                    let alias = ProjectAlias {
-                        short_name: retired,
-                        project: id,
-                        retired_at,
-                    };
-                    S::insert_project_alias(transaction, &alias).await?;
+                    // The project takes back a short name it had before.
+                    Some(_) => S::delete_project_alias(transaction, &short_name).await?,
+                    None => {}
                 }
-                if !S::update_project(transaction, id, &name, &short_name, Version::new(version))
-                    .await?
-                {
-                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                }
-                for (field, cells) in &own_writes {
-                    S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
-                }
-                Ok(())
-            })
+                let alias = ProjectAlias {
+                    short_name: retired,
+                    project: id,
+                    retired_at,
+                };
+                S::insert_project_alias(transaction, &alias).await?;
+            }
+            if !S::update_project(transaction, id, &name, &short_name, Version::new(version))
+                .await?
+            {
+                return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+            }
+            for (field, cells) in &own_writes {
+                S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
+            }
+            Ok(())
         })
-        .await
-        .map_err(|error| {
-            why.answer::<S>(&error, ErrorCode::NameTaken).about(
-                &entity(RecordKind::Project, id),
-                Place::Project(id),
-                actor.person.id,
-            )
-        })?;
+    })
+    .await
+    .map_err(|error| {
+        why.answer::<S>(&error, ErrorCode::NameTaken).about(
+            &entity(RecordKind::Project, id),
+            Place::Project(id),
+            actor.person.id,
+        )
+    })?;
     if plan.changes_short_name() {
         ctx.note(
             SecurityAction::ProjectShortNameChanged,

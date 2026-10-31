@@ -13,10 +13,13 @@ use bb_policy::{PeopleContext, Permission, Place};
 use jiff::Timestamp;
 use tracing_subscriber::fmt::MakeWriter;
 
+use super::scenarios::a_project;
 use super::world::{Outcome, PASSWORD, World};
 use crate::access::{PolicyStore as _, ProjectLabel};
 use crate::auth::{AppError, CreateInvitation, SignIn, create_invitation, sign_in};
-use crate::projects::{CreateProject, create_project};
+use crate::projects::{
+    CreateProject, MovePreviewQuery, MoveProject, create_project, move_project, preview_move,
+};
 use crate::roles::{
     AssignRole, CreateRole, Given, RemoveAssignment, SetPeopleLevel, Subject, assign_role,
     create_role, remove_assignment, set_level,
@@ -410,5 +413,42 @@ async fn sec_03_a_role_or_group_that_is_gone_is_not_found_not_a_blank_name() -> 
         ctx.group_view(group).await.err(),
         Some(AppError::Refused(ErrorCode::NotFound))
     );
+    Ok(())
+}
+
+/// What a request read of the projects (the chain of a project, the project of an address) is kept
+/// for the request (M5-F169) and forgotten when the request changes a project, so the chain read
+/// after a move is the new one.
+#[tokio::test]
+async fn prj_03_a_request_that_moves_a_project_reads_its_chain_again() -> Outcome {
+    let world = World::new().await?;
+    let (acme, beta) = (
+        a_project(&world, "ACME").await?,
+        a_project(&world, "BETA").await?,
+    );
+    let ctx = world.ctx();
+    let token = world.admin.session_token.clone();
+    assert!(!ctx.chain_of(beta).await?.contains(&acme));
+    let preview = preview_move(
+        &ctx,
+        MovePreviewQuery {
+            session_token: token.clone(),
+            project: beta,
+            to: Some(acme),
+        },
+    )
+    .await?
+    .into_value();
+    move_project(
+        &ctx,
+        MoveProject {
+            session_token: token,
+            project: beta,
+            to: Some(acme),
+            preview: preview.preview,
+        },
+    )
+    .await?;
+    assert!(ctx.chain_of(beta).await?.contains(&acme), "the new chain");
     Ok(())
 }
