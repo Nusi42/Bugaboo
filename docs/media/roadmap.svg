@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-total="225" data-done="96" viewBox="0 0 1280 210" width="1280" height="210" role="img" aria-labelledby="title desc">
+  <title id="title">Roadmap</title>
+  <desc id="desc">The sixteen milestones from M0 to M15. M0 to M5 are done, M6 is next. Version 0.9.0 means every feature is built, version 1.0.0 follows the last milestone.</desc>
+  <style>
+    /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
+       under the names of the tokens; a test (web/tooling/roadmap.test.ts) keeps them the same, and keeps
+       the milestones and their feature counts the same as the table in docs/04-milestones.md. */
+    :root {
+      --bg-surface: #f6f7f9;
+      --bg-raised: #ffffff;
+      --border: #dfe3e9;
+      --fg: #16181d;
+      --fg-muted: #565d6b;
+      --accent: #5b3fd9;
+      --accent-soft: #eeeafd;
+      --st-done: #1f784c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-surface: #252932;
+        --bg-raised: #2d323c;
+        --border: #3b414d;
+        --fg: #e5e8ed;
+        --fg-muted: #aeb5c1;
+        --accent: #a495ff;
+        --accent-soft: #37325a;
+        --st-done: #6fd39a;
+      }
+    }
+    text { font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+    .canvas { fill: var(--bg-surface); }
+    .tile { fill: var(--bg-raised); stroke: var(--border); stroke-width: 2; }
+    .done .tile { fill: var(--accent-soft); stroke: var(--st-done); }
+    .next .tile { stroke: var(--accent); stroke-width: 3; animation: pulse 2.4s ease-in-out infinite; }
+    .code { fill: var(--fg); font-size: 20px; font-weight: 700; }
+    .count { fill: var(--fg-muted); font-size: 14px; }
+    .done .code { fill: var(--st-done); }
+    .next .code { fill: var(--accent); }
+    .flag { fill: var(--fg); font-size: 17px; font-weight: 600; }
+    .flag-line { stroke: var(--fg-muted); stroke-width: 2; stroke-dasharray: 3 4; }
+    .legend { fill: var(--fg-muted); font-size: 16px; }
+    .track { fill: var(--bg-raised); stroke: var(--border); stroke-width: 2; }
+    .bar { fill: var(--st-done); transform-origin: 4px 0; animation: grow 1200ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+    @keyframes pulse { 50% { stroke-opacity: 0.35; } }
+    @keyframes grow { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .next .tile, .bar { animation: none; }
+    }
+  </style>
+
+  <rect class="canvas" width="1280" height="210" rx="24"/>
+  <g class="done" data-milestone="M0" data-features="2">
+    <title>M0: Foundation, 2 features</title>
+    <rect class="tile" x="8" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="43.5" y="98" text-anchor="middle">M0</text>
+    <text class="count" x="43.5" y="121" text-anchor="middle">2</text>
+  </g>
+  <g class="done" data-milestone="M1" data-features="23">
+    <title>M1: Server core and signing in, 23 features</title>
+    <rect class="tile" x="87" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="122.5" y="98" text-anchor="middle">M1</text>
+    <text class="count" x="122.5" y="121" text-anchor="middle">23</text>
+  </g>
+  <g class="done" data-milestone="M2" data-features="24">
+    <title>M2: People, permissions, projects and the app shell, 24 features</title>
+    <rect class="tile" x="166" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="201.5" y="98" text-anchor="middle">M2</text>
+    <text class="count" x="201.5" y="121" text-anchor="middle">24</text>
+  </g>
+  <g class="done" data-milestone="M3" data-features="23">
+    <title>M3: Issues, fields and editing, 23 features</title>
+    <rect class="tile" x="245" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="280.5" y="98" text-anchor="middle">M3</text>
+    <text class="count" x="280.5" y="121" text-anchor="middle">23</text>
+  </g>
+  <g class="done" data-milestone="M4" data-features="12">
+    <title>M4: Workflows, files and notifications, 12 features</title>
+    <rect class="tile" x="324" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="359.5" y="98" text-anchor="middle">M4</text>
+    <text class="count" x="359.5" y="121" text-anchor="middle">12</text>
+  </g>
+  <g class="done" data-milestone="M5" data-features="12">
+    <title>M5: Search and lists, 12 features</title>
+    <rect class="tile" x="403" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="438.5" y="98" text-anchor="middle">M5</text>
+    <text class="count" x="438.5" y="121" text-anchor="middle">12</text>
+  </g>
+  <g class="next" data-milestone="M6" data-features="10">
+    <title>M6: Time and working hours, 10 features</title>
+    <rect class="tile" x="482" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="517.5" y="98" text-anchor="middle">M6</text>
+    <text class="count" x="517.5" y="121" text-anchor="middle">10</text>
+  </g>
+  <g class="later" data-milestone="M7" data-features="14">
+    <title>M7: Timeline and theme editor, 14 features</title>
+    <rect class="tile" x="561" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="596.5" y="98" text-anchor="middle">M7</text>
+    <text class="count" x="596.5" y="121" text-anchor="middle">14</text>
+  </g>
+  <g class="later" data-milestone="M8" data-features="24">
+    <title>M8: Assistant, AI apps and agents, 24 features</title>
+    <rect class="tile" x="640" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="675.5" y="98" text-anchor="middle">M8</text>
+    <text class="count" x="675.5" y="121" text-anchor="middle">24</text>
+  </g>
+  <g class="later" data-milestone="M9" data-features="14">
+    <title>M9: Privacy, operations and the first release, 14 features</title>
+    <rect class="tile" x="719" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="754.5" y="98" text-anchor="middle">M9</text>
+    <text class="count" x="754.5" y="121" text-anchor="middle">14</text>
+  </g>
+  <g class="later" data-milestone="M10" data-features="10">
+    <title>M10: Board, calendar, relation map and dashboards, 10 features</title>
+    <rect class="tile" x="798" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="833.5" y="98" text-anchor="middle">M10</text>
+    <text class="count" x="833.5" y="121" text-anchor="middle">10</text>
+  </g>
+  <g class="later" data-milestone="M11" data-features="11">
+    <title>M11: Documents, 11 features</title>
+    <rect class="tile" x="877" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="912.5" y="98" text-anchor="middle">M11</text>
+    <text class="count" x="912.5" y="121" text-anchor="middle">11</text>
+  </g>
+  <g class="later" data-milestone="M12" data-features="16">
+    <title>M12: Teams, integrations and AI 1.0, 16 features</title>
+    <rect class="tile" x="956" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="991.5" y="98" text-anchor="middle">M12</text>
+    <text class="count" x="991.5" y="121" text-anchor="middle">16</text>
+  </g>
+  <g class="later" data-milestone="M13" data-features="15">
+    <title>M13: Admin power tools, 15 features</title>
+    <rect class="tile" x="1035" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="1070.5" y="98" text-anchor="middle">M13</text>
+    <text class="count" x="1070.5" y="121" text-anchor="middle">15</text>
+  </g>
+  <g class="later" data-milestone="M14" data-features="15">
+    <title>M14: Sold and served, 15 features</title>
+    <rect class="tile" x="1114" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="1149.5" y="98" text-anchor="middle">M14</text>
+    <text class="count" x="1149.5" y="121" text-anchor="middle">15</text>
+  </g>
+  <g class="later" data-milestone="M15" data-features="2">
+    <title>M15: Live updates and 1.0, 2 features</title>
+    <rect class="tile" x="1193" y="70" width="71" height="64" rx="12"/>
+    <text class="code" x="1228.5" y="98" text-anchor="middle">M15</text>
+    <text class="count" x="1228.5" y="121" text-anchor="middle">2</text>
+  </g>
+  <line class="flag-line" x1="475" y1="48" x2="475" y2="68"/>
+  <text class="flag" x="475" y="38" text-anchor="middle">Now: 0.3.0</text>
+  <line class="flag-line" x1="1193" y1="48" x2="1193" y2="68"/>
+  <text class="flag" x="1193" y="38" text-anchor="end">0.9.0: every feature is built</text>
+  <rect class="track" x="4" y="152" width="1272" height="14" rx="7"/>
+  <rect class="bar" x="4" y="152" width="542.7" height="14" rx="7"/>
+  <text class="legend" x="8" y="196">Tiles: milestones with the number of features each brings. Filled: done. Outlined: next.</text>
+  <text class="legend" x="1272" y="196" text-anchor="end">1.0.0 follows M15</text>
+</svg>
