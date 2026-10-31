@@ -1,6 +1,7 @@
 import { useId, useRef } from "react";
 
 import { partOf } from "./parts.ts";
+import { selectLook, type SelectLook } from "./props.ts";
 import { part } from "./tokens.ts";
 
 export interface SelectChoice<Value extends string> {
@@ -24,6 +25,8 @@ export interface SelectFieldProps<Value extends string> {
    * the name matters to everybody.
    */
   readonly hideLabel?: boolean;
+  /** `inline` puts the value after the name as quiet words without a box (UX §4.2). */
+  readonly look?: SelectLook;
   readonly choices: readonly SelectChoice<Value>[];
   readonly value: Value;
   readonly onChange: (value: Value) => void;
@@ -63,6 +66,7 @@ export function SelectField<Value extends string>({
   description,
   errorMessage,
   hideLabel = false,
+  look = selectLook.box,
   choices,
   value,
   onChange,
@@ -75,8 +79,9 @@ export function SelectField<Value extends string>({
     description === undefined ? null : helpId,
     errorMessage === undefined ? null : errorId,
   );
+  const inline = look === selectLook.inline && "inline";
   return (
-    <div {...partOf(part.field)}>
+    <div {...partOf(part.field, { variants: [inline] })}>
       <label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)} htmlFor={id}>
         {label}
       </label>
@@ -88,7 +93,7 @@ export function SelectField<Value extends string>({
       <select
         ref={select}
         id={id}
-        {...partOf(part.fieldInput)}
+        {...partOf(part.fieldInput, { variants: [inline] })}
         value={value}
         {...(describedBy === undefined ? {} : { "aria-describedby": describedBy })}
         {...(errorMessage === undefined ? {} : { "aria-invalid": true })}

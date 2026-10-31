@@ -26,7 +26,10 @@ describe("the banner of the front page", () => {
   it("shoos a bug away and says boo, and the bug and the word are still when motion is reduced", () => {
     expect(banner).toContain('class="bug"');
     expect(banner).toContain(">Boo!<");
-    expect(banner).toMatch(/\.row, \.bug, \.boo \{ animation: none/u);
+    // The tiles, the walk of the bug, the step to Done, the shoo and the boo all stand still.
+    expect(banner).toMatch(
+      /\.tiles > g, \.walk, \.legs, \.here, \.done \.fill, \.bug, \.boo \{ animation: none/u,
+    );
   });
 
   it("plays one calm sequence once: nothing repeats, blinks or changes its color", () => {
@@ -43,5 +46,20 @@ describe("the banner of the front page", () => {
 
   it("loads nothing from outside and runs no script", () => {
     expect(banner).not.toMatch(/<image|<script|href=|url\(|https?:\/\/(?!www\.w3\.org)/u);
+  });
+});
+
+describe("the words of the banner", () => {
+  it("shows what Bugaboo does, and says which parts are still planned", () => {
+    for (const words of [
+      "Issues and your own workflows",
+      "Gantt charts",
+      "AI agents",
+      "Built for the GDPR",
+    ]) {
+      expect(banner).toContain(`>${words}<`);
+    }
+    expect(banner.match(/>Planned: /gu)).toHaveLength(2);
+    expect(banner).toContain("Under development");
   });
 });

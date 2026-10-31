@@ -1,10 +1,13 @@
 import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 
 import { type Browser, expect, type Page } from "@playwright/test";
 
+import { expectLook } from "./checks.ts";
 import { signIn } from "./flows.ts";
-import { accountOf } from "./readme-organization.ts";
+import { accountOf, readmeTheme } from "./readme-organization.ts";
 import { Recording } from "./recording.ts";
+import { pointerAway } from "./screenshots.ts";
 import { type Instance } from "./server.ts";
 import { deviceContext, type DeviceOptions } from "./showcase.ts";
 
@@ -63,6 +66,13 @@ export async function administratorPage(
   const page = await context.newPage();
   await signIn(page, accountOf("marta"));
   return page;
+}
+
+/** Takes what the window shows, in the theme of the pictures (`readmeTheme`), as `<name>.png`. */
+export async function shootPicture(page: Page, name: string): Promise<void> {
+  await pointerAway(page);
+  await expectLook(page, readmeTheme);
+  await page.screenshot({ path: join(folder(), `${name}.png`) });
 }
 
 /** A recording of the window of Marta on a computer. */

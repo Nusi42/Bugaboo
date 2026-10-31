@@ -103,6 +103,7 @@
   --size-details-room: calc(var(--size-details) + var(--gap-details));
   --size-reading: 75ch;
   --size-main: 780px;
+  --inset-section-line: var(--space-6);
   --size-sheet-share: 85%;
   --size-side-panel: 30rem;
   --size-bar-sheet: 80dvh;

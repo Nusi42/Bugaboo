@@ -103,6 +103,7 @@
   --size-details-room: calc(var(--size-details) + var(--gap-details));
   --size-reading: 75ch;
   --size-main: 780px;
+  --inset-section-line: var(--space-6);
   --size-sheet-share: 85%;
   --size-side-panel: 30rem;
   --size-bar-sheet: 80dvh;
@@ -1261,6 +1262,26 @@ textarea,
   padding-block: 0;
   line-height: var(--lh-body);
   text-overflow: ellipsis;
+}
+
+[data-part="field"][data-variant~="inline"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+[data-part="field.input"][data-variant~="inline"] {
+  width: auto;
+  padding-inline: var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+
+[data-part="field.input"][data-variant~="inline"]:hover {
+  background: var(--bg-hover);
 }
 
 [data-part="field.input"][data-variant~="multiline"] {
@@ -2876,12 +2897,8 @@ textarea,
 [data-part="list-options"] {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-3) var(--space-5);
-}
-
-[data-part="list-options"] [data-part="button"] {
-  align-self: flex-end;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
 }
 
 [data-part="timeline-bar"] {
@@ -5671,6 +5688,18 @@ textarea,
   gap: var(--space-5);
   min-width: 0;
   max-width: var(--size-main);
+}
+
+[data-part="issue-main.section"]:empty {
+  display: none;
+}
+
+[data-part="issue-main.section"] ~ [data-part="issue-main.section"]::before {
+  content: "";
+  display: block;
+  margin-inline: var(--inset-section-line);
+  margin-block-end: var(--space-5);
+  border-top: var(--border-width) solid var(--border);
 }
 
 [data-part="issue-details"] {

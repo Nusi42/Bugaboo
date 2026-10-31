@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { newIssueDialog, openNewIssueDialog } from "./issues.ts";
 import { box, list } from "./quick-search.ts";
 import { expectHeading, expectRows } from "./readme-media.ts";
+import { PACE } from "./readme-pace.ts";
 import { readmeIssueTitle, readmeProject, readmeRepairs } from "./readme-organization.ts";
 import { type Recording } from "./recording.ts";
 import { titleBox } from "./windows.ts";
@@ -21,41 +22,41 @@ const NEW_REPAIR = "Fit new mudguards to a city bike";
 export async function openAnIssue(page: Page, recording: Readonly<Recording>): Promise<void> {
   await page.goto(projectIssuesAddress(readmeProject));
   await expectRows(page);
-  await recording.look();
+  await recording.look(PACE.startMs);
   const row = page.locator("[data-part='list-row']").filter({ hasText: readmeIssueTitle });
   await recording.click(row.getByRole("link").first());
   await expectHeading(page);
-  await recording.look(2000);
+  await recording.look(PACE.endMs);
 }
 
 /** Quick search finds the issues about brakes while the word is typed, and one is opened. */
 export async function findAnIssue(page: Page, recording: Readonly<Recording>): Promise<void> {
   await page.goto(projectIssuesAddress(readmeProject));
   await expectRows(page);
-  await recording.look();
+  await recording.look(PACE.startMs);
   await page.keyboard.press("Control+k");
   await box(page).waitFor();
-  await recording.look(500);
+  await recording.look();
   await recording.type(box(page), "brake", RESULTS_MS);
   const found = list(page).getByRole("option").first();
   await found.waitFor();
   await page.waitForLoadState("networkidle");
-  await recording.look(1400);
+  await recording.look(PACE.resultMs);
   await recording.click(found);
   await expectHeading(page);
-  await recording.look(2000);
+  await recording.look(PACE.endMs);
 }
 
 /** A new repair is written and reported from the list of the repairs. */
 export async function reportAnIssue(page: Page, recording: Readonly<Recording>): Promise<void> {
   await page.goto(projectIssuesAddress(readmeRepairs));
   await expectRows(page);
-  await recording.look();
+  await recording.look(PACE.startMs);
   await recording.pointAt(page.getByRole("button", { name: t("issues.new"), exact: true }).first());
   await openNewIssueDialog(page);
-  await recording.look(500);
+  await recording.look();
   await recording.type(titleBox(page), NEW_REPAIR);
-  await recording.look(600);
+  await recording.look(PACE.resultMs);
   await recording.click(
     newIssueDialog(page).getByRole("button", { name: t("issues.create"), exact: true }),
   );
@@ -63,7 +64,7 @@ export async function reportAnIssue(page: Page, recording: Readonly<Recording>):
   // The new issue opens.
   await page.getByRole("heading", { level: 1, name: NEW_REPAIR }).waitFor();
   await page.waitForLoadState("networkidle");
-  await recording.look(2000);
+  await recording.look(PACE.endMs);
 }
 
 /** Shows the workflow of the repairs as a drawing: its statuses and the arrows between them. */

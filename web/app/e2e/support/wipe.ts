@@ -1,4 +1,5 @@
 import { type Frame } from "./gif.ts";
+import { HERO } from "./readme-pace.ts";
 
 // The front picture of README.md shows one screen in the four themes, one after the other: the next
 // theme wipes in over the last along a slanted edge. Each step of a wipe changes only a band of
@@ -37,13 +38,14 @@ export function wipeSteps(steps: number): readonly number[] {
 /**
  * The frames of a cycle through some pictures: each one shows for `holdMs`, then the next one
  * wipes in over it in `steps` steps of `stepMs`; after the last, the first wipes in again, so the
- * GIF can play again and again without a jump.
+ * GIF can play again and again without a jump. The times are those of the front picture (`HERO`)
+ * unless they are given.
  */
 export function wipeCycle(
   pictures: readonly Frame[],
-  holdMs: number,
-  steps: number,
-  stepMs: number,
+  holdMs: number = HERO.holdMs,
+  steps: number = HERO.steps,
+  stepMs: number = HERO.stepMs,
 ): readonly Frame[] {
   return pictures.flatMap((picture, number) => {
     const next = pictures[(number + 1) % pictures.length] ?? picture;

@@ -1,3 +1,6 @@
+import { settingKeys, type SettingChoice } from "@bugaboo/api-client";
+
+import { type ApiSession } from "./api.ts";
 import { setUpCompany } from "./readme-company.ts";
 import { cargoBikeStory, createJob } from "./readme-issues.ts";
 import { cargoBike, company, projects, savedSearches } from "./readme-organization-data.ts";
@@ -26,11 +29,38 @@ export const readmeProject = company.shortName;
 export const readmeRepairs = projects.repairs.shortName;
 
 /**
+ * The theme of every picture and recording of the front page but the first, which shows all four:
+ * Paper, the second light theme, so the pages look the same whatever the reader's GitHub shows.
+ */
+export const readmeTheme: SettingChoice<"appearanceLightTheme"> = "paper";
+
+/** Marta sees the app always light, in the theme of the pictures (*My settings › Appearance*). */
+async function showReadmeTheme(admin: ApiSession): Promise<void> {
+  const choices = [
+    [settingKeys.appearanceMode, "light" satisfies SettingChoice<"appearanceMode">],
+    [settingKeys.appearanceLightTheme, readmeTheme],
+  ] as const;
+  await inOrder(
+    choices.map(([key, value]) => async () => {
+      const answer = await admin.client.PUT("/api/v1/me/settings/{key}", {
+        params: { path: { key } },
+        body: { value },
+      });
+      if (!answer.response.ok) {
+        throw new Error(`The setting ${key} was not kept.`);
+      }
+    }),
+  );
+}
+
+/**
  * Sets up Quillmoor Cycle Works on an empty server: the preparation of the pictures of the front
- * page. Marta Lindqvist, the administrator, signs in with `accountOf("marta")`.
+ * page. Marta Lindqvist, the administrator, signs in with `accountOf("marta")` and sees the app in
+ * `readmeTheme`.
  */
 export async function createReadmeOrganization(server: Instance): Promise<void> {
   const people = await setUpCompany(server);
+  await showReadmeTheme(people.admin);
   const shop = { people, ways: await setUpWork(people.admin) };
   // The cargo bike comes last, so it is the newest and stands at the top of its group in the list.
   await inOrder(jobs.map((job) => () => createJob(shop, job)));

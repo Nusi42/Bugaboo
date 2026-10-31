@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { SelectField } from "@bugaboo/ui";
+import { SelectField, selectLook, type SelectLook } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { notGroupable } from "../../shared/list-columns.ts";
@@ -16,6 +16,8 @@ export interface ViewChoicesProps extends ListViewControl {
   readonly fields: SearchFieldsAnswer;
   /** What stands after *Group by* (the button *Customize* on a computer). */
   readonly end?: ReactNode;
+  /** How *Group by* looks: quiet words above a list on a computer, a box in the *Filters* sheet. */
+  readonly look?: SelectLook;
 }
 
 /** The fields a list can be grouped by: every one the person may read. */
@@ -30,11 +32,18 @@ function groupChoicesOf(fields: SearchFieldsAnswer) {
  * *Filters* sheet on a phone (M5 exit decision D2). *Spacing* is no choice of a list: every screen
  * follows the person's *Spacing* in *My settings › Appearance* (ADR-0034, amendment).
  */
-export function ViewChoices({ view, fields, onView, end }: ViewChoicesProps) {
+export function ViewChoices({
+  view,
+  fields,
+  onView,
+  end,
+  look = selectLook.box,
+}: ViewChoicesProps) {
   return (
     <>
       <SelectField
         label={t("issues.group-by")}
+        look={look}
         choices={[
           { value: noGrouping, label: t("issues.group-by-none") },
           ...groupChoicesOf(fields),

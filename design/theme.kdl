@@ -209,6 +209,9 @@ tokens {
     size "size-details-room" "calc($size-details + $gap-details)"
     size "size-reading" "75ch"
     size "size-main" "780px"
+    // The thin line between two sections of the main column of an issue stands in this far from each side, so it
+    // separates the sections without closing them into boxes (UX §4.4).
+    size "inset-section-line" "$space-6"
     size "size-sheet-share" "85%"
     // A panel at the end of the screen, beside the page (the help of the search bar): about 30 rem.
     size "size-side-panel" "30rem"
@@ -1337,6 +1340,29 @@ part "field.input" {
     padding-block 0
     line-height "$lh-body"
     text-overflow ellipsis
+}
+
+// A choice that says how something is shown (Group by above a list): its name and then its value as quiet words in
+// the color of a link, with no box, like the text buttons beside it. The native list keeps the keyboard, the screen
+// reader and a phone's own picker; it is a control high, so a finger finds 44 on touch.
+part "field[variant=inline]" {
+    flex-direction row
+    flex-wrap wrap
+    align-items center
+    gap "$space-1"
+}
+
+part "field.input[variant=inline]" {
+    width auto
+    padding-inline "$space-1"
+    border-color transparent
+    background transparent
+    color "$accent-fg"
+    cursor pointer
+}
+
+part "field.input[variant=inline]:hover" {
+    background "$bg-hover"
 }
 
 part "field.input[variant=multiline]" {
@@ -2833,17 +2859,12 @@ part "list-nothing" {
     text-align center
 }
 
-// The controls above the list: Group by and Customize.
+// The controls above the list: Group by and Customize, quiet words on one line, level with each other (UX §4.2).
 part "list-options" {
     display flex
     flex-wrap wrap
-    align-items flex-start
-    gap "$space-3" "$space-5"
-}
-
-// The button stands level with the control of Group by, not with its label.
-part "list-options button" {
-    align-self flex-end
+    align-items center
+    gap "$space-2" "$space-5"
 }
 
 // A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.
@@ -5469,6 +5490,22 @@ part "issue-main" {
     gap "$space-5"
     min-width 0
     max-width "$size-main"
+}
+
+// One section of the main column (the description, a long text, the sub-issues, the related issues, the files, the
+// history). A block that has nothing to show leaves its section empty, and it takes no room.
+part "issue-main.section:empty" {
+    display none
+}
+
+// A thin line between two sections, inset from both sides, so the column reads as sections and not as one block
+// (UX §4.4). The Details have none: they are one panel of their own.
+part "issue-main.section ~ issue-main.section::before" {
+    content "\"\""
+    display block
+    margin-inline "$inset-section-line"
+    margin-block-end "$space-5"
+    border-top "$border-width solid $border"
 }
 
 // Details on wide screens keep their own scroll bar, so long details never push the description away.
