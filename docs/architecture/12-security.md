@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M4 built, M5 planned)
+## Scope (status: M5 built, M6 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments, mail and workflows (M4; threats below), search and lists (M5; threats below, planned), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5) | Time on issues and working hours (M6; threats below, planned), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -199,6 +199,23 @@ M5 lets people type searches that become database queries, search the text of is
 | Denial of service | Typing in the search bar asks the names route at every key press, and either uses up the 60 searches a minute (so a person cannot search) or, with a script, reads people without bound | The names route has an allowance of its own, `SUGGESTIONS_PER_MINUTE` (600) per person and minute, apart from the searches; a start of a name is at most `NAME_MAX` characters, an answer at most 20 names, and the store reads at most 5 pages of one name more than the answer holds (a `LIKE` on the stored name key, ordered, with the characters of a pattern written as themselves; the key is made in Rust, so capitals and repeated spaces do not count and accents do, on both databases) | `sec_17_suggestions_have_an_allowance_apart_from_searches` (unit test in `bb-api`, and over HTTP in `bb-server`: the names are still answered when the 60 searches are used up), `qry_05_a_start_that_is_too_long_or_a_kind_that_is_unknown_is_refused` |
 | Information disclosure | The names route lists people by their first letters, 20 at a time, including people of projects the person cannot open | **Accepted risk** (ADR-0005, decision 9): the names are those the person may name by *Who sees people* for the person fields; where that setting is at organization level a person may already see every name, so listing by start gives nothing more than the setting allows. A person who is shown no names is offered only themselves, and a person who exists looks the same as one who does not | `qry_05_a_person_who_is_shown_no_names_is_offered_no_one_and_a_missing_name_looks_the_same` |
 
+### Time and working hours (M6)
+
+M6 stores what people spent their time on and when they worked ([ADR-0035](../adr/0035-time-on-issues-and-working-hours.md)). Working hours are sensitive employee data (PRIV-09): the main threat is that somebody learns about another person's time without the permission for it, by any way out of the server. Each row names the check that proves it; the packages add the test names ([M6 plan](../milestones/M6/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|------------|-----------|
+| Information disclosure | A person reads another person's working hours (work days, breaks, warnings, reasons, totals) through a page, a total, a count, a history, a notification, an e-mail, an export or a search (PRIV-09, PRIV-13) | Working hours leave their module only for the person themselves and, on *Working hours of others*, for a holder of *See working hours of others*; with *Totals only* on, only the week totals. A notification about a day goes to the person of the day only; no search field, export or list reads work days (ADR-0035, decision 8) | SEC-MATRIX (the entry points `work-days` and `others-working-hours` for every starting role, *HR* included, and with *Totals only* on; the notifications and e-mail column); the tests of WP-06 and WP-10 |
+| Information disclosure | A person learns another person's time on issues through the time entries of an issue, *Time spent*, a total of an issue or a project, the history or a search (PRIV-12, PRIV-13) | A time entry shows its person only as *Who sees people* allows (the kind *Time entries*) and its length only to a reader of *Time spent*; totals count only the issues the reader sees and the fields they read, by the compiled search; the port of time spent reads only the issues the use case passes (ADR-0035, decision 4) | SEC-MATRIX (the entry points `timer` and `time-entries`, *Time spent* and the totals under field levels and visibility), ARCH-PERSON-REF, ARCH-DB-PARITY; the tests of WP-05 and WP-07 |
+| Information disclosure | A list, a search or an export orders or ranks people by a number of time, or an AI tool reads working hours (PRIV-09, COMP-10) | No route of time takes an order by person or by a total; grouping by person gives no length per person; the tool registry has no tool that reaches working hours (ADR-0035, decision 9; ADR-0013) | SEC-MATRIX, ARCH-AI-TOOLS; the tests of WP-05 and WP-06 |
+| Tampering | A person changes another person's work day without *Change working hours of others* | The use case judges the permission for the whole organization before every change of another person's day; the routes declare it | ARCH-PERMS, SEC-MATRIX (`others-working-hours` with *Change* for every starting role); the tests of WP-06 |
+| Repudiation | A past work day is changed without a reason, the old value is lost, or the person is not told (TIME-10) | A change of a past day without a reason is refused; its event keeps the old values and the reason, which the history of the day shows; a change by somebody else notifies the person of the day (ADR-0035, decision 7) | TEST-WORKING-TIME, ARCH-EVENTS; the tests of WP-06 |
+| Repudiation | A day left open is ended by the server, so the record shows an end that nobody gave | Nothing ends a day by itself; the next *Start work day* asks the person (ADR-0035, decision 5) | TEST-WORKING-TIME |
+| Elevation of privilege | A person gives themselves, or a group they are in, *See working hours of others* or *Change working hours of others* | Only a person who decides roles for the whole organization gives *HR*, and only one who holds the permissions adds them to a role; no access key holds them; every gift and removal is in the security log (ADR-0025, amendment M6) | ARCH-PERMS, SEC-MATRIX; `sec_15_every_change_of_permissions_is_in_the_security_log`; the tests of WP-06 |
+| Tampering | Two devices start two timers, or one work day is saved twice, so time is counted twice | One timer per person and one work day per person and date, kept by the store (a unique key) and by versions; the second start is refused with the conflict | TEST-CONCURRENT ("Timers and working hours start and stop at the same time", both databases), ARCH-VERSIONED |
+| Tampering | The note of a time entry or the reason of a change carries script that runs for another reader | Notes and reasons are plain text, shown as text and never as HTML; an e-mail writes them like any other text (ADR-0033) | SEC-RICHTEXT; the tests of WP-05 and WP-06 |
+| Denial of service | Many timers, starts or entries slow the server for everyone | At most one start or switch a second for a person, at most 200 time entries a day for a person, a length of 1 to 1,440 minutes, notes of at most 2,000 characters, pages with cursors on every list (the limits of WP-05 and WP-06, named constants) | PERF-N1, PERF-BENCH (the timesheet week and the totals of a project on 1 M issues); the tests of WP-05 and WP-06 |
+
 ### Boundary 4 (operator ↔ data) and the host
 
 | STRIDE | Threat | Mitigation | Proven by |
@@ -371,3 +388,49 @@ flowchart LR
 | Previews (a small image) | Showing a picture or a page of a file | (b) contract | As long as the attachment | As the file |
 
 The delete and export paths for a person are M9 work and are named in the follow-ups: the bytes of files M4-F52, the handles M4-F64, notifications and files in the export M4-F93. Until then, *Remove a person* (PRIV-04) is not built.
+
+## Personal data in M6
+
+M6 adds the time of people: what they spent it on (time entries and the timer) and when they worked (work days and breaks). Both are employee data that German law and the GDPR treat with care (PRIV-09); the decisions are in [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md). The marks below are decided here; WP-05 and WP-06 write them on their entities, and `cargo xtask gen privacy` lists them on the generated page `docs/privacy/personal-data.md`. Enforced by: DATA-MARKS.
+
+| Entity (package) | Field | Personal data | Category | Legal basis |
+|------------------|-------|---------------|----------|-------------|
+| Work day (WP-06) | person | yes | `identity` | `legal_obligation` |
+| Work day (WP-06) | date, start, end, time zone, the warnings of the rules | yes | `employee_time` | `legal_obligation` |
+| Break (WP-06) | start, end | yes | `employee_time` | `legal_obligation` |
+| Event of a change of a past day (WP-06) | the reason, the old values | yes | `employee_time` | `legal_obligation` |
+| Time entry (WP-05) | person | yes | `identity` | `contract` |
+| Time entry (WP-05) | date, length, note, *Billable*, the values of *Activity*, *Cost center* and other own fields | yes | `employee_time` | `contract` |
+| Time entry (WP-05) | issue | no | – | – |
+| Timer (WP-05) | person | yes | `identity` | `contract` |
+| Timer (WP-05) | issue, start, the mark of a long timer | yes | `employee_time` | `contract` |
+| Working-time settings (WP-06, WP-11) | preset, rules, keep period, *Totals only*, *Billable* | no | – | – |
+
+```mermaid
+flowchart LR
+  person(["Person"])
+  hr(["Holder of See working hours of others<br/>(the role HR)"])
+  subgraph bb["Bugaboo"]
+    timer["Timer<br/>person, issue, start"]
+    entries["Time entries<br/>person, issue, date, length,<br/>note, Activity, Cost center"]
+    days["Work days and breaks<br/>person, date, start, end,<br/>zone, warnings"]
+    reasons["Reasons and old values<br/>(events of past days)"]
+    notes["Notification to the person<br/>when somebody else changed a day"]
+    seclog["Security log<br/>gifts of HR, changes of the settings"]
+  end
+  person -- "starts, stops" --> timer --> entries
+  person -- "records" --> days
+  hr -- "reads (week totals only with Totals only)" --> days
+  hr -- "changes, with a reason" --> reasons --> notes --> person
+  days --> reasons
+  hr -.-> seclog
+```
+
+| Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
+|------|---------|---------------------------|------|---------------|
+| Work days and breaks, with their warnings | Recording working time as German law asks, and checking it against the working-time rules | (c) legal obligation (ArbZG §16 (2) and the duty to record working time; for employees in Germany with Art. 88 GDPR and § 26 BDSG) | The keep period of the rules from the day's date (2 years in the preset *Germany*, which cannot be set lower); then the daily job deletes them. A legal hold after *Remove a person* (architecture §7, *Legal holds*) | The person; holders of *See working hours of others*, only the week totals while *Totals only* is on. Never into a search, an export or an AI tool in M6 |
+| Reasons of changes and the old values | Trustworthy records (TIME-10) | (c) legal obligation | With their day | As the day; the notification of a change by somebody else goes to the person of the day only |
+| Time entries (length, date, note, accounting fields) | Accounting of work on issues, billing | (b) contract | No rule of their own in M6; 10 years with *Keep and delete rules* (PRIV-05, M9) | The person; others as *Who sees people* (the kind *Time entries*) and the field levels (*Time spent*) allow; the totals count only what the reader sees |
+| The running timer | Keeping the time on every device until it is saved | (b) contract | Until it is stopped or thrown away | The person only; the long-timer notification goes to the person |
+
+Nothing about time leaves the server, except the e-mail of a notification to the person themselves when they keep e-mail on (ADR-0033). No outside service and no AI reads working hours (COMP-10).

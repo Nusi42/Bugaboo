@@ -221,6 +221,15 @@ files = [
 status = "active"
 
 [[check]]
+id = "TXT-DATES"
+title = "Dates, moments, times of day and lengths of time on a screen are written only by the shared helpers, from the person's Region"
+rule = "coding-standards §4, ADR-0033 (amendment M6), UX-07"
+tool = "xtask (no Intl.DateTimeFormat, toLocaleDateString, toLocaleTimeString or toLocaleString of a date in web/ outside the shared helpers of web/app/src/shared/ and web/packages/)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
 id = "STY-TOKENS"
 title = "Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file"
 rule = "ADR-0010, ADR-0026"
@@ -563,6 +572,15 @@ tool = "xtask (the unit, property and two-database tests of the workflow rules e
 when = ["ci"]
 files = ["crates/**"]
 status = "active"
+
+[[check]]
+id = "TEST-WORKING-TIME"
+title = "The working-time rules, the person's day and the records of work days are tested by name: day boundaries, daylight-saving changes, zones, rest across days, a day that ends after midnight, a past day without a reason"
+rule = "ADR-0035, TIME-08, TIME-09, TIME-10"
+tool = "xtask (the unit and property tests of the working-time rules and of the person's day exist by name and are not switched off; the two-database tests of work days run through each_database)"
+when = ["ci"]
+files = ["crates/**"]
+status = "planned"
 
 [[check]]
 id = "TEST-UPLOADS"

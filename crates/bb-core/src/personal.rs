@@ -23,7 +23,8 @@ words! {
         Organization => "organization",
         /// What a person wrote: comments, descriptions, reasons.
         Content => "content",
-        /// Working hours and the accounting fields of time entries.
+        /// Time at work: work days and breaks, time entries with their notes and accounting
+        /// fields, the running timer, and the reasons for changing a past work day (ADR-0035).
         EmployeeTime => "employee_time",
         /// What identifies a device or connection: network address, browser, session.
         Technical => "technical",

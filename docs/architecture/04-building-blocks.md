@@ -202,7 +202,7 @@ The words that the developer tools, the tests and `xtask` share, written once: t
 
 ### bb-ai and bb-mcp
 
-One **tool registry** (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
+One **tool registry** (search issues, get issue, create, change status, comment, book time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
 
 ### bb-sample
 
