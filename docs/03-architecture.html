@@ -3652,7 +3652,7 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <h4>Decision</h4>
 <ol>
 <li><strong>0.9.0 means feature complete:</strong> every feature of the plan is built, that is every milestone up to M14. M15 (live updates and the release itself) brings <strong>1.0.0</strong>.</li>
-<li><strong>Before that, the minor number follows the features done:</strong> <code>minor = floor(9 × done / total)</code>, where <code>done</code> counts the features of the milestones that carry their <code>mN-done</code> tag, and <code>total</code> the features of M0 to M14 (the <em>Features</em> column of the overview in 04-milestones). With M0 to M5 done that is <code>floor(9 × 96 / 245) = 3</code>: <strong>0.3.0</strong>.</li>
+<li><strong>Before that, the minor number follows the features done:</strong> <code>minor = floor(9 × done / total)</code>, where <code>done</code> counts the features of the milestones that carry their <code>mN-done</code> tag, and <code>total</code> the features of M0 to M14 (the <em>Features</em> column of the overview in 04-milestones). With M0 to M5 done that is <code>floor(9 × 96 / 225) = 3</code>: <strong>0.3.0</strong>.</li>
 <li><strong>The patch number</strong> counts the releases made at the same minor number, from 0. A finished milestone that does not raise the minor number raises the patch number.</li>
 <li>The version is written once, in <code>[workspace.package]</code> of <code>Cargo.toml</code>, which every crate inherits; the browser packages carry no version of their own. It changes in the commit that records a finished milestone.</li>
 </ol>

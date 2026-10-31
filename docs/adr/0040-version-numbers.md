@@ -9,7 +9,7 @@ Bugaboo is published before it is finished. Its version number should tell a rea
 ## Decision
 
 1. **0.9.0 means feature complete:** every feature of the plan is built, that is every milestone up to M14. M15 (live updates and the release itself) brings **1.0.0**.
-2. **Before that, the minor number follows the features done:** `minor = floor(9 × done / total)`, where `done` counts the features of the milestones that carry their `mN-done` tag, and `total` the features of M0 to M14 (the *Features* column of the overview in 04-milestones). With M0 to M5 done that is `floor(9 × 96 / 245) = 3`: **0.3.0**.
+2. **Before that, the minor number follows the features done:** `minor = floor(9 × done / total)`, where `done` counts the features of the milestones that carry their `mN-done` tag, and `total` the features of M0 to M14 (the *Features* column of the overview in 04-milestones). With M0 to M5 done that is `floor(9 × 96 / 225) = 3`: **0.3.0**.
 3. **The patch number** counts the releases made at the same minor number, from 0. A finished milestone that does not raise the minor number raises the patch number.
 4. The version is written once, in `[workspace.package]` of `Cargo.toml`, which every crate inherits; the browser packages carry no version of their own. It changes in the commit that records a finished milestone.
 
