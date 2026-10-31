@@ -86,6 +86,11 @@ impl TryFrom<i64> for Minutes {
     }
 }
 
+// A length on its own is a number, like the `u32` it holds. Whether it says something about a
+// person is a matter of what it is the length of: a time entry marks its length `employee_time`
+// (ADR-0035), an estimate of an issue says nothing about anybody.
+impl crate::personal::NotPersonal for Minutes {}
+
 impl From<Minutes> for i64 {
     fn from(minutes: Minutes) -> Self {
         Self::from(minutes.0)

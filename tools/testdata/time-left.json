@@ -1,0 +1,77 @@
+{
+  "about": "The worked-out Time left of an issue: the typed value while there is one, else the estimate minus the time spent, never below zero, and none without either (ADR-0035, decision 4). This file is written by `cargo xtask gen time-vectors` from crates/bb-core/src/time/left.rs; the two-database test `time_03_the_compiled_time_left_matches_the_vectors` runs every case through the expression of the search compiler. All values are minutes; null is none.",
+  "cases": [
+    {
+      "estimated": null,
+      "spent": 0,
+      "typed": null,
+      "left": null
+    },
+    {
+      "estimated": null,
+      "spent": 90,
+      "typed": null,
+      "left": null
+    },
+    {
+      "estimated": 240,
+      "spent": 0,
+      "typed": null,
+      "left": 240
+    },
+    {
+      "estimated": 240,
+      "spent": 80,
+      "typed": null,
+      "left": 160
+    },
+    {
+      "estimated": 240,
+      "spent": 240,
+      "typed": null,
+      "left": 0
+    },
+    {
+      "estimated": 240,
+      "spent": 300,
+      "typed": null,
+      "left": 0
+    },
+    {
+      "estimated": 0,
+      "spent": 30,
+      "typed": null,
+      "left": 0
+    },
+    {
+      "estimated": 240,
+      "spent": 80,
+      "typed": 30,
+      "left": 30
+    },
+    {
+      "estimated": 240,
+      "spent": 300,
+      "typed": 0,
+      "left": 0
+    },
+    {
+      "estimated": null,
+      "spent": 90,
+      "typed": 45,
+      "left": 45
+    },
+    {
+      "estimated": null,
+      "spent": 0,
+      "typed": 0,
+      "left": 0
+    },
+    {
+      "estimated": 4294967295,
+      "spent": 1,
+      "typed": null,
+      "left": 4294967294
+    }
+  ]
+}

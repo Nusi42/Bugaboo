@@ -1,13 +1,17 @@
 //! Time as a person counts it, written once: the units of time that more than one crate counts in,
 //! the day of a moment for a person and the week it is in ([`day`]), the time zones the server knows
-//! ([`zone`]), and the length of time a person types ([`length`]). Pure: no clock and no I/O, the
-//! caller gives the moment.
+//! ([`zone`]), the length of time a person types ([`length`]), what a time entry may hold
+//! ([`entry`]), the worked-out *Time left* of an issue ([`left`]) and the ranges lengths are grouped
+//! in ([`range`]). Pure: no clock and no I/O, the caller gives the moment.
 
 pub mod day;
 pub mod entry;
+pub mod left;
 pub mod length;
+pub mod range;
 pub mod zone;
 
+pub use left::{TimeLeft, time_left};
 pub use length::{Minutes, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
 
 use jiff::SignedDuration;
