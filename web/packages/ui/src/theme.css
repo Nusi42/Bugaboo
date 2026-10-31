@@ -5462,6 +5462,10 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
+[data-part="quick-search.title"] [data-part="issue-id"] {
+  margin-inline-end: var(--space-2);
+}
+
 [data-part="quick-search.empty"] {
   margin: 0;
   padding: var(--space-3);

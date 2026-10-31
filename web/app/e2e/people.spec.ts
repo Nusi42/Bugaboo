@@ -112,7 +112,8 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
   await page.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
   const members = page.getByRole("list", { name: t("groups.members"), exact: true });
   await expect(members.getByText(bob.name)).toBeVisible();
-  await expect(page.getByText(t("groups.in-already"), { exact: true })).toBeVisible();
+  // Who is in the group is offered no more.
+  await expect(page.getByRole("radio", { name: bob.name, exact: true })).toHaveCount(0);
   await expect(
     page.getByText(t("groups.added", { name: bob.name, group: "Backend" })),
   ).toBeVisible();

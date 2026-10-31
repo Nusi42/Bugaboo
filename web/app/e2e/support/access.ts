@@ -7,6 +7,7 @@ import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
+import { peopleSentence } from "../../src/shared/people-sentence.ts";
 
 export const ana: Person = {
   name: "Ana Analyst",
@@ -240,27 +241,15 @@ export async function check(
   await page.getByRole("radio", { name: person.name }).check();
 }
 
-/** What stands for the list of kinds while the start of a sentence of the preview is worked out. */
-const KINDS_HERE = "";
-
-/** The start of each sentence of the preview of *Who sees people*, before the kinds it names. */
-const previewStarts = {
-  names: t("people-visibility.preview-names", { kinds: KINDS_HERE }),
-  "role-only": t("people-visibility.preview-role-only", {
-    kinds: KINDS_HERE,
-    example: t("person.role-inside", { role: t("starting-role.team-member") }),
-  }),
-  hidden: t("people-visibility.preview-hidden", {
-    kinds: KINDS_HERE,
-    someone: t("person.someone-inside"),
-  }),
-} as const;
+/** What stands for the list of kinds while the start of a sentence of the preview is worked out: a word no sentence has. */
+const KINDS_HERE = "KINDS-HERE";
 
 /**
  * The line of the preview under *Who sees people* for one level: the sentence that names the kinds of people
  * information the chosen role has at that level (PRIV-12, M5-F135).
  */
-export function peoplePreviewLine(page: Page, level: keyof typeof previewStarts): Locator {
-  const start = previewStarts[level].split(KINDS_HERE)[0] ?? "";
+export function peoplePreviewLine(page: Page, level: Schema<"PeopleLevel">): Locator {
+  // The sentence the screen writes, up to the kinds it names: the three levels start differently.
+  const start = peopleSentence(level, KINDS_HERE).split(KINDS_HERE)[0] ?? "";
   return page.locator('[data-part="access.preview-line"]').filter({ hasText: start });
 }

@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Button, PickerRow, SearchPicker } from "@bugaboo/ui";
 
+import { foundByName } from "../../shared/found-by-name.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { groupLinesOf, useGroups } from "../people/index.ts";
 import { ChoiceDialog } from "./ChoiceDialog.tsx";
@@ -31,21 +32,19 @@ export function GroupChoice({ field, onCommit }: OtherChoiceProps) {
             more: t("fields.pick-more-groups"),
           })}
         >
-          {groups
-            .filter((group) => group.name.toLowerCase().includes(frame.query.trim().toLowerCase()))
-            .map((group) => (
-              <PickerRow key={group.id} label={group.name}>
-                <Button
-                  aria-label={t("fields.pick-choose-name", { name: group.name })}
-                  onPress={() => {
-                    onCommit({ id: group.id, name: group.name });
-                    done();
-                  }}
-                >
-                  {t("fields.choose")}
-                </Button>
-              </PickerRow>
-            ))}
+          {foundByName(groups, frame.query).map((group) => (
+            <PickerRow key={group.id} label={group.name}>
+              <Button
+                aria-label={t("fields.pick-choose-name", { name: group.name })}
+                onPress={() => {
+                  onCommit({ id: group.id, name: group.name });
+                  done();
+                }}
+              >
+                {t("fields.choose")}
+              </Button>
+            </PickerRow>
+          ))}
         </SearchPicker>
       )}
     </ChoiceDialog>

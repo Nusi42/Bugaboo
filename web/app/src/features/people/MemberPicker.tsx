@@ -15,13 +15,14 @@ export interface MemberPickerProps {
 /**
  * Putting people into the group (UX §6), the way a person is picked to give a role to: a search box, the people it finds
  * by name as radio buttons, the ones picked last first, and *Put in* under them for the one picked. Those who are in
- * already say so, and cannot be put in again (M5-F135: one person picker).
+ * already are not offered (M5-F135: one person picker).
  */
 export function MemberPicker({ group, changes }: MemberPickerProps) {
   const { words, group: radios, frame } = usePickerFrame();
   const [picked, setPicked] = useState<Choice>();
   const found = useMemberChoices(group.id, words);
-  const choices = choicesOf(found.data?.pages);
+  // Who is in the group already is not offered: there is nothing to pick them for (M5-F135).
+  const choices = choicesOf(found.data?.pages).filter((person) => !person.alreadyIn);
   const shown = words === "" ? recentFirst("person", choices) : choices;
   return (
     <div {...partOf(part.stack)}>
@@ -41,7 +42,6 @@ export function MemberPicker({ group, changes }: MemberPickerProps) {
             group={radios}
             checked={picked?.id === person.id}
             label={person.name}
-            {...(person.alreadyIn ? { hint: t("groups.in-already") } : {})}
             onPick={() => {
               setPicked(person);
             }}
@@ -50,7 +50,7 @@ export function MemberPicker({ group, changes }: MemberPickerProps) {
       </SearchPicker>
       <div {...partOf(part.row)}>
         <Button
-          isDisabled={picked === undefined || picked.alreadyIn}
+          isDisabled={picked === undefined}
           {...(picked === undefined
             ? {}
             : { "aria-label": t("groups.add-name", { name: picked.name }) })}

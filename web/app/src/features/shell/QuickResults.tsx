@@ -49,10 +49,14 @@ export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
                 textValue={result.title}
                 {...partOf(part.quickSearchItem)}
               >
-                <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
-                {result.hint === undefined && result.issueId === undefined ? null : (
+                {/* An issue reads as in every row of issues: its ID first, then its title (R9). */}
+                <span {...partOf(part.quickSearchTitle)}>
+                  {result.issueId === undefined ? null : <IssueId id={result.issueId} />}
+                  {result.title}
+                </span>
+                {result.hint === undefined ? null : (
                   <Text slot={descriptionSlot} {...partOf(part.hint)}>
-                    {result.issueId === undefined ? result.hint : <IssueId id={result.issueId} />}
+                    {result.hint}
                   </Text>
                 )}
               </ListBoxItem>

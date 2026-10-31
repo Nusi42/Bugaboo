@@ -41,8 +41,9 @@ test("cfg_08_words_find_issues_by_title", async ({ page }) => {
   await ask(page, "passkey");
   const found = result(page, titles.passkey);
   await expect(found).toBeVisible();
-  // The ID of the issue is the line under its title; the other issues of the project are not here.
+  // The ID of the issue stands before its title, as in every row of issues; the other issues of the project are not here.
   await expect(found).toContainText("WEB-2");
+  expect((await found.innerText()).trimStart()).toMatch(/^WEB-2/u);
   await expect(result(page, titles.login)).toHaveCount(0);
   await found.click();
   await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-2")));
@@ -97,11 +98,11 @@ test("cfg_08 an ID of the other kind, with random letters, opens its issue too",
   await ask(page, "random kind");
   const found = result(page, titles.random);
   await expect(found).toBeVisible();
-  const hint = found.locator("[data-part='hint']");
+  const id = found.locator("[data-part='issue-id']");
   // A key of the other kind: letters in it, no counting number.
-  await expect(hint).toHaveText(/^RND-/u);
-  await expect(hint).not.toHaveText(/^RND-\d+$/u);
-  const key = await hint.innerText();
+  await expect(id).toHaveText(/^RND-/u);
+  await expect(id).not.toHaveText(/^RND-\d+$/u);
+  const key = await id.innerText();
   await box(page).fill(key.toLowerCase());
   await expect(result(page, titles.random)).toBeVisible();
   await expect(list(page).locator("[data-focused='true']")).toBeVisible();

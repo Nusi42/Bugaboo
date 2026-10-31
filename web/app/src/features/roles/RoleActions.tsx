@@ -15,7 +15,10 @@ export interface RoleActionsProps {
 export function RoleActions({ role, used }: RoleActionsProps) {
   const starting = role.starting !== undefined && role.starting !== null;
   return (
-    <Card heading={t("roles.actions-title")} intro={t("roles.actions-intro")}>
+    <Card
+      heading={t("roles.actions-title")}
+      intro={t(starting ? "roles.actions-intro-starting" : "roles.actions-intro")}
+    >
       <div {...partOf(part.stack)}>
         {starting ? <ResetRole id={role.id} name={role.name} version={role.version} /> : null}
         <CopyRole id={role.id} name={role.name} />

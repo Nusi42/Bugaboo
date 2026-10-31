@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
-import { roleName, someoneName } from "../../shared/person.ts";
+import { someoneName } from "../../shared/person.ts";
+import { exampleOfRoleOnly } from "../../shared/people-sentence.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { CheckAccessView } from "./CheckAccessView.tsx";
 import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
@@ -21,7 +22,7 @@ export function FieldPermissionsPage() {
  * stays on one line with its brackets.
  */
 function PeopleVisibilityIntro() {
-  const example = roleName("inside", t("starting-role.team-member"));
+  const example = exampleOfRoleOnly();
   return (
     <SentenceWithValue
       sentence={t("people-visibility.intro", { example, someone: someoneName("inside") })}

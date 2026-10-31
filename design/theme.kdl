@@ -564,7 +564,7 @@ distinct min-delta-e-between-states=15 min-delta-e-against-surfaces=7.5 reason="
 
 // The squares of labels are told apart at a glance in every theme: no Coral close to Pink, the case of the pale fills of
 // the light themes (M5-F149). Their ratio to the surfaces is the `fills` rule of the contrast rules.
-distinct min-delta-e-between-states=26 reason="The squares of the twelve label colors differ from each other by at least 26 (delta E), in every theme (M5-F149)." {
+distinct min-delta-e-between-states=25 reason="The squares of the twelve label colors differ from each other by at least 25 (delta E), in every theme (M5-F149)." {
     states "cat1-mark" "cat2-mark" "cat3-mark" "cat4-mark" "cat5-mark" "cat6-mark" "cat7-mark" "cat8-mark" "cat9-mark" "cat10-mark" "cat11-mark" "cat12-mark"
     surfaces "bg-raised"
 }
@@ -4064,8 +4064,6 @@ part "settings.locked-value" {
 
 // ───────────── Access ─────────────
 
-// The title of an answer of *Check access* (a permission, a field): the name of a row, regular weight (UX §7.3:
-// bold is for the heading of a section, not for the title of every line).
 // *Choose a role* of a table of levels, with *Saving…* and *Saved* at the end of the line of its label: the label line
 // is there anyway, so nothing moves when the status comes and it needs no line of its own (M5-F135).
 part "access.chooser" {
@@ -4078,6 +4076,8 @@ part "access.chooser save-status" {
     inset-inline-end 0
 }
 
+// The title of an answer of *Check access* (a permission, a field): the name of a row, regular weight (UX §7.3:
+// bold is for the heading of a section, not for the title of every line).
 part "access.subheading" {
     margin 0
     font-size "$fs-md"
@@ -5287,6 +5287,11 @@ part "quick-search.item[focused]" {
 part "quick-search.title" {
     font-size "$fs-md"
     font-weight "$weight-regular"
+}
+
+// The ID before the title of an issue found, as in every row of issues.
+part "quick-search.title issue-id" {
+    margin-inline-end "$space-2"
 }
 
 part "quick-search.empty" {

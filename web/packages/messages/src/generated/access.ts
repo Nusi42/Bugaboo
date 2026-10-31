@@ -27,10 +27,6 @@ export const messages = {
   "people-visibility.intro-project":
     "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
   "people-visibility.table-name": "How each role sees each kind of people information",
-  "people-visibility.preview-names": "Sees people by their names in {kinds}.",
-  "people-visibility.preview-role-only":
-    "Sees people by their role only, as {example}, in {kinds}.",
-  "people-visibility.preview-hidden": "Sees people as {someone}, without their role, in {kinds}.",
   "check-access.intro":
     "Choose a person and where to look. You read what they can do there, every field and how they see people, each with the reason.",
   "check-access.person-search": "Search for a person",

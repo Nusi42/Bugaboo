@@ -3,10 +3,10 @@ import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
-import { roleName, someoneName } from "../../shared/person.ts";
 import { IssueTypeChooser } from "../issue-types/index.ts";
 import { LevelTableView } from "./LevelTableView.tsx";
-import type { FieldKeyCode, FieldLevelCode, PeopleLevelCode } from "./levels.ts";
+import { peopleSentence } from "../../shared/people-sentence.ts";
+import type { FieldKeyCode, FieldLevelCode } from "./levels.ts";
 import { useFieldPermissions, usePeopleVisibility } from "./use-levels.ts";
 
 /** *More options* of the field permissions: the issue type whose levels the table shows (ADR-0027). */
@@ -48,20 +48,6 @@ const fieldSentenceOf = {
 /** What a role sees of the fields at a level, in a sentence of the preview. */
 function fieldSentence(level: FieldLevelCode, fields: string): string {
   return t(fieldSentenceOf[level], { fields });
-}
-
-/** What a role sees of people in the kinds at a level, in a sentence of the preview (the words of the glossary). */
-function peopleSentence(level: PeopleLevelCode, kinds: string): string {
-  if (level === "names") {
-    return t("people-visibility.preview-names", { kinds });
-  }
-  if (level === "role-only") {
-    return t("people-visibility.preview-role-only", {
-      kinds,
-      example: roleName("inside", t("starting-role.team-member")),
-    });
-  }
-  return t("people-visibility.preview-hidden", { kinds, someone: someoneName("inside") });
 }
 
 /** The field permissions of a place: the whole organization, or a project (an ID). */

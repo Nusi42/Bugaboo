@@ -86,7 +86,6 @@ export const messages = {
   "groups.add-list": "People you can put into the group",
   "groups.add": "Put in",
   "groups.add-name": "Put in {name}",
-  "groups.in-already": "In the group",
   "groups.add-nothing": "Nobody found. Try another word.",
   "groups.add-more": "Show more people",
   "groups.added": "{name} is in the group {group}.",

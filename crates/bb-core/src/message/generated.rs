@@ -1614,9 +1614,6 @@ pub const GROUPS_DELETE: MessageKey = MessageKey::new("groups.delete");
 /// The message `groups.field-name`.
 pub const GROUPS_FIELD_NAME: MessageKey = MessageKey::new("groups.field-name");
 
-/// The message `groups.in-already`.
-pub const GROUPS_IN_ALREADY: MessageKey = MessageKey::new("groups.in-already");
-
 /// The message `groups.intro`.
 pub const GROUPS_INTRO: MessageKey = MessageKey::new("groups.intro");
 
@@ -3591,6 +3588,10 @@ pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.se
 /// The message `roles.actions-intro`.
 pub const ROLES_ACTIONS_INTRO: MessageKey = MessageKey::new("roles.actions-intro");
 
+/// The message `roles.actions-intro-starting`.
+pub const ROLES_ACTIONS_INTRO_STARTING: MessageKey =
+    MessageKey::new("roles.actions-intro-starting");
+
 /// The message `roles.actions-title`.
 pub const ROLES_ACTIONS_TITLE: MessageKey = MessageKey::new("roles.actions-title");
 
@@ -3612,9 +3613,6 @@ pub const ROLES_COPY: MessageKey = MessageKey::new("roles.copy");
 
 /// The message `roles.copy-field`.
 pub const ROLES_COPY_FIELD: MessageKey = MessageKey::new("roles.copy-field");
-
-/// The message `roles.copy-help`.
-pub const ROLES_COPY_HELP: MessageKey = MessageKey::new("roles.copy-help");
 
 /// The message `roles.counts-organization`.
 pub const ROLES_COUNTS_ORGANIZATION: MessageKey = MessageKey::new("roles.counts-organization");
@@ -12609,7 +12607,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("groups.delete-title", "Delete the group {name}?"),
     ("groups.field-name", "Name of the group"),
-    ("groups.in-already", "In the group"),
     (
         "groups.intro",
         "A group is a set of people. Give a role to a group, and everybody in it has that role.",
@@ -14230,7 +14227,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-kinds.search", "Search kinds of relation"),
     (
         "roles.actions-intro",
-        "What can be done with the role as a whole: copy it, delete it, or reset a starting role to the permissions it started with.",
+        "Copy the role to start a new one from its permissions, or delete it.",
+    ),
+    (
+        "roles.actions-intro-starting",
+        "Reset this starting role to the permissions it started with, copy it to start a new one from its permissions, or delete it.",
     ),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
@@ -14243,10 +14244,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("roles.badge-used", "{badge}. {used}"),
     ("roles.copy", "Copy this role"),
     ("roles.copy-field", "Name of the copy"),
-    (
-        "roles.copy-help",
-        "Create a new role that starts with the permissions of this one.",
-    ),
     ("roles.copy-of", "Copy of {name}"),
     (
         "roles.counts-organization",

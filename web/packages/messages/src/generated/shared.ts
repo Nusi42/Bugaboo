@@ -418,6 +418,10 @@ export const messages = {
   "nav.check-access": "Check access",
   "field-permissions.project-title": "Field permissions in {project}",
   "people-visibility.project-title": "Who sees people in {project}",
+  "people-visibility.preview-names": "Sees people by their names in {kinds}.",
+  "people-visibility.preview-role-only":
+    "Sees people by their role only, as {example}, in {kinds}.",
+  "people-visibility.preview-hidden": "Sees people as {someone}, without their role, in {kinds}.",
   "check-access.project-title": "Check access in {project}",
   "person.role-inside": "someone ({role})",
   "person.someone-inside": "someone",

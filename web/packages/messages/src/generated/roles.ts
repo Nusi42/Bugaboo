@@ -28,8 +28,9 @@ export const messages = {
   "roles.second-step-gap":
     "{count, plural, =0 {Everybody with this role has set up a second step.} one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
   "roles.actions-title": "More about this role",
-  "roles.actions-intro":
-    "What can be done with the role as a whole: copy it, delete it, or reset a starting role to the permissions it started with.",
+  "roles.actions-intro": "Copy the role to start a new one from its permissions, or delete it.",
+  "roles.actions-intro-starting":
+    "Reset this starting role to the permissions it started with, copy it to start a new one from its permissions, or delete it.",
   "roles.reset": "Reset to the starting permissions",
   "roles.reset-help":
     "This is a starting role. You can give it back the permissions it had at the start.",
@@ -38,7 +39,6 @@ export const messages = {
     "The permissions and the two-step switch of {name} go back to what they were at the start. The name stays. What was changed since is lost.",
   "roles.reset-done": "{name} has its starting permissions again.",
   "roles.copy": "Copy this role",
-  "roles.copy-help": "Create a new role that starts with the permissions of this one.",
   "roles.copy-field": "Name of the copy",
   "roles.copy-of": "Copy of {name}",
   "roles.delete": "Delete the role",

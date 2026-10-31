@@ -30,7 +30,6 @@ export function CopyRole({ id, name }: CopyRoleProps) {
         copy.mutate({ params: { path: { role: id } }, body: { name: typed.trim() } });
       }}
     >
-      <p {...partOf(part.muted)}>{t("roles.copy-help")}</p>
       <TextField
         label={t("roles.copy-field")}
         requiredMessage={t("error.field.required")}
