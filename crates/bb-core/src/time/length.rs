@@ -96,6 +96,10 @@ impl From<Minutes> for i64 {
 /// lengths refuses more, and the server of time entries holds an entry to it.
 pub const TIME_ENTRY_MINUTES_MAX: Minutes = Minutes::new(HOURS_PER_DAY * MINUTES_PER_HOUR);
 
+/// The shortest one time entry may be: a whole minute. A timer that ran for less saves nothing,
+/// and the reader of typed lengths refuses less for an entry.
+pub const TIME_ENTRY_MINUTES_MIN: Minutes = Minutes::new(1);
+
 /// The mark before the decimals of an hour, as the person's *Number format* writes it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -159,7 +163,10 @@ impl LengthMistake {
                     (TIME_ENTRY_MINUTES_MAX.get() / MINUTES_PER_HOUR).to_string(),
                 )],
             ),
-            Self::Zero => Said::key(message::TIME_LENGTH_ZERO),
+            Self::Zero => Said::with(
+                &message::time_length_zero(0),
+                vec![Said::Count(TIME_ENTRY_MINUTES_MIN.get())],
+            ),
         }
     }
 }
@@ -324,12 +331,13 @@ pub fn read(text: &str, words: &LengthWords<'_>) -> Result<Minutes, LengthMistak
     .ok_or(LengthMistake::NotALength)
 }
 
-/// The bound of one time entry: at least a minute, at most [`TIME_ENTRY_MINUTES_MAX`].
+/// The bound of one time entry: at least [`TIME_ENTRY_MINUTES_MIN`], at most
+/// [`TIME_ENTRY_MINUTES_MAX`].
 ///
 /// # Errors
 /// [`LengthMistake::Zero`] for no time, [`LengthMistake::TooLong`] for more than a day.
 pub fn time_entry(length: Minutes) -> Result<Minutes, LengthMistake> {
-    if length == Minutes::default() {
+    if length < TIME_ENTRY_MINUTES_MIN {
         Err(LengthMistake::Zero)
     } else if length > TIME_ENTRY_MINUTES_MAX {
         Err(LengthMistake::TooLong)

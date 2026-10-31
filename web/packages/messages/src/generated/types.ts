@@ -550,6 +550,7 @@ export interface MessageArguments {
   "time.length.minutes": { minutes: number };
   "time.length.not-a-length": { decimal: string | number };
   "time.length.too-long": { hours: string | number };
+  "time.length.zero": { minutes: number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };

@@ -5432,9 +5432,6 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 
-/// The message `time.length.zero`.
-pub const TIME_LENGTH_ZERO: MessageKey = MessageKey::new("time.length.zero");
-
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
@@ -10849,6 +10846,15 @@ pub fn time_length_too_long(hours: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.length.zero`.
+#[must_use]
+pub fn time_length_zero(minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.length.zero"),
+        vec![("minutes", Value::Number(minutes))],
+    )
+}
+
 /// The message `tls.generate-failed`.
 #[must_use]
 pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
@@ -15935,7 +15941,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "time.length.too-long",
         "One entry is at most {hours} hours.",
     ),
-    ("time.length.zero", "A time entry is at least 1 minute."),
+    (
+        "time.length.zero",
+        "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
+    ),
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",

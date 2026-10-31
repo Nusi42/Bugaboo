@@ -7,7 +7,7 @@ pub mod day;
 pub mod length;
 pub mod zone;
 
-pub use length::{Minutes, TIME_ENTRY_MINUTES_MAX};
+pub use length::{Minutes, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
 
 use jiff::SignedDuration;
 
