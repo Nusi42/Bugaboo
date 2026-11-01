@@ -53,6 +53,29 @@ export function handleIn(scope: Locator | Page, label: string): Locator {
   return scope.locator(`[data-part="draggable.handle"][aria-label="${label}"]`);
 }
 
+/**
+ * Drags `source` onto `target` as a person does when the two are further apart than the window is
+ * high: takes it, scrolls until the target is in sight while holding it, and lets go there.
+ * `dragTo` scrolls the page between taking and dropping, which a drag does not survive.
+ */
+export async function dragOverThePage(page: Page, source: Locator, target: Locator): Promise<void> {
+  await source.hover();
+  const start = await source.boundingBox();
+  if (start === null) {
+    throw new TypeError("The thing to drag is not on the page.");
+  }
+  await page.mouse.down();
+  // A few pixels first, so the drag has started before the page moves.
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2 - 8, { steps: 4 });
+  await target.scrollIntoViewIfNeeded();
+  const end = await target.boundingBox();
+  if (end === null) {
+    throw new TypeError("The place to drop on is not on the page.");
+  }
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
 /** The places where a dragged thing can be dropped. */
 export function slotsIn(scope: Locator): Locator {
   return scope.locator('[data-part="drop-slot"]');

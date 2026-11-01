@@ -41,7 +41,7 @@ export async function prepareOffers(server: Instance): Promise<void> {
     body: { issue_type: bug, title: "A bug in Website" },
   });
   await admin.client.PUT("/api/v1/field-permissions/{role}/{field}", {
-    params: { path: { role: copy.id, field: "cost-center" }, query: { issue_type: bug } },
+    params: { path: { role: copy.id, field: "due-date" }, query: { issue_type: bug } },
     body: { level: "hidden" },
   });
   await giveRole(admin, bobId, "Careful", "WEB");

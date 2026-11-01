@@ -16,7 +16,7 @@ function table(project: LevelTable<string, Level>["project"]): LevelTable<string
     levels,
     rows: [
       {
-        subject: "cost-center",
+        subject: "due-date",
         yours: "can-change",
         cells: [
           { role: "r1", level: "can-see", origin: { kind: "role-own" } },
@@ -30,7 +30,7 @@ function table(project: LevelTable<string, Level>["project"]): LevelTable<string
 describe("sec_04 a level changes in the table before the server has answered", () => {
   it("shows the new level for the project that set it", () => {
     const project = { shown: "visible", id: "p", short_name: "WEB", name: "Website" } as const;
-    const after = applied(table(project), { role: "r1", subject: "cost-center", level: "hidden" });
+    const after = applied(table(project), { role: "r1", subject: "due-date", level: "hidden" });
     expect(after?.rows[0]?.cells[0]).toEqual({
       role: "r1",
       level: "hidden",
@@ -40,7 +40,7 @@ describe("sec_04 a level changes in the table before the server has answered", (
   });
 
   it("shows the role's own level on the table of the organization", () => {
-    const after = applied(table(null), { role: "r2", subject: "cost-center", level: "can-see" });
+    const after = applied(table(null), { role: "r2", subject: "due-date", level: "can-see" });
     expect(after?.rows[0]?.cells[1]).toEqual({
       role: "r2",
       level: "can-see",
@@ -50,9 +50,9 @@ describe("sec_04 a level changes in the table before the server has answered", (
 
   it("shows nothing new for a setting that is taken away: the server says what counts then", () => {
     const before = table(null);
-    expect(applied(before, { role: "r1", subject: "cost-center", level: null })).toBe(before);
+    expect(applied(before, { role: "r1", subject: "due-date", level: null })).toBe(before);
     expect(
-      applied(undefined, { role: "r1", subject: "cost-center", level: "hidden" }),
+      applied(undefined, { role: "r1", subject: "due-date", level: "hidden" }),
     ).toBeUndefined();
   });
 });

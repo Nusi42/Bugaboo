@@ -8,6 +8,7 @@ import { openFromMenu, signIn } from "./support/flows.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 import { createProject } from "./support/projects.ts";
 import { inOrder } from "./support/sequence.ts";
+import { serverWord } from "./support/server-words.ts";
 
 // Own fields (CF-01 to CF-08, WP-05): an administrator makes *Severity* (pick one, four colored
 // choices), *Platforms* (pick several) and *Customer* (text) on the screens, they are filled in on
@@ -87,7 +88,27 @@ test("cf_01 Platforms (pick several) and Customer (text) are made on the same sc
   await createField(page, t("field-type.text"), "Customer");
   await openFromMenu(page, t("nav.fields"));
   const list = page.getByRole("list", { name: t("fields.list") });
-  await expect(list.getByRole("link")).toHaveText(["Severity", "Platforms", "Customer"]);
+  // Every organization has the starter fields of time entries (ADR-0035): they come first, and
+  // each row says what its field is for.
+  const activity = serverWord("starter-field.activity");
+  const costCenter = serverWord("starter-field.cost-center");
+  await expect(list.getByRole("link")).toHaveText([
+    activity,
+    costCenter,
+    "Severity",
+    "Platforms",
+    "Customer",
+  ]);
+  await Promise.all(
+    [activity, costCenter].map((name) =>
+      expect(list.getByRole("listitem").filter({ hasText: name })).toContainText(
+        t("field-for.time-entries"),
+      ),
+    ),
+  );
+  await expect(list.getByRole("listitem").filter({ hasText: "Customer" })).toContainText(
+    t("field-for.issues"),
+  );
   await expectGoodInEveryLook(page);
 });
 

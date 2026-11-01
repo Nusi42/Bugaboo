@@ -89,7 +89,7 @@ describe("adr_0019 the sentence names the person as the reader may see them", ()
 
   it("leaves out a field the reader may not see and a change without words", () => {
     const text = sentence(
-      conflict({ fields: ["cost-center", "priority"], current: { priority: "low" } }),
+      conflict({ fields: ["due-date", "priority"], current: { priority: "low" } }),
       now,
     );
     expect(text).toContain("Priority to Low");
