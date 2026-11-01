@@ -7,7 +7,7 @@ import { prepareFieldsIssue } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes, inFourThemes } from "./support/four-themes.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
-import { createIssue, openNewIssueDialog } from "./support/issues.ts";
+import { createIssue, newIssueDialog, openNewIssueDialog } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The details of an issue with its defaults for booked time, and the new-issue form without them
@@ -38,4 +38,11 @@ test("the new-issue form, which does not ask for them", async ({ page }) => {
   await page.goto(projectIssuesAddress("WEB"));
   await openNewIssueDialog(page);
   await inFourThemes(page, "new-issue", MILESTONE);
+  // The form scrolls inside its window: its end too, so the pictures show every field it asks for.
+  await newIssueDialog(page)
+    .locator('[data-part="window.body"]')
+    .evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+  await inFourThemes(page, "new-issue-end", MILESTONE);
 });

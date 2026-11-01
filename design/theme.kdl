@@ -120,6 +120,9 @@ tokens {
     size "size-edge" "4px"
     // The name of a value in the details: 112 on a computer, 120 on a phone.
     size "size-name" "112px" phone="120px"
+    // The one name column of every list in the Details card (R1): on a phone narrower than
+    // `size-name`, so the value column keeps room for the *Followers* row on one line.
+    size "size-details-name" "112px" phone="80px"
     // The columns of a list row (UX §4.2): the icon columns, the ID, the priority, the person.
     size "size-col-icon" "24px"
     // The two columns of buttons at the end of a status change in the workflow editor: the same width in every row.
@@ -5625,6 +5628,14 @@ part "issue-details[variant=stacked]" {
     width "100%"
     max-height none
     overflow-y visible
+}
+
+// Every list of names and values in the Details shares one name column of `size-details-name`: the
+// rows of the fields, the titled sections of own fields and the defaults for time booked on the
+// issue (R1, one left edge for the values of a card). Each list alone would be as wide as its own
+// longest name, and the lists would start their values at different places. A longer name wraps.
+part "issue-details name-values" {
+    grid-template-columns "$size-details-name minmax(0, 1fr)"
 }
 
 part "issue-details.heading" {

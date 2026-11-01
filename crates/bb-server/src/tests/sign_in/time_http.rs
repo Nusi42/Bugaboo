@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 
 use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_of, ok, version_of};
+use super::layouts_http::{AN_EDITOR, LAYOUTS, save, slot, take_lock};
 
 pub(super) const TIMER: &str = "/api/v1/me/timer";
 pub(super) const MY_ENTRIES: &str = "/api/v1/me/time-entries";
@@ -379,6 +380,30 @@ async fn time_13_the_default_of_an_issue_is_no_field_of_its_forms_and_stays_chan
                 );
             }
         }
+        // A layout that places one is refused, as one that places a field the place has not.
+        let made = ada
+            .send(
+                "POST",
+                LAYOUTS,
+                Some(json!({"project": site.acme, "kind": "new-issue"})),
+            )
+            .await?;
+        let editor = ok(&made)?.clone();
+        let (layout, version) = slot(&editor)?;
+        let taken = take_lock(&mut ada, &layout, AN_EDITOR).await?;
+        let token = taken["lock_token"].as_str().ok_or("no lock token")?;
+        let sections = json!([{
+            "tab": "",
+            "title": "",
+            "fields": [{"field": activity, "roles": []}],
+        }]);
+        let refused = save(&mut ada, &layout, &version, token, sections).await?;
+        assert_eq!(
+            (refused.status, refused.code()),
+            (StatusCode::BAD_REQUEST, "field.not-here"),
+            "{}",
+            refused.body
+        );
         // The issue still holds its default, and its details let it be changed.
         let made = ada
             .send(

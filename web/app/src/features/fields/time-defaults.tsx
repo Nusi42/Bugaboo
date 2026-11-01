@@ -11,14 +11,16 @@ import { FieldLine } from "./FieldLine.tsx";
  * value on the issue is what every time entry booked on it starts with. They are no fields of the
  * issue, so no layout places them; they are shown and changed here with the levels of the fields.
  */
-export function TimeDefaults({ issue, mask, rowStatus, onChange }: IssueBlockProps) {
+export function TimeDefaults({ issue, mask, form, rowStatus, onChange }: IssueBlockProps) {
   const project = issue.project?.short_name;
   const fields = useFields({ project });
   const values: FieldValues = issue.own_fields ?? {};
   const shown = timeDefaultsOf(fields.data?.fields ?? [], issue).filter(
     (field) => field.kind !== "long-text" && (mask.sees(field.id) || mask.changes(field.id)),
   );
-  if (shown.length === 0) {
+  // Like the rows above it, the group is drawn once the layout is read, so nothing moves when it
+  // arrives (M3-F102).
+  if (!form.ready || shown.length === 0) {
     return null;
   }
   const title = t("fields.time-defaults");

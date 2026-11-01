@@ -142,7 +142,7 @@ Rules:
 | **Working-time rules**   | Legal limits checked on working hours (for example at most 10 hours a day) | compliance engine        |
 | **Activity**             | What kind of work a time entry was: *Development, Testing, Documentation, Meetings, Support* | work type, category, task type |
 | **Cost center**          | The accounting unit that pays for the work (Kostenstelle)          | cost object, account code          |
-| **Defaults for time booked on this issue** | The group of an issue's details with its values of the fields of time entries, such as *Activity* and *Cost center*: every time entry booked on the issue starts with them. They are not fields of the issue, so no form or layout places them | issue accounting fields, time fields of the issue (in UI) |
+| **Defaults for time booked on this issue** | The group of an issue's details with its values of the fields of time entries, such as *Activity* and *Cost center*: every time entry booked on the issue starts with them. They are not shown as fields of the issue, so no form or layout places them | issue accounting fields, time fields of the issue (in UI) |
 | **Switch issue**         | Start the timer on another issue while one runs: the time so far is saved on the first issue, with its defaults, without a window | swap timer, change task (in UI) |
 | **Change start time**    | Set when the running timer started; the bounds are in ADR-0035, decision 3 | edit timer, adjust timer (in UI) |
 | **Throw away** (of a timer) | Stop the timer without saving any time                          | discard, cancel timer (in UI)      |

@@ -48,6 +48,7 @@
   --size-list-scroll-least: 120px;
   --size-edge: 4px;
   --size-name: 112px;
+  --size-details-name: 112px;
   --size-col-icon: 24px;
   --size-col-rules: 64px;
   --size-col-remove: 80px;
@@ -750,6 +751,7 @@
     --size-phone-hang: calc(-1 * var(--pad-control));
     --pad-nothing: 0px;
     --size-name: 120px;
+    --size-details-name: 80px;
     --legend-start: 0px;
   }
 }
@@ -5807,6 +5809,10 @@ textarea,
   width: 100%;
   max-height: none;
   overflow-y: visible;
+}
+
+[data-part="issue-details"] [data-part="name-values"] {
+  grid-template-columns: var(--size-details-name) minmax(0, 1fr);
 }
 
 [data-part="issue-details.heading"] {

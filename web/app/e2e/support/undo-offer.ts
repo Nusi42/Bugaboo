@@ -16,7 +16,8 @@ function lieApart(a: Box, b: Box): boolean {
 /** The offer to undo does not cover the Details: the two boxes lie apart. */
 export async function expectOfferApartFromDetails(page: Page): Promise<void> {
   const offer = await boxOf(partIn(page, "undo-host.offer"));
-  const details = await boxOf(partIn(page, "name-values"));
+  // The list of the rows of the Details; a titled group after it has a list of its own.
+  const details = await boxOf(partIn(page, "name-values").first());
   expect(lieApart(offer, details)).toBe(true);
 }
 
@@ -41,7 +42,8 @@ export async function expectOfferClearOfControls(page: Page, panel: Locator): Pr
  */
 export async function expectOfferBesideTheDetails(page: Page): Promise<void> {
   const offer = await boxOf(partIn(page, "undo-host.offer"));
-  const details = await boxOf(partIn(page, "name-values"));
+  // The list of the rows of the Details; a titled group after it has a list of its own.
+  const details = await boxOf(partIn(page, "name-values").first());
   expect(offer.x + offer.width).toBeLessThanOrEqual(details.x);
 }
 

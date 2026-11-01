@@ -94,9 +94,15 @@ test("ux_4_4 Tags and Labels are rows of the one list of the Details and change 
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-3"));
   await showDetails(page);
-  // One list for all the rows of the Details: the own fields, following, tags and labels too.
+  // One list for all the rows of the Details: the own fields, following, tags and labels too. Only a
+  // titled group after it (the defaults for time booked on the issue) has a list of its own.
   const details = page.getByRole("complementary", { name: t("issues.details"), exact: true });
-  await expect(details.locator("dl")).toHaveCount(1);
+  const rows = details.locator(":scope > dl");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.getByRole("term").filter({ hasText: t("labels.tags-heading") })).toBeVisible();
+  await expect(
+    rows.getByRole("term").filter({ hasText: t("labels.labels-heading") }),
+  ).toBeVisible();
   const tags = detailRow(page, t("labels.tags-heading"));
   await expect(tags).toBeVisible();
   await addTag(tags, "fresh");

@@ -4845,6 +4845,10 @@ textarea,
   overflow-y: visible;
 }
 
+[data-part="issue-details"] [data-part="name-values"] {
+  grid-template-columns: var(--size-details-name) minmax(0, 1fr);
+}
+
 [data-part="issue-details.heading"] {
   margin: 0;
   font-size: var(--fs-md);

@@ -168,6 +168,7 @@ export const tokenNames = [
   "size-list-scroll-least",
   "size-edge",
   "size-name",
+  "size-details-name",
   "size-col-icon",
   "size-col-rules",
   "size-col-remove",
