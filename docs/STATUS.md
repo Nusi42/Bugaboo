@@ -18,7 +18,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-03 | Dates, the time of day and the person's day | merged (one fix round) | `win3` / `WIN3` | Wave 1 |
 | WP-04 | Speed edges and quiet upkeep | merged (one fix round) | `win4` / `WIN4` | Wave 1 |
 | WP-05 | Time on issues on the server | merged (four fix rounds) | `win2` / `WIN2` | Wave 2 |
-| WP-06 | Working hours on the server | building | `win3` / `WIN3` | Wave 2 |
+| WP-06 | Working hours on the server | merged (three fix rounds) | `win3` / `WIN3` | Wave 2 |
 | WP-07 | Estimates and totals | building | `win4` / `WIN4` | Wave 2 |
 | WP-08 | The maintainer's decisions on settings screens, label squares and IDs | merged (three fix rounds) | `win5` / `WIN5` | Wave 2 |
 | WP-09 | The timer and the work day on screen | planned | `win2` / `WIN2` | Wave 3 |
