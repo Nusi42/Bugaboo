@@ -122,6 +122,21 @@ export const scenarios: readonly Scenario[] = [
     once: (context) => firstPage(context, context.small),
   },
   {
+    // The totals of the time of the project with the most issues (TIME-03): within the budget of
+    // an issue page, because the project page shows them at once.
+    name: "project-time-totals",
+    budget: "page",
+    runs: RUNS,
+    once: async (context) =>
+      (
+        await timed(() =>
+          context.session.client.GET("/api/v1/projects/{project}/time", {
+            params: { path: { project: context.big } },
+          }),
+        )
+      ).ms,
+  },
+  {
     name: "notifications-count",
     budget: "page",
     runs: RUNS,

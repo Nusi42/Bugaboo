@@ -90,6 +90,9 @@ impl TryFrom<i64> for Minutes {
 // person is a matter of what it is the length of: a time entry marks its length `employee_time`
 // (ADR-0035), an estimate of an issue says nothing about anybody.
 impl crate::personal::NotPersonal for Minutes {}
+// A number of minutes holds no field a mask would cut.
+impl crate::plain::sealed::Sealed for Minutes {}
+impl crate::plain::Plain for Minutes {}
 
 impl From<Minutes> for i64 {
     fn from(minutes: Minutes) -> Self {

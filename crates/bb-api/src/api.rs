@@ -59,6 +59,7 @@ mod follow;
 mod groups;
 mod handles;
 mod history;
+mod issue_item;
 mod issue_types;
 mod issues;
 mod layouts;
@@ -80,6 +81,7 @@ mod settings;
 mod tags;
 mod time;
 mod time_entries;
+mod time_totals;
 mod workflows;
 mod working_hours;
 
@@ -194,6 +196,7 @@ where
         .merge(editing::routes())
         .merge(time::routes())
         .merge(time_entries::routes())
+        .merge(time_totals::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

@@ -14,7 +14,7 @@ use bb_core::given::SetTo;
 use bb_core::id::{IssueId, IssueTypeId, LockToken, UserId};
 use bb_core::issue::{IssueIcon, IssueType, Priority};
 use bb_core::own_fields_value::OwnValues;
-use bb_core::time::Minutes;
+use bb_core::time::{Minutes, TimeLeft};
 use bb_core::workflow::StatusKey;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
@@ -138,6 +138,9 @@ pub struct IssuesQuery {
     pub assigned_to: bool,
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
+    /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
+    /// spent is read only then, once for the page.
+    pub time: bool,
     /// Where the page after the last one starts (`next_cursor` of the page before), if any.
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
@@ -208,9 +211,13 @@ pub struct IssueView {
     /// *Estimated time*, in whole minutes; none until somebody gives one.
     #[masked(field = "estimated-time")]
     pub estimated_time: Option<Minutes>,
-    /// *Time left* as somebody typed it, in whole minutes; none while it is worked out.
+    /// *Time left*, typed or worked out from the estimate and the time spent; none without
+    /// either, or when the time spent was not read (a list that did not ask for it).
     #[masked(field = "time-left")]
-    pub time_left: Option<Minutes>,
+    pub time_left: Option<TimeLeft>,
+    /// *Time spent*: the total of the issue's time entries; none when it was not read.
+    #[masked(field = "time-spent")]
+    pub time_spent: Option<Minutes>,
     /// Who made it.
     #[masked(field = "reported-by", nested)]
     pub reported_by: PersonRef,

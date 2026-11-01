@@ -5,11 +5,13 @@
 //! time and *Throw away* work on the timer the actor has, and an actor without one is told so
 //! (`timer.not-running`), which the matrix counts as let in. Changing or deleting an entry names
 //! the actor's own entry, booked through the API first where they may, and one nobody made where
-//! they may not.
+//! they may not. The time of an issue names a new issue of the target project, and the totals of a
+//! project the target project.
 
 use bb_testing::Failure;
 use serde_json::json;
 
+use super::actors::Project;
 use super::examples::Request;
 use super::examples_issues::an_issue;
 use super::routes::Fixture;
@@ -115,6 +117,16 @@ pub(super) async fn time_request(
         "listIssueTimeEntries" => (
             "GET",
             format!("/api/v1/issues/{}/time-entries", an_issue(fixture).await?),
+            None,
+        ),
+        "getIssueTime" => (
+            "GET",
+            format!("/api/v1/issues/{}/time", an_issue(fixture).await?),
+            None,
+        ),
+        "getProjectTime" => (
+            "GET",
+            format!("/api/v1/projects/{}/time", fixture.project(Project::Target)),
             None,
         ),
         _ => return Ok(None),

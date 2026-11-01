@@ -27,6 +27,7 @@ pub(super) fn asked(session: &str, text: &str) -> SearchQuery {
         cursor: None,
         limit: 1,
         labels: false,
+        time: false,
     }
 }
 
@@ -563,6 +564,7 @@ async fn qry_05_the_list_of_a_project_is_the_search_within_it() -> Outcome {
         project: g.acme.to_string(),
         assigned_to,
         labels: false,
+        time: false,
         cursor: None,
         limit: 10,
     };

@@ -576,6 +576,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::route("countOldWorkDays"),
     Example::route("deleteOldWorkDays"),
+    Example::with("getIssueTime", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getProjectTime", &[Quirk::ListsTheIssuesSeen]),
 ];
 
 /// The request of an example: the method, the address with its parts filled in, and a body that

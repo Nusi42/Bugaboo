@@ -16,7 +16,6 @@ use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_policy::{Authorized, FieldMask, Masked};
 use serde::Serialize;
 
-use super::spent::TimeSpentStore;
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::search::{SearchRequest, SearchScope, stopped, target_of};
@@ -96,7 +95,7 @@ fn readable(request: &SearchRequest, field: Field) -> bool {
     target_of(&request.fields, &field.search_word()).is_some()
 }
 
-impl<S: AuthStore + TimeSpentStore> Ctx<'_, S> {
+impl<S: AuthStore> Ctx<'_, S> {
     /// The totals of the issues a search finds, for the reader the search was prepared for; none
     /// when it finds none.
     async fn totals_of(&self, request: &SearchRequest) -> Result<Option<TimeTotals>, AppError> {
@@ -159,7 +158,7 @@ fn own_numbers(
 /// # Errors
 /// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see; `search.too-slow` when the totals take longer than the limit of a search.
-pub async fn issue_time<S: AuthStore + TimeSpentStore>(
+pub async fn issue_time<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     query: IssueTimeQuery,
 ) -> Result<Authorized<IssueTime>, AppError> {
@@ -206,7 +205,7 @@ pub async fn issue_time<S: AuthStore + TimeSpentStore>(
 /// # Errors
 /// `resource.not-found` for a project that does not exist or that the person may not see;
 /// `search.too-slow` when the totals take longer than the limit of a search.
-pub async fn project_time<S: AuthStore + TimeSpentStore>(
+pub async fn project_time<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     query: ProjectTimeQuery,
 ) -> Result<Authorized<TimeTotals>, AppError> {

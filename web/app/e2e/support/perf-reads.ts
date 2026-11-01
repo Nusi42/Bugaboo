@@ -85,6 +85,7 @@ export function pageReads(session: ApiSession, issue: string): readonly PageRead
     ],
     ["follow", () => session.client.GET("/api/v1/issues/{issue}/follow", { params })],
     ["followers", () => session.client.GET("/api/v1/issues/{issue}/followers", { params })],
+    ["time", () => session.client.GET("/api/v1/issues/{issue}/time", { params })],
   ];
 }
 

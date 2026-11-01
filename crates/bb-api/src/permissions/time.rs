@@ -5,7 +5,8 @@
 //! where the issue is. The timer is the person's own: reading it, stopping, switching, moving its
 //! start and throwing it away are `own-account`, and the use case judges *Book time* on the issues
 //! whose time it saves. One's own entries are read as one's own; the entries on an issue are read
-//! by whoever sees the issue, with the people and the lengths as the use case allows.
+//! by whoever sees the issue, with the people and the lengths as the use case allows, and so are
+//! the time of an issue and the totals of a project.
 
 use bb_policy::Permission;
 
@@ -31,6 +32,18 @@ pub(super) const ROUTES: &[Route] = &[
     route("deleteTimeEntry", BOOK_TIME, Answer::Ordinary),
     route(
         "listIssueTimeEntries",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    // The time of an issue and the totals of a project (TIME-03) are read by whoever sees the issue
+    // or the project; the totals count only the issues they see and the fields they may read.
+    route(
+        "getIssueTime",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "getProjectTime",
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),

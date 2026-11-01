@@ -1806,6 +1806,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/time": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The time of an issue the reader sees: its *Estimated time*, *Time left* and *Time spent*, and
+     *     the totals with its sub-issues at every level below it, over the issues the reader sees.
+     */
+    get: operations["getIssueTime"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/time-entries": {
     parameters: {
       query?: never;
@@ -3131,6 +3151,26 @@ export interface paths {
      *     person sees are offered.
      */
     get: operations["listTagSuggestions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/time": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The totals of the time of a project: its issues and those of its sub-projects that the reader
+     *     sees, of the fields they may read in all of them.
+     */
+    get: operations["getProjectTime"];
     put?: never;
     post?: never;
     delete?: never;
@@ -5609,12 +5649,12 @@ export interface components {
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
+      time_left?: components["schemas"]["TimeLeftBody"] | null;
       /**
        * Format: int32
-       * @description *Time left* as somebody typed it, in whole minutes; left out while nobody did and it is
-       *     worked out from the estimate and the time spent.
+       * @description *Time spent*: the total of the issue's time entries, in whole minutes.
        */
-      time_left?: number | null;
+      time_spent?: number | null;
       /** @description What it is about. */
       title?: string | null;
       /**
@@ -5682,6 +5722,21 @@ export interface components {
        * @description The version of the issue: what *Part of* is changed from.
        */
       version: number;
+    };
+    /** @description The time of one issue: its own numbers, and the totals with its sub-issues at every level. */
+    IssueTimeBody: {
+      /**
+       * Format: int32
+       * @description *Estimated time*; left out while it has none or the reader may not read it.
+       */
+      estimated_time?: number | null;
+      time_left?: components["schemas"]["TimeLeftBody"] | null;
+      /**
+       * Format: int32
+       * @description *Time spent*: the total of the issue's time entries.
+       */
+      time_spent?: number | null;
+      with_sub_issues?: components["schemas"]["TimeTotalsBody"] | null;
     };
     /** @description A time entry on an issue, as the reader sees it. */
     IssueTimeEntryItem: {
@@ -8800,6 +8855,37 @@ export interface components {
      * @enum {string}
      */
     TimeEvent: "booked" | "changed" | "deleted";
+    /**
+     * @description *Time left* of an issue: the minutes, and whether nobody typed them and they are worked out from
+     *     the estimate and the time spent (shown in the quiet style of a value worked out).
+     */
+    TimeLeftBody: {
+      /**
+       * Format: int32
+       * @description The minutes.
+       */
+      minutes: number;
+      /** @description Whether it is worked out rather than typed. */
+      worked_out: boolean;
+    };
+    /** @description The totals of the time of many issues the reader sees, in whole minutes. */
+    TimeTotalsBody: {
+      /**
+       * Format: int32
+       * @description The sum of *Estimated time*; left out when no issue has one or the reader may not read it.
+       */
+      estimated_time?: number | null;
+      /**
+       * Format: int32
+       * @description The sum of *Time left*, typed or worked out; left out like the estimate.
+       */
+      time_left?: number | null;
+      /**
+       * Format: int32
+       * @description The sum of *Time spent*; left out when the reader may not read it.
+       */
+      time_spent?: number | null;
+    };
     /** @description The person's timer. */
     TimerItem: {
       running?: components["schemas"]["RunningItem"] | null;
@@ -12928,6 +13014,36 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  getIssueTime: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The time of the issue. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueTimeBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listIssueTimeEntries: {
     parameters: {
       query?: {
@@ -15679,6 +15795,36 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["TagSuggestionsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getProjectTime: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The totals of the project. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TimeTotalsBody"];
         };
       };
       304: components["responses"]["NotModified"];

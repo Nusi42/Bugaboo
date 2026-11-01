@@ -137,6 +137,9 @@ use crate::tags::{
     create_label_group, issue_labels_and_tags, label_change_preview, label_groups, labels,
     remove_label, remove_tag, tag_change_preview, tag_suggestions, tags,
 };
+use crate::time::totals::{
+    IssueTime, IssueTimeQuery, ProjectTimeQuery, TimeTotals, issue_time, project_time,
+};
 use crate::time::{
     AddTime, ChangeStartTime, ChangeTimeEntry, DeleteTimeEntry, IssueTimeEntries,
     IssueTimeEntriesQuery, MyTimeEntriesQuery, StartTimer, StopTimer, SwitchTimer, ThrowAwayTimer,
@@ -717,4 +720,8 @@ use_cases! {
     my_time_entries(MyTimeEntriesQuery) -> Authorized<TimeEntryPage>;
     /// Lists the time entries on an issue.
     issue_time_entries(IssueTimeEntriesQuery) -> Authorized<IssueTimeEntries>;
+    /// Shows the time of an issue, and its totals with its sub-issues.
+    issue_time(IssueTimeQuery) -> Authorized<IssueTime>;
+    /// Shows the totals of the time of a project.
+    project_time(ProjectTimeQuery) -> Authorized<TimeTotals>;
 }

@@ -6501,6 +6501,61 @@
         "x-permission": "change-issues"
       }
     },
+    "/api/v1/issues/{issue}/time": {
+      "get": {
+        "tags": ["time"],
+        "summary": "The time of an issue the reader sees: its *Estimated time*, *Time left* and *Time spent*, and\nthe totals with its sub-issues at every level below it, over the issues the reader sees.",
+        "operationId": "getIssueTime",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The time of the issue.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueTimeBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/issues/{issue}/time-entries": {
       "get": {
         "tags": ["time"],
@@ -11499,6 +11554,61 @@
         },
         "x-never-stored": true,
         "x-permission": "see-projects"
+      }
+    },
+    "/api/v1/projects/{project}/time": {
+      "get": {
+        "tags": ["time"],
+        "summary": "The totals of the time of a project: its issues and those of its sub-projects that the reader\nsees, of the fields they may read in all of them.",
+        "operationId": "getProjectTime",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The totals of the project.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeTotalsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
       }
     },
     "/api/v1/projects/{project}/who-may-change/{field}": {
@@ -17998,9 +18108,20 @@
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
           "time_left": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeLeftBody",
+                "description": "*Time left*, typed or worked out from the estimate and the time spent; left out without\neither."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_spent": {
             "type": ["integer", "null"],
             "format": "int32",
-            "description": "*Time left* as somebody typed it, in whole minutes; left out while nobody did and it is\nworked out from the estimate and the time spent.",
+            "description": "*Time spent*: the total of the issue's time entries, in whole minutes.",
             "minimum": 0
           },
           "title": {
@@ -18149,6 +18270,46 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the issue: what *Part of* is changed from."
+          }
+        }
+      },
+      "IssueTimeBody": {
+        "type": "object",
+        "description": "The time of one issue: its own numbers, and the totals with its sub-issues at every level.",
+        "properties": {
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Estimated time*; left out while it has none or the reader may not read it.",
+            "minimum": 0
+          },
+          "time_left": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeLeftBody",
+                "description": "*Time left*, typed or worked out; left out without an estimate and a typed value."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_spent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Time spent*: the total of the issue's time entries.",
+            "minimum": 0
+          },
+          "with_sub_issues": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeTotalsBody",
+                "description": "The totals with the sub-issues the reader sees; left out for an issue without any."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -24441,6 +24602,47 @@
         "type": "string",
         "description": "What happened to a time entry: booked, changed or deleted.",
         "enum": ["booked", "changed", "deleted"]
+      },
+      "TimeLeftBody": {
+        "type": "object",
+        "description": "*Time left* of an issue: the minutes, and whether nobody typed them and they are worked out from\nthe estimate and the time spent (shown in the quiet style of a value worked out).",
+        "required": ["minutes", "worked_out"],
+        "properties": {
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The minutes.",
+            "minimum": 0
+          },
+          "worked_out": {
+            "type": "boolean",
+            "description": "Whether it is worked out rather than typed."
+          }
+        }
+      },
+      "TimeTotalsBody": {
+        "type": "object",
+        "description": "The totals of the time of many issues the reader sees, in whole minutes.",
+        "properties": {
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The sum of *Estimated time*; left out when no issue has one or the reader may not read it.",
+            "minimum": 0
+          },
+          "time_left": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The sum of *Time left*, typed or worked out; left out like the estimate.",
+            "minimum": 0
+          },
+          "time_spent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The sum of *Time spent*; left out when the reader may not read it.",
+            "minimum": 0
+          }
+        }
       },
       "TimerItem": {
         "type": "object",

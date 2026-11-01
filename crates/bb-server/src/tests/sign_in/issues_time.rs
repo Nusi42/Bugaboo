@@ -53,7 +53,10 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
         let typed = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 90})))
             .await?;
-        assert_eq!(ok(&typed)?["time_left"], 90);
+        assert_eq!(
+            ok(&typed)?["time_left"],
+            json!({"minutes": 90, "worked_out": false})
+        );
         // A change made on an old version is refused.
         let stale = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 30})))
@@ -69,7 +72,8 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
             "{}",
             negative.body
         );
-        // Taking the typed value away leaves the estimate: time left is worked out again.
+        // Taking the typed value away leaves the estimate: time left is worked out again, from
+        // nothing spent.
         let cleared = ada
             .send(
                 "PATCH",
@@ -78,7 +82,10 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
             )
             .await?;
         let cleared = ok(&cleared)?;
-        assert!(cleared.get("time_left").is_none(), "{cleared}");
+        assert_eq!(
+            cleared["time_left"],
+            json!({"minutes": 240, "worked_out": true})
+        );
         assert_eq!(cleared["estimated_time"], 240);
 
         // The history words each change as a length, in the seconds the screens get for one.
@@ -153,8 +160,109 @@ async fn time_03_many_issues_get_an_estimate_at_once() -> TestResult {
         for issue in &issues {
             let read = issue_of(&mut ada, issue).await?;
             assert_eq!(read["estimated_time"], 120, "{issue}: {read}");
-            assert!(read.get("time_left").is_none(), "{issue}: {read}");
+            assert_eq!(
+                read["time_left"],
+                json!({"minutes": 120, "worked_out": true}),
+                "{issue}: {read}"
+            );
         }
+        Ok(())
+    })
+    .await
+}
+
+/// Puts `child` under `parent`.
+async fn put_under(browser: &mut Browser, child: &str, parent: &str) -> Result<(), Failure> {
+    let version = issue_of(browser, child).await?["version"].clone();
+    ok(&browser
+        .send(
+            "PUT",
+            &format!("{ISSUES}/{child}/parent"),
+            Some(json!({"version": version, "parent": parent})),
+        )
+        .await?)?;
+    Ok(())
+}
+
+/// Books `minutes` on an issue, as the person of the browser.
+async fn book(browser: &mut Browser, issue: &str, minutes: u32) -> Result<(), Failure> {
+    ok(&browser
+        .send(
+            "POST",
+            "/api/v1/me/time-entries",
+            Some(json!({"issue": issue, "date": "2027-01-14", "minutes": minutes})),
+        )
+        .await?)?;
+    Ok(())
+}
+
+/// Gives an issue an estimate.
+async fn estimate(browser: &mut Browser, issue: &str, minutes: u32) -> Result<(), Failure> {
+    let version = issue_of(browser, issue).await?["version"].clone();
+    ok(&browser
+        .send(
+            "PATCH",
+            &format!("{ISSUES}/{issue}"),
+            Some(json!({"version": version, "estimated_time": minutes})),
+        )
+        .await?)?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn time_03_the_time_of_an_issue_and_of_a_project_over_http() -> TestResult {
+    each_database("time_03_time_routes", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let goal = key_of(&site.create(&mut ada, "Release").await?)?;
+        let task = key_of(&site.create(&mut ada, "Write notes").await?)?;
+        let step = key_of(&site.create(&mut ada, "Check links").await?)?;
+        put_under(&mut ada, &task, &goal).await?;
+        put_under(&mut ada, &step, &task).await?;
+        estimate(&mut ada, &goal, 240).await?;
+        estimate(&mut ada, &task, 120).await?;
+        estimate(&mut ada, &step, 60).await?;
+        book(&mut ada, &goal, 80).await?;
+        book(&mut ada, &step, 90).await?;
+        let time = ada
+            .send("GET", &format!("{ISSUES}/{goal}/time"), None)
+            .await?;
+        let time = ok(&time)?;
+        assert_eq!(time["estimated_time"], 240, "{time}");
+        assert_eq!(
+            time["time_left"],
+            json!({"minutes": 160, "worked_out": true})
+        );
+        assert_eq!(time["time_spent"], 80);
+        // Every level below: the step is under the task, which is under the goal.
+        assert_eq!(
+            time["with_sub_issues"],
+            json!({"estimated_time": 420, "time_left": 160 + 120, "time_spent": 170})
+        );
+        let alone = ada
+            .send("GET", &format!("{ISSUES}/{step}/time"), None)
+            .await?;
+        assert!(ok(&alone)?.get("with_sub_issues").is_none());
+        let project = ada.send("GET", "/api/v1/projects/ACME/time", None).await?;
+        assert_eq!(
+            ok(&project)?,
+            &json!({"estimated_time": 420, "time_left": 280, "time_spent": 170})
+        );
+        // A list row says the same, when it asks for it.
+        let list = ada
+            .send(
+                "GET",
+                "/api/v1/projects/ACME/issues?fields=readable_id,time_left,time_spent",
+                None,
+            )
+            .await?;
+        let rows = ok(&list)?["items"].as_array().cloned().unwrap_or_default();
+        let row = rows
+            .iter()
+            .find(|row| row["readable_id"] == json!(step))
+            .ok_or("no row of the step")?;
+        assert_eq!(row["time_spent"], 90);
+        assert_eq!(row["time_left"], json!({"minutes": 0, "worked_out": true}));
         Ok(())
     })
     .await
