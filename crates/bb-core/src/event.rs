@@ -205,11 +205,16 @@ pub struct DomainEvent {
     /// The ID of the event.
     #[not_personal]
     pub id: EventId,
-    /// When it happened. For a timer or a time entry it is when a person started or stopped work
-    /// (ADR-0035), so it is time at work there.
+    /// When it happened. For a timer, a time entry or a work day it is when a person started,
+    /// stopped or changed the record of their work (ADR-0035), so it is time at work there.
     #[not_personal]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
     #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
+    #[personal_for(
+        kind = "work_day",
+        category = "employee_time",
+        basis = "legal_obligation"
+    )]
     pub time: Timestamp,
     /// Who did it.
     #[personal(category = "activity", basis = "legitimate_interests")]
@@ -225,10 +230,22 @@ pub struct DomainEvent {
     #[personal(category = "content", basis = "legitimate_interests")]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
     #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
+    #[personal_for(
+        kind = "work_day",
+        category = "employee_time",
+        basis = "legal_obligation"
+    )]
     pub changes: Vec<FieldChange>,
     /// Why, when the person said so; for a change a job made as the person, the item of the job
-    /// (a change to many issues, `ManyChangeRun::item_reason`).
+    /// (a change to many issues, `ManyChangeRun::item_reason`). For a work day it is the reason of
+    /// the change of a past day or of another person's day, kept with the old times (ADR-0035,
+    /// decision 7).
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[personal_for(
+        kind = "work_day",
+        category = "employee_time",
+        basis = "legal_obligation"
+    )]
     pub reason: Option<String>,
 }
 
