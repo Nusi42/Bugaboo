@@ -4,6 +4,7 @@ import { addDays } from "../../shared/format.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName } from "../../shared/person.ts";
 import type { OwnColumn } from "./own-columns.ts";
+import { rangeText } from "./time-words.ts";
 
 /** A group of a search as the server sends it. */
 type FoundGroup = Schema<"SearchGroupBody">;
@@ -84,6 +85,9 @@ function placed(group: FoundGroup, column: OwnColumn | undefined): Pick<GroupOfK
   }
   if (key.type === "text") {
     return { id: `text:${key.value}`, name: key.value };
+  }
+  if (key.type === "length") {
+    return { id: `length:${String(key.value.from)}`, name: rangeText(key.value) };
   }
   if (key.type === "priority" || key.type === "status-group") {
     return { id: `${key.type}:${key.value}`, name: undefined };

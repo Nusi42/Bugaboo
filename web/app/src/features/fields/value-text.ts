@@ -17,7 +17,7 @@ import type { LengthReader } from "../../shared/length.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
 import { renderSaid } from "../../shared/said.ts";
 import { durationText } from "../../shared/own-value-text.ts";
-import type { OwnField, Sent } from "./fields.ts";
+import type { BoxField, OwnField, Sent } from "./fields.ts";
 
 /** Whether the text is a decimal number as the API takes it: digits, an optional sign and point. */
 export function isDecimalText(text: string): boolean {
@@ -54,7 +54,7 @@ function durationSent(
  * without it a length cannot be read, and the box says the words could not be loaded.
  */
 export function sentFrom(
-  field: OwnField,
+  field: BoxField,
   text: string,
   readLength?: LengthReader,
 ): { readonly value: Sent } | { readonly problem: string } {
@@ -114,7 +114,7 @@ export function millionthsToDecimal(millionths: number): string {
 }
 
 /** The text a value has in a box: what a person edits. */
-export function textOf(field: OwnField, value: unknown): string {
+export function textOf(field: BoxField, value: unknown): string {
   if (value === undefined || value === null) {
     return "";
   }

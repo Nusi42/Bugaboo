@@ -21,6 +21,14 @@ export type FieldValues = Readonly<Record<string, unknown>>;
 
 /** An own field as the server shows it to this person (`FieldBody`). */
 export type OwnField = Schema<"FieldBody">;
+/**
+ * What a box needs of a field to read and word its value: its name, kind, help and whether it must
+ * be filled in. An own field is one; a length of the issue itself (*Estimated time*, *Time left*)
+ * is another, which is no own field.
+ */
+export type BoxField = Pick<OwnField, "name" | "kind" | "help"> & {
+  readonly rules: Pick<OwnField["rules"], "required">;
+};
 /** A choice of a *Pick one* or *Pick several* field. */
 export type Choice = Schema<"FieldChoiceBody">;
 /** What a kind of information allows. */

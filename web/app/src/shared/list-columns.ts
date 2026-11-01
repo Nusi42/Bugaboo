@@ -23,6 +23,9 @@ export const listWord = {
   type: "type",
   status: "status",
   priority: "priority",
+  estimatedTime: "estimated time",
+  timeLeft: "time left",
+  timeSpent: "time spent",
 } as const satisfies Readonly<Record<string, SearchWord>>;
 
 /**
@@ -120,6 +123,9 @@ const wordsWithText: ReadonlySet<string> = new Set([
   listWord.closed,
   listWord.reportedBy,
   listWord.statusGroup,
+  listWord.estimatedTime,
+  listWord.timeLeft,
+  listWord.timeSpent,
 ]);
 
 /** Whether a column or a group is a field of the organization: a word with no cell of its own and no text drawn from the row. */

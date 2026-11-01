@@ -3,10 +3,16 @@ import { useState } from "react";
 
 import { WithLengthReader, type LengthReader } from "../../shared/with-length-reader.tsx";
 import { boxWords } from "./box-words.ts";
+import type { BoxField } from "./fields.ts";
 import { SaveForm } from "./SaveForm.tsx";
 import { useSynced } from "./use-synced.ts";
 import type { ValueEditorProps } from "./ValueEditor.tsx";
 import { isUnchanged, sentFrom, textOf, type Kept } from "./value-text.ts";
+
+type TextEditorProps = Omit<ValueEditorProps, "field"> & {
+  readonly field: BoxField;
+  readonly readLength?: LengthReader;
+};
 
 /** A box for the kinds of value a person types: text, numbers and lengths of time. */
 export function TextEditor({
@@ -18,7 +24,7 @@ export function TextEditor({
   live = false,
   inRow = false,
   readLength,
-}: ValueEditorProps & { readonly readLength?: LengthReader }) {
+}: TextEditorProps) {
   const [text, setText] = useSynced(textOf(field, value));
   const [local, setLocal] = useState<string | undefined>();
   const [kept, setKept] = useState<Kept | undefined>();

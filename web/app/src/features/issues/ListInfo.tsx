@@ -5,6 +5,7 @@ import { showSearchSheet } from "../../shared/search-sheet.ts";
 import { countLine } from "./count-line.ts";
 import { useFoundCount } from "./found-issues.ts";
 import { useListContext } from "./list-context.ts";
+import { ProjectTime } from "./ProjectTime.tsx";
 
 export interface ListInfoProps {
   /** The name of the project, for the count line; none for every project. */
@@ -48,6 +49,7 @@ export function ListInfo({ scopeName, shown, stale, customizing }: ListInfoProps
         </Alert>
       ) : null}
       <p {...partOf(part.muted)}>{countLine(count.data, scope, shown.length)}</p>
+      {search.within === undefined ? null : <ProjectTime project={search.within} />}
       {hidden > 0 ? <p {...partOf(part.muted)}>{hiddenLine}</p> : null}
       <Announce>
         {t("issues.count", { count: count.data })}

@@ -30,6 +30,9 @@ const fieldOfWord: Readonly<Record<string, keyof FoundItem>> = {
   [listWord.reportedBy]: "reported_by",
   [listWord.labels]: "labels",
   [listWord.project]: "project",
+  [listWord.estimatedTime]: "estimated_time",
+  [listWord.timeLeft]: "time_left",
+  [listWord.timeSpent]: "time_spent",
 };
 
 /** The words whose values the row already has, and which add nothing to the fields asked for. */
@@ -90,6 +93,10 @@ export interface FoundLine {
   readonly createdAt: string | undefined;
   readonly changedAt: string | undefined;
   readonly closedAt: string | undefined;
+  /** *Estimated time*, *Time left* and *Time spent*, when the columns asked for them. */
+  readonly estimated: number | undefined;
+  readonly left: Schema<"TimeLeftBody"> | undefined;
+  readonly spent: number | undefined;
   /** The values of the fields of the organization, by the ID of the field. */
   readonly own: Readonly<Record<string, unknown>>;
 }
@@ -122,6 +129,9 @@ export function foundLineOf(item: FoundItem): FoundLine | undefined {
     createdAt: known(item.created_at),
     changedAt: known(item.updated_at),
     closedAt: known(item.closed_at),
+    estimated: known(item.estimated_time),
+    left: known(item.time_left),
+    spent: known(item.time_spent),
     own: item.own_fields ?? {},
   };
 }

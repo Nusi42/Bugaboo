@@ -2259,6 +2259,9 @@ pub const ISSUES_UPDATED: MessageKey = MessageKey::new("issues.updated");
 /// The message `issues.use-mine`.
 pub const ISSUES_USE_MINE: MessageKey = MessageKey::new("issues.use-mine");
 
+/// The message `issues.with-sub-issues`.
+pub const ISSUES_WITH_SUB_ISSUES: MessageKey = MessageKey::new("issues.with-sub-issues");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -7717,6 +7720,15 @@ pub fn issues_changed_people(
     )
 }
 
+/// The message `issues.cleared`.
+#[must_use]
+pub fn issues_cleared(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.cleared"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
 /// The message `issues.column-down`.
 #[must_use]
 pub fn issues_column_down(column: impl std::fmt::Display) -> Message {
@@ -7883,12 +7895,51 @@ pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.length-range`.
+#[must_use]
+pub fn issues_length_range(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.length-range"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.length-range-over`.
+#[must_use]
+pub fn issues_length_range_over(from: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.length-range-over"),
+        vec![("from", Value::Text(from.to_string()))],
+    )
+}
+
+/// The message `issues.length-range-under`.
+#[must_use]
+pub fn issues_length_range_under(to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.length-range-under"),
+        vec![("to", Value::Text(to.to_string()))],
+    )
+}
+
 /// The message `issues.page-title`.
 #[must_use]
 pub fn issues_page_title(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.page-title"),
         vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `issues.project-time`.
+#[must_use]
+pub fn issues_project_time(totals: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.project-time"),
+        vec![("totals", Value::Text(totals.to_string()))],
     )
 }
 
@@ -7979,6 +8030,24 @@ pub fn issues_tick_narrow(limit: i64) -> Message {
     )
 }
 
+/// The message `issues.time-left-worked-out`.
+#[must_use]
+pub fn issues_time_left_worked_out(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-left-worked-out"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `issues.time-left-worked-out-short`.
+#[must_use]
+pub fn issues_time_left_worked_out_short(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-left-worked-out-short"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
 /// The message `issues.title-of`.
 #[must_use]
 pub fn issues_title_of(key: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
@@ -7988,6 +8057,33 @@ pub fn issues_title_of(key: impl std::fmt::Display, title: impl std::fmt::Displa
             ("key", Value::Text(key.to_string())),
             ("title", Value::Text(title.to_string())),
         ],
+    )
+}
+
+/// The message `issues.total-estimated`.
+#[must_use]
+pub fn issues_total_estimated(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.total-estimated"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `issues.total-left`.
+#[must_use]
+pub fn issues_total_left(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.total-left"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `issues.total-spent`.
+#[must_use]
+pub fn issues_total_spent(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.total-spent"),
+        vec![("length", Value::Text(length.to_string()))],
     )
 }
 
@@ -13325,6 +13421,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
     ),
     ("issues.clear-selection", "Clear the ticks"),
+    ("issues.cleared", "{field} cleared."),
     ("issues.column-down", "Move {column} down"),
     ("issues.column-up", "Move {column} up"),
     ("issues.column-width", "Width of {column}"),
@@ -13413,6 +13510,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.legend", "What the colors mean"),
     ("issues.legend-button", "Legend"),
+    ("issues.length-range", "{from} to {to}"),
+    ("issues.length-range-over", "{from} or more"),
+    ("issues.length-range-under", "Under {to}"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (
@@ -13439,6 +13539,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.open-full-page", "Open full page"),
     ("issues.page-title", "Issues in {project}"),
     ("issues.project", "Project"),
+    ("issues.project-time", "Time in this project: {totals}"),
     (
         "issues.read-only",
         "Only people whose role allows it can change {field}.",
@@ -13478,13 +13579,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.tick-narrow",
         "Narrow the search to {limit, number} issues or fewer to change them together.",
     ),
+    ("issues.time-left-worked-out", "Worked out: {length}"),
+    ("issues.time-left-worked-out-short", "{length}, worked out"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
+    ("issues.total-estimated", "{length} estimated"),
+    ("issues.total-left", "{length} left"),
+    ("issues.total-spent", "{length} spent"),
     ("issues.type", "Type"),
     ("issues.unassign", "Take away"),
     ("issues.unassign-name", "Take {name} away"),
     ("issues.updated", "Last changed"),
     ("issues.use-mine", "Use mine"),
+    ("issues.with-sub-issues", "With sub-issues"),
     (
         "keys.database-placeholder",
         "--database-url <the address of your database>",

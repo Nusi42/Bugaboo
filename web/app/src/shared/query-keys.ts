@@ -116,6 +116,7 @@ export const queryKeys = {
     lists: () => ["issues", "list"],
     list: (project: string) => ["issues", "list", project],
     one: (address: string) => ["issues", "one", address],
+    time: (...about: readonly (string | number)[]) => ["issues", "time", ...about],
     statusChanges: (project: string) => ["issues", "status-changes", project],
     people: (project: string, search: string, field = "", issue = "", issueType = "") => [
       "issues",

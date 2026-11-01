@@ -21,12 +21,16 @@ export async function sendChange(id: string, edit: IssueEdit): Promise<number | 
       ? {}
       : { assigned_to: values.assignedTo.map((person) => person.id) }),
     ...(values.own === undefined ? {} : { fields: values.own }),
+    ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.timeLeft === undefined ? {} : { time_left: values.timeLeft }),
   };
   // One after the other: each change is made on the version the one before it has just made.
   const answer = await inOrder(`issue:${id}`, () =>
     api.client.PATCH("/api/v1/issues/{issue}", { params: { path: { issue: id } }, body }),
   );
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+  // A length of this issue counts in the totals of the issues above it.
+  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.time() });
   refreshHistory();
   return answer.data?.version ?? undefined;
 }

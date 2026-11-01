@@ -246,6 +246,7 @@ export interface MessageArguments {
   "issues.changed-after-you-by": { name: string | number };
   "issues.changed-own": { count: number };
   "issues.changed-people": { count: number; field: string | number; names: string | number };
+  "issues.cleared": { field: string | number };
   "issues.column-down": { column: string | number };
   "issues.column-up": { column: string | number };
   "issues.column-width": { column: string | number };
@@ -263,7 +264,11 @@ export interface MessageArguments {
   "issues.group-folded": { count: number; group: string | number };
   "issues.group-open": { count: number; group: string | number };
   "issues.keep-theirs": { name: string | number };
+  "issues.length-range": { from: string | number; to: string | number };
+  "issues.length-range-over": { from: string | number };
+  "issues.length-range-under": { to: string | number };
   "issues.page-title": { project: string | number };
+  "issues.project-time": { totals: string | number };
   "issues.read-only": { field: string | number };
   "issues.refused-at-field": { field: string | number; reason: string | number };
   "issues.select-issue": { key: string | number };
@@ -273,7 +278,12 @@ export interface MessageArguments {
   "issues.sorted-up": { column: string | number };
   "issues.tick-all": { count: number };
   "issues.tick-narrow": { limit: number };
+  "issues.time-left-worked-out": { length: string | number };
+  "issues.time-left-worked-out-short": { length: string | number };
   "issues.title-of": { key: string | number; title: string | number };
+  "issues.total-estimated": { length: string | number };
+  "issues.total-left": { length: string | number };
+  "issues.total-spent": { length: string | number };
   "issues.unassign-name": { name: string | number };
   "labels.combine-dialog-text": { name: string | number; other: string | number };
   "labels.combine-dialog-title": { name: string | number; other: string | number };

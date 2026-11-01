@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { NameValueList, Skeleton, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { AssignedToRow, PriorityRow } from "./ChangeableRows.tsx";
+import { AssignedToRow, PriorityRow, TimeRows } from "./ChangeableRows.tsx";
 import { useAfterDelay } from "../../shared/use-optimistic.ts";
 import { inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
@@ -24,6 +24,9 @@ const fields = {
   reportedBy: "reported-by",
 } as const satisfies Record<string, FieldWord>;
 
+/** The key of the group of the lengths of time, which no layout places. */
+const timeRows = "time";
+
 /** The groups of rows of the Details: the built-in fields, then what other packages add. */
 function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "changes">) {
   const own: readonly RowGroup<ReactNode>[] = [
@@ -38,6 +41,11 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
     {
       places: [fields.reportedBy],
       node: <FixedRows key={fields.reportedBy} blocks={blocks} />,
+    },
+    {
+      // No layout places the lengths of time yet: they come after the fields the layout places.
+      places: "end",
+      node: <TimeRows key={timeRows} blocks={blocks} changes={changes} />,
     },
   ];
   const added = issueBlocks(issueSlots.details).map((entry) => ({

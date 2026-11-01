@@ -1,7 +1,13 @@
-import { priorityWords, statusGroupWords, type Schema } from "@bugaboo/api-client";
+import {
+  priorityWords,
+  secondsPerMinute,
+  statusGroupWords,
+  type Schema,
+} from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { listText } from "../../shared/list-text.ts";
+import { durationText } from "../../shared/own-value-text.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
@@ -17,6 +23,10 @@ export interface IssueValues {
   readonly assignedTo?: readonly NamedPerson[];
   /** Values of own fields (WP-05) as the API takes them, by the key of the field; `null` takes one away. */
   readonly own?: Readonly<Record<string, unknown>>;
+  /** *Estimated time* in whole minutes; `null` takes it away. */
+  readonly estimatedTime?: number | null;
+  /** *Time left* as typed, in whole minutes; `null` takes it away, so it is worked out again. */
+  readonly timeLeft?: number | null;
 }
 
 /**
@@ -33,6 +43,12 @@ export function rowFieldOf(values: IssueValues): RowField | undefined {
   }
   if (values.priority !== undefined) {
     return "priority";
+  }
+  if (values.estimatedTime !== undefined) {
+    return "estimated-time";
+  }
+  if (values.timeLeft !== undefined) {
+    return "time-left";
   }
   // One own field changed: its row says it. Several at once have no one row.
   const own = Object.keys(values.own ?? {});
@@ -73,6 +89,13 @@ export function after(before: IssueDetail | undefined, edit: IssueEdit): IssueDe
     ...(values.status === undefined ? {} : { status: values.status }),
     ...(values.priority === undefined ? {} : { priority: values.priority }),
     ...(values.assignedTo === undefined ? {} : { assigned_to: values.assignedTo.map(shownByName) }),
+    ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.timeLeft === undefined
+      ? {}
+      : {
+          time_left:
+            values.timeLeft === null ? null : { minutes: values.timeLeft, worked_out: false },
+        }),
     version: edit.version + 1,
   };
   return { ...before, issue };
@@ -110,6 +133,11 @@ function ownBefore(detail: IssueDetail, own: Readonly<Record<string, unknown>>) 
 }
 
 /** The values of the same fields as they are now: what *Undo* sends. */
+/** The typed *Time left* of an issue as a change sends it back: none while it is worked out. */
+function typedLeft(left: Schema<"TimeLeftBody"> | null | undefined): number | null {
+  return left === null || left === undefined || left.worked_out ? null : left.minutes;
+}
+
 export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueValues {
   const { issue } = detail;
   const [title, status, priority] = [
@@ -125,12 +153,26 @@ export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueVal
     ...(values.priority === undefined || priority === undefined ? {} : { priority }),
     ...(values.assignedTo === undefined ? {} : { assignedTo: people }),
     ...(own === undefined ? {} : { own }),
+    ...(values.estimatedTime === undefined
+      ? {}
+      : { estimatedTime: known(issue.estimated_time) ?? null }),
+    ...(values.timeLeft === undefined ? {} : { timeLeft: typedLeft(issue.time_left) }),
   };
 }
 
 /** A change of one field in a sentence: "Priority changed to High." */
 function said(field: MessageKey, value: string): string {
   return t("issues.changed", { field: t(field), value });
+}
+
+/** A change of a length in a sentence ("Estimated time changed to 4h."); none when it did not change. */
+function lengthSaid(field: MessageKey, minutes: number | null | undefined): string | undefined {
+  if (minutes === undefined) {
+    return undefined;
+  }
+  return minutes === null
+    ? t("issues.cleared", { field: t(field) })
+    : said(field, durationText(minutes * secondsPerMinute));
 }
 
 /** What a change says in a sentence, for *Undo*: "Priority changed to High." */
@@ -151,6 +193,8 @@ export function undoSentence(values: IssueValues): string {
     values.own === undefined
       ? undefined
       : t("issues.changed-own", { count: Object.keys(values.own).length }),
+    lengthSaid("issue-field.estimated-time", values.estimatedTime),
+    lengthSaid("issue-field.time-left", values.timeLeft),
   ];
   return parts.filter((part): part is string => part !== undefined).join(" ");
 }
