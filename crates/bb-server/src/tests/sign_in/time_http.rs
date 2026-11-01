@@ -390,8 +390,8 @@ async fn time_13_the_default_of_an_issue_is_no_field_of_its_forms_and_stays_chan
             .await?;
         let editor = ok(&made)?.clone();
         let (layout, version) = slot(&editor)?;
-        let taken = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        let token = taken["lock_token"].as_str().ok_or("no lock token")?;
+        let lock = take_lock(&mut ada, &layout, AN_EDITOR).await?;
+        let token = lock["lock_token"].as_str().ok_or("no lock token")?;
         let sections = json!([{
             "tab": "",
             "title": "",
