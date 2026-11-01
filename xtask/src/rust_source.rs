@@ -162,7 +162,12 @@ pub(crate) fn is_test_module_file(path: &str) -> bool {
 /// brace in a text does not end an item early.
 pub(crate) fn without_tests(text: &str) -> String {
     const ATTRIBUTE: &str = "#[cfg(test)]";
-    let code: Vec<char> = strip(text).chars().collect();
+    let stripped = strip(text);
+    // Most files have no test item: nothing to cut, and no need to walk them char by char.
+    if !stripped.contains(ATTRIBUTE) {
+        return text.to_owned();
+    }
+    let code: Vec<char> = stripped.chars().collect();
     let marker: Vec<char> = ATTRIBUTE.chars().collect();
     let mut cut = vec![false; code.len()];
     let mut at = 0;

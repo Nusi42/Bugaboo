@@ -9,16 +9,16 @@
 //! role, a kind of people information, a field) count as used. That each of them is in the catalog
 //! is the build's job: a made key that is not there does not compile (`bb-core`, `derived_key!`).
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::made_keys::{Made, made_keys};
 use crate::generate::messages::{
-    FEATURES_FOLDER, PART_IMPORT, Quotes, SHARED, SOURCE_LOCALE_PATH, feature_entries,
+    FEATURES_FOLDER, PART_IMPORT, PartFile, Quotes, SHARED, SOURCE_LOCALE_PATH, feature_entries,
     features_without_part, is_generated_catalog, is_server_only, is_test_or_generated, parse_pairs,
-    parts_of, string_literals,
+    parts_of_files, string_literals,
 };
 use crate::generate::messages_rust::{constant_name, function_name};
 use crate::rust_source::{strip_comments, without_tests};
@@ -86,8 +86,13 @@ fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> 
             compare_with_source(path, other, source, &mut findings);
         }
     }
-    check_usage(source, sources, made, &mut findings);
-    check_parts(source, sources, made, &mut findings);
+    // Every file of code is cut into its code and its strings once, for both readings below.
+    let cut: Vec<Option<PartFile<'_>>> = sources
+        .iter()
+        .map(|file| PartFile::of(&file.path, &file.text))
+        .collect();
+    check_usage(source, sources, &cut, made, &mut findings);
+    check_parts(source, sources, &cut, made, &mut findings);
     findings
 }
 
@@ -97,6 +102,7 @@ fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> 
 fn check_parts(
     source: &BTreeMap<String, Placeholders>,
     sources: &[Source],
+    cut: &[Option<PartFile<'_>>],
     made: &[Made],
     findings: &mut Vec<Finding>,
 ) {
@@ -104,12 +110,10 @@ fn check_parts(
         .keys()
         .map(String::as_str)
         .filter(|key| !is_server_only(key));
-    let code: Vec<crate::source::Source> = sources
-        .iter()
-        .map(|file| (file.path.clone(), file.text.clone()))
-        .collect();
     let made: Vec<&str> = made.iter().map(|made| made.key.as_str()).collect();
-    let filled: HashSet<&str> = parts_of(keys, &code, &made).into_values().collect();
+    let filled: HashSet<&str> = parts_of_files(keys, cut.iter().flatten(), &made)
+        .into_values()
+        .collect();
     for feature in features_without_part(sources.iter().map(|file| file.path.as_str())) {
         findings.push(Finding::at(
             format!("{FEATURES_FOLDER}{feature}"),
@@ -132,9 +136,10 @@ fn check_parts(
             ));
         }
     }
+    // Only a file that names a part at all can import one in the wrong place.
     for file in sources
         .iter()
-        .filter(|file| !is_generated_catalog(&file.path))
+        .filter(|file| !is_generated_catalog(&file.path) && file.text.contains(PART_IMPORT))
     {
         for literal in string_literals(&file.text, Quotes::DoubleAndSingle) {
             let Some(part) = literal.strip_prefix(PART_IMPORT) else {
@@ -285,6 +290,7 @@ fn compare_with_source(
 fn check_usage(
     source: &BTreeMap<String, Placeholders>,
     sources: &[Source],
+    cut: &[Option<PartFile<'_>>],
     made: &[Made],
     findings: &mut Vec<Finding>,
 ) {
@@ -303,42 +309,51 @@ fn check_usage(
             )),
         }
     }
-    // The names a key has in Rust, made once and not for every file.
-    let names_of_keys: Vec<(&str, String, String)> = source
-        .keys()
-        .map(|key| (key.as_str(), constant_name(key), function_name(key)))
-        .collect();
-    for file in sources {
-        let is_test = is_test_or_generated(&file.path);
-        let text = if is_rust(&file.path) {
-            product_code(&file.text)
-        } else {
-            strip_web_comments(&file.text)
-        };
-        for literal in string_literals(
-            &text,
-            if is_rust(&file.path) {
-                Quotes::Double
-            } else {
-                Quotes::DoubleAndSingle
-            },
-        ) {
-            if !is_test && let Some((key, _)) = source.get_key_value(literal.as_str()) {
-                used.insert(key.as_str());
-            }
+    // The names a key has in Rust (its constant and its function), made once and looked up by
+    // the words of each file: going through every key for every file took most of the time of
+    // the check (META-SPEED).
+    let mut keys_by_name: HashMap<String, Vec<&str>> = HashMap::new();
+    for key in source.keys() {
+        for name in [constant_name(key), function_name(key)] {
+            keys_by_name.entry(name).or_default().push(key.as_str());
         }
-        if is_rust(&file.path) && !is_test {
-            let names = identifiers(&text);
-            for (key, constant, function) in &names_of_keys {
-                if names.contains(constant.as_str()) || names.contains(function.as_str()) {
-                    used.insert(key);
+    }
+    for (file, cut) in sources.iter().zip(cut) {
+        if is_rust(&file.path) {
+            // A Rust test names no key that ships, and `t()` is the call of the browser.
+            if is_test_or_generated(&file.path) {
+                continue;
+            }
+            let text = product_code(&file.text);
+            for literal in string_literals(&text, Quotes::Double) {
+                if let Some((key, _)) = source.get_key_value(literal.as_str()) {
+                    used.insert(key.as_str());
                 }
             }
-        }
-        if is_rust(&file.path) || is_generated_catalog(&file.path) {
+            for name in identifiers(&text) {
+                if let Some(keys) = keys_by_name.get(name) {
+                    used.extend(keys.iter().copied());
+                }
+            }
             continue;
         }
-        for key in called_keys(&text) {
+        // The code of the browser, cut once for the parts too; a test is cut here.
+        let tested;
+        let text = if let Some(cut) = cut {
+            for literal in &cut.literals {
+                if let Some((key, _)) = source.get_key_value(literal.as_str()) {
+                    used.insert(key.as_str());
+                }
+            }
+            cut.code.as_str()
+        } else {
+            tested = strip_web_comments(&file.text);
+            tested.as_str()
+        };
+        if is_generated_catalog(&file.path) {
+            continue;
+        }
+        for key in called_keys(text) {
             if !source.contains_key(&key) {
                 findings.push(Finding::at(
                     &file.path,

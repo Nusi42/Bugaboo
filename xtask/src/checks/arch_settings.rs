@@ -157,7 +157,14 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                     format!("Settings are declared only in {REGISTRY_FOLDER}; add this one there."),
                 ));
             }
-            for key in &keys {
+            // A key written as a string stands alone between two quotes, so only the pieces
+            // between quotes can be one: looking for every key in every line took most of the
+            // time of the check (META-SPEED).
+            let named: BTreeSet<&str> = line
+                .split(['"', '\x27', '`'])
+                .filter(|piece| keys.contains(*piece))
+                .collect();
+            for key in named {
                 if has_key_literal(line, key) {
                     findings.push(Finding::at(
                         &place,

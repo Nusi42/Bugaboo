@@ -294,6 +294,43 @@ pub(crate) fn parts_of<'a>(
     sources: &[Source],
     made: &[&str],
 ) -> BTreeMap<&'a str, &'static str> {
+    let files: Vec<PartFile<'_>> = sources
+        .iter()
+        .filter_map(|(path, text)| PartFile::of(path, text))
+        .collect();
+    parts_of_files(keys, files.iter(), made)
+}
+
+/// A file of code as [`parts_of`] reads it: its code without comments and the strings in that
+/// code, cut once so that a check that reads them too does not cut them again (META-SPEED).
+pub(crate) struct PartFile<'s> {
+    pub(crate) path: &'s str,
+    pub(crate) code: String,
+    pub(crate) literals: Vec<String>,
+}
+
+impl<'s> PartFile<'s> {
+    /// The file, or none for a test or a generated file, which names no key for a part.
+    pub(crate) fn of(path: &'s str, text: &str) -> Option<Self> {
+        if is_test_or_generated(path) {
+            return None;
+        }
+        let code = strip_comments(text);
+        let literals = string_literals(&code, Quotes::DoubleAndSingle);
+        Some(Self {
+            path,
+            code,
+            literals,
+        })
+    }
+}
+
+/// [`parts_of`] over files that are cut already.
+pub(crate) fn parts_of_files<'a, 'f: 'g, 'g>(
+    keys: impl IntoIterator<Item = &'a str>,
+    files: impl IntoIterator<Item = &'g PartFile<'f>>,
+    made: &[&str],
+) -> BTreeMap<&'a str, &'static str> {
     let keys: Vec<&str> = keys.into_iter().collect();
     let known: HashSet<&str> = keys.iter().copied().collect();
     let mut users: BTreeMap<&str, Users> = BTreeMap::new();
@@ -304,18 +341,14 @@ pub(crate) fn parts_of<'a>(
         };
         users.insert(key, merged);
     };
-    for (path, text) in sources {
-        if is_test_or_generated(path) {
-            continue;
-        }
-        let here = feature_of(path).map_or(Users::Several, Users::Feature);
-        let code = strip_comments(text);
-        for literal in string_literals(&code, Quotes::DoubleAndSingle) {
+    for file in files {
+        let here = feature_of(file.path).map_or(Users::Several, Users::Feature);
+        for literal in &file.literals {
             if let Some(key) = known.get(literal.as_str()) {
                 name(key, here);
             }
         }
-        for prefix in template_prefixes(&code) {
+        for prefix in template_prefixes(&file.code) {
             for key in keys.iter().filter(|key| key.starts_with(prefix.as_str())) {
                 name(key, here);
             }
