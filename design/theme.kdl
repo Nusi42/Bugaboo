@@ -2431,6 +2431,15 @@ part "list-row.cell[variant=value]" {
     width "$size-col-value"
 }
 
+// A length of time (*Estimated time*, *Time left*, *Time spent*): a number, so it stands at the end of its cell, and its
+// head with it, so the lengths line up (UX §7.3: "Numbers line up in tables").
+part "list-row.cell[variant=length]" {
+    flex none
+    width "$size-col-value"
+    justify-content flex-end
+    text-align end
+}
+
 part "list-row.cell[variant=changed]" {
     flex none
     width "$size-col-changed"
@@ -2494,7 +2503,7 @@ part "list-row[variant=phone]" "list-row[variant=slim]" {
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" "list-row[variant=phone] list-row.cell[variant=project]" "list-row[variant=phone] list-row.cell[variant=value]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" "list-row[variant=phone] list-row.cell[variant=project]" "list-row[variant=phone] list-row.cell[variant=value]" "list-row[variant=phone] list-row.cell[variant=length]" {
     display none
 }
 
@@ -2753,6 +2762,12 @@ part "list-sort.label" {
     overflow hidden
     text-overflow ellipsis
     white-space nowrap
+}
+
+// The head of a length stands at the end of its column, over its numbers.
+part "list-row.cell[variant=length] list-sort" {
+    justify-content flex-end
+    text-align end
 }
 
 // The edge of a head cell: dragging it, or moving it with the arrow keys, sets the width.

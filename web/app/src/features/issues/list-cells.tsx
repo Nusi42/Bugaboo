@@ -56,6 +56,7 @@ const contentOf: Readonly<Record<ColumnCell, (input: CellInput) => ReactNode>> =
     line.changedAt === undefined ? undefined : formatAgo(line.changedAt, context.now),
   project: ({ line }) => line.project?.name,
   value: ({ word, line, context }) => valueOf(word, line, context.own),
+  length: ({ word, line, context }) => valueOf(word, line, context.own),
 };
 
 /** A cell of a row: the column it stands in, the word of its field and what it shows. */

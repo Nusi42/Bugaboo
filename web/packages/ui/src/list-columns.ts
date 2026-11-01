@@ -19,8 +19,9 @@ const position = {
   priority: 7,
   person: 8,
   value: 9,
-  changed: 10,
-  action: 11,
+  length: 10,
+  changed: 11,
+  action: 12,
 } as const satisfies Readonly<Record<ListColumn, number>>;
 
 /** The columns in the order they stand, for the header and for every row. */

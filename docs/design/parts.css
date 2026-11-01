@@ -1476,6 +1476,13 @@ textarea,
   width: var(--size-col-value);
 }
 
+[data-part="list-row.cell"][data-variant~="length"] {
+  flex: none;
+  width: var(--size-col-value);
+  justify-content: flex-end;
+  text-align: end;
+}
+
 [data-part="list-row.cell"][data-variant~="changed"] {
   flex: none;
   width: var(--size-col-changed);
@@ -1548,7 +1555,8 @@ textarea,
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="type"],
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"],
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="project"],
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="value"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="value"],
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="length"] {
   display: none;
 }
 
@@ -1797,6 +1805,11 @@ textarea,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+[data-part="list-row.cell"][data-variant~="length"] [data-part="list-sort"] {
+  justify-content: flex-end;
+  text-align: end;
 }
 
 [data-part="list-handle"] {

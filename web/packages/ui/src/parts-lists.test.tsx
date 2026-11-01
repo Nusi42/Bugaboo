@@ -28,6 +28,7 @@ const columnLabels = {
   priority: "Priority",
   person: "Assigned to",
   value: "Value",
+  length: "Length",
   changed: "Changed",
   action: "Actions",
 } as const satisfies Readonly<Record<ListColumn, string>>;
@@ -53,6 +54,7 @@ describe("ux_4_2 the issue list is one grid with fixed columns", () => {
       "priority",
       "person",
       "value",
+      "length",
       "changed",
       "action",
     ]);

@@ -26,6 +26,7 @@ const widthTokens = {
   priority: ["size-col-priority", "size-icon-small"],
   person: ["size-col-person", "size-target-compact"],
   value: ["size-col-value", "size-target-compact"],
+  length: ["size-col-value", "size-target-compact"],
   changed: ["size-col-changed", "size-target-compact"],
   action: ["size-col-icon"],
 } as const satisfies Readonly<Record<ListColumn, readonly TokenName[]>>;

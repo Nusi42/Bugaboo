@@ -2,7 +2,7 @@ import type { SearchWord } from "@bugaboo/api-client";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
-type FixedCell = "select" | "action" | "value";
+type FixedCell = "select" | "action" | "value" | "length";
 
 /**
  * The search words of the fields the list names besides those of its cells: the one place where
@@ -46,15 +46,15 @@ const wordOfCell = {
   changed: listWord.changed,
 } as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
 
-/** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
-export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";
+/** The cell a column is drawn in: one the list has a cell for, a length of time, or a plain value (an own field). */
+export type ColumnCell = Exclude<ListColumn, FixedCell> | "value" | "length";
 
 /** The search words of the columns that cannot be taken away in *Customize → Columns* (UX §4.2). */
 export const keptWords: readonly string[] = [wordOfCell.key, wordOfCell.title];
 
 /** The cells a person can choose from, in the order the project's list has them (ADR-0034 decision 6). */
 const choiceCells = listColumns.filter(
-  (cell): cell is Exclude<ColumnCell, "value"> => cell in wordOfCell,
+  (cell): cell is Exclude<ColumnCell, "value" | "length"> => cell in wordOfCell,
 );
 
 /**
@@ -78,9 +78,16 @@ const cellOfWord: ReadonlyMap<string, ColumnCell> = new Map(
   choiceCells.map((cell) => [wordOfCell[cell], cell]),
 );
 
+/** The words of the lengths of time of an issue, whose cells line their numbers up. */
+const lengthWords: ReadonlySet<string> = new Set([
+  listWord.estimatedTime,
+  listWord.timeLeft,
+  listWord.timeSpent,
+]);
+
 /** The cell a column with this search word is drawn in; a field without a cell of its own is a plain value. */
 export function cellOf(word: string): ColumnCell {
-  return cellOfWord.get(word) ?? "value";
+  return cellOfWord.get(word) ?? (lengthWords.has(word) ? "length" : "value");
 }
 
 /**
@@ -123,9 +130,6 @@ const wordsWithText: ReadonlySet<string> = new Set([
   listWord.closed,
   listWord.reportedBy,
   listWord.statusGroup,
-  listWord.estimatedTime,
-  listWord.timeLeft,
-  listWord.timeSpent,
 ]);
 
 /** Whether a column or a group is a field of the organization: a word with no cell of its own and no text drawn from the row. */
