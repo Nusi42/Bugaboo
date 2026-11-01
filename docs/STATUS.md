@@ -20,7 +20,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-05 | Time on issues on the server | building | `win2` / `WIN2` | Wave 2 |
 | WP-06 | Working hours on the server | building | `win3` / `WIN3` | Wave 2 |
 | WP-07 | Estimates and totals | building | `win4` / `WIN4` | Wave 2 |
-| WP-08 | The maintainer's decisions on settings screens, label squares and IDs | planned | `win5` / `WIN5` | Wave 2 |
+| WP-08 | The maintainer's decisions on settings screens, label squares and IDs | merged (three fix rounds) | `win5` / `WIN5` | Wave 2 |
 | WP-09 | The timer and the work day on screen | planned | `win2` / `WIN2` | Wave 3 |
 | WP-10 | The timesheet | planned | `win3` / `WIN3` | Wave 3 |
 | WP-11 | The settings of working hours and time | planned | `win4` / `WIN4` | Wave 3 |
