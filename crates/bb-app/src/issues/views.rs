@@ -12,7 +12,7 @@ use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
 use bb_core::readable_id::ReadableId;
-use bb_core::time::{Minutes, time_left};
+use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_core::workflow::WorkflowContent;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
@@ -45,20 +45,9 @@ pub(crate) struct IssueViews {
     /// for the page; an issue not in it has none.
     /// `None` when the labels were not asked for.
     labels: Option<Arc<HashMap<IssueId, Vec<LabelRef>>>>,
-    /// The minutes spent on the issues, as far as they are read.
-    spent: Spent,
-}
-
-/// Where the views find the minutes spent on an issue (*Time spent*, and the worked-out *Time
-/// left*).
-enum Spent {
-    /// Read for each issue when its view is made: one issue at a time (the issue page, an answer
-    /// to a change).
-    EachIssue,
-    /// Read once for the page, by issue; an issue not in it has none.
-    Page(Arc<HashMap<IssueId, Minutes>>),
-    /// Not read: the page did not ask for it.
-    NotAsked,
+    /// The minutes spent on the issues of the page, by issue, when the page asked for them; an
+    /// issue not in it has none. The issue page reads them with its time (`time/totals.rs`).
+    spent: Option<Arc<HashMap<IssueId, Minutes>>>,
 }
 
 /// What a page of issues shows besides what every issue has: each is read only when it is asked
@@ -98,9 +87,9 @@ impl IssueViews {
         self
     }
 
-    /// Gives the views the minutes spent on the issues of the page, or tells them it was not asked.
+    /// Gives the views the minutes spent on the issues of the page, when they were asked for.
     fn with_spent(mut self, spent: Option<&Arc<HashMap<IssueId, Minutes>>>) -> Self {
-        self.spent = spent.map_or(Spent::NotAsked, |found| Spent::Page(Arc::clone(found)));
+        self.spent = spent.map(Arc::clone);
         self
     }
 
@@ -223,7 +212,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             workflows: HashMap::new(),
             show_people: true,
             labels: None,
-            spent: Spent::EachIssue,
+            spent: None,
         })
     }
 
@@ -322,27 +311,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(shown)
     }
 
-    /// The minutes spent on the issue, as the views find them; none when they were not asked for.
-    async fn spent_on(
-        &self,
-        views: &IssueViews,
-        issue: IssueId,
-    ) -> Result<Option<Minutes>, AppError> {
-        Ok(match &views.spent {
-            Spent::Page(found) => Some(found.get(&issue).copied().unwrap_or_default()),
-            Spent::NotAsked => None,
-            Spent::EachIssue => Some(
-                self.store()
-                    .spent_on_issues(&[issue])
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .first()
-                    .map(|(_, minutes)| *minutes)
-                    .unwrap_or_default(),
-            ),
-        })
-    }
-
     /// The issue as the viewer sees it. `assigned_to` are the people it is assigned to, in order.
     pub(crate) async fn issue_view(
         &self,
@@ -386,7 +354,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let reported_by = self
             .person_once(views, REPORTED_BY_PEOPLE, issue.reported_by)
             .await?;
-        let time_spent = self.spent_on(views, issue.id).await?;
+        let time_spent = views
+            .spent
+            .as_ref()
+            .map(|page| page.get(&issue.id).copied().unwrap_or_default());
         let shown_people = if views.show_people { assigned_to } else { &[] };
         let mut people = Vec::with_capacity(shown_people.len());
         for person in shown_people {
@@ -403,8 +374,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             status_changes,
             priority: issue.priority,
             estimated_time: issue.estimated_time,
-            time_left: time_spent
-                .and_then(|spent| time_left(issue.estimated_time, spent, issue.time_left)),
+            // Without the minutes spent only a typed value is known; the worked-out one needs them.
+            time_left: time_spent.map_or(issue.time_left.map(TimeLeft::Typed), |spent| {
+                time_left(issue.estimated_time, spent, issue.time_left)
+            }),
             time_spent,
             reported_by,
             assigned_to: people,

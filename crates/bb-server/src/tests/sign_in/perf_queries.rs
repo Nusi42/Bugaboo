@@ -134,6 +134,7 @@ fn page_reads(issue: &str) -> Vec<(&'static str, String)> {
         "/labels-and-tags",
         "/follow",
         "/followers",
+        "/time",
     ]
     .into_iter()
     .map(|part| (part, format!("{ISSUES}/{issue}{part}")))

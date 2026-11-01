@@ -18,7 +18,7 @@ use super::search_run::{asked, hit, issue_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, change_issue};
-use crate::search::{LengthTotals, search};
+use crate::search::{GroupCount, GroupKey, LengthTotals, search};
 use crate::time::totals::{IssueTimeQuery, ProjectTimeQuery, issue_time, project_time};
 
 const fn minutes(count: u32) -> Minutes {
@@ -50,6 +50,11 @@ async fn an_issue_with_sub_issues(world: &World) -> Result<IssueId, String> {
     an_entry(world, issue.id, 80).await?;
     an_entry(world, sub.id, 100).await?;
     let mut shared = world.store.lock();
+    // The compiled search finds the sub-issue in the project of the issue.
+    shared.search_groups = vec![GroupCount {
+        key: GroupKey::Project(project),
+        issues: 1,
+    }];
     shared.search_hits = vec![hit(sub)];
     shared.search_lengths = LengthTotals {
         found_any: true,
@@ -84,9 +89,10 @@ async fn time_03_an_issue_shows_its_own_numbers_and_the_totals_with_its_sub_issu
     assert_eq!(with.time_left, Some(minutes(460)));
     assert_eq!(with.time_spent, Some(minutes(180)));
     // The totals are the compiled search of the sub-issues, with the reader's sight in it: one
-    // statement for the lengths and one through the port of time spent.
+    // statement for the projects they are in, one for the lengths and one through the port of
+    // time spent.
     let searches = world.store.lock().searches.clone();
-    assert_eq!(searches.len(), 2);
+    assert_eq!(searches.len(), 3);
     assert!(searches.iter().all(|request| !request.sight.all.is_empty()));
     Ok(())
 }
@@ -137,8 +143,8 @@ async fn priv_13_a_total_of_a_field_the_reader_may_not_read_is_not_shown() -> Ou
         "{shown}"
     );
     assert_eq!(shown["with_sub_issues"]["estimated_time"], json!(840));
-    // The time spent of the issues below was never read: only the statement of the lengths ran.
-    assert_eq!(world.store.lock().searches.len(), 1);
+    // The time spent of the issues below was never read: only the projects and the lengths.
+    assert_eq!(world.store.lock().searches.len(), 2);
     Ok(())
 }
 

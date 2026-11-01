@@ -205,15 +205,31 @@ impl From<&IssueView> for IssueItem {
     }
 }
 
-/// Whether a list asks for *Time spent* or *Time left*, which need the minutes spent on each issue
-/// of the page.
+/// The members of an item that need the minutes spent on each issue of the page.
+const TIME_MEMBERS: [&str; 3] = ["time_spent", "time_left", "time_left_worked_out"];
+
+/// Whether a list asks for a member that needs the minutes spent on each issue of the page:
+/// *Time spent*, *Time left* or whether it is worked out.
 pub(crate) fn asks_for_time(params: &ListParams) -> bool {
-    params.asks_for(&ISSUE_FIELDS, "time_spent") || params.asks_for(&ISSUE_FIELDS, "time_left")
+    TIME_MEMBERS
+        .iter()
+        .any(|member| params.asks_for(&ISSUE_FIELDS, member))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn time_03_each_member_of_time_asks_for_the_minutes_spent() {
+        let asked = |fields: &str| -> ListParams {
+            serde_json::from_value(serde_json::json!({ "fields": fields })).unwrap()
+        };
+        for member in TIME_MEMBERS {
+            assert!(asks_for_time(&asked(&format!("id,{member}"))), "{member}");
+        }
+        assert!(!asks_for_time(&asked("id,title")));
+    }
 
     #[test]
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_issue() {

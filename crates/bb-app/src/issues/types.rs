@@ -212,10 +212,12 @@ pub struct IssueView {
     #[masked(field = "estimated-time")]
     pub estimated_time: Option<Minutes>,
     /// *Time left*, typed or worked out from the estimate and the time spent; none without
-    /// either, or when the time spent was not read (a list that did not ask for it).
+    /// either. Where the time spent was not read (one issue, whose page reads its time on its own
+    /// route, or a list that did not ask) only a typed value is here.
     #[masked(field = "time-left")]
     pub time_left: Option<TimeLeft>,
-    /// *Time spent*: the total of the issue's time entries; none when it was not read.
+    /// *Time spent*: the total of the issue's time entries; none where it was not read (one issue,
+    /// or a list that did not ask for it).
     #[masked(field = "time-spent")]
     pub time_spent: Option<Minutes>,
     /// Who made it.

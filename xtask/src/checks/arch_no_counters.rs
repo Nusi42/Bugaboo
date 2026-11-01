@@ -37,7 +37,7 @@ const EXEMPTIONS_PATH: &str = "tools/checks/counter-exemptions.toml";
 const COUNT_WORDS: [&str; 6] = ["total", "totals", "count", "counts", "tally", "sum"];
 /// The words of the description of a whole number that say the number counts, and the phrases.
 /// (`Counts up with every change`, a version, is no count of what a viewer may see.)
-const COUNT_DESCRIPTION_WORDS: [&str; 4] = ["counted", "counting", "total", "totals"];
+const COUNT_DESCRIPTION_WORDS: [&str; 5] = ["counted", "counting", "total", "totals", "sum"];
 const COUNT_PHRASES: [&str; 3] = ["how many", "number of", "the count"];
 /// How deep an answer schema is followed.
 const DEPTH_MAX: usize = 12;
@@ -353,6 +353,14 @@ mod tests {
 
     const GAP_ROUTE: &str = "GET /api/v1/roles/{role}/second-step-gap";
     const GAP_REASON: &str = "Only people the viewer may see are counted: whoever holds Manage roles sees names everywhere in Organization settings (M2-Q3).";
+
+    #[test]
+    fn a_whole_number_described_as_a_sum_is_a_count() {
+        let sum = serde_json::json!({"type": "integer", "description": "The sum of the lengths."});
+        assert!(describes_a_count(&sum));
+        let summary = serde_json::json!({"type": "integer", "description": "A summary of it."});
+        assert!(!describes_a_count(&summary));
+    }
 
     #[test]
     fn good_example_a_paged_list_and_an_answer_without_a_count() {

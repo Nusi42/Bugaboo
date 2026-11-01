@@ -3,11 +3,18 @@
 //! at once, and taking a typed *Time left* away makes it worked out again. Both databases.
 
 use axum::http::StatusCode;
+use bb_app::access::Permission;
+use bb_app::roles::SetFieldLevel;
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
+use bb_core::id::ProjectId;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok};
+use super::policy_rig::Member;
+use super::rig::Rig;
 
 /// The changes of the history of an issue, as `browser` reads them.
 async fn changes_of(browser: &mut Browser, issue: &str) -> Result<Vec<Value>, Failure> {
@@ -80,9 +87,14 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
             )
             .await?;
         let cleared = ok(&cleared)?;
-        assert_eq!(cleared["time_left"], 240);
-        assert_eq!(cleared["time_left_worked_out"], true);
+        // The answer of the change holds only a typed value; the issue's time works it out.
+        assert!(cleared.get("time_left").is_none(), "{cleared}");
         assert_eq!(cleared["estimated_time"], 240);
+        let time = ada.send("GET", &format!("{path}/time"), None).await?;
+        assert_eq!(
+            ok(&time)?["time_left"],
+            json!({"minutes": 240, "worked_out": true})
+        );
 
         // The history words each change as a length, in the seconds the screens get for one.
         let history = changes_of(&mut ada, &issue).await?;
@@ -156,8 +168,15 @@ async fn time_03_many_issues_get_an_estimate_at_once() -> TestResult {
         for issue in &issues {
             let read = issue_of(&mut ada, issue).await?;
             assert_eq!(read["estimated_time"], 120, "{issue}: {read}");
-            assert_eq!(read["time_left"], 120, "{issue}: {read}");
-            assert_eq!(read["time_left_worked_out"], true, "{issue}: {read}");
+            assert!(read.get("time_left").is_none(), "{issue}: {read}");
+            let time = ada
+                .send("GET", &format!("{ISSUES}/{issue}/time"), None)
+                .await?;
+            assert_eq!(
+                ok(&time)?["time_left"],
+                json!({"minutes": 120, "worked_out": true}),
+                "{issue}"
+            );
         }
         Ok(())
     })
@@ -257,6 +276,105 @@ async fn time_03_the_time_of_an_issue_and_of_a_project_over_http() -> TestResult
         assert_eq!(row["time_spent"], 90);
         assert_eq!(row["time_left"], 0);
         assert_eq!(row["time_left_worked_out"], true);
+        Ok(())
+    })
+    .await
+}
+
+/// A person who sees every issue and reads the three lengths of time everywhere but *Time spent*
+/// in the project `hidden_in`.
+async fn reader_without_spent_in(
+    site: &Site<'_>,
+    rig: &Rig,
+    hidden_in: ProjectId,
+) -> Result<Browser, Failure> {
+    let role = site
+        .org
+        .role(
+            "Time reader",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+        )
+        .await?;
+    let levels = [
+        (Field::Title, None, FieldLevel::CanSee),
+        (Field::EstimatedTime, None, FieldLevel::CanSee),
+        (Field::TimeLeft, None, FieldLevel::CanSee),
+        (Field::TimeSpent, None, FieldLevel::CanSee),
+        (Field::TimeSpent, Some(hidden_in), FieldLevel::Hidden),
+    ];
+    for (field, project, level) in levels {
+        rig.api()
+            .set_field_level(
+                Rig::info(),
+                SetFieldLevel {
+                    session_token: site.org.admin.session.clone(),
+                    role: role.id,
+                    project,
+                    issue_type: None,
+                    field: field.into(),
+                    level: Some(level),
+                },
+            )
+            .await?;
+    }
+    let email = "times@example.test";
+    let started = rig.person(&site.org.admin.session, email).await?;
+    let member = Member {
+        id: started.person.id,
+        session: started.session_token,
+    };
+    site.org.give_everywhere(&member, role.id).await?;
+    Browser::signed_in_as(site.app, email).await
+}
+
+#[tokio::test]
+async fn time_03_sub_issues_count_in_every_project_and_a_hidden_total_is_left_out() -> TestResult {
+    each_database("time_03_sub_issues_elsewhere", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let other = ada
+            .send(
+                "POST",
+                "/api/v1/projects",
+                Some(json!({"short_name": "SIDE", "name": "Side"})),
+            )
+            .await?;
+        let other_id: ProjectId = ok(&other)?["id"].as_str().ok_or("no ID")?.parse()?;
+        let goal = key_of(&site.create(&mut ada, "Release").await?)?;
+        let elsewhere = ada
+            .send(
+                "POST",
+                "/api/v1/projects/SIDE/issues",
+                Some(site.new_issue("Translate the notes")),
+            )
+            .await?;
+        let elsewhere = key_of(&elsewhere)?;
+        put_under(&mut ada, &elsewhere, &goal).await?;
+        estimate(&mut ada, &goal, 60).await?;
+        estimate(&mut ada, &elsewhere, 120).await?;
+        book(&mut ada, &goal, 80).await?;
+        book(&mut ada, &elsewhere, 30).await?;
+        // A sub-issue in a sibling project counts like one in the same project.
+        let time = ada
+            .send("GET", &format!("{ISSUES}/{goal}/time"), None)
+            .await?;
+        assert_eq!(
+            ok(&time)?["with_sub_issues"],
+            json!({"estimated_time": 180, "time_left": 90, "time_spent": 110})
+        );
+        // A reader who may not read Time spent where the sub-issue is gets no total of it: not
+        // the issue's own 80 minutes standing for the total.
+        let mut reader = reader_without_spent_in(&site, &rig, other_id).await?;
+        let seen = reader
+            .send("GET", &format!("{ISSUES}/{goal}/time"), None)
+            .await?;
+        let seen = ok(&seen)?;
+        assert_eq!(seen["time_spent"], 80, "{seen}");
+        assert!(
+            seen["with_sub_issues"].get("time_spent").is_none(),
+            "{seen}"
+        );
+        assert_eq!(seen["with_sub_issues"]["estimated_time"], 180, "{seen}");
         Ok(())
     })
     .await

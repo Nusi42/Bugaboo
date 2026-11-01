@@ -154,7 +154,7 @@ impl Masked for SearchGroups {}
 /// A search that is checked and ready for the store.
 pub(crate) struct Prepared {
     pub(crate) request: SearchRequest,
-    looked: Looked,
+    pub(crate) looked: Looked,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

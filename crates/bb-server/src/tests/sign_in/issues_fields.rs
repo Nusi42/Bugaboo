@@ -73,14 +73,15 @@ async fn check_reader(
     let detail = reader.send("GET", &format!("{ISSUES}/{key}"), None).await?;
     let issue = &ok(&detail)?["issue"];
     // `closed_at` is there only while the issue is closed, which this one is not, and the labels
-    // are not read for the issue page: it has its own route for them (`labels` is never there).
+    // and the time spent are not read for the issue page: it has its own routes for them
+    // (`labels` and `time_spent` are never there; a list has them when it asks).
     for (member, _) in field_members() {
         if hidden.contains(member) {
             assert!(
                 issue.get(*member).is_none(),
                 "{name}: `{member}` in the issue"
             );
-        } else if !["closed_at", "labels"].contains(member) {
+        } else if !["closed_at", "labels", "time_spent"].contains(member) {
             assert!(
                 issue.get(*member).is_some(),
                 "{name}: `{member}` not in the issue"

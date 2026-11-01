@@ -341,6 +341,47 @@ const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
     }
 }
 
+/// The lengths of time of an issue (*Estimated time*, *Time left*, *Time spent*) that the person
+/// may read in every one of `projects`, as fields of a search: by the same rule as the fields of a
+/// search that looks at those projects. The totals with the sub-issues of an issue look at the
+/// projects the sub-issues are in, wherever they are.
+pub(crate) fn lengths_readable_in(
+    seen: &crate::projects::Leveled,
+    projects: &[ProjectId],
+) -> Vec<Searchable> {
+    let places: Vec<Place> = seen
+        .seen_places(None)
+        .into_iter()
+        .filter(|(chain, _)| {
+            chain
+                .last()
+                .is_some_and(|project| projects.contains(project))
+        })
+        .map(|(chain, held)| Place::of(chain, held))
+        .collect();
+    let sources = Sources {
+        statuses: Vec::new(),
+        issue_types: Vec::new(),
+        own: Vec::new(),
+    };
+    [Field::EstimatedTime, Field::TimeLeft, Field::TimeSpent]
+        .into_iter()
+        .filter(|field| {
+            !places.is_empty()
+                && places
+                    .iter()
+                    .all(|place| place.may_use(FieldKey::from(*field), field.person_kind()))
+        })
+        .filter_map(|field| {
+            let (target, kind) = catalogue_target(field)?;
+            Some(Searchable {
+                field: catalogue_field(field, kind, &sources),
+                target,
+            })
+        })
+        .collect()
+}
+
 /// The field of the language for a field of the catalogue, with the names of its values.
 fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchField {
     let word = field.search_word();

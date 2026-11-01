@@ -17,7 +17,7 @@ pub use name_choices::{
 pub(crate) use names::NAME_RESOLUTIONS_MAX;
 pub(crate) use names::NameCache;
 pub use readable::{FieldName, ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
-pub(crate) use readable::{Looked, readable_of, word_is_taken};
+pub(crate) use readable::{Looked, lengths_readable_in, readable_of, word_is_taken};
 pub use request::{
     GroupCount, GroupKey, LengthTotals, Names, OwnReach, ProjectLink, SearchFailure, SearchHit,
     SearchRequest, SearchStore, UnknownName,

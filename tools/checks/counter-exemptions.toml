@@ -307,3 +307,28 @@ reason = "Minutes, not a count of things: the time booked on this one issue the 
 route = "GET /api/v1/search/issues"
 property = "time_spent"
 reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/time"
+property = "estimated_time"
+reason = "Minutes, not a count of things: the sum over the issue and the sub-issues under it that the viewer sees, in any project, by the compiled search with the viewer's sight; a field the viewer may not read where the sub-issues are is left out of the total (ADR-0004, ADR-0035 decision 4, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/time"
+property = "time_left"
+reason = "Minutes, not a count of things: the sum over the issue and the sub-issues under it that the viewer sees, in any project, by the compiled search with the viewer's sight; a field the viewer may not read where the sub-issues are is left out of the total (ADR-0004, ADR-0035 decision 4, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/time"
+property = "estimated_time"
+reason = "Minutes, not a count of things: the sum over the issues of the project and its sub-projects that the viewer sees, by the compiled search of its list with the viewer's sight, only of a field the viewer may read in all of them (ADR-0004, ADR-0035 decision 4, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/time"
+property = "time_left"
+reason = "Minutes, not a count of things: the sum over the issues of the project and its sub-projects that the viewer sees, by the compiled search of its list with the viewer's sight, only of a field the viewer may read in all of them (ADR-0004, ADR-0035 decision 4, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/time"
+property = "time_spent"
+reason = "Minutes, not a count of things: the sum over the issues of the project and its sub-projects that the viewer sees, by the compiled search of its list with the viewer's sight, only of a field the viewer may read in all of them (ADR-0004, ADR-0035 decision 4, PRIV-13)."
