@@ -4,20 +4,19 @@
 use bb_app::issues::{IssueTypeRef as AppIssueTypeRef, IssueView};
 use bb_core::issue::{IssueIcon, Priority};
 use bb_core::own_fields_value::OwnValues;
-use bb_core::time::Minutes;
+use bb_core::time::{Minutes, TimeLeft};
 use bb_policy::{Masked, PersonRef};
 use serde::Serialize;
 use utoipa::ToSchema;
 
 use super::projects::ProjectRef;
 use super::tags::LabelRefBody;
-use super::time_totals::TimeLeftBody;
 use super::workflows::{StatusChangeRef, StatusRef};
 use crate::lean::{FieldSpec, ListParams};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(crate) const ISSUE_FIELDS: [FieldSpec; 20] = [
+pub(crate) const ISSUE_FIELDS: [FieldSpec; 21] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -29,6 +28,7 @@ pub(crate) const ISSUE_FIELDS: [FieldSpec; 20] = [
     FieldSpec::by_default("priority"),
     FieldSpec::on_request("estimated_time"),
     FieldSpec::on_request("time_left"),
+    FieldSpec::on_request("time_left_worked_out"),
     FieldSpec::on_request("time_spent"),
     FieldSpec::on_request("reported_by"),
     FieldSpec::on_request("assigned_to"),
@@ -114,11 +114,17 @@ pub(crate) struct IssueItem {
     #[masked(field = "estimated-time")]
     #[schema(value_type = Option<u32>)]
     estimated_time: Option<Minutes>,
-    /// *Time left*, typed or worked out from the estimate and the time spent; left out without
-    /// either.
+    /// *Time left* in whole minutes, typed or worked out from the estimate and the time spent;
+    /// left out without either.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[masked(field = "time-left", nested)]
-    time_left: Option<TimeLeftBody>,
+    #[masked(field = "time-left")]
+    #[schema(value_type = Option<u32>)]
+    time_left: Option<Minutes>,
+    /// Whether *Time left* is worked out rather than typed (shown in the quiet style of a value
+    /// worked out); left out with it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "time-left")]
+    time_left_worked_out: Option<bool>,
     /// *Time spent*: the total of the issue's time entries, in whole minutes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "time-spent")]
@@ -179,7 +185,10 @@ impl From<&IssueView> for IssueItem {
             ),
             priority: Some(issue.priority),
             estimated_time: issue.estimated_time,
-            time_left: issue.time_left.map(TimeLeftBody::from),
+            time_left: issue.time_left.map(TimeLeft::minutes),
+            time_left_worked_out: issue
+                .time_left
+                .map(|left| matches!(left, TimeLeft::WorkedOut(_))),
             time_spent: issue.time_spent,
             reported_by: Some(issue.reported_by.clone()),
             assigned_to: Some(issue.assigned_to.clone()),
@@ -228,9 +237,8 @@ mod tests {
             status_changes: Some(Vec::new()),
             priority: Some(Priority::Normal),
             estimated_time: Some(Minutes::new(0)),
-            time_left: Some(TimeLeftBody::from(bb_core::time::TimeLeft::Typed(
-                Minutes::new(0),
-            ))),
+            time_left: Some(Minutes::new(0)),
+            time_left_worked_out: Some(false),
             time_spent: Some(Minutes::new(0)),
             reported_by: Some(PersonRef::Someone),
             assigned_to: Some(Vec::new()),

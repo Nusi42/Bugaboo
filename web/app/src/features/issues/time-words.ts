@@ -25,8 +25,23 @@ export function totalsText(totals: Schema<"TimeTotalsBody">): string {
   ]);
 }
 
+/** *Time left*: the minutes, and whether they are worked out rather than typed. */
+export interface TimeLeft {
+  readonly minutes: number;
+  readonly worked_out: boolean;
+}
+
+/** The *Time left* of an issue as an answer holds it; none while it has none. */
+export function timeLeftOf(
+  issue: Pick<Schema<"IssueItem">, "time_left" | "time_left_worked_out">,
+): TimeLeft | undefined {
+  return issue.time_left === undefined || issue.time_left === null
+    ? undefined
+    : { minutes: issue.time_left, worked_out: issue.time_left_worked_out === true };
+}
+
 /** *Time left* as a cell or a row reads it: the minutes, and whether they are worked out. */
-export function timeLeftText(left: Schema<"TimeLeftBody">): string {
+export function timeLeftText(left: TimeLeft): string {
   return left.worked_out
     ? t("issues.time-left-worked-out-short", { length: minutesText(left.minutes) })
     : minutesText(left.minutes);

@@ -5649,7 +5649,17 @@ export interface components {
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
-      time_left?: components["schemas"]["TimeLeftBody"] | null;
+      /**
+       * Format: int32
+       * @description *Time left* in whole minutes, typed or worked out from the estimate and the time spent;
+       *     left out without either.
+       */
+      time_left?: number | null;
+      /**
+       * @description Whether *Time left* is worked out rather than typed (shown in the quiet style of a value
+       *     worked out); left out with it.
+       */
+      time_left_worked_out?: boolean | null;
       /**
        * Format: int32
        * @description *Time spent*: the total of the issue's time entries, in whole minutes.

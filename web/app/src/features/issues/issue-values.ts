@@ -8,6 +8,7 @@ import { t, type MessageKey } from "@bugaboo/messages";
 
 import { listText } from "../../shared/list-text.ts";
 import { durationText } from "../../shared/own-value-text.ts";
+import { timeLeftOf } from "./time-words.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
@@ -93,8 +94,8 @@ export function after(before: IssueDetail | undefined, edit: IssueEdit): IssueDe
     ...(values.timeLeft === undefined
       ? {}
       : {
-          time_left:
-            values.timeLeft === null ? null : { minutes: values.timeLeft, worked_out: false },
+          time_left: values.timeLeft,
+          time_left_worked_out: values.timeLeft === null ? null : false,
         }),
     version: edit.version + 1,
   };
@@ -134,8 +135,9 @@ function ownBefore(detail: IssueDetail, own: Readonly<Record<string, unknown>>) 
 
 /** The values of the same fields as they are now: what *Undo* sends. */
 /** The typed *Time left* of an issue as a change sends it back: none while it is worked out. */
-function typedLeft(left: Schema<"TimeLeftBody"> | null | undefined): number | null {
-  return left === null || left === undefined || left.worked_out ? null : left.minutes;
+function typedLeft(issue: Schema<"IssueItem">): number | null {
+  const left = timeLeftOf(issue);
+  return left === undefined || left.worked_out ? null : left.minutes;
 }
 
 export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueValues {
@@ -156,7 +158,7 @@ export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueVal
     ...(values.estimatedTime === undefined
       ? {}
       : { estimatedTime: known(issue.estimated_time) ?? null }),
-    ...(values.timeLeft === undefined ? {} : { timeLeft: typedLeft(issue.time_left) }),
+    ...(values.timeLeft === undefined ? {} : { timeLeft: typedLeft(issue) }),
   };
 }
 

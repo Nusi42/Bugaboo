@@ -7,6 +7,7 @@ import { listWord } from "../../shared/list-columns.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { known } from "../../shared/present.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+import { timeLeftOf, type TimeLeft } from "./time-words.ts";
 
 /** An issue in a list, as the server sends it: the fields can be missing. */
 type FoundItem = Schema<"IssueItem">;
@@ -60,6 +61,10 @@ export function fieldsFor(columns: readonly string[]): string {
     if (field !== undefined) {
       asked.add(field);
     }
+    // A time left is read with whether it is worked out, which the cell says.
+    if (field === "time_left") {
+      asked.add("time_left_worked_out");
+    }
   }
   return fieldList<FoundItem>([...asked]);
 }
@@ -95,7 +100,7 @@ export interface FoundLine {
   readonly closedAt: string | undefined;
   /** *Estimated time*, *Time left* and *Time spent*, when the columns asked for them. */
   readonly estimated: number | undefined;
-  readonly left: Schema<"TimeLeftBody"> | undefined;
+  readonly left: TimeLeft | undefined;
   readonly spent: number | undefined;
   /** The values of the fields of the organization, by the ID of the field. */
   readonly own: Readonly<Record<string, unknown>>;
@@ -130,7 +135,7 @@ export function foundLineOf(item: FoundItem): FoundLine | undefined {
     changedAt: known(item.updated_at),
     closedAt: known(item.closed_at),
     estimated: known(item.estimated_time),
-    left: known(item.time_left),
+    left: timeLeftOf(item),
     spent: known(item.time_spent),
     own: item.own_fields ?? {},
   };

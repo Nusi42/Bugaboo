@@ -8,7 +8,7 @@ import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-import { minutesText, totalsText } from "./time-words.ts";
+import { minutesText, timeLeftOf, totalsText } from "./time-words.ts";
 
 /** The totals of the issue with its sub-issues, read when the row is drawn. */
 function useWithSubIssues(issue: string, version: number) {
@@ -52,7 +52,7 @@ function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
 function LeftRow({ blocks, changes }: ChangeableRowsProps) {
   const { issue, mask } = blocks;
   const name = t("issue-field.time-left");
-  const left = issue.time_left ?? undefined;
+  const left = timeLeftOf(issue);
   const typed = left === undefined || left.worked_out ? undefined : left.minutes;
   const workedOut = left?.worked_out === true ? minutesText(left.minutes) : undefined;
   if (!mask.sees("time-left")) {

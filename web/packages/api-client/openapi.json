@@ -18108,15 +18108,14 @@
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
           "time_left": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TimeLeftBody",
-                "description": "*Time left*, typed or worked out from the estimate and the time spent; left out without\neither."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Time left* in whole minutes, typed or worked out from the estimate and the time spent;\nleft out without either.",
+            "minimum": 0
+          },
+          "time_left_worked_out": {
+            "type": ["boolean", "null"],
+            "description": "Whether *Time left* is worked out rather than typed (shown in the quiet style of a value\nworked out); left out with it."
           },
           "time_spent": {
             "type": ["integer", "null"],

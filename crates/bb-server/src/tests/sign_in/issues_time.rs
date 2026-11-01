@@ -53,10 +53,8 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
         let typed = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 90})))
             .await?;
-        assert_eq!(
-            ok(&typed)?["time_left"],
-            json!({"minutes": 90, "worked_out": false})
-        );
+        assert_eq!(ok(&typed)?["time_left"], 90);
+        assert_eq!(ok(&typed)?["time_left_worked_out"], false);
         // A change made on an old version is refused.
         let stale = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 30})))
@@ -82,10 +80,8 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
             )
             .await?;
         let cleared = ok(&cleared)?;
-        assert_eq!(
-            cleared["time_left"],
-            json!({"minutes": 240, "worked_out": true})
-        );
+        assert_eq!(cleared["time_left"], 240);
+        assert_eq!(cleared["time_left_worked_out"], true);
         assert_eq!(cleared["estimated_time"], 240);
 
         // The history words each change as a length, in the seconds the screens get for one.
@@ -160,11 +156,8 @@ async fn time_03_many_issues_get_an_estimate_at_once() -> TestResult {
         for issue in &issues {
             let read = issue_of(&mut ada, issue).await?;
             assert_eq!(read["estimated_time"], 120, "{issue}: {read}");
-            assert_eq!(
-                read["time_left"],
-                json!({"minutes": 120, "worked_out": true}),
-                "{issue}: {read}"
-            );
+            assert_eq!(read["time_left"], 120, "{issue}: {read}");
+            assert_eq!(read["time_left_worked_out"], true, "{issue}: {read}");
         }
         Ok(())
     })
@@ -252,7 +245,7 @@ async fn time_03_the_time_of_an_issue_and_of_a_project_over_http() -> TestResult
         let list = ada
             .send(
                 "GET",
-                "/api/v1/projects/ACME/issues?fields=readable_id,time_left,time_spent",
+                "/api/v1/projects/ACME/issues?fields=readable_id,time_left,time_left_worked_out,time_spent",
                 None,
             )
             .await?;
@@ -262,7 +255,8 @@ async fn time_03_the_time_of_an_issue_and_of_a_project_over_http() -> TestResult
             .find(|row| row["readable_id"] == json!(step))
             .ok_or("no row of the step")?;
         assert_eq!(row["time_spent"], 90);
-        assert_eq!(row["time_left"], json!({"minutes": 0, "worked_out": true}));
+        assert_eq!(row["time_left"], 0);
+        assert_eq!(row["time_left_worked_out"], true);
         Ok(())
     })
     .await
