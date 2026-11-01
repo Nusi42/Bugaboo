@@ -19,7 +19,7 @@ use super::types::{
 use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 use crate::editing::EditorPlace;
-use crate::fields::{Definition, Item, must_be_asked_for};
+use crate::fields::{Definition, Held, Item, must_be_asked_for};
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
 
@@ -60,10 +60,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             reported_by: None,
         };
         if at.project.is_some() {
-            return self.own_fields_at(&issues, |_| true).await;
+            return self.own_fields_at(&issues, Held::OfItsKind, |_| true).await;
         }
-        self.own_fields_reaching(&issues, |scope| scope.reaches_type(at.issue_type), |_| true)
-            .await
+        self.own_fields_reaching(
+            &issues,
+            Held::OfItsKind,
+            |scope| scope.reaches_type(at.issue_type),
+            |_| true,
+        )
+        .await
     }
 
     /// Every role, in the order of roles.
@@ -136,8 +141,14 @@ pub async fn form_layout<S: AuthStore>(
         reported_by: None,
     };
     let own: BTreeSet<FieldKey> = match at.kind {
-        LayoutKind::IssuePage => ctx.visible_own_fields(&mask, &item).await?,
-        LayoutKind::NewIssue => ctx.changeable_own_fields(&mask, &item).await?,
+        LayoutKind::IssuePage => {
+            ctx.visible_own_fields(&mask, &item, Held::OfItsKind)
+                .await?
+        }
+        LayoutKind::NewIssue => {
+            ctx.changeable_own_fields(&mask, &item, Held::OfItsKind)
+                .await?
+        }
     }
     .into_iter()
     .collect();

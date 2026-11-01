@@ -290,10 +290,7 @@ async fn cfg_01_a_place_with_many_own_fields_can_be_customized_and_saved() -> Te
             .sum();
         assert_eq!(
             placed,
-            // The starter fields of time entries are on the issue page too: their value there is
-            // the default of the entries booked on the issue.
-            101 + built_in_fields(LayoutKind::IssuePage).len()
-                + bb_core::time::entry::StarterField::ALL.len(),
+            101 + built_in_fields(LayoutKind::IssuePage).len(),
             "{editor}"
         );
         // A save of the whole layout is not refused for its size.

@@ -1,13 +1,15 @@
 import { addIssueBlock, issueSlots } from "../issues/index.ts";
 import { OwnFieldGroups, OwnFieldRows } from "./blocks.tsx";
 import { OwnFieldSections } from "./long-texts.tsx";
+import { TimeDefaults } from "./time-defaults.tsx";
 
 let registered = false;
 
 /**
  * Puts the own fields into the issue page: the fields as rows of the *Details* panel (or, for a
- * layout with titled sections or tabs, as lists after it) and the long texts as sections under the
- * description (the slots of WP-06). Called once when the app starts.
+ * layout with titled sections or tabs, as lists after it), the defaults for time booked on the
+ * issue in a group after them, and the long texts as sections under the description (the slots of
+ * WP-06). Called once when the app starts.
  */
 export function registerFields(): void {
   if (registered) {
@@ -24,6 +26,11 @@ export function registerFields(): void {
     id: "own-field-groups",
     order: 100,
     component: OwnFieldGroups,
+  });
+  addIssueBlock(issueSlots.detailSections, {
+    id: "time-defaults",
+    order: 110,
+    component: TimeDefaults,
   });
   addIssueBlock(issueSlots.ownFieldSections, {
     id: "own-field-sections",

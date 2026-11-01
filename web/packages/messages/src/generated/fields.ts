@@ -83,6 +83,7 @@ export const messages = {
   "fields.offer-again": "Offer this field again",
   "fields.value-of": "Value of {name}",
   "fields.project-heading": "Project fields",
+  "fields.time-defaults": "Defaults for time booked on this issue",
   "fields.unknown-choice": "A choice that is gone",
   "fields.hidden-reference": "Not shown",
   "fields.not-a-whole-number": "Type a whole number.",

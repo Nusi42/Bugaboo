@@ -174,16 +174,37 @@ export function choiceOf(field: OwnField, id: string): Choice | undefined {
   return field.choices.find((choice) => choice.id === id);
 }
 
+/** The own fields made for `appliesTo` that reach an issue: used in its project and its issue type. */
+function reachingIssue(
+  fields: readonly OwnField[],
+  issue: IssueBlockProps["issue"],
+  appliesTo: OwnField["applies_to"],
+): readonly OwnField[] {
+  const type = issue.issue_type?.id;
+  return fields.filter(
+    (field) =>
+      field.applies_to === appliesTo &&
+      (field.scope.issue_types.length === 0 ||
+        field.scope.issue_types.some((each) => each.id === type)),
+  );
+}
+
 /** The own fields of an issue that the person sees: used in its project and its issue type. */
 export function issueFieldsOf(
   fields: readonly OwnField[],
   issue: IssueBlockProps["issue"],
 ): readonly OwnField[] {
-  const type = issue.issue_type?.id;
-  return fields.filter(
-    (field) =>
-      field.applies_to === "issues" &&
-      (field.scope.issue_types.length === 0 ||
-        field.scope.issue_types.some((each) => each.id === type)),
-  );
+  return reachingIssue(fields, issue, "issues");
+}
+
+/**
+ * The fields of time entries whose value an issue holds as the default for the time booked on it
+ * (ADR-0035, decision 1): no fields of the issue, so its forms do not place them, and its details
+ * show them in a group of their own.
+ */
+export function timeDefaultsOf(
+  fields: readonly OwnField[],
+  issue: IssueBlockProps["issue"],
+): readonly OwnField[] {
+  return reachingIssue(fields, issue, "time-entries");
 }

@@ -21,7 +21,7 @@ use super::store::IssueFound;
 use super::types::{IssueDetail, IssueQuery, IssuesQuery};
 use crate::access::place_of_address;
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
-use crate::fields::Item;
+use crate::fields::{Held, Item};
 use crate::search::{SearchPage, SearchQuery, SearchScope, search_page};
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -131,7 +131,7 @@ pub async fn issue<S: AuthStore>(
             issue_type: Some(issue.issue_type),
             reported_by: Some(issue.reported_by),
         };
-        keys.extend(ctx.changeable_own_fields(&mask, &item).await?);
+        keys.extend(ctx.changeable_own_fields(&mask, &item, Held::Every).await?);
         keys
     } else {
         Vec::new()

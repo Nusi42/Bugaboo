@@ -353,6 +353,55 @@ async fn time_13_the_default_comes_from_the_issue_then_the_project_then_the_proj
 }
 
 #[tokio::test]
+async fn time_13_the_default_of_an_issue_is_no_field_of_its_forms_and_stays_changeable_there()
+-> TestResult {
+    each_database("time_13_default_not_on_forms", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let activity = starter(&mut ada, "activity").await?;
+        let cost_center = starter(&mut ada, "cost-center").await?;
+        // Neither the new-issue form nor the issue page places them, and the editor of layouts
+        // does not offer them: the default for time booked on an issue is not a field of the
+        // issue (ADR-0035, decision 1).
+        for kind in ["new-issue", "issue-page"] {
+            for route in ["form", "editor"] {
+                let read = ada
+                    .send(
+                        "GET",
+                        &format!("/api/v1/layouts/{route}?project={}&kind={kind}", site.acme),
+                        None,
+                    )
+                    .await?;
+                let text = ok(&read)?.to_string();
+                assert!(
+                    !text.contains(&activity) && !text.contains(&cost_center),
+                    "{route} of {kind}: {text}"
+                );
+            }
+        }
+        // The issue still holds its default, and its details let it be changed.
+        let made = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{}/issues", site.acme),
+                Some(site.new_issue("Paper runs out")),
+            )
+            .await?;
+        let issue = key_of(&made)?;
+        let detail = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
+        let changeable = &ok(&detail)?["changeable"];
+        assert!(
+            changeable
+                .as_array()
+                .is_some_and(|all| all.contains(&json!(activity))),
+            "{changeable}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn time_13_a_required_cost_center_refuses_an_entry_without_one() -> TestResult {
     each_database("time_13_required", async |db| {
         let (rig, app) = rig_and_app(db).await?;

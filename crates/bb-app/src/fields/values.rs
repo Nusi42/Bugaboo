@@ -26,6 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
+use super::held::Holder;
 use super::making::Making;
 use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
@@ -242,21 +243,6 @@ pub(crate) struct Item {
     pub(crate) reported_by: Option<UserId>,
 }
 
-/// What an item holds values of own fields for: the fields made for its kind, and on an issue and
-/// a project also the fields of time entries, whose value there is the default of the entries
-/// booked there (ADR-0035, decision 1).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Holder(FieldFor);
-
-impl Holder {
-    /// Whether the item holds values of a field made for `applies_to`.
-    fn holds(self, applies_to: FieldFor) -> bool {
-        applies_to == self.0
-            || (applies_to == FieldFor::TimeEntries
-                && matches!(self.0, FieldFor::Issues | FieldFor::Projects))
-    }
-}
-
 impl Item {
     /// What the fields of this item are made for.
     const fn field_for(&self) -> FieldFor {
@@ -268,71 +254,12 @@ impl Item {
     }
 
     /// The fields the item holds values of.
-    const fn holder(&self) -> Holder {
+    pub(super) const fn holder(&self) -> Holder {
         Holder(self.field_for())
     }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The own fields of an item that the mask lets the person change: they are used for the item
-    /// and not retired. A long text is in the list: it is changed on its own route.
-    pub(crate) async fn changeable_own_fields(
-        &self,
-        mask: &bb_policy::FieldMask,
-        item: &Item,
-    ) -> Result<Vec<FieldKey>, AppError> {
-        self.own_fields_at(item, |field| mask.can_change(field))
-            .await
-    }
-
-    /// The own fields of an item that the mask lets the person see: used for the item and not
-    /// retired. The layouts of the issue page ask it, next to `changeable_own_fields`.
-    pub(crate) async fn visible_own_fields(
-        &self,
-        mask: &bb_policy::FieldMask,
-        item: &Item,
-    ) -> Result<Vec<FieldKey>, AppError> {
-        self.own_fields_at(item, |field| mask.can_see(field)).await
-    }
-
-    /// The own fields that reach an item and that `level_allows`: the one filter of the two reads.
-    pub(crate) async fn own_fields_at(
-        &self,
-        item: &Item,
-        level_allows: impl Fn(FieldKey) -> bool,
-    ) -> Result<Vec<FieldKey>, AppError> {
-        self.own_fields_reaching(
-            item,
-            |scope| scope.reaches(&item.chain, item.issue_type),
-            level_allows,
-        )
-        .await
-    }
-
-    /// The own fields that are used for an item and not retired, whose scope `reached` and that
-    /// `level_allows`. The layouts of the whole organization, which has no project, say `reached`
-    /// by the issue type alone (`Scope::reaches_type`).
-    pub(crate) async fn own_fields_reaching(
-        &self,
-        item: &Item,
-        reached: impl Fn(&bb_core::own_fields::Scope) -> bool,
-        level_allows: impl Fn(FieldKey) -> bool,
-    ) -> Result<Vec<FieldKey>, AppError> {
-        Ok(self
-            .field_catalogue()
-            .await?
-            .iter()
-            .filter(|definition| {
-                let field = &definition.field;
-                item.holder().holds(field.applies_to)
-                    && field.retired_at.is_none()
-                    && reached(&definition.scope)
-                    && level_allows(FieldKey::Own(field.id))
-            })
-            .map(|definition| FieldKey::Own(definition.field.id))
-            .collect())
-    }
-
     /// What an own field of people is used for, when the viewer may choose its value in a project
     /// for an issue of this type (the list to choose from): `access.forbidden` for a field that
     /// is not there or that they may not change, `field.not-here` for one that is not of people,

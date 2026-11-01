@@ -18,7 +18,7 @@ import {
   saveSectionInAnotherWindow,
 } from "./support/layouts.ts";
 import { titleLabel } from "./support/issues.ts";
-import { dragOverThePage, handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
+import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
 // *Customize this form* from the new-issue dialog, moves *Review deadline* into a section (by dragging on a
@@ -81,11 +81,7 @@ async function moveDueDateIntoSection(page: Page): Promise<void> {
         name: t("layouts.section", { number: "1" }),
         exact: true,
       });
-      // The fields of time entries are on the list too (ADR-0035), so the field and the
-      // section are further apart than the window is high.
-      await dragOverThePage(
-        page,
-        handleIn(available, t("layouts.field-drag", { name: dueDate })),
+      await handleIn(available, t("layouts.field-drag", { name: dueDate })).dragTo(
         slotsIn(section).last(),
       );
     },

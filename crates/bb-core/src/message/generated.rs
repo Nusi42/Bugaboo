@@ -1451,6 +1451,9 @@ pub const FIELDS_SEE_TITLE: MessageKey = MessageKey::new("fields.see-title");
 /// The message `fields.take-away`.
 pub const FIELDS_TAKE_AWAY: MessageKey = MessageKey::new("fields.take-away");
 
+/// The message `fields.time-defaults`.
+pub const FIELDS_TIME_DEFAULTS: MessageKey = MessageKey::new("fields.time-defaults");
+
 /// The message `fields.time-of-day`.
 pub const FIELDS_TIME_OF_DAY: MessageKey = MessageKey::new("fields.time-of-day");
 
@@ -12590,6 +12593,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.see-link", "Open the field permissions"),
     ("fields.see-title", "Who can see it"),
     ("fields.take-away", "Take away"),
+    (
+        "fields.time-defaults",
+        "Defaults for time booked on this issue",
+    ),
     ("fields.time-of-day", "Time (hours and minutes, like 14:30)"),
     ("fields.unit-hour", "h"),
     ("fields.unit-minute", "m"),

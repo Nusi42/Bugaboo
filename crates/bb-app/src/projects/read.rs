@@ -16,7 +16,7 @@ use super::types::{
 };
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
-use crate::fields::Item;
+use crate::fields::{Held, Item};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project that has this short name, or had it once, read once for the request (see
@@ -135,7 +135,7 @@ pub async fn project<S: AuthStore>(
         .load_values(RecordKind::Project, &[project.id.into()])
         .await?;
     let changeable_fields = if held.allows(Permission::ChangeProjectSettings) {
-        ctx.changeable_own_fields(&held.field_mask_for(None), &item)
+        ctx.changeable_own_fields(&held.field_mask_for(None), &item, Held::Every)
             .await?
     } else {
         Vec::new()
