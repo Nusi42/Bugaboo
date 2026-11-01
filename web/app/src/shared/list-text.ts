@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { factSeparator } from "@bugaboo/ui";
 
 /** Names in a sentence as the catalog lists them: `Ana, Ben, and Cleo`. The e-mail lists them the same way. */
 export function listText(names: readonly string[]): string {
@@ -18,5 +19,5 @@ export function listText(names: readonly string[]): string {
 
 /** The short facts about a thing, side by side under its name: `Text · For issues`. */
 export function detailsText(facts: readonly string[]): string {
-  return facts.join(" · ");
+  return facts.join(` ${factSeparator} `);
 }

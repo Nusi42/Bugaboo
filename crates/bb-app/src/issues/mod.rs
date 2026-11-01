@@ -30,6 +30,7 @@ mod store;
 mod types;
 mod views;
 mod visible;
+pub(crate) use fields::Given;
 pub(crate) use views::{PagePlace, ReadOnRequest};
 pub(crate) use visible::{Where, seen_by};
 

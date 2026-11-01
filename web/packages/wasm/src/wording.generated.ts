@@ -76,6 +76,22 @@ export interface File {
   readonly what: FileChange;
 }
 
+/** What happened to a time entry of an issue (TIME-02): booked, changed or deleted, with its length for a reader who may read *Time spent*. */
+export interface TimeChange {
+  /** What happened; none for an event this version does not know (the sentence then says only that time on the issue changed). */
+  readonly event?: Schema<"TimeEvent"> | null;
+  /** The length in whole minutes; none for a reader who may not read *Time spent*, and for a change that left the length as it was. */
+  readonly minutes?: number | null;
+}
+
+/** What happened to a time entry, and who did it: the history names who for each item. */
+export interface Time {
+  /** Who did it, at the start of a sentence. */
+  readonly who: string;
+  /** What happened. */
+  readonly what: TimeChange;
+}
+
 /** A renewal of issue IDs that gave up. */
 export interface Renewal {
   /** The name of the project, if the reader may know it. */

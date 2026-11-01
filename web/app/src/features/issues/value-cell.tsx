@@ -8,7 +8,7 @@ import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import type { FoundLine } from "./found-issues.ts";
 import { ownColumnText, type OwnColumns } from "./own-columns.ts";
-import { minutesText, timeLeftText } from "./time-words.ts";
+import { MinutesLength, TimeLeftLength } from "./TimeFacts.tsx";
 
 /** A moment from the server in the words of the region, or nothing where there is none. */
 function momentText(moment: string | undefined): string | undefined {
@@ -20,7 +20,7 @@ function momentText(moment: string | undefined): string | undefined {
  * issue was made and closed, who reported it, its status group, its lengths of time, or a field of
  * the organization.
  */
-export function valueOf(word: string, line: FoundLine, own: OwnColumns): string | undefined {
+export function valueOf(word: string, line: FoundLine, own: OwnColumns): ReactNode {
   switch (word) {
     case listWord.created:
       return momentText(line.createdAt);
@@ -31,11 +31,11 @@ export function valueOf(word: string, line: FoundLine, own: OwnColumns): string 
     case listWord.statusGroup:
       return t(`status-group.${line.group}`);
     case listWord.estimatedTime:
-      return line.estimated === undefined ? undefined : minutesText(line.estimated);
+      return line.estimated === undefined ? undefined : <MinutesLength minutes={line.estimated} />;
     case listWord.timeLeft:
-      return line.left === undefined ? undefined : timeLeftText(line.left);
+      return line.left === undefined ? undefined : <TimeLeftLength left={line.left} />;
     case listWord.timeSpent:
-      return line.spent === undefined ? undefined : minutesText(line.spent);
+      return line.spent === undefined ? undefined : <MinutesLength minutes={line.spent} />;
     default: {
       const column = own[word];
       return column === undefined ? undefined : ownColumnText(column, line.own[column.id]);

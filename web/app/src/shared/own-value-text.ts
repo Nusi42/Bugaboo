@@ -22,6 +22,11 @@ export function durationText(seconds: number): string {
   return minutes === 0 ? `${hours}${hour}` : `${hours}${hour} ${minutes}${minute}`;
 }
 
+/** A length in whole minutes in the short form of a row and a column (`1h 30m`, UX §4.9). */
+export function minutesText(minutes: number): string {
+  return durationText(minutes * secondsPerMinute);
+}
+
 function textOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }

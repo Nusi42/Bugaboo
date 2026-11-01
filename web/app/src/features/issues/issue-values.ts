@@ -1,14 +1,8 @@
-import {
-  priorityWords,
-  secondsPerMinute,
-  statusGroupWords,
-  type Schema,
-} from "@bugaboo/api-client";
+import { priorityWords, statusGroupWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { listText } from "../../shared/list-text.ts";
-import { durationText } from "../../shared/own-value-text.ts";
-import { timeLeftOf } from "./time-words.ts";
+import { minutesText, timeLeftOf } from "./time-words.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
@@ -174,7 +168,7 @@ function lengthSaid(field: MessageKey, minutes: number | null | undefined): stri
   }
   return minutes === null
     ? t("issues.cleared", { field: t(field) })
-    : said(field, durationText(minutes * secondsPerMinute));
+    : said(field, minutesText(minutes));
 }
 
 /** What a change says in a sentence, for *Undo*: "Priority changed to High." */

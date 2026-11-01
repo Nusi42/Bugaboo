@@ -21,7 +21,7 @@ use serde_json::Value;
 
 use crate::edit::NoticeKind;
 use crate::fields::Field;
-use crate::history::FileEvent;
+use crate::history::{FileEvent, TimeEvent};
 use crate::issue::Priority;
 use crate::message::{self, Message, MessageKey};
 use crate::notification::NotificationKind;
@@ -419,6 +419,65 @@ fn file_words(who: &str, what: &FileChange) -> Said {
             said!(message::history_file_restored, name, who)
         }
         (Some(FileEvent::Restored), None) => said!(message::history_file_restored_unnamed, who),
+    }
+}
+
+/// What happened to a time entry of an issue (TIME-02): booked, changed or deleted, with its length
+/// for a reader who may read *Time spent*.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeChange {
+    /// What happened; none for an event this version does not know (the sentence then says only
+    /// that time on the issue changed).
+    #[serde(default)]
+    pub event: Option<TimeEvent>,
+    /// The length in whole minutes; none for a reader who may not read *Time spent*, and for a
+    /// change that left the length as it was.
+    #[serde(default)]
+    pub minutes: Option<u32>,
+}
+
+/// What happened to a time entry, and who did it: the history names who for each item.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Time {
+    /// Who did it, at the start of a sentence.
+    pub who: String,
+    /// What happened.
+    pub what: TimeChange,
+}
+
+/// A message function with two placeholders, as [`said!`] calls it (with blanks, for their names).
+type TwoWords = fn(&'static str, &'static str) -> Message;
+
+/// A message function with one placeholder, as [`said!`] calls it.
+type OneWord = fn(&'static str) -> Message;
+
+/// The sentence of a time entry that was booked, changed or deleted: *Ana booked 1h 30m*. The
+/// length is written by the one writer of lengths ([`length_said`]); without it the sentence says
+/// only that time was booked.
+#[must_use]
+pub fn time_sentence(time: &Time) -> Said {
+    // The message with the length and the one without, for each event: the sentence is said in
+    // one place for each, which keeps the module of the browser small.
+    let (measured, unmeasured): (TwoWords, OneWord) = match time.what.event {
+        Some(TimeEvent::Booked) => (
+            message::history_time_booked,
+            message::history_time_booked_unmeasured,
+        ),
+        Some(TimeEvent::Deleted) => (
+            message::history_time_deleted,
+            message::history_time_deleted_unmeasured,
+        ),
+        // An event this version does not know says that booked time changed.
+        Some(TimeEvent::Changed) | None => (
+            message::history_time_changed,
+            message::history_time_changed_unmeasured,
+        ),
+    };
+    let who = Said::text(&time.who);
+    match (time.what.event, time.what.minutes) {
+        // An event this version does not know says only that booked time changed, never a length.
+        (Some(_), Some(minutes)) => said!(measured, length_said(Minutes::new(minutes)), who),
+        (_, _) => said!(unmeasured, who),
     }
 }
 

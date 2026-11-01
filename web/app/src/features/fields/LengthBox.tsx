@@ -1,4 +1,5 @@
 import { secondsPerMinute } from "@bugaboo/api-client";
+import { partOf, part } from "@bugaboo/ui";
 
 import { WithLengthReader } from "../../shared/with-length-reader.tsx";
 import type { BoxField } from "./fields.ts";
@@ -21,18 +22,20 @@ export interface LengthBoxProps {
 export function LengthBox({ name, minutes, onCommit }: LengthBoxProps) {
   const field: BoxField = { name, kind: "duration", help: "", rules: { required: false } };
   return (
-    <WithLengthReader>
-      {(readLength) => (
-        <TextEditor
-          field={field}
-          value={minutes === undefined ? undefined : minutes * secondsPerMinute}
-          inRow
-          readLength={readLength}
-          onCommit={(sent) => {
-            onCommit(typeof sent === "number" ? Math.floor(sent / secondsPerMinute) : null);
-          }}
-        />
-      )}
-    </WithLengthReader>
+    <span {...partOf(part.lengthBox)}>
+      <WithLengthReader>
+        {(readLength) => (
+          <TextEditor
+            field={field}
+            value={minutes === undefined ? undefined : minutes * secondsPerMinute}
+            inRow
+            readLength={readLength}
+            onCommit={(sent) => {
+              onCommit(typeof sent === "number" ? Math.floor(sent / secondsPerMinute) : null);
+            }}
+          />
+        )}
+      </WithLengthReader>
+    </span>
   );
 }

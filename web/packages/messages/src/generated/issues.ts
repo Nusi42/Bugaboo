@@ -54,7 +54,7 @@ export const messages = {
   "issues.length-range": "{from} to {to}",
   "issues.length-range-under": "Under {to}",
   "issues.length-range-over": "{from} or more",
-  "issues.project-time": "Time in this project: {totals}",
+  "issues.project-time": "Time in this project:",
   "issues.total-estimated": "{length} estimated",
   "issues.total-left": "{length} left",
   "issues.total-spent": "{length} spent",

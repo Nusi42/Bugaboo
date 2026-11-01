@@ -40,8 +40,39 @@ test("the list of a project with the time in the project", async ({ page, server
   await signIn(page, ada);
   await inFourChosenThemes(page, "project-time", MILESTONE, paths.appearance, async () => {
     await page.goto(projectIssuesAddress("WEB"));
+    await expect(page.getByText(t("issues.project-time"), { exact: false })).toBeVisible();
+  });
+});
+
+/** The list of WEB with these columns or grouped by this field, as its address says. */
+function listAddress(query: Readonly<Record<string, string>>): string {
+  return `${projectIssuesAddress("WEB")}?${new URLSearchParams(query).toString()}`;
+}
+
+test("a list with the columns of the lengths of time", async ({ page, server }) => {
+  const admin = await signedInAdmin(server);
+  await goalWithTask(admin);
+  await admin.dispose();
+  await signIn(page, ada);
+  const columns = "id,title,estimated time,time left,time spent";
+  await inFourChosenThemes(page, "list-time-columns", MILESTONE, paths.appearance, async () => {
+    await page.goto(listAddress({ cols: columns }));
+    // A phone draws its own few columns in each card; a computer the ones the address names.
+    await expect(page.getByText(t("issues.project-time"), { exact: false })).toBeVisible();
+  });
+});
+
+test("a list grouped by a length of time", async ({ page, server }) => {
+  const admin = await signedInAdmin(server);
+  await goalWithTask(admin);
+  await admin.dispose();
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "list-time-groups", MILESTONE, paths.appearance, async () => {
+    await page.goto(listAddress({ group: "estimated time" }));
     await expect(
-      page.getByText(t("issues.project-time", { totals: "" }), { exact: false }),
+      page.getByRole("row", {
+        name: new RegExp(t("issues.length-range", { from: "4h", to: "8h" }), "u"),
+      }),
     ).toBeVisible();
   });
 });

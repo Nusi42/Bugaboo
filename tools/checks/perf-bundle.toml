@@ -16,7 +16,9 @@ budget_bytes = 250000
 # Markdown, the wording of changes and notifications, the rule of the same name (architecture §8),
 # and since M6 the reader of typed lengths of time and the writers of a length on the clock and in a
 # sentence, measured at 150.1 KB (the module takes the words of the units from the browser, so it
-# carries no catalog).
-bb_wasm_bg = 152000
+# carries no catalog); and since M6 the sentence of time booked on an issue, which the history of
+# the browser says, measured at 152.7 KB (it takes its three values as they are, not as JSON, so the
+# module carries no reader of its own for them).
+bb_wasm_bg = 153000
 # The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core) and at 90.3 KB with `contains` on its own (M5 WP-04); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 91000

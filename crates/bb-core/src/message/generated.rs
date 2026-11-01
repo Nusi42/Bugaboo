@@ -2217,6 +2217,9 @@ pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
+/// The message `issues.project-time`.
+pub const ISSUES_PROJECT_TIME: MessageKey = MessageKey::new("issues.project-time");
+
 /// The message `issues.ready-to-create`.
 pub const ISSUES_READY_TO_CREATE: MessageKey = MessageKey::new("issues.ready-to-create");
 
@@ -7538,6 +7541,75 @@ pub fn history_set(
     )
 }
 
+/// The message `history.time-booked`.
+#[must_use]
+pub fn history_time_booked(length: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-booked"),
+        vec![
+            ("length", Value::Text(length.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.time-booked-unmeasured`.
+#[must_use]
+pub fn history_time_booked_unmeasured(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-booked-unmeasured"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.time-changed`.
+#[must_use]
+pub fn history_time_changed(
+    length: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-changed"),
+        vec![
+            ("length", Value::Text(length.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.time-changed-unmeasured`.
+#[must_use]
+pub fn history_time_changed_unmeasured(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-changed-unmeasured"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.time-deleted`.
+#[must_use]
+pub fn history_time_deleted(
+    length: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-deleted"),
+        vec![
+            ("length", Value::Text(length.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.time-deleted-unmeasured`.
+#[must_use]
+pub fn history_time_deleted_unmeasured(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.time-deleted-unmeasured"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `home.title`.
 #[must_use]
 pub fn home_title(name: impl std::fmt::Display) -> Message {
@@ -7931,15 +8003,6 @@ pub fn issues_page_title(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.page-title"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `issues.project-time`.
-#[must_use]
-pub fn issues_project_time(totals: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.project-time"),
-        vec![("totals", Value::Text(totals.to_string()))],
     )
 }
 
@@ -13235,6 +13298,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.tab-comments", "Comments"),
     ("history.tab-everything", "Everything"),
     ("history.tabs", "What to show"),
+    ("history.time-booked", "{who} booked {length}"),
+    ("history.time-booked-unmeasured", "{who} booked time"),
+    (
+        "history.time-changed",
+        "{who} changed booked time to {length}",
+    ),
+    (
+        "history.time-changed-unmeasured",
+        "{who} changed booked time",
+    ),
+    (
+        "history.time-deleted",
+        "{who} deleted booked time of {length}",
+    ),
+    (
+        "history.time-deleted-unmeasured",
+        "{who} deleted booked time",
+    ),
     ("history.title", "History"),
     ("history.type-unknown", "another issue type"),
     (
@@ -13539,7 +13620,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.open-full-page", "Open full page"),
     ("issues.page-title", "Issues in {project}"),
     ("issues.project", "Project"),
-    ("issues.project-time", "Time in this project: {totals}"),
+    ("issues.project-time", "Time in this project:"),
     (
         "issues.read-only",
         "Only people whose role allows it can change {field}.",

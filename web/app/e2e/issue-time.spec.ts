@@ -37,6 +37,9 @@ test("time_03 the Details show the estimate, the worked-out time left and the ti
       { exact: true },
     ),
   ).toBeVisible();
+  // The history says the time booked in words, and no empty sentence (WP-05 sends it).
+  await expect(page.getByText("Ada Admin booked 1h 20m", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ada Admin changed", { exact: true })).toHaveCount(0);
   // A typed time left counts until it is cleared: the quiet worked-out value goes.
   const left = page.getByLabel(t("issue-field.time-left"), { exact: true });
   await left.fill("1:30");
@@ -55,7 +58,7 @@ test("time_03 the list of a project says the time in the project", async ({ page
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   // Other tests of this server book time in WEB too: the line says the totals, whatever they are.
-  const prefix = t("issues.project-time", { totals: "" });
+  const prefix = t("issues.project-time");
   const line = page.getByText(prefix, { exact: false });
   await expect(line).toBeVisible();
   await expect(line).toContainText(t("issues.total-spent", { length: "" }).trim());

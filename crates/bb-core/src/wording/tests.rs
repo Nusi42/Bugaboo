@@ -350,3 +350,26 @@ fn a_notification_about_a_file_says_what_happened_to_it() {
     });
     assert_eq!(sentences(&added), ["Ana added the file jam.txt"]);
 }
+
+#[test]
+fn time_02_booked_time_is_said_with_its_length_or_without_it() {
+    let said = |event, minutes| {
+        time_sentence(&Time {
+            who: "Ana".to_owned(),
+            what: TimeChange { event, minutes },
+        })
+        .render()
+    };
+    assert_eq!(said(Some(TimeEvent::Booked), Some(90)), "Ana booked 1h 30m");
+    // A reader who may not read Time spent is told only that time was booked.
+    assert_eq!(said(Some(TimeEvent::Booked), None), "Ana booked time");
+    assert_eq!(
+        said(Some(TimeEvent::Changed), Some(45)),
+        "Ana changed booked time to 45m"
+    );
+    assert_eq!(
+        said(Some(TimeEvent::Deleted), Some(120)),
+        "Ana deleted booked time of 2h"
+    );
+    assert_eq!(said(None, Some(30)), "Ana changed booked time");
+}

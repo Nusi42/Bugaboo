@@ -11,8 +11,9 @@
 pub mod names;
 
 use bb_core::fields::Field;
+use bb_core::history::TimeEvent;
 use bb_core::time::Minutes;
-use bb_core::wording::{self, Change, File, Notice, Side};
+use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
 use bb_markdown::Options;
 use serde::Deserialize;
 use serde::Serialize;
@@ -42,7 +43,12 @@ fn answer<Input: for<'a> Deserialize<'a>, Output: Serialize>(
     work: impl FnOnce(&Input) -> Output,
 ) -> Result<String, String> {
     let input = serde_json::from_str(json).map_err(|error| format!("unreadable input: {error}"))?;
-    serde_json::to_string(&work(&input)).map_err(|error| format!("unwritable answer: {error}"))
+    written(&work(&input))
+}
+
+/// Writes an answer as JSON for the browser.
+fn written<Output: Serialize>(output: &Output) -> Result<String, String> {
+    serde_json::to_string(output).map_err(|error| format!("unwritable answer: {error}"))
 }
 
 /// The sentence of a change of one field, as the server words it (`bb_core::wording`): the message
@@ -63,6 +69,27 @@ pub fn change_sentence(change: &str) -> Result<String, JsError> {
 #[wasm_bindgen]
 pub fn file_sentence(file: &str) -> Result<String, JsError> {
     answer(file, |file: &File| wording::file_sentence(file)).map_err(|e| JsError::new(&e))
+}
+
+/// The sentence of time that was booked on an issue, changed or deleted (see [`change_sentence`]):
+/// who did it, the word of what happened (`booked`, `changed`, `deleted`; another word, or none,
+/// is an event this version does not know) and the length in whole minutes, if the reader may read
+/// it. The
+/// three come as they are, not as JSON: reading them as JSON would put a reader of its own for
+/// `bb_core::wording::Time` into the module, which the browser fetches on every history.
+///
+/// # Errors
+/// The answer cannot be written, a defect.
+#[wasm_bindgen]
+pub fn time_sentence(who: &str, event: &str, minutes: Option<u32>) -> Result<String, JsError> {
+    let time = Time {
+        who: who.to_owned(),
+        what: TimeChange {
+            event: TimeEvent::from_code(event),
+            minutes,
+        },
+    };
+    written(&wording::time_sentence(&time)).map_err(|e| JsError::new(&e))
 }
 
 /// The sentences of a notification, as a list in JSON (see [`change_sentence`]).

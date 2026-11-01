@@ -18,6 +18,7 @@ import init, {
   read_time_entry,
   render,
   side_words,
+  time_sentence,
 } from "../generated/bb_wasm.js";
 import type {
   Change as WordedChange,
@@ -27,6 +28,7 @@ import type {
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
+  Time as WordedTime,
 } from "./wording.generated.ts";
 
 export type {
@@ -37,6 +39,7 @@ export type {
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
+  Time as WordedTime,
 } from "./wording.generated.ts";
 
 /** Where the module is. Vite turns this into the address of the built file. */
@@ -58,6 +61,8 @@ export interface Wording {
   readonly changeSentence: (change: WordedChange) => Said;
   /** The sentence of a file that was added, deleted or brought back. */
   readonly fileSentence: (file: WordedFile) => Said;
+  /** The sentence of time booked on an issue, changed or deleted: *Ana booked 1h 30m*. */
+  readonly timeSentence: (time: WordedTime) => Said;
   /** The sentences of a notification: one, or one for each field a change touched. */
   readonly notificationSentences: (notice: WordedNotice) => readonly Said[];
   /** One side of a change as people read it; `null` when the side holds no value. */
@@ -145,6 +150,10 @@ function ask(question: () => string): string {
 const wording: Wording = {
   changeSentence: (change) => saidIn(ask(() => change_sentence(JSON.stringify(change)))) ?? "",
   fileSentence: (file) => saidIn(ask(() => file_sentence(JSON.stringify(file)))) ?? "",
+  timeSentence: (time) =>
+    saidIn(
+      ask(() => time_sentence(time.who, time.what.event ?? "", time.what.minutes ?? undefined)),
+    ) ?? "",
   notificationSentences: (notice) => {
     const parsed: unknown = JSON.parse(ask(() => notification_sentences(JSON.stringify(notice))));
     return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];

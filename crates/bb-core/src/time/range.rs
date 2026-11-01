@@ -1,7 +1,8 @@
 //! The ranges that lengths of time are grouped in (TIME-03): *Group by* a length (*Estimated time*,
 //! *Time left*, *Time spent*) puts each issue in the range of its length, never in a group of its
 //! own minutes. The ranges are counted in hours, which mean the same in every organization (ADR-0005,
-//! decision 10); the compiler of the search and the screens read them from here.
+//! decision 10); the compiler of the search puts a length into its range (`order.rs`, the one
+//! rule) and the screens word a range, both from this list.
 
 use serde::Serialize;
 
@@ -43,21 +44,6 @@ impl LengthRange {
     pub fn starting_at(from: Minutes) -> Option<Self> {
         Self::all().into_iter().find(|range| range.from == from)
     }
-
-    /// The range a length is in.
-    #[must_use]
-    pub fn of(length: Minutes) -> Self {
-        let all = Self::all();
-        all.iter()
-            .rev()
-            .find(|range| range.from <= length)
-            .or_else(|| all.first())
-            .copied()
-            .unwrap_or(Self {
-                from: Minutes::new(0),
-                to: None,
-            })
-    }
 }
 
 #[cfg(test)]
@@ -65,16 +51,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn time_03_every_length_is_in_one_range_and_the_ranges_follow_each_other() {
+    fn time_03_the_ranges_start_at_nothing_follow_each_other_and_the_last_has_no_end() {
         let all = LengthRange::all();
         assert_eq!(all.first().map(|range| range.from), Some(Minutes::new(0)));
         assert_eq!(all.last().and_then(|range| range.to), None);
         for pair in all.windows(2) {
             assert_eq!(pair[0].to, Some(pair[1].from));
         }
-        assert_eq!(LengthRange::of(Minutes::new(59)), all[0]);
-        assert_eq!(LengthRange::of(Minutes::new(60)), all[1]);
-        assert_eq!(LengthRange::of(Minutes::new(100_000)), all[5]);
         assert_eq!(LengthRange::starting_at(Minutes::new(240)), Some(all[2]));
         assert_eq!(LengthRange::starting_at(Minutes::new(241)), None);
     }

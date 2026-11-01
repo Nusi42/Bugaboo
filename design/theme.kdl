@@ -706,6 +706,15 @@ mixin "issue-id" {
     white-space nowrap
 }
 
+// A length of time (`1h 30m`) is in the code font, like an ID and a time of day (UX §7.3: "IDs and times use the
+// mono face"), and never breaks between its hours and its minutes: the one rule for the look of a length, which every
+// place that shows one uses through the part `length` or this mixin (TIME-03).
+mixin "length" {
+    font-family "$font-mono"
+    font-weight "$weight-regular"
+    white-space nowrap
+}
+
 // Words that are less important than their neighbours.
 mixin "quiet-text" {
     color "$fg-muted"
@@ -3694,6 +3703,30 @@ part "strong" {
 
 part "hint" {
     use "quiet-text"
+}
+
+part "length" {
+    use "length"
+}
+
+// The box of a length in a row of the Details: what is typed is a length too.
+part "length-box field.input" {
+    use "length"
+}
+
+// Facts side by side (*10h estimated · 6h 40m left · 3h 20m spent*): a fact never breaks inside, and a line breaks only
+// before the dot that starts the next one, so no dot is left at the end of a line.
+part "fact-line" {
+    display inline
+}
+
+part "fact-line.item" {
+    white-space nowrap
+}
+
+// A name of a row that must not break at its hyphen (*With sub-issues*).
+part "name-value.name[variant=whole]" {
+    white-space nowrap
 }
 
 part "column" {

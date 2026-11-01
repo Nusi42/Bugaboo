@@ -26,6 +26,8 @@ export interface ChangeStatus {
 export interface NameValueRowProps {
   /** The name of the field, on the left: 112 wide on a computer and 120 on a phone. */
   readonly name: string;
+  /** `whole` keeps a name with a hyphen on one line (*With sub-issues*). */
+  readonly nameLook?: "whole";
   /** Where the last change of the value stands. Without it the row says nothing about saving. */
   readonly status?: ChangeStatus;
   /** The value, which the person can click to change. */
@@ -36,10 +38,10 @@ export interface NameValueRowProps {
  * A field of the Details (UX §4.4): its name on the left, its value on the right. A short value
  * saves as soon as it changes and says *Saved* with *Undo* where it happened (R7).
  */
-export function NameValueRow({ name, status, children }: NameValueRowProps) {
+export function NameValueRow({ name, nameLook, status, children }: NameValueRowProps) {
   return (
     <div {...partOf(part.nameValue)}>
-      <dt {...partOf(part.nameValueName)}>{name}</dt>
+      <dt {...partOf(part.nameValueName, { variants: [nameLook] })}>{name}</dt>
       <dd {...partOf(part.nameValueValue)}>
         {children}
         {status === undefined ? null : (

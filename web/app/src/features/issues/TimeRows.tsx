@@ -1,23 +1,17 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
+import { NameValueRow, partOf, part } from "@bugaboo/ui";
 
-import { api } from "../../shared/api.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
 import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-import { minutesText, timeLeftOf, totalsText } from "./time-words.ts";
+import { LengthIn, MinutesLength, TotalFacts } from "./TimeFacts.tsx";
+import { hasTotals, lengthWords, timeLeftOf } from "./time-words.ts";
+import { useIssueTime } from "./use-issue-time.ts";
 
-/** The totals of the issue with its sub-issues, read when the row is drawn. */
-function useWithSubIssues(issue: string, version: number) {
-  return useQuery({
-    queryKey: queryKeys.issues.time(issue, version),
-    queryFn: async () =>
-      (await api.client.GET("/api/v1/issues/{issue}/time", { params: { path: { issue } } })).data,
-  });
-}
+/** The look of a name that keeps its hyphen on one line. */
+const unbroken = "whole";
 
 /** *Estimated time*: a box for who may change it, the length for who may only read it. */
 function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
@@ -38,7 +32,7 @@ function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
           }}
         />
       ) : minutes === undefined ? null : (
-        minutesText(minutes)
+        <MinutesLength minutes={minutes} />
       )}
     </DetailRow>
   );
@@ -49,12 +43,17 @@ function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
  * estimate and the time spent and said quietly beside it, and typing one makes it count until it is
  * cleared.
  */
-function LeftRow({ blocks, changes }: ChangeableRowsProps) {
+function LeftRow({
+  blocks,
+  changes,
+  time,
+}: ChangeableRowsProps & { readonly time: Schema<"IssueTimeBody"> | undefined }) {
   const { issue, mask } = blocks;
   const name = t("issue-field.time-left");
-  const left = timeLeftOf(issue);
-  const typed = left === undefined || left.worked_out ? undefined : left.minutes;
-  const workedOut = left?.worked_out === true ? minutesText(left.minutes) : undefined;
+  const typed = timeLeftOf(issue);
+  const typedMinutes = typed === undefined || typed.worked_out ? undefined : typed.minutes;
+  const left = time?.time_left ?? undefined;
+  const workedOut = left?.worked_out === true ? left.minutes : undefined;
   if (!mask.sees("time-left")) {
     return null;
   }
@@ -64,19 +63,22 @@ function LeftRow({ blocks, changes }: ChangeableRowsProps) {
       {changeable ? (
         <LengthBox
           name={name}
-          minutes={typed}
+          minutes={typedMinutes}
           onCommit={(minutes) => {
             changes.change({ timeLeft: minutes });
           }}
         />
-      ) : typed === undefined ? null : (
-        minutesText(typed)
+      ) : typedMinutes === undefined ? null : (
+        <MinutesLength minutes={typedMinutes} />
       )}
       {workedOut === undefined ? null : (
         <span {...partOf(part.hint)}>
-          {t(changeable ? "issues.time-left-worked-out" : "issues.time-left-worked-out-short", {
-            length: workedOut,
-          })}
+          <LengthIn
+            words={lengthWords(
+              changeable ? "issues.time-left-worked-out" : "issues.time-left-worked-out-short",
+              workedOut,
+            )}
+          />
         </span>
       )}
     </DetailRow>
@@ -90,18 +92,22 @@ function LeftRow({ blocks, changes }: ChangeableRowsProps) {
  * fields of the issue and stand among its rows, apart from the defaults for time booked on it.
  */
 export function TimeRows({ blocks, changes }: ChangeableRowsProps) {
-  const spent = blocks.issue.time_spent ?? undefined;
-  const totals = useWithSubIssues(blocks.readableId, blocks.version).data?.with_sub_issues;
-  const totalWords = totals === undefined || totals === null ? "" : totalsText(totals);
+  const time = useIssueTime(blocks.readableId, blocks.version).data ?? undefined;
+  const spent = time?.time_spent ?? undefined;
+  const totals = time?.with_sub_issues;
   return (
     <>
       <EstimateRow blocks={blocks} changes={changes} />
-      <LeftRow blocks={blocks} changes={changes} />
+      <LeftRow blocks={blocks} changes={changes} time={time} />
       {spent === undefined ? null : (
-        <DetailRow name={t("issue-field.time-spent")}>{minutesText(spent)}</DetailRow>
+        <DetailRow name={t("issue-field.time-spent")}>
+          <MinutesLength minutes={spent} />
+        </DetailRow>
       )}
-      {totalWords === "" ? null : (
-        <DetailRow name={t("issues.with-sub-issues")}>{totalWords}</DetailRow>
+      {totals === undefined || totals === null || !hasTotals(totals) ? null : (
+        <NameValueRow name={t("issues.with-sub-issues")} nameLook={unbroken}>
+          <TotalFacts totals={totals} />
+        </NameValueRow>
       )}
     </>
   );

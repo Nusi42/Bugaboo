@@ -135,6 +135,21 @@ impl From<&ChangeIssue> for Given {
     }
 }
 
+impl From<&crate::many_changes::ManyChange> for Given {
+    fn from(change: &crate::many_changes::ManyChange) -> Self {
+        // A change to many issues names no title and no description.
+        Self([
+            false,
+            false,
+            change.status.is_some(),
+            change.priority.is_some(),
+            change.assigned_to.is_some(),
+            change.estimated_time.is_some(),
+            change.time_left.is_some(),
+        ])
+    }
+}
+
 impl From<&CreateIssue> for Given {
     fn from(input: &CreateIssue) -> Self {
         Self([

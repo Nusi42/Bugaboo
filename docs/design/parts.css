@@ -2736,6 +2736,30 @@ textarea,
   font-size: var(--fs-base);
 }
 
+[data-part="length"] {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+}
+
+[data-part="length-box"] [data-part="field.input"] {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+}
+
+[data-part="fact-line"] {
+  display: inline;
+}
+
+[data-part="fact-line.item"] {
+  white-space: nowrap;
+}
+
+[data-part="name-value.name"][data-variant~="whole"] {
+  white-space: nowrap;
+}
+
 [data-part="column"] {
   display: flex;
   flex-direction: column;

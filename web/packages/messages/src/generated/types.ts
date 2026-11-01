@@ -227,6 +227,12 @@ export interface MessageArguments {
     who: string | number;
   };
   "history.set": { after: string | number; field: string | number; who: string | number };
+  "history.time-booked": { length: string | number; who: string | number };
+  "history.time-booked-unmeasured": { who: string | number };
+  "history.time-changed": { length: string | number; who: string | number };
+  "history.time-changed-unmeasured": { who: string | number };
+  "history.time-deleted": { length: string | number; who: string | number };
+  "history.time-deleted-unmeasured": { who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -268,7 +274,6 @@ export interface MessageArguments {
   "issues.length-range-over": { from: string | number };
   "issues.length-range-under": { to: string | number };
   "issues.page-title": { project: string | number };
-  "issues.project-time": { totals: string | number };
   "issues.read-only": { field: string | number };
   "issues.refused-at-field": { field: string | number; reason: string | number };
   "issues.select-issue": { key: string | number };

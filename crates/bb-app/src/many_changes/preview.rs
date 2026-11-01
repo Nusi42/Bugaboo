@@ -16,6 +16,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::history::ChangeReader;
+use crate::issues::Given;
 use crate::preview::PreviewSummary;
 use crate::relations::LineMaker;
 
@@ -35,13 +36,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut other = None;
         match action {
             ManyChangeAction::Change { change } => {
-                if change.status.is_none()
-                    && change.priority.is_none()
-                    && change.estimated_time.is_none()
-                    && change.time_left.is_none()
-                    && change.assigned_to.is_none()
-                    && change.fields.is_empty()
-                {
+                // Nothing asked: no field of the catalogue and no own field.
+                if Given::from(change).fields().is_empty() && change.fields.is_empty() {
                     return Err(ErrorCode::InvalidRequest.into());
                 }
             }
