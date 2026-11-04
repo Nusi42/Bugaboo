@@ -262,10 +262,11 @@ export function refreshIssueFiles(): void {
   refreshReads(["/api/v1/issues/{issue}/files"]);
 }
 
-/** A sub-issue or a relation was added or taken away: what an issue stands among is read again. */
+/** A sub-issue or a relation was added or taken away: what an issue stands among, and the totals above it, are read again. */
 export function refreshIssueRelations(): void {
   reread({ queryKey: queryKeys.issueRelations.all });
   reread({ queryKey: queryKeys.history.all });
+  reread({ queryKey: queryKeys.issues.time() });
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
 

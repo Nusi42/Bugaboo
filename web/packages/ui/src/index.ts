@@ -175,6 +175,7 @@ export { longestNameIn } from "./names-in-sentence.ts";
 export {
   SentenceWithName,
   SentenceWithNames,
+  SentenceWithValues,
   SentenceWithValue,
   UnbrokenWords,
 } from "./UnbrokenWords.tsx";

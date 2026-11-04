@@ -1,4 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import { factSeparator } from "@bugaboo/ui";
 
 import type { ApiSession } from "./api.ts";
 import { createIssue, versionOf, type MadeIssue } from "./issues.ts";
@@ -45,4 +47,13 @@ export async function goalWithTask(admin: ApiSession): Promise<MadeIssue> {
   await book(admin, goal, 80);
   await book(admin, task, 120);
   return goal;
+}
+
+/** The totals of an issue with its sub-issues, as the Details write them. */
+export function totalsText(estimated: string, left: string, spent: string): string {
+  return [
+    t("issues.total-estimated", { length: estimated }),
+    t("issues.total-left", { length: left }),
+    t("issues.total-spent", { length: spent }),
+  ].join(` ${factSeparator} `);
 }

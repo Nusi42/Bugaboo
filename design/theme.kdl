@@ -261,6 +261,10 @@ tokens {
     // Font weights
     weight "weight-regular" 400
     weight "weight-bold" 700
+    // The regular weight of the code face for a length set among words: Cascadia Mono at 400 puts about half as much
+    // ink again on the page as the text face at 400, so a length in a sentence or a row reads as bold; at 300 the two
+    // carry the same ink (a face without a lighter cut, such as Consolas, keeps its 400).
+    weight "weight-code" 300
 
     // Line heights
     line-height "lh-tight" 1.2
@@ -711,7 +715,7 @@ mixin "issue-id" {
 // place that shows one uses through the part `length` or this mixin (TIME-03).
 mixin "length" {
     font-family "$font-mono"
-    font-weight "$weight-regular"
+    font-weight "$weight-code"
     white-space nowrap
 }
 
@@ -2438,6 +2442,8 @@ part "list-row.cell[variant=length]" {
     width "$size-col-value"
     justify-content flex-end
     text-align end
+    // The room the head keeps for the handle that sets the width, so a number ends where its head does.
+    padding-inline-end "$size-target-compact"
 }
 
 part "list-row.cell[variant=changed]" {
@@ -3736,11 +3742,6 @@ part "fact-line" {
 }
 
 part "fact-line.item" {
-    white-space nowrap
-}
-
-// A name of a row that must not break at its hyphen (*With sub-issues*).
-part "name-value.name[variant=whole]" {
     white-space nowrap
 }
 

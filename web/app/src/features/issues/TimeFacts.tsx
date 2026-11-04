@@ -1,5 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
-import { Facts, Length, partOf, part, SentenceWithValue } from "@bugaboo/ui";
+import { t } from "@bugaboo/messages";
+import { Facts, Length, NameValueRow, partOf, part, SentenceWithValue } from "@bugaboo/ui";
+
+import { keepingHyphens } from "../../shared/format.ts";
 
 import { minutesText, totalsWords, type LengthWords, type TimeLeft } from "./time-words.ts";
 
@@ -36,4 +39,13 @@ export function MinutesLength({ minutes }: { readonly minutes: number }) {
 export function TimeLeftLength({ left }: { readonly left: TimeLeft }) {
   const length = <Length text={minutesText(left.minutes)} />;
   return left.worked_out ? <span {...partOf(part.hint)}>{length}</span> : length;
+}
+
+/** The row of the totals with the sub-issues: its name breaks at its space, never at its hyphen. */
+export function WithSubIssuesRow({ totals }: { readonly totals: Schema<"TimeTotalsBody"> }) {
+  return (
+    <NameValueRow name={keepingHyphens(t("issues.with-sub-issues"))}>
+      <TotalFacts totals={totals} />
+    </NameValueRow>
+  );
 }

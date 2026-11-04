@@ -134,6 +134,7 @@
   --text-scale: 1;
   --weight-regular: 400;
   --weight-bold: 700;
+  --weight-code: 300;
   --lh-tight: 1.2;
   --lh-snug: 1.25;
   --lh-body: 1.4;
@@ -2447,6 +2448,7 @@ textarea,
   width: var(--size-col-value);
   justify-content: flex-end;
   text-align: end;
+  padding-inline-end: var(--size-target-compact);
 }
 
 [data-part="list-row.cell"][data-variant~="changed"] {
@@ -3717,13 +3719,13 @@ textarea,
 
 [data-part="length"] {
   font-family: var(--font-mono);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-code);
   white-space: nowrap;
 }
 
 [data-part="length-box"] [data-part="field.input"] {
   font-family: var(--font-mono);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-code);
   white-space: nowrap;
 }
 
@@ -3732,10 +3734,6 @@ textarea,
 }
 
 [data-part="fact-line.item"] {
-  white-space: nowrap;
-}
-
-[data-part="name-value.name"][data-variant~="whole"] {
   white-space: nowrap;
 }
 

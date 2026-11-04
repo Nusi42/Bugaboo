@@ -47,18 +47,6 @@ interface Placed {
   readonly text: string;
 }
 
-/** The pieces of a sentence between the places a value stands, each with where the piece ends up in the sentence. */
-function placedAround(sentence: string, value: string): readonly Placed[] {
-  const pieces: Placed[] = [];
-  let start = 0;
-  for (const at of wholeNamePlaces(sentence, value)) {
-    pieces.push({ start, text: sentence.slice(start, at) });
-    start = at + value.length;
-  }
-  pieces.push({ start, text: sentence.slice(start) });
-  return pieces;
-}
-
 /**
  * A sentence that has a value in it (the name of a file, the start of a key): the value is drawn by
  * `children`, as a part of its own, every time the sentence has it as a whole name (not as a piece of a longer one), and the rest of the sentence flows
@@ -73,20 +61,11 @@ export function SentenceWithValue({
   readonly value: string | null | undefined;
   readonly children: (value: string) => ReactNode;
 }) {
-  // One element from both ways, so that a list item that lays out its children (a flex box) keeps
-  // the sentence in one line of words.
   const shown = value === null || value === undefined || value === "" ? null : value;
   return (
-    <span>
-      {shown === null
-        ? sentence
-        : placedAround(sentence, shown).map(({ start, text }) => (
-            <Fragment key={start}>
-              {start > 0 ? children(shown) : null}
-              {text}
-            </Fragment>
-          ))}
-    </span>
+    <SentenceWithValues sentence={sentence} values={shown === null ? [] : [shown]}>
+      {children}
+    </SentenceWithValues>
   );
 }
 
@@ -134,15 +113,30 @@ export function SentenceWithNames({
   readonly sentence: string;
   readonly names: readonly string[];
 }) {
+  return (
+    <SentenceWithValues sentence={sentence} values={names}>
+      {(name) => <span {...partOf(part.unbrokenWord)}>{name}</span>}
+    </SentenceWithValues>
+  );
+}
+
+/**
+ * A sentence with several values in it (two lengths of a change, the names of a list): each value is
+ * drawn by `children` wherever the sentence has it as a whole, and the rest of the sentence flows.
+ */
+export function SentenceWithValues({
+  sentence,
+  values,
+  children,
+}: {
+  readonly sentence: string;
+  readonly values: readonly string[];
+  readonly children: (value: string) => ReactNode;
+}) {
   const pieces: ReactNode[] = [];
   let at = 0;
-  for (const { start, text } of namePlaces(sentence, names)) {
-    pieces.push(
-      sentence.slice(at, start),
-      <span key={start} {...partOf(part.unbrokenWord)}>
-        {text}
-      </span>,
-    );
+  for (const { start, text } of namePlaces(sentence, values)) {
+    pieces.push(sentence.slice(at, start), <Fragment key={start}>{children(text)}</Fragment>);
     at = start + text.length;
   }
   pieces.push(sentence.slice(at));

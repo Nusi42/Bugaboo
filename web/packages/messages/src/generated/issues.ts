@@ -51,6 +51,7 @@ export const messages = {
   "issues.count": "{count, plural, one {# issue found} other {# issues found}}",
   "issues.remove-filters": "Remove all filters",
   "issues.with-sub-issues": "With sub-issues",
+  "issues.length-not-set": "{field} not set",
   "issues.length-range": "{from} to {to}",
   "issues.length-range-under": "Under {to}",
   "issues.length-range-over": "{from} or more",

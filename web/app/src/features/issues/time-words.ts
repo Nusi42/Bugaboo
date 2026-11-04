@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
+import { listWord } from "../../shared/list-columns.ts";
 import { minutesText } from "../../shared/own-value-text.ts";
 
 export { minutesText };
@@ -60,4 +61,20 @@ export function rangeText(range: Schema<"SearchLengthRangeBody">): string {
   return to === undefined
     ? t("issues.length-range-over", { from: minutesText(range.from) })
     : t("issues.length-range", { from: minutesText(range.from), to: minutesText(to) });
+}
+
+/**
+ * The fields of a length that can be without one, by their search word: their group of the issues
+ * without a value is called by the field's name (*Estimated time not set*). Time spent has none:
+ * an issue nobody booked on has spent 0m.
+ */
+const fieldOfLength: Readonly<Record<string, MessageKey>> = {
+  [listWord.estimatedTime]: "issue-field.estimated-time",
+  [listWord.timeLeft]: "issue-field.time-left",
+};
+
+/** The name of the group of the issues without a value of a length; none for another field. */
+export function noLengthName(word: string): string | undefined {
+  const field = fieldOfLength[word];
+  return field === undefined ? undefined : t("issues.length-not-set", { field: t(field) });
 }

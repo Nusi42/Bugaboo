@@ -4,7 +4,7 @@ import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { inFourChosenThemes } from "./support/four-themes.ts";
+import { inFourChosenThemes, inLightAndDarkChosen } from "./support/four-themes.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { goalWithTask } from "./support/issue-time.ts";
 import { prepareWeb } from "./support/issues.ts";
@@ -29,7 +29,8 @@ test("the Details of an issue with its estimate, time left, time spent and total
   await signIn(page, ada);
   await inFourChosenThemes(page, "issue-time", MILESTONE, paths.appearance, async () => {
     await openIssueWithDetails(page, goal.key);
-    await expect(page.getByText(t("issues.with-sub-issues"), { exact: true })).toBeVisible();
+    // The name of the row keeps its hyphen whole, so it is matched by its words.
+    await expect(page.getByText(/^With.sub.issues$/u)).toBeVisible();
   });
 });
 
@@ -75,4 +76,39 @@ test("a list grouped by a length of time", async ({ page, server }) => {
       }),
     ).toBeVisible();
   });
+});
+
+test("a list grouped by Time left, with the group of the issues without one", async ({
+  page,
+  server,
+  hasTouch,
+}) => {
+  test.skip(hasTouch, "The group of a phone is in the picture grouped by Estimated time.");
+  // The task has 2h left and the goal 4h 40m, worked out.
+  const ranges = {
+    lower: t("issues.length-range", { from: "1h", to: "4h" }),
+    upper: t("issues.length-range", { from: "4h", to: "8h" }),
+  };
+  const admin = await signedInAdmin(server);
+  await goalWithTask(admin);
+  await admin.dispose();
+  await signIn(page, ada);
+  await inLightAndDarkChosen(
+    page,
+    "list-time-left-groups",
+    MILESTONE,
+    paths.appearance,
+    async () => {
+      await page.goto(listAddress({ group: "time left" }));
+      // The ranges are folded, so the group without a Time left is in the picture however many
+      // issues the other pictures gave a time.
+      await page.getByRole("row", { name: new RegExp(`^${ranges.lower},`, "u") }).click();
+      await page.getByRole("row", { name: new RegExp(`^${ranges.upper},`, "u") }).click();
+      await expect(
+        page.getByRole("row", {
+          name: new RegExp(t("issues.length-not-set", { field: t("issue-field.time-left") }), "u"),
+        }),
+      ).toBeVisible();
+    },
+  );
 });

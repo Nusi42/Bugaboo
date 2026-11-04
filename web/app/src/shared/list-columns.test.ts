@@ -21,18 +21,19 @@ describe("the columns a person chooses in Customize", () => {
     expect(cellOf("plannedFor")).toBe("value");
   });
 
-  it("keeps the ID and the title when everything is taken away", () => {
-    expect(chooseColumns([], readable)).toEqual(["id", "title"]);
+  it("keeps the status, the ID and the title when everything is taken away (R5, R9)", () => {
+    expect(chooseColumns([], readable)).toEqual(["status", "id", "title"]);
   });
 
   it("keeps the order the person gave, a field of their own, and once each", () => {
     expect(
       chooseColumns(["title", "priority", "plannedFor", "id", "priority", "labels"], readable),
-    ).toEqual(["title", "priority", "plannedFor", "id", "labels"]);
+    ).toEqual(["status", "title", "priority", "plannedFor", "id", "labels"]);
   });
 
   it("leaves out what is no readable field, such as the tick box or a hidden field", () => {
     expect(chooseColumns(["select", "secret", "title", "action"], readable)).toEqual([
+      "status",
       "id",
       "title",
     ]);

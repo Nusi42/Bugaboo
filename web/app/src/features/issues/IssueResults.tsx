@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Skeleton } from "@bugaboo/ui";
 
-import { isDrawnColumn } from "../../shared/list-columns.ts";
+import { isDrawnColumn, withKeptColumns } from "../../shared/list-columns.ts";
 import { useSearchFields, useSearchLanguage } from "../search/index.ts";
 import { LoadedResults } from "./LoadedResults.tsx";
 import type { IssueResultsProps } from "./results-props.ts";
@@ -21,8 +21,9 @@ export function IssueResults(props: IssueResultsProps) {
   }
   const known = new Map(fields.data.fields.fields.map((field) => [field.word, field]));
   const { view, defaults } = props;
+  // Whatever the address or a saved search names, the columns that cannot be taken away are drawn.
   const drawn = (columns: readonly string[]): readonly string[] =>
-    columns.filter((word) => isDrawnColumn(word, known.get(word)));
+    withKeptColumns(columns.filter((word) => isDrawnColumn(word, known.get(word))));
   return (
     <LoadedResults
       {...props}

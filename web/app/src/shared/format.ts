@@ -63,7 +63,12 @@ const NO_BREAK_HYPHEN = "\u2011";
  * not inside it. The spaces and the hyphens of the text become ones that hold it together.
  */
 export function unbroken(text: string): string {
-  return text.replaceAll(" ", NO_BREAK_SPACE).replaceAll("-", NO_BREAK_HYPHEN);
+  return keepingHyphens(text.replaceAll(" ", NO_BREAK_SPACE));
+}
+
+/** A text that may break at its spaces but never at a hyphen (*With / sub-issues*, never *With sub- / issues*). */
+export function keepingHyphens(text: string): string {
+  return text.replaceAll("-", NO_BREAK_HYPHEN);
 }
 
 /** The words as they are written for an e-mail or a file, where a space is a space and a hyphen a hyphen. */

@@ -49,8 +49,18 @@ const wordOfCell = {
 /** The cell a column is drawn in: one the list has a cell for, a length of time, or a plain value (an own field). */
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value" | "length";
 
-/** The search words of the columns that cannot be taken away in *Customize → Columns* (UX §4.2). */
-export const keptWords: readonly string[] = [wordOfCell.key, wordOfCell.title];
+/**
+ * The search words of the columns that cannot be taken away in *Customize → Columns* (UX §4.2), in
+ * the order they stand when they were not chosen: the status first with its icon, then the ID and
+ * the title (R5, R9).
+ */
+export const keptWords: readonly string[] = [wordOfCell.status, wordOfCell.key, wordOfCell.title];
+
+/** The columns with the ones that cannot be taken away, which come first where they are missing. */
+export function withKeptColumns(columns: readonly string[]): readonly string[] {
+  const missing = keptWords.filter((word) => !columns.includes(word));
+  return [...missing, ...columns];
+}
 
 /** The cells a person can choose from, in the order the project's list has them (ADR-0034 decision 6). */
 const choiceCells = listColumns.filter(
@@ -92,8 +102,8 @@ export function cellOf(word: string): ColumnCell {
 
 /**
  * The columns after *Customize → Columns*, as search words: the ticked ones that the person can
- * read (a field of their own included, once each), in the order given, and the ID and the title
- * whatever was ticked (they come first when they were not ticked). A word that is no readable field
+ * read (a field of their own included, once each), in the order given, and the status, the ID and
+ * the title whatever was ticked (they come first when they were not ticked). A word that is no readable field
  * is left out.
  */
 export function chooseColumns(
@@ -103,8 +113,7 @@ export function chooseColumns(
   const chosen = [...new Set(ticked)].filter(
     (word) => keptWords.includes(word) || readable.includes(word),
   );
-  const missing = keptWords.filter((word) => !chosen.includes(word));
-  return [...missing, ...chosen];
+  return withKeptColumns(chosen);
 }
 
 /** One column one place up or down; at an end it stays. */

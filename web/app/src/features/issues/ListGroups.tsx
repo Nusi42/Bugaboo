@@ -21,11 +21,13 @@ export function GroupedList() {
   return (
     <>
       <ListScroll busy={groups.isFetching}>
-        {groupsOfKeys(groups.data?.groups ?? [], groupBy === null ? undefined : own[groupBy]).map(
-          (group) => (
-            <GroupSection key={group.id} group={group} count={group.count} />
-          ),
-        )}
+        {groupsOfKeys(
+          groups.data?.groups ?? [],
+          groupBy === null ? undefined : own[groupBy],
+          groupBy ?? undefined,
+        ).map((group) => (
+          <GroupSection key={group.id} group={group} count={group.count} />
+        ))}
       </ListScroll>
       {groups.data?.truncated === true ? (
         <p {...partOf(part.muted)}>{t("issues.groups-cut")}</p>

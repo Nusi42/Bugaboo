@@ -270,6 +270,7 @@ export interface MessageArguments {
   "issues.group-folded": { count: number; group: string | number };
   "issues.group-open": { count: number; group: string | number };
   "issues.keep-theirs": { name: string | number };
+  "issues.length-not-set": { field: string | number };
   "issues.length-range": { from: string | number; to: string | number };
   "issues.length-range-over": { from: string | number };
   "issues.length-range-under": { to: string | number };

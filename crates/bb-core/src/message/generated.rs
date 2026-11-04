@@ -7967,6 +7967,15 @@ pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.length-not-set`.
+#[must_use]
+pub fn issues_length_not_set(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.length-not-set"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
 /// The message `issues.length-range`.
 #[must_use]
 pub fn issues_length_range(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
@@ -13591,6 +13600,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.legend", "What the colors mean"),
     ("issues.legend-button", "Legend"),
+    ("issues.length-not-set", "{field} not set"),
     ("issues.length-range", "{from} to {to}"),
     ("issues.length-range-over", "{from} or more"),
     ("issues.length-range-under", "Under {to}"),

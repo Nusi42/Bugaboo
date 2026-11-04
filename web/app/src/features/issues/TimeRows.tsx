@@ -1,17 +1,14 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { NameValueRow, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 
 import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-import { LengthIn, MinutesLength, TotalFacts } from "./TimeFacts.tsx";
+import { LengthIn, MinutesLength, WithSubIssuesRow } from "./TimeFacts.tsx";
 import { hasTotals, lengthWords, timeLeftOf } from "./time-words.ts";
 import { useIssueTime } from "./use-issue-time.ts";
-
-/** The look of a name that keeps its hyphen on one line. */
-const unbroken = "whole";
 
 /** *Estimated time*: a box for who may change it, the length for who may only read it. */
 function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
@@ -92,7 +89,7 @@ function LeftRow({
  * fields of the issue and stand among its rows, apart from the defaults for time booked on it.
  */
 export function TimeRows({ blocks, changes }: ChangeableRowsProps) {
-  const time = useIssueTime(blocks.readableId, blocks.version).data ?? undefined;
+  const time = useIssueTime(blocks.readableId).data ?? undefined;
   const spent = time?.time_spent ?? undefined;
   const totals = time?.with_sub_issues;
   return (
@@ -105,9 +102,7 @@ export function TimeRows({ blocks, changes }: ChangeableRowsProps) {
         </DetailRow>
       )}
       {totals === undefined || totals === null || !hasTotals(totals) ? null : (
-        <NameValueRow name={t("issues.with-sub-issues")} nameLook={unbroken}>
-          <TotalFacts totals={totals} />
-        </NameValueRow>
+        <WithSubIssuesRow totals={totals} />
       )}
     </>
   );

@@ -4,7 +4,7 @@ import { addDays } from "../../shared/format.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName } from "../../shared/person.ts";
 import type { OwnColumn } from "./own-columns.ts";
-import { rangeText } from "./time-words.ts";
+import { noLengthName, rangeText } from "./time-words.ts";
 
 /** A group of a search as the server sends it. */
 type FoundGroup = Schema<"SearchGroupBody">;
@@ -62,7 +62,11 @@ function personPlace(person: Schema<"PersonRef">): string {
  * the server gave it a name (`name`, found by the one resolution of names), a person as the viewer
  * sees them, or a tag or a label by its name.
  */
-function placed(group: FoundGroup, column: OwnColumn | undefined): Pick<GroupOfKey, "id" | "name"> {
+function placed(
+  group: FoundGroup,
+  column: OwnColumn | undefined,
+  by: string | undefined,
+): Pick<GroupOfKey, "id" | "name"> {
   const { key } = group;
   if (key.type === "tag" || key.type === "label") {
     return { id: `${key.type}:${key.value.id}`, name: key.value.name ?? undefined };
@@ -74,7 +78,7 @@ function placed(group: FoundGroup, column: OwnColumn | undefined): Pick<GroupOfK
     };
   }
   if (key.type === "empty") {
-    return { id: "empty", name: undefined };
+    return { id: "empty", name: by === undefined ? undefined : noLengthName(by) };
   }
   if (key.type === "whole") {
     const name =
@@ -96,10 +100,10 @@ function placed(group: FoundGroup, column: OwnColumn | undefined): Pick<GroupOfK
 }
 
 /** The group the server sends: its header, and the filter that selects its issues. */
-export function groupOfKey(group: FoundGroup, column?: OwnColumn): GroupOfKey {
+export function groupOfKey(group: FoundGroup, column?: OwnColumn, by?: string): GroupOfKey {
   const { key } = group;
   return {
-    ...placed(group, column),
+    ...placed(group, column, by),
     statusGroup: key.type === "status-group" ? key.value : undefined,
     priority: key.type === "priority" ? key.value : undefined,
     filter: group.filter ?? undefined,
@@ -114,10 +118,11 @@ export function groupOfKey(group: FoundGroup, column?: OwnColumn): GroupOfKey {
 export function groupsOfKeys(
   groups: readonly FoundGroup[],
   column?: OwnColumn,
+  by?: string,
 ): readonly GroupOfKey[] {
   const seen = new Map<string, number>();
   return groups.map((each) => {
-    const group = groupOfKey(each, column);
+    const group = groupOfKey(each, column, by);
     const turn = seen.get(group.id) ?? 0;
     seen.set(group.id, turn + 1);
     return turn === 0 ? group : { ...group, id: `${group.id}#${String(turn)}` };
