@@ -4,7 +4,7 @@
 
 use crate::literal::{field_or_quoted, key_or_quoted, quoted, value_or_quoted};
 use crate::span::Span;
-use crate::syntax::{Expr, FieldRef, Operand, Search, SortKey, Test, Text};
+use crate::syntax::{Comparison, Expr, FieldRef, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
 
 /// Whether this build checks that a canonical text reads back as the same search.
@@ -57,37 +57,71 @@ pub fn print(search: &Search) -> String {
 /// too long, a number with too many digits): such a filter is never given out.
 #[must_use]
 pub fn is_filter_text(word: &str, value: Operand) -> Option<String> {
-    canonical_text(&only(
+    canonical_text(&search_of(field_test(
         word,
         Test::Is {
             value,
             span: Span::default(),
         },
-    ))
+    )))
 }
 
 /// The canonical text of the one filter `<field> is empty`, as [`is_filter_text`].
 #[must_use]
 pub fn empty_filter_text(word: &str) -> Option<String> {
-    canonical_text(&only(
+    canonical_text(&search_of(field_test(
         word,
         Test::IsEmpty {
             span: Span::default(),
         },
-    ))
+    )))
 }
 
-/// A search with this one filter on a field.
-fn only(word: &str, test: Test) -> Search {
-    Search {
-        filter: Some(Expr::Field {
-            field: FieldRef {
-                word: word.to_owned(),
+/// The canonical text of the filter of a range of lengths of time: `<field> >= <from> and <field>
+/// < <to>`, or only the first test for a range with no end. How a group of lengths says which issues
+/// it holds, as [`is_filter_text`].
+#[must_use]
+pub fn range_filter_text(word: &str, from_minutes: u32, to_minutes: Option<u32>) -> Option<String> {
+    let compare = |operator: Comparison, minutes: u32| {
+        field_test(
+            word,
+            Test::Compare {
+                operator,
+                value: Operand::Duration {
+                    minutes,
+                    span: Span::default(),
+                },
                 span: Span::default(),
             },
-            test,
+        )
+    };
+    let from = compare(Comparison::GreaterOrEqual, from_minutes);
+    let filter = match to_minutes {
+        Some(to) => Expr::And {
+            items: vec![from, compare(Comparison::Less, to)],
             span: Span::default(),
-        }),
+        },
+        None => from,
+    };
+    canonical_text(&search_of(filter))
+}
+
+/// The test of one field, as a filter.
+fn field_test(word: &str, test: Test) -> Expr {
+    Expr::Field {
+        field: FieldRef {
+            word: word.to_owned(),
+            span: Span::default(),
+        },
+        test,
+        span: Span::default(),
+    }
+}
+
+/// A search with this filter and no order.
+fn search_of(filter: Expr) -> Search {
+    Search {
+        filter: Some(filter),
         sort: Vec::new(),
         span: Span::default(),
     }

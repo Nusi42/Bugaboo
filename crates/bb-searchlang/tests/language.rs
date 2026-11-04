@@ -13,7 +13,7 @@ use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
     Expr, Field, FieldKind, MAX_CONTAINS_WORDS, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS,
     MAX_TEXT_BYTES, MAX_WORD_BYTES, MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion,
-    Test, check, parse, parse_with, print, suggest,
+    Test, check, parse, parse_with, print, range_filter_text, suggest,
 };
 
 /// A text parsed and checked against the sample fields, printed.
@@ -767,4 +767,18 @@ fn qry_04_the_filter_of_a_group_is_written_by_the_printer_and_reads_back() {
     if bb_searchlang::ROUND_TRIP_GUARD {
         assert_eq!(is_filter_text("title", name(&"a".repeat(5000))), None);
     }
+}
+
+#[test]
+fn time_03_a_range_of_lengths_is_one_filter_of_two_comparisons() {
+    let range = range_filter_text("estimated time", 240, Some(480)).unwrap();
+    assert_eq!(
+        range,
+        "estimated time >= 4 hours and estimated time < 8 hours"
+    );
+    assert_eq!(print(&parse(&range).unwrap()), range);
+    assert_eq!(
+        range_filter_text("time spent", 2_400, None).as_deref(),
+        Some("time spent >= 40 hours")
+    );
 }

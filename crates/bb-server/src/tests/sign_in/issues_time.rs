@@ -13,6 +13,10 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok};
+use super::search_groups_http::{GROUPS, encoded};
+
+/// The route of a search of issues.
+const SEARCH: &str = "/api/v1/search/issues";
 use super::policy_rig::Member;
 use super::rig::Rig;
 
@@ -375,6 +379,64 @@ async fn time_03_sub_issues_count_in_every_project_and_a_hidden_total_is_left_ou
             "{seen}"
         );
         assert_eq!(seen["with_sub_issues"]["estimated_time"], 180, "{seen}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_03_a_group_of_lengths_has_the_filter_of_its_range() -> TestResult {
+    each_database("time_03_length_group_filter", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let long = key_of(&site.create(&mut ada, "Long").await?)?;
+        let short = key_of(&site.create(&mut ada, "Short").await?)?;
+        estimate(&mut ada, &long, 300).await?;
+        estimate(&mut ada, &short, 30).await?;
+        let groups = ada
+            .send(
+                "GET",
+                &format!("{GROUPS}?by={}", encoded("estimated time")),
+                None,
+            )
+            .await?;
+        let groups = ok(&groups)?["groups"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        let filter_of = |from: u64| {
+            groups
+                .iter()
+                .find(|group| group["key"]["value"]["from"] == from)
+                .and_then(|group| group["filter"].as_str())
+                .map(str::to_owned)
+        };
+        assert_eq!(
+            filter_of(240).as_deref(),
+            Some("estimated time >= 4 hours and estimated time < 8 hours")
+        );
+        // Every group says which issues it holds, the issues without an estimate too.
+        assert!(
+            groups.iter().all(|group| group["filter"].is_string()),
+            "{groups:?}"
+        );
+        // The filter of a group finds exactly its issues.
+        let text = filter_of(240).ok_or("no filter of 4 to 8 hours")?;
+        let found = ada
+            .send(
+                "GET",
+                &format!("{SEARCH}?q={}&fields=readable_id", encoded(&text)),
+                None,
+            )
+            .await?;
+        let keys: Vec<Value> = ok(&found)?["items"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .map(|item| item["readable_id"].clone())
+            .collect();
+        assert_eq!(keys, [json!(long)]);
         Ok(())
     })
     .await

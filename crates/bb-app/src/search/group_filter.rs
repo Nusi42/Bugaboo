@@ -19,11 +19,12 @@ use bb_core::own_fields::{DECIMAL_PARTS, FieldType};
 use bb_core::own_fields_value::{Cell, FieldValue, date_of};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::readable_id::ReadableId;
-use bb_core::time::SECONDS_PER_MINUTE;
+use bb_core::time::range::LengthRange;
+use bb_core::time::{Minutes, SECONDS_PER_MINUTE};
 use bb_policy::{Evaluation, PersonRef};
 use bb_searchlang::{
     Date, Decimal, IssueRef, NO, Operand, ReadableFields, Span, YES, check, empty_filter_text,
-    is_filter_text, parse_with,
+    is_filter_text, parse_with, range_filter_text,
 };
 
 use super::names::NameCache;
@@ -49,11 +50,22 @@ enum Thing {
     Project(ProjectId),
 }
 
-/// What a group is asked for: the name it is shown by, the value of its filter (none for the issues
-/// without a value) and what the name has to stand for.
+/// What the filter of a group asks of its field.
+#[derive(Clone)]
+enum Asked {
+    /// `is <value>`.
+    Is(Operand),
+    /// `is empty`: the issues without a value.
+    Empty,
+    /// A range of lengths of time: `>= <from>` and, when it has an end, `< <to>`.
+    Range(LengthRange),
+}
+
+/// What a group is asked for: the name it is shown by, what its filter asks and what the name has
+/// to stand for.
 struct Wanted {
     name: Option<String>,
-    value: Option<Operand>,
+    value: Asked,
     thing: Thing,
 }
 
@@ -61,7 +73,7 @@ impl Wanted {
     fn plain(value: Operand) -> Self {
         Self {
             name: None,
-            value: Some(value),
+            value: Asked::Is(value),
             thing: Thing::Plain,
         }
     }
@@ -69,7 +81,7 @@ impl Wanted {
     fn named(name: &str, thing: Thing) -> Self {
         Self {
             name: Some(name.to_owned()),
-            value: Some(text(name)),
+            value: Asked::Is(text(name)),
             thing,
         }
     }
@@ -293,8 +305,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         cache: &mut NameCache,
     ) -> Result<(Option<String>, bool), AppError> {
         let written = match wanted.value.clone() {
-            Some(value) => is_filter_text(word, value),
-            None => empty_filter_text(word),
+            Asked::Is(value) => is_filter_text(word, value),
+            Asked::Empty => empty_filter_text(word),
+            Asked::Range(range) => {
+                range_filter_text(word, range.from.get(), range.to.map(Minutes::get))
+            }
         };
         let Some(written) = written else {
             return Ok((None, false));
@@ -339,7 +354,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|name| Wanted::named(name, Thing::Label(*id))),
             ShownKey::Other(GroupKey::Empty) => Some(Wanted {
                 name: None,
-                value: None,
+                value: Asked::Empty,
                 thing: Thing::Plain,
             }),
             ShownKey::Other(other) => {
@@ -411,7 +426,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                         cache.know_issue(&readable, *id);
                         let name = readable.to_string();
                         Some(Wanted {
-                            value: Some(Operand::Issue {
+                            value: Asked::Is(Operand::Issue {
                                 id: IssueRef {
                                     text: name.clone(),
                                     span: Span::default(),
@@ -426,13 +441,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 },
                 None => None,
             },
-            // A range of lengths is two comparisons, which a group's filter of one value cannot
-            // say yet.
-            GroupKey::Empty
-            | GroupKey::Person(_)
-            | GroupKey::Tag(_)
-            | GroupKey::Label(_)
-            | GroupKey::Length(_) => None,
+            GroupKey::Length(range) => Some(Wanted {
+                name: None,
+                value: Asked::Range(*range),
+                thing: Thing::Plain,
+            }),
+            GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => None,
         })
     }
 }
