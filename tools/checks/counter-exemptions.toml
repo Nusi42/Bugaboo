@@ -261,32 +261,32 @@ reason = "How many work days the holder of Change organization settings just del
 [[exempt]]
 route = "GET /api/v1/issues/{issue}"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "PATCH /api/v1/issues/{issue}"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "PUT /api/v1/issues/{issue}/description"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "PUT /api/v1/issues/{issue}/fields/{field}/text"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "POST /api/v1/issues/{issue}/move"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "POST /api/v1/issues/{issue}/restore"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "GET /api/v1/issues/{issue}/time"
@@ -296,17 +296,17 @@ reason = "Minutes, not a count of things: the time booked on this issue and, wit
 [[exempt]]
 route = "GET /api/v1/projects/{project}/issues"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "POST /api/v1/projects/{project}/issues"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "GET /api/v1/search/issues"
 property = "time_spent"
-reason = "Minutes, not a count of things: the time booked on this one issue the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
+reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."
 
 [[exempt]]
 route = "GET /api/v1/issues/{issue}/time"

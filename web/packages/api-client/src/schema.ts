@@ -5652,17 +5652,19 @@ export interface components {
       /**
        * Format: int32
        * @description *Time left* in whole minutes, typed or worked out from the estimate and the time spent;
-       *     left out without either.
+       *     left out without either. Worked out only in a list that asks for it: the answer of one issue
+       *     holds only a typed value, and one issue reads its worked-out one through `/time`.
        */
       time_left?: number | null;
       /**
        * @description Whether *Time left* is worked out rather than typed (shown in the quiet style of a value
-       *     worked out); left out with it.
+       *     worked out); left out with it. Only in a list; one issue reads it through `/time`.
        */
       time_left_worked_out?: boolean | null;
       /**
        * Format: int32
-       * @description *Time spent*: the total of the issue's time entries, in whole minutes.
+       * @description *Time spent*: the total of the issue's time entries, in whole minutes. Only in a list that
+       *     asks for it; one issue reads it through `/time`.
        */
       time_spent?: number | null;
       /** @description What it is about. */

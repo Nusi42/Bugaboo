@@ -18110,17 +18110,17 @@
           "time_left": {
             "type": ["integer", "null"],
             "format": "int32",
-            "description": "*Time left* in whole minutes, typed or worked out from the estimate and the time spent;\nleft out without either.",
+            "description": "*Time left* in whole minutes, typed or worked out from the estimate and the time spent;\nleft out without either. Worked out only in a list that asks for it: the answer of one issue\nholds only a typed value, and one issue reads its worked-out one through `/time`.",
             "minimum": 0
           },
           "time_left_worked_out": {
             "type": ["boolean", "null"],
-            "description": "Whether *Time left* is worked out rather than typed (shown in the quiet style of a value\nworked out); left out with it."
+            "description": "Whether *Time left* is worked out rather than typed (shown in the quiet style of a value\nworked out); left out with it. Only in a list; one issue reads it through `/time`."
           },
           "time_spent": {
             "type": ["integer", "null"],
             "format": "int32",
-            "description": "*Time spent*: the total of the issue's time entries, in whole minutes.",
+            "description": "*Time spent*: the total of the issue's time entries, in whole minutes. Only in a list that\nasks for it; one issue reads it through `/time`.",
             "minimum": 0
           },
           "title": {

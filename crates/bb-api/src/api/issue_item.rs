@@ -115,17 +115,19 @@ pub(crate) struct IssueItem {
     #[schema(value_type = Option<u32>)]
     estimated_time: Option<Minutes>,
     /// *Time left* in whole minutes, typed or worked out from the estimate and the time spent;
-    /// left out without either.
+    /// left out without either. Worked out only in a list that asks for it: the answer of one issue
+    /// holds only a typed value, and one issue reads its worked-out one through `/time`.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "time-left")]
     #[schema(value_type = Option<u32>)]
     time_left: Option<Minutes>,
     /// Whether *Time left* is worked out rather than typed (shown in the quiet style of a value
-    /// worked out); left out with it.
+    /// worked out); left out with it. Only in a list; one issue reads it through `/time`.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "time-left")]
     time_left_worked_out: Option<bool>,
-    /// *Time spent*: the total of the issue's time entries, in whole minutes.
+    /// *Time spent*: the total of the issue's time entries, in whole minutes. Only in a list that
+    /// asks for it; one issue reads it through `/time`.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "time-spent")]
     #[schema(value_type = Option<u32>)]
