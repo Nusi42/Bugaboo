@@ -364,18 +364,30 @@ pub(crate) fn lengths_readable_in(
         issue_types: Vec::new(),
         own: Vec::new(),
     };
-    [Field::EstimatedTime, Field::TimeLeft, Field::TimeSpent]
-        .into_iter()
+    catalogue_fields_in(
+        &places,
+        &sources,
+        &[Field::EstimatedTime, Field::TimeLeft, Field::TimeSpent],
+    )
+}
+
+/// The fields of the catalogue among `fields` that a search may use in these places: readable in
+/// every one of them. The one rule for the fields of a search and for the lengths of the totals.
+fn catalogue_fields_in(places: &[Place], sources: &Sources, fields: &[Field]) -> Vec<Searchable> {
+    if places.is_empty() {
+        return Vec::new();
+    }
+    fields
+        .iter()
         .filter(|field| {
-            !places.is_empty()
-                && places
-                    .iter()
-                    .all(|place| place.may_use(FieldKey::from(*field), field.person_kind()))
+            places
+                .iter()
+                .all(|place| place.may_use(FieldKey::from(**field), field.person_kind()))
         })
         .filter_map(|field| {
-            let (target, kind) = catalogue_target(field)?;
+            let (target, kind) = catalogue_target(*field)?;
             Some(Searchable {
-                field: catalogue_field(field, kind, &sources),
+                field: catalogue_field(*field, kind, sources),
                 target,
             })
         })
@@ -499,24 +511,10 @@ fn status_group_names() -> Vec<String> {
 /// The fields a search may use in these places: those of the catalogue and the own fields that
 /// are readable in every place they apply to, and the fields every issue has.
 fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
-    let mut found: Vec<Searchable> = Vec::new();
     if places.is_empty() {
-        return found;
+        return Vec::new();
     }
-    for field in Field::ALL {
-        let Some((target, kind)) = catalogue_target(*field) else {
-            continue;
-        };
-        if places
-            .iter()
-            .all(|place| place.may_use(FieldKey::from(*field), field.person_kind()))
-        {
-            found.push(Searchable {
-                field: catalogue_field(*field, kind, sources),
-                target,
-            });
-        }
-    }
+    let mut found = catalogue_fields_in(places, sources, Field::ALL);
     for (each, target, choices) in [
         (IssueField::Project, FieldTarget::Project, Vec::new()),
         (
