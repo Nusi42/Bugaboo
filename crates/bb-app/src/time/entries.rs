@@ -30,7 +30,7 @@ use super::limits::{clean_note, entry_length, room_for_an_entry};
 use super::types::{AddTime, ChangeTimeEntry, DeleteTimeEntry, EntryDetails, TimeEntryView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
-use crate::fields::{Item, Making, PlannedValues};
+use crate::fields::{Item, ItemValues, Making, PlannedValues};
 use crate::issues::Where;
 use crate::member::time_entry as member;
 use crate::projects::Why;
@@ -153,6 +153,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         chain: &[bb_core::id::ProjectId],
     ) -> Result<BTreeMap<FieldId, FieldValue>, AppError> {
+        let on_issue = self
+            .load_values(RecordKind::Issue, &[issue.id.into()])
+            .await?;
+        self.entry_defaults_from(issue, chain, &on_issue).await
+    }
+
+    /// [`Self::entry_defaults`] with the values of the issue already read, for a caller that needs
+    /// them for something else too.
+    pub(super) async fn entry_defaults_from(
+        &self,
+        issue: &Issue,
+        chain: &[bb_core::id::ProjectId],
+        on_issue: &ItemValues,
+    ) -> Result<BTreeMap<FieldId, FieldValue>, AppError> {
         let fields: Vec<FieldId> = self
             .field_catalogue()
             .await?
@@ -166,9 +180,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         if fields.is_empty() {
             return Ok(BTreeMap::new());
         }
-        let on_issue = self
-            .load_values(RecordKind::Issue, &[issue.id.into()])
-            .await?;
         let projects: Vec<EntityId> = chain.iter().map(|project| (*project).into()).collect();
         let on_projects = self.load_values(RecordKind::Project, &projects).await?;
         Ok(fields

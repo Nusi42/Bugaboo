@@ -141,13 +141,15 @@ pub async fn time_entry_defaults<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.bookable_issue(&actor, &input.issue).await?;
     let item = ctx.entry_item(&issue, None).await?;
-    let defaults = ctx.entry_defaults(&issue, &item.chain).await?;
     let record = EntityId::from(issue.id);
-    let own_fields = ctx
-        .load_values(RecordKind::Issue, &[record])
-        .await?
-        .holding(record, defaults)
-        .shown(&held, Some(issue.issue_type), record);
+    let on_issue = ctx.load_values(RecordKind::Issue, &[record]).await?;
+    let defaults = ctx
+        .entry_defaults_from(&issue, &item.chain, &on_issue)
+        .await?;
+    let own_fields =
+        on_issue
+            .holding(record, defaults)
+            .shown(&held, Some(issue.issue_type), record);
     let billable_offered = ctx.billable_offered().await?;
     Ok(held.authorize(EntryDefaults {
         billable_offered,

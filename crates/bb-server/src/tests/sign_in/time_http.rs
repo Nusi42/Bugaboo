@@ -3,11 +3,13 @@
 //! issue and its projects, the starter fields found by their mark, and a long timer told once.
 
 use axum::http::StatusCode;
-use bb_app::access::StartingRole;
+use bb_app::access::{Permission, StartingRole};
 use bb_app::time::LONG_TIMER_HOURS;
+use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
+use super::fields_http::reader_of;
 use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_of, ok, version_of};
 use super::layouts_http::{AN_EDITOR, LAYOUTS, save, slot, take_lock};
@@ -385,6 +387,58 @@ async fn time_13_the_defaults_of_a_new_entry_are_told_before_it_is_made() -> Tes
             .send("GET", &format!("{ISSUES}/NOPE-1/time-entry-defaults"), None)
             .await?;
         assert_eq!(missing.status, StatusCode::NOT_FOUND);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_13_the_defaults_tell_billable_when_it_is_on_and_leave_out_a_hidden_field()
+-> TestResult {
+    each_database("time_13_defaults_masked", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let activity = starter(&mut ada, "activity").await?;
+        let cost_center = starter(&mut ada, "cost-center").await?;
+        let testing = choice_named(&field(&mut ada, &activity).await?, "Testing")?;
+        let product = add_choice(&mut ada, &cost_center, "4100 Product development").await?;
+        set_on_issue(&mut ada, &issue, &activity, &testing).await?;
+        set_on_issue(&mut ada, &issue, &cost_center, &product).await?;
+        let path = format!("{ISSUES}/{issue}/time-entry-defaults");
+        // *Billable* is told as offered once an administrator switches it on.
+        let on = ada
+            .send(
+                "PUT",
+                "/api/v1/settings/time.billable",
+                Some(json!({"value": true})),
+            )
+            .await?;
+        assert_eq!(on.status, StatusCode::OK, "{}", on.body);
+        let told = ok(&ada.send("GET", &path, None).await?)?.clone();
+        assert_eq!(told["billable_offered"], true);
+        assert_eq!(told["own_fields"][&activity], json!(testing));
+        // A role that may book time but not see *Activity* is not told its default; what it may see
+        // is told.
+        let mut vic = reader_of(
+            &site,
+            &rig,
+            "vic@example.test",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::BookTime,
+            ],
+            &[
+                (&activity, None, FieldLevel::Hidden),
+                (&cost_center, None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+        let seen = ok(&vic.send("GET", &path, None).await?)?.clone();
+        assert!(seen["own_fields"].get(&activity).is_none(), "{seen}");
+        assert_eq!(seen["own_fields"][&cost_center], json!(product));
+        assert_eq!(seen["billable_offered"], true);
         Ok(())
     })
     .await
