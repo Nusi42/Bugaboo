@@ -256,6 +256,9 @@ error_codes! {
     /// *Totals only* is on: other people's days are shown as week totals only and are not changed
     /// (ADR-0035, decision 8).
     TotalsOnly => ("working-hours.week-totals-only", 403),
+    /// The keep period of work days is set below the two years the preset *Germany* asks for
+    /// (ADR-0035, decision 7).
+    KeepYearsTooShort => ("working-hours.keep-years-too-short", 400),
     /// A search took longer than the time a search may take (SEC-17, architecture §7 *Search
     /// limits*); the person narrows it down.
     SearchTooSlow => ("search.too-slow", 503),

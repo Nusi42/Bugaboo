@@ -120,6 +120,14 @@ fn reason_of(code: ErrorCode) -> SkipReason {
         ErrorCode::RelationExists => SkipReason::RelationExists,
         ErrorCode::LimitReached => SkipReason::LimitReached,
         code if code.is_field_rule() => SkipReason::FieldRule,
+        other => unworded(other),
+    }
+}
+
+/// The refusals that have no word of their own: the single change would not take this issue as it is.
+/// The codes the arms of [`reason_of`] name are listed too, so that this match stays whole.
+fn unworded(code: ErrorCode) -> SkipReason {
+    match code {
         // Every other refusal says the single change would not take this issue as it is and has
         // no word of its own. The codes are listed (the `field.*` ones are caught above) so a
         // new one is a decision made here, not a silent "not valid".
@@ -205,9 +213,23 @@ fn reason_of(code: ErrorCode) -> SkipReason {
         | ErrorCode::WorkDayInTheFuture
         | ErrorCode::ReasonNeeded
         | ErrorCode::TotalsOnly
+        | ErrorCode::KeepYearsTooShort
         | ErrorCode::Internal
         // A busy database is caught by `skip_of`; listed so that the match stays whole.
-        | ErrorCode::Unavailable => SkipReason::NotValid,
+        | ErrorCode::Unavailable
+        | ErrorCode::VersionChanged
+        | ErrorCode::NotFound
+        | ErrorCode::Forbidden
+        | ErrorCode::FieldNotHere
+        | ErrorCode::WorkflowNoSuchChange
+        | ErrorCode::WorkflowNotForYou
+        | ErrorCode::WorkflowNotNamed
+        | ErrorCode::WorkflowOnlyIf
+        | ErrorCode::WorkflowCannotFill
+        | ErrorCode::TagNotHere
+        | ErrorCode::LabelNotOffered
+        | ErrorCode::RelationExists
+        | ErrorCode::LimitReached => SkipReason::NotValid,
     }
 }
 

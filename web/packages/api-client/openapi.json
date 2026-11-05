@@ -17045,6 +17045,7 @@
           "working-hours.in-the-future",
           "working-hours.reason-needed",
           "working-hours.week-totals-only",
+          "working-hours.keep-years-too-short",
           "search.too-slow",
           "rate-limit.exceeded",
           "server.unavailable",
@@ -24061,6 +24062,17 @@
             "$ref": "#/components/schemas/SourceBody",
             "description": "Where it comes from."
           },
+          "unit": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SettingUnit",
+                "description": "For a whole number: what it counts in, when it is not a bare number."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "value": {
             "$ref": "#/components/schemas/ValueBody",
             "description": "The value that counts here."
@@ -24099,6 +24111,11 @@
         "type": "string",
         "description": "The type of a setting.",
         "enum": ["yes-no", "whole-number", "text"]
+      },
+      "SettingUnit": {
+        "type": "string",
+        "description": "What a whole number counts in, when it is drawn as more than a bare number.",
+        "enum": ["minutes"]
       },
       "SettingsBody": {
         "type": "object",

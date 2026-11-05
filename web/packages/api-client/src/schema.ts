@@ -5147,6 +5147,7 @@ export interface components {
       | "working-hours.in-the-future"
       | "working-hours.reason-needed"
       | "working-hours.week-totals-only"
+      | "working-hours.keep-years-too-short"
       | "search.too-slow"
       | "rate-limit.exceeded"
       | "server.unavailable"
@@ -8547,6 +8548,7 @@ export interface components {
       own: boolean;
       /** @description Where it comes from. */
       source: components["schemas"]["SourceBody"];
+      unit?: components["schemas"]["SettingUnit"] | null;
       /** @description The value that counts here. */
       value: components["schemas"]["ValueBody"];
       /**
@@ -8583,6 +8585,11 @@ export interface components {
      * @enum {string}
      */
     SettingType: "yes-no" | "whole-number" | "text";
+    /**
+     * @description What a whole number counts in, when it is drawn as more than a bare number.
+     * @enum {string}
+     */
+    SettingUnit: "minutes";
     /** @description The settings of a topic, in the order of the registry. */
     SettingsBody: {
       /** @description The settings. */

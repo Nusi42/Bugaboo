@@ -833,30 +833,29 @@ export const messages = {
   "setting.working-hours.preset.name": "Working-time rules",
   "setting.working-hours.preset.help":
     "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",
-  "setting.working-hours.day-minutes-max.name": "Most work in a day (minutes)",
-  "setting.working-hours.day-minutes-max.help":
-    "A day with more work gets a warning. Germany: 600 minutes, which is 10 hours.",
-  "setting.working-hours.first-break-after-minutes.name": "First break after (minutes of work)",
+  "setting.working-hours.day-minutes-max.name": "Longest work day",
+  "setting.working-hours.day-minutes-max.help": "A day with more work gets a warning.",
+  "setting.working-hours.first-break-after-minutes.name": "First break is due after",
   "setting.working-hours.first-break-after-minutes.help":
-    "A day with more work than this needs the first break. Germany: 360 minutes, which is 6 hours.",
-  "setting.working-hours.first-break-minutes.name": "First break (minutes)",
+    "A day with more work than this needs the first break.",
+  "setting.working-hours.first-break-minutes.name": "First break",
   "setting.working-hours.first-break-minutes.help":
-    "How long the breaks of such a day are together at least. Germany: 30 minutes.",
-  "setting.working-hours.second-break-after-minutes.name": "Longer break after (minutes of work)",
+    "How long the breaks of such a day are together at least.",
+  "setting.working-hours.second-break-after-minutes.name": "Longer break is due after",
   "setting.working-hours.second-break-after-minutes.help":
-    "A day with more work than this needs the longer break. Germany: 540 minutes, which is 9 hours.",
-  "setting.working-hours.second-break-minutes.name": "Longer break (minutes)",
+    "A day with more work than this needs the longer break.",
+  "setting.working-hours.second-break-minutes.name": "Longer break",
   "setting.working-hours.second-break-minutes.help":
-    "How long the breaks of such a day are together at least. Germany: 45 minutes.",
-  "setting.working-hours.shortest-break-minutes.name": "Shortest break that counts (minutes)",
+    "How long the breaks of such a day are together at least.",
+  "setting.working-hours.shortest-break-minutes.name": "Shortest break that counts",
   "setting.working-hours.shortest-break-minutes.help":
-    "A shorter break does not count for the rules. Germany: 15 minutes.",
-  "setting.working-hours.in-a-row-minutes-max.name": "Most work in a row (minutes)",
+    "A shorter break does not count for the rules.",
+  "setting.working-hours.in-a-row-minutes-max.name": "Longest stretch without a break",
   "setting.working-hours.in-a-row-minutes-max.help":
-    "Work in a row longer than this, without a break that counts, gets a warning. Germany: 360 minutes, which is 6 hours.",
-  "setting.working-hours.rest-minutes-min.name": "Least rest between two work days (minutes)",
+    "Work in a row longer than this, without a break that counts, gets a warning.",
+  "setting.working-hours.rest-minutes-min.name": "Rest between two work days",
   "setting.working-hours.rest-minutes-min.help":
-    "Less rest between the end of one work day and the start of the next gets a warning. Germany: 660 minutes, which is 11 hours.",
+    "Less rest between the end of one work day and the start of the next gets a warning.",
   "setting.working-hours.keep-years.name": "Keep work days for (years)",
   "setting.working-hours.keep-years.help":
     "Work days are kept at least this many years from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
@@ -887,6 +886,8 @@ export const messages = {
   "notifications.work-day-reason": "Why: {reason}",
   "error.working-hours.in-the-future":
     "A work day records what has happened. Times later than now cannot be saved yet.",
+  "error.working-hours.keep-years-too-short":
+    "With the rules of Germany, work days are kept for 2 years at least. Choose No rules first, or keep them longer.",
 } as const;
 
 register(messages);

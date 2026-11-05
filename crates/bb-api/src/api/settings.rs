@@ -20,7 +20,7 @@ use bb_app::settings::{
     ChangeSetting, ImageHostsQuery, LockSetting, ResetSetting, SettingList, SettingSource,
     SettingView, SettingsQuery, SettingsScope,
 };
-use bb_core::settings::{DefaultValue, Format, Level, SettingValue};
+use bb_core::settings::{DefaultValue, Format, Level, SettingValue, Unit};
 use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
 use utoipa::openapi::response::{Response as ResponseDescription, ResponseBuilder};

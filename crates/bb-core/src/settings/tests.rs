@@ -262,3 +262,19 @@ fn values_are_stored_as_plain_json() {
         SettingValue::Text("dusk".to_owned())
     );
 }
+
+#[test]
+fn time_09_the_numbers_of_the_rules_count_in_minutes_and_nothing_else_does() {
+    use super::Unit;
+    let minutes: Vec<_> = registry()
+        .filter(|definition| definition.unit() == Some(Unit::Minutes))
+        .map(SettingDefinition::key)
+        .filter(|key| key.starts_with("working-hours."))
+        .collect();
+    assert_eq!(minutes.len(), 8, "{minutes:?}");
+    assert!(minutes.iter().all(|key| key.contains("minutes")));
+    assert_eq!(
+        working_hours::WORKING_HOURS_KEEP_YEARS.definition().unit(),
+        None
+    );
+}

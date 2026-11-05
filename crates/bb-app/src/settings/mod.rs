@@ -27,12 +27,14 @@ use bb_core::ErrorCode;
 use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
+use bb_core::settings::working_hours::WORKING_HOURS_KEEP_YEARS;
 use bb_core::settings::{
     ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
     changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{Version, counted_up};
+use bb_core::working_time::{keep_years_allowed, preset_of};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::{Value, json};
 
@@ -491,18 +493,7 @@ pub async fn change_setting<S: AuthStore>(
     if !definition.has_type_of(&input.value) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    if !definition.accepts(&input.value) {
-        // A text its format refuses has the format's answer (a list of hosts with an address in it,
-        // a zone the server does not know), in plain words; anything else is an invalid request.
-        let format_refused =
-            matches!(&input.value, SettingValue::Text(text) if !definition.format().accepts(text));
-        return Err(if format_refused {
-            definition.format().refusal()
-        } else {
-            ErrorCode::InvalidRequest
-        }
-        .into());
-    }
+    refuse_unaccepted(definition, &input.value)?;
     // A version is a number the server gave out: it never counts below zero.
     if input.version.is_some_and(|version| version < 0) {
         return Err(ErrorCode::InvalidRequest.into());
@@ -510,6 +501,9 @@ pub async fn change_setting<S: AuthStore>(
     let layers = ctx.layers_of(scope, None).await?;
     if scope != Scope::Organization && layers.resolve(definition).locked {
         return Err(ErrorCode::SettingLocked.into());
+    }
+    if shortens_the_keep_period_below_the_law(&layers, definition, &input.value) {
+        return Err(ErrorCode::KeepYearsTooShort.into());
     }
     let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let forgets = moves_the_mail_server(scope, &layers, definition, &input.value);
@@ -569,6 +563,35 @@ pub async fn change_setting<S: AuthStore>(
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
     Ok(evaluation.authorize(view))
+}
+
+/// Refuses a value the setting does not accept. A text its format refuses has the format's answer
+/// (a list of hosts with an address in it, a zone the server does not know), in plain words;
+/// anything else is an invalid request.
+fn refuse_unaccepted(definition: &SettingDefinition, value: &SettingValue) -> Result<(), AppError> {
+    if definition.accepts(value) {
+        return Ok(());
+    }
+    let format_refused =
+        matches!(value, SettingValue::Text(text) if !definition.format().accepts(text));
+    Err(if format_refused {
+        definition.format().refusal()
+    } else {
+        ErrorCode::InvalidRequest
+    }
+    .into())
+}
+
+/// Whether `new` is a keep period of work days below what the preset *Germany* asks for, while that
+/// preset holds (ADR-0035, decision 7): the one rule is `keep_years_allowed`.
+fn shortens_the_keep_period_below_the_law(
+    layers: &Layers,
+    definition: &SettingDefinition,
+    new: &SettingValue,
+) -> bool {
+    definition.key() == WORKING_HOURS_KEEP_YEARS.definition().key()
+        && matches!(new, SettingValue::Integer(years)
+            if !keep_years_allowed(preset_of(layers), *years))
 }
 
 /// Whether setting `definition` to `new` on `scope` moves the organization to another mail server:

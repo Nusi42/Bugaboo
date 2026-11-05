@@ -4,7 +4,7 @@ use super::{
     ApiError, Authorized, BTreeMap, ContentBuilder, DefaultValue, Deserialize, Format,
     IntoResponses, Level, Masked, PROBLEM_CONTENT_TYPE, ProjectLabel, Ref, RefOr, Response,
     ResponseBuilder, ResponseDescription, Serialize, SettingList, SettingSource, SettingValue,
-    SettingView, ToSchema, answer_authorized, problem_answers,
+    SettingView, ToSchema, Unit, answer_authorized, problem_answers,
 };
 
 use crate::api::projects::ProjectRef;
@@ -78,6 +78,22 @@ pub(super) enum SettingFormat {
     WindowSizes,
     /// A list of host names separated by commas.
     Hosts,
+}
+
+/// What a whole number counts in, when it is drawn as more than a bare number.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(super) enum SettingUnit {
+    /// Minutes of time: drawn and typed as a length.
+    Minutes,
+}
+
+impl From<Unit> for SettingUnit {
+    fn from(unit: Unit) -> Self {
+        match unit {
+            Unit::Minutes => Self::Minutes,
+        }
+    }
 }
 
 /// Where a setting can be set.
@@ -195,6 +211,9 @@ pub(crate) struct SettingBody {
     /// For a whole number: the smallest and the largest value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) bounds: Option<BoundsBody>,
+    /// For a whole number: what it counts in, when it is not a bare number.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) unit: Option<SettingUnit>,
     /// For a list in a text: its size.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) list: Option<ListLimitsBody>,
@@ -254,6 +273,7 @@ impl From<&SettingView> for SettingBody {
             bounds: definition
                 .bounds()
                 .map(|(least, most)| BoundsBody { least, most }),
+            unit: definition.unit().map(SettingUnit::from),
             list: definition
                 .list_limits()
                 .map(|(most_items, longest_item)| ListLimitsBody {

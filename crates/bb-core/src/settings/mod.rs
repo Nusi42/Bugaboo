@@ -99,12 +99,22 @@ pub(crate) struct Words {
     pub(crate) help: MessageKey,
 }
 
+/// What a whole number counts in, when the form should write it as more than a bare number: the
+/// browser draws a number of minutes as a length (`1h 30m`) and reads it back with the one reader
+/// of lengths (ADR-0035).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Unit {
+    /// Minutes of time.
+    Minutes,
+}
+
 /// The limits a setting can declare: the bounds of a whole number, the size of a list.
 #[derive(Clone, Copy)]
 pub(crate) struct Limits {
     pub(crate) bounds: Option<(i64, i64)>,
     pub(crate) list: Option<(usize, usize)>,
     pub(crate) format: Format,
+    pub(crate) unit: Option<Unit>,
 }
 
 /// Everything the registry knows about one setting, whatever its type.
@@ -120,6 +130,7 @@ pub struct SettingDefinition {
     bounds: Option<(i64, i64)>,
     list: Option<(usize, usize)>,
     format: Format,
+    unit: Option<Unit>,
 }
 
 impl SettingDefinition {
@@ -144,7 +155,14 @@ impl SettingDefinition {
             bounds: limits.bounds,
             list: limits.list,
             format: limits.format,
+            unit: limits.unit,
         }
+    }
+
+    /// What a whole number counts in, if the form should write it as more than a bare number.
+    #[must_use]
+    pub const fn unit(&self) -> Option<Unit> {
+        self.unit
     }
 
     /// The kind of text the setting holds, and the choices when it has a list.
@@ -446,7 +464,8 @@ macro_rules! settings {
             lockable: $lockable:literal
             $(, bounds: ($least:literal, $most:literal))?
             $(, list: ($items:literal, $length:literal))?
-            $(, format: $format:expr)? $(,)?
+            $(, format: $format:expr)?
+            $(, unit: $unit:ident)? $(,)?
         }
     )+) => {
         $(
@@ -476,6 +495,12 @@ macro_rules! settings {
                     format: {
                         let all: [$crate::settings::Format; _] =
                             [$crate::settings::Format::Free $(, $format)?];
+                        all[all.len() - 1]
+                    },
+                    // What a number counts in: nothing unless the setting says so.
+                    unit: {
+                        let all: [Option<$crate::settings::Unit>; _] =
+                            [None $(, Some($crate::settings::Unit::$unit))?];
                         all[all.len() - 1]
                     },
                 },

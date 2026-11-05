@@ -1066,6 +1066,10 @@ pub const ERROR_WORKING_HOURS_DAY_RUNNING: MessageKey =
 pub const ERROR_WORKING_HOURS_IN_THE_FUTURE: MessageKey =
     MessageKey::new("error.working-hours.in-the-future");
 
+/// The message `error.working-hours.keep-years-too-short`.
+pub const ERROR_WORKING_HOURS_KEEP_YEARS_TOO_SHORT: MessageKey =
+    MessageKey::new("error.working-hours.keep-years-too-short");
+
 /// The message `error.working-hours.no-break-running`.
 pub const ERROR_WORKING_HOURS_NO_BREAK_RUNNING: MessageKey =
     MessageKey::new("error.working-hours.no-break-running");
@@ -13767,6 +13771,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A work day records what has happened. Times later than now cannot be saved yet.",
     ),
     (
+        "error.working-hours.keep-years-too-short",
+        "With the rules of Germany, work days are kept for 2 years at least. Choose No rules first, or keep them longer.",
+    ),
+    (
         "error.working-hours.no-break-running",
         "No break is running.",
     ),
@@ -17348,35 +17356,35 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.window.sizes.name", "Your window sizes"),
     (
         "setting.working-hours.day-minutes-max.help",
-        "A day with more work gets a warning. Germany: 600 minutes, which is 10 hours.",
+        "A day with more work gets a warning.",
     ),
     (
         "setting.working-hours.day-minutes-max.name",
-        "Most work in a day (minutes)",
+        "Longest work day",
     ),
     (
         "setting.working-hours.first-break-after-minutes.help",
-        "A day with more work than this needs the first break. Germany: 360 minutes, which is 6 hours.",
+        "A day with more work than this needs the first break.",
     ),
     (
         "setting.working-hours.first-break-after-minutes.name",
-        "First break after (minutes of work)",
+        "First break is due after",
     ),
     (
         "setting.working-hours.first-break-minutes.help",
-        "How long the breaks of such a day are together at least. Germany: 30 minutes.",
+        "How long the breaks of such a day are together at least.",
     ),
     (
         "setting.working-hours.first-break-minutes.name",
-        "First break (minutes)",
+        "First break",
     ),
     (
         "setting.working-hours.in-a-row-minutes-max.help",
-        "Work in a row longer than this, without a break that counts, gets a warning. Germany: 360 minutes, which is 6 hours.",
+        "Work in a row longer than this, without a break that counts, gets a warning.",
     ),
     (
         "setting.working-hours.in-a-row-minutes-max.name",
-        "Most work in a row (minutes)",
+        "Longest stretch without a break",
     ),
     (
         "setting.working-hours.keep-years.help",
@@ -17393,35 +17401,35 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.working-hours.preset.name", "Working-time rules"),
     (
         "setting.working-hours.rest-minutes-min.help",
-        "Less rest between the end of one work day and the start of the next gets a warning. Germany: 660 minutes, which is 11 hours.",
+        "Less rest between the end of one work day and the start of the next gets a warning.",
     ),
     (
         "setting.working-hours.rest-minutes-min.name",
-        "Least rest between two work days (minutes)",
+        "Rest between two work days",
     ),
     (
         "setting.working-hours.second-break-after-minutes.help",
-        "A day with more work than this needs the longer break. Germany: 540 minutes, which is 9 hours.",
+        "A day with more work than this needs the longer break.",
     ),
     (
         "setting.working-hours.second-break-after-minutes.name",
-        "Longer break after (minutes of work)",
+        "Longer break is due after",
     ),
     (
         "setting.working-hours.second-break-minutes.help",
-        "How long the breaks of such a day are together at least. Germany: 45 minutes.",
+        "How long the breaks of such a day are together at least.",
     ),
     (
         "setting.working-hours.second-break-minutes.name",
-        "Longer break (minutes)",
+        "Longer break",
     ),
     (
         "setting.working-hours.shortest-break-minutes.help",
-        "A shorter break does not count for the rules. Germany: 15 minutes.",
+        "A shorter break does not count for the rules.",
     ),
     (
         "setting.working-hours.shortest-break-minutes.name",
-        "Shortest break that counts (minutes)",
+        "Shortest break that counts",
     ),
     (
         "setting.working-hours.totals-only.help",

@@ -104,6 +104,47 @@ async fn time_02_a_change_of_billable_is_in_the_security_log() -> Outcome {
 }
 
 #[tokio::test]
+async fn time_10_the_keep_period_cannot_go_below_two_years_with_the_germany_preset() -> Outcome {
+    let world = World::new().await?;
+    let events = world.store.event_count();
+    let code = refused(
+        change(
+            &world,
+            SettingsScope::Organization,
+            "working-hours.keep-years",
+            SettingValue::Integer(1),
+        )
+        .await,
+    );
+    assert_eq!(code, ErrorCode::KeepYearsTooShort);
+    assert_eq!(world.store.event_count(), events);
+    // Two years is the law's least; without rules one year is the organization's own choice.
+    for (preset, years, allowed) in [
+        ("germany", 2, true),
+        ("no-rules", 1, true),
+        ("germany", 1, false),
+    ] {
+        change(
+            &world,
+            SettingsScope::Organization,
+            "working-hours.preset",
+            text(preset),
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+        let result = change(
+            &world,
+            SettingsScope::Organization,
+            "working-hours.keep-years",
+            SettingValue::Integer(years),
+        )
+        .await;
+        assert_eq!(result.is_ok(), allowed, "{preset} {years}");
+    }
+    Ok(())
+}
+
+#[tokio::test]
 async fn cfg_06_the_event_says_what_the_value_was_and_what_it_became() -> Outcome {
     let world = World::new().await?;
     change(

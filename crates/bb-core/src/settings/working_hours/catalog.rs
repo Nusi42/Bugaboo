@@ -45,6 +45,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_DAY_MINUTES_MAX_HELP,
         lockable: false,
         bounds: (60, 1440),
+        unit: Minutes,
     }
 
     /// After how many minutes of work the first break is due (Working Hours Act §4: more than 6 hours).
@@ -57,6 +58,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_FIRST_BREAK_AFTER_MINUTES_HELP,
         lockable: false,
         bounds: (60, 1440),
+        unit: Minutes,
     }
 
     /// How many minutes of break are due after that (Working Hours Act §4: 30 minutes).
@@ -69,6 +71,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_FIRST_BREAK_MINUTES_HELP,
         lockable: false,
         bounds: (0, 240),
+        unit: Minutes,
     }
 
     /// After how many minutes of work the longer break is due (Working Hours Act §4: more than 9 hours).
@@ -81,6 +84,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_SECOND_BREAK_AFTER_MINUTES_HELP,
         lockable: false,
         bounds: (60, 1440),
+        unit: Minutes,
     }
 
     /// How many minutes of break are due after that (Working Hours Act §4: 45 minutes).
@@ -93,6 +97,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_SECOND_BREAK_MINUTES_HELP,
         lockable: false,
         bounds: (0, 240),
+        unit: Minutes,
     }
 
     /// The shortest break that counts, in minutes: a shorter one counts neither as a break nor
@@ -106,6 +111,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_SHORTEST_BREAK_MINUTES_HELP,
         lockable: false,
         bounds: (1, 120),
+        unit: Minutes,
     }
 
     /// The most minutes of work in a row without a break that counts (Working Hours Act §4: 6 hours).
@@ -118,6 +124,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_IN_A_ROW_MINUTES_MAX_HELP,
         lockable: false,
         bounds: (60, 1440),
+        unit: Minutes,
     }
 
     /// The fewest minutes of rest between the end of one work day and the start of the next
@@ -131,6 +138,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_REST_MINUTES_MIN_HELP,
         lockable: false,
         bounds: (0, 1440),
+        unit: Minutes,
     }
 
     /// How many whole years from its date a work day is kept at least (the keep period, ADR-0035,
