@@ -5,16 +5,19 @@ import { SettingsForm } from "./SettingsForm.tsx";
 export interface OrganizationTopicProps {
   /** The settings of this page: the beginnings of their keys, separated by commas. */
   readonly topics: string;
+  /** Whether the form has a search box; a page of a few settings does not need one. */
+  readonly searchable?: boolean;
 }
 
 /** The organization's settings of one page, drawn by the generic form, with the lock for administrators. */
-export function OrganizationTopic({ topics }: OrganizationTopicProps) {
+export function OrganizationTopic({ topics, searchable }: OrganizationTopicProps) {
   const { settings, failed, edits } = useOrganizationSettings(topics);
   return (
     <QueryGate error={failed} data={settings} loading={null}>
       {(shown) => (
         <SettingsForm
           settings={shown.settings}
+          {...(searchable === undefined ? {} : { searchable })}
           saveState={edits.saveState}
           problem={edits.problem}
           actions={{

@@ -359,6 +359,14 @@ export interface MessageArguments {
   "notifications.taken-over": { who: string | number };
   "notifications.work-day-changed": { date: string | number; who: string | number };
   "notifications.work-day-reason": { reason: string | number };
+  "old-work-days.delete-all-text": { count: number };
+  "old-work-days.delete-all-title": { count: number };
+  "old-work-days.delete-person-name": { name: string | number };
+  "old-work-days.delete-person-text": { count: number; name: string | number };
+  "old-work-days.delete-person-title": { name: string | number };
+  "old-work-days.deleted": { count: number };
+  "old-work-days.person-count": { count: number };
+  "old-work-days.summary": { count: number; date: string | number; years: number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
@@ -545,11 +553,13 @@ export interface MessageArguments {
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
   "setting.ui.between": { least: string | number; most: string | number };
+  "setting.ui.between-lengths": { least: string | number; most: string | number };
   "setting.ui.device-zone": { zone: string | number };
   "setting.ui.example-moment": { moment: string | number };
   "setting.ui.example-number": { number: string | number };
   "setting.ui.reset-name": { name: string | number };
   "setting.ui.source-project": { project: string | number };
+  "setting.ui.standard-length": { length: string | number };
   "setup.ask.replace": { path: string | number };
   "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };

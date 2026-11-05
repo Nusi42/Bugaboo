@@ -7,7 +7,6 @@ export const messages = {
   "setting.ui.nothing": "No setting matches your search.",
   "setting.ui.saved-at-once":
     "A switch or a choice is saved at once. What you type in a box is saved with the Save button under it.",
-  "setting.ui.reset-name": "Reset to default: {name}",
   "setting.ui.locked": "Set by your organization",
   "setting.ui.locked-why":
     "An administrator chose this for everyone, so you cannot change it here.",
@@ -19,11 +18,45 @@ export const messages = {
   "setting.ui.source-hidden-project": "From a project you cannot see",
   "setting.ui.source-person": "Your own choice",
   "setting.ui.device-zone": "Match my device ({zone})",
+  "setting.ui.between-lengths": "From {least} to {most}.",
+  "setting.ui.standard-length": "The default value is {length}.",
   "setting.page.sign-in-rules-intro":
     "How long people stay signed in, and the rules for signing in. They apply to everybody.",
   "setting.page.security-intro": "What the text that people write may show.",
+  "setting.page.working-hours-intro":
+    "How working hours are checked and kept, and who sees what of them. Every change here is written to the security log.",
   "setting.page.themes-intro":
     "The organization's choice of look. People can choose their own, unless you lock a setting.",
+  "old-work-days.title": "Work days past the keep period",
+  "old-work-days.intro": "Bugaboo counts them when you open this page.",
+  "old-work-days.none": "No work day is older than the keep period.",
+  "old-work-days.summary":
+    "{count, plural, one {# work day is} other {# work days are}} older than the keep period of {years, plural, one {# year} other {# years}}. These are the days before {date}.",
+  "old-work-days.person-count": "{count, plural, one {# work day} other {# work days}}",
+  "old-work-days.more-people":
+    "More people have old work days than are listed here. Delete all of them at once to include them.",
+  "old-work-days.nothing-by-itself":
+    "Bugaboo deletes nothing by itself. Delete them when your organization no longer needs them.",
+  "old-work-days.delete": "Delete them",
+  "old-work-days.delete-all": "Delete them all",
+  "old-work-days.delete-all-title":
+    "Delete {count, plural, one {# old work day} other {# old work days}}?",
+  "old-work-days.delete-all-text":
+    "This deletes {count, plural, one {# work day} other {# work days}} of everybody that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
+  "old-work-days.delete-person": "Delete them",
+  "old-work-days.delete-person-name": "Delete the old work days of {name}",
+  "old-work-days.delete-person-title": "Delete the old work days of {name}?",
+  "old-work-days.delete-person-text":
+    "This deletes {count, plural, one {# work day} other {# work days}} of {name} that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
+  "old-work-days.deleted":
+    "{count, plural, one {# work day was} other {# work days were}} deleted.",
+  "working-hours.who-title": "Who sees working hours",
+  "working-hours.who-intro":
+    "Everybody sees their own. Other people's working hours are seen only by those who hold the permission to see them.",
+  "working-hours.who-nobody":
+    "Nobody holds the permission to see other people's working hours yet. Give the role HR to a group to change that.",
+  "working-hours.who-holders":
+    "These groups and people hold the permission to see other people's working hours:",
 } as const;
 
 register(messages);

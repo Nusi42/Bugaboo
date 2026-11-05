@@ -40,12 +40,13 @@ export function sourceInWords(setting: Setting): string {
 }
 
 /** The kinds of control a setting is drawn with. */
-export type ControlKind = "switch" | "choices" | "list" | "time-zone" | "none" | "typed";
+export type ControlKind = "switch" | "choices" | "list" | "time-zone" | "none" | "typed" | "length";
 
 /**
  * The control that fits what a setting holds: the one place that says it. A switch for yes or no, a few
  * buttons (up to four choices) or a list for a fixed list of choices, a list of time zones, nothing for a
- * setting that has a page of its own, and else a box that is typed in, with its own Save button and its hint.
+ * setting that has a page of its own, a length for a number of minutes, and else a box that is typed in, with
+ * its own Save button and its hint.
  */
 export function controlKindOf(setting: Setting): ControlKind {
   const value = setting.value;
@@ -58,5 +59,14 @@ export function controlKindOf(setting: Setting): ControlKind {
   if (setting.format === "time-zone" && typeof value === "string") {
     return "time-zone";
   }
+  if (setting.kind === "whole-number" && setting.unit === "minutes" && typeof value === "number") {
+    return "length";
+  }
   return hasNoGenericControl(setting) ? "none" : "typed";
+}
+
+/** Whether the control is a box that is typed in, with its own Save button and the hint inside it. */
+export function isBox(setting: Setting): boolean {
+  const kind = controlKindOf(setting);
+  return kind === "typed" || kind === "length";
 }

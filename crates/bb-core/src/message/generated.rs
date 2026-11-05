@@ -1491,8 +1491,20 @@ pub const FIELDS_SEE_TITLE: MessageKey = MessageKey::new("fields.see-title");
 /// The message `fields.take-away`.
 pub const FIELDS_TAKE_AWAY: MessageKey = MessageKey::new("fields.take-away");
 
+/// The message `fields.time-default-from-above`.
+pub const FIELDS_TIME_DEFAULT_FROM_ABOVE: MessageKey =
+    MessageKey::new("fields.time-default-from-above");
+
 /// The message `fields.time-defaults`.
 pub const FIELDS_TIME_DEFAULTS: MessageKey = MessageKey::new("fields.time-defaults");
+
+/// The message `fields.time-defaults-project`.
+pub const FIELDS_TIME_DEFAULTS_PROJECT: MessageKey =
+    MessageKey::new("fields.time-defaults-project");
+
+/// The message `fields.time-defaults-project-intro`.
+pub const FIELDS_TIME_DEFAULTS_PROJECT_INTRO: MessageKey =
+    MessageKey::new("fields.time-defaults-project-intro");
 
 /// The message `fields.time-of-day`.
 pub const FIELDS_TIME_OF_DAY: MessageKey = MessageKey::new("fields.time-of-day");
@@ -2936,6 +2948,9 @@ pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 /// The message `nav.timesheet`.
 pub const NAV_TIMESHEET: MessageKey = MessageKey::new("nav.timesheet");
 
+/// The message `nav.working-hours`.
+pub const NAV_WORKING_HOURS: MessageKey = MessageKey::new("nav.working-hours");
+
 /// The message `notification.kind.assigned`.
 pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
 
@@ -3058,6 +3073,31 @@ pub const NOTIFICATIONS_START_NOTHING: MessageKey = MessageKey::new("notificatio
 
 /// The message `notifications.title`.
 pub const NOTIFICATIONS_TITLE: MessageKey = MessageKey::new("notifications.title");
+
+/// The message `old-work-days.delete`.
+pub const OLD_WORK_DAYS_DELETE: MessageKey = MessageKey::new("old-work-days.delete");
+
+/// The message `old-work-days.delete-all`.
+pub const OLD_WORK_DAYS_DELETE_ALL: MessageKey = MessageKey::new("old-work-days.delete-all");
+
+/// The message `old-work-days.delete-person`.
+pub const OLD_WORK_DAYS_DELETE_PERSON: MessageKey = MessageKey::new("old-work-days.delete-person");
+
+/// The message `old-work-days.intro`.
+pub const OLD_WORK_DAYS_INTRO: MessageKey = MessageKey::new("old-work-days.intro");
+
+/// The message `old-work-days.more-people`.
+pub const OLD_WORK_DAYS_MORE_PEOPLE: MessageKey = MessageKey::new("old-work-days.more-people");
+
+/// The message `old-work-days.none`.
+pub const OLD_WORK_DAYS_NONE: MessageKey = MessageKey::new("old-work-days.none");
+
+/// The message `old-work-days.nothing-by-itself`.
+pub const OLD_WORK_DAYS_NOTHING_BY_ITSELF: MessageKey =
+    MessageKey::new("old-work-days.nothing-by-itself");
+
+/// The message `old-work-days.title`.
+pub const OLD_WORK_DAYS_TITLE: MessageKey = MessageKey::new("old-work-days.title");
 
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
@@ -5043,6 +5083,10 @@ pub const SETTING_PAGE_START_PAGE_INTRO: MessageKey =
 /// The message `setting.page.themes-intro`.
 pub const SETTING_PAGE_THEMES_INTRO: MessageKey = MessageKey::new("setting.page.themes-intro");
 
+/// The message `setting.page.working-hours-intro`.
+pub const SETTING_PAGE_WORKING_HOURS_INTRO: MessageKey =
+    MessageKey::new("setting.page.working-hours-intro");
+
 /// The message `setting.region.date-format.day-month-year`.
 pub const SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR: MessageKey =
     MessageKey::new("setting.region.date-format.day-month-year");
@@ -6298,6 +6342,18 @@ pub const WORKFLOWS_WHO_REPORTER: MessageKey = MessageKey::new("workflows.who-re
 
 /// The message `workflows.who-roles`.
 pub const WORKFLOWS_WHO_ROLES: MessageKey = MessageKey::new("workflows.who-roles");
+
+/// The message `working-hours.who-holders`.
+pub const WORKING_HOURS_WHO_HOLDERS: MessageKey = MessageKey::new("working-hours.who-holders");
+
+/// The message `working-hours.who-intro`.
+pub const WORKING_HOURS_WHO_INTRO: MessageKey = MessageKey::new("working-hours.who-intro");
+
+/// The message `working-hours.who-nobody`.
+pub const WORKING_HOURS_WHO_NOBODY: MessageKey = MessageKey::new("working-hours.who-nobody");
+
+/// The message `working-hours.who-title`.
+pub const WORKING_HOURS_WHO_TITLE: MessageKey = MessageKey::new("working-hours.who-title");
 
 /// The message `working-time.preset.germany`.
 pub const WORKING_TIME_PRESET_GERMANY: MessageKey = MessageKey::new("working-time.preset.germany");
@@ -9434,6 +9490,85 @@ pub fn notifications_work_day_reason(reason: impl std::fmt::Display) -> Message 
     )
 }
 
+/// The message `old-work-days.delete-all-text`.
+#[must_use]
+pub fn old_work_days_delete_all_text(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.delete-all-text"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `old-work-days.delete-all-title`.
+#[must_use]
+pub fn old_work_days_delete_all_title(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.delete-all-title"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `old-work-days.delete-person-name`.
+#[must_use]
+pub fn old_work_days_delete_person_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.delete-person-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `old-work-days.delete-person-text`.
+#[must_use]
+pub fn old_work_days_delete_person_text(count: i64, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.delete-person-text"),
+        vec![
+            ("count", Value::Number(count)),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `old-work-days.delete-person-title`.
+#[must_use]
+pub fn old_work_days_delete_person_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.delete-person-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `old-work-days.deleted`.
+#[must_use]
+pub fn old_work_days_deleted(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.deleted"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `old-work-days.person-count`.
+#[must_use]
+pub fn old_work_days_person_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.person-count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `old-work-days.summary`.
+#[must_use]
+pub fn old_work_days_summary(count: i64, date: impl std::fmt::Display, years: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-work-days.summary"),
+        vec![
+            ("count", Value::Number(count)),
+            ("date", Value::Text(date.to_string())),
+            ("years", Value::Number(years)),
+        ],
+    )
+}
+
 /// The message `own.ask-text`.
 #[must_use]
 pub fn own_ask_text(lost: impl std::fmt::Display) -> Message {
@@ -11384,6 +11519,21 @@ pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Di
     )
 }
 
+/// The message `setting.ui.between-lengths`.
+#[must_use]
+pub fn setting_ui_between_lengths(
+    least: impl std::fmt::Display,
+    most: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.between-lengths"),
+        vec![
+            ("least", Value::Text(least.to_string())),
+            ("most", Value::Text(most.to_string())),
+        ],
+    )
+}
+
 /// The message `setting.ui.device-zone`.
 #[must_use]
 pub fn setting_ui_device_zone(zone: impl std::fmt::Display) -> Message {
@@ -11426,6 +11576,15 @@ pub fn setting_ui_source_project(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("setting.ui.source-project"),
         vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `setting.ui.standard-length`.
+#[must_use]
+pub fn setting_ui_standard_length(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.standard-length"),
+        vec![("length", Value::Text(length.to_string()))],
     )
 }
 
@@ -14032,8 +14191,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.see-title", "Who can see it"),
     ("fields.take-away", "Take away"),
     (
+        "fields.time-default-from-above",
+        "Set by the project above:",
+    ),
+    (
         "fields.time-defaults",
         "Defaults for time booked on this issue",
+    ),
+    (
+        "fields.time-defaults-project",
+        "Defaults for time booked in this project",
+    ),
+    (
+        "fields.time-defaults-project-intro",
+        "Time booked on an issue of this project starts with these values, unless the issue has its own. Sub-projects use them too.",
     ),
     ("fields.time-of-day", "Time (hours and minutes, like 14:30)"),
     ("fields.unit-hour", "h"),
@@ -15234,6 +15405,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
     ("nav.timesheet", "Timesheet"),
+    ("nav.working-hours", "Working hours"),
     ("notification.kind.assigned", "An issue is assigned to you"),
     (
         "notification.kind.edit-notice",
@@ -15345,6 +15517,58 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} changed your work day of {date}",
     ),
     ("notifications.work-day-reason", "Why: {reason}"),
+    ("old-work-days.delete", "Delete them"),
+    ("old-work-days.delete-all", "Delete them all"),
+    (
+        "old-work-days.delete-all-text",
+        "This deletes {count, plural, one {# work day} other {# work days}} of everybody that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
+    ),
+    (
+        "old-work-days.delete-all-title",
+        "Delete {count, plural, one {# old work day} other {# old work days}}?",
+    ),
+    ("old-work-days.delete-person", "Delete them"),
+    (
+        "old-work-days.delete-person-name",
+        "Delete the old work days of {name}",
+    ),
+    (
+        "old-work-days.delete-person-text",
+        "This deletes {count, plural, one {# work day} other {# work days}} of {name} that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
+    ),
+    (
+        "old-work-days.delete-person-title",
+        "Delete the old work days of {name}?",
+    ),
+    (
+        "old-work-days.deleted",
+        "{count, plural, one {# work day was} other {# work days were}} deleted.",
+    ),
+    (
+        "old-work-days.intro",
+        "Bugaboo counts them when you open this page.",
+    ),
+    (
+        "old-work-days.more-people",
+        "More people have old work days than are listed here. Delete all of them at once to include them.",
+    ),
+    (
+        "old-work-days.none",
+        "No work day is older than the keep period.",
+    ),
+    (
+        "old-work-days.nothing-by-itself",
+        "Bugaboo deletes nothing by itself. Delete them when your organization no longer needs them.",
+    ),
+    (
+        "old-work-days.person-count",
+        "{count, plural, one {# work day} other {# work days}}",
+    ),
+    (
+        "old-work-days.summary",
+        "{count, plural, one {# work day is} other {# work days are}} older than the keep period of {years, plural, one {# year} other {# years}}. These are the days before {date}.",
+    ),
+    ("old-work-days.title", "Work days past the keep period"),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -17212,6 +17436,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The organization's choice of look. People can choose their own, unless you lock a setting.",
     ),
     (
+        "setting.page.working-hours-intro",
+        "How working hours are checked and kept, and who sees what of them. Every change here is written to the security log.",
+    ),
+    (
         "setting.region.date-format.day-month-year",
         "Day, month, year (31.12.2026)",
     ),
@@ -17310,6 +17538,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.ui.between",
         "Whole numbers from {least} to {most}.",
     ),
+    ("setting.ui.between-lengths", "From {least} to {most}."),
     ("setting.ui.device-zone", "Match my device ({zone})"),
     (
         "setting.ui.example-moment",
@@ -17348,6 +17577,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("setting.ui.source-person", "Your own choice"),
     ("setting.ui.source-project", "From {project}"),
+    (
+        "setting.ui.standard-length",
+        "The default value is {length}.",
+    ),
     ("setting.ui.whole-number", "Enter a whole number."),
     (
         "setting.window.sizes.help",
@@ -18225,6 +18458,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),
+    (
+        "working-hours.who-holders",
+        "These groups and people hold the permission to see other people's working hours:",
+    ),
+    (
+        "working-hours.who-intro",
+        "Everybody sees their own. Other people's working hours are seen only by those who hold the permission to see them.",
+    ),
+    (
+        "working-hours.who-nobody",
+        "Nobody holds the permission to see other people's working hours yet. Give the role HR to a group to change that.",
+    ),
+    ("working-hours.who-title", "Who sees working hours"),
     ("working-time.preset.germany", "Germany"),
     ("working-time.preset.no-rules", "No rules"),
     (

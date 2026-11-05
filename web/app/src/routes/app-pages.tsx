@@ -33,6 +33,11 @@ const ThemesScreen = lazyRouteComponent(
   "ThemesPage",
 );
 
+const WorkingHoursScreen = lazyRouteComponent(
+  () => import("../features/settings/index.ts"),
+  "WorkingHoursPage",
+);
+
 export const homeRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.home,
@@ -164,6 +169,19 @@ export const signInRulesRoute = createRoute({
     return (
       <OnlyWith path={paths.signInRules}>
         <SignInRulesScreen />
+      </OnlyWith>
+    );
+  },
+});
+
+export const workingHoursRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.workingHours,
+  loader: loadsScreen(WorkingHoursScreen),
+  component: function WorkingHours() {
+    return (
+      <OnlyWith path={paths.workingHours}>
+        <WorkingHoursScreen />
       </OnlyWith>
     );
   },

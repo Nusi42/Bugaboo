@@ -5,7 +5,7 @@ import { type ReactNode } from "react";
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { controlKindOf, sourceInWords, wordsOf } from "./texts.ts";
+import { isBox, sourceInWords, wordsOf } from "./texts.ts";
 
 /** A control a page draws for one setting instead of the generic one (a theme with its sample). */
 export type ControlRenderer = (
@@ -117,7 +117,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
   };
   // A box that is typed in has its explanation inside, with its field; every other control, and a setting that is
   // locked (no box), has it under it.
-  const helpWithField = !lockedBelow && control === undefined && controlKindOf(setting) === "typed";
+  const helpWithField = !lockedBelow && control === undefined && isBox(setting);
   return (
     <li {...partOf(part.box)}>
       {helpWithField ? (

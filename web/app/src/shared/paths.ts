@@ -44,6 +44,7 @@ export const paths = {
   signInRules: "/settings/sign-in-rules",
   organizationSecurity: "/settings/security",
   themes: "/settings/themes",
+  workingHours: "/settings/working-hours",
   status: "/settings/status",
   mailServer: "/settings/email",
   projects: "/settings/projects",

@@ -239,6 +239,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.labels"),
     t("layouts.nav"),
     t("workflows.nav"),
+    t("nav.working-hours"),
     t("nav.mail-server"),
     t("nav.organization-security"),
     t("nav.status"),

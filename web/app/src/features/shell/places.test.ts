@@ -120,6 +120,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.roles,
       paths.signInRules,
       paths.themes,
+      paths.workingHours,
       paths.mailServer,
       paths.organizationSecurity,
       paths.status,

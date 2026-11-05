@@ -14,7 +14,7 @@ import { useState } from "react";
 import { type Setting } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingRow, type ControlRenderer } from "./SettingRow.tsx";
-import { controlKindOf, hasNoGenericControl, wordsOf } from "./texts.ts";
+import { hasNoGenericControl, isBox, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
@@ -50,9 +50,7 @@ function howSaved(
   if (isLockedBelow(setting, actions)) {
     return "never";
   }
-  return !hasOwnControl(setting, controls) && controlKindOf(setting) === "typed"
-    ? "with-save"
-    : "at-once";
+  return !hasOwnControl(setting, controls) && isBox(setting) ? "with-save" : "at-once";
 }
 
 /** Whether every word the person typed is in the name or the explanation of the setting. */

@@ -6,6 +6,7 @@ export { FieldsPage } from "./FieldsPage.tsx";
 export { LengthBox, type LengthBoxProps } from "./LengthBox.tsx";
 export { OwnFieldInput, type OwnFieldInputProps } from "./OwnFieldInput.tsx";
 export { OwnFieldsOfProject } from "./project-fields.tsx";
+export { TimeDefaultsOfProject } from "./TimeDefaultsOfProject.tsx";
 export { useFieldName } from "./use-field-name.ts";
 export { timeEntryFieldsFor, useFields, type OwnField } from "./fields.ts";
 export { registerFields } from "./register.ts";

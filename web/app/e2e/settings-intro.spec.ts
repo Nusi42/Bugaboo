@@ -32,6 +32,7 @@ const pages = [
   paths.labels,
   paths.layouts,
   paths.workflows,
+  paths.workingHours,
   paths.mailServer,
   paths.status,
   paths.appearance,

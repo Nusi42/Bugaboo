@@ -3,9 +3,9 @@ import { Card, cardLook } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
-import { ProjectSettingsSection } from "../settings/index.ts";
 import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MoveProject } from "./MoveProject.tsx";
+import { ProjectSettingsCards } from "./ProjectSettingsCards.tsx";
 import { ProjectSettingsFrame } from "./ProjectSettingsFrame.tsx";
 import type { OneProject } from "./use-projects.ts";
 import { mayChangeProject, mayMoveProject } from "../../shared/project-pages.ts";
@@ -47,11 +47,7 @@ export function ProjectSettings({
           />
         </Card>
       ) : null}
-      {mayChange ? (
-        <Card heading={t("projects.issue-ids-title")}>
-          <ProjectSettingsSection projectId={id} />
-        </Card>
-      ) : null}
+      {mayChange ? <ProjectSettingsCards project={project} /> : null}
       {mayMove ? (
         <Card heading={t("projects.move-title")} intro={t("projects.move-text", { name })}>
           <MoveProject project={project} />

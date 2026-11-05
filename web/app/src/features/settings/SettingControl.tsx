@@ -15,6 +15,7 @@ import { useState } from "react";
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
 import { deviceTimeZone } from "../../shared/region.ts";
+import { LengthControl } from "./LengthControl.tsx";
 import { controlKindOf, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -127,6 +128,10 @@ export function SettingControl({ setting, onChange, help, source }: SettingContr
   }
   if (kind === "none") {
     return null;
+  }
+  if (kind === "length") {
+    // Keyed by the stored value, so the box shows the new value after a reset.
+    return <LengthControl key={String(value)} {...{ setting, onChange, help, source }} />;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.
   return <TypedControl key={String(value)} {...{ setting, onChange, help, source }} />;

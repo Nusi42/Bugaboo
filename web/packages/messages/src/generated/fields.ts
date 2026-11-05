@@ -83,6 +83,10 @@ export const messages = {
   "fields.offer-again": "Offer this field again",
   "fields.value-of": "Value of {name}",
   "fields.project-heading": "Project fields",
+  "fields.time-defaults-project": "Defaults for time booked in this project",
+  "fields.time-defaults-project-intro":
+    "Time booked on an issue of this project starts with these values, unless the issue has its own. Sub-projects use them too.",
+  "fields.time-default-from-above": "Set by the project above:",
   "fields.time-defaults": "Defaults for time booked on this issue",
   "fields.unknown-choice": "A choice that is gone",
   "fields.hidden-reference": "Not shown",
