@@ -49,6 +49,7 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   Tags,
+  TriangleAlert,
   Undo2,
   UserCog,
   UserPlus,
@@ -122,6 +123,7 @@ export const iconName = {
   stop: "stop",
   undo: "undo",
   up: "up",
+  warning: "warning",
   widen: "widen",
 } as const;
 
@@ -187,5 +189,6 @@ export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   stop: CircleStop,
   undo: Undo2,
   up: ChevronUp,
+  warning: TriangleAlert,
   widen: PanelLeftOpen,
 };

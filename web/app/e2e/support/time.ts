@@ -76,6 +76,12 @@ export async function startedMinutesAgo(session: ApiSession, minutes: number): P
   );
 }
 
+/** Whether the server has marked the person's timer as running longer than a work day (its job does, a little after). */
+export async function timerRunsLong(session: ApiSession): Promise<boolean> {
+  const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
+  return timer.running?.runs_long === true;
+}
+
 /** The readable ID of the issue the person's timer runs on; none while it stands still. */
 export async function timerRunsOn(session: ApiSession): Promise<string | undefined> {
   const timer = dataOf(await session.client.GET("/api/v1/me/timer"));

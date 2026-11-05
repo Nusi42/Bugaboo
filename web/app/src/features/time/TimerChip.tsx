@@ -1,10 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { ActionOverlay, Alert, alertTone, partOf, part } from "@bugaboo/ui";
+import { ActionOverlay, Alert, alertTone, Icon, iconName, partOf, part } from "@bugaboo/ui";
 import { Button } from "react-aria-components";
 
 import { timerActions, timerMenuTitle } from "./timer-actions.ts";
 import { TimerMenuHeading } from "./TimerMenuHeading.tsx";
+import { RunsLongWords } from "./RunsLong.tsx";
 import { useRunClock } from "./use-run-clock.ts";
 
 export interface TimerChipProps {
@@ -47,11 +48,16 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
           {...(onOpen === undefined ? {} : { onPress: onOpen })}
         >
           <span {...partOf(part.visuallyHidden)}>{nameOf(issue, narrow)}</span>
-          <span {...partOf(part.timerChipLive)} />
+          {running.runs_long ? (
+            <Icon name={iconName.warning} />
+          ) : (
+            <span {...partOf(part.timerChipLive)} />
+          )}
           {issue === undefined || narrow ? null : (
             <span {...partOf(part.timerChipIssue)}>{issue}</span>
           )}
           <span {...partOf(part.timerChipTime)}>{clock}</span>
+          <RunsLongWords running={running} />
         </Button>
       )}
     />

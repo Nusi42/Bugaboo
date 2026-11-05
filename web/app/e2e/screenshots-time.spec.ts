@@ -7,7 +7,7 @@ import { inFourChosenThemes } from "./support/four-themes.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
-import { chipOf, idleScene, scene, waitForParts } from "./support/time-scene.ts";
+import { chipOf, idleScene, longScene, scene, waitForParts } from "./support/time-scene.ts";
 
 // The screens of the timer and the work day (TIME-01, TIME-02, TIME-08) in the four themes, for the
 // review of the screens. They are only taken when `BB_SCREENSHOT_DIR` names the folder they go to.
@@ -111,6 +111,16 @@ test("stop timer under one minute", async ({ page, server }) => {
     await expect(
       page.getByRole("alertdialog", { name: t("time.stop.title", { issue: issue.key }) }),
     ).toContainText(t("time.stop.nothing", { issue: issue.key }));
+  });
+  await dispose();
+});
+
+test("a timer that runs longer than a work day", async ({ page, server }) => {
+  const { issue, dispose } = await longScene(server);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "long-timer", MILESTONE, paths.appearance, async () => {
+    await page.goto("/");
+    await expect(chipOf(page, issue.key).locator("svg")).toBeVisible();
   });
   await dispose();
 });

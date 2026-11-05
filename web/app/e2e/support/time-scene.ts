@@ -9,6 +9,7 @@ import {
   clearTimer,
   setTimeDefault,
   startedMinutesAgo,
+  timerRunsLong,
   starterField,
   startTimerOn,
 } from "./time.ts";
@@ -45,6 +46,21 @@ export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
   await startedMinutesAgo(admin, 42);
   await admin.client.POST("/api/v1/me/work-days/start", { body: {} });
   return { admin, issue };
+}
+
+/** Longer than any work day: the minutes a timer is started back to run long. */
+const LONG_RUN_MINUTES = 1000;
+
+/** How long the job that marks a long timer may take, in the test server. */
+const LONG_JOB_WAIT_MS = 120_000;
+
+/** An issue and a timer that has run longer than a work day, once the server has marked it so. */
+export async function longScene(server: Parameters<typeof signedInAdmin>[0]) {
+  const idle = await idleScene(server);
+  await idle.start();
+  await startedMinutesAgo(idle.admin, LONG_RUN_MINUTES);
+  await expect.poll(() => timerRunsLong(idle.admin), { timeout: LONG_JOB_WAIT_MS }).toBe(true);
+  return idle;
 }
 
 /** The timer part of the sidebar or the bar and the work day, whichever the window shows. */
