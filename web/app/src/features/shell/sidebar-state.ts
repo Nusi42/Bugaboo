@@ -52,25 +52,3 @@ export function useNarrowSidebarWhile(active: boolean): void {
     };
   }, [active]);
 }
-
-/** What the person chose for the group at the bottom of a sidebar in a low window; none (null) until they chose. */
-const foldChoice = createStore<boolean | null>(null);
-
-/**
- * Whether the group at the bottom of the sidebar (*My settings* and the rest) is folded behind one
- * button: only in a window too low for it (M5-F150), folded at first and opened by the person.
- * In a window with room it is never folded and has no button.
- */
-export function useSidebarFold(short: boolean): {
-  readonly folded: boolean;
-  readonly toggle: () => void;
-} {
-  const choice = useSyncExternalStore(foldChoice.subscribe, foldChoice.snapshot);
-  const folded = short && (choice ?? true);
-  return {
-    folded,
-    toggle: () => {
-      foldChoice.replace(!folded);
-    },
-  };
-}
