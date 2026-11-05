@@ -27,7 +27,7 @@ export function Bottom({ narrow, inDrawer, organizationSettings, onNavigate }: B
       {short ? (
         <li>
           <NavButton
-            icon={iconName.settings}
+            icon={iconName.more}
             label={t("shell.group-fold")}
             narrow={narrow}
             isExpanded={!folded}

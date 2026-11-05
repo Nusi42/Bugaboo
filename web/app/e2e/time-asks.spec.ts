@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
-import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -50,17 +49,18 @@ test("time_01 the windows of the timer are good in every look", async ({ page, s
 });
 
 test("time_08 the questions of the work day are good in every look", async ({ page, server }) => {
-  const { issue, dispose } = await idleScene(server);
+  const { issue, workDayStarted, dispose } = await idleScene(server);
   await signIn(page, ada);
-  await page.goto(issueAddress(issue.key));
+  await openIssueWithDetails(page, issue.key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
   const asked = page.getByRole("alertdialog", { name: t("time.work-day.too-title") });
   await expect(asked).toBeVisible();
   await expectGoodInEveryLook(page);
   await asked.getByRole("button", { name: t("time.work-day.too-yes"), exact: true }).click();
-  await expect(page.getByText(/^Working since/u)).toBeVisible();
   // The work day ends while the timer runs: *Stop the timer on … too?*.
+  await expect.poll(workDayStarted).toBe(true);
   await page.goto("/");
+  await expect(page.getByText(/^Working since/u)).toBeVisible();
   await page.waitForTimeout(1100);
   await page.getByRole("button", { name: t("time.work-day.end"), exact: true }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
@@ -97,7 +97,7 @@ test("time_01 the issue page shows the running timer in a row of its own", async
   const row = page.getByRole("term").filter({ hasText: t("time.timer.row") });
   await expect(row).toBeVisible();
   // The clock is in hours and minutes, and *Stop* opens *Stop timer*.
-  await expect(page.getByText("0:42", { exact: true })).toBeVisible();
+  await expect(page.getByText("0:42", { exact: true }).first()).toBeVisible();
   await page
     .getByRole("button", { name: t("time.timer.bar-stop"), exact: true })
     .first()

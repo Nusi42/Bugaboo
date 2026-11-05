@@ -107,7 +107,8 @@ test("time_08 starting a timer before the work day asks to start it too", async 
   await expect(question).toContainText(t("time.work-day.too-text", { issue: issue.key }));
   await question.getByRole("button", { name: t("time.work-day.too-yes"), exact: true }).click();
   await expect(question).toHaveCount(0);
-  expect(await workDayRuns(admin)).toBe(true);
+  // The work day starts after the question closes: the answer is waited for.
+  await expect.poll(() => workDayRuns(admin)).toBe(true);
   expect(await timerRunsOn(admin)).toBe(issue.key);
   await clearTimer(admin);
   await admin.dispose();

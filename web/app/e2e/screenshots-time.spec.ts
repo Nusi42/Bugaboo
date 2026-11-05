@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { inFourChosenThemes } from "./support/four-themes.ts";
+import { inFourChosenThemes, inFourChosenThemesAsWindow } from "./support/four-themes.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -76,7 +76,7 @@ test("the issue page with the timer", async ({ page, server }) => {
     await expect(
       page
         .getByRole("button", {
-          name: new RegExp(`^(${t("time.timer.bar-stop")}|${t("time.timer.stop-timer")})$`, "u"),
+          name: new RegExp(`^${t("time.timer.bar-stop")}`, "u"),
         })
         .first(),
     ).toBeVisible();
@@ -119,12 +119,20 @@ test("the folded group of the sidebar, opened, in a window 600 px high", async (
   const { admin, issue } = await scene(server);
   await page.setViewportSize({ width: 1280, height: 600 });
   await signIn(page, ada);
-  await inFourChosenThemes(page, "sidebar-600-open", MILESTONE, paths.appearance, async () => {
-    await page.goto("/");
-    await waitForParts(page, issue.key);
-    await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
-    await expect(page.getByRole("link", { name: t("nav.my-settings"), exact: true })).toBeVisible();
-  });
+  await inFourChosenThemesAsWindow(
+    page,
+    "sidebar-600-open",
+    MILESTONE,
+    paths.appearance,
+    async () => {
+      await page.goto("/");
+      await waitForParts(page, issue.key);
+      await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
+      await expect(
+        page.getByRole("link", { name: t("nav.my-settings"), exact: true }),
+      ).toBeVisible();
+    },
+  );
   await admin.dispose();
 });
 

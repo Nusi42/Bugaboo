@@ -101,7 +101,9 @@ test("time_01 stop timer shows activity and cost center from the issue", async (
   await expect(window).toHaveCount(0);
   await expect(chipOn(page, issue.key)).toHaveCount(0);
   await expect(
-    page.getByText(t("time.timer.saved", { length: "42m", issue: issue.key }), { exact: true }),
+    page
+      .getByText(t("time.timer.saved", { length: "42m", issue: issue.key }), { exact: true })
+      .first(),
   ).toBeVisible();
   const [saved] = await entriesBookedOn(admin, issue);
   expect(saved?.minutes).toBe(42);

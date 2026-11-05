@@ -11,7 +11,7 @@ import {
   starterField,
   startTimerOn,
 } from "./time.ts";
-import { endWorkDayIfRunning } from "./work-day.ts";
+import { endWorkDayIfRunning, workDayRuns } from "./work-day.ts";
 
 /** The button that is the running timer, on the issue with this ID. */
 export function chipOf(page: Page, issue: string) {
@@ -61,5 +61,6 @@ export async function idleScene(server: Parameters<typeof signedInAdmin>[0]) {
   };
   await reset();
   const start = (): Promise<void> => startTimerOn(admin, issue);
-  return { issue, reset, start, dispose: () => admin.dispose() };
+  const workDayStarted = (): Promise<boolean> => workDayRuns(admin);
+  return { issue, reset, start, workDayStarted, dispose: () => admin.dispose() };
 }

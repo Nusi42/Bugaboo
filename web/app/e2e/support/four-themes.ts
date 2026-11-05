@@ -2,7 +2,7 @@ import { type Page } from "@playwright/test";
 
 import { chooseTheme, themes, type Theme } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
-import { shotWholeAs } from "./screenshots.ts";
+import { shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 import { showTheme } from "./showcase.ts";
 
@@ -25,6 +25,8 @@ export async function inFourThemes(page: Page, name: string, milestone = MILESTO
 
 /** Which screen is taken, where it goes, and the address of *My settings › Appearance*. */
 interface ChosenShot {
+  /** The picture is the window as it is, not grown to the height of the page. */
+  readonly asWindow?: boolean;
   readonly name: string;
   readonly milestone: string;
   readonly appearance: string;
@@ -42,7 +44,12 @@ async function inChosen(
     chosen.map((theme) => async () => {
       await showTheme(page, theme, shot.appearance);
       await open();
-      await shotWholeAs(page, `${shot.name}-${layout}`, shot.milestone, theme.id);
+      await (shot.asWindow === true ? shootWindowAs : shotWholeAs)(
+        page,
+        `${shot.name}-${layout}`,
+        shot.milestone,
+        theme.id,
+      );
     }),
   );
 }
@@ -73,4 +80,15 @@ export async function inLightAndDarkChosen(
   open: () => Promise<void>,
 ): Promise<void> {
   await inChosen(page, { name, milestone, appearance }, lightAndDark, open);
+}
+
+/** As `inFourChosenThemes`, taking the window as it is: for a screen that depends on the height of the window. */
+export async function inFourChosenThemesAsWindow(
+  page: Page,
+  name: string,
+  milestone: string,
+  appearance: string,
+  open: () => Promise<void>,
+): Promise<void> {
+  await inChosen(page, { name, milestone, appearance, asWindow: true }, themes, open);
 }
