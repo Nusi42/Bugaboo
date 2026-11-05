@@ -12,7 +12,7 @@ import type { EntryDefaults } from "./use-entry-defaults.ts";
 export interface StopTimerBodyProps {
   readonly issue: EntryIssue;
   readonly defaults: EntryDefaults;
-  /** Whole minutes the timer has run; under one the window says nothing will be saved. */
+  /** Whole minutes the timer has run: at least one, or the window is not shown. */
   readonly minutes: number;
   readonly values: EntryValues;
   readonly onChange: (values: EntryValues) => void;

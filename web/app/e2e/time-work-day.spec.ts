@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
-import { clearTimer, startTimerOn, timerRunsOn } from "./support/time.ts";
+import { clearTimer, startedMinutesAgo, startTimerOn, timerRunsOn } from "./support/time.ts";
 import { endWorkDayIfRunning, workDayRuns } from "./support/work-day.ts";
 
 // The work day on screen (TIME-08): the four buttons and the line of today's hours, the question
@@ -66,6 +66,7 @@ test("time_08 ending the work day while a timer runs asks to stop the timer too"
   const issue = await createIssue(admin, "WEB", "Printer jams");
   await endWorkDayIfRunning(admin);
   await startTimerOn(admin, issue);
+  await startedMinutesAgo(admin, 5);
   await signIn(page, ada);
   await page.goto("/");
   await tap(page, "time.work-day.start");
@@ -131,10 +132,7 @@ test("time_08 not now is not asked again with the next timer of the day", async 
   await page.waitForTimeout(TAP_PAUSE_MS);
   await openIssueWithDetails(page, second.key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
-  // The issue page of a phone has no bar of the app: its own bar says the timer runs here.
-  await expect(
-    page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).first(),
-  ).toBeVisible();
+  await expect.poll(() => timerRunsOn(admin)).toBe(second.key);
   await expect(question).toHaveCount(0);
   expect(await workDayRuns(admin)).toBe(false);
   await clearTimer(admin);
