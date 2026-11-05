@@ -32,26 +32,30 @@ export function spread(numbers: readonly number[]): number {
   return Math.max(...numbers) - Math.min(...numbers);
 }
 
+/** *Status*, *Comment*, *Timer* and *More*: the four parts of the bar of an issue for a person who may book time on it. */
+export const BAR_PARTS = 4;
+
 /** The bar of actions fills its width in equal parts: the same width each, the same room at both ends and between them. */
-export async function expectEqualParts(bar: Locator): Promise<void> {
+export async function expectEqualParts(bar: Locator, parts: number = BAR_PARTS): Promise<void> {
   const buttons = bar.getByRole("button");
-  await expect(buttons).toHaveCount(3);
-  const boxes = await Promise.all([0, 1, 2].map((index) => boxOf(buttons.nth(index))));
+  await expect(buttons).toHaveCount(parts);
+  const indexes = Array.from({ length: parts }, (_, index) => index);
+  const boxes = await Promise.all(indexes.map((index) => boxOf(buttons.nth(index))));
   const whole = await boxOf(bar);
   const first = boxes.at(0);
   const last = boxes.at(-1);
   if (first === undefined || last === undefined) {
-    throw new TypeError("The bar has three buttons.");
+    throw new TypeError("The bar has buttons.");
   }
   const widths = await Promise.all(
-    [0, 1, 2].map(async (index) => (await boxOf(buttons.nth(index))).width),
+    indexes.map(async (index) => (await boxOf(buttons.nth(index))).width),
   );
   expect(spread(widths)).toBeLessThanOrEqual(1);
   const before = first.x - whole.x;
   const after = whole.x + whole.width - (last.x + last.width);
   expect(Math.abs(before - after)).toBeLessThanOrEqual(1);
-  // The gaps between the buttons are the padding of the bar: the three fill it.
-  expect(first.width * 3 + before * 4).toBeGreaterThanOrEqual(whole.width - 2);
+  // The gaps between the buttons are the padding of the bar: the parts fill it.
+  expect(first.width * parts + before * (parts + 1)).toBeGreaterThanOrEqual(whole.width - 2);
 }
 
 /** The color behind a part. */
