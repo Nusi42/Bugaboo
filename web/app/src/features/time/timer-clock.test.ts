@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { elapsedMinutes, elapsedSeconds } from "./timer-clock.ts";
+import { elapsedMinutes, elapsedSeconds, wasUnderMinute } from "./timer-clock.ts";
 
 describe("time_01 how long a timer has run", () => {
   it("counts from the moment the server says the timer started", () => {
@@ -16,6 +16,18 @@ describe("time_01 how long a timer has run", () => {
     const now = Date.parse("2027-01-14T08:39:30Z");
     const offset = 3 * 60 * 1000;
     expect(elapsedMinutes(started, offset, now)).toBe(42);
+  });
+
+  it("takes a timer that is not loaded yet for neither short nor long", () => {
+    const now = Date.parse("2027-01-14T08:42:08Z");
+    expect(wasUnderMinute(undefined, 0, now)).toBeUndefined();
+  });
+
+  it("says a timer is under a minute only when it ran less than one", () => {
+    const started = "2027-01-14T08:00:00Z";
+    expect(wasUnderMinute(started, 0, Date.parse("2027-01-14T08:00:59Z"))).toBe(true);
+    expect(wasUnderMinute(started, 0, Date.parse("2027-01-14T08:01:00Z"))).toBe(false);
+    expect(wasUnderMinute(started, 0, Date.parse("2027-01-14T16:00:00Z"))).toBe(false);
   });
 
   it("never goes below zero, also for a start that is a moment ahead", () => {

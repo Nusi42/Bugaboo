@@ -5,7 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { CannotSave } from "./CannotSave.tsx";
 import { StopTimerWindow } from "./StopTimerWindow.tsx";
 import { StopUnderMinute } from "./StopUnderMinute.tsx";
-import { minutesRun } from "./timer-clock.ts";
+import { wasUnderMinute } from "./timer-clock.ts";
 import { useEntryDefaults } from "./use-entry-defaults.ts";
 import { useEntryIssue } from "./use-entry-issue.ts";
 import { useTimer } from "./use-timer.ts";
@@ -21,10 +21,11 @@ export function StopTimerAsk({ switchingTo }: { readonly switchingTo: string | u
   const key = running?.readable_id ?? undefined;
   const issue = useEntryIssue(key);
   const defaults = useEntryDefaults(key ?? "", key !== undefined);
-  // How long it had run when the question came: whole minutes, as the server saves them.
-  const [under] = useState(
-    () => minutesRun(running?.started_at, reading?.serverOffsetMs ?? 0) === 0,
-  );
+  // How long it had run when the question came: whole minutes, as the server saves them. It is counted
+  // to the moment the question opened, and only once the timer is loaded: a timer that is not loaded yet
+  // is never taken for a short one.
+  const [openedAt] = useState(() => Date.now());
+  const under = wasUnderMinute(running?.started_at, reading?.serverOffsetMs ?? 0, openedAt);
   if (reading === undefined || running === undefined) {
     return null;
   }
@@ -32,7 +33,7 @@ export function StopTimerAsk({ switchingTo }: { readonly switchingTo: string | u
     return <CannotSave why={t("time.stop.hidden-issue")} version={reading.timer.version} />;
   }
   // Under a minute nothing is saved: a question, not a window with fields.
-  if (under && switchingTo === undefined) {
+  if (under === true && switchingTo === undefined) {
     return <StopUnderMinute issue={key} version={reading.timer.version} />;
   }
   if (defaults.isError) {

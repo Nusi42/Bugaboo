@@ -1,8 +1,7 @@
-import { t } from "@bugaboo/messages";
-
 import { IdsIn } from "./IdsIn.tsx";
+import { timerMenuTitle } from "./timer-actions.ts";
 
-/** The heading of the sheet of the timer on a phone: *Timer on WEB-5 · 0:42*, the ID and the clock in the code font. */
+/** The heading of the sheet of the timer on a phone: its title, with only the ID and the clock in the code font. */
 export function TimerMenuHeading({
   issue,
   clock,
@@ -10,9 +9,10 @@ export function TimerMenuHeading({
   readonly issue: string | undefined;
   readonly clock: string | undefined;
 }) {
+  const title = timerMenuTitle(issue, clock);
   return issue === undefined || clock === undefined ? (
-    t("time.timer.menu")
+    title
   ) : (
-    <IdsIn sentence={t("time.timer.menu-of", { issue, clock })} ids={[issue]} lengths={[clock]} />
+    <IdsIn sentence={title} ids={[issue]} lengths={[clock]} />
   );
 }
