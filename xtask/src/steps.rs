@@ -37,6 +37,12 @@ pub(crate) struct Step {
     pub(crate) skip: Option<&'static str>,
     /// For cargo builds: the program whose path to read from cargo's JSON messages.
     pub(crate) executable: Option<&'static str>,
+    /// Starts when its turn comes and runs beside the steps after it; its output goes to a log
+    /// file that is shown, and its result counts, when the step that joins it is reached (or at
+    /// the end of the plan).
+    pub(crate) background: bool,
+    /// Waits for the steps that run in the background before it starts.
+    pub(crate) joins_background: bool,
 }
 
 /// What running steps produced.
@@ -54,6 +60,24 @@ impl Step {
             args: args.iter().map(|arg| (*arg).to_owned()).collect(),
             skip: None,
             executable: None,
+            background: false,
+            joins_background: false,
+        }
+    }
+
+    /// Runs beside the steps after it (see `background`).
+    pub(crate) fn in_background(self) -> Self {
+        Self {
+            background: true,
+            ..self
+        }
+    }
+
+    /// Starts only after every step in the background has ended (see `joins_background`).
+    pub(crate) fn after_background(self) -> Self {
+        Self {
+            joins_background: true,
+            ..self
         }
     }
 
@@ -151,20 +175,102 @@ pub(crate) fn executable_from(cargo_output: &str, name: &str) -> Option<PathBuf>
         .next_back()
 }
 
-/// Runs the steps in order and stops at the first failure.
+/// A step that runs beside the others.
+struct Running {
+    name: &'static str,
+    child: std::process::Child,
+    log: PathBuf,
+    started: Instant,
+}
+
+/// The log file of a step in the background, inside the build folder of the repository.
+fn log_path(root: &Path, name: &str) -> PathBuf {
+    let slug: String = name
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    root.join("target").join(format!("step-{slug}.log"))
+}
+
+/// Starts a step in the background with its output in its log file.
+fn start_background(root: &Path, step: &Step) -> anyhow::Result<Running> {
+    let log = log_path(root, step.name);
+    if let Some(folder) = log.parent() {
+        std::fs::create_dir_all(folder)?;
+    }
+    let file = std::fs::File::create(&log)
+        .with_context(|| format!("could not write {}", log.display()))?;
+    let child = crate::tools::command(&step.program)
+        .args(&step.args)
+        .current_dir(root)
+        .stdin(Stdio::null())
+        .stdout(file.try_clone()?)
+        .stderr(file)
+        .spawn()
+        .with_context(|| start_error(step))?;
+    output::line(&format!(
+        "start {} in the background (log: {})",
+        step.name,
+        log.display()
+    ));
+    Ok(Running {
+        name: step.name,
+        child,
+        log,
+        started: Instant::now(),
+    })
+}
+
+/// Waits for the steps in the background, shows their logs and tells how each one went; true when
+/// all of them passed. With `stop`, they are ended instead of waited for (an earlier step failed).
+fn finish_background(running: &mut Vec<Running>, stop: bool) -> anyhow::Result<bool> {
+    let mut all_passed = true;
+    for mut step in running.drain(..) {
+        if stop {
+            let _ = step.child.kill();
+        }
+        let status = step.child.wait()?;
+        let log = std::fs::read_to_string(&step.log).unwrap_or_default();
+        output::line(&format!("--- output of {} ---", step.name));
+        output::line(log.trim_end());
+        output::line("---");
+        if stop {
+            output::line(&format!(
+                "{} was stopped because an earlier step failed.",
+                step.name
+            ));
+        }
+        let passed = status.success() && !stop;
+        output::step_end(step.name, passed, step.started.elapsed());
+        all_passed &= passed;
+    }
+    Ok(all_passed)
+}
+
+/// Runs the steps in order and stops at the first failure. A step in the background runs beside
+/// the steps after it; its result is told, and fails the run, where the plan joins it.
 pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
     let mut outcome = Outcome {
         passed: true,
         executable: None,
     };
     let mut skipped = 0_usize;
+    let mut running: Vec<Running> = Vec::new();
     for (index, step) in steps.iter().enumerate() {
         if let Some(reason) = step.skip {
             output::step_skipped(step.name, reason);
             skipped += 1;
             continue;
         }
+        if step.joins_background && !finish_background(&mut running, false)? {
+            outcome.passed = false;
+            break;
+        }
         output::step_start(index + 1, steps.len(), step.name);
+        if step.background {
+            running.push(start_background(root, step)?);
+            continue;
+        }
         let started = Instant::now();
         let mut command = crate::tools::command(&step.program);
         command.args(&step.args).current_dir(root);
@@ -187,6 +293,10 @@ pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
             outcome.passed = false;
             break;
         }
+    }
+    // What is still in the background at the end is waited for, or ended after a failure.
+    if !finish_background(&mut running, !outcome.passed)? && outcome.passed {
+        outcome.passed = false;
     }
     output::steps_summary(steps.len(), skipped, usize::from(!outcome.passed));
     Ok(outcome)
@@ -279,5 +389,54 @@ mod tests {
         let step = Step::new("missing", "bugaboo-no-such-program", &[]);
         let error = run(root.path(), &[step]).err().unwrap();
         assert!(format!("{error:#}").contains("missing"));
+    }
+
+    fn cargo_step(name: &'static str, args: &[&str]) -> Step {
+        Step::new(name, std::env::var("CARGO").unwrap(), args)
+    }
+
+    #[test]
+    fn a_step_in_the_background_runs_and_its_log_is_kept() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = [
+            cargo_step("version in the background", &["--version"]).in_background(),
+            cargo_step("version", &["--version"]),
+            cargo_step("version after it", &["--version"]).after_background(),
+        ];
+        assert!(run(root.path(), &steps).unwrap().passed);
+        let log =
+            std::fs::read_to_string(log_path(root.path(), "version in the background")).unwrap();
+        assert!(log.starts_with("cargo "), "{log}");
+    }
+
+    #[test]
+    fn bad_example_a_failing_step_in_the_background_fails_the_run() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = [
+            cargo_step("fails", &["no-such-subcommand-for-test"]).in_background(),
+            cargo_step("version", &["--version"]),
+        ];
+        assert!(!run(root.path(), &steps).unwrap().passed);
+    }
+
+    #[test]
+    fn bad_example_a_step_that_joins_does_not_start_after_a_failure_in_the_background() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = [
+            cargo_step("fails", &["no-such-subcommand-for-test"]).in_background(),
+            Step::new("must not run", "bugaboo-no-such-program", &[]).after_background(),
+        ];
+        // The missing program would be an error if the step started.
+        assert!(!run(root.path(), &steps).unwrap().passed);
+    }
+
+    #[test]
+    fn a_failing_step_ends_the_one_in_the_background_and_fails_the_run() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = [
+            cargo_step("version in the background", &["--version"]).in_background(),
+            cargo_step("fails", &["no-such-subcommand-for-test"]),
+        ];
+        assert!(!run(root.path(), &steps).unwrap().passed);
     }
 }

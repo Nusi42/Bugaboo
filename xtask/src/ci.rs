@@ -47,6 +47,14 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         // First: PERF-BUNDLE measures the build, so the checks need it.
         steps::web_build(root),
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
+        // One core, about five minutes: it runs beside the Rust tests and the steps up to the
+        // browser tests, which wait for it (its log is shown where they wait).
+        Step::new(
+            "create the sample organization",
+            xtask.to_string_lossy(),
+            &["dataset", "sample"],
+        )
+        .in_background(),
         // SQLite and PostgreSQL: the cluster is started, used and stopped around the tests.
         Step::new(
             "Rust tests",
@@ -73,12 +81,7 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         // The end-to-end tests start the program themselves (ADR-0023), some of them on a copy of
         // a fresh sample organization.
         steps::server_build(Profile::Debug),
-        Step::new(
-            "create the sample organization",
-            xtask.to_string_lossy(),
-            &["dataset", "sample"],
-        ),
-        Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]),
+        Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]).after_background(),
         // Ten people work on the same issues at speed for two minutes, on each database
         // (TEST-CONCURRENT); the long run is `cargo xtask load --nightly`.
         needs_browser_app(
@@ -115,13 +118,13 @@ mod tests {
             [
                 "build the browser app",
                 "all checks",
+                "create the sample organization",
                 "Rust tests",
                 "Rust doc tests",
                 "sample organization",
                 "large dataset",
                 "browser unit tests",
                 "build the bugaboo program",
-                "create the sample organization",
                 "browser end-to-end tests",
                 "ten people at once",
                 "add the static Linux target",
@@ -142,9 +145,24 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, false, false, true, false, false, true, true, on_linux,
+                true, false, false, false, false, false, false, true, false, true, true, on_linux,
                 on_linux
             ]
         );
+    }
+
+    #[test]
+    fn the_sample_is_made_in_the_background_and_the_browser_tests_wait_for_it() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = plan(root.path()).unwrap();
+        let find = |name: &str| steps.iter().position(|step| step.name == name).unwrap();
+        let sample = &steps[find("create the sample organization")];
+        assert!(sample.background);
+        // It starts before the Rust tests and ends before the browser tests start.
+        assert!(find("create the sample organization") < find("Rust tests"));
+        assert!(steps[find("browser end-to-end tests")].joins_background);
+        assert!(find("create the sample organization") < find("browser end-to-end tests"));
+        // No other step runs in the background.
+        assert_eq!(steps.iter().filter(|step| step.background).count(), 1);
     }
 }
