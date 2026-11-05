@@ -25,6 +25,8 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-10 | The timesheet | building | `win3` / `WIN3` | Wave 3 |
 | WP-11 | The settings of working hours and time | building | `win4` / `WIN4` | Wave 3 |
 | WP-12 | Sample part 5, timers under load, speed, the exit demo | planned | `win2` / `WIN2` | Wave 4 |
+| WP-13 | The time fields in layouts and an estimate when an issue is made | planned | `win3` / `WIN3` | Wave 4 |
+| WP-14 | Numbered choices: *Cost center* as number and name | planned | `win4` / `WIN4` | Wave 4 |
 
 ## Resuming a package marked "building" in a new session
 

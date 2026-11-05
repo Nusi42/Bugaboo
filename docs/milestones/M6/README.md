@@ -31,6 +31,8 @@ M6 runs in **four waves**, then the exit visual pass and the exit waves. A wave 
 | 3 | [WP-10](WP-10-timesheet.md) | The timesheet: work-day rows, time on issues, warnings, reasons, the working hours of others | Builder | `bugaboo.win3` / `WIN3` |
 | 3 | [WP-11](WP-11-working-hours-and-time-settings.md) | The settings of working hours and time: rules, keep period, *Totals only*, project defaults | Builder | `bugaboo.win4` / `WIN4` |
 | 4 | [WP-12](WP-12-sample-load-speed-and-exit-demo.md) | Sample organization part 5, timers under load, speed of the time pages, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
+| 4 | [WP-13](WP-13-time-fields-in-layouts-and-the-new-issue-form.md) | The time fields in layouts and an estimate when an issue is made | Builder | `bugaboo.win3` / `WIN3` |
+| 4 | [WP-14](WP-14-numbered-choices-of-cost-center.md) | Numbered choices: *Cost center* as number and name | Builder | `bugaboo.win4` / `WIN4` |
 
 Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). WP-01 writes the decision records and the words before any builder of wave 2 starts; wave 1's code packages need only what is decided already, so they start while the lead writes the rest.
 
@@ -54,6 +56,8 @@ Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). WP-01 writes the d
 - **WP-10 (TIME-04, TIME-08, TIME-09, TIME-10, TIME-12 on screen):** the weekly timesheet of UX §4.9 with fast keyboard entry, work-day rows, time on issues, the footer that compares them, warnings in plain sentences, the reason window, the history of a day, the phone timesheet, and *Working hours of others*.
 - **WP-11 (TIME-09, TIME-10, TIME-12, TIME-13 settings):** *Organization settings › Working hours* (preset, rules, keep period, the count of older work days and *Delete them*, *Totals only*), the *Billable* switch, the defaults of *Activity* and *Cost center* in the project settings, and the security-log entries of every change (PRIV-09).
 - **WP-12 (exit; TIME-01 under load, PERF-01):** sample organization part 5 (six months of working hours, about 20,000 time entries, a few running timers, an *HR* group); timers and work days in the ten-people run; time entries in the large dataset and the speed of the timesheet and the totals; the exit demo; the user docs of time and working hours.
+- **WP-13 (TIME-03, CFG-01; M6-F60, M6-F61):** the layout editor places *Estimated time*, *Time left* and *Time spent*; a new issue can be given an estimate in the form that makes it.
+- **WP-14 (TIME-13, CF-08; M6-F41):** a choice of an own choice field may have a number; *Cost center* is listed by number and written "4100 Product development" everywhere; the search finds a choice by its number.
 
 ## Why the waves are in this order
 
@@ -79,6 +83,8 @@ Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). WP-01 writes the d
 | WP-10 | `web/app/src/features/time/timesheet*`, `web/app/src/features/time/others*`, the route `/time` |
 | WP-11 | `web/app/src/features/settings/working-hours*`, the project defaults of time entries |
 | WP-12 | `tools/dev/sample.json` and `bb-sample` (time), `dataset large` (time entries), the ten-people scenarios of timers and work days, the M6 exit demo, the user docs of time |
+| WP-13 | the time fields in the field list of the layout editor and in the default layouts, the estimate in the form of a new issue |
+| WP-14 | the number of a choice of an own choice field (store, API, *Fields* page), the order of choices by number, its migration |
 
 Migrations get their numbers from the lead, in the order of merging. Ports come from each folder's block in `tools/dev/ports.json` (ADR-0023); M6 adds no port.
 
