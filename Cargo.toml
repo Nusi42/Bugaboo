@@ -67,7 +67,7 @@ known-folders = "1.4.2"
 mime_guess = "2.0.5"
 nix = { version = "0.31.3", default-features = false, features = ["user"] }
 proc-macro2 = "1.0.107"
-pulldown-cmark = { version = "0.13.4", default-features = false }
+pulldown-cmark = { version = "0.13.6", default-features = false }
 proptest = "1.11.0"
 quote = "1.0.47"
 regex = { version = "1.13.1", default-features = false, features = ["std", "perf", "unicode"] }
@@ -76,7 +76,7 @@ html5ever = "0.40.1"
 hyper-util = { version = "0.1.21", default-features = false }
 rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "pem", "ring"] }
 rust-embed = "8.12.0"
-rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
 sea-query = { version = "1.0.2", default-features = false, features = [
   "backend-postgres",
   "backend-sqlite",
@@ -93,7 +93,7 @@ syn = { version = "3.0.6", default-features = false }
 sqlx = { version = "0.9.0", default-features = false }
 subtle = "2.6.1"
 tempfile = "3.27.0"
-tokio = "1.53.2"
+tokio = "1.54.1"
 totp-rs = { version = "6.0.0", default-features = false, features = ["otpauth", "qr", "zeroize"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
 toml = "1.1.6"

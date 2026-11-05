@@ -29,7 +29,7 @@ sha2 = { workspace = true }
 syn = { workspace = true, features = ["full", "parsing", "derive"] }
 tar = "0.4.46"
 toml = { workspace = true }
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.3.0", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }

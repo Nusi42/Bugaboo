@@ -113,7 +113,12 @@ pub(crate) fn extract_folders(bytes: &[u8], folders: &[String], to: &Path) -> an
     for index in 0..zip.len() {
         let mut entry = zip.by_index(index)?;
         let Some(path) = entry.enclosed_name() else {
-            bail!("the archive contains the unsafe path {}", entry.name());
+            bail!(
+                "the archive contains the unsafe path {}",
+                entry
+                    .name()
+                    .unwrap_or_else(|error| error.to_string().into())
+            );
         };
         let mut parts = path.components();
         // The first component is the archive's root folder (`pgsql`).

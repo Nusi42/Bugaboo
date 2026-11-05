@@ -15,11 +15,11 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 
 | Area | Crate | Version | License |
 |------|-------|---------|---------|
-| Async runtime | tokio | 1.53.2 | MIT |
+| Async runtime | tokio | 1.54.1 | MIT |
 | HTTP | axum | 0.8.9 | MIT |
 | HTTP middleware | tower-http | 0.7.1 | MIT |
 | Rate limits | own fixed-window limiter in `bb-api` (`tower_governor` 0.8.0 was considered, see architecture §7) | none | none |
-| TLS | rustls / tokio-rustls | 0.23.45 / 0.26.6 | Apache-2.0/MIT/ISC |
+| TLS | rustls / tokio-rustls | 0.23.46 / 0.26.6 | Apache-2.0/MIT/ISC |
 | Certificates (ACME) | instant-acme | 0.8.5 | Apache-2.0 |
 | Database access | sqlx | 0.9.0 | MIT/Apache-2.0 |
 | Query builder | sea-query + sea-query-sqlx | 1.0.2 + 0.9.1 | MIT/Apache-2.0 |
@@ -40,7 +40,7 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | Dates and time zones | jiff | 0.2.37 | MIT/Unlicense |
 | Errors | thiserror | 2.0.21 | MIT/Apache-2.0 |
 | Logging | tracing | 0.1.44 | MIT |
-| Markdown | pulldown-cmark | 0.13.4 | MIT |
+| Markdown | pulldown-cmark | 0.13.6 | MIT |
 | HTML writing | own writer over pulldown-cmark's events, one allow list (ADR-0011); no HTML parser | — | — |
 | Embedded web app | rust-embed | 8.12.0 | MIT |
 | File type detection | infer | 0.22.0 | MIT |
@@ -61,7 +61,7 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Area | Package | Version | License |
 |------|---------|---------|---------|
 | UI library | react / react-dom | 19.3.0 | MIT |
-| Build | vite | 8.3.2 | MIT |
+| Build | vite | 8.3.3 | MIT |
 | Routing | @tanstack/react-router | 1.170.41 | MIT |
 | Server data | @tanstack/react-query | 5.104.1 | MIT |
 | Accessible components | react-aria-components | 1.21.1 | Apache-2.0 |
@@ -96,7 +96,7 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Licenses, bans, advisories | cargo-deny | 0.20.2 | MIT/Apache-2.0 |
 | Third-party notices | cargo-about | 0.9.2 | MIT/Apache-2.0 |
 | SBOM | cargo-cyclonedx / @cyclonedx/cyclonedx-npm | 0.5.9 / 6.0.1 | Apache-2.0 |
-| Docs → HTML (`cargo xtask docs`) | pulldown-cmark | 0.13.4 | MIT |
+| Docs → HTML (`cargo xtask docs`) | pulldown-cmark | 0.13.6 | MIT |
 
 ## Considered and not chosen
 

@@ -239,7 +239,7 @@ pub(crate) fn extract_binary(
         let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
         for index in 0..zip.len() {
             let mut entry = zip.by_index(index)?;
-            if entry.is_file() && file_name_of(entry.name()) == binary {
+            if entry.is_file() && entry.name().is_ok_and(|name| file_name_of(&name) == binary) {
                 let mut data = Vec::new();
                 entry.read_to_end(&mut data)?;
                 found = Some(data);

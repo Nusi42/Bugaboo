@@ -18,7 +18,9 @@ budget_bytes = 250000
 # sentence, measured at 150.1 KB (the module takes the words of the units from the browser, so it
 # carries no catalog); and since M6 the sentence of time booked on an issue, which the history of
 # the browser says, measured at 152.7 KB (it takes its three values as they are, not as JSON, so the
-# module carries no reader of its own for them).
-bb_wasm_bg = 153000
+# module carries no reader of its own for them); and since the security fix of pulldown-cmark
+# (0.13.6), measured at 153.5 KB; M6-F68 (taking serde's float formatting and the Debug panic text
+# out of the module) is where it comes back down.
+bb_wasm_bg = 154000
 # The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core) and at 90.3 KB with `contains` on its own (M5 WP-04); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 91000
