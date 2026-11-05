@@ -16,7 +16,7 @@ use bb_dev_words::database::DatabaseKind;
 use bb_dev_words::sample::Layout;
 
 use crate::dataset::{
-    Arguments, CHECK_START, Request, in_folder, load_layout, now, program_command,
+    Arguments, CHECK_START, Request, in_folder, load_layout, now, program_command, side_by_side,
 };
 use crate::db;
 use crate::output;
@@ -277,8 +277,8 @@ fn twice(
 ) -> anyhow::Result<Vec<Option<String>>> {
     let folder = in_folder(repo.root(), &layout.large.check_out);
     let issues = Some(request.issues.unwrap_or(layout.large.check_issues));
-    let mut prints = Vec::new();
-    for number in 1..=2 {
+    // The two runs have folders and databases of their own: they run side by side.
+    side_by_side(&[1, 2], |&number| {
         let out = folder.join(format!("{}-{number}", database.code()));
         if out.exists() {
             fs::remove_dir_all(&out)?;
@@ -307,14 +307,14 @@ fn twice(
         fs::remove_dir_all(&out)?;
         if !made.status.success() {
             bail!(
-                "The large dataset did not hold its rules on {}:\n{}",
+                "The large dataset did not hold its rules on {}:
+{}",
                 database.code(),
                 said(&made)
             );
         }
-        prints.push(fingerprint(&said(&made)));
-    }
-    Ok(prints)
+        Ok(fingerprint(&said(&made)))
+    })
 }
 
 fn check_on(
