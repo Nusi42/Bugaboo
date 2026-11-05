@@ -4988,6 +4988,8 @@ part "app-layout[variant=phone] app-layout.main" {
 part "sidebar" {
     position sticky
     top 0
+    // Above the page, so what floats out of it (the notice of the timer) is not drawn under the page.
+    z-index "$z-panel"
     align-self flex-start
     box-sizing border-box
     display flex
@@ -5004,7 +5006,7 @@ part "sidebar" {
 
 // In a window too low for the whole sidebar the sections stand closer, so the timer and the work day fit (M5-F150).
 part "sidebar[variant=short]" {
-    gap "$space-2"
+    gap "$space-1"
 }
 
 part "sidebar[variant=narrow]" {
@@ -5099,6 +5101,10 @@ part "timer-notice[variant=floating]" {
     bottom "$space-4"
     max-width "$size-dialog"
     z-index "$z-panel"
+}
+
+part "timer-notice[variant=narrow]" {
+    inset-inline-start "calc($size-sidebar-narrow + $space-4)"
 }
 
 // The timer is one button: the issue it runs on and how long, which opens the list *Stop · Switch issue ·

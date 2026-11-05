@@ -192,14 +192,19 @@ export function expectGoodWithRingsInEveryTheme(page: Page): Promise<void> {
   );
 }
 
-/** The same without the choice of theme: for screens with a question open over the page. */
-export function expectGoodInEveryLook(page: Page): Promise<void> {
+/** Runs `check` on the open screen in every theme, put on the page directly: for screens with a question open. */
+export function inEveryLook(page: Page, check: () => Promise<void>): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await putOnTheme(page, theme);
-      await expectGoodScreen(page);
+      await check();
     }),
   );
+}
+
+/** The same without the choice of theme: for screens with a question open over the page. */
+export function expectGoodInEveryLook(page: Page): Promise<void> {
+  return inEveryLook(page, () => expectGoodScreen(page));
 }
 
 /** The first element is drawn above the second. */

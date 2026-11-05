@@ -1152,7 +1152,7 @@ export const partWords = {
   "sidebar.person": { variant: [], state: [] },
   "sidebar.who": { variant: [], state: [] },
   "time-part": { variant: ["bar"], state: [] },
-  "timer-notice": { variant: ["floating"], state: [] },
+  "timer-notice": { variant: ["floating", "narrow"], state: [] },
   "timer-chip": { variant: ["long", "narrow"], state: [] },
   "timer-chip.live": { variant: [], state: [] },
   "timer-chip.issue": { variant: [], state: [] },

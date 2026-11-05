@@ -1,12 +1,13 @@
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
+import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expectGoodInEveryLook, inEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { chipOf, idleScene } from "./support/time-scene.ts";
+import { chipOf, idleScene, scene, waitForParts } from "./support/time-scene.ts";
 
 // The sidebar with the timer and the work day fits a window 600 px high, and its group at the bottom is
 // a menu that rises from its button (M5-F150, UX §3.1). A spec for a computer: it is a sidebar.
@@ -66,12 +67,23 @@ test("ux_01 the menu of the group at the bottom rises over the page and gives th
   page,
   server,
 }) => {
-  const { issue, start, dispose } = await idleScene(server);
-  await start();
+  // The work day runs and the timer too: the highest the sidebar gets.
+  const { admin, issue } = await scene(server);
   await page.setViewportSize({ width: 1280, height: WINDOW_HEIGHT });
   await signIn(page, ada);
   await page.goto("/");
-  await expect(chipOf(page, issue.key)).toBeVisible();
+  await waitForParts(page, issue.key);
+  await inEveryLook(page, () => expectSidebarFits(page));
+  // The line of today's hours may wrap to a second line, as it does after hours of work.
+  const line = page.getByRole("region", { name: t("time.work-day.region") }).locator("p");
+  const oneLine = await line.evaluate((element) => element.getBoundingClientRect().height);
+  await line.evaluate((element) => {
+    element.append(" and then some more");
+  });
+  expect(await line.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(
+    oneLine,
+  );
+  await inEveryLook(page, () => expectSidebarFits(page));
   // The group is one button; its menu rises over the page, and the sidebar does not grow or scroll.
   const group = page.getByRole("button", { name: t("shell.group-fold"), exact: true });
   await group.click();
@@ -81,9 +93,54 @@ test("ux_01 the menu of the group at the bottom rises over the page and gives th
   // The focus is inside the menu.
   await expect(opened.and(page.locator(":focus-within"))).toHaveCount(1);
   await expectGoodInEveryLook(page);
+  // Opened, the sidebar is as high as closed, in every theme, and *Sign out* stays in view.
+  const height = () =>
+    page
+      .getByRole("navigation", { name: t("shell.menu") })
+      .evaluate((nav) => nav.getBoundingClientRect().height);
+  const openHeight = await height();
+  await inEveryLook(page, async () => {
+    await expectSidebarFits(page);
+    expect(await height()).toBe(openHeight);
+  });
   // Esc closes it and the focus goes back to the button.
   await page.keyboard.press("Escape");
   await expect(opened).toHaveCount(0);
   await expect(group).toBeFocused();
+  await admin.dispose();
+});
+
+test("ux_01 the narrow rail names the timer and tells what it did beside the rail", async ({
+  page,
+  server,
+}) => {
+  const { issue, start, dispose } = await idleScene(server);
+  await start();
+  await signIn(page, ada);
+  await page.goto(issueAddress(issue.key));
+  // The issue page narrows the sidebar to icons; the timer is one button named by its words.
+  const chip = chipOf(page, issue.key);
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveAccessibleName(
+    new RegExp(`^${t("time.timer.running", { issue: issue.key })} [0-9]+:[0-9]{2}$`, "u"),
+  );
+  // What the timer tells is not lost for the narrow rail: it shows beside it, not over the Details.
+  await page.getByRole("button", { name: t("time.timer.bar-stop"), exact: true }).click();
+  await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
+  const notice = page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true });
+  await expect(notice).toBeVisible();
+  const details = page.getByRole("term").filter({ hasText: t("issue-field.time-spent") });
+  const right = await notice.evaluate((element) => element.getBoundingClientRect().right);
+  const detailsLeft = await details.evaluate((element) => element.getBoundingClientRect().left);
+  expect(right).toBeLessThan(detailsLeft);
+  // Nothing of the page is drawn over it: the point in the middle of the notice belongs to the notice.
+  const alert = page.getByRole("status").filter({ has: notice });
+  const onTop = await alert.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return element.contains(
+      document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2),
+    );
+  });
+  expect(onTop).toBe(true);
   await dispose();
 });

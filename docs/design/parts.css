@@ -4112,6 +4112,7 @@ textarea,
 [data-part="sidebar"] {
   position: sticky;
   top: 0;
+  z-index: var(--z-panel);
   align-self: flex-start;
   box-sizing: border-box;
   display: flex;
@@ -4127,7 +4128,7 @@ textarea,
 }
 
 [data-part="sidebar"][data-variant~="short"] {
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 [data-part="sidebar"][data-variant~="narrow"] {
@@ -4220,6 +4221,10 @@ textarea,
   bottom: var(--space-4);
   max-width: var(--size-dialog);
   z-index: var(--z-panel);
+}
+
+[data-part="timer-notice"][data-variant~="narrow"] {
+  inset-inline-start: calc(var(--size-sidebar-narrow) + var(--space-4));
 }
 
 [data-part="timer-chip"] {

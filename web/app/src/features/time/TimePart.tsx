@@ -42,7 +42,11 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
       {running === undefined || reading === undefined ? null : (
         <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
       )}
-      {narrow ? null : <Tells floating={place === "sidebar" && short} running={running} />}
+      <Tells
+        floating={place === "sidebar" && (short || narrow)}
+        narrow={narrow}
+        running={running}
+      />
     </section>
   );
 }
