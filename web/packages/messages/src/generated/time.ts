@@ -25,6 +25,7 @@ export const messages = {
   "time.timer.too-short": "Less than a minute on {issue}, so no time was saved.",
   "time.timer.saved": "Saved {length} on {issue}.",
   "time.timer.bar": "Timer",
+  "time.timer.bar-stop": "Stop",
   "time.timer.start-title": "Start timer on which issue?",
   "time.timer.stop-timer": "Stop timer",
   "time.stop.title": "Stop timer on {issue}",

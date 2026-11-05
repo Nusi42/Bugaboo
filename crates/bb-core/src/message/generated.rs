@@ -5740,6 +5740,9 @@ pub const TIME_THROW_AWAY_TEXT: MessageKey = MessageKey::new("time.throw-away.te
 /// The message `time.timer.bar`.
 pub const TIME_TIMER_BAR: MessageKey = MessageKey::new("time.timer.bar");
 
+/// The message `time.timer.bar-stop`.
+pub const TIME_TIMER_BAR_STOP: MessageKey = MessageKey::new("time.timer.bar-stop");
+
 /// The message `time.timer.change-start`.
 pub const TIME_TIMER_CHANGE_START: MessageKey = MessageKey::new("time.timer.change-start");
 
@@ -17072,6 +17075,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.throw-away.text", "The time so far will not be saved."),
     ("time.throw-away.title", "Throw away the timer on {issue}?"),
     ("time.timer.bar", "Timer"),
+    ("time.timer.bar-stop", "Stop"),
     ("time.timer.change-start", "Change start time"),
     ("time.timer.menu", "Timer"),
     ("time.timer.region", "Timer"),

@@ -18,7 +18,7 @@ export function TimerBarButton({ issue }: { readonly issue: EntryIssue }) {
   }
   return (
     <Button wide onPress={press}>
-      {state === "here" ? t("time.timer.stop-timer") : t("time.timer.bar")}
+      {state === "here" ? t("time.timer.bar-stop") : t("time.timer.bar")}
     </Button>
   );
 }
