@@ -2,7 +2,6 @@ import { t } from "@bugaboo/messages";
 
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -12,7 +11,6 @@ import { paths } from "../src/shared/paths.ts";
 test.use({ sample: true });
 
 test("ux_5 on a phone Copy this role is as wide as the name of the copy", async ({ page }) => {
-  test.skip(layoutOf(page) !== "phone", "a computer keeps the button as wide as its words");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.roles);
   await page

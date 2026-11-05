@@ -1,7 +1,6 @@
 import { expectNoOverlap } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { cutWords, linesOfEach } from "./support/phone-list.ts";
 import { sampleAdministrator } from "./support/sample.ts";
@@ -15,7 +14,6 @@ import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 test.use({ sample: true });
 
 test("ux_5 a row with only its name is one line in the middle of the row", async ({ page }) => {
-  test.skip(layoutOf(page) !== "phone", "the rows of a computer have their own look");
   await signIn(page, sampleAdministrator());
   await inOrder(
     [paths.issueTypes, paths.relationKinds].map((address) => async () => {
@@ -34,7 +32,6 @@ test("ux_5 a row with only its name is one line in the middle of the row", async
 test("ux_4_2 the people of a row on a phone are written out on more lines, never cut with dots (M5 exit F-A3)", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "the rows of a computer have a column of their own");
   await page.setViewportSize({ width: 360, height: 740 });
   await signIn(page, sampleAdministrator());
   // The rows of a project have the box to tick, so the least room; Niko Eriksen shares some issues with a second person.

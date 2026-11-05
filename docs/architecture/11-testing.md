@@ -177,6 +177,8 @@ What cut them (M5-F46, F47, F48; before: 716 ms for the list of the big project,
 
 The speed tests of the browser (`perf_01_*` in `perf-*.spec.ts`) run after the rest of the suite, one at a time (the `speed` project), so their numbers do not follow the load of the other tests (M5-F98).
 
+A spec that belongs to one device carries it in its name: `*-phone.spec.ts` runs only in the phone projects and `*-computer.spec.ts` only in the computer projects (`testIgnore` in `web/tooling/playwright.config.ts`), so a test for one device is never a skipped test on the other (coding-standards §7).
+
 ## Ten people at the same time
 
 Concurrency is tested with **10 simulated people** (an administrator and Team members of one project, made for the run), each in their own browser context (Playwright) or API client (`cargo xtask load --people 10`):

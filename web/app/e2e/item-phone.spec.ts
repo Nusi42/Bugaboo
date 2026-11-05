@@ -3,7 +3,6 @@ import { expect } from "@playwright/test";
 
 import { test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
@@ -19,7 +18,6 @@ const lists = [paths.issueTypes, paths.relationKinds];
 test("ux_5 on a phone an item of a list opens as its own screen with its name in the bar", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "a computer opens an item beside the list");
   await signIn(page, sampleAdministrator());
   await inOrder(
     lists.map((address) => async () => {

@@ -3,7 +3,6 @@ import { expect } from "@playwright/test";
 
 import { test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
@@ -16,7 +15,6 @@ test.use({ sample: true });
 test("ux_5 on a phone the settings of a project are a menu screen, then a section screen", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "a computer has the menu beside the section");
   await signIn(page, sampleAdministrator());
   await page.goto(projectAddress("APP"));
   await page.getByRole("link", { name: t("projects.settings-link") }).click();
@@ -42,7 +40,6 @@ test("ux_5 on a phone the settings of a project are a menu screen, then a sectio
 test("ux_5 a section opened by its address names itself in the bar, and Back goes to the menu", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "a computer has the menu beside the section");
   await signIn(page, sampleAdministrator());
   // No history: the person comes straight to the first section.
   await page.goto(addressInProject(paths.projectSettings, "APP"));

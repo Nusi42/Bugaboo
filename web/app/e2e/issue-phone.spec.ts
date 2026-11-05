@@ -5,7 +5,6 @@ import { ada } from "./support/accounts.ts";
 import { chooseTheme, expectNoSidewaysScroll } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf } from "./support/layout.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import {
@@ -26,7 +25,6 @@ test.use({ preparation: { run: prepareLook } });
 test("ux_03 on a phone the closed Details button says who has the issue and its priority with its icon (M3-F184)", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "only a phone has this button");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   const toggle = partIn(page, "issue-details-toggle");
@@ -45,7 +43,6 @@ test("ux_03 on a phone the closed Details button says who has the issue and its 
 test("ux_3_3 on a phone the issue page has the top bar of every page, Previous and Next in the page and one More (L1)", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "only a phone has this bar");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await expect(page.getByRole("heading", { level: 1, name: /Login fails/u })).toBeVisible();
@@ -75,7 +72,6 @@ test("ux_3_3 on a phone the issue page has the top bar of every page, Previous a
 test("ux_3_3 on a phone the bar of actions fills its width in equal parts, stands apart from the page and casts a shadow over what scrolls under it", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "only a phone has this bar");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await expect(page.getByRole("heading", { level: 1, name: /Login fails/u })).toBeVisible();
@@ -100,7 +96,6 @@ test("ux_3_3 on a phone the bar of actions fills its width in equal parts, stand
 test("ux_3_3 on a phone the button that sends a comment is as wide as the screen, on a row of its own", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "only a phone has this rule");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   const box = page.getByRole("textbox", { name: t("comments.write"), exact: true });

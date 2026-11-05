@@ -2,7 +2,6 @@ import { t } from "@bugaboo/messages";
 
 import { expect, test } from "./support/fixtures.ts";
 import { openNewIssueDialog } from "./support/issues.ts";
-import { layoutOf } from "./support/layout.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { resolved } from "./support/styles.ts";
@@ -17,7 +16,6 @@ test.use({ preparation: { run: prepareLook } });
 test("ux_8 on a phone the footer of New issue is the hint and one button, the rest scrolls", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "the footer of a window on a computer has all its buttons");
   await openList(page);
   await openNewIssueDialog(page);
   const dialog = page.getByRole("dialog");
@@ -54,7 +52,6 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
 test("ux_8 on a phone the bar of New issue is one line, as high as the bar of every page", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "a window on a computer has its own bar");
   await openList(page);
   await openNewIssueDialog(page);
   const dialog = page.getByRole("dialog");
@@ -78,7 +75,6 @@ test("ux_8 on a phone the bar of New issue is one line, as high as the bar of ev
 test("ux_8 on a phone the bar of a window shown as a screen is the bar of the page under it: Back of the same size, the title in the same place", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "a window on a computer has its own bar");
   await openList(page);
   const topBar = page.getByRole("banner");
   const pageBack = topBar.getByRole("button", { name: t("shell.back"), exact: true });

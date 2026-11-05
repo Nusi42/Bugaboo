@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { createAdmin, forgetChoices } from "./support/accounts.ts";
 import { openAppearance } from "./support/appearance.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { expectOneColumn, layoutOf } from "./support/layout.ts";
+import { expectOneColumn } from "./support/layout.ts";
 
 // *My settings › Appearance* on a phone (UX §3.3; M5 exit A14).
 
@@ -22,7 +22,6 @@ test.beforeEach(async ({ server }) => {
 test("thm_01 on a phone the choice of the colors is a list of full-width choices, not buttons of ragged widths (A14)", async ({
   page,
 }) => {
-  test.skip(layoutOf(page) !== "phone", "only a phone stacks the choices");
   await openAppearance(page);
   // The input of a choice covers its label: the three stand in one column, as wide as each other.
   await expectOneColumn([
