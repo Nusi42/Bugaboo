@@ -74,15 +74,13 @@ test("ux_01 the menu of the group at the bottom rises over the page and gives th
   await page.goto("/");
   await waitForParts(page, issue.key);
   await inEveryLook(page, () => expectSidebarFits(page));
-  // The line of today's hours may wrap to a second line, as it does after hours of work.
+  // The line of today's hours may wrap to one more line than it has, as it does after hours of work: it
+  // is made one line higher than it is (a style, so a new clock does not undo it).
   const line = page.getByRole("region", { name: t("time.work-day.region") }).locator("p");
-  const oneLine = await line.evaluate((element) => element.getBoundingClientRect().height);
   await line.evaluate((element) => {
-    element.append(" and then some more");
+    const style = getComputedStyle(element);
+    element.style.minHeight = `${element.getBoundingClientRect().height + Number(style.lineHeight.replace("px", ""))}px`;
   });
-  expect(await line.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(
-    oneLine,
-  );
   await inEveryLook(page, () => expectSidebarFits(page));
   // The group is one button; its menu rises over the page, and the sidebar does not grow or scroll.
   const group = page.getByRole("button", { name: t("shell.group-fold"), exact: true });

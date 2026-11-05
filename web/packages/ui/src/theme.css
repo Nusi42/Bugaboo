@@ -5098,6 +5098,7 @@ textarea,
 
 [data-part="sidebar"][data-variant~="short"] {
   gap: var(--space-1);
+  padding-block: var(--space-2);
 }
 
 [data-part="sidebar"][data-variant~="narrow"] {

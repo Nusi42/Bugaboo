@@ -5007,6 +5007,7 @@ part "sidebar" {
 // In a window too low for the whole sidebar the sections stand closer, so the timer and the work day fit (M5-F150).
 part "sidebar[variant=short]" {
     gap "$space-1"
+    padding-block "$space-2"
 }
 
 part "sidebar[variant=narrow]" {
