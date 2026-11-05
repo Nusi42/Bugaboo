@@ -5,6 +5,7 @@ import { tellTime } from "./time-notice.ts";
 import { startTimerOn, switchTimer } from "./timer-requests.ts";
 import { tellSaved } from "./timer-saved.ts";
 import { timerQuery } from "./use-timer.ts";
+import { offerWorkDay } from "./work-day-offer.ts";
 
 /**
  * Puts the timer on an issue (by its readable ID), whatever the timer is doing now: starts it when
@@ -19,6 +20,7 @@ export async function startTimer(issue: string): Promise<void> {
     const running = timer.running ?? undefined;
     if (running === undefined) {
       await startTimerOn(issue);
+      await offerWorkDay(issue);
     } else if (running.readable_id !== issue) {
       const saved = await switchTimer(timer.version, issue);
       tellSaved(saved, running.readable_id ?? issue);

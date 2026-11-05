@@ -15,10 +15,18 @@ const ChangeStartWindow = lazy(async () => ({
 const ThrowAwayAsk = lazy(async () => ({
   default: (await import("./ThrowAwayAsk.tsx")).ThrowAwayAsk,
 }));
+const WorkDayTooAsk = lazy(async () => ({
+  default: (await import("./WorkDayTooAsk.tsx")).WorkDayTooAsk,
+}));
+const TimerTooAsk = lazy(async () => ({
+  default: (await import("./TimerTooAsk.tsx")).TimerTooAsk,
+}));
+const OpenDayAsk = lazy(async () => ({ default: (await import("./OpenDayAsk.tsx")).OpenDayAsk }));
 
 /**
- * The windows and questions of the timer, over any page: *Stop timer*, *Switch issue*, *Change start
- * time* and *Throw away*. What is asked is set by `askTime`; one at a time.
+ * The windows and questions of the timer and the work day, over any page: *Stop timer*, *Switch
+ * issue*, *Change start time*, *Throw away*, *Start your work day too?*, *Stop the timer … too?* and
+ * *When did your work day … end?*. What is asked is set by `askTime`; one at a time.
  */
 export function TimeAsks() {
   const ask = useTimeAsk();
@@ -31,6 +39,9 @@ export function TimeAsks() {
       {ask.kind === "switch" ? <SwitchIssueWindow /> : null}
       {ask.kind === "start-time" ? <ChangeStartWindow /> : null}
       {ask.kind === "throw-away" ? <ThrowAwayAsk /> : null}
+      {ask.kind === "work-day-too" ? <WorkDayTooAsk issue={ask.issue} /> : null}
+      {ask.kind === "timer-too" ? <TimerTooAsk issue={ask.issue} /> : null}
+      {ask.kind === "open-day" ? <OpenDayAsk /> : null}
     </Suspense>
   );
 }

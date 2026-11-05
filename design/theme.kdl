@@ -5131,6 +5131,33 @@ part "timer-chip.time" {
     use "length"
 }
 
+// ───────────── The work day (TIME-08, UX §4.9) ─────────────
+// The line of today's hours and the buttons under it: *Start work day*, *Start break*, *End break*, *End work day*.
+part "work-day" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    width "100%"
+}
+
+part "work-day.line" {
+    margin 0
+    use "quiet-text"
+    line-height "$lh-text"
+    overflow-wrap anywhere
+}
+
+part "work-day.buttons" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+part "work-day.button" {
+    flex "1 1 0"
+    min-width 0
+}
+
 part "nav-item" {
     position relative
     use "touch-row"

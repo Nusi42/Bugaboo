@@ -14,7 +14,13 @@ export type TimeAsk =
   /** *Change start time*. */
   | { readonly kind: "start-time" }
   /** *Throw away*, after a question. */
-  | { readonly kind: "throw-away" };
+  | { readonly kind: "throw-away" }
+  /** *Start your work day too?*, after a timer was started before the work day. */
+  | { readonly kind: "work-day-too"; readonly issue: string }
+  /** *Stop the timer on WEB-142 too?*, when the work day is ended while a timer runs. */
+  | { readonly kind: "timer-too"; readonly issue: string }
+  /** *When did your work day on Thursday end?*, for a day that was left open. */
+  | { readonly kind: "open-day" };
 
 const current = createStore<TimeAsk | null>(null);
 

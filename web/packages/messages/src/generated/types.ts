@@ -580,6 +580,14 @@ export interface MessageArguments {
   "time.timer.running": { issue: string | number };
   "time.timer.saved": { issue: string | number; length: string | number };
   "time.timer.too-short": { issue: string | number };
+  "time.work-day.done": { end: string | number; start: string | number; worked: string | number };
+  "time.work-day.left-open": { day: string | number };
+  "time.work-day.on-break": { start: string | number; worked: string | number };
+  "time.work-day.open-title": { day: string | number };
+  "time.work-day.since": { start: string | number; worked: string | number };
+  "time.work-day.timer-text": { issue: string | number };
+  "time.work-day.timer-title": { issue: string | number };
+  "time.work-day.too-text": { issue: string | number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };

@@ -5761,6 +5761,52 @@ pub const TIME_TIMER_SWITCH: MessageKey = MessageKey::new("time.timer.switch");
 /// The message `time.timer.throw-away`.
 pub const TIME_TIMER_THROW_AWAY: MessageKey = MessageKey::new("time.timer.throw-away");
 
+/// The message `time.work-day.break-end`.
+pub const TIME_WORK_DAY_BREAK_END: MessageKey = MessageKey::new("time.work-day.break-end");
+
+/// The message `time.work-day.break-start`.
+pub const TIME_WORK_DAY_BREAK_START: MessageKey = MessageKey::new("time.work-day.break-start");
+
+/// The message `time.work-day.end`.
+pub const TIME_WORK_DAY_END: MessageKey = MessageKey::new("time.work-day.end");
+
+/// The message `time.work-day.left-open-button`.
+pub const TIME_WORK_DAY_LEFT_OPEN_BUTTON: MessageKey =
+    MessageKey::new("time.work-day.left-open-button");
+
+/// The message `time.work-day.open-reason`.
+pub const TIME_WORK_DAY_OPEN_REASON: MessageKey = MessageKey::new("time.work-day.open-reason");
+
+/// The message `time.work-day.open-save`.
+pub const TIME_WORK_DAY_OPEN_SAVE: MessageKey = MessageKey::new("time.work-day.open-save");
+
+/// The message `time.work-day.open-text`.
+pub const TIME_WORK_DAY_OPEN_TEXT: MessageKey = MessageKey::new("time.work-day.open-text");
+
+/// The message `time.work-day.open-time`.
+pub const TIME_WORK_DAY_OPEN_TIME: MessageKey = MessageKey::new("time.work-day.open-time");
+
+/// The message `time.work-day.region`.
+pub const TIME_WORK_DAY_REGION: MessageKey = MessageKey::new("time.work-day.region");
+
+/// The message `time.work-day.start`.
+pub const TIME_WORK_DAY_START: MessageKey = MessageKey::new("time.work-day.start");
+
+/// The message `time.work-day.timer-no`.
+pub const TIME_WORK_DAY_TIMER_NO: MessageKey = MessageKey::new("time.work-day.timer-no");
+
+/// The message `time.work-day.timer-yes`.
+pub const TIME_WORK_DAY_TIMER_YES: MessageKey = MessageKey::new("time.work-day.timer-yes");
+
+/// The message `time.work-day.too-no`.
+pub const TIME_WORK_DAY_TOO_NO: MessageKey = MessageKey::new("time.work-day.too-no");
+
+/// The message `time.work-day.too-title`.
+pub const TIME_WORK_DAY_TOO_TITLE: MessageKey = MessageKey::new("time.work-day.too-title");
+
+/// The message `time.work-day.too-yes`.
+pub const TIME_WORK_DAY_TOO_YES: MessageKey = MessageKey::new("time.work-day.too-yes");
+
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
@@ -11464,6 +11510,98 @@ pub fn time_timer_too_short(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.work-day.done`.
+#[must_use]
+pub fn time_work_day_done(
+    end: impl std::fmt::Display,
+    start: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.done"),
+        vec![
+            ("end", Value::Text(end.to_string())),
+            ("start", Value::Text(start.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
+/// The message `time.work-day.left-open`.
+#[must_use]
+pub fn time_work_day_left_open(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.left-open"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.work-day.on-break`.
+#[must_use]
+pub fn time_work_day_on_break(
+    start: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.on-break"),
+        vec![
+            ("start", Value::Text(start.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
+/// The message `time.work-day.open-title`.
+#[must_use]
+pub fn time_work_day_open_title(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.open-title"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.work-day.since`.
+#[must_use]
+pub fn time_work_day_since(
+    start: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.since"),
+        vec![
+            ("start", Value::Text(start.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
+/// The message `time.work-day.timer-text`.
+#[must_use]
+pub fn time_work_day_timer_text(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.timer-text"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.work-day.timer-title`.
+#[must_use]
+pub fn time_work_day_timer_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.timer-title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.work-day.too-text`.
+#[must_use]
+pub fn time_work_day_too_text(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.too-text"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `tls.generate-failed`.
 #[must_use]
 pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
@@ -16932,6 +17070,53 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "time.timer.too-short",
         "Less than a minute on {issue}, so no time was saved.",
     ),
+    ("time.work-day.break-end", "End break"),
+    ("time.work-day.break-start", "Start break"),
+    ("time.work-day.done", "Worked {start} to {end} · {worked}"),
+    ("time.work-day.end", "End work day"),
+    (
+        "time.work-day.left-open",
+        "Your work day on {day} was not ended.",
+    ),
+    ("time.work-day.left-open-button", "Say when it ended"),
+    (
+        "time.work-day.on-break",
+        "On break since {start} · {worked} so far",
+    ),
+    ("time.work-day.open-reason", "Why was it not ended?"),
+    ("time.work-day.open-save", "End that day"),
+    (
+        "time.work-day.open-text",
+        "Type the time of day it ended, like 16:45, and why it was not ended. The old times stay in the history of the day.",
+    ),
+    ("time.work-day.open-time", "End time"),
+    (
+        "time.work-day.open-title",
+        "When did your work day on {day} end?",
+    ),
+    ("time.work-day.region", "Work day"),
+    (
+        "time.work-day.since",
+        "Working since {start} · {worked} so far",
+    ),
+    ("time.work-day.start", "Start work day"),
+    ("time.work-day.timer-no", "Keep it running"),
+    (
+        "time.work-day.timer-text",
+        "Your work day ends now. The timer on {issue} is still running.",
+    ),
+    (
+        "time.work-day.timer-title",
+        "Stop the timer on {issue} too?",
+    ),
+    ("time.work-day.timer-yes", "Stop the timer too"),
+    ("time.work-day.too-no", "Not now"),
+    (
+        "time.work-day.too-text",
+        "You started a timer on {issue}, and your work day has not started.",
+    ),
+    ("time.work-day.too-title", "Start your work day too?"),
+    ("time.work-day.too-yes", "Start work day"),
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",

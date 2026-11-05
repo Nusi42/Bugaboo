@@ -7,6 +7,7 @@ import { useTimeNotice } from "./time-notice.ts";
 import { TimerChip } from "./TimerChip.tsx";
 import { TimerNotice } from "./TimerNotice.tsx";
 import { useTimer } from "./use-timer.ts";
+import { WorkDayPart } from "./WorkDayPart.tsx";
 
 export interface TimePartProps {
   /** Where it stands: in the sidebar (the default), at the top of *Home*, or in the bar of a phone. */
@@ -23,16 +24,16 @@ function LongTimer({ running }: { readonly running: Schema<"RunningItem"> }) {
 }
 
 /**
- * The timer and, in the next package of the screen, the work day: one part for the bottom of the
- * sidebar, the top of *Home* and the bar of a phone (TIME-01, TIME-08, UX §3.3, §4.9). It shows
- * nothing while there is no timer and nothing to tell.
+ * The timer and the work day: one part for the bottom of the sidebar, the top of *Home* (on a phone)
+ * and the bar of a phone (TIME-01, TIME-08, UX §3.3, §4.9). The sidebar and *Home* show the work day;
+ * the sidebar and the bar show the timer, with what it tells.
  */
 export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
   const reading = useTimer().data;
   const notice = useTimeNotice();
   const running = reading?.timer.running ?? undefined;
-  // The start page shows the work day; the timer is in the bar of a phone and in the sidebar.
-  if (place === "home" || (running === undefined && notice === null)) {
+  const withTimer = place !== "home" && (running !== undefined || notice !== null);
+  if (place === "bar" && !withTimer) {
     return null;
   }
   return (
@@ -40,13 +41,14 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
       aria-label={t("time.timer.region")}
       {...partOf(part.timePart, { variants: [place === "bar" && "bar"] })}
     >
-      {running === undefined || reading === undefined ? null : (
+      {place === "bar" ? null : <WorkDayPart narrow={narrow} />}
+      {running === undefined || reading === undefined || place === "home" ? null : (
         <>
           <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
           {narrow ? null : <LongTimer running={running} />}
         </>
       )}
-      {narrow ? null : <TimerNotice />}
+      {narrow || place === "home" ? null : <TimerNotice />}
     </section>
   );
 }
