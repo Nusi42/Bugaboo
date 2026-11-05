@@ -14,6 +14,7 @@ export const messages = {
   "time.entry.from-issue":
     "These start with the values of the issue and its project. Change them if this time was different.",
   "time.timer.region": "Timer",
+  "time.timer.running": "Timer running on {issue}",
   "time.timer.running-hidden": "Timer running",
   "time.timer.running-on": "Timer running on",
   "time.timer.menu": "Timer",

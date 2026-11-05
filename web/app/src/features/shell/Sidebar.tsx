@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, useShortWindow } from "@bugaboo/ui";
 
 import { Sections } from "./Sections.tsx";
 import { timePlace } from "./time-parts.ts";
@@ -33,9 +33,13 @@ export function Sidebar({
   signingOut,
   onNavigate,
 }: SidebarProps) {
+  // In a low window the sections stand closer, so the timer and the work day fit (M5-F150).
+  const short = useShortWindow() && !inDrawer;
   return (
     <nav
-      {...partOf(part.sidebar, { variants: [narrow && "narrow", inDrawer && "drawer"] })}
+      {...partOf(part.sidebar, {
+        variants: [narrow && "narrow", inDrawer && "drawer", short && "short"],
+      })}
       aria-label={t("shell.menu")}
     >
       <span {...partOf(part.sidebarBrand, { variants: [narrow && "narrow"] })}>

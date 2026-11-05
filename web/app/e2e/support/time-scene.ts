@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
-import { createIssue } from "./issues.ts";
+import type { ApiSession } from "./api.ts";
+import { createIssue, type MadeIssue } from "./issues.ts";
 import {
   choiceNamed,
   clearTimer,
@@ -15,15 +16,13 @@ import { endWorkDayIfRunning, workDayRuns } from "./work-day.ts";
 
 /** The button that is the running timer, on the issue with this ID. */
 export function chipOf(page: Page, issue: string) {
-  return page
-    .getByRole("button", { name: new RegExp(`^${t("time.timer.running-on")} ${issue}`, "u") })
-    .first();
+  return page.getByRole("button", {
+    name: new RegExp(`^${t("time.timer.running-on")} ${issue}`, "u"),
+  });
 }
 
-/** An issue with defaults for its time, a timer that ran 42 minutes on it, and a work day that runs. */
-export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
-  const admin = await signedInAdmin(server);
-  const issue = await createIssue(admin, "WEB", "Login fails after password reset");
+/** Gives the issue an Activity and a Cost center for its time, so the entry of a stop is filled in. */
+async function giveDefaults(admin: ApiSession, issue: MadeIssue): Promise<void> {
   const activity = await starterField(admin, "activity");
   const costCenter = await starterField(admin, "cost-center");
   await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
@@ -33,6 +32,13 @@ export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
     costCenter,
     await choiceNamed(admin, costCenter, "4100 Product development"),
   );
+}
+
+/** An issue with defaults for its time, a timer that ran 42 minutes on it, and a work day that runs. */
+export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Login fails after password reset");
+  await giveDefaults(admin, issue);
   await clearTimer(admin);
   await endWorkDayIfRunning(admin);
   await startTimerOn(admin, issue);
@@ -43,11 +49,7 @@ export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
 
 /** The timer part of the sidebar or the bar and the work day, whichever the window shows. */
 export async function waitForParts(page: Page, issue: string): Promise<void> {
-  await expect(
-    page
-      .getByRole("button", { name: new RegExp(`^${t("time.timer.running-on")} ${issue}`, "u") })
-      .first(),
-  ).toBeVisible();
+  await expect(chipOf(page, issue)).toBeVisible();
   await expect(page.getByText(/^Working since/u)).toBeVisible();
 }
 
@@ -55,6 +57,7 @@ export async function waitForParts(page: Page, issue: string): Promise<void> {
 export async function idleScene(server: Parameters<typeof signedInAdmin>[0]) {
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Paper runs out");
+  await giveDefaults(admin, issue);
   const reset = async (): Promise<void> => {
     await clearTimer(admin);
     await endWorkDayIfRunning(admin);
@@ -62,5 +65,5 @@ export async function idleScene(server: Parameters<typeof signedInAdmin>[0]) {
   await reset();
   const start = (): Promise<void> => startTimerOn(admin, issue);
   const workDayStarted = (): Promise<boolean> => workDayRuns(admin);
-  return { issue, reset, start, workDayStarted, dispose: () => admin.dispose() };
+  return { admin, issue, reset, start, workDayStarted, dispose: () => admin.dispose() };
 }

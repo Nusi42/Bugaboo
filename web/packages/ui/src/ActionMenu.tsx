@@ -32,6 +32,8 @@ export interface ActionOverlayProps {
   /** The name of the list, for screen readers; on a phone it is the title of the sheet too. */
   readonly label: string;
   readonly actions: readonly MenuAction[];
+  /** The title of the sheet of a phone when it is more than the name: words with an ID in the code font. */
+  readonly heading?: ReactNode;
   /** The word of the button that closes the sheet of a phone without choosing: *Cancel*. */
   readonly cancelLabel?: string;
   /** The button that opens the list; it gets what to do when it is pressed (nothing on a computer). */
@@ -89,7 +91,13 @@ function ListInPopover({ actions }: { readonly actions: readonly MenuAction[] })
  * focus, closes with Esc and gives the focus back; pressing an action does it and closes the list.
  * `ActionMenu` and the status menu both use it.
  */
-export function ActionOverlay({ label, actions, cancelLabel, renderTrigger }: ActionOverlayProps) {
+export function ActionOverlay({
+  label,
+  heading,
+  actions,
+  cancelLabel,
+  renderTrigger,
+}: ActionOverlayProps) {
   const phone = useLayout() === "phone";
   const [open, setOpen] = useState(false);
   if (!phone) {
@@ -114,7 +122,7 @@ export function ActionOverlay({ label, actions, cancelLabel, renderTrigger }: Ac
       })}
       <Overlay isOpen={open} onOpenChange={setOpen} label={label} from={overlayEdge.bottom}>
         <div {...partOf(part.actionSheet)}>
-          <p {...partOf(part.actionMenuTitle)}>{label}</p>
+          <p {...partOf(part.actionMenuTitle)}>{heading ?? label}</p>
           <ActionList actions={actions} close={close} />
           {cancelLabel === undefined ? null : (
             <Button wide onPress={close}>

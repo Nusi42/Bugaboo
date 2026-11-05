@@ -5002,6 +5002,11 @@ part "sidebar" {
     background "$bg-surface"
 }
 
+// In a window too low for the whole sidebar the sections stand closer, so the timer and the work day fit (M5-F150).
+part "sidebar[variant=short]" {
+    gap "$space-2"
+}
+
 part "sidebar[variant=narrow]" {
     width "$size-sidebar-narrow"
     align-items center
@@ -5077,6 +5082,23 @@ part "time-part[variant=bar]" {
     padding "$space-2 $space-4"
     border-top "$border-width solid $divider"
     background "$bg-surface"
+}
+
+// What the timer tells. In a window too low for the sidebar it floats over the page beside the sidebar, so the
+// sidebar keeps its height (M5-F150).
+part "timer-notice" {
+    display contents
+}
+
+part "timer-notice[variant=floating]" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    position fixed
+    inset-inline-start "calc($size-sidebar + $space-4)"
+    bottom "$space-4"
+    max-width "$size-dialog"
+    z-index "$z-panel"
 }
 
 // The timer is one button: the issue it runs on and how long, which opens the list *Stop · Switch issue ·

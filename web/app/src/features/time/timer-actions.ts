@@ -3,6 +3,13 @@ import type { MenuAction } from "@bugaboo/ui";
 
 import { askTime } from "./time-asks.ts";
 
+/** The name of the menu of the timer: the issue it runs on and how long, once both are known. */
+export function timerMenuTitle(issue: string | undefined, clock: string | undefined): string {
+  return issue === undefined || clock === undefined
+    ? t("time.timer.menu")
+    : t("time.timer.menu-of", { issue, clock });
+}
+
 /** What can be asked of a running timer, each opening its window or question. */
 export function timerActions(first: readonly MenuAction[] = []): readonly MenuAction[] {
   return [

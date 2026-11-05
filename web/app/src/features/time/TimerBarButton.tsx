@@ -1,29 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { ActionOverlay, Icon, iconName, Length, partOf, part, type IconName } from "@bugaboo/ui";
-import type { ReactNode } from "react";
+import { ActionOverlay, iconName, Length, partOf, part } from "@bugaboo/ui";
 import { Button } from "react-aria-components";
 
+import { BarPlace } from "../shell/index.ts";
 import type { EntryIssue } from "./entry-issue.ts";
-import { timerActions } from "./timer-actions.ts";
+import { timerActions, timerMenuTitle } from "./timer-actions.ts";
+import { TimerMenuHeading } from "./TimerMenuHeading.tsx";
 import { useEntryDefaults } from "./use-entry-defaults.ts";
-import { useRunClock } from "./use-run-clock.ts";
-import { useTimer } from "./use-timer.ts";
+import { useRunningClock } from "./use-run-clock.ts";
 import { useTimerOn } from "./use-timer-on.ts";
-
-/** A start that is none, for the clock of a timer that does not run. */
-const notRunning = { started_at: "" };
-
-/** The words and the icon of a place of the bar, drawn as the places of the bar of the app are. */
-function Place({ icon, children }: { readonly icon: IconName; readonly children: ReactNode }) {
-  return (
-    <>
-      <span {...partOf(part.bottomBarLabel)}>{children}</span>
-      <span {...partOf(part.bottomBarIcon)}>
-        <Icon name={icon} />
-      </span>
-    </>
-  );
-}
 
 interface RunningPlaceProps {
   readonly issue: EntryIssue;
@@ -35,24 +20,19 @@ interface RunningPlaceProps {
 
 /** The timer while it runs, here or on another issue: its clock, and the sheet of what to do with it. */
 function RunningPlace({ issue, here, press }: RunningPlaceProps) {
-  const reading = useTimer().data;
-  const running = reading?.timer.running ?? undefined;
-  const { clock } = useRunClock(running ?? notRunning, reading?.serverOffsetMs ?? 0);
+  const { running, clock } = useRunningClock();
   if (running === undefined) {
     return null;
   }
   const on = running.readable_id ?? undefined;
   const prefix = here ? t("time.timer.stop-on", { issue: issue.key }) : t("time.timer.running-on");
-  const sheet =
-    clock === undefined
-      ? t("time.timer.menu")
-      : t("time.timer.menu-of", { issue: on ?? issue.key, clock });
   const first = here
     ? []
     : [{ id: "switch-here", label: t("time.timer.switch-here"), onAction: press }];
   return (
     <ActionOverlay
-      label={sheet}
+      label={timerMenuTitle(on ?? issue.key, clock)}
+      heading={<TimerMenuHeading issue={on ?? issue.key} clock={clock} />}
       actions={timerActions(first)}
       cancelLabel={t("common.cancel")}
       renderTrigger={(onOpen) => (
@@ -61,10 +41,10 @@ function RunningPlace({ issue, here, press }: RunningPlaceProps) {
           {...(onOpen === undefined ? {} : { onPress: onOpen })}
         >
           <span {...partOf(part.visuallyHidden)}>{prefix}</span>
-          <Place icon={here ? iconName.stop : iconName.clock}>
+          <BarPlace icon={here ? iconName.stop : iconName.clock}>
             {here || on === undefined ? null : <>{on} </>}
             {clock === undefined ? null : <Length text={clock} />}
-          </Place>
+          </BarPlace>
         </Button>
       )}
     />
@@ -87,7 +67,7 @@ export function TimerBarButton({ issue }: { readonly issue: EntryIssue }) {
   if (state === "idle") {
     return (
       <Button {...partOf(part.bottomBarItem)} onPress={press}>
-        <Place icon={iconName.play}>{t("time.timer.bar")}</Place>
+        <BarPlace icon={iconName.play}>{t("time.timer.bar")}</BarPlace>
       </Button>
     );
   }

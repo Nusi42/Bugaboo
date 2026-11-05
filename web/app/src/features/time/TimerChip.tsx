@@ -1,9 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { ActionOverlay, partOf, part } from "@bugaboo/ui";
+import { ActionOverlay, Alert, alertTone, partOf, part } from "@bugaboo/ui";
 import { Button } from "react-aria-components";
 
-import { timerActions } from "./timer-actions.ts";
+import { timerActions, timerMenuTitle } from "./timer-actions.ts";
+import { TimerMenuHeading } from "./TimerMenuHeading.tsx";
 import { useRunClock } from "./use-run-clock.ts";
 
 export interface TimerChipProps {
@@ -12,6 +13,15 @@ export interface TimerChipProps {
   readonly serverOffsetMs: number;
   /** The sidebar is narrowed to icons: the chip shows the clock only. */
   readonly narrow?: boolean;
+}
+
+/** What the button says before the clock, for a screen reader: the issue is in its words, or not known. */
+function nameOf(issue: string | undefined, narrow: boolean): string {
+  if (issue === undefined) {
+    return t("time.timer.running-hidden");
+  }
+  // With the issue drawn beside it the name needs only the words before it; without, the issue is named too.
+  return narrow ? t("time.timer.running", { issue }) : t("time.timer.running-on");
 }
 
 /**
@@ -23,14 +33,10 @@ export interface TimerChipProps {
 export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChipProps) {
   const issue = running.readable_id ?? undefined;
   const { clock } = useRunClock(running, serverOffsetMs);
-  const prefix = issue === undefined ? t("time.timer.running-hidden") : t("time.timer.running-on");
-  const sheet =
-    issue === undefined || clock === undefined
-      ? t("time.timer.menu")
-      : t("time.timer.menu-of", { issue, clock });
   return (
     <ActionOverlay
-      label={sheet}
+      label={timerMenuTitle(issue, clock)}
+      heading={<TimerMenuHeading issue={issue} clock={clock} />}
       actions={timerActions()}
       cancelLabel={t("common.cancel")}
       renderTrigger={(onOpen) => (
@@ -40,9 +46,7 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
           })}
           {...(onOpen === undefined ? {} : { onPress: onOpen })}
         >
-          <span {...partOf(part.visuallyHidden)}>
-            {narrow ? `${prefix} ${issue ?? ""}` : prefix}
-          </span>
+          <span {...partOf(part.visuallyHidden)}>{nameOf(issue, narrow)}</span>
           <span {...partOf(part.timerChipLive)} />
           {issue === undefined || narrow ? null : (
             <span {...partOf(part.timerChipIssue)}>{issue}</span>
@@ -52,4 +56,11 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
       )}
     />
   );
+}
+
+/** The warning of a timer that runs longer than a work day, on the timer itself. */
+export function LongTimer({ running }: { readonly running: Schema<"RunningItem"> }) {
+  return running.runs_long ? (
+    <Alert tone={alertTone.warning}>{t("time.timer.runs-long")}</Alert>
+  ) : null;
 }

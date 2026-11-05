@@ -1,17 +1,15 @@
 import { t } from "@bugaboo/messages";
 import {
   ActionMenu,
-  Icon,
   iconName,
   partOf,
   part,
   type ActionMenuTriggerProps,
-  type IconName,
   type MenuAction,
 } from "@bugaboo/ui";
-import type { ReactNode } from "react";
 import { Button, Toolbar } from "react-aria-components";
 
+import { BarPlace } from "../shell/index.ts";
 import { TimerBarButton, TimerNotice, type EntryIssue } from "../time/index.ts";
 
 export interface IssueBarProps {
@@ -24,23 +22,11 @@ export interface IssueBarProps {
   readonly issue: EntryIssue | undefined;
 }
 
-/** A place of the bar: an icon over its words, as the places of the bar of the app (UX §3.3). */
-function Place({ icon, children }: { readonly icon: IconName; readonly children: ReactNode }) {
-  return (
-    <>
-      <span {...partOf(part.bottomBarLabel)}>{children}</span>
-      <span {...partOf(part.bottomBarIcon)}>
-        <Icon name={icon} />
-      </span>
-    </>
-  );
-}
-
 /** The button that opens *More*. */
 function MoreButton({ label, onOpen }: ActionMenuTriggerProps) {
   return (
     <Button {...partOf(part.bottomBarItem)} {...(onOpen === undefined ? {} : { onPress: onOpen })}>
-      <Place icon={iconName.more}>{label}</Place>
+      <BarPlace icon={iconName.more}>{label}</BarPlace>
     </Button>
   );
 }
@@ -58,12 +44,12 @@ export function IssueBar({ onStatus, onComment, actions, issue }: IssueBarProps)
       <Toolbar {...partOf(part.issueBar)} aria-label={t("issues.bar")}>
         <div {...partOf(part.issueBarItem)}>
           <Button {...partOf(part.bottomBarItem)} onPress={onStatus}>
-            <Place icon={iconName.status}>{t("issue-field.status")}</Place>
+            <BarPlace icon={iconName.status}>{t("issue-field.status")}</BarPlace>
           </Button>
         </div>
         <div {...partOf(part.issueBarItem)}>
           <Button {...partOf(part.bottomBarItem)} onPress={onComment}>
-            <Place icon={iconName.comment}>{t("issues.comment")}</Place>
+            <BarPlace icon={iconName.comment}>{t("issues.comment")}</BarPlace>
           </Button>
         </div>
         {issue === undefined ? null : (

@@ -1,11 +1,12 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
+import { partOf, part, useShortWindow } from "@bugaboo/ui";
+import { useLocation } from "@tanstack/react-router";
 
 import type { TimePlace } from "../shell/index.ts";
+import { paths } from "../../shared/paths.ts";
 import { useTimeNotice } from "./time-notice.ts";
 import { TimerChip } from "./TimerChip.tsx";
-import { TimerNotice } from "./TimerNotice.tsx";
+import { Tells } from "./Tells.tsx";
 import { useTimer } from "./use-timer.ts";
 import { WorkDayPart } from "./WorkDayPart.tsx";
 
@@ -14,13 +15,6 @@ export interface TimePartProps {
   readonly place?: TimePlace;
   /** The sidebar is narrowed to icons. */
   readonly narrow?: boolean;
-}
-
-/** The warning of a timer that runs longer than a work day, on the timer itself. */
-function LongTimer({ running }: { readonly running: Schema<"RunningItem"> }) {
-  return running.runs_long ? (
-    <Alert tone={alertTone.warning}>{t("time.timer.runs-long")}</Alert>
-  ) : null;
 }
 
 /**
@@ -32,8 +26,11 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
   const reading = useTimer().data;
   const notice = useTimeNotice();
   const running = reading?.timer.running ?? undefined;
+  const short = useShortWindow();
+  const onHome = useLocation().pathname === paths.home;
   const withTimer = running !== undefined || notice !== null;
-  if (place === "bar" && !withTimer) {
+  // Home of a phone has the timer at its top, so the bar has none there: one chip and one notice.
+  if (place === "bar" && (!withTimer || onHome)) {
     return null;
   }
   return (
@@ -43,12 +40,9 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
     >
       {place === "bar" ? null : <WorkDayPart narrow={narrow} place={place} />}
       {running === undefined || reading === undefined ? null : (
-        <>
-          <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
-          {narrow ? null : <LongTimer running={running} />}
-        </>
+        <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
       )}
-      {narrow ? null : <TimerNotice />}
+      {narrow ? null : <Tells floating={place === "sidebar" && short} running={running} />}
     </section>
   );
 }

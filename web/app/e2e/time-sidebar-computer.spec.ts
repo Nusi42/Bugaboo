@@ -1,0 +1,89 @@
+import { t } from "@bugaboo/messages";
+import type { Page } from "@playwright/test";
+
+import { ada } from "./support/accounts.ts";
+import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expect, test } from "./support/fixtures.ts";
+import { signIn } from "./support/flows.ts";
+import { prepareWeb } from "./support/issues.ts";
+import { chipOf, idleScene } from "./support/time-scene.ts";
+
+// The sidebar with the timer and the work day fits a window 600 px high, and its group at the bottom is
+// a menu that rises from its button (M5-F150, UX §3.1). A spec for a computer: it is a sidebar.
+
+test.use({ preparation: { run: prepareWeb } });
+
+const WINDOW_HEIGHT = 600;
+const SIDEBAR_WIDTH = 264;
+
+/** Everything of the sidebar is in the window: it does not scroll, and *Sign out* is above the edge. */
+async function expectSidebarFits(page: Page): Promise<void> {
+  const menu = page.getByRole("navigation", { name: t("shell.menu") });
+  const sizes = await menu.evaluate((nav) => ({
+    content: nav.scrollHeight,
+    shown: nav.clientHeight,
+  }));
+  expect(sizes.content).toBeLessThanOrEqual(sizes.shown);
+  const signOut = page.getByRole("button", { name: t("nav.sign-out"), exact: true });
+  const bottom = await signOut.evaluate((button) => button.getBoundingClientRect().bottom);
+  expect(bottom).toBeLessThanOrEqual(WINDOW_HEIGHT);
+}
+
+test("ux_01 the sidebar fits a window 600 px high in every state of the timer and the work day", async ({
+  page,
+  server,
+}) => {
+  const { issue, start, dispose } = await idleScene(server);
+  await start();
+  await page.setViewportSize({ width: 1280, height: WINDOW_HEIGHT });
+  await signIn(page, ada);
+  await page.goto("/");
+  await expect(chipOf(page, issue.key)).toBeVisible();
+  // The timer runs and the day has not started.
+  await expect(
+    page.getByRole("button", { name: t("time.work-day.start"), exact: true }),
+  ).toBeVisible();
+  await expectSidebarFits(page);
+  await expectGoodInEveryLook(page);
+  // The day started.
+  await page.getByRole("button", { name: t("time.work-day.start"), exact: true }).click();
+  await expect(page.getByText(/^Working since/u)).toBeVisible();
+  await expectSidebarFits(page);
+  // A notice: the stop of a timer under a minute says that nothing was saved. It floats over the page.
+  await chipOf(page, issue.key).click();
+  await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
+  await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
+  const notice = page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true });
+  await expect(notice).toBeVisible();
+  await expectSidebarFits(page);
+  const left = await notice.evaluate((element) => element.getBoundingClientRect().left);
+  expect(left).toBeGreaterThanOrEqual(SIDEBAR_WIDTH);
+  await expectGoodInEveryLook(page);
+  await dispose();
+});
+
+test("ux_01 the menu of the group at the bottom rises over the page and gives the focus back", async ({
+  page,
+  server,
+}) => {
+  const { issue, start, dispose } = await idleScene(server);
+  await start();
+  await page.setViewportSize({ width: 1280, height: WINDOW_HEIGHT });
+  await signIn(page, ada);
+  await page.goto("/");
+  await expect(chipOf(page, issue.key)).toBeVisible();
+  // The group is one button; its menu rises over the page, and the sidebar does not grow or scroll.
+  const group = page.getByRole("button", { name: t("shell.group-fold"), exact: true });
+  await group.click();
+  const opened = page.getByRole("dialog", { name: t("shell.group-fold") });
+  await expect(opened.getByRole("link", { name: t("nav.my-settings"), exact: true })).toBeVisible();
+  await expectSidebarFits(page);
+  // The focus is inside the menu.
+  await expect(opened.and(page.locator(":focus-within"))).toHaveCount(1);
+  await expectGoodInEveryLook(page);
+  // Esc closes it and the focus goes back to the button.
+  await page.keyboard.press("Escape");
+  await expect(opened).toHaveCount(0);
+  await expect(group).toBeFocused();
+  await dispose();
+});

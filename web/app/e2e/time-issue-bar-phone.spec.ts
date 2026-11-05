@@ -18,9 +18,7 @@ test.use({ preparation: { run: prepareWeb } });
 test("ux_01 on a phone an open issue shows one bar and one more button", async ({
   page,
   server,
-  hasTouch,
 }) => {
-  test.skip(!hasTouch, "The bar of an issue is the bar of a phone.");
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Printer jams");
   await admin.dispose();
@@ -49,9 +47,7 @@ test("ux_01 on a phone an open issue shows one bar and one more button", async (
 test("ux_01 the timer in the bar of a phone issue shows its clock and opens its sheet", async ({
   page,
   server,
-  hasTouch,
 }) => {
-  test.skip(!hasTouch, "The bar of an issue is the bar of a phone.");
   const { admin, issue } = await scene(server);
   await signIn(page, ada);
   // On the issue the timer runs on: the clock with a stop mark, and the sheet of what to do with it.

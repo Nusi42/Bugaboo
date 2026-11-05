@@ -8,9 +8,9 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
 import { ask, result } from "./support/quick-search.ts";
-import { clearTimer, timerRunsOn } from "./support/time.ts";
+import { clearTimer, startedMinutesAgo, timerRunsOn } from "./support/time.ts";
 
-// *Start timer* and *Stop timer* in Quick search (CFG-08) and the key `t` on an open issue (UX-05):
+// A spec for a computer: keys. *Start timer* and *Stop timer* in Quick search (CFG-08) and the key `t` on an open issue (UX-05):
 // the keyboard alone starts and stops the timer and saves the time.
 
 test.use({ preparation: { run: prepareWeb } });
@@ -25,8 +25,12 @@ function stopWindow(page: Page, issue: string) {
   return page.getByRole("dialog", { name: t("time.stop.title", { issue }) });
 }
 
-test("cfg_08 quick search starts and stops the timer", async ({ page, server, hasTouch }) => {
-  test.skip(hasTouch, "Quick search by keys is for a computer.");
+/** The question that a timer under a minute gets: nothing would be saved. */
+function stopQuestion(page: Page, issue: string) {
+  return page.getByRole("alertdialog", { name: t("time.stop.title", { issue }) });
+}
+
+test("cfg_08 quick search starts and stops the timer", async ({ page, server }) => {
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Printer jams");
   await signIn(page, ada);
@@ -35,14 +39,18 @@ test("cfg_08 quick search starts and stops the timer", async ({ page, server, ha
   await ask(page, t("time.timer.start"));
   await result(page, t("time.timer.start")).first().click();
   await expect.poll(() => timerRunsOn(admin)).toBe(issue.key);
+  // Starting a timer before the work day asks to start the day too: answer it, or it covers the page.
+  const offer = page.getByRole("alertdialog", { name: t("time.work-day.too-title") });
+  await offer.getByRole("button", { name: t("time.work-day.too-no"), exact: true }).click();
+  await expect(offer).toHaveCount(0);
   // Start timer on the issue the timer runs on is asking to stop it.
   await ask(page, t("time.timer.start"));
   await result(page, t("time.timer.start")).first().click();
-  await expect(stopWindow(page, issue.key)).toBeVisible();
+  await expect(stopQuestion(page, issue.key)).toBeVisible();
   await page.keyboard.press("Escape");
   await ask(page, t("time.timer.stop-timer"));
   await result(page, t("time.timer.stop-timer")).first().click();
-  await expect(stopWindow(page, issue.key)).toBeVisible();
+  await expect(stopQuestion(page, issue.key)).toBeVisible();
   await clearTimer(admin);
   await admin.dispose();
 });
@@ -50,9 +58,7 @@ test("cfg_08 quick search starts and stops the timer", async ({ page, server, ha
 test("ux_05 the keyboard alone starts and stops the timer and saves the time", async ({
   page,
   server,
-  hasTouch,
 }) => {
-  test.skip(hasTouch, "Keys are for a computer.");
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Paper runs out");
   await signIn(page, ada);
@@ -60,6 +66,10 @@ test("ux_05 the keyboard alone starts and stops the timer and saves the time", a
   await expect(startButton(page)).toBeVisible();
   await page.keyboard.press("t");
   await expect.poll(() => timerRunsOn(admin)).toBe(issue.key);
+  await startedMinutesAgo(admin, 5);
+  // The page looks at the timer again, with its new start.
+  await page.reload();
+  await expect(page.getByRole("definition").filter({ hasText: "0:05" })).toBeVisible();
   await page.keyboard.press("t");
   const window = stopWindow(page, issue.key);
   await expect(window).toBeVisible();

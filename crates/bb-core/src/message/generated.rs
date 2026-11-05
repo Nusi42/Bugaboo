@@ -11525,6 +11525,15 @@ pub fn time_timer_menu_of(clock: impl std::fmt::Display, issue: impl std::fmt::D
     )
 }
 
+/// The message `time.timer.running`.
+#[must_use]
+pub fn time_timer_running(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.running"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `time.timer.saved`.
 #[must_use]
 pub fn time_timer_saved(issue: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
@@ -17117,6 +17126,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.menu-of", "Timer on {issue} · {clock}"),
     ("time.timer.region", "Timer"),
     ("time.timer.row", "Your timer"),
+    ("time.timer.running", "Timer running on {issue}"),
     ("time.timer.running-hidden", "Timer running"),
     ("time.timer.running-on", "Timer running on"),
     (

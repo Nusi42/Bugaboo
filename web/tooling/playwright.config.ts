@@ -55,13 +55,15 @@ export default defineConfig({
     },
     {
       name: "desktop",
-      testIgnore: speedFiles,
+      // A spec for a phone only (`*-phone.spec.ts`) is not run here.
+      testIgnore: [speedFiles, "**/*-phone.spec.ts"],
       use: { browserName: "chromium", viewport: viewports.computer },
     },
     {
       name: "phone",
       // Ten browsers at once are shown on a computer; the phone has the locks in WebKit below.
-      testIgnore: ["**/concurrent/**", speedFiles],
+      // A spec for a computer only (`*-computer.spec.ts`) is not run here.
+      testIgnore: ["**/concurrent/**", speedFiles, "**/*-computer.spec.ts"],
       use: { browserName: "chromium", viewport: viewports.phone, hasTouch: true },
     },
     // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the

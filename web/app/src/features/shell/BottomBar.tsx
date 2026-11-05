@@ -1,85 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { Icon, iconName, type IconName, partOf, part, ariaCurrent } from "@bugaboo/ui";
-import { useLocation } from "@tanstack/react-router";
-import { Button, Link } from "react-aria-components";
+import { iconName, partOf, part } from "@bugaboo/ui";
 
-import { paths, type Path } from "../../shared/paths.ts";
-import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
+import { paths } from "../../shared/paths.ts";
+import { overlays, useOverlayOpen } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
-import { howCurrent, placeAt } from "../../shared/places.ts";
+import { OverlayTab, PlaceTab } from "./BottomBarTabs.tsx";
 import { timePlace } from "./time-parts.ts";
 import { TimeSlot } from "./TimeSlot.tsx";
-
-interface TabProps {
-  readonly icon: IconName;
-  readonly label: string;
-  /** A number after the words, such as the notifications not read yet. */
-  readonly count?: string | undefined;
-}
-
-/** The icon with its words under it: a button of the bar. The words come first in the page, so a
- * screen reader says *Notifications 3*; the icon is drawn above them. */
-function Tab({ icon, label, count }: TabProps) {
-  return (
-    <>
-      <span {...partOf(part.bottomBarLabel)}>{label}</span>
-      <span {...partOf(part.bottomBarIcon)}>
-        <Icon name={icon} />
-        {count === undefined ? null : <span {...partOf(part.bottomBarCount)}>{count}</span>}
-      </span>
-    </>
-  );
-}
-
-/** A link of the bar to a page of the app. */
-function PlaceTab({ path, count }: { readonly path: Path; readonly count?: string | undefined }) {
-  const { pathname } = useLocation();
-  const place = placeAt(path);
-  if (place === undefined) {
-    return null;
-  }
-  const current = howCurrent(place.path, pathname) !== undefined;
-  return (
-    <li {...partOf(part.bottomBarTab)}>
-      <Link
-        {...partOf(part.bottomBarItem, { states: [current && "current"] })}
-        href={place.path}
-        {...(current ? { "aria-current": ariaCurrent.page } : {})}
-      >
-        <Tab icon={place.icon} label={t(place.name)} count={count} />
-      </Link>
-    </li>
-  );
-}
-
-interface OverlayTabProps extends TabProps {
-  /** The layer the button opens. */
-  readonly opens: OverlayName;
-  /** The layer is open now (for screen readers). */
-  readonly expanded?: boolean;
-  /** The place the tab stands for (*Search*): the tab is current there, as the link of a place is. */
-  readonly place?: Path;
-}
-
-/** A button of the bar that opens a layer over the page. */
-function OverlayTab({ icon, label, opens, expanded, place }: OverlayTabProps) {
-  const { pathname } = useLocation();
-  const current = place !== undefined && howCurrent(place, pathname) !== undefined;
-  return (
-    <li {...partOf(part.bottomBarTab)}>
-      <Button
-        {...partOf(part.bottomBarItem, { states: [current && "current"] })}
-        {...(current ? { "aria-current": ariaCurrent.page } : {})}
-        {...(expanded === undefined ? {} : { "aria-expanded": expanded })}
-        onPress={() => {
-          openOverlay(opens);
-        }}
-      >
-        <Tab icon={icon} label={label} />
-      </Button>
-    </li>
-  );
-}
 
 /**
  * The bar at the bottom of a phone, with words under the icons (UX §3.3): *Home*, *Search*, *New*

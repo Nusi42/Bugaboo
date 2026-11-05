@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { inFourChosenThemes, inFourChosenThemesAsWindow } from "./support/four-themes.ts";
+import { inFourChosenThemes } from "./support/four-themes.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -74,11 +74,12 @@ test("the issue page with the timer", async ({ page, server }) => {
   await inFourChosenThemes(page, "issue-page", MILESTONE, paths.appearance, async () => {
     await page.goto(issueAddress(issue.key));
     await expect(
-      page
-        .getByRole("button", {
-          name: new RegExp(`^${t("time.timer.bar-stop")}`, "u"),
-        })
-        .first(),
+      // The row of the issue page on a computer, or the bar of the issue on a phone.
+      page.getByRole("button", { name: t("time.timer.bar-stop"), exact: true }).or(
+        page.getByRole("button", {
+          name: new RegExp(`^${t("time.timer.stop-on", { issue: issue.key })}`, "u"),
+        }),
+      ),
     ).toBeVisible();
   });
   await admin.dispose();
@@ -98,44 +99,6 @@ test("start your work day too", async ({ page, server }) => {
   await dispose();
 });
 
-test("the sidebar in a window 600 px high", async ({ page, server, hasTouch }) => {
-  test.skip(hasTouch, "The sidebar is the sidebar of a computer.");
-  const { admin, issue } = await scene(server);
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await signIn(page, ada);
-  await inFourChosenThemes(page, "sidebar-600", MILESTONE, paths.appearance, async () => {
-    await page.goto("/");
-    await waitForParts(page, issue.key);
-  });
-  await admin.dispose();
-});
-
-test("the folded group of the sidebar, opened, in a window 600 px high", async ({
-  page,
-  server,
-  hasTouch,
-}) => {
-  test.skip(hasTouch, "The sidebar is the sidebar of a computer.");
-  const { admin, issue } = await scene(server);
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await signIn(page, ada);
-  await inFourChosenThemesAsWindow(
-    page,
-    "sidebar-600-open",
-    MILESTONE,
-    paths.appearance,
-    async () => {
-      await page.goto("/");
-      await waitForParts(page, issue.key);
-      await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
-      await expect(
-        page.getByRole("link", { name: t("nav.my-settings"), exact: true }),
-      ).toBeVisible();
-    },
-  );
-  await admin.dispose();
-});
-
 test("stop timer under one minute", async ({ page, server }) => {
   const { issue, reset, start, dispose } = await idleScene(server);
   await signIn(page, ada);
@@ -146,7 +109,7 @@ test("stop timer under one minute", async ({ page, server }) => {
     await chipOf(page, issue.key).click();
     await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
     await expect(
-      page.getByRole("dialog", { name: t("time.stop.title", { issue: issue.key }) }),
+      page.getByRole("alertdialog", { name: t("time.stop.title", { issue: issue.key }) }),
     ).toContainText(t("time.stop.nothing", { issue: issue.key }));
   });
   await dispose();

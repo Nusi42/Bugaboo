@@ -43,6 +43,7 @@ export {
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
 export { BarSlot } from "./bar-slot.ts";
+export { BarPlace, type BarPlaceProps } from "./BarPlace.tsx";
 export { useHideAppBar } from "./app-bar.ts";
 export { TimeSlot } from "./TimeSlot.tsx";
 export {

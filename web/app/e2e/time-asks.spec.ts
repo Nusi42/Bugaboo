@@ -68,7 +68,7 @@ test("time_08 the questions of the work day are good in every look", async ({ pa
   await dispose();
 });
 
-test("time_01 a stop under one minute says that nothing will be saved", async ({
+test("time_01 a stop under one minute is one question with nothing to fill in", async ({
   page,
   server,
 }) => {
@@ -78,11 +78,18 @@ test("time_01 a stop under one minute says that nothing will be saved", async ({
   await page.goto("/");
   await chipOf(page, issue.key).click();
   await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
-  const window = page.getByRole("dialog", { name: t("time.stop.title", { issue: issue.key }) });
-  await expect(window).toContainText(t("time.stop.nothing", { issue: issue.key }));
-  await window.getByRole("button", { name: t("time.stop.save"), exact: true }).click();
+  const question = page.getByRole("alertdialog", {
+    name: t("time.stop.title", { issue: issue.key }),
+  });
+  await expect(question).toContainText(t("time.stop.nothing", { issue: issue.key }));
+  // Nothing is saved, so there are no fields, no note, no *Save time* and no *Throw away*.
+  await expect(question.getByLabel(t("time.entry.note"))).toHaveCount(0);
+  await expect(question.getByRole("button", { name: t("time.stop.save") })).toHaveCount(0);
+  await expect(question.getByRole("button", { name: t("time.timer.throw-away") })).toHaveCount(0);
+  await expectGoodInEveryLook(page);
+  await question.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
   await expect(
-    page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true }).first(),
+    page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true }),
   ).toBeVisible();
   await dispose();
 });
@@ -97,7 +104,7 @@ test("time_01 the issue page shows the running timer in a row of its own", async
   const row = page.getByRole("term").filter({ hasText: t("time.timer.row") });
   await expect(row).toBeVisible();
   // The clock is in hours and minutes, and *Stop* opens *Stop timer*.
-  await expect(page.getByText("0:42", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("definition").filter({ hasText: "0:42" })).toBeVisible();
   await page
     .getByRole("button", { name: t("time.timer.bar-stop"), exact: true })
     .first()
