@@ -74,9 +74,8 @@ pub fn file_sentence(file: &str) -> Result<String, JsError> {
 /// The sentence of time that was booked on an issue, changed or deleted (see [`change_sentence`]):
 /// who did it, the word of what happened (`booked`, `changed`, `deleted`; another word, or none,
 /// is an event this version does not know) and the length in whole minutes, if the reader may read
-/// it. The
-/// three come as they are, not as JSON: reading them as JSON would put a reader of its own for
-/// `bb_core::wording::Time` into the module, which the browser fetches on every history.
+/// it. The three come as they are, not as JSON: reading them as JSON would put a reader of its own
+/// for `bb_core::wording::Time` into the module, which the browser fetches on every history.
 ///
 /// # Errors
 /// The answer cannot be written, a defect.
