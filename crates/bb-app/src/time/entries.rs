@@ -131,7 +131,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The item the own fields of an entry on `issue` are judged for.
-    async fn entry_item(&self, issue: &Issue, id: Option<TimeEntryId>) -> Result<Item, AppError> {
+    pub(super) async fn entry_item(
+        &self,
+        issue: &Issue,
+        id: Option<TimeEntryId>,
+    ) -> Result<Item, AppError> {
         Ok(Item {
             kind: RecordKind::TimeEntry,
             id: id.map(EntityId::from),

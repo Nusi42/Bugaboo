@@ -16,7 +16,8 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, PeopleContext};
 
 use super::types::{
-    IssueTimeEntries, IssueTimeEntriesQuery, IssueTimeEntryView, MyTimeEntriesQuery, TimeEntryPage,
+    EntryDefaults, EntryDefaultsQuery, IssueTimeEntries, IssueTimeEntriesQuery, IssueTimeEntryView,
+    MyTimeEntriesQuery, TimeEntryPage,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -123,4 +124,33 @@ pub async fn issue_time_entries<S: AuthStore>(
     }
     let next_cursor = cut.next_cursor(|entry| entry.id.to_string());
     Ok(held.authorize(IssueTimeEntries { items, next_cursor }))
+}
+
+/// What a new time entry on an issue starts with: whether *Billable* is offered and the defaults of
+/// the own fields of time entries, as the person may see them (ADR-0035, decision 1). The *Stop
+/// timer* window and *Add time* show these, and the entry they save takes the same defaults for a
+/// field they leave out.
+///
+/// # Errors
+/// `resource.not-found` for an issue the person does not see, `access.forbidden` without *Book
+/// time* there.
+pub async fn time_entry_defaults<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: EntryDefaultsQuery,
+) -> Result<Authorized<EntryDefaults>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let (issue, held) = ctx.bookable_issue(&actor, &input.issue).await?;
+    let item = ctx.entry_item(&issue, None).await?;
+    let defaults = ctx.entry_defaults(&issue, &item.chain).await?;
+    let record = EntityId::from(issue.id);
+    let own_fields = ctx
+        .load_values(RecordKind::Issue, &[record])
+        .await?
+        .holding(record, defaults)
+        .shown(&held, Some(issue.issue_type), record);
+    let billable_offered = ctx.billable_offered().await?;
+    Ok(held.authorize(EntryDefaults {
+        billable_offered,
+        own_fields,
+    }))
 }

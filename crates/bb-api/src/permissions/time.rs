@@ -35,6 +35,8 @@ pub(super) const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
+    // What a new entry starts with is read by whoever may book on the issue.
+    route("getTimeEntryDefaults", BOOK_TIME, Answer::NeverStored),
     // The time of an issue and the totals of a project (TIME-03) are read by whoever sees the issue
     // or the project; the totals count only the issues they see and the fields they may read.
     route(

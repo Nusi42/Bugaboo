@@ -6631,6 +6631,64 @@
         "x-permission": "see-issues"
       }
     },
+    "/api/v1/issues/{issue}/time-entry-defaults": {
+      "get": {
+        "tags": ["time"],
+        "summary": "What a new time entry on an issue starts with: whether *Billable* is offered and the defaults of\nthe own fields of time entries. The screens that book time show these; the server fills in the\nsame defaults for a field a request leaves out. Needs *Book time*.",
+        "operationId": "getTimeEntryDefaults",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What a new entry starts with.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryDefaultsItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "book-time"
+      }
+    },
     "/api/v1/issues/{issue}/uploads": {
       "post": {
         "tags": ["files"],
@@ -16745,6 +16803,21 @@
           "email": {
             "type": "string",
             "description": "The e-mail address."
+          }
+        }
+      },
+      "EntryDefaultsItem": {
+        "type": "object",
+        "description": "What a new time entry on an issue starts with.",
+        "required": ["billable_offered", "own_fields"],
+        "properties": {
+          "billable_offered": {
+            "type": "boolean",
+            "description": "Whether the organization offers *Billable*."
+          },
+          "own_fields": {
+            "$ref": "#/components/schemas/OwnValues",
+            "description": "The values of its own fields the person may see, by the key (ID) of the field: the value on\nthe issue, else on its project, else on the projects above (the nearest wins)."
           }
         }
       },

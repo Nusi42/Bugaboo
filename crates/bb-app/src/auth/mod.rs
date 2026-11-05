@@ -141,11 +141,12 @@ use crate::time::totals::{
     IssueTime, IssueTimeQuery, ProjectTimeQuery, TimeTotals, issue_time, project_time,
 };
 use crate::time::{
-    AddTime, ChangeStartTime, ChangeTimeEntry, DeleteTimeEntry, IssueTimeEntries,
-    IssueTimeEntriesQuery, MyTimeEntriesQuery, StartTimer, StopTimer, SwitchTimer, ThrowAwayTimer,
-    TimeEntryPage, TimeEntryView, TimerQuery, TimerSaved, TimerView, add_time, change_start_time,
-    change_time_entry, delete_time_entry, issue_time_entries, my_time_entries, start_timer,
-    stop_timer, switch_timer, throw_away_timer, timer,
+    AddTime, ChangeStartTime, ChangeTimeEntry, DeleteTimeEntry, EntryDefaults, EntryDefaultsQuery,
+    IssueTimeEntries, IssueTimeEntriesQuery, MyTimeEntriesQuery, StartTimer, StopTimer,
+    SwitchTimer, ThrowAwayTimer, TimeEntryPage, TimeEntryView, TimerQuery, TimerSaved, TimerView,
+    add_time, change_start_time, change_time_entry, delete_time_entry, issue_time_entries,
+    my_time_entries, start_timer, stop_timer, switch_timer, throw_away_timer, time_entry_defaults,
+    timer,
 };
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
@@ -720,6 +721,8 @@ use_cases! {
     my_time_entries(MyTimeEntriesQuery) -> Authorized<TimeEntryPage>;
     /// Lists the time entries on an issue.
     issue_time_entries(IssueTimeEntriesQuery) -> Authorized<IssueTimeEntries>;
+    /// Tells what a new time entry on an issue starts with.
+    time_entry_defaults(EntryDefaultsQuery) -> Authorized<EntryDefaults>;
     /// Shows the time of an issue, and its totals with its sub-issues.
     issue_time(IssueTimeQuery) -> Authorized<IssueTime>;
     /// Shows the totals of the time of a project.

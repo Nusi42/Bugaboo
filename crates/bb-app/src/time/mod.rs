@@ -26,7 +26,7 @@ pub use entries::{add_time, change_time_entry, delete_time_entry};
 pub use limits::{
     LONG_TIMER_HOURS, TIME_ENTRIES_PER_DAY_MAX, TIME_NOTE_CHARS_MAX, TIMER_CHANGES_PER_SECOND,
 };
-pub use read::{issue_time_entries, my_time_entries};
+pub use read::{issue_time_entries, my_time_entries, time_entry_defaults};
 pub use starter::{CreateStarterTimeFields, create_starter_time_fields};
 pub use store::{EntryCursor, TimeStore};
 pub use timer::{

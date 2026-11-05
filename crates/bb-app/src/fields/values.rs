@@ -80,6 +80,16 @@ impl ItemValues {
         self.values.get(&item)?.get(&field)
     }
 
+    /// These definitions with `values` as the values of `item` and of nothing else: a set of values
+    /// that no record holds, such as the defaults of a time entry, can be shown with the same
+    /// masks as the values of a record.
+    pub(crate) fn holding(&self, item: EntityId, values: BTreeMap<FieldId, FieldValue>) -> Self {
+        Self {
+            definitions: Arc::clone(&self.definitions),
+            values: HashMap::from([(item, values)]),
+        }
+    }
+
     /// The values of an item that the viewer may see on an item of this issue type (`None` for an
     /// item that has none, a project), each as the JSON of its type.
     pub(crate) fn shown(

@@ -32,6 +32,27 @@ pub struct TimerQuery {
     pub session_token: String,
 }
 
+/// What a new time entry on an issue starts with.
+pub struct EntryDefaultsQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+}
+
+/// What a new time entry on an issue starts with: whether the organization offers *Billable*, and
+/// the values of the own fields of time entries that its issue, its project or the projects above
+/// give it. The server works them out once; the screens only show them.
+#[derive(Clone, Debug, Serialize)]
+pub struct EntryDefaults {
+    /// Whether the organization offers *Billable*.
+    pub billable_offered: bool,
+    /// The values of own fields the person may see, by the key of the field.
+    pub own_fields: OwnValues,
+}
+
+impl Masked for EntryDefaults {}
+
 /// Start the timer on an issue.
 pub struct StartTimer {
     /// The secret of the session of the request.

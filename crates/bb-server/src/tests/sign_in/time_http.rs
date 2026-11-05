@@ -354,6 +354,43 @@ async fn time_13_the_default_comes_from_the_issue_then_the_project_then_the_proj
 }
 
 #[tokio::test]
+async fn time_13_the_defaults_of_a_new_entry_are_told_before_it_is_made() -> TestResult {
+    each_database("time_13_defaults_told", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let activity = starter(&mut ada, "activity").await?;
+        let choices = field(&mut ada, &activity).await?;
+        let (meetings, testing) = (
+            choice_named(&choices, "Meetings")?,
+            choice_named(&choices, "Testing")?,
+        );
+        let path = format!("{ISSUES}/{issue}/time-entry-defaults");
+        let told = |reply: Reply| -> Result<Value, Failure> { Ok(ok(&reply)?.clone()) };
+        // Nothing anywhere: no value, and *Billable* is not offered at the start.
+        let none = told(ada.send("GET", &path, None).await?)?;
+        assert_eq!(none["billable_offered"], false);
+        assert_eq!(none["own_fields"], json!({}));
+        // The project gives its value; the issue is nearer. Each is the one a booked entry gets.
+        set_on_project(&mut ada, &site.acme, &activity, &meetings).await?;
+        let from_project = told(ada.send("GET", &path, None).await?)?;
+        assert_eq!(from_project["own_fields"][&activity], json!(meetings));
+        set_on_issue(&mut ada, &issue, &activity, &testing).await?;
+        let from_issue = told(ada.send("GET", &path, None).await?)?;
+        assert_eq!(from_issue["own_fields"][&activity], json!(testing));
+        let booked = book(&mut ada, &issue, 10).await?;
+        assert_eq!(ok(&booked)?["own_fields"][&activity], json!(testing));
+        // An issue nobody sees is not found.
+        let missing = ada
+            .send("GET", &format!("{ISSUES}/NOPE-1/time-entry-defaults"), None)
+            .await?;
+        assert_eq!(missing.status, StatusCode::NOT_FOUND);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn time_13_the_default_of_an_issue_is_no_field_of_its_forms_and_stays_changeable_there()
 -> TestResult {
     each_database("time_13_default_not_on_forms", async |db| {

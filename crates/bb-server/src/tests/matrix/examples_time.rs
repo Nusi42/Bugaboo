@@ -119,6 +119,14 @@ pub(super) async fn time_request(
             format!("/api/v1/issues/{}/time-entries", an_issue(fixture).await?),
             None,
         ),
+        "getTimeEntryDefaults" => (
+            "GET",
+            format!(
+                "/api/v1/issues/{}/time-entry-defaults",
+                an_issue(fixture).await?
+            ),
+            None,
+        ),
         "getIssueTime" => (
             "GET",
             format!("/api/v1/issues/{}/time", an_issue(fixture).await?),

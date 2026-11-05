@@ -10,8 +10,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::time::{
-    AddTime, ChangeTimeEntry, DeleteTimeEntry, IssueTimeEntriesQuery, IssueTimeEntryView,
-    MyTimeEntriesQuery, TimeEntryView,
+    AddTime, ChangeTimeEntry, DeleteTimeEntry, EntryDefaults, EntryDefaultsQuery,
+    IssueTimeEntriesQuery, IssueTimeEntryView, MyTimeEntriesQuery, TimeEntryView,
 };
 use bb_core::fields::Field;
 use bb_core::id::TimeEntryId;
@@ -154,6 +154,31 @@ impl From<&IssueTimeEntryView> for IssueTimeEntryItem {
             minutes: view.minutes.map(Minutes::get),
             note: view.note.clone(),
             own_fields: view.own_fields.clone(),
+        }
+    }
+}
+
+/// What a new time entry on an issue starts with.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct EntryDefaultsItem {
+    /// Whether the organization offers *Billable*.
+    billable_offered: bool,
+    /// The values of its own fields the person may see, by the key (ID) of the field: the value on
+    /// the issue, else on its project, else on the projects above (the nearest wins).
+    own_fields: OwnValues,
+}
+
+impl Masked for EntryDefaultsItem {
+    fn mask(value: &mut MaskedValue, mask: &FieldMask) {
+        drop_hidden_own_fields(value, OWN_FIELDS, mask);
+    }
+}
+
+impl From<&EntryDefaults> for EntryDefaultsItem {
+    fn from(defaults: &EntryDefaults) -> Self {
+        Self {
+            billable_offered: defaults.billable_offered,
+            own_fields: defaults.own_fields.clone(),
         }
     }
 }
@@ -407,6 +432,41 @@ async fn list_issue_time_entries(
     )?))
 }
 
+/// What a new time entry on an issue starts with: whether *Billable* is offered and the defaults of
+/// the own fields of time entries. The screens that book time show these; the server fills in the
+/// same defaults for a field a request leaves out. Needs *Book time*.
+#[utoipa::path(
+    get,
+    path = "/api/v1/issues/{issue}/time-entry-defaults",
+    operation_id = "getTimeEntryDefaults",
+    tag = "time",
+    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
+    responses(
+        (status = 200, description = "What a new entry starts with.", body = EntryDefaultsItem),
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn get_time_entry_defaults(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(issue): ApiPath<String>,
+) -> Result<Response, ApiError> {
+    let defaults = auth
+        .api()?
+        .time_entry_defaults(
+            info,
+            EntryDefaultsQuery {
+                session_token,
+                issue,
+            },
+        )
+        .await?;
+    answer_authorized(&defaults.map(|defaults| EntryDefaultsItem::from(&defaults)))
+}
+
 /// The routes of time entries.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
@@ -417,6 +477,7 @@ where
         .routes(routes!(list_my_time_entries, add_time_entry))
         .routes(routes!(change_time_entry, delete_time_entry))
         .routes(routes!(list_issue_time_entries))
+        .routes(routes!(get_time_entry_defaults))
 }
 
 #[cfg(test)]

@@ -1847,6 +1847,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/time-entry-defaults": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What a new time entry on an issue starts with: whether *Billable* is offered and the defaults of
+     *     the own fields of time entries. The screens that book time show these; the server fills in the
+     *     same defaults for a field a request leaves out. Needs *Book time*.
+     */
+    get: operations["getTimeEntryDefaults"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/uploads": {
     parameters: {
       query?: never;
@@ -4955,6 +4976,16 @@ export interface components {
     EmailBody: {
       /** @description The e-mail address. */
       email: string;
+    };
+    /** @description What a new time entry on an issue starts with. */
+    EntryDefaultsItem: {
+      /** @description Whether the organization offers *Billable*. */
+      billable_offered: boolean;
+      /**
+       * @description The values of its own fields the person may see, by the key (ID) of the field: the value on
+       *     the issue, else on its project, else on the projects above (the nearest wins).
+       */
+      own_fields: components["schemas"]["OwnValues"];
     };
     /**
      * @description What the person fills in for the entry that a stop or a switch saves; left out, the note is
@@ -13088,6 +13119,37 @@ export interface operations {
       304: components["responses"]["NotModified"];
       400: components["responses"]["BadListRequest"];
       401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getTimeEntryDefaults: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What a new entry starts with. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDefaultsItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
