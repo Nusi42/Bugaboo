@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
 
+import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import type { QuickAction } from "../shell/index.ts";
 import { openIssueId } from "./open-issue-id.ts";
 import { askTime } from "./time-asks.ts";
+import { tellTime } from "./time-notice.ts";
 import { startTimer } from "./timer-start.ts";
 import { timerQuery } from "./use-timer.ts";
 
@@ -29,11 +31,16 @@ export const timerQuickActions: readonly QuickAction[] = [
     id: "stop-timer",
     title: t("time.timer.stop-timer"),
     run: () => {
-      void queryClient.query({ ...timerQuery, staleTime: 0 }).then((reading) => {
-        if (reading.timer.running !== undefined && reading.timer.running !== null) {
-          askTime({ kind: "stop" });
-        }
-      });
+      queryClient.query({ ...timerQuery, staleTime: 0 }).then(
+        (reading) => {
+          if (reading.timer.running !== undefined && reading.timer.running !== null) {
+            askTime({ kind: "stop" });
+          }
+        },
+        (error: unknown) => {
+          tellTime(messageOf(error), "danger");
+        },
+      );
     },
   },
 ];

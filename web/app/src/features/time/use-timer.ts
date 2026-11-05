@@ -27,8 +27,11 @@ export function offsetOf(stated: string | null, receivedMs: number): number {
 /** The read of the timer: the same for the hook and for what asks for the timer outside a screen. */
 export const timerQuery = {
   queryKey: timeKeys.timer(),
-  queryFn: async (): Promise<TimerReading> => {
-    const answer = await api.client.GET("/api/v1/me/timer");
+  queryFn: async ({
+    signal,
+  }: Readonly<{ signal: Readonly<AbortSignal> }>): Promise<TimerReading> => {
+    // The signal of the query: a read the page cuts off (a navigation, a closed page) ends as a handled abort.
+    const answer = await api.client.GET("/api/v1/me/timer", { signal });
     const received = Date.now();
     return {
       timer: dataOf(answer),

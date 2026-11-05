@@ -36,14 +36,6 @@ const REFUSED = /^Failed to load resource: the server responded with a status of
 /** The notice of a browser that a measured list asks for another round of measuring (no defect). */
 const RESIZE_NOTICE = /^ResizeObserver loop completed with undelivered notifications\.$/u;
 
-/**
- * The notice of WebKit that a navigation cut a request that was still on its way (`/localhost:47310/api/v1/me/timer
- * due to access control checks.`). WebKit gives it as an error of the page for a request the page had started,
- * whether the app handles the cancelled request or not (no `error` or `unhandledrejection` event of the page
- * comes with it), so it is no defect of the app, like the notice of the measured list.
- */
-const CUT_REQUEST_NOTICE = /^\S*\/api\/\S+ due to access control checks\.$/u;
-
 /** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
 const tolerances = new Tolerances();
 
@@ -55,11 +47,11 @@ export function watchApp(context: BrowserContext): void {
       reports.push(text);
     }
   });
-  // An uncaught error is never expected, whatever the network does. The two notices that WebKit gives (a
-  // measured list that measures its rows again, and a request that a navigation cut) are no error of the app.
+  // An uncaught error is never expected, whatever the network does. The one notice that WebKit gives
+  // when a list that is drawn by what is on screen measures its rows is no error of the app.
   context.on("weberror", (error) => {
     const { message } = error.error();
-    if (!RESIZE_NOTICE.test(message) && !CUT_REQUEST_NOTICE.test(message)) {
+    if (!RESIZE_NOTICE.test(message)) {
       reports.push(`uncaught: ${message}`);
     }
   });
