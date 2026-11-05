@@ -4,7 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { layoutOf, nothing, onThisLayout } from "./support/layout.ts";
+import { layoutOf } from "./support/layout.ts";
 import { ariaCurrent } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -53,7 +53,7 @@ test("cfg_08 on a phone the Search tab of the bar is current on the Search page"
   expect(fills[0], "the current tab is drawn like a current tab").not.toBe(fills[1]);
 });
 
-test("qry_05 an empty section says so in one line; the sidebar of a computer leaves out the saved searches of a person who has none", async ({
+test("qry_05 an empty section says so in one line, the saved searches like the projects", async ({
   page,
 }) => {
   test.skip(layoutOf(page) === "tablet", "the computer and the phone show both places");
@@ -62,20 +62,25 @@ test("qry_05 an empty section says so in one line; the sidebar of a computer lea
   const projects = sections.getByRole("region", { name: t("projects.heading"), exact: true });
   const saved = sections.getByRole("region", { name: t("search.saved-heading"), exact: true });
   await expect(projects.getByText(t("projects.tree-empty"), { exact: true })).toBeVisible();
-  // The sidebar of a computer has no room for a heading and a note that say nothing (M5-F150, a window 600 px
-  // high); the sheet More of a phone has room and tells it, like the projects.
-  await onThisLayout(page, {
-    computer: async () => {
-      await expect(saved).toHaveCount(0);
-    },
-    tablet: nothing,
-    phone: async () => {
-      await expect(saved.getByText(t("search.saved-none"), { exact: true })).toBeVisible();
-      // The two notes are one part, so they look alike.
-      await expect(projects.locator("p")).toHaveAttribute("data-part", "sidebar.note");
-      await expect(saved.locator("p")).toHaveAttribute("data-part", "sidebar.note");
-    },
-  });
+  await expect(saved.getByText(t("search.saved-none"), { exact: true })).toBeVisible();
+  // The two notes are one part, so they look alike.
+  await expect(projects.locator("p")).toHaveAttribute("data-part", "sidebar.note");
+  await expect(saved.locator("p")).toHaveAttribute("data-part", "sidebar.note");
+});
+
+test("qry_05 in a window too low for the sidebar the first thing left out is the empty Saved searches", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has a sidebar that can be too low");
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await signIn(page, ada);
+  const sections = await sectionsOf(page);
+  await expect(
+    sections.getByRole("region", { name: t("projects.heading"), exact: true }),
+  ).toBeVisible();
+  await expect(
+    sections.getByRole("region", { name: t("search.saved-heading"), exact: true }),
+  ).toHaveCount(0);
 });
 
 test("cfg_08 on a phone a long text in quick search keeps its end in view, beside the clear mark (M5 exit F-A7)", async ({

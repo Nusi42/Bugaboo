@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { iconName, part, partOf } from "@bugaboo/ui";
+import { iconName, part, partOf, useShortWindow } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -75,6 +75,7 @@ function SavedList({
 export function SavedSearchesSection({ view }: SavedSearchesSectionProps) {
   const { narrow, onNavigate } = view;
   const { pathname } = useLocation();
+  const low = useShortWindow();
   const mineList = useSavedList(savedSet.mine, shown);
   const sharedList = useSavedList(savedSet.shared, shown);
   const mine = itemsOf(mineList.data?.pages);
@@ -89,12 +90,13 @@ export function SavedSearchesSection({ view }: SavedSearchesSectionProps) {
     return framed(<p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>);
   }
   const none = mineList.isSuccess && sharedList.isSuccess && mine.length + shared.length === 0;
-  // A person without a saved search sees no heading and no note in the sidebar: a window 600 px high has no
-  // room for them (M5-F150). The sheet *More* of a phone has room and tells it.
+  // An empty section keeps its heading and says so in one line, like every section. Only in a window too low
+  // for the sidebar (the height that folds its bottom group) the first thing left out is this one, for a
+  // person without a saved search (M5-F150, UX §4.9); the sheet *More* of a phone always has room.
   if (!narrow && none) {
-    return view.place === "sheet"
-      ? framed(<p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>)
-      : null;
+    return low && view.place !== "sheet"
+      ? null
+      : framed(<p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>);
   }
   return framed(
     <ul {...partOf(part.sidebarList)}>
