@@ -14,3 +14,4 @@
 - [Rebase, never merge](rebase-not-merge.md) — branches are rebased onto WIN1 and moved forward; pre-push refuses merge commits (ADR-0041)
 - [Explicit deletion](explicit-deletion.md) — keep periods are minimums; business data is deleted only explicitly by an administrator
 - [Access rights are deliberate](access-rights-are-deliberate.md) — no masking of values derivable from readable fields; the admin chose the rights
+- [Do not wait for nightlies](dont-wait-for-nightlies.md) — go on with the next step at once; nightly results are looked at in parallel
