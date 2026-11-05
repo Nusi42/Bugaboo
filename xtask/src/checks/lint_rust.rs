@@ -33,10 +33,11 @@ impl Check for LintRust {
 fn check_root(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<Vec<Finding>> {
     let host = host_target(root)?;
     let targets = native_targets(root)?;
+    let build_folder = build_folder(root, build_env);
     // The targets are checked at the same time (each takes only part of the computer), and what
     // they found is told in the order of the list.
     let checked = side_by_side(&targets, |target| {
-        check_target(root, build_env, &host, target.as_deref())
+        check_target(root, build_env, &build_folder, &host, target.as_deref())
     })?;
     let mut findings = Vec::new();
     for (target_findings, note) in checked {
@@ -53,6 +54,7 @@ fn check_root(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<Vec<Fin
 fn check_target(
     root: &Path,
     build_env: &[(&str, &str)],
+    build_folder: &Path,
     host: &str,
     target: Option<&str>,
 ) -> anyhow::Result<(Vec<Finding>, Option<String>)> {
@@ -69,10 +71,10 @@ fn check_target(
     // Cargo lets one build at a time into a build folder. Each target has a folder of its own
     // inside the build folder of the run, so the targets (and the build of the server that
     // DOC-GENERATED runs at the same time) do not wait for each other.
-    let folder = lint_folder(root, build_env, target);
-    env.retain(|(name, _)| name != TARGET_DIR_VARIABLE);
+    let folder = lint_folder(build_folder, target);
+    env.retain(|(name, _)| name != tools::TARGET_DIR_VARIABLE);
     env.push((
-        TARGET_DIR_VARIABLE.to_owned(),
+        tools::TARGET_DIR_VARIABLE.to_owned(),
         folder.to_string_lossy().into_owned(),
     ));
     if let Some(target) = target {
@@ -116,23 +118,34 @@ fn check_target(
     Ok((findings, note))
 }
 
-/// The variable that names the build folder of cargo.
-const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
-
-/// The build folder of Clippy for `target`: `lint/<target>` inside the build folder of the run
-/// (the one `build_env` or the environment names, else `target` of the repository).
-fn lint_folder(root: &Path, build_env: &[(&str, &str)], target: Option<&str>) -> PathBuf {
-    let named = build_env
+/// The build folder of the run: the one `build_env` names, else the one cargo reads from the
+/// environment and `.cargo/config.local.toml` (ADR-0024; asked with `cargo metadata`), else `target`
+/// of the repository.
+fn build_folder(root: &Path, build_env: &[(&str, &str)]) -> PathBuf {
+    if let Some((_, named)) = build_env
         .iter()
-        .find(|(name, _)| *name == TARGET_DIR_VARIABLE)
-        .map(|(_, value)| PathBuf::from(value))
-        .or_else(|| std::env::var_os(TARGET_DIR_VARIABLE).map(PathBuf::from));
-    let base = match named {
-        Some(named) if named.is_absolute() => named,
-        Some(named) => std::env::current_dir().map_or(named.clone(), |here| here.join(&named)),
-        None => root.join("target"),
-    };
-    base.join("lint").join(target.unwrap_or("host"))
+        .find(|(name, _)| *name == tools::TARGET_DIR_VARIABLE)
+    {
+        let named = Path::new(named);
+        return std::env::current_dir()
+            .ok()
+            .and_then(|here| tools::target_dir_from(named, &here))
+            .unwrap_or_else(|| named.to_path_buf());
+    }
+    tools::command("cargo")
+        .args(["metadata", "--no-deps", "--format-version", "1"])
+        .current_dir(root)
+        .output()
+        .ok()
+        .filter(|out| out.status.success())
+        .and_then(|out| serde_json::from_slice::<serde_json::Value>(&out.stdout).ok())
+        .and_then(|metadata| metadata["target_directory"].as_str().map(PathBuf::from))
+        .unwrap_or_else(|| root.join("target"))
+}
+
+/// The build folder of Clippy for `target`: `lint/<target>` inside the build folder of the run.
+fn lint_folder(build_folder: &Path, target: Option<&str>) -> PathBuf {
+    build_folder.join("lint").join(target.unwrap_or("host"))
 }
 
 /// The target of this machine, from `rustc -vV`.
@@ -322,15 +335,21 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
     #[test]
     fn each_target_lints_in_a_folder_of_its_own_inside_the_build_folder_of_the_run() {
         let base = std::env::temp_dir().join("lint-folders");
-        let named = base.to_string_lossy().into_owned();
-        let env = [(TARGET_DIR_VARIABLE, named.as_str())];
-        let windows = lint_folder(Path::new("."), &env, Some("x86_64-pc-windows-msvc"));
-        let linux = lint_folder(Path::new("."), &env, Some("x86_64-unknown-linux-gnu"));
+        let windows = lint_folder(&base, Some("x86_64-pc-windows-msvc"));
+        let linux = lint_folder(&base, Some("x86_64-unknown-linux-gnu"));
         assert_eq!(windows, base.join("lint/x86_64-pc-windows-msvc"));
         assert_eq!(linux, base.join("lint/x86_64-unknown-linux-gnu"));
-        assert_eq!(
-            lint_folder(Path::new("."), &env, None),
-            base.join("lint/host")
-        );
+        assert_eq!(lint_folder(&base, None), base.join("lint/host"));
+    }
+
+    #[test]
+    fn the_build_folder_is_the_one_named_for_the_run_or_the_one_cargo_reads() {
+        let named = std::env::temp_dir().join("lint-named");
+        let text = named.to_string_lossy().into_owned();
+        let env = [(tools::TARGET_DIR_VARIABLE, text.as_str())];
+        assert_eq!(build_folder(Path::new("."), &env), named);
+        // Without a name cargo says where it builds (the folder of this repository here).
+        let asked = build_folder(Path::new(env!("CARGO_MANIFEST_DIR")), &[]);
+        assert!(asked.is_absolute(), "{}", asked.display());
     }
 }

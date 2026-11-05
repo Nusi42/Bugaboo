@@ -192,7 +192,8 @@ fn log_path(root: &Path, name: &str) -> PathBuf {
     root.join("target").join(format!("step-{slug}.log"))
 }
 
-/// Starts a step in the background with its output in its log file.
+/// Starts a step in the background with its output in its log file, in a process group of its own
+/// so that it can be ended with everything it started.
 fn start_background(root: &Path, step: &Step) -> anyhow::Result<Running> {
     let log = log_path(root, step.name);
     if let Some(folder) = log.parent() {
@@ -200,14 +201,15 @@ fn start_background(root: &Path, step: &Step) -> anyhow::Result<Running> {
     }
     let file = std::fs::File::create(&log)
         .with_context(|| format!("could not write {}", log.display()))?;
-    let child = crate::tools::command(&step.program)
+    let mut command = crate::tools::command(&step.program);
+    command
         .args(&step.args)
         .current_dir(root)
         .stdin(Stdio::null())
         .stdout(file.try_clone()?)
-        .stderr(file)
-        .spawn()
-        .with_context(|| start_error(step))?;
+        .stderr(file);
+    let child =
+        crate::tools::spawn_in_group(&mut command, step.name).with_context(|| start_error(step))?;
     output::line(&format!(
         "start {} in the background (log: {})",
         step.name,
@@ -222,17 +224,25 @@ fn start_background(root: &Path, step: &Step) -> anyhow::Result<Running> {
 }
 
 /// Waits for the steps in the background, shows their logs and tells how each one went; true when
-/// all of them passed. With `stop`, they are ended instead of waited for (an earlier step failed).
-fn finish_background(running: &mut Vec<Running>, stop: bool) -> anyhow::Result<bool> {
+/// all of them passed. With `stop`, they are ended with everything they started instead of waited
+/// for (an earlier step failed, or the run is leaving on an error). It never fails itself.
+fn finish_background(running: &mut Vec<Running>, stop: bool) -> bool {
     let mut all_passed = true;
     for mut step in running.drain(..) {
-        if stop {
-            let _ = step.child.kill();
-        }
-        let status = step.child.wait()?;
-        let log = std::fs::read_to_string(&step.log).unwrap_or_default();
+        let ended_well = if stop {
+            crate::tools::stop_tree(&mut step.child);
+            false
+        } else {
+            step.child.wait().is_ok_and(|status| status.success())
+        };
         output::line(&format!("--- output of {} ---", step.name));
-        output::line(log.trim_end());
+        match std::fs::read(&step.log) {
+            Ok(bytes) => output::line(String::from_utf8_lossy(&bytes).trim_end()),
+            Err(error) => output::line(&format!(
+                "The log could not be read ({error}); it is {}.",
+                step.log.display()
+            )),
+        }
         output::line("---");
         if stop {
             output::line(&format!(
@@ -240,29 +250,45 @@ fn finish_background(running: &mut Vec<Running>, stop: bool) -> anyhow::Result<b
                 step.name
             ));
         }
-        let passed = status.success() && !stop;
-        output::step_end(step.name, passed, step.started.elapsed());
-        all_passed &= passed;
+        output::step_end(step.name, ended_well, step.started.elapsed());
+        all_passed &= ended_well;
     }
-    Ok(all_passed)
+    all_passed
 }
 
 /// Runs the steps in order and stops at the first failure. A step in the background runs beside
-/// the steps after it; its result is told, and fails the run, where the plan joins it.
+/// the steps after it; its result is told, and fails the run, where the plan joins it. On every
+/// way out, an error included, the steps still in the background are ended and reported.
 pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
+    let mut running: Vec<Running> = Vec::new();
+    let mut skipped = 0_usize;
+    let result = run_in_order(root, steps, &mut running, &mut skipped);
+    // What is still in the background is waited for after a good run and ended after a failure.
+    let stop = result.as_ref().map_or(true, |outcome| !outcome.passed);
+    let background_passed = finish_background(&mut running, stop);
+    let mut outcome = result?;
+    outcome.passed &= background_passed;
+    output::steps_summary(steps.len(), skipped, usize::from(!outcome.passed));
+    Ok(outcome)
+}
+
+fn run_in_order(
+    root: &Path,
+    steps: &[Step],
+    running: &mut Vec<Running>,
+    skipped: &mut usize,
+) -> anyhow::Result<Outcome> {
     let mut outcome = Outcome {
         passed: true,
         executable: None,
     };
-    let mut skipped = 0_usize;
-    let mut running: Vec<Running> = Vec::new();
     for (index, step) in steps.iter().enumerate() {
         if let Some(reason) = step.skip {
             output::step_skipped(step.name, reason);
-            skipped += 1;
+            *skipped += 1;
             continue;
         }
-        if step.joins_background && !finish_background(&mut running, false)? {
+        if step.joins_background && !finish_background(running, false) {
             outcome.passed = false;
             break;
         }
@@ -294,11 +320,6 @@ pub(crate) fn run(root: &Path, steps: &[Step]) -> anyhow::Result<Outcome> {
             break;
         }
     }
-    // What is still in the background at the end is waited for, or ended after a failure.
-    if !finish_background(&mut running, !outcome.passed)? && outcome.passed {
-        outcome.passed = false;
-    }
-    output::steps_summary(steps.len(), skipped, usize::from(!outcome.passed));
     Ok(outcome)
 }
 
@@ -430,13 +451,55 @@ mod tests {
         assert!(!run(root.path(), &steps).unwrap().passed);
     }
 
+    /// A step that runs for half a minute unless it is ended.
+    fn long_step(name: &'static str) -> Step {
+        if cfg!(windows) {
+            Step::new(name, "ping", &["-n", "30", "127.0.0.1"])
+        } else {
+            Step::new(name, "sleep", &["30"])
+        }
+    }
+
+    /// The log of a step that was ended can be deleted: on Windows a file cannot be deleted while
+    /// a program that writes to it is running.
+    fn assert_ended(root: &Path, name: &str, started: Instant) {
+        assert!(started.elapsed() < std::time::Duration::from_secs(20));
+        std::fs::remove_file(log_path(root, name)).unwrap();
+    }
+
     #[test]
     fn a_failing_step_ends_the_one_in_the_background_and_fails_the_run() {
         let root = tempfile::tempdir().unwrap();
+        let started = Instant::now();
         let steps = [
-            cargo_step("version in the background", &["--version"]).in_background(),
+            long_step("long").in_background(),
             cargo_step("fails", &["no-such-subcommand-for-test"]),
         ];
         assert!(!run(root.path(), &steps).unwrap().passed);
+        assert_ended(root.path(), "long", started);
+    }
+
+    #[test]
+    fn a_step_that_cannot_start_ends_the_one_in_the_background_before_the_error_leaves() {
+        let root = tempfile::tempdir().unwrap();
+        let started = Instant::now();
+        let steps = [
+            long_step("long").in_background(),
+            Step::new("missing", "bugaboo-no-such-program", &[]),
+        ];
+        assert!(run(root.path(), &steps).is_err());
+        assert_ended(root.path(), "long", started);
+    }
+
+    #[test]
+    fn a_background_step_that_cannot_start_ends_the_earlier_one() {
+        let root = tempfile::tempdir().unwrap();
+        let started = Instant::now();
+        let steps = [
+            long_step("long").in_background(),
+            Step::new("missing", "bugaboo-no-such-program", &[]).in_background(),
+        ];
+        assert!(run(root.path(), &steps).is_err());
+        assert_ended(root.path(), "long", started);
     }
 }

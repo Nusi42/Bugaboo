@@ -11,6 +11,8 @@ threads-required = "num-cpus"
 # The runner starts tests in the order of the test programs, so the longest tests may start last
 # and alone make the run longer than the rest. These start first (a higher priority starts
 # earlier; every test still runs). The list is the tests that took more than half a minute.
+# The patterns are parts of the names of those tests: when one is renamed, change its pattern here
+# (a pattern that matches nothing is not an error, the test just loses its early start).
 [[profile.default.overrides]]
 filter = "test(/sec_01_every_route_answers_every_actor/)"
 priority = 100

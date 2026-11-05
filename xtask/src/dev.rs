@@ -3,11 +3,11 @@
 //! The ports come from [`crate::ports`].
 
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
+use std::process::Child;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{Context as _, bail};
 
@@ -15,10 +15,9 @@ use crate::dataset;
 use crate::output;
 use crate::ports::{PORTS_FILE, Ports};
 use crate::steps::{self, Profile};
+use crate::tools;
 
 const POLL: Duration = Duration::from_millis(250);
-/// How long a program gets to stop after being asked to, before it is killed.
-const STOP_GRACE: Duration = Duration::from_secs(5);
 
 /// A started program that is stopped again when this value goes away.
 struct Running {
@@ -28,41 +27,8 @@ struct Running {
 
 impl Drop for Running {
     fn drop(&mut self) {
-        stop(&mut self.child);
+        tools::stop_tree(&mut self.child);
     }
-}
-
-/// Starts the program in its own process group (Unix), so it and what it starts can be
-/// stopped together. On Windows `taskkill /T` stops the whole tree instead.
-fn spawn(command: &mut Command, what: &str) -> anyhow::Result<Child> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::process::CommandExt as _;
-        command.process_group(0);
-    }
-    command
-        .spawn()
-        .with_context(|| format!("could not start the {what}"))
-}
-
-/// Stops the program and everything it started (`npm` starts `node`).
-fn stop(child: &mut Child) {
-    if cfg!(windows) {
-        let _ = crate::tools::command("taskkill")
-            .args(["/PID", &child.id().to_string(), "/T", "/F"])
-            .output();
-    } else {
-        // A negative id addresses the whole process group.
-        let _ = crate::tools::command("kill")
-            .args(["-TERM", "--", &format!("-{}", child.id())])
-            .output();
-        let deadline = Instant::now() + STOP_GRACE;
-        while Instant::now() < deadline && matches!(child.try_wait(), Ok(None)) {
-            sleep(Duration::from_millis(50));
-        }
-        let _ = child.kill();
-    }
-    let _ = child.wait();
 }
 
 /// The data folder of the server in development (inside the work folder's build folder).
@@ -97,8 +63,8 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     let mut running = Vec::new();
     running.push(Running {
         name: "server",
-        child: spawn(
-            crate::tools::command(server)
+        child: tools::spawn_in_group(
+            tools::command(server)
                 .args(["serve", "--port", &ports.server.to_string()])
                 // Development runs on this computer only, so plain HTTP is allowed (SEC-10); its
                 // data stays inside the work folder's build folder.
@@ -113,8 +79,8 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     if steps::web_app_exists(root) {
         running.push(Running {
             name: "browser app",
-            child: spawn(
-                crate::tools::command(steps::npm())
+            child: tools::spawn_in_group(
+                tools::command(steps::npm())
                     .args(["run", "dev", "--"])
                     .args(["--port", &ports.web.to_string(), "--strictPort"])
                     .current_dir(root),

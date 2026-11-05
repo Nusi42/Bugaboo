@@ -320,10 +320,7 @@ impl CheckRuns<'_> {
             String::from_utf8_lossy(&made.stderr)
         );
         if !made.status.success() {
-            bail!(
-                "The sample program failed for the run {label}:
-{said}"
-            );
+            bail!("The sample program failed for the run {label}:\n{said}");
         }
         fs::write(out.join("output.txt"), said)
             .with_context(|| format!("could not write the output of {label}"))?;

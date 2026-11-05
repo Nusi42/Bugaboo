@@ -6,7 +6,9 @@
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 use anyhow::Context as _;
 use serde::Deserialize;
@@ -179,7 +181,8 @@ pub(crate) fn side_by_side<T: Sync, R: Send>(
     items: &[T],
     work: impl Fn(&T) -> anyhow::Result<R> + Sync,
 ) -> anyhow::Result<Vec<R>> {
-    std::thread::scope(|scope| {
+    // Every run is waited for, whatever the others did.
+    let results: Vec<anyhow::Result<R>> = std::thread::scope(|scope| {
         let handles: Vec<_> = items
             .iter()
             .map(|item| {
@@ -195,7 +198,64 @@ pub(crate) fn side_by_side<T: Sync, R: Send>(
                     .unwrap_or_else(|_| anyhow::bail!("a run that went side by side panicked"))
             })
             .collect()
-    })
+    });
+    let failed = results.iter().filter(|result| result.is_err()).count();
+    let mut values = Vec::new();
+    let mut first: Option<anyhow::Error> = None;
+    for result in results {
+        match result {
+            Ok(value) => values.push(value),
+            Err(error) => {
+                if first.is_none() {
+                    first = Some(error);
+                }
+            }
+        }
+    }
+    match first {
+        None => Ok(values),
+        Some(error) if failed > 1 => Err(error.context(format!(
+            "{} more run(s) went side by side failed too",
+            failed - 1
+        ))),
+        Some(error) => Err(error),
+    }
+}
+
+/// How long a program gets to stop after being asked to, before it is killed.
+const STOP_GRACE: Duration = Duration::from_secs(5);
+
+/// Starts the program in its own process group (Unix), so it and what it starts can be
+/// stopped together. On Windows `taskkill /T` stops the whole tree instead.
+pub(crate) fn spawn_in_group(command: &mut Command, what: &str) -> anyhow::Result<Child> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt as _;
+        command.process_group(0);
+    }
+    command
+        .spawn()
+        .with_context(|| format!("could not start the {what}"))
+}
+
+/// Stops the program and everything it started (`npm` starts `node`), and waits for it.
+pub(crate) fn stop_tree(child: &mut Child) {
+    if cfg!(windows) {
+        let _ = command("taskkill")
+            .args(["/PID", &child.id().to_string(), "/T", "/F"])
+            .output();
+    } else {
+        // A negative id addresses the whole process group.
+        let _ = command("kill")
+            .args(["-TERM", "--", &format!("-{}", child.id())])
+            .output();
+        let deadline = Instant::now() + STOP_GRACE;
+        while Instant::now() < deadline && matches!(child.try_wait(), Ok(None)) {
+            sleep(Duration::from_millis(50));
+        }
+        let _ = child.kill();
+    }
+    let _ = child.wait();
 }
 
 /// What a finished tool run printed.
@@ -208,7 +268,7 @@ pub(crate) struct Output {
 }
 
 /// The variable that names the build folder of cargo.
-const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
+pub(crate) const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
 
 /// The build folder of the run, made absolute when it is relative, for every program xtask starts
 /// (through [`command`]). Cargo reads a relative `CARGO_TARGET_DIR` from the folder it runs in, and
@@ -231,7 +291,7 @@ pub(crate) fn command(program: impl AsRef<std::ffi::OsStr>) -> Command {
 }
 
 /// The build folder `named` from the folder `here`, when it is relative.
-fn target_dir_from(named: &Path, here: &Path) -> Option<PathBuf> {
+pub(crate) fn target_dir_from(named: &Path, here: &Path) -> Option<PathBuf> {
     (!named.is_absolute()).then(|| here.join(named))
 }
 
@@ -438,7 +498,7 @@ mod tests {
     fn side_by_side_keeps_the_order_of_the_items() {
         // The first item takes longest, so it ends last.
         let results = side_by_side(&[30_u64, 10, 0], |&wait| {
-            std::thread::sleep(std::time::Duration::from_millis(wait));
+            sleep(Duration::from_millis(wait));
             Ok(wait)
         })
         .unwrap();
@@ -460,5 +520,20 @@ mod tests {
         let error =
             side_by_side(&[1], |_| -> anyhow::Result<u8> { panic!("on purpose") }).unwrap_err();
         assert!(format!("{error:#}").contains("panicked"));
+    }
+
+    #[test]
+    fn bad_example_side_by_side_names_the_first_failure_and_counts_the_others() {
+        let error = side_by_side(&[1, 2, 3], |&number| -> anyhow::Result<u8> {
+            match number {
+                1 => Ok(1),
+                2 => anyhow::bail!("number 2 failed"),
+                _ => panic!("on purpose"),
+            }
+        })
+        .unwrap_err();
+        let text = format!("{error:#}");
+        assert!(text.contains("number 2 failed"), "{text}");
+        assert!(text.contains("1 more run(s)"), "{text}");
     }
 }

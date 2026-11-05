@@ -308,8 +308,7 @@ fn twice(
         fs::remove_dir_all(&out)?;
         if !made.status.success() {
             bail!(
-                "The large dataset did not hold its rules on {}:
-{}",
+                "The large dataset did not hold its rules on {}:\n{}",
                 database.code(),
                 said(&made)
             );
