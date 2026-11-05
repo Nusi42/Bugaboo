@@ -63,6 +63,24 @@ export async function longScene(server: Parameters<typeof signedInAdmin>[0]) {
   return idle;
 }
 
+/**
+ * Makes the line of today's hours in the sidebar `lines` lines higher than it is, as it grows when it wraps after
+ * hours of work (a style, so a new clock does not undo it). Returns its height before and after.
+ */
+export function growWorkDayLine(
+  page: Page,
+  lines: number,
+): Promise<{ readonly before: number; readonly after: number }> {
+  const line = page.getByRole("region", { name: t("time.work-day.region") }).locator("p");
+  return line.evaluate((element, more) => {
+    const before = element.getBoundingClientRect().height;
+    // By the size of the letters (the line height may be `normal`, which is no number).
+    const size = Number(getComputedStyle(element).fontSize.replace("px", ""));
+    element.style.minHeight = `${before + more * size * 1.5}px`;
+    return { before, after: element.getBoundingClientRect().height };
+  }, lines);
+}
+
 /** The timer part of the sidebar or the bar and the work day, whichever the window shows. */
 export async function waitForParts(page: Page, issue: string): Promise<void> {
   await expect(chipOf(page, issue)).toBeVisible();

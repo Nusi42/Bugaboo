@@ -7,7 +7,7 @@ import { expectGoodInEveryLook, inEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { chipOf, idleScene, scene, waitForParts } from "./support/time-scene.ts";
+import { chipOf, growWorkDayLine, idleScene, scene, waitForParts } from "./support/time-scene.ts";
 
 // The sidebar with the timer and the work day fits a window 600 px high, and its group at the bottom is
 // a menu that rises from its button (M5-F150, UX §3.1). A spec for a computer: it is a sidebar.
@@ -76,11 +76,9 @@ test("ux_01 the menu of the group at the bottom rises over the page and gives th
   await inEveryLook(page, () => expectSidebarFits(page));
   // The line of today's hours may wrap to one more line than it has, as it does after hours of work: it
   // is made one line higher than it is (a style, so a new clock does not undo it).
-  const line = page.getByRole("region", { name: t("time.work-day.region") }).locator("p");
-  await line.evaluate((element) => {
-    const style = getComputedStyle(element);
-    element.style.minHeight = `${element.getBoundingClientRect().height + Number(style.lineHeight.replace("px", ""))}px`;
-  });
+  const heights = await growWorkDayLine(page, 1);
+  expect(Number.isFinite(heights.after)).toBe(true);
+  expect(heights.after).toBeGreaterThan(heights.before);
   await inEveryLook(page, () => expectSidebarFits(page));
   // The group is one button; its menu rises over the page, and the sidebar does not grow or scroll.
   const group = page.getByRole("button", { name: t("shell.group-fold"), exact: true });
