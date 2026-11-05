@@ -175,6 +175,12 @@ fn cfg_06_only_settings_of_signing_in_and_safety_touch_security() {
             .touches_security()
     );
     assert!(AUTH_SIGN_UP_ENABLED.definition().touches_security());
+    assert!(TIME_BILLABLE.definition().touches_security());
+    assert!(
+        working_hours::WORKING_HOURS_TOTALS_ONLY
+            .definition()
+            .touches_security()
+    );
     assert!(!APPEARANCE_MODE.definition().touches_security());
     assert!(!SHORTCUTS_KEYS.definition().touches_security());
     assert!(!WINDOW_SIZES.definition().touches_security());

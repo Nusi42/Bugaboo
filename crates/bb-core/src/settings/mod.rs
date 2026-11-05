@@ -42,8 +42,9 @@ words! {
 }
 
 /// The topics whose settings change how people sign in or what keeps the organization safe, and the
-/// settings of working hours, whose every change is recorded (PRIV-09, ADR-0035, decision 8).
-const SECURITY_TOPICS: [&str; 3] = ["security", "auth", "working-hours"];
+/// settings of working hours and of time (*Billable*), whose every change is recorded (PRIV-09,
+/// ADR-0035, decision 8).
+const SECURITY_TOPICS: [&str; 4] = ["security", "auth", "working-hours", "time"];
 
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

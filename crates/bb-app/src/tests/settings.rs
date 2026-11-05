@@ -88,6 +88,22 @@ async fn cfg_06_a_change_writes_one_event_and_one_entry_of_the_log_when_it_touch
 }
 
 #[tokio::test]
+async fn time_02_a_change_of_billable_is_in_the_security_log() -> Outcome {
+    let world = World::new().await?;
+    let log = world.store.log_count();
+    change(
+        &world,
+        SettingsScope::Organization,
+        "time.billable",
+        SettingValue::Bool(true),
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+    assert_eq!(world.store.log_count(), log + 1);
+    Ok(())
+}
+
+#[tokio::test]
 async fn cfg_06_the_event_says_what_the_value_was_and_what_it_became() -> Outcome {
     let world = World::new().await?;
     change(
