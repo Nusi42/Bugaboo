@@ -7,7 +7,7 @@ import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
 import { dayText, operandText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { NameChoice } from "./NameChoice.tsx";
-import { unbroken } from "../../shared/format.ts";
+import { CALENDAR, unbroken } from "../../shared/format.ts";
 import { nowhere } from "../../shared/search-tree.ts";
 
 export interface ValueInputProps {
@@ -187,7 +187,7 @@ function DateValue({ values, onValues }: ValueInputProps) {
           label={t("search.bar.day")}
           description={t("search.bar.day-format")}
           value={typed}
-          date={{ min: "0001-01-01", max: "9999-12-31" }}
+          date={CALENDAR}
           onChange={(day) => {
             setTyped(day);
             const operand = dayOf(day);

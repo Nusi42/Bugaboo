@@ -113,13 +113,15 @@ export function ActionOverlay({ label, actions, cancelLabel, renderTrigger }: Ac
         setOpen(true);
       })}
       <Overlay isOpen={open} onOpenChange={setOpen} label={label} from={overlayEdge.bottom}>
-        <p {...partOf(part.actionMenuTitle)}>{label}</p>
-        <ActionList actions={actions} close={close} />
-        {cancelLabel === undefined ? null : (
-          <Button wide onPress={close}>
-            {cancelLabel}
-          </Button>
-        )}
+        <div {...partOf(part.actionSheet)}>
+          <p {...partOf(part.actionMenuTitle)}>{label}</p>
+          <ActionList actions={actions} close={close} />
+          {cancelLabel === undefined ? null : (
+            <Button wide onPress={close}>
+              {cancelLabel}
+            </Button>
+          )}
+        </div>
       </Overlay>
     </>
   );

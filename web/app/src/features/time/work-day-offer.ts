@@ -1,19 +1,17 @@
+import { readStored, storageKey, writeStored } from "@bugaboo/ui";
+
 import { queryClient } from "../../shared/query-client.ts";
-import { addDays, calendarDayOf } from "../../shared/format.ts";
-import { timeKeys } from "../../shared/time-keys.ts";
+import { calendarDayOf } from "../../shared/format.ts";
 import { askTime } from "./time-asks.ts";
-import { readWorkDays } from "./use-work-days.ts";
+import { workDaysQuery } from "./use-work-days.ts";
 import { workDayNow } from "./work-day-state.ts";
 
-/** How many days back the part looks for a day that was left open (as `use-work-days.ts`). */
-const DAYS_BACK = 7;
-
-/** The day on which the person said *Not now*, so the question comes once a day. */
-let declinedOn: string | undefined;
+/** The storage of this tab: *Not now* is kept while the tab is open, also through a reload, and never beyond it. */
+const thisTab = (): Storage => sessionStorage;
 
 /** The person said *Not now* to starting the work day with the timer; the question waits until tomorrow. */
 export function declineWorkDayToday(): void {
-  declinedOn = calendarDayOf(Date.now());
+  writeStored(storageKey.workDayDeclined, calendarDayOf(Date.now()), thisTab);
 }
 
 /**
@@ -23,16 +21,11 @@ export function declineWorkDayToday(): void {
  */
 export async function offerWorkDay(issue: string): Promise<void> {
   const today = calendarDayOf(Date.now());
-  if (declinedOn === today) {
+  if (readStored(storageKey.workDayDeclined, thisTab) === today) {
     return;
   }
   try {
-    const first = addDays(today, -DAYS_BACK);
-    const days = await queryClient.query({
-      queryKey: timeKeys.workDays(first, today),
-      queryFn: () => readWorkDays(first, today),
-      staleTime: 0,
-    });
+    const days = await queryClient.query({ ...workDaysQuery(today), staleTime: 0 });
     const { kind } = workDayNow(days.days, today);
     if (kind === "none" || kind === "ended") {
       askTime({ kind: "work-day-too", issue });

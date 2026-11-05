@@ -10,6 +10,7 @@ export const storageKey = {
   recentChoices: "bugaboo.recent-choices",
   shortcutKeys: "bugaboo.shortcut-keys",
   sidebarNarrow: "bugaboo.sidebar-narrow",
+  workDayDeclined: "bugaboo.work-day-declined",
 } as const;
 
 /** The name of something the app keeps in the storage of the browser. */

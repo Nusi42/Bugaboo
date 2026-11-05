@@ -6,7 +6,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { WithLengthReader, type LengthReader } from "../../shared/with-length-reader.tsx";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
-import { boxOf, countOf, storedOf } from "./rule-values.ts";
+import { boxOf, countOf, dayRange, storedOf } from "./rule-values.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import { bound } from "./value-text.ts";
 
@@ -101,7 +101,7 @@ interface BoxesProps {
 
 /** The lowest and highest value. */
 function RangeBoxes({ boxes, onChange, dated }: BoxesProps & { readonly dated: boolean }) {
-  const day = dated ? { date: { min: "0001-01-01", max: "9999-12-31" } } : {};
+  const day = dated ? dayRange : {};
   return (
     <>
       <TextField

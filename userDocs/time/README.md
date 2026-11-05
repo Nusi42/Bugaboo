@@ -7,14 +7,14 @@ Bugaboo keeps two things apart on purpose. **Time on issues** says what you spen
 A timer counts the time you work on an issue. There is one timer for each person, and it is kept on the server, so every device shows the same one. Closing the browser does not stop it; a timer started on the phone shows on the computer as soon as you come back to its window.
 
 - **Start it:** press the play button beside *Time spent* on the issue page, press **Timer** in the bar of an issue on a phone, press `t` on an open issue, or open *Quick search* with `Ctrl` and `K` and choose **Start timer**. *Quick search* asks which issue when none is open.
-- **See it:** the running timer is at the bottom of the sidebar, in the bar of a phone, and on the issue page. It shows the issue and how long it has run. It counts from the moment the server says it started, never from the clock of your device alone.
+- **See it:** the running timer is at the bottom of the sidebar, in the bar of a phone, and on the issue page. It shows the issue and how long it has run, in hours and minutes (`0:42`). It counts from the moment the server says it started, never from the clock of your device alone. On the issue page a row **Your timer** shows the clock and **Stop**. On a phone the bar of an open issue shows the running time in its **Timer** place; press it for **Stop**, **Switch issue**, **Change start time** and **Throw away**.
 - **Use it:** press the timer to open **Stop**, **Switch issue**, **Change start time** and **Throw away**.
 
 A timer that has run longer than the longest work day of your organization shows a warning on itself, and you get a notification.
 
 ### Stop
 
-**Stop** opens a window with the sentence "You worked 42m on …", the fields **Activity** and **Cost center** filled in from the issue, a place for what you did (optional) and, when your organization has switched it on, **Billable**. **Save time** books the time on the issue. **Throw away** stops the timer and saves nothing. A timer that ran for less than a minute saves nothing, and the window says so.
+**Stop** opens a window with the sentence "You worked 42 minutes on "…"", the fields **Activity** and **Cost center** filled in from the issue, a place for what you did (optional) and, when your organization has switched it on, **Billable**. **Save time** books the time on the issue. **Throw away** stops the timer and saves nothing. A timer that ran for less than a minute saves nothing, and the window says so.
 
 The fields start with the value of the issue. If the issue has none, they take the value of its project, then of the projects above it. Change them in the window when this time was different.
 

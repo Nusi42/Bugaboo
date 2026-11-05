@@ -5,6 +5,8 @@
  */
 import { secondsPerMinute } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+
+import { twoDigits } from "../../shared/format.ts";
 import type {
   Comparison,
   Date as CalendarDate,
@@ -27,11 +29,9 @@ export function decimalText({ value, scale }: Decimal): string {
   return scale === 0 ? String(value) : (value / 10 ** scale).toFixed(scale);
 }
 
-const two = (n: number): string => String(n).padStart(2, "0");
-
 /** A day as the calendar writes it: `2026-10-25`. */
 export function dayText(date: Readonly<CalendarDate>): string {
-  return `${String(date.year).padStart(4, "0")}-${two(date.month)}-${two(date.day)}`;
+  return `${String(date.year).padStart(4, "0")}-${twoDigits(date.month)}-${twoDigits(date.day)}`;
 }
 
 /** The words for the time words of the language, by the word. */

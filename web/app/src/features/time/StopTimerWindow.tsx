@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
+import { IdsIn } from "./IdsIn.tsx";
 import { StopFooter } from "./StopFooter.tsx";
 import { StopTimerBody } from "./StopTimerBody.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
@@ -28,7 +29,7 @@ export function StopTimerWindow({ reading, issue, defaults, switchingTo }: StopT
   const stop = useStopTimer(reading, { issue: issue.key, switchingTo, defaults });
   return (
     <EntryWindow
-      title={t("time.stop.title", { issue: issue.key })}
+      title={<IdsIn sentence={t("time.stop.title", { issue: issue.key })} ids={[issue.key]} />}
       isOpen
       onOpenChange={closeTimeAsk}
       footer={

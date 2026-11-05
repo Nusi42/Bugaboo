@@ -5074,7 +5074,7 @@ part "time-part" {
 }
 
 part "time-part[variant=bar]" {
-    padding "$space-2 $space-3"
+    padding "$space-2 $space-4"
     border-top "$border-width solid $divider"
     background "$bg-surface"
 }
@@ -5147,6 +5147,11 @@ part "work-day.line" {
     use "quiet-text"
     line-height "$lh-text"
     overflow-wrap anywhere
+}
+
+// In the sidebar the line starts where the words of the items above it start.
+part "work-day[variant=sidebar] work-day.line" {
+    padding-inline "$space-3"
 }
 
 part "work-day.buttons" {
@@ -5901,15 +5906,31 @@ part "layout-field.limited link" {
 // share the width in equal parts, and it has the surface of the bars of the app, not the color of the page (M5 exit, L1).
 part "issue-bar" {
     display flex
-    gap "$space-2"
-    padding "$space-2"
     border-top "$border-width solid $divider"
     background "$bg-surface"
+    padding-bottom "env(safe-area-inset-bottom)"
 }
 
+// Each place of the bar is an icon over its words, as in the bar of the app (its parts *bottom-bar.item*, *label* and
+// *icon* draw it); the places share the width in equal parts.
 part "issue-bar.item" {
+    display flex
     flex "1 1 0"
     min-width 0
+}
+
+// The sheet of actions of a phone: the words stand 16 px from the edge, like the words of the other sheets, and the
+// button that closes it has the same margin; the list takes back the padding of its entries.
+part "action-sheet" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding-inline "$space-4"
+    padding-bottom "$space-4"
+}
+
+part "action-sheet action-menu" "action-sheet action-menu.title" {
+    margin-inline "calc(-1 * ($pad-control + $border-width))"
 }
 
 // The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it

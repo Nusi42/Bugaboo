@@ -4,9 +4,6 @@ import { useSyncExternalStore } from "react";
 /** How often the clock of the screens moves, in milliseconds: words like "2 minutes ago" are good for that long. */
 const TICK_MS = 30_000;
 
-/** How often the clock of a running timer moves: a second, as the seconds on its face. */
-const SECOND_MS = 1_000;
-
 /** A clock that moves every `periodMs` while some screen listens, and stops when nobody does. */
 function clockEvery(periodMs: number) {
   let current = Date.now();
@@ -36,7 +33,6 @@ function clockEvery(periodMs: number) {
 }
 
 const halfMinute = clockEvery(TICK_MS);
-const eachSecond = clockEvery(SECOND_MS);
 
 /**
  * The time now in milliseconds, moving every half minute: what a screen needs for words about how
@@ -45,9 +41,4 @@ const eachSecond = clockEvery(SECOND_MS);
  */
 export function useNow(): number {
   return useSyncExternalStore(halfMinute.subscribe, halfMinute.snapshot);
-}
-
-/** The time now in milliseconds, moving every second: the face of a running timer and of a work day that runs. */
-export function useNowEachSecond(): number {
-  return useSyncExternalStore(eachSecond.subscribe, eachSecond.snapshot);
 }

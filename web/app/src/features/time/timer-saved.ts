@@ -11,14 +11,13 @@ import type { TimerSaved } from "./timer-requests.ts";
 export function tellSaved(saved: TimerSaved, issue: string): void {
   const entry = saved.entry;
   if (entry === undefined || entry === null) {
-    tellTime(t("time.timer.too-short", { issue }), "info");
+    tellTime(t("time.timer.too-short", { issue }), "info", { ids: [issue] });
     return;
   }
-  tellTime(
-    t("time.timer.saved", {
-      length: minutesText(entry.minutes),
-      issue: entry.readable_id ?? issue,
-    }),
-    "success",
-  );
+  const length = minutesText(entry.minutes);
+  const on = entry.readable_id ?? issue;
+  tellTime(t("time.timer.saved", { length, issue: on }), "success", {
+    ids: [on],
+    lengths: [length],
+  });
 }

@@ -3,6 +3,7 @@ import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { IssuePicker } from "../search/index.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
+import { IdsIn } from "./IdsIn.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
 import { startTimer } from "./timer-start.ts";
 import { useTimer } from "./use-timer.ts";
@@ -28,7 +29,12 @@ export function SwitchIssueWindow() {
     >
       <div {...partOf(part.stack)}>
         {running?.readable_id === undefined || running.readable_id === null ? null : (
-          <p {...partOf(part.muted)}>{t("time.switch.help", { issue: running.readable_id })}</p>
+          <p {...partOf(part.muted)}>
+            <IdsIn
+              sentence={t("time.switch.help", { issue: running.readable_id })}
+              ids={[running.readable_id]}
+            />
+          </p>
         )}
         <IssuePicker
           onPick={(key) => {

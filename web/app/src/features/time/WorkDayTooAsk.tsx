@@ -3,6 +3,7 @@ import { AskDialog } from "@bugaboo/ui";
 import { useRef } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { IdsIn } from "./IdsIn.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
 import { tellTime } from "./time-notice.ts";
 import { startWorkDay } from "./work-day-requests.ts";
@@ -27,7 +28,7 @@ export function WorkDayTooAsk({ issue }: { readonly issue: string }) {
         }
       }}
       title={t("time.work-day.too-title")}
-      text={t("time.work-day.too-text", { issue })}
+      text={<IdsIn sentence={t("time.work-day.too-text", { issue })} ids={[issue]} />}
       confirmLabel={t("time.work-day.too-yes")}
       cancelLabel={t("time.work-day.too-no")}
       onConfirm={() => {

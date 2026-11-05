@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 
 export interface WindowDockProps {
-  readonly title: string;
+  readonly title: ReactNode;
   /** What the minimized window keeps: *Draft kept*. */
   readonly note: string;
   readonly onRestore: () => void;

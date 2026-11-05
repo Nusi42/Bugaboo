@@ -218,6 +218,7 @@ export {
   ActionMenu,
   ActionOverlay,
   type ActionMenuProps,
+  type ActionMenuTriggerProps,
   type ActionOverlayProps,
   type MenuAction,
 } from "./ActionMenu.tsx";

@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { AskDialog, buttonLook } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { IdsIn } from "./IdsIn.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
 import { tellTime } from "./time-notice.ts";
 import { throwAwayTimer } from "./timer-requests.ts";
@@ -14,13 +15,18 @@ export function ThrowAwayAsk() {
   if (reading === undefined || running === undefined) {
     return null;
   }
+  const issue = running.readable_id ?? undefined;
   return (
     <AskDialog
       isOpen
       onOpenChange={closeTimeAsk}
-      title={t("time.throw-away.title", {
-        issue: running.readable_id ?? t("time.timer.running-hidden"),
-      })}
+      title={
+        issue === undefined ? (
+          t("time.timer.running-hidden")
+        ) : (
+          <IdsIn sentence={t("time.throw-away.title", { issue })} ids={[issue]} />
+        )
+      }
       text={t("time.throw-away.text")}
       confirmLabel={t("time.timer.throw-away")}
       cancelLabel={t("common.cancel")}

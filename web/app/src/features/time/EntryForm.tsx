@@ -16,6 +16,9 @@ export interface EntryFormProps {
   readonly problems?: Readonly<Record<string, string>>;
 }
 
+/** No problem at any box. */
+const noProblems: Readonly<Record<string, string>> = {};
+
 /**
  * The boxes of a time entry that are the same wherever time is booked (TIME-01, TIME-02, TIME-13):
  * *Activity*, *Cost center* and the other fields of time entries that must be filled in, started
@@ -23,9 +26,6 @@ export interface EntryFormProps {
  * window that stops the timer, the window of *Add time* and, in the timesheet, the details of a row
  * all show this form and add their own date and length above it.
  */
-/** No problem at any box. */
-const noProblems: Readonly<Record<string, string>> = {};
-
 export function EntryForm({
   issue,
   defaults,

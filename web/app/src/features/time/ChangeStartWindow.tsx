@@ -13,15 +13,12 @@ import {
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { calendarDayOf } from "../../shared/format.ts";
+import { CALENDAR, calendarDayOf } from "../../shared/format.ts";
 import { momentOnDay, readTimeOfDay, timeBoxText } from "../../shared/wall-clock.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
 import { changeTimerStart } from "./timer-requests.ts";
 import { useTimer } from "./use-timer.ts";
-
-/** The widest span of days a day box takes: the whole calendar. */
-const CALENDAR = { min: "0001-01-01", max: "9999-12-31" };
 
 /** The new start as the API takes it, from the boxes; none while the day or the time of day is none. */
 function startOf(day: string, time: string): string | undefined {

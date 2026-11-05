@@ -5,7 +5,7 @@ import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 
 export interface EntryWindowProps {
-  readonly title: string;
+  readonly title: ReactNode;
   readonly isOpen: boolean;
   /** Called with `false` when the window closes (*Close*, *Back* or Esc). */
   readonly onOpenChange: (isOpen: boolean) => void;

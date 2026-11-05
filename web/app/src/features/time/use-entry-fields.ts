@@ -1,4 +1,4 @@
-import { useFields, type OwnField } from "../fields/index.ts";
+import { timeEntryFieldsFor, useFields, type OwnField } from "../fields/index.ts";
 import { useTimer } from "./use-timer.ts";
 
 /**
@@ -13,13 +13,7 @@ export function useEntryFields(
 ): readonly OwnField[] {
   const fields = useFields({ project }).data?.fields ?? [];
   const starters = Object.values(useTimer().data?.timer.starters ?? {});
-  const reaching = fields.filter(
-    (field) =>
-      field.applies_to === "time-entries" &&
-      !field.retired &&
-      (field.scope.issue_types.length === 0 ||
-        field.scope.issue_types.some((each) => each.id === issueType)),
-  );
+  const reaching = timeEntryFieldsFor(fields, issueType);
   const starter = starters.flatMap((id) => reaching.filter((field) => field.id === id));
   const required = reaching.filter(
     (field) => field.rules.required === true && !starters.includes(field.id),

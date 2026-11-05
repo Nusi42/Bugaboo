@@ -20,6 +20,15 @@ export async function readWorkDays(first: string, last: string) {
   );
 }
 
+/** The read of the person's days from a week back to `today`: the same for the hook and for the offer of the work day. */
+export function workDaysQuery(today: string) {
+  const first = addDays(today, -DAYS_BACK);
+  return {
+    queryKey: timeKeys.workDays(first, today),
+    queryFn: () => readWorkDays(first, today),
+  };
+}
+
 /**
  * The person's work day of today and the days of the week before, as the server shows them, read
  * again when the page gets the focus and every minute. `now` is what a day left
@@ -27,10 +36,8 @@ export async function readWorkDays(first: string, last: string) {
  */
 export function useWorkDayNow(): { readonly now: WorkDayNow | undefined; readonly today: string } {
   const today = calendarDayOf(useNow());
-  const first = addDays(today, -DAYS_BACK);
   const days = useQuery({
-    queryKey: timeKeys.workDays(first, today),
-    queryFn: () => readWorkDays(first, today),
+    ...workDaysQuery(today),
     refetchOnWindowFocus: true,
     refetchInterval: REREAD_MS,
   }).data;

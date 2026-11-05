@@ -182,16 +182,16 @@ export function choiceOf(field: OwnField, id: string): Choice | undefined {
   return field.choices.find((choice) => choice.id === id);
 }
 
-/** The own fields made for `appliesTo` that reach an issue: used in its project and its issue type. */
+/** The own fields made for `appliesTo` that reach an issue of this type: used in its project and its issue type, not retired. */
 function reachingIssue(
   fields: readonly OwnField[],
-  issue: IssueBlockProps["issue"],
+  type: string | undefined,
   appliesTo: OwnField["applies_to"],
 ): readonly OwnField[] {
-  const type = issue.issue_type?.id;
   return fields.filter(
     (field) =>
       field.applies_to === appliesTo &&
+      !field.retired &&
       (field.scope.issue_types.length === 0 ||
         field.scope.issue_types.some((each) => each.id === type)),
   );
@@ -202,7 +202,7 @@ export function issueFieldsOf(
   fields: readonly OwnField[],
   issue: IssueBlockProps["issue"],
 ): readonly OwnField[] {
-  return reachingIssue(fields, issue, "issues");
+  return reachingIssue(fields, issue.issue_type?.id, "issues");
 }
 
 /**
@@ -214,5 +214,16 @@ export function timeDefaultsOf(
   fields: readonly OwnField[],
   issue: IssueBlockProps["issue"],
 ): readonly OwnField[] {
-  return reachingIssue(fields, issue, "time-entries");
+  return timeEntryFieldsFor(fields, issue.issue_type?.id);
+}
+
+/**
+ * The fields of time entries that reach an issue of this type (or any type): what the forms of time
+ * and the defaults of the issue both start from.
+ */
+export function timeEntryFieldsFor(
+  fields: readonly OwnField[],
+  issueTypeId: string | undefined,
+): readonly OwnField[] {
+  return reachingIssue(fields, issueTypeId, "time-entries");
 }

@@ -1,6 +1,7 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 
 import { api } from "../../shared/api.ts";
+import { codeOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { refreshHistory, refreshIssues } from "../../shared/query-keys.ts";
 import { timeKeys } from "../../shared/time-keys.ts";
@@ -20,6 +21,21 @@ function refreshAfterEntry(): void {
   refreshHistory();
 }
 
+/**
+ * Runs a change of the timer; when the server says the timer changed since it was read (another device
+ * stopped or moved it), the timer is read again, so the next try is made on what it is now.
+ */
+async function freshOnStale<Answer>(change: () => Promise<Answer>): Promise<Answer> {
+  try {
+    return await change();
+  } catch (error) {
+    if (codeOf(error) === "edit.version-changed" || codeOf(error) === "timer.not-running") {
+      refreshTime();
+    }
+    throw error;
+  }
+}
+
 /** Starts the timer on an issue (by its readable ID). */
 export async function startTimerOn(issue: string): Promise<void> {
   dataOf(await api.client.POST("/api/v1/me/timer", { body: { issue } }));
@@ -31,10 +47,12 @@ export async function stopTimer(
   version: number,
   entry?: Schema<"EntryDetailsBody">,
 ): Promise<TimerSaved> {
-  const saved = dataOf(
-    await api.client.POST("/api/v1/me/timer/stop", {
-      body: { version, ...(entry === undefined ? {} : { entry }) },
-    }),
+  const saved = await freshOnStale(async () =>
+    dataOf(
+      await api.client.POST("/api/v1/me/timer/stop", {
+        body: { version, ...(entry === undefined ? {} : { entry }) },
+      }),
+    ),
   );
   refreshAfterEntry();
   return saved;
@@ -46,10 +64,12 @@ export async function switchTimer(
   issue: string,
   entry?: Schema<"EntryDetailsBody">,
 ): Promise<TimerSaved> {
-  const saved = dataOf(
-    await api.client.POST("/api/v1/me/timer/switch", {
-      body: { version, issue, ...(entry === undefined ? {} : { entry }) },
-    }),
+  const saved = await freshOnStale(async () =>
+    dataOf(
+      await api.client.POST("/api/v1/me/timer/switch", {
+        body: { version, issue, ...(entry === undefined ? {} : { entry }) },
+      }),
+    ),
   );
   refreshAfterEntry();
   return saved;
@@ -57,16 +77,20 @@ export async function switchTimer(
 
 /** Sets when the running timer started. */
 export async function changeTimerStart(version: number, startedAt: string): Promise<void> {
-  dataOf(
-    await api.client.POST("/api/v1/me/timer/start-time", {
-      body: { version, started_at: startedAt },
-    }),
+  await freshOnStale(async () =>
+    dataOf(
+      await api.client.POST("/api/v1/me/timer/start-time", {
+        body: { version, started_at: startedAt },
+      }),
+    ),
   );
   refreshTime();
 }
 
 /** Stops the timer and saves nothing. */
 export async function throwAwayTimer(version: number): Promise<void> {
-  dataOf(await api.client.POST("/api/v1/me/timer/throw-away", { body: { version } }));
+  await freshOnStale(async () =>
+    dataOf(await api.client.POST("/api/v1/me/timer/throw-away", { body: { version } })),
+  );
   refreshTime();
 }

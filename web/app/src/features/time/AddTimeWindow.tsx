@@ -5,6 +5,7 @@ import { useId } from "react";
 import { AddTimeForm } from "./AddTimeForm.tsx";
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
+import { IdsIn } from "./IdsIn.tsx";
 import { useAddTime } from "./use-add-time.ts";
 import { useAddTimeState } from "./use-add-time-state.ts";
 import type { EntryDefaults } from "./use-entry-defaults.ts";
@@ -26,7 +27,7 @@ export function AddTimeWindow({ issue, defaults, onClose }: AddTimeWindowProps) 
   const { date, minutes, values, ready } = state;
   return (
     <EntryWindow
-      title={t("time.add.title", { issue: issue.key })}
+      title={<IdsIn sentence={t("time.add.title", { issue: issue.key })} ids={[issue.key]} />}
       isOpen
       onOpenChange={onClose}
       footer={

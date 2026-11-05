@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { signedInAdmin } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
+import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
@@ -23,6 +24,8 @@ test("time_08 a work day left open asks when it ended", async ({ page, server })
     .getByRole("button", { name: t("time.work-day.left-open-button"), exact: true })
     .click();
   const question = page.getByRole("alertdialog");
+  await expect(question).toBeVisible();
+  await expectGoodInEveryLook(page);
   await expect(question).toContainText("?");
   await question.getByLabel(t("time.work-day.open-time"), { exact: true }).fill("17:30");
   await question.getByLabel(t("time.work-day.open-reason"), { exact: true }).fill("I forgot");

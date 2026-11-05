@@ -1,15 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form, TextField } from "@bugaboo/ui";
 
+import { CALENDAR } from "../../shared/format.ts";
 import { LengthBox } from "../fields/index.ts";
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryForm } from "./EntryForm.tsx";
 import type { AddTimeState } from "./use-add-time-state.ts";
 import type { EntryProblem } from "./use-add-time.ts";
 import type { EntryDefaults } from "./use-entry-defaults.ts";
-
-/** The widest span of days a day box takes: the whole calendar. */
-const CALENDAR = { min: "0001-01-01", max: "9999-12-31" };
 
 export interface AddTimeFormProps {
   /** The ID of the form, for the button of the footer that sends it. */
@@ -36,6 +34,7 @@ export function AddTimeForm({ id, issue, defaults, state, problem, onSubmit }: A
       />
       <LengthBox
         name={t("time.entry.length")}
+        help={t("time.entry.length-hint")}
         minutes={state.minutes ?? undefined}
         inRow={false}
         onCommit={state.setMinutes}

@@ -24,7 +24,7 @@ describe("time_08 a time of day somebody types", () => {
   });
 
   it("refuses what is no time of day", () => {
-    for (const text of ["", "soon", "24:00", "8:75", "13 pm", "0 am", "8:2"]) {
+    for (const text of ["", "soon", "24:00", "8:75", "13 pm", "0 am", "8:2", "8m", "8.", "8 a"]) {
       expect(readTimeOfDay(text)).toBeUndefined();
     }
   });

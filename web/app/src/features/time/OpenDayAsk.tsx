@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
-import { momentOnDay, readTimeOfDay } from "../../shared/wall-clock.ts";
+import { endOfOpenDay } from "./work-day-end.ts";
 import { closeTimeAsk } from "./time-asks.ts";
 import { tellTime } from "./time-notice.ts";
 import { endLeftOpenDay } from "./work-day-requests.ts";
@@ -21,8 +21,7 @@ export function OpenDayAsk() {
   if (day === undefined) {
     return null;
   }
-  const typed = readTimeOfDay(time);
-  const moment = typed === undefined ? null : momentOnDay(day.date, typed);
+  const moment = endOfOpenDay(day, time);
   const save = (): void => {
     if (moment !== null) {
       endLeftOpenDay(day, new Date(moment).toISOString(), reason.trim()).catch((error: unknown) => {

@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { AskDialog, Button, buttonLook } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { IdsIn } from "./IdsIn.tsx";
 import { askTime, closeTimeAsk } from "./time-asks.ts";
 import { tellTime } from "./time-notice.ts";
 import { tapWorkDay } from "./work-day-requests.ts";
@@ -34,8 +35,8 @@ export function TimerTooAsk({ issue }: { readonly issue: string }) {
           closeTimeAsk();
         }
       }}
-      title={t("time.work-day.timer-title", { issue })}
-      text={t("time.work-day.timer-text", { issue })}
+      title={<IdsIn sentence={t("time.work-day.timer-title", { issue })} ids={[issue]} />}
+      text={<IdsIn sentence={t("time.work-day.timer-text", { issue })} ids={[issue]} />}
       confirmLabel={t("time.work-day.timer-yes")}
       cancelLabel={t("common.cancel")}
       onConfirm={() => {

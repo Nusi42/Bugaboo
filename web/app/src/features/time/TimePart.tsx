@@ -32,7 +32,7 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
   const reading = useTimer().data;
   const notice = useTimeNotice();
   const running = reading?.timer.running ?? undefined;
-  const withTimer = place !== "home" && (running !== undefined || notice !== null);
+  const withTimer = running !== undefined || notice !== null;
   if (place === "bar" && !withTimer) {
     return null;
   }
@@ -41,14 +41,14 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
       aria-label={t("time.timer.region")}
       {...partOf(part.timePart, { variants: [place === "bar" && "bar"] })}
     >
-      {place === "bar" ? null : <WorkDayPart narrow={narrow} />}
-      {running === undefined || reading === undefined || place === "home" ? null : (
+      {place === "bar" ? null : <WorkDayPart narrow={narrow} place={place} />}
+      {running === undefined || reading === undefined ? null : (
         <>
           <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
           {narrow ? null : <LongTimer running={running} />}
         </>
       )}
-      {narrow || place === "home" ? null : <TimerNotice />}
+      {narrow ? null : <TimerNotice />}
     </section>
   );
 }

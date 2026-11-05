@@ -60,5 +60,6 @@ export async function idleScene(server: Parameters<typeof signedInAdmin>[0]) {
     await endWorkDayIfRunning(admin);
   };
   await reset();
-  return { issue, reset, dispose: () => admin.dispose() };
+  const start = (): Promise<void> => startTimerOn(admin, issue);
+  return { issue, reset, start, dispose: () => admin.dispose() };
 }

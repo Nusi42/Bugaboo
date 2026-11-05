@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { Facts, Length, NameValueRow, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { keepingHyphens } from "../../shared/format.ts";
-import { AddTimeButton, TimerButton } from "../time/index.ts";
+import { AddTimeButton, TimerButton, TimerNow, useTimerOn } from "../time/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { entryIssueOf } from "./entry-issue.ts";
@@ -51,6 +51,20 @@ export function WithSubIssuesRow({ totals }: { readonly totals: Schema<"TimeTota
     <NameValueRow name={keepingHyphens(t("issues.with-sub-issues"))}>
       <TotalFacts totals={totals} />
     </NameValueRow>
+  );
+}
+
+/** *Your timer*: how long it has run and *Stop*, in a row of the Details while the timer runs on this issue. */
+export function TimerRow({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
+  const issue = entryIssueOf(blocks.issue);
+  const { state } = useTimerOn(issue?.key ?? "");
+  if (issue === undefined || state !== "here") {
+    return null;
+  }
+  return (
+    <DetailRow name={t("time.timer.row")}>
+      <TimerNow />
+    </DetailRow>
   );
 }
 

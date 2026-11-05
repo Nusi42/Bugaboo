@@ -11,7 +11,8 @@ export interface WindowProps {
   readonly isOpen: boolean;
   /** Called with `false` when the window closes: *Close*, *Back* or Esc. The draft is the screen's to keep. */
   readonly onOpenChange: (isOpen: boolean) => void;
-  readonly title: string;
+  /** The title of the window; a node, so an Issue ID in it is drawn as an ID. */
+  readonly title: ReactNode;
   readonly labels: WindowLabels;
   /** The buttons of the form; the main one stands at the right (R6). */
   readonly footer?: ReactNode;

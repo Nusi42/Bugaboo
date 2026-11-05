@@ -35,6 +35,11 @@ test("cfg_08 quick search starts and stops the timer", async ({ page, server, ha
   await ask(page, t("time.timer.start"));
   await result(page, t("time.timer.start")).first().click();
   await expect.poll(() => timerRunsOn(admin)).toBe(issue.key);
+  // Start timer on the issue the timer runs on is asking to stop it.
+  await ask(page, t("time.timer.start"));
+  await result(page, t("time.timer.start")).first().click();
+  await expect(stopWindow(page, issue.key)).toBeVisible();
+  await page.keyboard.press("Escape");
   await ask(page, t("time.timer.stop-timer"));
   await result(page, t("time.timer.stop-timer")).first().click();
   await expect(stopWindow(page, issue.key)).toBeVisible();

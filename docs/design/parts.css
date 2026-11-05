@@ -4198,7 +4198,7 @@ textarea,
 }
 
 [data-part="time-part"][data-variant~="bar"] {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border-top: var(--border-width) solid var(--divider);
   background: var(--bg-surface);
 }
@@ -4287,6 +4287,10 @@ textarea,
   font-size: var(--fs-base);
   line-height: var(--lh-text);
   overflow-wrap: anywhere;
+}
+
+[data-part="work-day"][data-variant~="sidebar"] [data-part="work-day.line"] {
+  padding-inline: var(--space-3);
 }
 
 [data-part="work-day.buttons"] {
@@ -5115,15 +5119,28 @@ textarea,
 
 [data-part="issue-bar"] {
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
   border-top: var(--border-width) solid var(--divider);
   background: var(--bg-surface);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 [data-part="issue-bar.item"] {
+  display: flex;
   flex: 1 1 0;
   min-width: 0;
+}
+
+[data-part="action-sheet"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+[data-part="action-sheet"] [data-part="action-menu"],
+[data-part="action-sheet"] [data-part="action-menu.title"] {
+  margin-inline: calc(-1 * (var(--pad-control) + var(--border-width)));
 }
 
 @supports (animation-timeline: scroll()) {

@@ -26,9 +26,9 @@ export interface ConfirmDialogProps {
   /** The name for screen readers when the same button appears many times in a list. */
   readonly triggerName?: string;
   /** The question, as the heading of the dialog. */
-  readonly title: string;
+  readonly title: ReactNode;
   /** What will happen, in a sentence. */
-  readonly text: string;
+  readonly text: ReactNode;
   readonly confirmLabel: string;
   readonly cancelLabel: string;
   /** `danger` draws the confirming button in the color of warnings: the question is about a loss. */

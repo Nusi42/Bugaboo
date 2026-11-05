@@ -17,6 +17,8 @@ export interface LengthBoxProps {
    * has a visible name and sends every change at once, as a box of a form does.
    */
   readonly inRow?: boolean;
+  /** A hint under the box, for a box of a form: what can be typed. */
+  readonly help?: string;
 }
 
 /**
@@ -24,8 +26,8 @@ export interface LengthBoxProps {
  * time*, *Time left*, TIME-03): the same box, reader and words as the length of an own field, so a
  * length is typed and written one way everywhere.
  */
-export function LengthBox({ name, minutes, onCommit, inRow = true }: LengthBoxProps) {
-  const field: BoxField = { name, kind: "duration", help: "", rules: { required: false } };
+export function LengthBox({ name, minutes, onCommit, inRow = true, help = "" }: LengthBoxProps) {
+  const field: BoxField = { name, kind: "duration", help, rules: { required: false } };
   return (
     <span {...partOf(part.lengthBox)}>
       <WithLengthReader>

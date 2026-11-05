@@ -42,7 +42,7 @@ export interface WindowResize {
 }
 
 export interface WindowFrameProps {
-  readonly title: string;
+  readonly title: ReactNode;
   readonly labels: WindowLabels;
   readonly state: WindowState;
   /** The buttons of the form; the main one stands at the right (R6). */

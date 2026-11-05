@@ -109,3 +109,37 @@ test("the sidebar in a window 600 px high", async ({ page, server, hasTouch }) =
   });
   await admin.dispose();
 });
+
+test("the folded group of the sidebar, opened, in a window 600 px high", async ({
+  page,
+  server,
+  hasTouch,
+}) => {
+  test.skip(hasTouch, "The sidebar is the sidebar of a computer.");
+  const { admin, issue } = await scene(server);
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "sidebar-600-open", MILESTONE, paths.appearance, async () => {
+    await page.goto("/");
+    await waitForParts(page, issue.key);
+    await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
+    await expect(page.getByRole("link", { name: t("nav.my-settings"), exact: true })).toBeVisible();
+  });
+  await admin.dispose();
+});
+
+test("stop timer under one minute", async ({ page, server }) => {
+  const { issue, reset, start, dispose } = await idleScene(server);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "stop-timer-nothing", MILESTONE, paths.appearance, async () => {
+    await reset();
+    await start();
+    await page.goto("/");
+    await chipOf(page, issue.key).click();
+    await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
+    await expect(
+      page.getByRole("dialog", { name: t("time.stop.title", { issue: issue.key }) }),
+    ).toContainText(t("time.stop.nothing", { issue: issue.key }));
+  });
+  await dispose();
+});

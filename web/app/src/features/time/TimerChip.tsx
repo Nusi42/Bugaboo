@@ -1,11 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { ActionOverlay, Icon, iconName, partOf, part, type MenuAction } from "@bugaboo/ui";
+import { ActionOverlay, partOf, part } from "@bugaboo/ui";
 import { Button } from "react-aria-components";
 
-import { useNowEachSecond } from "../../shared/use-now.ts";
-import { askTime } from "./time-asks.ts";
-import { clockText, elapsedSeconds } from "./timer-clock.ts";
+import { timerActions } from "./timer-actions.ts";
+import { useRunClock } from "./use-run-clock.ts";
 
 export interface TimerChipProps {
   readonly running: Schema<"RunningItem">;
@@ -15,65 +14,23 @@ export interface TimerChipProps {
   readonly narrow?: boolean;
 }
 
-/** What the timer can be asked to do, each opening its window or question. */
-function timerActions(): readonly MenuAction[] {
-  return [
-    {
-      id: "stop",
-      label: t("time.timer.stop"),
-      onAction: () => {
-        askTime({ kind: "stop" });
-      },
-    },
-    {
-      id: "switch",
-      label: t("time.timer.switch"),
-      onAction: () => {
-        askTime({ kind: "switch" });
-      },
-    },
-    {
-      id: "change-start",
-      label: t("time.timer.change-start"),
-      onAction: () => {
-        askTime({ kind: "start-time" });
-      },
-    },
-    {
-      id: "throw-away",
-      label: t("time.timer.throw-away"),
-      onAction: () => {
-        askTime({ kind: "throw-away" });
-      },
-    },
-  ];
-}
-
-/**
- * How long the timer has run, counting each second from the server's start. It is part of the name
- * of the button, which is what the eyes read.
- */
-function RunTime({ running, serverOffsetMs }: Pick<TimerChipProps, "running" | "serverOffsetMs">) {
-  const now = useNowEachSecond();
-  return (
-    <span {...partOf(part.timerChipTime)}>
-      {clockText(elapsedSeconds(running.started_at, serverOffsetMs, now))}
-    </span>
-  );
-}
-
 /**
  * The running timer (TIME-01, UX §4.9): the issue it runs on and how long, in one button that opens
  * *Stop · Switch issue · Change start time · Throw away*. A timer that runs longer than a work day is
- * tinted as a warning.
+ * tinted as a warning. The button is named by its words, issue and clock, so what the eyes read is in
+ * its name; in the narrow sidebar the issue is only in the name.
  */
 export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChipProps) {
   const issue = running.readable_id ?? undefined;
-  const name =
-    issue === undefined ? t("time.timer.running-hidden") : t("time.timer.running", { issue });
+  const { clock } = useRunClock(running, serverOffsetMs);
+  const prefix = issue === undefined ? t("time.timer.running-hidden") : t("time.timer.running-on");
+  const sheet =
+    issue === undefined || clock === undefined
+      ? t("time.timer.menu")
+      : t("time.timer.menu-of", { issue, clock });
   return (
     <ActionOverlay
-      label={t("time.timer.menu")}
+      label={sheet}
       actions={timerActions()}
       cancelLabel={t("common.cancel")}
       renderTrigger={(onOpen) => (
@@ -81,21 +38,16 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
           {...partOf(part.timerChip, {
             variants: [running.runs_long && "long", narrow && "narrow"],
           })}
-          {...(narrow ? { "aria-label": name } : {})}
           {...(onOpen === undefined ? {} : { onPress: onOpen })}
         >
-          {narrow ? (
-            <Icon name={iconName.clock} />
-          ) : (
-            <>
-              <span {...partOf(part.visuallyHidden)}>
-                {issue === undefined ? t("time.timer.running-hidden") : t("time.timer.running-on")}
-              </span>
-              <span {...partOf(part.timerChipLive)} />
-              {issue === undefined ? null : <span {...partOf(part.timerChipIssue)}>{issue}</span>}
-              <RunTime running={running} serverOffsetMs={serverOffsetMs} />
-            </>
+          <span {...partOf(part.visuallyHidden)}>
+            {narrow ? `${prefix} ${issue ?? ""}` : prefix}
+          </span>
+          <span {...partOf(part.timerChipLive)} />
+          {issue === undefined || narrow ? null : (
+            <span {...partOf(part.timerChipIssue)}>{issue}</span>
           )}
+          <span {...partOf(part.timerChipTime)}>{clock}</span>
         </Button>
       )}
     />

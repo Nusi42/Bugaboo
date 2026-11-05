@@ -9,6 +9,7 @@ export const messages = {
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",
   "search.show-mistake": "Show the mistake",
+  "time.timer.row": "Your timer",
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",

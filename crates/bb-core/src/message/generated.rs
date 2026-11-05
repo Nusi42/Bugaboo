@@ -5710,6 +5710,9 @@ pub const TIME_ENTRY_FROM_ISSUE: MessageKey = MessageKey::new("time.entry.from-i
 /// The message `time.entry.length`.
 pub const TIME_ENTRY_LENGTH: MessageKey = MessageKey::new("time.entry.length");
 
+/// The message `time.entry.length-hint`.
+pub const TIME_ENTRY_LENGTH_HINT: MessageKey = MessageKey::new("time.entry.length-hint");
+
 /// The message `time.entry.note`.
 pub const TIME_ENTRY_NOTE: MessageKey = MessageKey::new("time.entry.note");
 
@@ -5727,6 +5730,12 @@ pub const TIME_START_TIME_TIME: MessageKey = MessageKey::new("time.start-time.ti
 
 /// The message `time.start-time.title`.
 pub const TIME_START_TIME_TITLE: MessageKey = MessageKey::new("time.start-time.title");
+
+/// The message `time.stop.cannot-title`.
+pub const TIME_STOP_CANNOT_TITLE: MessageKey = MessageKey::new("time.stop.cannot-title");
+
+/// The message `time.stop.hidden-issue`.
+pub const TIME_STOP_HIDDEN_ISSUE: MessageKey = MessageKey::new("time.stop.hidden-issue");
 
 /// The message `time.stop.save`.
 pub const TIME_STOP_SAVE: MessageKey = MessageKey::new("time.stop.save");
@@ -5752,6 +5761,9 @@ pub const TIME_TIMER_MENU: MessageKey = MessageKey::new("time.timer.menu");
 /// The message `time.timer.region`.
 pub const TIME_TIMER_REGION: MessageKey = MessageKey::new("time.timer.region");
 
+/// The message `time.timer.row`.
+pub const TIME_TIMER_ROW: MessageKey = MessageKey::new("time.timer.row");
+
 /// The message `time.timer.running-hidden`.
 pub const TIME_TIMER_RUNNING_HIDDEN: MessageKey = MessageKey::new("time.timer.running-hidden");
 
@@ -5775,6 +5787,9 @@ pub const TIME_TIMER_STOP_TIMER: MessageKey = MessageKey::new("time.timer.stop-t
 
 /// The message `time.timer.switch`.
 pub const TIME_TIMER_SWITCH: MessageKey = MessageKey::new("time.timer.switch");
+
+/// The message `time.timer.switch-here`.
+pub const TIME_TIMER_SWITCH_HERE: MessageKey = MessageKey::new("time.timer.switch-here");
 
 /// The message `time.timer.throw-away`.
 pub const TIME_TIMER_THROW_AWAY: MessageKey = MessageKey::new("time.timer.throw-away");
@@ -11498,12 +11513,15 @@ pub fn time_throw_away_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `time.timer.running`.
+/// The message `time.timer.menu-of`.
 #[must_use]
-pub fn time_timer_running(issue: impl std::fmt::Display) -> Message {
+pub fn time_timer_menu_of(clock: impl std::fmt::Display, issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("time.timer.running"),
-        vec![("issue", Value::Text(issue.to_string()))],
+        MessageKey::new("time.timer.menu-of"),
+        vec![
+            ("clock", Value::Text(clock.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+        ],
     )
 }
 
@@ -11516,6 +11534,15 @@ pub fn time_timer_saved(issue: impl std::fmt::Display, length: impl std::fmt::Di
             ("issue", Value::Text(issue.to_string())),
             ("length", Value::Text(length.to_string())),
         ],
+    )
+}
+
+/// The message `time.timer.stop-on`.
+#[must_use]
+pub fn time_timer_stop_on(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.stop-on"),
+        vec![("issue", Value::Text(issue.to_string()))],
     )
 }
 
@@ -17030,6 +17057,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These start with the values of the issue and its project. Change them if this time was different.",
     ),
     ("time.entry.length", "Length"),
+    (
+        "time.entry.length-hint",
+        "1:30, 1.5 and 90m all mean ninety minutes.",
+    ),
     ("time.entry.note", "What did you do? (optional)"),
     (
         "time.length.hours",
@@ -17060,13 +17091,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.start-time.save", "Change start time"),
     ("time.start-time.time", "Time of day"),
     ("time.start-time.title", "Change start time"),
+    ("time.stop.cannot-title", "Your timer cannot be saved"),
+    (
+        "time.stop.hidden-issue",
+        "Your timer runs on an issue you cannot see any more, so its time cannot be saved. You can throw it away.",
+    ),
     (
         "time.stop.nothing",
         "You worked less than a minute on {issue}, so nothing will be saved.",
     ),
     ("time.stop.save", "Save time"),
     ("time.stop.title", "Stop timer on {issue}"),
-    ("time.stop.worked", "You worked {length} on {title}."),
+    ("time.stop.worked", "You worked {length} on \"{title}\"."),
     (
         "time.switch.help",
         "The time so far on {issue} is saved, and the timer goes on with the issue you pick.",
@@ -17078,8 +17114,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.bar-stop", "Stop"),
     ("time.timer.change-start", "Change start time"),
     ("time.timer.menu", "Timer"),
+    ("time.timer.menu-of", "Timer on {issue} · {clock}"),
     ("time.timer.region", "Timer"),
-    ("time.timer.running", "Timer running on {issue}"),
+    ("time.timer.row", "Your timer"),
     ("time.timer.running-hidden", "Timer running"),
     ("time.timer.running-on", "Timer running on"),
     (
@@ -17090,8 +17127,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.start", "Start timer"),
     ("time.timer.start-title", "Start timer on which issue?"),
     ("time.timer.stop", "Stop"),
+    ("time.timer.stop-on", "Stop timer on {issue}"),
     ("time.timer.stop-timer", "Stop timer"),
     ("time.timer.switch", "Switch issue"),
+    ("time.timer.switch-here", "Switch to this issue"),
     ("time.timer.throw-away", "Throw away"),
     (
         "time.timer.too-short",

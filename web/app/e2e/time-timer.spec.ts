@@ -91,7 +91,7 @@ test("time_01 stop timer shows activity and cost center from the issue", async (
   const window = page.getByRole("dialog", { name: t("time.stop.title", { issue: issue.key }) });
   await expect(window).toBeVisible();
   await expect(window).toContainText(
-    t("time.stop.worked", { length: "42m", title: "Login fails after password reset" }),
+    t("time.stop.worked", { length: "42 minutes", title: "Login fails after password reset" }),
   );
   // The boxes start with the defaults of the issue, which the server worked out.
   await expect(window.getByLabel("Activity", { exact: true })).toHaveValue(testing);

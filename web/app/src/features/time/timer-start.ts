@@ -21,7 +21,10 @@ export async function startTimer(issue: string): Promise<void> {
     if (running === undefined) {
       await startTimerOn(issue);
       await offerWorkDay(issue);
-    } else if (running.readable_id !== issue) {
+    } else if (running.readable_id === issue) {
+      // The timer runs here already: pressing start again is asking to stop it.
+      askTime({ kind: "stop" });
+    } else {
       const saved = await switchTimer(timer.version, issue);
       tellSaved(saved, running.readable_id ?? issue);
     }

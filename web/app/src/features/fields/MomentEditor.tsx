@@ -1,13 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { TextField, fieldKind } from "@bugaboo/ui";
 
+import { CALENDAR } from "../../shared/format.ts";
 import { boxWords } from "./box-words.ts";
 import { SaveForm } from "./SaveForm.tsx";
 import { useSynced } from "./use-synced.ts";
 import type { Sent, ValueEditorProps } from "./ValueEditor.tsx";
-
-/** The widest span of days a day box takes: the whole calendar. */
-const CALENDAR = { min: "0001-01-01", max: "9999-12-31" };
 
 /** What the boxes of a day (and a time of day) send: nothing for no day. */
 function momentOf(withTime: boolean, day: string, time: string): Sent {

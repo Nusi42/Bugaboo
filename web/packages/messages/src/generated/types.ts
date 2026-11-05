@@ -577,8 +577,9 @@ export interface MessageArguments {
   "time.stop.worked": { length: string | number; title: string | number };
   "time.switch.help": { issue: string | number };
   "time.throw-away.title": { issue: string | number };
-  "time.timer.running": { issue: string | number };
+  "time.timer.menu-of": { clock: string | number; issue: string | number };
   "time.timer.saved": { issue: string | number; length: string | number };
+  "time.timer.stop-on": { issue: string | number };
   "time.timer.too-short": { issue: string | number };
   "time.work-day.done": { end: string | number; start: string | number; worked: string | number };
   "time.work-day.left-open": { day: string | number };

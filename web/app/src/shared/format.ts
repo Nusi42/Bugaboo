@@ -116,12 +116,20 @@ export function clockPartsOf(moment: number, region: Region = currentRegion()): 
 const TWO_DIGITS = 2;
 const YEAR_DIGITS = 4;
 
+/** A number of two digits at least, with a nought in front when it has one: `07`. */
+export function twoDigits(value: number): string {
+  return String(value).padStart(TWO_DIGITS, "0");
+}
+
+/** The widest span of days a day box takes: the whole calendar. */
+export const CALENDAR = { min: "0001-01-01", max: "9999-12-31" } as const;
+
 /** A day as numbers in the order the person chose: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
 function numeric(moment: number, region: Region): string {
   const clock = clockPartsOf(moment, region);
   const year = String(clock.year).padStart(YEAR_DIGITS, "0");
-  const month = String(clock.month).padStart(TWO_DIGITS, "0");
-  const day = String(clock.day).padStart(TWO_DIGITS, "0");
+  const month = twoDigits(clock.month);
+  const day = twoDigits(clock.day);
   switch (region.dateFormat) {
     case "day-month-year":
       return `${day}.${month}.${year}`;

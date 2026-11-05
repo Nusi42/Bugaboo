@@ -15,6 +15,7 @@ import {
   durationStored,
   millionthsToDecimal,
 } from "./value-text.ts";
+import { CALENDAR } from "../../shared/format.ts";
 
 /** Whether the bounds of the field are days (a *Date* or a *Date and time*). */
 function isDated(field: OwnField): boolean {
@@ -66,3 +67,6 @@ export function countOf(text: string): number | null | undefined {
   }
   return /^\d+$/u.test(trimmed) ? Number(trimmed) : undefined;
 }
+
+/** The whole calendar, for the boxes of a range of days. */
+export const dayRange = { date: CALENDAR } as const;
