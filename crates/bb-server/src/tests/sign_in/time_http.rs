@@ -449,6 +449,52 @@ async fn time_13_the_defaults_tell_billable_when_it_is_on_and_leave_out_a_hidden
 }
 
 #[tokio::test]
+async fn time_13_a_projects_cost_center_is_the_default_of_its_sub_projects_issues() -> TestResult {
+    each_database("time_13_cost_center_default", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let cost_center = starter(&mut ada, "cost-center").await?;
+        let product = add_choice(&mut ada, &cost_center, "4100 Product development").await?;
+        let sub = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{}/sub-projects", site.acme),
+                Some(json!({"short_name": "SUB", "name": "Sub"})),
+            )
+            .await?;
+        let sub = id_in(ok(&sub)?)?;
+        let made = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{sub}/issues"),
+                Some(site.new_issue("Paper runs out")),
+            )
+            .await?;
+        let issue = key_of(&made)?;
+        let booked = book(&mut ada, &issue, 10).await?;
+        assert_eq!(ok(&booked)?["own_fields"][&cost_center], Value::Null);
+        // The project above sets it; the sub-project's issue starts with it, and the project says so.
+        set_on_project(&mut ada, &site.acme, &cost_center, &product).await?;
+        let booked = book(&mut ada, &issue, 10).await?;
+        assert_eq!(ok(&booked)?["own_fields"][&cost_center], json!(product));
+        let above = ada
+            .send("GET", &format!("{PROJECTS}/{}", site.acme), None)
+            .await?;
+        assert_eq!(ok(&above)?["own_fields"][&cost_center], json!(product));
+        assert!(
+            ok(&above)?["changeable_fields"]
+                .as_array()
+                .is_some_and(|keys| keys.contains(&json!(cost_center)))
+        );
+        // The sub-project holds no value of its own: the page shows it as inherited.
+        let own = ada.send("GET", &format!("{PROJECTS}/{sub}"), None).await?;
+        assert_eq!(ok(&own)?["own_fields"][&cost_center], Value::Null);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn time_13_the_default_of_an_issue_is_no_field_of_its_forms_and_stays_changeable_there()
 -> TestResult {
     each_database("time_13_default_not_on_forms", async |db| {

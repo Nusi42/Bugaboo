@@ -109,3 +109,4 @@ mod workflows_http;
 mod workflows_publish_http;
 mod working_hours_http;
 mod working_hours_perf;
+mod working_hours_settings_http;

@@ -16,8 +16,8 @@ use super::rig::{PASSWORD, Rig};
 pub(super) const MINE: &str = "/api/v1/me/work-days";
 const OLD: &str = "/api/v1/work-days/old";
 /// The date of the clock of the tests (2027-01-15 08:00 UTC); people who chose no zone count in UTC.
-const TODAY: &str = "2027-01-15";
-const YESTERDAY: &str = "2027-01-14";
+pub(super) const TODAY: &str = "2027-01-15";
+pub(super) const YESTERDAY: &str = "2027-01-14";
 const HOUR: i64 = 3600;
 const MINUTE: i64 = 60;
 
@@ -61,7 +61,7 @@ pub(super) fn times(date: &str, from: &str, to: &str, version: i64, reason: Opti
 
 /// Sessions that last through a work day: the longest the settings allow, so the clock of a test
 /// can move by hours.
-async fn long_sessions(rig: &Rig) -> Result<(), Failure> {
+pub(super) async fn long_sessions(rig: &Rig) -> Result<(), Failure> {
     rig.set_organization_setting("security.session-idle-minutes", 1440)
         .await?;
     rig.set_organization_setting("security.session-absolute-hours", 720)
@@ -259,7 +259,10 @@ async fn time_10_a_past_day_changes_only_with_a_reason_and_keeps_the_old_value()
 }
 
 /// Hana holds *HR* for the whole organization; Bob is a team member with a day of yesterday.
-async fn hana_and_bob(rig: &Rig, site: &Site<'_>) -> Result<(Browser, Browser, String), Failure> {
+pub(super) async fn hana_and_bob(
+    rig: &Rig,
+    site: &Site<'_>,
+) -> Result<(Browser, Browser, String), Failure> {
     let (hana, _) = site
         .person_called(StartingRole::Hr, "hana", "Hana Hart")
         .await?;
