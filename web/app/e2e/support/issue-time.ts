@@ -1,7 +1,9 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { factSeparator } from "@bugaboo/ui";
+import type { Page } from "@playwright/test";
 
+import { isRecord } from "../../src/shared/is-record.ts";
 import type { ApiSession } from "./api.ts";
 import { createIssue, versionOf, type MadeIssue } from "./issues.ts";
 
@@ -56,4 +58,27 @@ export function totalsText(estimated: string, left: string, spent: string): stri
     t("issues.total-left", { length: left }),
     t("issues.total-spent", { length: spent }),
   ].join(` ${factSeparator} `);
+}
+
+/** An item of the history as the server sends it. */
+type HistoryItem = Readonly<Record<string, unknown>>;
+
+/**
+ * Makes the history of every issue tell its booked time the way another version of the server
+ * could: `change` gets each item of time of the answer and gives the item to send instead.
+ */
+export async function changeTimeInHistory(
+  page: Page,
+  change: (item: HistoryItem) => HistoryItem,
+): Promise<void> {
+  await page.route("**/api/v1/issues/*/history*", async (route) => {
+    const response = await route.fetch();
+    const body: unknown = await response.json();
+    if (isRecord(body) && Array.isArray(body["items"])) {
+      body["items"] = body["items"].map((item: unknown) =>
+        isRecord(item) && item["kind"] === "time" ? change(item) : item,
+      );
+    }
+    await route.fulfill({ response, json: body });
+  });
 }
