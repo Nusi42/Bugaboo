@@ -5,6 +5,7 @@
  */
 export const windowForms = {
   newIssue: "new-issue",
+  timeEntry: "time-entry",
 } as const;
 
 /** The name of a form that opens as a window. */

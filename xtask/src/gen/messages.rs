@@ -70,7 +70,7 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 29] = [
+const PARTS: [Part; 30] = [
     part!("access"),
     part!("account"),
     part!("admin"),
@@ -99,6 +99,7 @@ const PARTS: [Part; 29] = [
     part!("shell"),
     part!("sign-in"),
     part!("sign-up"),
+    part!("time"),
     part!("workflows"),
 ];
 

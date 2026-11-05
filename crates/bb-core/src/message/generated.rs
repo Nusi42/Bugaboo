@@ -5686,6 +5686,27 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 
+/// The message `time.add.button`.
+pub const TIME_ADD_BUTTON: MessageKey = MessageKey::new("time.add.button");
+
+/// The message `time.add.save`.
+pub const TIME_ADD_SAVE: MessageKey = MessageKey::new("time.add.save");
+
+/// The message `time.entry.billable`.
+pub const TIME_ENTRY_BILLABLE: MessageKey = MessageKey::new("time.entry.billable");
+
+/// The message `time.entry.date`.
+pub const TIME_ENTRY_DATE: MessageKey = MessageKey::new("time.entry.date");
+
+/// The message `time.entry.from-issue`.
+pub const TIME_ENTRY_FROM_ISSUE: MessageKey = MessageKey::new("time.entry.from-issue");
+
+/// The message `time.entry.length`.
+pub const TIME_ENTRY_LENGTH: MessageKey = MessageKey::new("time.entry.length");
+
+/// The message `time.entry.note`.
+pub const TIME_ENTRY_NOTE: MessageKey = MessageKey::new("time.entry.note");
+
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
@@ -11242,6 +11263,15 @@ pub fn theme_device_resolved(
     )
 }
 
+/// The message `time.add.title`.
+#[must_use]
+pub fn time_add_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.add.title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `time.length.hours`.
 #[must_use]
 pub fn time_length_hours(hours: i64) -> Message {
@@ -16697,6 +16727,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme.legend", "Theme"),
     ("theme.midnight", "Midnight"),
     ("theme.paper", "Paper"),
+    ("time.add.button", "Add time"),
+    ("time.add.save", "Add time"),
+    ("time.add.title", "Add time on {issue}"),
+    ("time.entry.billable", "Billable"),
+    ("time.entry.date", "Date"),
+    (
+        "time.entry.from-issue",
+        "These start with the values of the issue and its project. Change them if this time was different.",
+    ),
+    ("time.entry.length", "Length"),
+    ("time.entry.note", "What did you do? (optional)"),
     (
         "time.length.hours",
         "{hours, plural, one {# hour} other {# hours}}",

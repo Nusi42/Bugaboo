@@ -28,4 +28,5 @@ export { messages as shared } from "./shared.ts";
 export { messages as shell } from "./shell.ts";
 export { messages as signIn } from "./sign-in.ts";
 export { messages as signUp } from "./sign-up.ts";
+export { messages as time } from "./time.ts";
 export { messages as workflows } from "./workflows.ts";

@@ -6,7 +6,7 @@ import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-import { LengthIn, MinutesLength, WithSubIssuesRow } from "./TimeFacts.tsx";
+import { LengthIn, MinutesLength, SpentRow, WithSubIssuesRow } from "./TimeFacts.tsx";
 import { hasTotals, lengthWords, timeLeftOf } from "./time-words.ts";
 import { useIssueTime } from "./use-issue-time.ts";
 
@@ -96,11 +96,7 @@ export function TimeRows({ blocks, changes }: ChangeableRowsProps) {
     <>
       <EstimateRow blocks={blocks} changes={changes} />
       <LeftRow blocks={blocks} changes={changes} time={time} />
-      {spent === undefined ? null : (
-        <DetailRow name={t("issue-field.time-spent")}>
-          <MinutesLength minutes={spent} />
-        </DetailRow>
-      )}
+      {spent === undefined ? null : <SpentRow blocks={blocks} minutes={spent} />}
       {totals === undefined || totals === null || !hasTotals(totals) ? null : (
         <WithSubIssuesRow totals={totals} />
       )}

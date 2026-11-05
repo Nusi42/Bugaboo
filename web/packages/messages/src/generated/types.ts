@@ -28,6 +28,7 @@ import type { messages as shared } from "./shared.ts";
 import type { messages as shell } from "./shell.ts";
 import type { messages as signIn } from "./sign-in.ts";
 import type { messages as signUp } from "./sign-up.ts";
+import type { messages as time } from "./time.ts";
 import type { messages as workflows } from "./workflows.ts";
 
 export type MessageKey =
@@ -59,6 +60,7 @@ export type MessageKey =
   | keyof typeof shell
   | keyof typeof signIn
   | keyof typeof signUp
+  | keyof typeof time
   | keyof typeof workflows;
 
 export interface MessageArguments {
@@ -563,6 +565,7 @@ export interface MessageArguments {
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
+  "time.add.title": { issue: string | number };
   "time.length.hours": { hours: number };
   "time.length.hours-and-minutes": { hours: string | number; minutes: string | number };
   "time.length.minutes": { minutes: number };
