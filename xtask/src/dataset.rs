@@ -240,53 +240,19 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
         .with_context(|| format!("could not read {NAMES_FILE}"))?;
     let names =
         NameList::parse(&names).map_err(|problem| anyhow::anyhow!("{NAMES_FILE}: {problem}"))?;
+    // The four runs have folders and databases of their own and do not depend on each other, so
+    // they run side by side; the dumps are compared in the order of `CHECK_RUNS` all the same.
+    let shared = CheckRuns {
+        root,
+        program,
+        layout: &layout,
+        folder: &folder,
+        seed,
+    };
     let runs = db::with_postgres(repo, |postgres| {
-        let mut runs = Vec::new();
-        for (label, database) in CHECK_RUNS {
-            let out = folder.join(label);
-            let database_name = format!("bbsample_{}", label.replace('-', "_"));
-            let url = match database {
-                DatabaseKind::Sqlite => None,
-                DatabaseKind::Postgres => Some(postgres.empty_database(&database_name)?),
-            };
-            let made = program_command(
-                program,
-                root,
-                &Arguments {
-                    large: false,
-                    check: false,
-                    seed,
-                    start: CHECK_START,
-                    database,
-                    issues: Some(layout.issues.small_total),
-                    out: &out,
-                },
-                (&layout, url.as_deref()),
-            )
-            .stdin(Stdio::null())
-            .output()
-            .with_context(|| format!("could not start {}", program.display()))?;
-            let said = format!(
-                "{}{}",
-                String::from_utf8_lossy(&made.stdout),
-                String::from_utf8_lossy(&made.stderr)
-            );
-            if !made.status.success() {
-                bail!("The sample program failed for the run {label}:\n{said}");
-            }
-            fs::write(out.join("output.txt"), said)
-                .with_context(|| format!("could not write the output of {label}"))?;
-            if database == DatabaseKind::Postgres {
-                // The tables are in the cluster, not in the folder: they are read like a file,
-                // so a secret in them is found too.
-                postgres.dump_data(&database_name, &out.join(POSTGRES_DUMP_FILE))?;
-            }
-            runs.push(Run::read(label, &out, &layout)?);
-            if database == DatabaseKind::Postgres {
-                postgres.drop_database(&database_name)?;
-            }
-        }
-        Ok(runs)
+        side_by_side(&CHECK_RUNS, |&(label, database)| {
+            shared.run(postgres, label, database)
+        })
     })?;
     let problems = test_sample_data::problems(
         &names,
@@ -304,6 +270,98 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
         ));
     }
     Ok(problems.is_empty())
+}
+
+/// Runs `work` for every item at the same time, and returns the results in the order of the items.
+/// The first error (in that order) is the result when any run fails.
+pub(crate) fn side_by_side<T: Sync, R: Send>(
+    items: &[T],
+    work: impl Fn(&T) -> anyhow::Result<R> + Sync,
+) -> anyhow::Result<Vec<R>> {
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = items
+            .iter()
+            .map(|item| {
+                let work = &work;
+                scope.spawn(move || work(item))
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .unwrap_or_else(|_| bail!("a run that went side by side panicked"))
+            })
+            .collect()
+    })
+}
+
+/// What the runs of `--check` have in common.
+struct CheckRuns<'a> {
+    root: &'a Path,
+    program: &'a Path,
+    layout: &'a Layout,
+    /// The folder the runs make their folders in.
+    folder: &'a Path,
+    seed: Option<u64>,
+}
+
+impl CheckRuns<'_> {
+    /// One run of `--check`: makes the sample in the folder `label`, on `database`, and reads it back.
+    fn run(
+        &self,
+        postgres: &db::Postgres<'_>,
+        label: &'static str,
+        database: DatabaseKind,
+    ) -> anyhow::Result<Run> {
+        let out = self.folder.join(label);
+        let database_name = format!("bbsample_{}", label.replace('-', "_"));
+        let url = match database {
+            DatabaseKind::Sqlite => None,
+            DatabaseKind::Postgres => Some(postgres.empty_database(&database_name)?),
+        };
+        let made = program_command(
+            self.program,
+            self.root,
+            &Arguments {
+                large: false,
+                check: false,
+                seed: self.seed,
+                start: CHECK_START,
+                database,
+                issues: Some(self.layout.issues.small_total),
+                out: &out,
+            },
+            (self.layout, url.as_deref()),
+        )
+        .stdin(Stdio::null())
+        .output()
+        .with_context(|| format!("could not start {}", self.program.display()))?;
+        let said = format!(
+            "{}{}",
+            String::from_utf8_lossy(&made.stdout),
+            String::from_utf8_lossy(&made.stderr)
+        );
+        if !made.status.success() {
+            bail!(
+                "The sample program failed for the run {label}:
+{said}"
+            );
+        }
+        fs::write(out.join("output.txt"), said)
+            .with_context(|| format!("could not write the output of {label}"))?;
+        if database == DatabaseKind::Postgres {
+            // The tables are in the cluster, not in the folder: they are read like a file,
+            // so a secret in them is found too.
+            postgres.dump_data(&database_name, &out.join(POSTGRES_DUMP_FILE))?;
+        }
+        let run = Run::read(label, &out, self.layout)?;
+        if database == DatabaseKind::Postgres {
+            postgres.drop_database(&database_name)?;
+        }
+        Ok(run)
+    }
 }
 
 #[cfg(test)]
@@ -439,5 +497,33 @@ mod tests {
             .filter(|(_, database)| *database == DatabaseKind::Sqlite)
             .count();
         assert_eq!((sqlite, CHECK_RUNS.len() - sqlite), (2, 2));
+    }
+
+    #[test]
+    fn side_by_side_keeps_the_order_of_the_items() {
+        // The first item takes longest, so it ends last.
+        let results = side_by_side(&[30_u64, 10, 0], |&wait| {
+            std::thread::sleep(std::time::Duration::from_millis(wait));
+            Ok(wait)
+        })
+        .unwrap();
+        assert_eq!(results, [30, 10, 0]);
+    }
+
+    #[test]
+    fn bad_example_side_by_side_fails_when_one_fails() {
+        let error = side_by_side(&[1, 2, 3], |&number| {
+            anyhow::ensure!(number != 2, "number {number} failed");
+            Ok(number)
+        })
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("number 2 failed"));
+    }
+
+    #[test]
+    fn bad_example_side_by_side_reports_a_panic_as_an_error() {
+        let error =
+            side_by_side(&[1], |_| -> anyhow::Result<u8> { panic!("on purpose") }).unwrap_err();
+        assert!(format!("{error:#}").contains("panicked"));
     }
 }
