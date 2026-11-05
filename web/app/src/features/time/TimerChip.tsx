@@ -49,7 +49,10 @@ function timerActions(): readonly MenuAction[] {
   ];
 }
 
-/** How long the timer has run, counting each second from the server's start. */
+/**
+ * How long the timer has run, counting each second from the server's start. It is part of the name
+ * of the button, which is what the eyes read.
+ */
 function RunTime({ running, serverOffsetMs }: Pick<TimerChipProps, "running" | "serverOffsetMs">) {
   const now = useNowEachSecond();
   return (
@@ -78,13 +81,16 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
           {...partOf(part.timerChip, {
             variants: [running.runs_long && "long", narrow && "narrow"],
           })}
-          aria-label={name}
+          {...(narrow ? { "aria-label": name } : {})}
           {...(onOpen === undefined ? {} : { onPress: onOpen })}
         >
           {narrow ? (
             <Icon name={iconName.clock} />
           ) : (
             <>
+              <span {...partOf(part.visuallyHidden)}>
+                {issue === undefined ? t("time.timer.running-hidden") : t("time.timer.running-on")}
+              </span>
               <span {...partOf(part.timerChipLive)} />
               {issue === undefined ? null : <span {...partOf(part.timerChipIssue)}>{issue}</span>}
               <RunTime running={running} serverOffsetMs={serverOffsetMs} />

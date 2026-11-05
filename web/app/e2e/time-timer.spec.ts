@@ -26,7 +26,7 @@ test.use({ preparation: { run: prepareWeb } });
 /** The button that is the running timer, on the issue with this ID. */
 function chipOn(page: Page, issue: string) {
   return page
-    .getByRole("button", { name: t("time.timer.running", { issue }), exact: true })
+    .getByRole("button", { name: new RegExp(`^${t("time.timer.running-on")} ${issue}`, "u") })
     .first();
 }
 

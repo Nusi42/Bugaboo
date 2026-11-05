@@ -15,7 +15,7 @@ export function SwitchIssueWindow() {
   const running = useTimer().data?.timer.running ?? undefined;
   return (
     <EntryWindow
-      title={t("time.switch.title")}
+      title={running === undefined ? t("time.timer.start-title") : t("time.switch.title")}
       isOpen
       onOpenChange={closeTimeAsk}
       footer={

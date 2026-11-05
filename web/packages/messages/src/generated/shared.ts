@@ -580,6 +580,7 @@ export const messages = {
   "time.length.zero":
     "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
   "time.length.too-long": "One entry is at most {hours} hours.",
+  "time.timer.start": "Start timer",
   "field-example.text": "For example: Customer name",
   "field-example.long-text": "For example: Notes",
   "field-example.whole-number": "For example: Affected users",
@@ -641,6 +642,7 @@ export const messages = {
   "shortcut.change-status": "Change the status of the open issue",
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
+  "shortcut.timer": "Start or stop the timer on the open issue",
   "shortcut.on-issue": "On an open issue",
   "many-changes-skip.not-found": "It was deleted, or you can no longer see it",
   "many-changes-skip.not-allowed": "You may not change it this way",

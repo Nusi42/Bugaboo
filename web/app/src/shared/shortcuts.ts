@@ -95,6 +95,13 @@ export const shortcutDefinitions = [
     where: "issues",
     button: "issues.description.edit",
   },
+  {
+    id: "timer",
+    keys: ["t"],
+    message: "shortcut.timer",
+    where: "issues",
+    button: "time.timer.start",
+  },
 ] as const satisfies readonly ShortcutDefinition[];
 
 /** Where a shortcut works. */

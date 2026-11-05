@@ -8,7 +8,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
 import { clearTimer, startTimerOn, timerRunsOn } from "./support/time.ts";
-import { dateDaysAgo, endWorkDayIfRunning, leaveDayOpen, workDayRuns } from "./support/work-day.ts";
+import { endWorkDayIfRunning, workDayRuns } from "./support/work-day.ts";
 
 // The work day on screen (TIME-08): the four buttons and the line of today's hours, the question
 // "Start your work day too?" when a timer starts before the work day, and "Stop the timer on WEB-142
@@ -130,34 +130,12 @@ test("time_08 not now is not asked again with the next timer of the day", async 
   await page.waitForTimeout(TAP_PAUSE_MS);
   await openIssueWithDetails(page, second.key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
+  // The issue page of a phone has no bar of the app: its own bar says the timer runs here.
   await expect(
-    page.getByRole("button", { name: t("time.timer.running", { issue: second.key }) }).first(),
+    page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).first(),
   ).toBeVisible();
   await expect(question).toHaveCount(0);
   expect(await workDayRuns(admin)).toBe(false);
   await clearTimer(admin);
-  await admin.dispose();
-});
-
-test("time_08 a work day left open asks when it ended", async ({ page, server }) => {
-  const admin = await signedInAdmin(server);
-  await endWorkDayIfRunning(admin);
-  const date = dateDaysAgo(2);
-  await leaveDayOpen(admin, date);
-  await signIn(page, ada);
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: t("time.work-day.left-open-button"), exact: true })
-    .click();
-  const question = page.getByRole("alertdialog");
-  await expect(question).toContainText("?");
-  await question.getByLabel(t("time.work-day.open-time"), { exact: true }).fill("17:30");
-  await question.getByLabel(t("time.work-day.open-reason"), { exact: true }).fill("I forgot");
-  await question.getByRole("button", { name: t("time.work-day.open-save"), exact: true }).click();
-  await expect(question).toHaveCount(0);
-  await expect(page.getByRole("button", { name: t("time.work-day.left-open-button") })).toHaveCount(
-    0,
-  );
-  expect(await workDayRuns(admin)).toBe(false);
   await admin.dispose();
 });

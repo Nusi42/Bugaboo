@@ -26,7 +26,9 @@ test("ux_01 the sidebar fits a window 600 px high", async ({ page, server, hasTo
   await page.goto("/");
   // The timer and the work day are there, with the buttons of a day that has not started.
   await expect(
-    page.getByRole("button", { name: t("time.timer.running", { issue: issue.key }) }),
+    page.getByRole("button", {
+      name: new RegExp(`^${t("time.timer.running-on")} ${issue.key}`, "u"),
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: t("time.work-day.start"), exact: true }),

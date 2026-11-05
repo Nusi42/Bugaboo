@@ -1,4 +1,5 @@
-import { addOverlayHost, addTimePart } from "../shell/index.ts";
+import { addOverlayHost, addQuickAction, addTimePart } from "../shell/index.ts";
+import { timerQuickActions } from "./quick-actions.ts";
 import { TimeAsks } from "./TimeAsks.tsx";
 import { TimePart } from "./TimePart.tsx";
 
@@ -19,4 +20,7 @@ export function registerTime(): void {
     render: (view) => <TimePart {...view} />,
   });
   addOverlayHost({ id: "time-asks", render: () => <TimeAsks /> });
+  for (const action of timerQuickActions) {
+    addQuickAction(action);
+  }
 }

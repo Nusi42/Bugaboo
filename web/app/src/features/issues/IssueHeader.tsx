@@ -15,6 +15,8 @@ import {
 } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
+import { TimerKey } from "../time/index.ts";
+import { entryIssueOf } from "./entry-issue.ts";
 import { linkTo } from "./issue-actions.ts";
 import type { IssueShow } from "./issue-show.ts";
 import type { IssueView } from "./slots.ts";
@@ -70,8 +72,10 @@ export function IssueHeader(props: IssueHeaderProps) {
   const Heading = show === "focus" ? "h1" : "h2";
   // A phone always shows the issue on a screen of its own, so there is no other view to open it in.
   const phone = useLayout() === "phone";
+  const entry = entryIssueOf(issue);
   return (
     <>
+      {entry === undefined ? null : <TimerKey issue={entry} />}
       <div {...partOf(part.issueHead)}>
         <span {...partOf(part.issueHeadKind)}>
           {issueType === undefined ? null : (

@@ -5455,6 +5455,9 @@ pub const SHORTCUT_SHOW_SHORTCUTS: MessageKey = MessageKey::new("shortcut.show-s
 /// The message `shortcut.then`.
 pub const SHORTCUT_THEN: MessageKey = MessageKey::new("shortcut.then");
 
+/// The message `shortcut.timer`.
+pub const SHORTCUT_TIMER: MessageKey = MessageKey::new("shortcut.timer");
+
 /// The message `shortcut.title`.
 pub const SHORTCUT_TITLE: MessageKey = MessageKey::new("shortcut.title");
 
@@ -5749,11 +5752,17 @@ pub const TIME_TIMER_REGION: MessageKey = MessageKey::new("time.timer.region");
 /// The message `time.timer.running-hidden`.
 pub const TIME_TIMER_RUNNING_HIDDEN: MessageKey = MessageKey::new("time.timer.running-hidden");
 
+/// The message `time.timer.running-on`.
+pub const TIME_TIMER_RUNNING_ON: MessageKey = MessageKey::new("time.timer.running-on");
+
 /// The message `time.timer.runs-long`.
 pub const TIME_TIMER_RUNS_LONG: MessageKey = MessageKey::new("time.timer.runs-long");
 
 /// The message `time.timer.start`.
 pub const TIME_TIMER_START: MessageKey = MessageKey::new("time.timer.start");
+
+/// The message `time.timer.start-title`.
+pub const TIME_TIMER_START_TITLE: MessageKey = MessageKey::new("time.timer.start-title");
 
 /// The message `time.timer.stop`.
 pub const TIME_TIMER_STOP: MessageKey = MessageKey::new("time.timer.stop");
@@ -16866,6 +16875,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcut.quick-search", "Open quick search"),
     ("shortcut.show-shortcuts", "Show all keyboard shortcuts"),
     ("shortcut.then", "then"),
+    (
+        "shortcut.timer",
+        "Start or stop the timer on the open issue",
+    ),
     ("shortcut.title", "Keyboard shortcuts"),
     ("shortcut.undo", "Undo the last action"),
     (
@@ -17064,12 +17077,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.region", "Timer"),
     ("time.timer.running", "Timer running on {issue}"),
     ("time.timer.running-hidden", "Timer running"),
+    ("time.timer.running-on", "Timer running on"),
     (
         "time.timer.runs-long",
         "This timer has run longer than a work day.",
     ),
     ("time.timer.saved", "Saved {length} on {issue}."),
     ("time.timer.start", "Start timer"),
+    ("time.timer.start-title", "Start timer on which issue?"),
     ("time.timer.stop", "Stop"),
     ("time.timer.stop-timer", "Stop timer"),
     ("time.timer.switch", "Switch issue"),
