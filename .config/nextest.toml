@@ -1,0 +1,20 @@
+# The settings of the Rust test runner (`cargo nextest`, pinned in tools/dev/tools.toml). The tests
+# of all test programs run side by side, one process for each test.
+
+# The tests of the preview program start child programs that have a memory limit and a time limit
+# (ATT-04). Beside the other tests the child can miss its time, so each of them takes every slot
+# of the runner and runs alone; they still run, on every database, like every other test.
+[[profile.default.overrides]]
+filter = "binary(preview)"
+threads-required = "num-cpus"
+
+# The runner starts tests in the order of the test programs, so the longest tests may start last
+# and alone make the run longer than the rest. These start first (a higher priority starts
+# earlier; every test still runs). The list is the tests that took more than half a minute.
+[[profile.default.overrides]]
+filter = "test(/sec_01_every_route_answers_every_actor/)"
+priority = 100
+
+[[profile.default.overrides]]
+filter = "package(bb-sample) | test(/iss_09_more_than_a_thousand_run_as_a_job|iss_01a_a_big_project_gets_new_ids|sec_12_changing_the_password_stops_the_runs|sec_12_signing_out_everywhere_stops_the_runs|iss_09_a_run_is_stopped_by_who_asked|iss_06_a_long_run_of_hidden_changes|cf_07_a_choice_held_by_thousands/)"
+priority = 50

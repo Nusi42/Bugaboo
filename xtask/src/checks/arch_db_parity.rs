@@ -36,7 +36,7 @@ impl Check for ArchDbParity {
 const CI_SOURCE: &str = "xtask/src/ci.rs";
 
 /// The step that runs the repository tests on both databases and then checks the record.
-const TEST_STEP: &str = r#"&["db", "run", "--", "cargo", "test", "--workspace"]"#;
+const TEST_STEP: &str = r#"&["db", "run", "--", "cargo", "nextest", "run", "--workspace"]"#;
 
 /// Why the CI steps would not check the record, if they would not.
 fn wiring_problem(ci_source: &str) -> Option<String> {
@@ -64,7 +64,7 @@ pub(crate) fn problems(record: &str) -> Vec<String> {
     if ran.is_empty() {
         return vec![
             "No repository test is recorded. Run `cargo xtask ci` (or `cargo xtask db run -- \
-             cargo test --workspace`)."
+             cargo nextest run --workspace`)."
                 .to_owned(),
         ];
     }
@@ -127,7 +127,8 @@ mod tests {
 
     #[test]
     fn good_example_ci_runs_the_tests_through_db_run() {
-        let ci = r#"step("Rust tests", &["db", "run", "--", "cargo", "test", "--workspace"])"#;
+        let ci =
+            r#"step("Rust tests", &["db", "run", "--", "cargo", "nextest", "run", "--workspace"])"#;
         assert!(wiring_problem(ci).is_none());
     }
 }

@@ -51,8 +51,11 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         Step::new(
             "Rust tests",
             xtask.to_string_lossy(),
-            &["db", "run", "--", "cargo", "test", "--workspace"],
+            &["db", "run", "--", "cargo", "nextest", "run", "--workspace"],
         ),
+        // The runner does not run the examples in the documentation comments; cargo does. They need
+        // no database.
+        Step::new("Rust doc tests", "cargo", &["test", "--workspace", "--doc"]),
         // The sample organization is made twice on each database and compared (TEST-SAMPLE-DATA).
         Step::new(
             "sample organization",
@@ -113,6 +116,7 @@ mod tests {
                 "build the browser app",
                 "all checks",
                 "Rust tests",
+                "Rust doc tests",
                 "sample organization",
                 "large dataset",
                 "browser unit tests",
@@ -138,7 +142,7 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, false, true, false, false, true, true, on_linux,
+                true, false, false, false, false, false, true, false, false, true, true, on_linux,
                 on_linux
             ]
         );

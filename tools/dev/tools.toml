@@ -63,6 +63,16 @@ version = "8.30.1"
 windows-x64 = { url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip", sha256 = "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e" }
 linux-x64 = { url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz", sha256 = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" }
 
+# The runner of the Rust tests (`cargo xtask db run -- cargo nextest run`): it starts the tests of all
+# test programs side by side, each test in its own process. The checksums are computed from the
+# files at github.com/nextest-rs/nextest/releases (tag cargo-nextest-0.9.151).
+[[tool]]
+name = "cargo-nextest"
+kind = "download"
+version = "0.9.151"
+windows-x64 = { url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.151/cargo-nextest-0.9.151-x86_64-pc-windows-msvc.zip", sha256 = "ba35ee0ce14ace65cd8c7aaa9613adb7d2644b0fe3866e85131eb4c269786efb" }
+linux-x64 = { url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.151/cargo-nextest-0.9.151-x86_64-unknown-linux-gnu.tar.gz", sha256 = "1d4ce302b820c41f4b89c5fb9bce45f0f0c94882c1cf08fc360caf08be6e7df4" }
+
 # Git hooks (ADR-0014): `cargo xtask setup` installs the hooks from lefthook.yml with it.
 # The sha256 values are lefthook's published lefthook_checksums.txt for v2.1.16.
 [[tool]]

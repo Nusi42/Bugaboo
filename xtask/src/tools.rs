@@ -157,6 +157,22 @@ pub(crate) fn find(name: &str) -> Result<PathBuf, Finding> {
     })
 }
 
+/// The `PATH` with the folder of the pinned tools in front, for a program that finds its helpers
+/// on the `PATH`: `cargo nextest` is the program `cargo-nextest` that cargo looks for there. The
+/// pinned version is found first, so every machine runs the same one.
+pub(crate) fn path_with_tools(root: &Path) -> anyhow::Result<std::ffi::OsString> {
+    let existing = std::env::var_os("PATH").unwrap_or_default();
+    path_with_folder(&bin_dir(root), &existing)
+}
+
+fn path_with_folder(
+    folder: &Path,
+    existing: &std::ffi::OsStr,
+) -> anyhow::Result<std::ffi::OsString> {
+    let parts = std::iter::once(folder.to_path_buf()).chain(std::env::split_paths(existing));
+    std::env::join_paths(parts).context("a folder of the PATH contains a separator")
+}
+
 /// What a finished tool run printed.
 pub(crate) struct Output {
     pub(crate) success: bool,
@@ -332,6 +348,15 @@ fn shorten(text: &str, lines: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_pinned_tools_come_first_on_the_path() {
+        let tools = std::env::temp_dir().join("tools-bin");
+        let other = std::env::temp_dir().join("other-bin");
+        let joined = path_with_folder(&tools, other.as_os_str()).unwrap();
+        let parts: Vec<_> = std::env::split_paths(&joined).collect();
+        assert_eq!(parts, [tools, other]);
+    }
 
     #[test]
     fn a_relative_build_folder_is_handed_on_from_where_xtask_started() {

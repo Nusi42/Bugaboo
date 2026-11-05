@@ -310,7 +310,9 @@ impl Cluster {
     /// never decides anything.
     fn run_command(&self, repo: &Repo, command: &[String]) -> anyhow::Result<bool> {
         let Some((program, args)) = command.split_first() else {
-            bail!("Give a command after `--`, for example `cargo xtask db run -- cargo test`.");
+            bail!(
+                "Give a command after `--`, for example `cargo xtask db run -- cargo nextest run`."
+            );
         };
         let root = repo.root();
         let record = root.join(RECORD_PATH);
@@ -332,6 +334,7 @@ impl Cluster {
             .env(TEST_DATABASES_VARIABLE, DatabaseKind::names(","))
             .env(TEST_POSTGRES_URL_VARIABLE, self.url()?)
             .env(PARITY_RECORD_VARIABLE, &record)
+            .env("PATH", tools::path_with_tools(root)?)
             .status()
             .with_context(|| format!("could not start `{program}`"));
         // A failure to stop must not hide how the tests went.
