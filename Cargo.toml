@@ -132,6 +132,32 @@ opt-level = 3
 [profile.dev.package.blake2]
 opt-level = 3
 
+# The sign-in to PostgreSQL (SCRAM) hashes a password 4096 times for every connection a test opens;
+# unoptimised that was a visible part of the time of every test on PostgreSQL.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.hmac]
+opt-level = 3
+
+[profile.dev.package.digest]
+opt-level = 3
+
+[profile.dev.package.block-buffer]
+opt-level = 3
+
+[profile.dev.package.crypto-common]
+opt-level = 3
+
+[profile.dev.package.md-5]
+opt-level = 3
+
+[profile.dev.package.pbkdf2]
+opt-level = 3
+
+[profile.dev.package.sha1]
+opt-level = 3
+
 # The theme file is read by three checks in one run, and the KDL of nine thousand lines took half a
 # second to read in an unoptimised build each time.
 [profile.dev.package.kdl]
