@@ -6,6 +6,10 @@ Shortcuts are extras: everything they do also has a button on the page.
 
 Press `?` to open the list of all keyboard shortcuts, or press "Keyboard shortcuts" in the menu. The list says what each shortcut does and where it works. It is always up to date, because it is the same list Bugaboo itself uses.
 
+## The timer
+
+On an open issue, `t` starts the timer, or opens **Stop** while it runs on that issue. See [Time](../time/README.md).
+
 ## Sequences
 
 Some shortcuts are two keys in a row. Press the first key, let go, and press the second within a second. For example `g` and then `h` goes to the start page.
