@@ -29,7 +29,7 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | CLI | clap | 4.6.7 | MIT/Apache-2.0 |
 | Windows service | windows-service | 0.8.1 | MIT/Apache-2.0 |
 | Passwords | argon2 | 0.6.0 | MIT/Apache-2.0 |
-| Passkeys | webauthn-rs | 0.5.5 | MPL-2.0 (allowed, unmodified) |
+| Passkeys | webauthn-rs | 0.6.2 | MPL-2.0 (allowed, unmodified) |
 | Two-step codes | totp-rs | 6.0.0 | MIT |
 | Company sign-in | openidconnect | 4.0.1 | MIT |
 | Tokens (JWT) | jsonwebtoken | 11.1.0 | MIT |

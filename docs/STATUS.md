@@ -82,6 +82,6 @@ Engineering
 - CSRF is a session-bound token (server-derived from the session, sent in `__Host-bb_csrf`, echoed as `x-csrf-token`, compared in constant time) plus an `Origin` / `Sec-Fetch-Site` check that fails closed.
 - Security log entries are signed with a separate, non-rotating log key and anchored in an append-only file outside the database; the person in an entry is personal data (basis: legitimate interest, Art. 6(1)(f) with Art. 32).
 - All UI theming lives in `design/theme.kdl` (KDL), compiled at build time.
-- `webauthn-rs` 0.6.1-dev stays for M1 (pure Rust, MPL-2.0, free); switch to the first stable 0.6 before 1.0 (M1-F36). RUSTSEC-2023-0071 stays an accepted risk.
+- `webauthn-rs` 0.6.2 (pure Rust, MPL-2.0, free; M1-F36 done). RUSTSEC-2023-0071 stays an accepted risk.
 - The check runner runs the selected checks side by side; META-SPEED times the same function.
 - Playwright run by hand serves `web/app/dist`: run `npm run build` first (`cargo xtask ci` builds it as step 1).

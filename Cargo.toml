@@ -106,10 +106,10 @@ uuid = { version = "1.27.0", default-features = false }
 wasm-bindgen = "0.2.129"
 windows-service = "0.8.1"
 tracing = "0.1.44"
-webauthn-authenticator-rs = { version = "=0.6.1-dev", default-features = false, features = [
+webauthn-authenticator-rs = { version = "=0.6.2", default-features = false, features = [
   "softpasskey",
 ] }
-webauthn-rs = { version = "=0.6.1-dev", default-features = false, features = ["conditional-ui"] }
+webauthn-rs = { version = "=0.6.2", default-features = false, features = ["conditional-ui"] }
 utoipa = { version = "6.0.0", default-features = false, features = ["macros"] }
 utoipa-axum = { version = "0.3.0", default-features = false }
 tracing-subscriber = { version = "0.3.23", default-features = false, features = [

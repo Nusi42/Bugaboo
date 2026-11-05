@@ -7,8 +7,7 @@ version = 2
 yanked = "deny"
 # Accepted advisories: one line each; the reason names the register (META-SUPPRESS counts them).
 ignore = [
-  { id = "RUSTSEC-2023-0071", reason = "rsa has no patched release; only public-key checks run, never a private key (docs/third-party/README.md § Accepted risks)" },
-  { id = "RUSTSEC-2026-0387", reason = "fixed by webauthn-rs 0.6.2 (crypto-glue 0.2, elliptic-curve 0.14), update tracked as M1-F36; only public-key checks run (docs/third-party/README.md § Accepted risks)" },
+  { id = "RUSTSEC-2023-0071", reason = "rsa has no patched release (webauthn-rs 0.6.2 uses rsa 0.10.0-rc.19, also affected); only public-key checks run, never a private key (docs/third-party/README.md § Accepted risks)" },
 ]
 
 # Nothing from the GPL family (GPL, LGPL, AGPL) is on this list, so cargo deny refuses it, and
