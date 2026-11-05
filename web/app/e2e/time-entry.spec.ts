@@ -1,5 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { factSeparator } from "@bugaboo/ui";
 
 import { signedInAdmin } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
@@ -7,6 +8,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
+import { choiceNamed, setTimeDefault, starterField } from "./support/time.ts";
 
 // Booking time by hand (TIME-02): the window of *Add time* on the issue page takes a date, a length
 // and a note, the fields of time entries start with the defaults of the issue, and what is saved is
@@ -63,4 +65,33 @@ test("time_02 add time refuses a length that is none and says why", async ({ pag
   await expect(
     window.getByRole("button", { name: t("time.add.save"), exact: true }),
   ).toBeDisabled();
+});
+
+test("time_02 the history says the fields of booked time in the sentence of the time", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Toner is low");
+  const activity = await starterField(admin, "activity");
+  const costCenter = await starterField(admin, "cost-center");
+  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
+  await setTimeDefault(
+    admin,
+    issue,
+    costCenter,
+    await choiceNamed(admin, costCenter, "4100 Product development"),
+  );
+  await admin.dispose();
+  await signIn(page, ada);
+  await openIssueWithDetails(page, issue.key);
+  await page.getByRole("button", { name: t("time.add.button"), exact: true }).click();
+  const window = page.getByRole("dialog");
+  await window.getByLabel(t("time.entry.length"), { exact: true }).fill("45m");
+  await window.getByRole("button", { name: t("time.add.save"), exact: true }).click();
+  const history = page.getByRole("region", { name: t("history.title") }).first();
+  const fields = ["Testing", "4100 Product development"].join(` ${factSeparator} `);
+  await expect(history).toContainText(`Ada Admin booked 45m ${factSeparator} ${fields}`);
+  // The fields are not sentences of their own.
+  await expect(history.getByText(/changed Activity/u)).toHaveCount(0);
 });

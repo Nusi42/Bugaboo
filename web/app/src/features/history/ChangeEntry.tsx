@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   IssueId,
+  factSeparator,
   Length,
   partOf,
   part,
@@ -16,6 +17,7 @@ import { timeSentence } from "../../shared/time-sentence.ts";
 import { durationText, minutesText } from "../../shared/own-value-text.ts";
 import { WithWording, WordingNotice } from "../../shared/with-wording.tsx";
 import { changeSentence, relationSentence, useScrollTo } from "./history.ts";
+import { timeFieldValues } from "./time-fields.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation, the file or the time. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
@@ -50,8 +52,18 @@ function changeLengths(item: Schema<"HistoryEntryItem">): readonly string[] {
   return [...lengthOf(item.change?.before), ...lengthOf(item.change?.after)];
 }
 
+/** No own fields beside a sentence. */
+const noFields: readonly string[] = [];
+
 /** The sentence of one item that the shared wording words: a file, time, or a change of a field. */
-function WordedItem({ item }: { readonly item: Schema<"HistoryEntryItem"> }) {
+function WordedItem({
+  item,
+  fields = noFields,
+}: {
+  readonly item: Schema<"HistoryEntryItem">;
+  /** The own fields of a booked time, said after its sentence. */
+  readonly fields?: readonly string[];
+}) {
   return (
     <WithWording>
       {(wording) => {
@@ -63,9 +75,12 @@ function WordedItem({ item }: { readonly item: Schema<"HistoryEntryItem"> }) {
             ? [timeSentence(wording, item), timeLengths(item)]
             : [changeSentence(wording, item), changeLengths(item)];
         return (
-          <SentenceWithValues sentence={sentence} values={lengths}>
-            {(length) => <Length text={length} />}
-          </SentenceWithValues>
+          <>
+            <SentenceWithValues sentence={sentence} values={lengths}>
+              {(length) => <Length text={length} />}
+            </SentenceWithValues>
+            {fields.map((field) => ` ${factSeparator} ${field}`)}
+          </>
         );
       }}
     </WithWording>
@@ -90,11 +105,15 @@ export function ChangeEntry({
   if (first === undefined) {
     return null;
   }
+  // The own fields of booked time stand in the sentence of the time, not as sentences of their own.
+  const ofTime = first.kind === "time";
+  const sentences = ofTime ? [first] : items;
+  const timeFields = ofTime ? timeFieldValues(items.slice(1)) : [];
   return (
     <article ref={shown} {...partOf(part.historyEntry, { states: [highlighted && "highlighted"] })}>
       <span {...partOf(part.historyWhen)}>{formatDateTime(first.at)}</span>
       <ul {...partOf(part.list)}>
-        {items
+        {sentences
           .filter((item) => worded.has(item.kind))
           .map((item) => (
             <li key={keyOf(item)} {...partOf(part.itemText)}>
@@ -106,7 +125,7 @@ export function ChangeEntry({
                   {(id) => <IssueId id={id} />}
                 </SentenceWithValue>
               ) : (
-                <WordedItem item={item} />
+                <WordedItem item={item} fields={timeFields} />
               )}
             </li>
           ))}
