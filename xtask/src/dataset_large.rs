@@ -16,11 +16,12 @@ use bb_dev_words::database::DatabaseKind;
 use bb_dev_words::sample::Layout;
 
 use crate::dataset::{
-    Arguments, CHECK_START, Request, in_folder, load_layout, now, program_command, side_by_side,
+    Arguments, CHECK_START, Request, in_folder, load_layout, now, program_command,
 };
 use crate::db;
 use crate::output;
 use crate::repo::Repo;
+use crate::tools::side_by_side;
 
 /// Where the migrations are; the name of the newest file says which schema a dataset was made for.
 const MIGRATIONS: &str = "crates/bb-store/src/migrations";

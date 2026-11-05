@@ -20,6 +20,7 @@ use crate::db;
 use crate::output;
 use crate::repo::Repo;
 use crate::steps::{self, Profile};
+use crate::tools::side_by_side;
 
 /// Where the folders and file names of the sample are written down once; the program `bb-sample`
 /// and the end-to-end tests read the same file.
@@ -272,31 +273,6 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
     Ok(problems.is_empty())
 }
 
-/// Runs `work` for every item at the same time, and returns the results in the order of the items.
-/// The first error (in that order) is the result when any run fails.
-pub(crate) fn side_by_side<T: Sync, R: Send>(
-    items: &[T],
-    work: impl Fn(&T) -> anyhow::Result<R> + Sync,
-) -> anyhow::Result<Vec<R>> {
-    std::thread::scope(|scope| {
-        let handles: Vec<_> = items
-            .iter()
-            .map(|item| {
-                let work = &work;
-                scope.spawn(move || work(item))
-            })
-            .collect();
-        handles
-            .into_iter()
-            .map(|handle| {
-                handle
-                    .join()
-                    .unwrap_or_else(|_| bail!("a run that went side by side panicked"))
-            })
-            .collect()
-    })
-}
-
 /// What the runs of `--check` have in common.
 struct CheckRuns<'a> {
     root: &'a Path,
@@ -497,33 +473,5 @@ mod tests {
             .filter(|(_, database)| *database == DatabaseKind::Sqlite)
             .count();
         assert_eq!((sqlite, CHECK_RUNS.len() - sqlite), (2, 2));
-    }
-
-    #[test]
-    fn side_by_side_keeps_the_order_of_the_items() {
-        // The first item takes longest, so it ends last.
-        let results = side_by_side(&[30_u64, 10, 0], |&wait| {
-            std::thread::sleep(std::time::Duration::from_millis(wait));
-            Ok(wait)
-        })
-        .unwrap();
-        assert_eq!(results, [30, 10, 0]);
-    }
-
-    #[test]
-    fn bad_example_side_by_side_fails_when_one_fails() {
-        let error = side_by_side(&[1, 2, 3], |&number| {
-            anyhow::ensure!(number != 2, "number {number} failed");
-            Ok(number)
-        })
-        .unwrap_err();
-        assert!(format!("{error:#}").contains("number 2 failed"));
-    }
-
-    #[test]
-    fn bad_example_side_by_side_reports_a_panic_as_an_error() {
-        let error =
-            side_by_side(&[1], |_| -> anyhow::Result<u8> { panic!("on purpose") }).unwrap_err();
-        assert!(format!("{error:#}").contains("panicked"));
     }
 }

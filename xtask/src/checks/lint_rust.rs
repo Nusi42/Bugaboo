@@ -1,14 +1,14 @@
 //! LINT-RUST: Clippy finds no warnings (coding-standards §3).
 
 use std::fmt::Write as _;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
 
 use super::{Check, Context, Finding};
 use crate::fakecc;
 use crate::output;
-use crate::tools;
+use crate::tools::{self, side_by_side};
 
 pub(crate) struct LintRust;
 
@@ -31,59 +31,108 @@ impl Check for LintRust {
 /// Runs Clippy on the workspace at `root`; `build_env` is set for cargo besides the variables of
 /// the run.
 fn check_root(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<Vec<Finding>> {
-    let mut findings = Vec::new();
     let host = host_target(root)?;
-    for target in native_targets(root)? {
-        let mut args = vec![
-            "clippy".to_owned(),
-            "--workspace".to_owned(),
-            "--all-targets".to_owned(),
-        ];
-        let mut skipped = Vec::new();
-        let mut env: Vec<(String, String)> = build_env
-            .iter()
-            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
-            .collect();
-        if let Some(target) = &target {
-            args.extend(["--target".to_owned(), target.clone()]);
-            if target != &host {
-                skipped = c_build_packages(root, target)?;
-                if !skipped.is_empty() {
-                    env.extend(stand_in_compiler(target)?);
-                }
-            }
-        }
-        args.extend(["--".to_owned(), "-D".to_owned(), "warnings".to_owned()]);
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        let output = tools::run_with_env(Path::new("cargo"), &args, root, &env)?;
-        let mut message = match &target {
-            Some(target) => format!(
-                "Clippy found problems when checking for {target}. Fix them in the code (do not silence them)."
-            ),
-            None => "Clippy found problems. Fix them in the code (do not silence them).".to_owned(),
-        };
-        if !skipped.is_empty() {
-            let names: Vec<String> = skipped.iter().map(|p| p.name.clone()).collect();
-            let _ = write!(
-                message,
-                " (C compiler replaced by a no-op for this lint run: {}.)",
-                names.join(", ")
-            );
-        }
-        findings.extend(tools::findings_from(Ok(output), &message));
-        if let (true, Some(target)) = (!skipped.is_empty(), &target) {
-            output::info(&format!(
-                "        {target}: C compiler replaced by a no-op for {}",
-                skipped
-                    .iter()
-                    .map(|p| p.name.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ));
+    let targets = native_targets(root)?;
+    // The targets are checked at the same time (each takes only part of the computer), and what
+    // they found is told in the order of the list.
+    let checked = side_by_side(&targets, |target| {
+        check_target(root, build_env, &host, target.as_deref())
+    })?;
+    let mut findings = Vec::new();
+    for (target_findings, note) in checked {
+        findings.extend(target_findings);
+        if let Some(note) = note {
+            output::info(&note);
         }
     }
     Ok(findings)
+}
+
+/// Clippy for one target (`None`: the target of this machine, when the list names none): its
+/// findings, and a note when the C compiler was replaced for it.
+fn check_target(
+    root: &Path,
+    build_env: &[(&str, &str)],
+    host: &str,
+    target: Option<&str>,
+) -> anyhow::Result<(Vec<Finding>, Option<String>)> {
+    let mut args = vec![
+        "clippy".to_owned(),
+        "--workspace".to_owned(),
+        "--all-targets".to_owned(),
+    ];
+    let mut skipped = Vec::new();
+    let mut env: Vec<(String, String)> = build_env
+        .iter()
+        .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+        .collect();
+    // Cargo lets one build at a time into a build folder. Each target has a folder of its own
+    // inside the build folder of the run, so the targets (and the build of the server that
+    // DOC-GENERATED runs at the same time) do not wait for each other.
+    let folder = lint_folder(root, build_env, target);
+    env.retain(|(name, _)| name != TARGET_DIR_VARIABLE);
+    env.push((
+        TARGET_DIR_VARIABLE.to_owned(),
+        folder.to_string_lossy().into_owned(),
+    ));
+    if let Some(target) = target {
+        args.extend(["--target".to_owned(), target.to_owned()]);
+        if target != host {
+            skipped = c_build_packages(root, target)?;
+            if !skipped.is_empty() {
+                env.extend(stand_in_compiler(target)?);
+            }
+        }
+    }
+    args.extend(["--".to_owned(), "-D".to_owned(), "warnings".to_owned()]);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    let output = tools::run_with_env(Path::new("cargo"), &args, root, &env)?;
+    let mut message = match target {
+        Some(target) => format!(
+            "Clippy found problems when checking for {target}. Fix them in the code (do not silence them)."
+        ),
+        None => "Clippy found problems. Fix them in the code (do not silence them).".to_owned(),
+    };
+    if !skipped.is_empty() {
+        let names: Vec<String> = skipped.iter().map(|p| p.name.clone()).collect();
+        let _ = write!(
+            message,
+            " (C compiler replaced by a no-op for this lint run: {}.)",
+            names.join(", ")
+        );
+    }
+    let findings = tools::findings_from(Ok(output), &message);
+    let note = target.filter(|_| !skipped.is_empty()).map(|target| {
+        format!(
+            "        {target}: C compiler replaced by a no-op for {}",
+            skipped
+                .iter()
+                .map(|p| p.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    });
+    Ok((findings, note))
+}
+
+/// The variable that names the build folder of cargo.
+const TARGET_DIR_VARIABLE: &str = "CARGO_TARGET_DIR";
+
+/// The build folder of Clippy for `target`: `lint/<target>` inside the build folder of the run
+/// (the one `build_env` or the environment names, else `target` of the repository).
+fn lint_folder(root: &Path, build_env: &[(&str, &str)], target: Option<&str>) -> PathBuf {
+    let named = build_env
+        .iter()
+        .find(|(name, _)| *name == TARGET_DIR_VARIABLE)
+        .map(|(_, value)| PathBuf::from(value))
+        .or_else(|| std::env::var_os(TARGET_DIR_VARIABLE).map(PathBuf::from));
+    let base = match named {
+        Some(named) if named.is_absolute() => named,
+        Some(named) => std::env::current_dir().map_or(named.clone(), |here| here.join(&named)),
+        None => root.join("target"),
+    };
+    base.join("lint").join(target.unwrap_or("host"))
 }
 
 /// The target of this machine, from `rustc -vV`.
@@ -268,5 +317,20 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
         temp.write("Cargo.toml", MANIFEST);
         temp.write("src/main.rs", "fn main() {}\n");
         assert!(demo_findings(&temp).is_empty());
+    }
+
+    #[test]
+    fn each_target_lints_in_a_folder_of_its_own_inside_the_build_folder_of_the_run() {
+        let base = std::env::temp_dir().join("lint-folders");
+        let named = base.to_string_lossy().into_owned();
+        let env = [(TARGET_DIR_VARIABLE, named.as_str())];
+        let windows = lint_folder(Path::new("."), &env, Some("x86_64-pc-windows-msvc"));
+        let linux = lint_folder(Path::new("."), &env, Some("x86_64-unknown-linux-gnu"));
+        assert_eq!(windows, base.join("lint/x86_64-pc-windows-msvc"));
+        assert_eq!(linux, base.join("lint/x86_64-unknown-linux-gnu"));
+        assert_eq!(
+            lint_folder(Path::new("."), &env, None),
+            base.join("lint/host")
+        );
     }
 }
