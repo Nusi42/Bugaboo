@@ -53,7 +53,7 @@ export function IssueFrame(props: IssueFrameProps) {
   const article = (
     <article>
       {inside}
-      {layout === "phone" ? <PhoneBar actions={actions} /> : null}
+      {layout === "phone" ? <PhoneBar actions={actions} issue={issue} /> : null}
     </article>
   );
   // In the panel the panel is what stands beside the list, so it can keep its place while the page scrolls (L7).

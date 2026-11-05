@@ -1,6 +1,11 @@
-import { addQuickSearchSource, addSidebarSection } from "../shell/index.ts";
+import type { MessageKey } from "@bugaboo/messages";
+
+import { addQuickSearchSource, addSidebarSection, SectionFrame } from "../shell/index.ts";
 import { ProjectTree } from "./ProjectTree.tsx";
 import { projectsSource } from "./quick-search.ts";
+
+/** The heading of the project tree. */
+const heading = "projects.heading" satisfies MessageKey;
 
 let registered = false;
 
@@ -15,9 +20,14 @@ export function registerProjects(): void {
   }
   registered = true;
   addSidebarSection({
-    heading: "projects.heading",
-    render: ({ narrow, onNavigate }) => (
-      <ProjectTree narrow={narrow} {...(onNavigate === undefined ? {} : { onNavigate })} />
+    heading,
+    render: (view) => (
+      <SectionFrame heading={heading} view={view}>
+        <ProjectTree
+          narrow={view.narrow}
+          {...(view.onNavigate === undefined ? {} : { onNavigate: view.onNavigate })}
+        />
+      </SectionFrame>
     ),
   });
   addQuickSearchSource(projectsSource);

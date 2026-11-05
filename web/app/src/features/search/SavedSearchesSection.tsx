@@ -1,17 +1,23 @@
 import { t } from "@bugaboo/messages";
 import { iconName, part, partOf } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 import { itemsOf } from "../../shared/paged.ts";
 import { savedSearchAddress } from "../../shared/paths.ts";
 import { personName } from "../../shared/person.ts";
 import { howCurrent, placeCurrent } from "../../shared/places.ts";
-import { NavLink } from "../shell/index.ts";
-import { useSavedList, savedSet, type SavedSearch, type SavedSet } from "./saved-searches.ts";
+import { NavLink, SectionFrame, type SidebarSectionView } from "../shell/index.ts";
+import {
+  savedHeading,
+  useSavedList,
+  savedSet,
+  type SavedSearch,
+  type SavedSet,
+} from "./saved-searches.ts";
 
 export interface SavedSearchesSectionProps {
-  readonly narrow: boolean;
-  readonly onNavigate?: (() => void) | undefined;
+  readonly view: SidebarSectionView;
 }
 
 /** How many saved searches of one list the sidebar shows; the rest is on the page of *Search*. */
@@ -24,7 +30,8 @@ function SavedList({
   heading,
   pathname,
   onNavigate,
-}: Omit<SavedSearchesSectionProps, "narrow"> & {
+}: {
+  readonly onNavigate?: (() => void) | undefined;
   readonly which: SavedSet;
   readonly searches: readonly SavedSearch[];
   readonly heading: string;
@@ -65,21 +72,31 @@ function SavedList({
  * them: it stands with the start page above. A saved search opens at its
  * own address.
  */
-export function SavedSearchesSection({ narrow, onNavigate }: SavedSearchesSectionProps) {
+export function SavedSearchesSection({ view }: SavedSearchesSectionProps) {
+  const { narrow, onNavigate } = view;
   const { pathname } = useLocation();
   const mineList = useSavedList(savedSet.mine, shown);
   const sharedList = useSavedList(savedSet.shared, shown);
   const mine = itemsOf(mineList.data?.pages);
   const shared = itemsOf(sharedList.data?.pages);
-  // While the lists are read the section says so in one line, and an empty section keeps its heading and says so in
-  // one line, like *Projects* (UX §3.1): the line is there from the start, so the menu does not grow under the person.
+  const framed = (children: ReactNode) => (
+    <SectionFrame heading={savedHeading} view={view}>
+      {children}
+    </SectionFrame>
+  );
+  // While the lists are read the section says so in one line, so the menu does not grow under the person.
   if (!narrow && (mineList.isPending || sharedList.isPending)) {
-    return <p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>;
+    return framed(<p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>);
   }
-  if (!narrow && mineList.isSuccess && sharedList.isSuccess && mine.length + shared.length === 0) {
-    return <p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>;
+  const none = mineList.isSuccess && sharedList.isSuccess && mine.length + shared.length === 0;
+  // A person without a saved search sees no heading and no note in the sidebar: a window 600 px high has no
+  // room for them (M5-F150). The sheet *More* of a phone has room and tells it.
+  if (!narrow && none) {
+    return view.place === "sheet"
+      ? framed(<p {...partOf(part.sidebarNote)}>{t("search.saved-none")}</p>)
+      : null;
   }
-  return (
+  return framed(
     <ul {...partOf(part.sidebarList)}>
       {narrow ? null : (
         <>
@@ -99,6 +116,6 @@ export function SavedSearchesSection({ narrow, onNavigate }: SavedSearchesSectio
           />
         </>
       )}
-    </ul>
+    </ul>,
   );
 }

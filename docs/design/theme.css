@@ -85,6 +85,7 @@
   --ring-room: calc(var(--ring-width) + var(--ring-offset));
   --bp-tablet: 768px;
   --bp-computer: 1280px;
+  --bp-sidebar-tall: 720px;
   --size-sidebar: 264px;
   --size-sidebar-narrow: 72px;
   --size-panel: 420px;

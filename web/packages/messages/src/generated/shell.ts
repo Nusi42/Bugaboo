@@ -11,6 +11,7 @@ export const messages = {
   "page.not-found.home": "Go to the start page",
   "shell.quick-search": "Quick search",
   "shell.more": "More",
+  "shell.group-fold": "Settings and more",
   "shell.widen": "Widen the menu",
   "shell.menu-button": "Menu",
   "shell.trail": "You are here",

@@ -1,4 +1,5 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
+import type { MessageKey } from "@bugaboo/messages";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -177,3 +178,6 @@ export function useProjectListChoice(project: string) {
       ),
   });
 }
+
+/** The heading of *Saved searches*, in the sidebar and in the sheet *More*. */
+export const savedHeading = "search.saved-heading" satisfies MessageKey;

@@ -184,6 +184,8 @@ tokens {
     // Where the layout changes
     size "bp-tablet" "768px"
     size "bp-computer" "1280px"
+    // A window at least this high has room for the whole sidebar; a lower one folds its bottom group (M5-F150).
+    size "bp-sidebar-tall" "720px"
     size "size-sidebar" "264px"
     size "size-sidebar-narrow" "72px"
     size "size-panel" "420px"

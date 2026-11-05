@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { iconName, partOf, part } from "@bugaboo/ui";
+import { iconName, partOf, part, useShortWindow } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { NavButton } from "./NavItem.tsx";
 import { openOverlay } from "./overlay-state.ts";
 import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
-import { toggleSidebar } from "./sidebar-state.ts";
+import { toggleSidebar, useSidebarFold } from "./sidebar-state.ts";
 
 export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate"> {
   /** The sidebar is inside the menu of a tablet: no button to narrow it. */
@@ -14,33 +14,54 @@ export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate
   readonly organizationSettings: boolean;
 }
 
-/** *My settings*, *Organization settings*, the list of shortcuts and the button to narrow the bar. */
+/**
+ * *My settings*, *Organization settings*, the list of shortcuts and the button to narrow the bar. In
+ * a window too low for the whole sidebar they are folded behind one button, which the person opens
+ * (M5-F150).
+ */
 export function Bottom({ narrow, inDrawer, organizationSettings, onNavigate }: BottomProps) {
+  const short = useShortWindow() && !inDrawer;
+  const { folded, toggle } = useSidebarFold(short);
   return (
     <ul {...partOf(part.sidebarBottom)}>
-      <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
-      {organizationSettings ? (
-        <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />
-      ) : null}
-      <li>
-        <NavButton
-          icon={iconName.keyboard}
-          label={t("shortcut.title")}
-          narrow={narrow}
-          onPress={() => {
-            openOverlay("shortcuts");
-          }}
-        />
-      </li>
-      {inDrawer ? null : (
+      {short ? (
         <li>
           <NavButton
-            icon={narrow ? iconName.widen : iconName.narrow}
-            label={narrow ? t("shell.widen") : t("shell.narrow")}
+            icon={iconName.settings}
+            label={t("shell.group-fold")}
             narrow={narrow}
-            onPress={toggleSidebar}
+            isExpanded={!folded}
+            onPress={toggle}
           />
         </li>
+      ) : null}
+      {folded ? null : (
+        <>
+          <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
+          {organizationSettings ? (
+            <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />
+          ) : null}
+          <li>
+            <NavButton
+              icon={iconName.keyboard}
+              label={t("shortcut.title")}
+              narrow={narrow}
+              onPress={() => {
+                openOverlay("shortcuts");
+              }}
+            />
+          </li>
+          {inDrawer ? null : (
+            <li>
+              <NavButton
+                icon={narrow ? iconName.widen : iconName.narrow}
+                label={narrow ? t("shell.widen") : t("shell.narrow")}
+                narrow={narrow}
+                onPress={toggleSidebar}
+              />
+            </li>
+          )}
+        </>
       )}
     </ul>
   );

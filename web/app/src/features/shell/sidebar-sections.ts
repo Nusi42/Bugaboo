@@ -9,7 +9,7 @@ import { createRegistry, useRegistry } from "./registry.ts";
  * feature adds it, so the sidebar lists only what exists.
  */
 export interface SidebarSection {
-  /** The heading above the section. */
+  /** The heading above the section: its name, and the key it is told by. */
   readonly heading: MessageKey;
   /**
    * What the section shows; links inside it are links of the app. `narrow`: the sidebar shows
@@ -22,6 +22,8 @@ export interface SidebarSection {
 export interface SidebarSectionView {
   /** The sidebar is narrowed to icons. */
   readonly narrow: boolean;
+  /** Where the part stands: in the sidebar of a computer and the menu of a tablet, or in the sheet *More* of a phone. */
+  readonly place: "sidebar" | "sheet";
   /** Called after a link of the section was used, for a menu or a sheet that closes. */
   readonly onNavigate?: () => void;
 }

@@ -54,7 +54,14 @@ export {
 export { LinkRow, RowChevron, type LinkRowProps } from "./RowChevron.tsx";
 export { type PagedList, ShowMore, ShowMoreOf } from "./ShowMore.tsx";
 export { TitleCarriedByBar } from "./TitleCarriedByBar.tsx";
-export { layoutForWidth, layoutModes, useLayout, useUpright, type LayoutMode } from "./layout.ts";
+export {
+  layoutForWidth,
+  layoutModes,
+  useLayout,
+  useShortWindow,
+  useUpright,
+  type LayoutMode,
+} from "./layout.ts";
 export {
   Legend,
   LegendItem,

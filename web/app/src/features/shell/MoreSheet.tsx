@@ -1,6 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { IconButton, iconName, Overlay, overlayEdge, partOf, part } from "@bugaboo/ui";
 
+import { Fragment } from "react";
+
 import { paths } from "../../shared/paths.ts";
 import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
@@ -54,10 +56,9 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
           <p {...partOf(part.moreSheetWho)}>{t("shell.signed-in-as", { name })}</p>
         )}
         {sections.map((section) => (
-          <section key={section.heading} {...partOf(part.column)} aria-label={t(section.heading)}>
-            <h3 {...partOf(part.shellSectionHeading)}>{t(section.heading)}</h3>
-            {section.render({ narrow: false, onNavigate: closeOverlay })}
-          </section>
+          <Fragment key={section.heading}>
+            {section.render({ narrow: false, place: "sheet", onNavigate: closeOverlay })}
+          </Fragment>
         ))}
         <ul {...partOf(part.list, { variants: ["tight"] })}>
           <Places organizationSettings={organizationSettings} />

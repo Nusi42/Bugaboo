@@ -3,9 +3,10 @@ import { t } from "@bugaboo/messages";
 import { Facts, Length, NameValueRow, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { keepingHyphens } from "../../shared/format.ts";
-import { AddTimeButton, TimerButton, type EntryIssue } from "../time/index.ts";
+import { AddTimeButton, TimerButton } from "../time/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
+import { entryIssueOf } from "./entry-issue.ts";
 
 import { minutesText, totalsWords, type LengthWords, type TimeLeft } from "./time-words.ts";
 
@@ -51,15 +52,6 @@ export function WithSubIssuesRow({ totals }: { readonly totals: Schema<"TimeTota
       <TotalFacts totals={totals} />
     </NameValueRow>
   );
-}
-
-/** The issue as the forms of time need it; none while the page does not know its ID or project. */
-function entryIssueOf(issue: ChangeableRowsProps["blocks"]["issue"]): EntryIssue | undefined {
-  const project = issue.project?.short_name;
-  const key = issue.readable_id;
-  return project === undefined || key === undefined || key === null
-    ? undefined
-    : { key, title: issue.title ?? "", project, issueType: issue.issue_type?.id };
 }
 
 /**

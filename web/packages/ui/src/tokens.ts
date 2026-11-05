@@ -23,6 +23,7 @@ export const breakpoints = {
   windowWide: 1200,
   tablet: 768,
   computer: 1280,
+  sidebarTall: 720,
 } as const;
 
 /** The choices that change token values: the attribute on <html> and its value. */
@@ -205,6 +206,7 @@ export const tokenNames = [
   "ring-room",
   "bp-tablet",
   "bp-computer",
+  "bp-sidebar-tall",
   "size-sidebar",
   "size-sidebar-narrow",
   "size-panel",

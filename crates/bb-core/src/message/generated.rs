@@ -5353,6 +5353,9 @@ pub const SETUP_WELCOME: MessageKey = MessageKey::new("setup.welcome");
 /// The message `shell.back`.
 pub const SHELL_BACK: MessageKey = MessageKey::new("shell.back");
 
+/// The message `shell.group-fold`.
+pub const SHELL_GROUP_FOLD: MessageKey = MessageKey::new("shell.group-fold");
+
 /// The message `shell.menu`.
 pub const SHELL_MENU: MessageKey = MessageKey::new("shell.menu");
 
@@ -5730,6 +5733,9 @@ pub const TIME_SWITCH_TITLE: MessageKey = MessageKey::new("time.switch.title");
 
 /// The message `time.throw-away.text`.
 pub const TIME_THROW_AWAY_TEXT: MessageKey = MessageKey::new("time.throw-away.text");
+
+/// The message `time.timer.bar`.
+pub const TIME_TIMER_BAR: MessageKey = MessageKey::new("time.timer.bar");
 
 /// The message `time.timer.change-start`.
 pub const TIME_TIMER_CHANGE_START: MessageKey = MessageKey::new("time.timer.change-start");
@@ -16810,6 +16816,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
     ),
     ("shell.back", "Back"),
+    ("shell.group-fold", "Settings and more"),
     ("shell.menu", "Main menu"),
     ("shell.menu-button", "Menu"),
     ("shell.more", "More"),
@@ -17051,6 +17058,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.switch.title", "Switch issue"),
     ("time.throw-away.text", "The time so far will not be saved."),
     ("time.throw-away.title", "Throw away the timer on {issue}?"),
+    ("time.timer.bar", "Timer"),
     ("time.timer.change-start", "Change start time"),
     ("time.timer.menu", "Timer"),
     ("time.timer.region", "Timer"),

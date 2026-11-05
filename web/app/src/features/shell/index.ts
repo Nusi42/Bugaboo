@@ -23,6 +23,7 @@ export {
 } from "./SettingsFrame.tsx";
 export { NavLink, type NavLinkProps } from "./NavItem.tsx";
 export { useItemTrail, usePageTrail, type TrailStep } from "./page-trail.ts";
+export { SectionFrame, type SectionFrameProps } from "./SectionFrame.tsx";
 export {
   addSidebarSection,
   type SidebarSection,
@@ -42,6 +43,7 @@ export {
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
 export { BarSlot } from "./bar-slot.ts";
+export { useHideAppBar } from "./app-bar.ts";
 export { TimeSlot } from "./TimeSlot.tsx";
 export {
   addTimePart,

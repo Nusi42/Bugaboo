@@ -58,7 +58,10 @@ test("time_01 the timer started on the phone shows on the computer", async ({
   await expect(chipOn(computer, issue.key)).toHaveCount(0);
   await openIssueWithDetails(phone, issue.key);
   await phone.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
-  await expect(chipOn(phone, issue.key)).toBeVisible();
+  // An open issue on a phone has no bar of the app; its own bar says that the timer runs here.
+  await expect(
+    phone.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).first(),
+  ).toBeVisible();
   // The computer gets the focus again and shows the same timer, counting from the server's start.
   await focusAgain(computer);
   await expect(chipOn(computer, issue.key)).toBeVisible();

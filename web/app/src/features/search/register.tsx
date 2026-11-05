@@ -1,5 +1,6 @@
 import { addSidebarSection } from "../shell/index.ts";
 import { SavedSearchesSection } from "./SavedSearchesSection.tsx";
+import { savedHeading } from "./saved-searches.ts";
 
 let registered = false;
 
@@ -14,9 +15,7 @@ export function registerSearch(): void {
   }
   registered = true;
   addSidebarSection({
-    heading: "search.saved-heading",
-    render: ({ narrow, onNavigate }) => (
-      <SavedSearchesSection narrow={narrow} {...(onNavigate === undefined ? {} : { onNavigate })} />
-    ),
+    heading: savedHeading,
+    render: (view) => <SavedSearchesSection view={view} />,
   });
 }

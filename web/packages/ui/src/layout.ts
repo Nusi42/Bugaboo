@@ -67,3 +67,23 @@ function serverLayout(): LayoutMode {
 export function useLayout(): LayoutMode {
   return useSyncExternalStore(subscribe, readLayout, serverLayout);
 }
+
+/** The highest window that folds the group at the bottom of the sidebar (`bp-sidebar-tall` is the lowest that keeps it open). */
+const tall = `(min-height: ${String(breakpoints.sidebarTall)}px)`;
+
+function readShort(): boolean {
+  return !matchMedia(tall).matches;
+}
+
+function subscribeShort(listener: () => void): () => void {
+  const watched = matchMedia(tall);
+  watched.addEventListener("change", listener);
+  return () => {
+    watched.removeEventListener("change", listener);
+  };
+}
+
+/** Whether the window is too low for the whole sidebar (M5-F150); it follows the window as it is resized. */
+export function useShortWindow(): boolean {
+  return useSyncExternalStore(subscribeShort, readShort);
+}
