@@ -118,6 +118,12 @@ tracing-subscriber = { version = "0.3.23", default-features = false, features = 
   "std",
 ] }
 
+# Debug builds keep the file and line of every function (so a failed test shows where it failed) but not
+# the names and places of variables, which only a debugger reads. This halves the size of the build
+# folder and the time the linker takes to write the debug information.
+[profile.dev]
+debug = "line-tables-only"
+
 # Argon2id with the OWASP parameters (19 MiB) takes seconds in an unoptimised build. The hashing
 # crates are optimised in debug builds, so the tests that sign in stay fast.
 [profile.dev.package.argon2]
