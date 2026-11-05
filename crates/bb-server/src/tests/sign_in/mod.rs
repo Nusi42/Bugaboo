@@ -100,6 +100,7 @@ mod tags_http;
 mod time_http;
 mod time_perf_http;
 mod time_privacy_http;
+mod time_projects_http;
 mod time_titles_http;
 mod timing;
 mod tls;
