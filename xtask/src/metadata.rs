@@ -53,10 +53,14 @@ impl Package {
 #[derive(Deserialize)]
 struct Metadata {
     packages: Vec<Package>,
+    /// The build folder cargo uses: from `CARGO_TARGET_DIR` or `build.target-dir` (ADR-0024), else
+    /// `target`. Absent in the short examples of the tests.
+    #[serde(default)]
+    target_directory: PathBuf,
 }
 
-/// Runs `cargo metadata --no-deps` in `root` and returns the workspace members.
-pub(crate) fn load(root: &Path) -> anyhow::Result<Vec<Package>> {
+/// Runs `cargo metadata --no-deps` in `root` and reads what it says.
+fn run(root: &Path) -> anyhow::Result<Metadata> {
     let out = crate::tools::command("cargo")
         .args(["metadata", "--no-deps", "--format-version", "1"])
         .current_dir(root)
@@ -68,7 +72,21 @@ pub(crate) fn load(root: &Path) -> anyhow::Result<Vec<Package>> {
             String::from_utf8_lossy(&out.stderr).trim()
         );
     }
-    parse(&String::from_utf8_lossy(&out.stdout))
+    read(&String::from_utf8_lossy(&out.stdout))
+}
+
+/// Runs `cargo metadata --no-deps` in `root` and returns the workspace members.
+pub(crate) fn load(root: &Path) -> anyhow::Result<Vec<Package>> {
+    Ok(run(root)?.packages)
+}
+
+/// The build folder of the workspace in `root`, as cargo says it (an absolute path).
+pub(crate) fn target_directory(root: &Path) -> anyhow::Result<PathBuf> {
+    let folder = run(root)?.target_directory;
+    if folder.as_os_str().is_empty() {
+        bail!("cargo metadata did not name the build folder");
+    }
+    Ok(folder)
 }
 
 /// One package of the full `cargo metadata` output.
@@ -150,9 +168,8 @@ pub(crate) fn direct_versions(json: &str) -> anyhow::Result<DirectVersions> {
     Ok(versions)
 }
 
-pub(crate) fn parse(json: &str) -> anyhow::Result<Vec<Package>> {
-    let metadata: Metadata = serde_json::from_str(json).context("unreadable cargo metadata")?;
-    Ok(metadata.packages)
+fn read(json: &str) -> anyhow::Result<Metadata> {
+    serde_json::from_str(json).context("unreadable cargo metadata")
 }
 
 #[cfg(test)]

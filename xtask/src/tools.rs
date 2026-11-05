@@ -215,7 +215,7 @@ pub(crate) fn side_by_side<T: Sync, R: Send>(
     match first {
         None => Ok(values),
         Some(error) if failed > 1 => Err(error.context(format!(
-            "{} more run(s) went side by side failed too",
+            "{} more of the runs side by side failed too",
             failed - 1
         ))),
         Some(error) => Err(error),
@@ -534,6 +534,9 @@ mod tests {
         .unwrap_err();
         let text = format!("{error:#}");
         assert!(text.contains("number 2 failed"), "{text}");
-        assert!(text.contains("1 more run(s)"), "{text}");
+        assert!(
+            text.contains("1 more of the runs side by side failed too"),
+            "{text}"
+        );
     }
 }

@@ -33,7 +33,7 @@ impl Check for LintRust {
 fn check_root(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<Vec<Finding>> {
     let host = host_target(root)?;
     let targets = native_targets(root)?;
-    let build_folder = build_folder(root, build_env);
+    let build_folder = build_folder(root, build_env)?;
     // The targets are checked at the same time (each takes only part of the computer), and what
     // they found is told in the order of the list.
     let checked = side_by_side(&targets, |target| {
@@ -119,28 +119,19 @@ fn check_target(
 }
 
 /// The build folder of the run: the one `build_env` names, else the one cargo reads from the
-/// environment and `.cargo/config.local.toml` (ADR-0024; asked with `cargo metadata`), else `target`
-/// of the repository.
-fn build_folder(root: &Path, build_env: &[(&str, &str)]) -> PathBuf {
+/// environment and `.cargo/config.local.toml` (ADR-0024; asked with `cargo metadata`).
+fn build_folder(root: &Path, build_env: &[(&str, &str)]) -> anyhow::Result<PathBuf> {
     if let Some((_, named)) = build_env
         .iter()
         .find(|(name, _)| *name == tools::TARGET_DIR_VARIABLE)
     {
         let named = Path::new(named);
-        return std::env::current_dir()
+        return Ok(std::env::current_dir()
             .ok()
             .and_then(|here| tools::target_dir_from(named, &here))
-            .unwrap_or_else(|| named.to_path_buf());
+            .unwrap_or_else(|| named.to_path_buf()));
     }
-    tools::command("cargo")
-        .args(["metadata", "--no-deps", "--format-version", "1"])
-        .current_dir(root)
-        .output()
-        .ok()
-        .filter(|out| out.status.success())
-        .and_then(|out| serde_json::from_slice::<serde_json::Value>(&out.stdout).ok())
-        .and_then(|metadata| metadata["target_directory"].as_str().map(PathBuf::from))
-        .unwrap_or_else(|| root.join("target"))
+    crate::metadata::target_directory(root)
 }
 
 /// The build folder of Clippy for `target`: `lint/<target>` inside the build folder of the run.
@@ -347,9 +338,9 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
         let named = std::env::temp_dir().join("lint-named");
         let text = named.to_string_lossy().into_owned();
         let env = [(tools::TARGET_DIR_VARIABLE, text.as_str())];
-        assert_eq!(build_folder(Path::new("."), &env), named);
+        assert_eq!(build_folder(Path::new("."), &env).unwrap(), named);
         // Without a name cargo says where it builds (the folder of this repository here).
-        let asked = build_folder(Path::new(env!("CARGO_MANIFEST_DIR")), &[]);
+        let asked = build_folder(Path::new(env!("CARGO_MANIFEST_DIR")), &[]).unwrap();
         assert!(asked.is_absolute(), "{}", asked.display());
     }
 }

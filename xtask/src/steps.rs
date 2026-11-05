@@ -229,12 +229,25 @@ fn start_background(root: &Path, step: &Step) -> anyhow::Result<Running> {
 fn finish_background(running: &mut Vec<Running>, stop: bool) -> bool {
     let mut all_passed = true;
     for mut step in running.drain(..) {
-        let ended_well = if stop {
-            crate::tools::stop_tree(&mut step.child);
-            false
-        } else {
-            step.child.wait().is_ok_and(|status| status.success())
+        // A step that has ended by itself is judged by how it ended, also when the run is
+        // leaving; only one that still runs is stopped.
+        let ended = match step.child.try_wait() {
+            Ok(Some(status)) => Some(status),
+            Ok(None) if stop => None,
+            Ok(None) => step.child.wait().ok(),
+            Err(error) => {
+                output::line(&format!(
+                    "Could not ask {} how it ended: {error}",
+                    step.name
+                ));
+                None
+            }
         };
+        let stopped = ended.is_none() && stop;
+        if stopped {
+            crate::tools::stop_tree(&mut step.child);
+        }
+        let ended_well = ended.is_some_and(|status| status.success());
         output::line(&format!("--- output of {} ---", step.name));
         match std::fs::read(&step.log) {
             Ok(bytes) => output::line(String::from_utf8_lossy(&bytes).trim_end()),
@@ -244,7 +257,7 @@ fn finish_background(running: &mut Vec<Running>, stop: bool) -> bool {
             )),
         }
         output::line("---");
-        if stop {
+        if stopped {
             output::line(&format!(
                 "{} was stopped because an earlier step failed.",
                 step.name
@@ -501,5 +514,34 @@ mod tests {
         ];
         assert!(run(root.path(), &steps).is_err());
         assert_ended(root.path(), "long", started);
+    }
+
+    #[test]
+    fn a_background_step_that_ended_well_is_not_called_stopped_when_a_later_step_fails() {
+        let root = tempfile::tempdir().unwrap();
+        let steps = [
+            cargo_step("done", &["--version"]).in_background(),
+            // Long enough for the first step to be over.
+            long_step("wait").in_background(),
+            cargo_step("fails", &["no-such-subcommand-for-test"]),
+        ];
+        let mut running = Vec::new();
+        let mut skipped = 0;
+        let outcome = run_in_order(root.path(), &steps, &mut running, &mut skipped).unwrap();
+        assert!(!outcome.passed);
+        assert_eq!(running.len(), 2);
+        // The first step ended well by itself; the second one is still running.
+        let first = &mut running[0];
+        assert!(first.child.wait().unwrap().success());
+        assert!(running[1].child.try_wait().unwrap().is_none());
+        // Finishing with `stop` judges the first by its end and ends the second.
+        assert!(!finish_background(&mut running, true));
+        assert!(running.is_empty());
+        // A step that ended well alone counts as passed even when the run is leaving.
+        let mut alone = Vec::new();
+        let steps = [cargo_step("done", &["--version"]).in_background()];
+        run_in_order(root.path(), &steps, &mut alone, &mut skipped).unwrap();
+        assert!(alone[0].child.wait().unwrap().success());
+        assert!(finish_background(&mut alone, true));
     }
 }
