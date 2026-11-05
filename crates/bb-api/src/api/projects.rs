@@ -169,6 +169,14 @@ impl From<MoveRight> for MoveRightKind {
     }
 }
 
+/// The project an inherited default of a field of time entries comes from.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct InheritedDefaultFromBody {
+    /// The project above that sets it; missing when the person cannot see that project.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    project: Option<ProjectRef>,
+}
+
 /// One project, with where it is and what the person may do there.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectDetailBody {
@@ -190,11 +198,19 @@ pub(crate) struct ProjectDetailBody {
     own_fields: OwnValues,
     /// The own fields the person may change in this project, by their keys.
     changeable_fields: Vec<FieldKey>,
+    /// The defaults of the fields of time entries that a project above sets and this project does
+    /// not, by the key (ID) of the field: only the fields the person may see.
+    inherited_fields: OwnValues,
+    /// Where each inherited default comes from, by the key of the field: the project, or `null`
+    /// when the person cannot see it.
+    inherited_from: std::collections::BTreeMap<String, InheritedDefaultFromBody>,
 }
 
 impl Masked for ProjectDetailBody {
     fn mask(value: &mut bb_policy::MaskedValue, mask: &bb_policy::FieldMask) {
         bb_policy::drop_hidden_own_fields(value, "own_fields", mask);
+        bb_policy::drop_hidden_own_fields(value, "inherited_fields", mask);
+        bb_policy::drop_hidden_own_fields(value, "inherited_from", mask);
     }
 }
 
@@ -209,6 +225,19 @@ impl From<ProjectDetail> for ProjectDetailBody {
             may_move: detail.may_move.into(),
             own_fields: detail.own_fields,
             changeable_fields: detail.changeable_fields,
+            inherited_fields: detail.inherited_fields,
+            inherited_from: detail
+                .inherited_from
+                .iter()
+                .map(|(key, from)| {
+                    (
+                        key.clone(),
+                        InheritedDefaultFromBody {
+                            project: from.as_ref().map(ProjectRef::from),
+                        },
+                    )
+                })
+                .collect(),
         }
     }
 }

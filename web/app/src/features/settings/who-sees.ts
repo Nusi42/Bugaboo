@@ -1,8 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
+
+import type { PermissionKey } from "../../shared/permissions.ts";
 import type { Subject } from "../roles/index.ts";
 
 /** The permission that shows working hours of other people (ADR-0035, decision 8). */
-const SEE_OTHERS = "see-working-hours-of-others";
+const SEE_OTHERS: PermissionKey = "see-working-hours-of-others";
 
 /** The roles that hold the permission to see the working hours of others. */
 function rolesThatSee(roles: readonly Schema<"RoleItem">[]): ReadonlySet<string> {

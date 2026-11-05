@@ -22,7 +22,7 @@ export function OldPersonLine({
       <span {...partOf(part.muted)}>{t("old-work-days.person-count", { count: line.count })}</span>
       {id === undefined ? null : (
         <ConfirmDialog
-          triggerLabel={t("old-work-days.delete-person")}
+          triggerLabel={t("old-work-days.delete")}
           triggerName={t("old-work-days.delete-person-name", { name })}
           title={t("old-work-days.delete-person-title", { name })}
           text={t("old-work-days.delete-person-text", { count: line.count, name })}

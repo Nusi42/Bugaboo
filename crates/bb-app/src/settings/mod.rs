@@ -27,14 +27,13 @@ use bb_core::ErrorCode;
 use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
-use bb_core::settings::working_hours::WORKING_HOURS_KEEP_YEARS;
 use bb_core::settings::{
     ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
     changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{Version, counted_up};
-use bb_core::working_time::{keep_years_allowed, preset_of};
+use bb_core::working_time::leaves_keep_period_short;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::{Value, json};
 
@@ -502,7 +501,9 @@ pub async fn change_setting<S: AuthStore>(
     if scope != Scope::Organization && layers.resolve(definition).locked {
         return Err(ErrorCode::SettingLocked.into());
     }
-    if shortens_the_keep_period_below_the_law(&layers, definition, &input.value) {
+    if scope == Scope::Organization
+        && leaves_keep_period_short(&layers, definition.key(), &input.value)
+    {
         return Err(ErrorCode::KeepYearsTooShort.into());
     }
     let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
@@ -582,18 +583,6 @@ fn refuse_unaccepted(definition: &SettingDefinition, value: &SettingValue) -> Re
     .into())
 }
 
-/// Whether `new` is a keep period of work days below what the preset *Germany* asks for, while that
-/// preset holds (ADR-0035, decision 7): the one rule is `keep_years_allowed`.
-fn shortens_the_keep_period_below_the_law(
-    layers: &Layers,
-    definition: &SettingDefinition,
-    new: &SettingValue,
-) -> bool {
-    definition.key() == WORKING_HOURS_KEEP_YEARS.definition().key()
-        && matches!(new, SettingValue::Integer(years)
-            if !keep_years_allowed(preset_of(layers), *years))
-}
-
 /// Whether setting `definition` to `new` on `scope` moves the organization to another mail server:
 /// the host, the port or the user name changes. The stored password belongs to the old server and
 /// goes in the same change, so it is never given to the new one (SEC-16).
@@ -631,6 +620,11 @@ pub async fn reset_setting<S: AuthStore>(
     }
     let keeps_the_lock = scope == Scope::Organization && view.locked;
     let standard = definition.default().to_value();
+    if scope == Scope::Organization
+        && leaves_keep_period_short(&layers, definition.key(), &standard)
+    {
+        return Err(ErrorCode::KeepYearsTooShort.into());
+    }
     let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let forgets = moves_the_mail_server(scope, &layers, definition, &standard);
     let mut changes = vec![FieldChange {

@@ -20,7 +20,6 @@ export const settingKeys = {
   securitySessionIdleMinutes: "security.session-idle-minutes",
   securitySessionAbsoluteHours: "security.session-absolute-hours",
   authSignUpEnabled: "auth.sign-up-enabled",
-  timeBillable: "time.billable",
   authSignUpDomains: "auth.sign-up-domains",
   contentImageHosts: "content.image-hosts",
   securityTwoStepRequired: "security.two-step-required",
@@ -65,6 +64,7 @@ export const settingKeys = {
   workingHoursRestMinutesMin: "working-hours.rest-minutes-min",
   workingHoursKeepYears: "working-hours.keep-years",
   workingHoursTotalsOnly: "working-hours.totals-only",
+  timeBillable: "time.billable",
   notificationsWorkDayChangedInApp: "notifications.work-day-changed-in-app",
   notificationsWorkDayChangedByMail: "notifications.work-day-changed-by-mail",
 } as const;
@@ -108,7 +108,6 @@ export const settingDefaults = {
   securitySessionIdleMinutes: 30,
   securitySessionAbsoluteHours: 24,
   authSignUpEnabled: false,
-  timeBillable: false,
   authSignUpDomains: "",
   contentImageHosts: "",
   securityTwoStepRequired: false,
@@ -153,6 +152,7 @@ export const settingDefaults = {
   workingHoursRestMinutesMin: 660,
   workingHoursKeepYears: 2,
   workingHoursTotalsOnly: false,
+  timeBillable: false,
   notificationsWorkDayChangedInApp: true,
   notificationsWorkDayChangedByMail: true,
 } as const;

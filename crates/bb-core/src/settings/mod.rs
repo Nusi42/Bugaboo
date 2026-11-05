@@ -101,11 +101,13 @@ pub(crate) struct Words {
 
 /// What a whole number counts in, when the form should write it as more than a bare number: the
 /// browser draws a number of minutes as a length (`1h 30m`) and reads it back with the one reader
-/// of lengths (ADR-0035).
+/// of lengths (ADR-0035), and a number of years as `2 years`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Unit {
     /// Minutes of time.
     Minutes,
+    /// Whole years.
+    Years,
 }
 
 /// The limits a setting can declare: the bounds of a whole number, the size of a list.

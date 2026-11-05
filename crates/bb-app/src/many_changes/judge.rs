@@ -102,135 +102,117 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     reason.ok_or(error)
 }
 
+/// The refusals of the single change that have a reason of their own. The `field.*` refusals are one
+/// reason too ([`ErrorCode::is_field_rule`]).
+const WORDED: [(ErrorCode, SkipReason); 13] = [
+    (ErrorCode::VersionChanged, SkipReason::ChangedSince),
+    (ErrorCode::NotFound, SkipReason::NotFound),
+    (ErrorCode::Forbidden, SkipReason::NotAllowed),
+    (ErrorCode::FieldNotHere, SkipReason::FieldMissing),
+    (ErrorCode::WorkflowNoSuchChange, SkipReason::Workflow),
+    (ErrorCode::WorkflowNotForYou, SkipReason::Workflow),
+    (ErrorCode::WorkflowNotNamed, SkipReason::Workflow),
+    (ErrorCode::WorkflowOnlyIf, SkipReason::Workflow),
+    (ErrorCode::WorkflowCannotFill, SkipReason::Workflow),
+    (ErrorCode::TagNotHere, SkipReason::TagNotHere),
+    (ErrorCode::LabelNotOffered, SkipReason::LabelNotHere),
+    (ErrorCode::RelationExists, SkipReason::RelationExists),
+    (ErrorCode::LimitReached, SkipReason::LimitReached),
+];
+
+/// Every other refusal says the single change would not take this issue as it is and has no word of
+/// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
+/// [`WORDED`] or in this list.
+const UNWORDED: [ErrorCode; 76] = [
+    ErrorCode::WrongCredentials,
+    ErrorCode::WrongSecondStepCode,
+    ErrorCode::WrongSetupCode,
+    ErrorCode::PasswordTooShort,
+    ErrorCode::PasswordBreached,
+    ErrorCode::InvitationInvalid,
+    ErrorCode::MailRejected,
+    ErrorCode::MailUnavailable,
+    ErrorCode::MailOff,
+    ErrorCode::MailInsecure,
+    ErrorCode::HandleChangedLately,
+    ErrorCode::SignUpRefused,
+    ErrorCode::PasskeyRejected,
+    ErrorCode::SecondStepRequired,
+    ErrorCode::AccessKeyNotAllowed,
+    ErrorCode::NotSignedIn,
+    ErrorCode::CannotLift,
+    ErrorCode::WouldLockOut,
+    ErrorCode::TooMuch,
+    ErrorCode::RoleInUse,
+    ErrorCode::AssignmentConflict,
+    ErrorCode::SettingLocked,
+    ErrorCode::SettingHostsNotBare,
+    ErrorCode::SettingUnknownTimeZone,
+    ErrorCode::MoveLiftsNoAccess,
+    ErrorCode::MoveIntoItself,
+    ErrorCode::ProjectTooDeep,
+    ErrorCode::MovePreviewChanged,
+    ErrorCode::ParentCircle,
+    ErrorCode::IssueTypeRetired,
+    ErrorCode::IssueTypeNotOffered,
+    ErrorCode::PickOneConflict,
+    ErrorCode::WorkflowStatusInUse,
+    ErrorCode::WorkflowInvalid,
+    ErrorCode::TimerRunning,
+    ErrorCode::TimerNotRunning,
+    ErrorCode::TimerStartInFuture,
+    ErrorCode::TimerStartBeforeLastEntry,
+    ErrorCode::TimerTooLong,
+    ErrorCode::TimerTooFast,
+    ErrorCode::TooManyTimeEntries,
+    ErrorCode::TimeEntryTooShort,
+    ErrorCode::TimeEntryTooLong,
+    ErrorCode::TimeNoteTooLong,
+    ErrorCode::FileTooBig,
+    ErrorCode::FileTypeBlocked,
+    ErrorCode::FileWrongPart,
+    ErrorCode::FileIncomplete,
+    ErrorCode::FileNoRoom,
+    ErrorCode::NameTaken,
+    ErrorCode::InvalidRequest,
+    ErrorCode::UnknownField,
+    ErrorCode::BadCursor,
+    ErrorCode::WrongOrigin,
+    ErrorCode::WrongToken,
+    ErrorCode::MethodNotAllowed,
+    ErrorCode::TimedOut,
+    ErrorCode::TooLarge,
+    ErrorCode::EditLockLost,
+    ErrorCode::EditTakenOver,
+    ErrorCode::EditInProgress,
+    ErrorCode::SearchInvalid,
+    ErrorCode::SearchTooSlow,
+    ErrorCode::TooManyRequests,
+    ErrorCode::WorkDayLeftOpen,
+    ErrorCode::WorkDayRunning,
+    ErrorCode::WorkDayNotRunning,
+    ErrorCode::BreakRunning,
+    ErrorCode::NoBreakRunning,
+    ErrorCode::NotAWorkDay,
+    ErrorCode::WorkDayInTheFuture,
+    ErrorCode::ReasonNeeded,
+    ErrorCode::TotalsOnly,
+    ErrorCode::Internal,
+    ErrorCode::Unavailable,
+    ErrorCode::KeepYearsTooShort,
+];
+
 /// The reason an issue is left alone for a refusal of the single change; a busy database
 /// ([`AppError::is_busy`]) is caught before by [`skip_of`].
 fn reason_of(code: ErrorCode) -> SkipReason {
-    match code {
-        ErrorCode::VersionChanged => SkipReason::ChangedSince,
-        ErrorCode::NotFound => SkipReason::NotFound,
-        ErrorCode::Forbidden => SkipReason::NotAllowed,
-        ErrorCode::FieldNotHere => SkipReason::FieldMissing,
-        ErrorCode::WorkflowNoSuchChange
-        | ErrorCode::WorkflowNotForYou
-        | ErrorCode::WorkflowNotNamed
-        | ErrorCode::WorkflowOnlyIf
-        | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
-        ErrorCode::TagNotHere => SkipReason::TagNotHere,
-        ErrorCode::LabelNotOffered => SkipReason::LabelNotHere,
-        ErrorCode::RelationExists => SkipReason::RelationExists,
-        ErrorCode::LimitReached => SkipReason::LimitReached,
-        code if code.is_field_rule() => SkipReason::FieldRule,
-        other => unworded(other),
+    if let Some((_, reason)) = WORDED.iter().find(|(worded, _)| *worded == code) {
+        return *reason;
     }
-}
-
-/// The refusals that have no word of their own: the single change would not take this issue as it is.
-/// The codes the arms of [`reason_of`] name are listed too, so that this match stays whole.
-fn unworded(code: ErrorCode) -> SkipReason {
-    match code {
-        // Every other refusal says the single change would not take this issue as it is and has
-        // no word of its own. The codes are listed (the `field.*` ones are caught above) so a
-        // new one is a decision made here, not a silent "not valid".
-        ErrorCode::WrongCredentials
-        | ErrorCode::WrongSecondStepCode
-        | ErrorCode::WrongSetupCode
-        | ErrorCode::PasswordTooShort
-        | ErrorCode::PasswordBreached
-        | ErrorCode::InvitationInvalid
-        | ErrorCode::MailRejected
-        | ErrorCode::MailUnavailable
-        | ErrorCode::MailOff
-        | ErrorCode::MailInsecure
-        | ErrorCode::HandleChangedLately
-        | ErrorCode::SignUpRefused
-        | ErrorCode::PasskeyRejected
-        | ErrorCode::SecondStepRequired
-        | ErrorCode::AccessKeyNotAllowed
-        | ErrorCode::NotSignedIn
-        | ErrorCode::CannotLift
-        | ErrorCode::WouldLockOut
-        | ErrorCode::TooMuch
-        | ErrorCode::RoleInUse
-        | ErrorCode::AssignmentConflict
-        | ErrorCode::SettingLocked
-        | ErrorCode::SettingHostsNotBare
-        | ErrorCode::SettingUnknownTimeZone
-        | ErrorCode::MoveLiftsNoAccess
-        | ErrorCode::MoveIntoItself
-        | ErrorCode::ProjectTooDeep
-        | ErrorCode::MovePreviewChanged
-        | ErrorCode::ParentCircle
-        | ErrorCode::IssueTypeRetired
-        | ErrorCode::IssueTypeNotOffered
-        | ErrorCode::PickOneConflict
-        | ErrorCode::WorkflowStatusInUse
-        | ErrorCode::WorkflowInvalid
-        | ErrorCode::TimerRunning
-        | ErrorCode::TimerNotRunning
-        | ErrorCode::TimerStartInFuture
-        | ErrorCode::TimerStartBeforeLastEntry
-        | ErrorCode::TimerTooLong
-        | ErrorCode::TimerTooFast
-        | ErrorCode::TooManyTimeEntries
-        | ErrorCode::TimeEntryTooShort
-        | ErrorCode::TimeEntryTooLong
-        | ErrorCode::TimeNoteTooLong
-        | ErrorCode::FieldRequired
-        | ErrorCode::FieldTooShort
-        | ErrorCode::FieldTooLong
-        | ErrorCode::FieldTooSmall
-        | ErrorCode::FieldTooBig
-        | ErrorCode::FileTooBig
-        | ErrorCode::FileTypeBlocked
-        | ErrorCode::FileWrongPart
-        | ErrorCode::FileIncomplete
-        | ErrorCode::FileNoRoom
-        | ErrorCode::FieldNoMatch
-        | ErrorCode::FieldWrongValue
-        | ErrorCode::FieldUnknownChoice
-        | ErrorCode::FieldUnknownReference
-        | ErrorCode::NameTaken
-        | ErrorCode::InvalidRequest
-        | ErrorCode::UnknownField
-        | ErrorCode::BadCursor
-        | ErrorCode::WrongOrigin
-        | ErrorCode::WrongToken
-        | ErrorCode::MethodNotAllowed
-        | ErrorCode::TimedOut
-        | ErrorCode::TooLarge
-        | ErrorCode::EditLockLost
-        | ErrorCode::EditTakenOver
-        | ErrorCode::EditInProgress
-        | ErrorCode::SearchInvalid
-        | ErrorCode::SearchTooSlow
-        | ErrorCode::TooManyRequests
-        | ErrorCode::WorkDayLeftOpen
-        | ErrorCode::WorkDayRunning
-        | ErrorCode::WorkDayNotRunning
-        | ErrorCode::BreakRunning
-        | ErrorCode::NoBreakRunning
-        | ErrorCode::NotAWorkDay
-        | ErrorCode::WorkDayInTheFuture
-        | ErrorCode::ReasonNeeded
-        | ErrorCode::TotalsOnly
-        | ErrorCode::KeepYearsTooShort
-        | ErrorCode::Internal
-        // A busy database is caught by `skip_of`; listed so that the match stays whole.
-        | ErrorCode::Unavailable
-        | ErrorCode::VersionChanged
-        | ErrorCode::NotFound
-        | ErrorCode::Forbidden
-        | ErrorCode::FieldNotHere
-        | ErrorCode::WorkflowNoSuchChange
-        | ErrorCode::WorkflowNotForYou
-        | ErrorCode::WorkflowNotNamed
-        | ErrorCode::WorkflowOnlyIf
-        | ErrorCode::WorkflowCannotFill
-        | ErrorCode::TagNotHere
-        | ErrorCode::LabelNotOffered
-        | ErrorCode::RelationExists
-        | ErrorCode::LimitReached => SkipReason::NotValid,
+    if code.is_field_rule() {
+        return SkipReason::FieldRule;
     }
+    debug_assert!(UNWORDED.contains(&code), "{code:?} has no decision here");
+    SkipReason::NotValid
 }
 
 /// A judged change turned into a reason to skip the issue, when the single change would have
@@ -431,6 +413,16 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn every_refusal_is_a_decision_made_in_one_place() {
+        for code in ErrorCode::ALL {
+            let places = usize::from(WORDED.iter().any(|(worded, _)| worded == code))
+                + usize::from(code.is_field_rule())
+                + usize::from(UNWORDED.contains(code));
+            assert_eq!(places, 1, "{code:?} is decided in {places} places");
+        }
+    }
+
     use super::*;
 
     #[test]

@@ -8,7 +8,7 @@ Administrators set up working hours and time in **Organization settings › Work
 
 You can change any number. A number you changed shows the default value it can go back to, and **Reset to default** brings it back. A rule that is broken only gives a warning: it never stops anyone from recording what really happened.
 
-## Keep working hours for
+## Keep work days for
 
 Work days are kept at least this many years from their date. With the preset *Germany* the number cannot be below 2 years. Nothing is deleted by itself after that time: the page counts the work days that are older, for each person and in total, and **Delete them** deletes all of them or one person's, after a question in the page. The deletion takes their breaks and the history of their changes too, and is written to the security log. Whether an older work day is still needed is your organization's judgement.
 

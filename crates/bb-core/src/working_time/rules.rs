@@ -10,7 +10,7 @@ use crate::settings::working_hours::{
     WORKING_HOURS_SECOND_BREAK_AFTER_MINUTES, WORKING_HOURS_SECOND_BREAK_MINUTES,
     WORKING_HOURS_SHORTEST_BREAK_MINUTES, WORKING_HOURS_TOTALS_ONLY,
 };
-use crate::settings::{Integer, Setting};
+use crate::settings::{Integer, Setting, SettingValue};
 use crate::time::Minutes;
 
 words! {
@@ -121,6 +121,24 @@ pub fn longest_day(layers: &Layers) -> Minutes {
 #[must_use]
 pub fn keep_years_allowed(preset: Preset, years: i64) -> bool {
     preset != Preset::Germany || years >= GERMANY_KEEP_YEARS_LEAST
+}
+
+/// Whether setting the setting `key` to `value`, on top of what `layers` hold, leaves a keep period
+/// the preset does not allow: a keep period below the law while the preset is *Germany*, or the
+/// preset *Germany* chosen while a keep period below the law is stored (ADR-0035, decision 7). The
+/// one rule is [`keep_years_allowed`]; every change and every reset of the two settings asks it.
+#[must_use]
+pub fn leaves_keep_period_short(layers: &Layers, key: &str, value: &SettingValue) -> bool {
+    let years = layers.number(&WORKING_HOURS_KEEP_YEARS);
+    match value {
+        SettingValue::Integer(new) if key == WORKING_HOURS_KEEP_YEARS.definition().key() => {
+            !keep_years_allowed(preset_of(layers), *new)
+        }
+        SettingValue::Text(code) if key == WORKING_HOURS_PRESET.definition().key() => {
+            Preset::from_code(code).is_some_and(|preset| !keep_years_allowed(preset, years))
+        }
+        _ => false,
+    }
 }
 
 /// The keep period that counts, in whole years: the setting, and with the preset *Germany* never

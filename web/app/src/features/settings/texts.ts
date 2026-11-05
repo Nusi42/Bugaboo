@@ -22,6 +22,16 @@ export function hasNoGenericControl(setting: Setting): boolean {
   );
 }
 
+/**
+ * What a number counts, in words, to stand beside its box (*years*): the one place that says what each
+ * unit draws. A number of minutes has no words beside it, it is written as a length.
+ */
+export function unitWords(setting: Setting, count: number): string | undefined {
+  return setting.kind === "whole-number" && setting.unit === "years"
+    ? t("setting.ui.years", { count })
+    : undefined;
+}
+
 /** Where the value comes from, in the words of the glossary: the standard, the organization, a project, you. */
 export function sourceInWords(setting: Setting): string {
   const { kind, project } = setting.source;

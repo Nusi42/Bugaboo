@@ -127,7 +127,7 @@ pub async fn project<S: AuthStore>(
     let item = Item {
         kind: RecordKind::Project,
         id: Some(project.id.into()),
-        chain,
+        chain: chain.clone(),
         issue_type: None,
         reported_by: None,
     };
@@ -150,8 +150,18 @@ pub async fn project<S: AuthStore>(
         }
     }
     own_fields.0.retain(|_, value| !value.is_null());
+    // What a project inherits is told only to the people who may change its settings, like the
+    // fields they may change: a reader without that right is not told what a project above holds.
+    let (inherited_fields, inherited_from) = if held.allows(Permission::ChangeProjectSettings) {
+        ctx.inherited_time_defaults(&actor, &held, &shown, &chain, project.id)
+            .await?
+    } else {
+        Default::default()
+    };
     Ok(held.authorize(ProjectDetail {
         own_fields,
+        inherited_fields,
+        inherited_from,
         changeable_fields,
         trail,
         truncated,

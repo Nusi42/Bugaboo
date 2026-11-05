@@ -1,3 +1,4 @@
+import { useId, type ReactNode } from "react";
 import {
   FieldError,
   Input,
@@ -58,6 +59,8 @@ export interface TextFieldProps {
   readonly name?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
+  /** What the box counts, in words, beside it (*years*): the box holds the number only. */
+  readonly unit?: string;
   /** What a password manager or the browser may fill in: one of `autoComplete`. */
   readonly autoComplete?: AutoComplete;
 }
@@ -95,6 +98,29 @@ function problemOf(
   return null;
 }
 
+/** The box with the words of what it counts beside it; the box alone when it counts nothing. */
+function InputWithUnit({
+  unit,
+  unitId,
+  children,
+}: {
+  readonly unit?: string | undefined;
+  /** The ID of the words, which the box names as its description, so a screen reader says "2 years". */
+  readonly unitId: string;
+  readonly children: ReactNode;
+}) {
+  return unit === undefined ? (
+    children
+  ) : (
+    <div {...partOf(part.fieldInputRow)}>
+      {children}
+      <span id={unitId} {...partOf(part.fieldUnit)}>
+        {unit}
+      </span>
+    </div>
+  );
+}
+
 /** A label, a text box, help and a problem, tied together for screen readers. */
 export function TextField({
   label,
@@ -109,8 +135,10 @@ export function TextField({
   name = "",
   value,
   onChange,
+  unit,
   autoComplete: fill = autoComplete.off,
 }: TextFieldProps) {
+  const unitId = useId();
   return (
     <AriaTextField
       {...partOf(part.field)}
@@ -122,6 +150,7 @@ export function TextField({
       autoComplete={fill}
       // Only a problem is passed on: `isInvalid={false}` would switch off the checks of the field.
       {...(errorMessage === undefined ? {} : { isInvalid: true })}
+      {...(unit === undefined ? {} : { "aria-describedby": unitId })}
       validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
       <Label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)}>{label}</Label>
@@ -129,10 +158,12 @@ export function TextField({
       {kind === fieldKind.multiline ? (
         <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
-        <Input
-          {...partOf(part.fieldInput)}
-          {...(date === undefined ? {} : { min: date.min, max: date.max })}
-        />
+        <InputWithUnit unit={unit} unitId={unitId}>
+          <Input
+            {...partOf(part.fieldInput)}
+            {...(date === undefined ? {} : { min: date.min, max: date.max })}
+          />
+        </InputWithUnit>
       )}
       {/* The help stands under the box, so the boxes of a row start on one line however long the help is. */}
       {hintAbove ? null : <Hint text={description} />}

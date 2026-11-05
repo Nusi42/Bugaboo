@@ -152,6 +152,7 @@ settings! {
         help: crate::message::SETTING_WORKING_HOURS_KEEP_YEARS_HELP,
         lockable: false,
         bounds: (1, 30),
+        unit: Years,
     }
 
     /// *Totals only*: *Working hours of others* shows each person's week total and nothing else,
@@ -163,6 +164,19 @@ settings! {
         levels: [Organization],
         changed_by: Administrators,
         help: crate::message::SETTING_WORKING_HOURS_TOTALS_ONLY_HELP,
+        lockable: false,
+    }
+
+    /// Whether a time entry offers *Billable*: off at the start; switching it off hides the box and
+    /// keeps the values (ADR-0035, decision 1). It stands with the working-time settings because they
+    /// are one page, *Working hours*, in this order (UX §5.1).
+    TIME_BILLABLE: Bool = {
+        key: "time.billable",
+        name: crate::message::SETTING_TIME_BILLABLE_NAME,
+        default: false,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: crate::message::SETTING_TIME_BILLABLE_HELP,
         lockable: false,
     }
 

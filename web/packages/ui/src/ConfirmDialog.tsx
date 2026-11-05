@@ -31,6 +31,8 @@ export interface ConfirmDialogProps {
   readonly text: ReactNode;
   readonly confirmLabel: string;
   readonly cancelLabel: string;
+  /** How the button that opens the question looks; `danger` for a question about a loss that stands alone. */
+  readonly triggerLook?: ButtonLook;
   /** `danger` draws the confirming button in the color of warnings: the question is about a loss. */
   readonly confirmLook?: ButtonLook;
   readonly onConfirm: () => void;
@@ -60,7 +62,10 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
   };
   return (
     <DialogTrigger isOpen={isOpen} onOpenChange={changeOpen}>
-      <Button {...(triggerName === undefined ? {} : { "aria-label": triggerName })}>
+      <Button
+        {...(triggerName === undefined ? {} : { "aria-label": triggerName })}
+        {...(props.triggerLook === undefined ? {} : { look: props.triggerLook })}
+      >
         {triggerLabel}
       </Button>
       <ModalOverlay {...partOf(part.overlay, { variants: [variant] })} isDismissable>

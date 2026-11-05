@@ -210,11 +210,20 @@ pub struct ProjectDetail {
     pub own_fields: OwnValues,
     /// The own fields the person may change in this project.
     pub changeable_fields: Vec<FieldKey>,
+    /// The default of each field of time entries that this project does not set itself but a
+    /// project above does (the nearest wins, the rule of `time::nearest_on_projects`), by the key
+    /// of the field: only the fields the person may see.
+    pub inherited_fields: OwnValues,
+    /// Where each of those defaults comes from, by the key of the field: the project, or nothing
+    /// when the person cannot see it.
+    pub inherited_from: std::collections::BTreeMap<String, Option<ProjectRef>>,
 }
 
 impl Masked for ProjectDetail {
     fn mask(value: &mut bb_policy::MaskedValue, mask: &bb_policy::FieldMask) {
         bb_policy::drop_hidden_own_fields(value, "own_fields", mask);
+        bb_policy::drop_hidden_own_fields(value, "inherited_fields", mask);
+        bb_policy::drop_hidden_own_fields(value, "inherited_from", mask);
     }
 }
 

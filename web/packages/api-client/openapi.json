@@ -18025,6 +18025,23 @@
           }
         }
       },
+      "InheritedDefaultFromBody": {
+        "type": "object",
+        "description": "The project an inherited default of a field of time entries comes from.",
+        "properties": {
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project above that sets it; missing when the person cannot see that project."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "InheritedFromBody": {
         "type": "object",
         "description": "Where the layout that counts at a place is set, when it is another place.",
@@ -22307,7 +22324,9 @@
           "may_change_short_name",
           "may_move",
           "own_fields",
-          "changeable_fields"
+          "changeable_fields",
+          "inherited_fields",
+          "inherited_from"
         ],
         "properties": {
           "changeable_fields": {
@@ -22316,6 +22335,20 @@
               "$ref": "#/components/schemas/FieldKey"
             },
             "description": "The own fields the person may change in this project, by their keys."
+          },
+          "inherited_fields": {
+            "$ref": "#/components/schemas/OwnValues",
+            "description": "The defaults of the fields of time entries that a project above sets and this project does\nnot, by the key (ID) of the field: only the fields the person may see."
+          },
+          "inherited_from": {
+            "type": "object",
+            "description": "Where each inherited default comes from, by the key of the field: the project, or `null`\nwhen the person cannot see it.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/InheritedDefaultFromBody"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "may_change_short_name": {
             "type": "boolean",
@@ -24115,7 +24148,7 @@
       "SettingUnit": {
         "type": "string",
         "description": "What a whole number counts in, when it is drawn as more than a bare number.",
-        "enum": ["minutes"]
+        "enum": ["minutes", "years"]
       },
       "SettingsBody": {
         "type": "object",

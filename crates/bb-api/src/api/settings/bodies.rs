@@ -86,12 +86,15 @@ pub(super) enum SettingFormat {
 pub(super) enum SettingUnit {
     /// Minutes of time: drawn and typed as a length.
     Minutes,
+    /// Whole years: drawn and typed as `2 years`.
+    Years,
 }
 
 impl From<Unit> for SettingUnit {
     fn from(unit: Unit) -> Self {
         match unit {
             Unit::Minutes => Self::Minutes,
+            Unit::Years => Self::Years,
         }
     }
 }

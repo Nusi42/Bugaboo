@@ -1415,6 +1415,18 @@ part "field.input" {
     text-overflow ellipsis
 }
 
+// A box with the words of what it counts beside it (*years*): the box takes the room, the words stand at its end.
+part "field.input-row" {
+    display flex
+    align-items center
+    gap "$space-3"
+}
+
+part "field.unit" {
+    use "quiet-text"
+    white-space nowrap
+}
+
 // A choice that says how something is shown (Group by above a list): its name and then its value as quiet words in
 // the color of a link, with no box, like the text buttons beside it. The native list keeps the keyboard, the screen
 // reader and a phone's own picker; it is a control high, so a finger finds 44 on touch.

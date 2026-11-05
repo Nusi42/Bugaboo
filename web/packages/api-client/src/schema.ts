@@ -5595,6 +5595,10 @@ export interface components {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
       hosts: string[];
     };
+    /** @description The project an inherited default of a field of time entries comes from. */
+    InheritedDefaultFromBody: {
+      project?: components["schemas"]["ProjectRef"] | null;
+    };
     /** @description Where the layout that counts at a place is set, when it is another place. */
     InheritedFromBody: {
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
@@ -7639,6 +7643,18 @@ export interface components {
     ProjectDetailBody: {
       /** @description The own fields the person may change in this project, by their keys. */
       changeable_fields: components["schemas"]["FieldKey"][];
+      /**
+       * @description The defaults of the fields of time entries that a project above sets and this project does
+       *     not, by the key (ID) of the field: only the fields the person may see.
+       */
+      inherited_fields: components["schemas"]["OwnValues"];
+      /**
+       * @description Where each inherited default comes from, by the key of the field: the project, or `null`
+       *     when the person cannot see it.
+       */
+      inherited_from: {
+        [key: string]: components["schemas"]["InheritedDefaultFromBody"];
+      };
       /** @description Whether the person may change the short name. */
       may_change_short_name: boolean;
       /** @description Where the person may move the project to. */
@@ -8589,7 +8605,7 @@ export interface components {
      * @description What a whole number counts in, when it is drawn as more than a bare number.
      * @enum {string}
      */
-    SettingUnit: "minutes";
+    SettingUnit: "minutes" | "years";
     /** @description The settings of a topic, in the order of the registry. */
     SettingsBody: {
       /** @description The settings. */

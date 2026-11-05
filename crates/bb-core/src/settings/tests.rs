@@ -175,7 +175,7 @@ fn cfg_06_only_settings_of_signing_in_and_safety_touch_security() {
             .touches_security()
     );
     assert!(AUTH_SIGN_UP_ENABLED.definition().touches_security());
-    assert!(TIME_BILLABLE.definition().touches_security());
+    assert!(working_hours::TIME_BILLABLE.definition().touches_security());
     assert!(
         working_hours::WORKING_HOURS_TOTALS_ONLY
             .definition()
@@ -264,7 +264,7 @@ fn values_are_stored_as_plain_json() {
 }
 
 #[test]
-fn time_09_the_numbers_of_the_rules_count_in_minutes_and_nothing_else_does() {
+fn time_09_the_numbers_of_the_rules_count_in_minutes_and_the_keep_period_in_years() {
     use super::Unit;
     let minutes: Vec<_> = registry()
         .filter(|definition| definition.unit() == Some(Unit::Minutes))
@@ -275,6 +275,17 @@ fn time_09_the_numbers_of_the_rules_count_in_minutes_and_nothing_else_does() {
     assert!(minutes.iter().all(|key| key.contains("minutes")));
     assert_eq!(
         working_hours::WORKING_HOURS_KEEP_YEARS.definition().unit(),
-        None
+        Some(Unit::Years)
     );
+}
+
+#[test]
+fn priv_09_every_setting_of_the_time_topic_is_a_deliberate_choice_of_the_security_log() {
+    // The whole topic `time` is recorded in the security log (`SECURITY_TOPICS`). A new setting of the
+    // topic is added here on purpose, after asking whether its change belongs in that log.
+    let keys: Vec<_> = registry()
+        .filter(|definition| definition.topic() == "time")
+        .map(SettingDefinition::key)
+        .collect();
+    assert_eq!(keys, ["time.billable"]);
 }

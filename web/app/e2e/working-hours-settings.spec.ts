@@ -7,6 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { press } from "./support/working-hours-scene.ts";
+import { boxOf as boxOnPage } from "./support/windows.ts";
 import { partIn } from "./support/parts.ts";
 
 // Organization settings › Work › Working hours (TIME-09, TIME-10, TIME-12, ADR-0018, ADR-0035): the rules
@@ -48,6 +49,22 @@ test("time_09 an administrator types the longest day as a length and goes back t
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("10h");
 });
 
+test("time_10 the keep period is shown with its unit beside the number", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(paths.workingHours);
+  const name = t("setting.working-hours.keep-years.name");
+  const keep = page.getByLabel(name, { exact: true });
+  // A screen reader says the number with its unit, and the hint spans the whole width of the setting, not only
+  // the narrower box.
+  await expect(keep).toHaveAccessibleDescription(
+    new RegExp(t("setting.ui.years", { count: 2 }), "u"),
+  );
+  const field = partIn(boxOf(page, name), "field");
+  expect((await boxOnPage(partIn(field, "field.description"))).width).toBeGreaterThanOrEqual(
+    (await boxOnPage(field)).width - 1,
+  );
+});
+
 test("time_10 the keep period cannot go below two years with the preset Germany", async ({
   page,
 }) => {
@@ -55,6 +72,11 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   await page.goto(paths.workingHours);
   const name = t("setting.working-hours.keep-years.name");
   const keep = page.getByLabel(name, { exact: true });
+  // The box holds the number; what it counts stands beside it in words.
+  await expect(keep).toHaveValue("2");
+  await expect(
+    boxOf(page, name).getByText(t("setting.ui.years", { count: 2 }), { exact: true }),
+  ).toBeVisible();
   await keep.fill("1");
   await keep.press("Enter");
   await expect(
@@ -63,18 +85,26 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   // Without rules the organization chooses.
   await page.getByRole("radio", { name: t("working-time.preset.no-rules"), exact: true }).click();
   await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
+  // The page reads the settings again once the change is saved; type only after that.
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await page.getByLabel(name, { exact: true }).fill("1");
   await page.getByLabel(name, { exact: true }).press("Enter");
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("1");
   await expect(
     page.getByRole("alert").filter({ hasText: t("error.working-hours.keep-years-too-short") }),
   ).toHaveCount(0);
-  // The tests of a file share one server: the rules go back to the preset.
+  // Choosing Germany again with one year kept is refused too, and the preset stays.
   await page.getByRole("radio", { name: t("working-time.preset.germany"), exact: true }).click();
-  await expect(page.getByRole("radio", { name: t("working-time.preset.germany") })).toBeChecked();
+  await expect(
+    page.getByRole("alert").filter({ hasText: t("error.working-hours.keep-years-too-short") }),
+  ).toBeVisible();
+  await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
+  // The tests of a file share one server: the rules go back to the preset, two years first.
   await page.getByLabel(name, { exact: true }).fill("2");
   await page.getByLabel(name, { exact: true }).press("Enter");
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("2");
+  await page.getByRole("radio", { name: t("working-time.preset.germany"), exact: true }).click();
+  await expect(page.getByRole("radio", { name: t("working-time.preset.germany") })).toBeChecked();
 });
 
 test("time_02 Billable is a switch that starts off", async ({ page }) => {

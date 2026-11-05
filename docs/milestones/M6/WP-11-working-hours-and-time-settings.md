@@ -13,7 +13,7 @@ An administrator sets up working hours and time in one page in plain words: the 
 
 ## What is decided (M6-Q7, Q8, Q10, Q11)
 
-- *Organization settings › Working hours*: *Rules* (preset *Germany* or *No rules*, then each number with its plain sentence; a changed number marks the preset as changed and *Reset to default* brings it back), *Keep working hours for* (the minimum of ADR-0035, decision 7), the count of older work days with *Delete them* (all, or one person's, after a confirmation in the page; only for holders of *Change organization settings*), *Totals only* (with a sentence that says what others with *See working hours of others* then see), *Billable* (on or off).
+- *Organization settings › Working hours*: *Rules* (preset *Germany* or *No rules*, then each number with its plain sentence; a changed number marks the preset as changed and *Reset to default* brings it back), *Keep work days for* (the minimum of ADR-0035, decision 7), the count of older work days with *Delete them* (all, or one person's, after a confirmation in the page; only for holders of *Change organization settings*), *Totals only* (with a sentence that says what others with *See working hours of others* then see), *Billable* (on or off).
 - The page says that every change is in the security log, and who holds *See working hours of others* today (the groups, by name, with a link to *Roles and permissions*).
 - The project settings: *Activity* and *Cost center* defaults of the project, inherited by sub-projects (*Set by the project above* when inherited, *Reset to default* when set here).
 - *Activity* and *Cost center* themselves are managed on the *Fields* page like any own field (rename, choices, required); no second page for them.

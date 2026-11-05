@@ -1324,6 +1324,18 @@ textarea,
   text-overflow: ellipsis;
 }
 
+[data-part="field.input-row"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+[data-part="field.unit"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  white-space: nowrap;
+}
+
 [data-part="field"][data-variant~="inline"] {
   flex-direction: row;
   flex-wrap: wrap;

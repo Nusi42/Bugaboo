@@ -278,18 +278,6 @@ settings! {
         lockable: false,
     }
 
-    /// Whether a time entry offers *Billable*: off at the start; switching it off hides the box and
-    /// keeps the values (ADR-0035, decision 1).
-    TIME_BILLABLE: Bool = {
-        key: "time.billable",
-        name: message::SETTING_TIME_BILLABLE_NAME,
-        default: false,
-        levels: [Organization],
-        changed_by: Administrators,
-        help: message::SETTING_TIME_BILLABLE_HELP,
-        lockable: false,
-    }
-
     /// The e-mail domains that may sign up on their own (a list separated by commas).
     AUTH_SIGN_UP_DOMAINS: Text = {
         key: "auth.sign-up-domains",

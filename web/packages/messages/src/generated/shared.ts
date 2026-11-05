@@ -731,7 +731,7 @@ export const messages = {
   "setting.notifications.long-timer-by-mail.name": "Your timer runs long: by e-mail",
   "setting.notifications.long-timer-by-mail.help":
     "Sends you an e-mail when your timer has run longer than the longest work day of your organization's working-time rules. E-mail goes only when your organization has switched it on.",
-  "setting.time.billable.name": "Billable time",
+  "setting.time.billable.name": "Billable",
   "setting.time.billable.help":
     "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
   "setting.notifications.run-ended-by-mail.help":
@@ -858,9 +858,9 @@ export const messages = {
   "setting.working-hours.rest-minutes-min.name": "Rest between two work days",
   "setting.working-hours.rest-minutes-min.help":
     "Less rest between the end of one work day and the start of the next gets a warning.",
-  "setting.working-hours.keep-years.name": "Keep work days for (years)",
+  "setting.working-hours.keep-years.name": "Keep work days for",
   "setting.working-hours.keep-years.help":
-    "Work days are kept at least this many years from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+    "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
   "setting.working-hours.totals-only.name": "Totals only",
   "setting.working-hours.totals-only.help":
     "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",

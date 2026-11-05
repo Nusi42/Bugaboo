@@ -14,7 +14,7 @@ type Old = Schema<"OldWorkDaysBody">;
 /** What the old work days are: how many, and since when. */
 function Summary({ old }: { readonly old: Old }) {
   return (
-    <p>
+    <p {...partOf(part.text)}>
       {old.total === 0
         ? t("old-work-days.none")
         : t("old-work-days.summary", {
@@ -40,6 +40,7 @@ function DeleteAll({
     <div {...partOf(part.row)}>
       <ConfirmDialog
         triggerLabel={t("old-work-days.delete-all")}
+        triggerLook={buttonLook.danger}
         title={t("old-work-days.delete-all-title", { count: total })}
         text={t("old-work-days.delete-all-text", { count: total })}
         confirmLabel={t("old-work-days.delete")}

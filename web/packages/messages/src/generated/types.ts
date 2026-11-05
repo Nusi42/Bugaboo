@@ -170,6 +170,7 @@ export interface MessageArguments {
   "fields.pick-take-out-name": { name: string | number };
   "fields.scope-projects": { count: number };
   "fields.scope-remove": { name: string | number };
+  "fields.time-default-source": { project: string | number };
   "fields.used-everywhere": { count: number };
   "fields.used-in-projects": { count: number };
   "fields.used-more": { count: number };
@@ -553,13 +554,14 @@ export interface MessageArguments {
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
   "setting.ui.between": { least: string | number; most: string | number };
-  "setting.ui.between-lengths": { least: string | number; most: string | number };
+  "setting.ui.between-amounts": { least: string | number; most: string | number };
   "setting.ui.device-zone": { zone: string | number };
   "setting.ui.example-moment": { moment: string | number };
   "setting.ui.example-number": { number: string | number };
   "setting.ui.reset-name": { name: string | number };
   "setting.ui.source-project": { project: string | number };
   "setting.ui.standard-length": { length: string | number };
+  "setting.ui.years": { count: number };
   "setup.ask.replace": { path: string | number };
   "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };
@@ -668,6 +670,7 @@ export interface MessageArguments {
   "workflows.uses-organization": { name: string | number };
   "workflows.uses-project": { name: string | number; project: string | number };
   "workflows.uses-starting": { name: string | number };
+  "working-hours.who-not-allowed": { decide: string | number; manage: string | number };
   "working-time.warning.long-day": { most: string | number; worked: string | number };
   "working-time.warning.long-stretch": {
     most: string | number;

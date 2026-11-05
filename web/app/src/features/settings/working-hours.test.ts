@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Setting } from "../../shared/my-settings.ts";
 import { whoSeesWorkingHours } from "./who-sees.ts";
-import { controlKindOf } from "./texts.ts";
+import { controlKindOf, unitWords } from "./texts.ts";
 
 const hr = { id: "role-hr", name: "HR", permissions: ["see-working-hours-of-others"] } as const;
 const member = { id: "role-member", name: "Team member", permissions: ["see-projects"] } as const;
@@ -50,5 +50,16 @@ describe("time_09 the numbers of the rules are lengths", () => {
   it("draws a number of minutes as a length and any other number as a number", () => {
     expect(controlKindOf(minutes)).toBe("length");
     expect(controlKindOf({ ...minutes, unit: null })).toBe("typed");
+  });
+});
+
+describe("time_10 a number of years has its unit beside the box", () => {
+  it("says what each unit draws in one place", () => {
+    const years: Setting = { ...minutes, key: "working-hours.keep-years", unit: "years", value: 2 };
+    expect(unitWords(years, 1)).toBe("year");
+    expect(unitWords(years, 2)).toBe("years");
+    expect(unitWords(minutes, 2)).toBeUndefined();
+    expect(unitWords({ ...minutes, unit: null }, 2)).toBeUndefined();
+    expect(controlKindOf(years)).toBe("typed");
   });
 });

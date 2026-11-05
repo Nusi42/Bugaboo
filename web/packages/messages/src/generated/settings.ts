@@ -18,7 +18,8 @@ export const messages = {
   "setting.ui.source-hidden-project": "From a project you cannot see",
   "setting.ui.source-person": "Your own choice",
   "setting.ui.device-zone": "Match my device ({zone})",
-  "setting.ui.between-lengths": "From {least} to {most}.",
+  "setting.ui.years": "{count, plural, one {year} other {years}}",
+  "setting.ui.between-amounts": "From {least} to {most}.",
   "setting.ui.standard-length": "The default value is {length}.",
   "setting.page.sign-in-rules-intro":
     "How long people stay signed in, and the rules for signing in. They apply to everybody.",
@@ -43,7 +44,6 @@ export const messages = {
     "Delete {count, plural, one {# old work day} other {# old work days}}?",
   "old-work-days.delete-all-text":
     "This deletes {count, plural, one {# work day} other {# work days}} of everybody that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
-  "old-work-days.delete-person": "Delete them",
   "old-work-days.delete-person-name": "Delete the old work days of {name}",
   "old-work-days.delete-person-title": "Delete the old work days of {name}?",
   "old-work-days.delete-person-text":
@@ -55,8 +55,8 @@ export const messages = {
     "Everybody sees their own. Other people's working hours are seen only by those who hold the permission to see them.",
   "working-hours.who-nobody":
     "Nobody holds the permission to see other people's working hours yet. Give the role HR to a group to change that.",
-  "working-hours.who-holders":
-    "These groups and people hold the permission to see other people's working hours:",
+  "working-hours.who-not-allowed":
+    "To see who holds it, you need both of these permissions: {manage}; {decide}.",
 } as const;
 
 register(messages);

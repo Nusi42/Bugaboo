@@ -17,7 +17,7 @@ use bb_core::id::{EntityId, FieldId, IssueId, TimeEntryId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldFor;
 use bb_core::own_fields_value::FieldValue;
-use bb_core::settings::TIME_BILLABLE;
+use bb_core::settings::working_hours::TIME_BILLABLE;
 use bb_core::time::Minutes;
 use bb_core::time::entry::TimeEntry;
 use bb_core::version::{FIRST_VERSION, Version, counted_up, next};
@@ -188,10 +188,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 on_issue
                     .value(issue.id.into(), field)
                     .or_else(|| {
-                        projects
-                            .iter()
-                            .rev()
-                            .find_map(|project| on_projects.value(*project, field))
+                        nearest_on_projects(&on_projects, &projects, field).map(|(_, value)| value)
                     })
                     .map(|value| (field, value.clone()))
             })
@@ -589,4 +586,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?
             .authorize(value))
     }
+}
+
+/// The default a field has from the projects: the value of the nearest project that holds one, and
+/// that project. `projects` run from the top down, so the last one is the nearest. This is the one
+/// rule of which project a default comes from: the defaults of a new entry and the page of a
+/// project that says where its inherited defaults come from both ask it.
+pub(crate) fn nearest_on_projects<'v>(
+    values: &'v ItemValues,
+    projects: &[EntityId],
+    field: FieldId,
+) -> Option<(EntityId, &'v FieldValue)> {
+    projects
+        .iter()
+        .rev()
+        .find_map(|project| values.value(*project, field).map(|value| (*project, value)))
 }

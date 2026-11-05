@@ -35,6 +35,8 @@ export interface ValueEditorProps {
    * *Save*, and what is typed is kept when the person leaves the box or presses Enter (R7).
    */
   readonly inRow?: boolean;
+  /** What a list says for no choice when something else stands in for it (*From the project above*). */
+  readonly emptyLabel?: string | undefined;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
@@ -56,7 +58,14 @@ function YesNoEditor({ field, value, onCommit, inRow = false }: ValueEditorProps
 }
 
 /** A list with the choices that are not retired, and the one the value has. */
-function PickOneEditor({ field, value, onCommit, problem, inRow = false }: ValueEditorProps) {
+function PickOneEditor({
+  field,
+  value,
+  onCommit,
+  problem,
+  inRow = false,
+  emptyLabel,
+}: ValueEditorProps) {
   const current = typeof value === "string" ? value : "";
   const choices = pickable(field, current === "" ? [] : [current]).map((choice) => ({
     value: choice.id,
@@ -67,7 +76,7 @@ function PickOneEditor({ field, value, onCommit, problem, inRow = false }: Value
     <SelectField
       {...boxWords(field, problem, inRow)}
       choices={[
-        ...(mayBeEmpty ? [{ value: "", label: t("fields.nothing-picked") }] : []),
+        ...(mayBeEmpty ? [{ value: "", label: emptyLabel ?? t("fields.nothing-picked") }] : []),
         ...choices,
       ]}
       value={current}

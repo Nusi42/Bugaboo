@@ -16,6 +16,7 @@
 
 mod change;
 mod create;
+mod inherited;
 mod moving;
 mod read;
 mod shown;

@@ -1495,6 +1495,10 @@ pub const FIELDS_TAKE_AWAY: MessageKey = MessageKey::new("fields.take-away");
 pub const FIELDS_TIME_DEFAULT_FROM_ABOVE: MessageKey =
     MessageKey::new("fields.time-default-from-above");
 
+/// The message `fields.time-default-hidden-source`.
+pub const FIELDS_TIME_DEFAULT_HIDDEN_SOURCE: MessageKey =
+    MessageKey::new("fields.time-default-hidden-source");
+
 /// The message `fields.time-defaults`.
 pub const FIELDS_TIME_DEFAULTS: MessageKey = MessageKey::new("fields.time-defaults");
 
@@ -3079,9 +3083,6 @@ pub const OLD_WORK_DAYS_DELETE: MessageKey = MessageKey::new("old-work-days.dele
 
 /// The message `old-work-days.delete-all`.
 pub const OLD_WORK_DAYS_DELETE_ALL: MessageKey = MessageKey::new("old-work-days.delete-all");
-
-/// The message `old-work-days.delete-person`.
-pub const OLD_WORK_DAYS_DELETE_PERSON: MessageKey = MessageKey::new("old-work-days.delete-person");
 
 /// The message `old-work-days.intro`.
 pub const OLD_WORK_DAYS_INTRO: MessageKey = MessageKey::new("old-work-days.intro");
@@ -6343,9 +6344,6 @@ pub const WORKFLOWS_WHO_REPORTER: MessageKey = MessageKey::new("workflows.who-re
 /// The message `workflows.who-roles`.
 pub const WORKFLOWS_WHO_ROLES: MessageKey = MessageKey::new("workflows.who-roles");
 
-/// The message `working-hours.who-holders`.
-pub const WORKING_HOURS_WHO_HOLDERS: MessageKey = MessageKey::new("working-hours.who-holders");
-
 /// The message `working-hours.who-intro`.
 pub const WORKING_HOURS_WHO_INTRO: MessageKey = MessageKey::new("working-hours.who-intro");
 
@@ -7410,6 +7408,15 @@ pub fn fields_scope_remove(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.scope-remove"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.time-default-source`.
+#[must_use]
+pub fn fields_time_default_source(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.time-default-source"),
+        vec![("project", Value::Text(project.to_string()))],
     )
 }
 
@@ -11519,14 +11526,14 @@ pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Di
     )
 }
 
-/// The message `setting.ui.between-lengths`.
+/// The message `setting.ui.between-amounts`.
 #[must_use]
-pub fn setting_ui_between_lengths(
+pub fn setting_ui_between_amounts(
     least: impl std::fmt::Display,
     most: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
-        MessageKey::new("setting.ui.between-lengths"),
+        MessageKey::new("setting.ui.between-amounts"),
         vec![
             ("least", Value::Text(least.to_string())),
             ("most", Value::Text(most.to_string())),
@@ -11585,6 +11592,15 @@ pub fn setting_ui_standard_length(length: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("setting.ui.standard-length"),
         vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `setting.ui.years`.
+#[must_use]
+pub fn setting_ui_years(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.years"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -12786,6 +12802,21 @@ pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.uses-starting"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `working-hours.who-not-allowed`.
+#[must_use]
+pub fn working_hours_who_not_allowed(
+    decide: impl std::fmt::Display,
+    manage: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-hours.who-not-allowed"),
+        vec![
+            ("decide", Value::Text(decide.to_string())),
+            ("manage", Value::Text(manage.to_string())),
+        ],
     )
 }
 
@@ -14190,10 +14221,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.see-link", "Open the field permissions"),
     ("fields.see-title", "Who can see it"),
     ("fields.take-away", "Take away"),
+    ("fields.time-default-from-above", "From the project above"),
     (
-        "fields.time-default-from-above",
-        "Set by the project above:",
+        "fields.time-default-hidden-source",
+        "Set by a project above that you cannot see:",
     ),
+    ("fields.time-default-source", "Set by {project}:"),
     (
         "fields.time-defaults",
         "Defaults for time booked on this issue",
@@ -15527,7 +15560,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "old-work-days.delete-all-title",
         "Delete {count, plural, one {# old work day} other {# old work days}}?",
     ),
-    ("old-work-days.delete-person", "Delete them"),
     (
         "old-work-days.delete-person-name",
         "Delete the old work days of {name}",
@@ -17533,12 +17565,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.time.billable.help",
         "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
     ),
-    ("setting.time.billable.name", "Billable time"),
+    ("setting.time.billable.name", "Billable"),
     (
         "setting.ui.between",
         "Whole numbers from {least} to {most}.",
     ),
-    ("setting.ui.between-lengths", "From {least} to {most}."),
+    ("setting.ui.between-amounts", "From {least} to {most}."),
     ("setting.ui.device-zone", "Match my device ({zone})"),
     (
         "setting.ui.example-moment",
@@ -17583,6 +17615,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("setting.ui.whole-number", "Enter a whole number."),
     (
+        "setting.ui.years",
+        "{count, plural, one {year} other {years}}",
+    ),
+    (
         "setting.window.sizes.help",
         "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
     ),
@@ -17621,11 +17657,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.working-hours.keep-years.help",
-        "Work days are kept at least this many years from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+        "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
     ),
     (
         "setting.working-hours.keep-years.name",
-        "Keep work days for (years)",
+        "Keep work days for",
     ),
     (
         "setting.working-hours.preset.help",
@@ -18459,16 +18495,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),
     (
-        "working-hours.who-holders",
-        "These groups and people hold the permission to see other people's working hours:",
-    ),
-    (
         "working-hours.who-intro",
         "Everybody sees their own. Other people's working hours are seen only by those who hold the permission to see them.",
     ),
     (
         "working-hours.who-nobody",
         "Nobody holds the permission to see other people's working hours yet. Give the role HR to a group to change that.",
+    ),
+    (
+        "working-hours.who-not-allowed",
+        "To see who holds it, you need both of these permissions: {manage}; {decide}.",
     ),
     ("working-hours.who-title", "Who sees working hours"),
     ("working-time.preset.germany", "Germany"),

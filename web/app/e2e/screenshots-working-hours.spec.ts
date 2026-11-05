@@ -1,17 +1,17 @@
 import { t } from "@bugaboo/messages";
 
 import { addressInProject, paths } from "../src/shared/paths.ts";
-import { ada } from "./support/accounts.ts";
+import { ada, bob, cleo } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { inFourChosenThemes } from "./support/four-themes.ts";
+import { inFourChosenThemes, inLightAndDarkChosen } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
-import { prepareWorkingHours } from "./support/working-hours-scene.ts";
+import { prepareWorkingHoursPeople } from "./support/working-hours-people-scene.ts";
 
 // *Organization settings › Working hours* and the time defaults of a project in the four themes, for the
 // maintainer's review of M6. They are only taken when `BB_SCREENSHOT_DIR` names the folder they go to.
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
-test.use({ preparation: { run: prepareWorkingHours } });
+test.use({ preparation: { run: prepareWorkingHoursPeople } });
 
 /** Where the pictures go, below the folder the run was given. */
 const MILESTONE = "M6/working-hours";
@@ -37,6 +37,28 @@ test("the time defaults in the settings of a project and of its sub-project", as
   });
   await inFourChosenThemes(page, "sub-project-defaults", MILESTONE, paths.appearance, async () => {
     await page.goto(addressInProject(paths.projectSettings, "APP"));
-    await expect(page.getByText(t("fields.time-default-from-above"))).toBeVisible();
+    await expect(
+      page.getByText(t("fields.time-default-source", { project: "Website" })),
+    ).toBeVisible();
+  });
+});
+
+test("the card of who sees working hours for somebody who may not read the roles", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await inLightAndDarkChosen(page, "not-allowed", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.workingHours);
+    await expect(
+      page.getByRole("region", { name: t("working-hours.who-title"), exact: true }),
+    ).toContainText(t("permission.manage-roles"));
+  });
+});
+
+test("the default of a project above that the project lead cannot see", async ({ page }) => {
+  await signIn(page, cleo);
+  await inLightAndDarkChosen(page, "hidden-source", MILESTONE, paths.appearance, async () => {
+    await page.goto(addressInProject(paths.projectSettings, "APP"));
+    await expect(page.getByText(t("fields.time-default-hidden-source"))).toBeVisible();
   });
 });

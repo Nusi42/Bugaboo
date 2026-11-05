@@ -18,7 +18,7 @@ mod warning;
 pub use check::warnings;
 pub use rules::{
     BreakRule, GERMANY_KEEP_YEARS_LEAST, NO_RULES_LONGEST_DAY, Preset, Rules, keep_years,
-    keep_years_allowed, longest_day, preset_of, totals_only,
+    keep_years_allowed, leaves_keep_period_short, longest_day, preset_of, totals_only,
 };
 pub use totals::Totals;
 pub use warning::Warning;

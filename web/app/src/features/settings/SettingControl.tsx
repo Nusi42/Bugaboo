@@ -1,21 +1,11 @@
 import { timeZones } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import {
-  ChoiceGroup,
-  Form,
-  SelectField,
-  SubmitButton,
-  Switch,
-  TextField,
-  partOf,
-  part,
-} from "@bugaboo/ui";
-import { useState } from "react";
+import { ChoiceGroup, SelectField, Switch } from "@bugaboo/ui";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
-import { wholeNumberIn } from "../../shared/number.ts";
 import { deviceTimeZone } from "../../shared/region.ts";
 import { LengthControl } from "./LengthControl.tsx";
+import { TypedControl } from "./TypedControl.tsx";
 import { controlKindOf, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -35,53 +25,6 @@ function timeZoneChoices(): readonly { readonly value: string; readonly label: s
     { value: "device", label: t("setting.ui.device-zone", { zone: deviceTimeZone() }) },
     ...timeZones.map((name) => ({ value: name, label: name })),
   ];
-}
-
-/** A text or a number the person types, saved with its own button. */
-function TypedControl({ setting, onChange, help, source }: SettingControlProps) {
-  const [draft, setDraft] = useState(String(setting.value));
-  const [problem, setProblem] = useState<string>();
-  const bounds = setting.bounds ?? undefined;
-  const number = setting.kind === "whole-number";
-  const between =
-    bounds === undefined
-      ? undefined
-      : t("setting.ui.between", { least: bounds.least, most: bounds.most });
-  // The hint of the box is the explanation of the setting and, from the registry, the bounds it accepts: said once,
-  // never typed into the explanation.
-  const description = [help, between].filter((piece) => piece !== undefined).join(" ") || undefined;
-  const submit = (): void => {
-    if (!number) {
-      onChange(draft);
-      return;
-    }
-    // A number that is none, or outside the bounds, is not sent: the server would only refuse it.
-    const value = wholeNumberIn(draft, bounds);
-    if (value === null) {
-      setProblem(between ?? t("setting.ui.whole-number"));
-      return;
-    }
-    setProblem(undefined);
-    onChange(value);
-  };
-  return (
-    <Form onSubmit={submit}>
-      <TextField
-        label={wordsOf(setting.name_key)}
-        {...(description === undefined ? {} : { description })}
-        errorMessage={problem}
-        value={draft}
-        onChange={(next) => {
-          setDraft(next);
-          setProblem(undefined);
-        }}
-      />
-      {source === undefined ? null : <p {...partOf(part.settingsSource)}>{source}</p>}
-      <div {...partOf(part.row)}>
-        <SubmitButton>{t("common.save")}</SubmitButton>
-      </div>
-    </Form>
-  );
 }
 
 /**
