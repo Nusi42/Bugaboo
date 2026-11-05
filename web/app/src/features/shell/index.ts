@@ -42,3 +42,11 @@ export {
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
 export { BarSlot } from "./bar-slot.ts";
+export { TimeSlot } from "./TimeSlot.tsx";
+export {
+  addTimePart,
+  timePlace,
+  type TimePartHost,
+  type TimePartView,
+  type TimePlace,
+} from "./time-parts.ts";

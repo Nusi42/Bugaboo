@@ -4189,6 +4189,91 @@ textarea,
   overflow-wrap: anywhere;
 }
 
+[data-part="time-part"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+[data-part="time-part"][data-variant~="bar"] {
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width) solid var(--divider);
+  background: var(--bg-surface);
+}
+
+[data-part="timer-chip"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-control);
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--r-ctl);
+  font-family: var(--font-ui);
+  background: var(--accent-soft);
+  color: var(--accent-fg);
+  font-size: var(--fs-md);
+  text-align: start;
+}
+
+@media (forced-colors: active) {
+  [data-part="timer-chip"] {
+    border: var(--border-width) solid;
+  }
+}
+
+[data-part="timer-chip"][data-hovered] {
+  background: var(--bg-selected);
+}
+
+[data-part="timer-chip"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: var(--ring-offset);
+}
+
+@media (forced-colors: active) {
+  [data-part="timer-chip"][data-focus-visible] {
+    outline-style: double;
+    outline-width: calc(var(--ring-width) * 2);
+  }
+}
+
+[data-part="timer-chip"][data-variant~="long"] {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+[data-part="timer-chip"][data-variant~="narrow"] {
+  justify-content: center;
+  padding: 0;
+}
+
+[data-part="timer-chip.live"] {
+  flex: none;
+  width: var(--size-dot);
+  height: var(--size-dot);
+  border-radius: var(--r-pill);
+  background: currentColor;
+}
+
+[data-part="timer-chip.issue"] {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+}
+
+[data-part="timer-chip.time"] {
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-code);
+  white-space: nowrap;
+}
+
 [data-part="nav-item"] {
   position: relative;
   display: flex;

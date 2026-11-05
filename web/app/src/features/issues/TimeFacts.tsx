@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { Facts, Length, NameValueRow, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { keepingHyphens } from "../../shared/format.ts";
-import { AddTimeButton, type EntryIssue } from "../time/index.ts";
+import { AddTimeButton, TimerButton, type EntryIssue } from "../time/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 
@@ -74,7 +74,12 @@ export function SpentRow({
   return (
     <DetailRow name={t("issue-field.time-spent")}>
       <MinutesLength minutes={minutes} />
-      {issue === undefined ? null : <AddTimeButton issue={issue} />}
+      {issue === undefined ? null : (
+        <>
+          <TimerButton issue={issue} />
+          <AddTimeButton issue={issue} />
+        </>
+      )}
     </DetailRow>
   );
 }

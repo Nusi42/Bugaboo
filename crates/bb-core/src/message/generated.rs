@@ -5707,6 +5707,60 @@ pub const TIME_ENTRY_LENGTH: MessageKey = MessageKey::new("time.entry.length");
 /// The message `time.entry.note`.
 pub const TIME_ENTRY_NOTE: MessageKey = MessageKey::new("time.entry.note");
 
+/// The message `time.start-time.day`.
+pub const TIME_START_TIME_DAY: MessageKey = MessageKey::new("time.start-time.day");
+
+/// The message `time.start-time.not-a-time`.
+pub const TIME_START_TIME_NOT_A_TIME: MessageKey = MessageKey::new("time.start-time.not-a-time");
+
+/// The message `time.start-time.save`.
+pub const TIME_START_TIME_SAVE: MessageKey = MessageKey::new("time.start-time.save");
+
+/// The message `time.start-time.time`.
+pub const TIME_START_TIME_TIME: MessageKey = MessageKey::new("time.start-time.time");
+
+/// The message `time.start-time.title`.
+pub const TIME_START_TIME_TITLE: MessageKey = MessageKey::new("time.start-time.title");
+
+/// The message `time.stop.save`.
+pub const TIME_STOP_SAVE: MessageKey = MessageKey::new("time.stop.save");
+
+/// The message `time.switch.title`.
+pub const TIME_SWITCH_TITLE: MessageKey = MessageKey::new("time.switch.title");
+
+/// The message `time.throw-away.text`.
+pub const TIME_THROW_AWAY_TEXT: MessageKey = MessageKey::new("time.throw-away.text");
+
+/// The message `time.timer.change-start`.
+pub const TIME_TIMER_CHANGE_START: MessageKey = MessageKey::new("time.timer.change-start");
+
+/// The message `time.timer.menu`.
+pub const TIME_TIMER_MENU: MessageKey = MessageKey::new("time.timer.menu");
+
+/// The message `time.timer.region`.
+pub const TIME_TIMER_REGION: MessageKey = MessageKey::new("time.timer.region");
+
+/// The message `time.timer.running-hidden`.
+pub const TIME_TIMER_RUNNING_HIDDEN: MessageKey = MessageKey::new("time.timer.running-hidden");
+
+/// The message `time.timer.runs-long`.
+pub const TIME_TIMER_RUNS_LONG: MessageKey = MessageKey::new("time.timer.runs-long");
+
+/// The message `time.timer.start`.
+pub const TIME_TIMER_START: MessageKey = MessageKey::new("time.timer.start");
+
+/// The message `time.timer.stop`.
+pub const TIME_TIMER_STOP: MessageKey = MessageKey::new("time.timer.stop");
+
+/// The message `time.timer.stop-timer`.
+pub const TIME_TIMER_STOP_TIMER: MessageKey = MessageKey::new("time.timer.stop-timer");
+
+/// The message `time.timer.switch`.
+pub const TIME_TIMER_SWITCH: MessageKey = MessageKey::new("time.timer.switch");
+
+/// The message `time.timer.throw-away`.
+pub const TIME_TIMER_THROW_AWAY: MessageKey = MessageKey::new("time.timer.throw-away");
+
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
@@ -11332,6 +11386,84 @@ pub fn time_length_zero(minutes: i64) -> Message {
     )
 }
 
+/// The message `time.stop.nothing`.
+#[must_use]
+pub fn time_stop_nothing(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.stop.nothing"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.stop.title`.
+#[must_use]
+pub fn time_stop_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.stop.title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.stop.worked`.
+#[must_use]
+pub fn time_stop_worked(length: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.stop.worked"),
+        vec![
+            ("length", Value::Text(length.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `time.switch.help`.
+#[must_use]
+pub fn time_switch_help(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.switch.help"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.throw-away.title`.
+#[must_use]
+pub fn time_throw_away_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.throw-away.title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.timer.running`.
+#[must_use]
+pub fn time_timer_running(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.running"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `time.timer.saved`.
+#[must_use]
+pub fn time_timer_saved(issue: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.saved"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("length", Value::Text(length.to_string())),
+        ],
+    )
+}
+
+/// The message `time.timer.too-short`.
+#[must_use]
+pub fn time_timer_too_short(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.too-short"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `tls.generate-failed`.
 #[must_use]
 pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
@@ -16758,6 +16890,47 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "time.length.zero",
         "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
+    ),
+    ("time.start-time.day", "Day"),
+    (
+        "time.start-time.not-a-time",
+        "Type a time of day like 8:30 or 16:45.",
+    ),
+    ("time.start-time.save", "Change start time"),
+    ("time.start-time.time", "Time of day"),
+    ("time.start-time.title", "Change start time"),
+    (
+        "time.stop.nothing",
+        "You worked less than a minute on {issue}, so nothing will be saved.",
+    ),
+    ("time.stop.save", "Save time"),
+    ("time.stop.title", "Stop timer on {issue}"),
+    ("time.stop.worked", "You worked {length} on {title}."),
+    (
+        "time.switch.help",
+        "The time so far on {issue} is saved, and the timer goes on with the issue you pick.",
+    ),
+    ("time.switch.title", "Switch issue"),
+    ("time.throw-away.text", "The time so far will not be saved."),
+    ("time.throw-away.title", "Throw away the timer on {issue}?"),
+    ("time.timer.change-start", "Change start time"),
+    ("time.timer.menu", "Timer"),
+    ("time.timer.region", "Timer"),
+    ("time.timer.running", "Timer running on {issue}"),
+    ("time.timer.running-hidden", "Timer running"),
+    (
+        "time.timer.runs-long",
+        "This timer has run longer than a work day.",
+    ),
+    ("time.timer.saved", "Saved {length} on {issue}."),
+    ("time.timer.start", "Start timer"),
+    ("time.timer.stop", "Stop"),
+    ("time.timer.stop-timer", "Stop timer"),
+    ("time.timer.switch", "Switch issue"),
+    ("time.timer.throw-away", "Throw away"),
+    (
+        "time.timer.too-short",
+        "Less than a minute on {issue}, so no time was saved.",
     ),
     (
         "tls.generate-failed",

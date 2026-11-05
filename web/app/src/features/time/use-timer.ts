@@ -24,21 +24,23 @@ export function offsetOf(stated: string | null, receivedMs: number): number {
   return Number.isNaN(served) ? 0 : served + msPerSecond / 2 - receivedMs;
 }
 
+/** The read of the timer: the same for the hook and for what asks for the timer outside a screen. */
+export const timerQuery = {
+  queryKey: timeKeys.timer(),
+  queryFn: async (): Promise<TimerReading> => {
+    const answer = await api.client.GET("/api/v1/me/timer");
+    const received = Date.now();
+    return {
+      timer: dataOf(answer),
+      serverOffsetMs: offsetOf(answer.response.headers.get("date"), received),
+    };
+  },
+} as const;
+
 /**
  * The person's timer (TIME-01): one per person, kept on the server, so it is read again when the
  * page gets the focus and a timer started on the phone shows on the computer.
  */
 export function useTimer() {
-  return useQuery({
-    queryKey: timeKeys.timer(),
-    refetchOnWindowFocus: true,
-    queryFn: async (): Promise<TimerReading> => {
-      const answer = await api.client.GET("/api/v1/me/timer");
-      const received = Date.now();
-      return {
-        timer: dataOf(answer),
-        serverOffsetMs: offsetOf(answer.response.headers.get("date"), received),
-      };
-    },
-  });
+  return useQuery({ ...timerQuery, refetchOnWindowFocus: true });
 }

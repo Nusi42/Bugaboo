@@ -2,6 +2,8 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { Sections } from "./Sections.tsx";
+import { timePlace } from "./time-parts.ts";
+import { TimeSlot } from "./TimeSlot.tsx";
 import { Bottom, Person, type PersonProps } from "./SidebarBottom.tsx";
 import { Top } from "./SidebarTop.tsx";
 
@@ -41,6 +43,7 @@ export function Sidebar({
       </span>
       <Top narrow={narrow} onNavigate={onNavigate} />
       <Sections narrow={narrow} onNavigate={onNavigate} />
+      <TimeSlot place={timePlace.sidebar} narrow={narrow} />
       <Bottom
         narrow={narrow}
         inDrawer={inDrawer || locked}

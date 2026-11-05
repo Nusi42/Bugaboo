@@ -7,6 +7,8 @@ import { paths, type Path } from "../../shared/paths.ts";
 import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { useUnreadCountText } from "../../shared/unread-notifications.ts";
 import { howCurrent, placeAt } from "../../shared/places.ts";
+import { timePlace } from "./time-parts.ts";
+import { TimeSlot } from "./TimeSlot.tsx";
 
 interface TabProps {
   readonly icon: IconName;
@@ -88,6 +90,7 @@ export function BottomBar() {
   const unread = useUnreadCountText();
   return (
     <nav {...partOf(part.bottomBar)} aria-label={t("shell.menu")}>
+      <TimeSlot place={timePlace.bar} />
       <ul {...partOf(part.bottomBarTabs)}>
         <PlaceTab path={paths.home} />
         <OverlayTab

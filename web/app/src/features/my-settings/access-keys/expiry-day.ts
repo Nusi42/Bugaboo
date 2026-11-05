@@ -1,13 +1,9 @@
 import { msPerDay, msPerSecond } from "@bugaboo/api-client";
 import type { Schema } from "@bugaboo/api-client";
 
-import {
-  calendarDayOf,
-  clockPartsOf,
-  dayNumbersOf,
-  isCalendarDay,
-} from "../../../shared/format.ts";
+import { calendarDayOf } from "../../../shared/format.ts";
 import { currentRegion, type Region } from "../../../shared/region.ts";
+import { momentOnDay } from "../../../shared/wall-clock.ts";
 
 /** What the day of the key needs of the rules of the organization. */
 export type Days = Pick<Schema<"AccessKeyRulesBody">, "default_days" | "longest_days">;
@@ -25,25 +21,17 @@ function dayOfMomentIn(days: number, region: Region, now: number): string {
   return calendarDayOf(now + days * msPerDay, region);
 }
 
-/** The clock of the region at a moment, read as if it were the clock of UTC. */
-function wallClockAsUtc(moment: number, region: Region): number {
-  const clock = clockPartsOf(moment, region);
-  return Date.UTC(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute, clock.second);
-}
-
 /**
  * The end of a day the date field wrote, in the zone of the region, as milliseconds since 1970; null
  * when the text is no day. The zone's offset is worked out at the moment itself, so a day on which
  * the clocks change still ends at its last second.
  */
 function endOfDayAt(day: string, region: Region): number | null {
-  if (!isCalendarDay(day)) {
-    return null;
-  }
-  const [year, month, date] = dayNumbersOf(day);
-  const asIfUtc = Date.UTC(year, month - 1, date, HOURS_BEFORE_MIDNIGHT, LAST_MINUTE, LAST_MINUTE);
-  const guess = asIfUtc - (wallClockAsUtc(asIfUtc, region) - asIfUtc);
-  return asIfUtc - (wallClockAsUtc(guess, region) - guess);
+  return momentOnDay(
+    day,
+    { hour: HOURS_BEFORE_MIDNIGHT, minute: LAST_MINUTE, second: LAST_MINUTE },
+    region,
+  );
 }
 
 /** A moment (milliseconds since 1970) in the words of the API, cut to a whole second. */

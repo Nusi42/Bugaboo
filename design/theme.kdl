@@ -194,6 +194,7 @@ tokens {
     size "size-palette" "560px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
+    size "size-dot" "8px"
     // The least width of a swatch of a color with its name (the longest, "Sky blue") and the tick of the chosen one.
     size "size-swatch" "calc(96px * $text-scale)"
     size "size-list" "300px"
@@ -5057,6 +5058,77 @@ part "sidebar.who" {
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
+}
+
+// ───────────── The timer (TIME-01, UX §4.9) ─────────────
+// The part that shows the running timer and what it asks: one look in the sidebar, at the top of the start
+// page of a phone and in the bar of a phone. It stands as high as a control and is tinted like a chosen item.
+part "time-part" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    box-sizing border-box
+    width "100%"
+}
+
+part "time-part[variant=bar]" {
+    padding "$space-2 $space-3"
+    border-top "$border-width solid $divider"
+    background "$bg-surface"
+}
+
+// The timer is one button: the issue it runs on and how long, which opens the list *Stop · Switch issue ·
+// Change start time · Throw away*. A timer that runs longer than a work day is tinted as a warning.
+part "timer-chip" {
+    use "touch-row"
+    box-sizing border-box
+    width "100%"
+    padding "0 $space-3"
+    border 0
+    border-radius "$r-ctl"
+    font-family "$font-ui"
+    background "$accent-soft"
+    color "$accent-fg"
+    font-size "$fs-md"
+    text-align start
+    forced {
+        border "$border-width solid"
+    }
+}
+
+part "timer-chip[hovered]" {
+    background "$bg-selected"
+}
+
+part "timer-chip[focus-visible]" {
+    use "ring"
+}
+
+part "timer-chip[variant=long]" {
+    background "$warning-soft"
+    color "$warning"
+}
+
+part "timer-chip[variant=narrow]" {
+    justify-content center
+    padding 0
+}
+
+part "timer-chip.live" {
+    flex none
+    width "$size-dot"
+    height "$size-dot"
+    border-radius "$r-pill"
+    background currentColor
+}
+
+part "timer-chip.issue" {
+    use "issue-id"
+}
+
+part "timer-chip.time" {
+    margin-inline-start auto
+    use "length"
 }
 
 part "nav-item" {

@@ -67,6 +67,20 @@ async function joinProjects(): Promise<void> {
   }
 }
 
+let timeJoined = false;
+
+/** The timer and the work day join the shell once somebody is signed in, like the projects do. */
+async function joinTime(): Promise<void> {
+  if (timeJoined) {
+    return;
+  }
+  const time = await import("../features/time/index.ts");
+  if (!timeJoined) {
+    timeJoined = true;
+    time.registerTime();
+  }
+}
+
 /** Whether the issues have joined the shell (the new-issue dialog and its key). */
 let issuesJoined = false;
 
@@ -121,6 +135,7 @@ export const appRoute = createRoute({
     await loadMySettings();
     await joinProjects();
     await joinIssues();
+    await joinTime();
     return { person };
   },
   component: AppLayout,

@@ -572,6 +572,14 @@ export interface MessageArguments {
   "time.length.not-a-length": { decimal: string | number };
   "time.length.too-long": { hours: string | number };
   "time.length.zero": { minutes: number };
+  "time.stop.nothing": { issue: string | number };
+  "time.stop.title": { issue: string | number };
+  "time.stop.worked": { length: string | number; title: string | number };
+  "time.switch.help": { issue: string | number };
+  "time.throw-away.title": { issue: string | number };
+  "time.timer.running": { issue: string | number };
+  "time.timer.saved": { issue: string | number; length: string | number };
+  "time.timer.too-short": { issue: string | number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };

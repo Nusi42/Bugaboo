@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
-import { fieldOf, messageOf } from "../../shared/errors.ts";
+import { codeOf, fieldOf, messageOf } from "../../shared/errors.ts";
 import { refreshHistory, refreshIssues } from "../../shared/query-keys.ts";
 import { entryDetails, type EntryValues } from "./entry-values.ts";
 import type { EntryDefaults } from "./use-entry-defaults.ts";
@@ -12,6 +12,13 @@ export interface EntryProblem {
   readonly text: string;
   /** The ID of the own field the refusal is about; none when it is about the entry. */
   readonly field: string | undefined;
+  /** The code of the refusal (`timer.too-long`), for a screen that offers a way out of one. */
+  readonly code: string | undefined;
+}
+
+/** What an error from the server comes to for a form of a time entry. */
+export function problemOf(error: unknown): EntryProblem {
+  return { text: messageOf(error), field: fieldOf(error), code: codeOf(error) };
 }
 
 export interface AddTimeInput {
@@ -46,7 +53,7 @@ export function useAddTime(onBooked: () => void) {
       refreshHistory();
       onBooked();
     } catch (error) {
-      setProblem({ text: messageOf(error), field: fieldOf(error) });
+      setProblem(problemOf(error));
     } finally {
       setPending(false);
     }

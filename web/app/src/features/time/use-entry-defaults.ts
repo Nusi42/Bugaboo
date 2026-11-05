@@ -13,9 +13,10 @@ export type EntryDefaults = Schema<"EntryDefaultsItem">;
  * It answers only a person who may book time on the issue, so no data also means no time can be
  * booked there: the buttons that book time wait for it.
  */
-export function useEntryDefaults(issue: string) {
+export function useEntryDefaults(issue: string, enabled = true) {
   return useQuery({
     queryKey: timeKeys.defaults(issue),
+    enabled,
     queryFn: async () =>
       dataOf(
         await api.client.GET("/api/v1/issues/{issue}/time-entry-defaults", {

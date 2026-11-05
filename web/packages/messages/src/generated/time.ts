@@ -12,6 +12,33 @@ export const messages = {
   "time.entry.billable": "Billable",
   "time.entry.from-issue":
     "These start with the values of the issue and its project. Change them if this time was different.",
+  "time.timer.region": "Timer",
+  "time.timer.running": "Timer running on {issue}",
+  "time.timer.running-hidden": "Timer running",
+  "time.timer.menu": "Timer",
+  "time.timer.stop": "Stop",
+  "time.timer.switch": "Switch issue",
+  "time.timer.change-start": "Change start time",
+  "time.timer.throw-away": "Throw away",
+  "time.timer.runs-long": "This timer has run longer than a work day.",
+  "time.timer.too-short": "Less than a minute on {issue}, so no time was saved.",
+  "time.timer.saved": "Saved {length} on {issue}.",
+  "time.timer.start": "Start timer",
+  "time.timer.stop-timer": "Stop timer",
+  "time.stop.title": "Stop timer on {issue}",
+  "time.stop.worked": "You worked {length} on {title}.",
+  "time.stop.nothing": "You worked less than a minute on {issue}, so nothing will be saved.",
+  "time.stop.save": "Save time",
+  "time.switch.title": "Switch issue",
+  "time.switch.help":
+    "The time so far on {issue} is saved, and the timer goes on with the issue you pick.",
+  "time.start-time.title": "Change start time",
+  "time.start-time.day": "Day",
+  "time.start-time.time": "Time of day",
+  "time.start-time.not-a-time": "Type a time of day like 8:30 or 16:45.",
+  "time.start-time.save": "Change start time",
+  "time.throw-away.title": "Throw away the timer on {issue}?",
+  "time.throw-away.text": "The time so far will not be saved.",
 } as const;
 
 register(messages);
