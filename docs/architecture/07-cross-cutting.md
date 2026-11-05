@@ -485,5 +485,5 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"
 | Third-party notices | `cargo about` + npm license data, rendered by xtask | every release; shown in *About › Licenses* |
 | Third-party register check | xtask compares lockfiles with `docs/third-party/` | every CI run |
 | License policy | `cargo deny` (`deny.toml`) and the same list for npm | every CI run |
-| Vulnerability scan + VEX | `cargo audit`, OSV for npm; VEX statements in `security/vex/` | every CI run and daily |
+| Vulnerability scan + VEX | `cargo deny check advisories` and `npm audit` (SEC-ADVISORIES); accepted ones are the `ignore` list in `deny.toml` and `tools/checks/npm-advisories.toml`, each with a row in the register's *Accepted risks*; VEX statements in `security/vex/` | every CI run and daily |
 | Technical documentation file | xtask assembles architecture docs, ADRs, SBOM, test reports, support period | every release |

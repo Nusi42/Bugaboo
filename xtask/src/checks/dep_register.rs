@@ -7,6 +7,7 @@ use std::path::Path;
 
 use anyhow::Context as _;
 
+use super::dep_licenses::is_npm_lockfile;
 use super::{Check, Context, Finding};
 use crate::metadata::{self, Package};
 
@@ -148,8 +149,7 @@ fn npm_dependencies(root: &Path, files: &[String]) -> anyhow::Result<BTreeSet<St
 fn npm_lock_versions(root: &Path, files: &[String]) -> anyhow::Result<Versions> {
     let mut versions = Versions::new();
     for file in files {
-        let is_lock = file == "package-lock.json" || file.ends_with("/package-lock.json");
-        if !is_lock || file.split('/').any(|part| part == "node_modules") {
+        if !is_npm_lockfile(file) {
             continue;
         }
         let text = fs::read_to_string(root.join(file))

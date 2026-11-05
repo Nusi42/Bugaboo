@@ -162,6 +162,8 @@ pub(crate) struct Output {
     pub(crate) success: bool,
     /// Standard output and standard error together, trimmed.
     pub(crate) text: String,
+    /// Standard output alone, trimmed, for tools that print a report there and warnings elsewhere.
+    pub(crate) stdout: String,
 }
 
 /// The variable that names the build folder of cargo.
@@ -210,12 +212,43 @@ pub(crate) fn run_with_env(
         .current_dir(cwd)
         .output()
         .with_context(|| format!("could not start {}", program.display()))?;
-    let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
+    let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
+    let mut text = stdout.clone();
     text.push_str(&String::from_utf8_lossy(&out.stderr));
     Ok(Output {
         success: out.status.success(),
         text: text.trim().to_owned(),
+        stdout: stdout.trim().to_owned(),
     })
+}
+
+/// The config of cargo deny, relative to the repository root: the one source of the license allow
+/// list (DEP-LICENSES) and of the accepted advisories (SEC-ADVISORIES).
+pub(crate) const DENY_CONFIG: &str = "deny.toml";
+
+/// Runs `cargo deny` with [`DENY_CONFIG`] over the whole workspace, so the way it is started
+/// exists once. `options` go before `check`, `check` after it. A missing tool is a finding.
+pub(crate) fn cargo_deny(
+    root: &Path,
+    options: &[&str],
+    check: &[&str],
+) -> anyhow::Result<Result<Output, Finding>> {
+    // The master marks Cargo with a program that refuses to compile; reading the dependencies
+    // (`cargo metadata` inside cargo-deny) compiles nothing, so the wrapper is switched off here.
+    let program = match find("cargo-deny") {
+        Ok(program) => program,
+        Err(missing) => return Ok(Err(missing)),
+    };
+    let mut args = vec!["--workspace", "--config", DENY_CONFIG];
+    args.extend_from_slice(options);
+    args.push("check");
+    args.extend_from_slice(check);
+    Ok(Ok(run_with_env(
+        &program,
+        &args,
+        root,
+        &[("RUSTC_WRAPPER", "")],
+    )?))
 }
 
 /// Runs an installed tool in `cwd`; a missing tool is a finding, never a silent skip.

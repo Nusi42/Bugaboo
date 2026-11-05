@@ -334,8 +334,7 @@ fn install_npm(root: &Path) -> anyhow::Result<()> {
         return Ok(());
     }
     output::info("install  npm packages (npm ci)");
-    let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
-    let status = tools::command(npm)
+    let status = tools::command(crate::steps::npm())
         .args(["ci", "--ignore-scripts"])
         .current_dir(root)
         .status()
@@ -370,8 +369,7 @@ fn install_browsers(root: &Path) -> anyhow::Result<()> {
         "install  browsers for the end-to-end tests ({})",
         E2E_BROWSERS.join(", ")
     ));
-    let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
-    let status = tools::command(npm)
+    let status = tools::command(crate::steps::npm())
         .args(browser_install_arguments())
         .current_dir(root)
         .status()

@@ -11,9 +11,7 @@ use anyhow::Context as _;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::tools;
-
-const DENY_CONFIG: &str = "deny.toml";
+use crate::tools::{self, DENY_CONFIG};
 
 pub(crate) struct DepLicenses;
 
@@ -25,46 +23,45 @@ impl Check for DepLicenses {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let root = context.repo.root();
         let mut findings = rust_licenses(root)?;
-        let lockfiles: Vec<String> = context
-            .repo
-            .all_files()?
-            .into_iter()
-            .filter(|file| {
-                (file == "package-lock.json" || file.ends_with("/package-lock.json"))
-                    && !file.split('/').any(|part| part == "node_modules")
-            })
-            .collect();
+        let lockfiles = npm_lockfiles(context)?;
         findings.extend(npm_licenses(root, &lockfiles)?);
         Ok(findings)
     }
+}
+
+/// The `package-lock.json` files of the repository, those inside `node_modules` left out.
+pub(super) fn npm_lockfiles(context: &Context<'_>) -> anyhow::Result<Vec<String>> {
+    Ok(context
+        .repo
+        .all_files()?
+        .into_iter()
+        .filter(|file| is_npm_lockfile(file))
+        .collect())
+}
+
+/// Whether a path of the repository is a `package-lock.json` of ours, not one inside
+/// `node_modules`.
+pub(super) fn is_npm_lockfile(file: &str) -> bool {
+    (file == "package-lock.json" || file.ends_with("/package-lock.json"))
+        && !file.split('/').any(|part| part == "node_modules")
 }
 
 /// `cargo deny check licenses bans sources`, and no warnings either.
 fn rust_licenses(root: &Path) -> anyhow::Result<Vec<Finding>> {
     // `license-not-encountered` is allowed: the allow list is the architecture's policy
     // (architecture §1), not a list of what happens to be used today.
-    // The master marks Cargo with a program that refuses to compile; reading the dependencies
-    // (`cargo metadata` inside cargo-deny) compiles nothing, so the wrapper is switched off here.
-    let output = match tools::find("cargo-deny") {
-        Ok(program) => Ok(tools::run_with_env(
-            &program,
-            &[
-                "--workspace",
-                "--config",
-                DENY_CONFIG,
-                "check",
-                "-A",
-                "license-not-encountered",
-                "licenses",
-                "bans",
-                "sources",
-            ],
-            root,
-            &[("RUSTC_WRAPPER", "")],
-        )?),
-        Err(missing) => Err(missing),
-    };
-    let output = output.map(|mut output| {
+    let output = tools::cargo_deny(
+        root,
+        &[],
+        &[
+            "-A",
+            "license-not-encountered",
+            "licenses",
+            "bans",
+            "sources",
+        ],
+    )?
+    .map(|mut output| {
         // cargo-deny exits 0 on warnings; this project treats warnings as errors.
         output.success &= !output.text.contains("warning[");
         output

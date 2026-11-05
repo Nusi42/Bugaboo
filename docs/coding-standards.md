@@ -175,6 +175,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 
 - **Every new direct dependency** needs a register entry in `docs/third-party/` (purpose, license, maintainer health, alternatives considered) in the same change. Prefer the standard library and existing dependencies.
 - **Licenses:** only licenses on the allow list may end up in the shipped binary. The list lives in `deny.toml` and is mirrored for npm by the same check.
+- **No locked dependency with a known vulnerability.** A fix is applied by updating the package; one that cannot be fixed and does not affect Bugaboo may be accepted, with a reason in `deny.toml` (Rust) or `tools/checks/npm-advisories.toml` (npm) and a row in the register's *Accepted risks*. Enforced by: SEC-ADVISORIES.
 - **Architecture docs change with the code:** new module, new external interface, new dependency or a changed boundary → update the architecture doc or add a decision record in the same change.
 - **Personal data:** every new stored field is marked as personal data or not, in the data model. Unmarked fields fail CI.
 

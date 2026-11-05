@@ -58,8 +58,9 @@ const ANY_FILE_MARKERS: [&str; 1] = ["gitleaks:allow"];
 /// Markers in Markdown files, only counted inside an HTML comment.
 const MARKDOWN_MARKERS: [&str; 2] = ["rumdl-disable", "markdownlint-disable"];
 
-/// Accepted security advisories in `deny.toml` (the "not affected" statements).
-const ADVISORY_MARKER: &str = "RUSTSEC-";
+/// Accepted security advisories in TOML files (the "not affected" statements): `deny.toml` for
+/// Rust (`RustSec` IDs) and `tools/checks/npm-advisories.toml` for npm (GitHub IDs).
+const ADVISORY_MARKERS: [&str; 2] = ["RUSTSEC-", "GHSA-"];
 // end marker definitions
 
 const HEADER: &str = "# Suppressions counted by META-SUPPRESS. Rewritten by `cargo xtask suppressions`.\n# The total may only grow in a change that also updates this file (and the lead approves it).\n";
@@ -209,10 +210,12 @@ fn scan_source(file: &str, source: &str, scanned: bool) -> (usize, Vec<Finding>)
                 );
             }
             if is_toml {
-                reasons.extend(
-                    line.match_indices(ADVISORY_MARKER)
-                        .map(|(at, _)| line[at..].to_owned()),
-                );
+                for marker in ADVISORY_MARKERS {
+                    reasons.extend(
+                        line.match_indices(marker)
+                            .map(|(at, _)| line[at..].to_owned()),
+                    );
+                }
             }
         }
         for marker in ANY_FILE_MARKERS {
@@ -316,7 +319,12 @@ mod tests {
         assert_eq!(counted("a.md", &md), (1, 0));
         let prose = format!("Prose about {} stays free.\n", MARKDOWN_MARKERS[0]);
         assert_eq!(counted("a.md", &prose), (0, 0));
-        let deny = format!("ignore = [\"{ADVISORY_MARKER}2024-1\", # BUG-12\n");
+        let deny = format!("ignore = [\"{}2024-1\", # BUG-12\n", ADVISORY_MARKERS[0]);
+        let npm = format!(
+            "accepted = [{{ id = \"{}a-b-c\", reason = \"§ x\" }}]\n",
+            ADVISORY_MARKERS[1]
+        );
+        assert_eq!(counted("tools/checks/npm-advisories.toml", &npm), (1, 0));
         assert_eq!(counted("deny.toml", &deny), (1, 0));
     }
 
@@ -341,7 +349,7 @@ mod tests {
         assert_eq!(counted("a.yml", &yml), (1, 1));
         let md = format!("<!-- {} MD013 -->\n", MARKDOWN_MARKERS[1]);
         assert_eq!(counted("a.md", &md), (1, 1));
-        let deny = format!("ignore = [\"{ADVISORY_MARKER}2024-1\"]\n");
+        let deny = format!("ignore = [\"{}2024-1\"]\n", ADVISORY_MARKERS[0]);
         assert_eq!(counted("deny.toml", &deny), (1, 1));
     }
 

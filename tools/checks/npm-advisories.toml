@@ -1,0 +1,6 @@
+# Accepted npm advisories (SEC-ADVISORIES, COMP-03): the packages that `npm audit` names, which
+# Bugaboo accepts because no fix exists and it is not affected. One line each, the way `ignore` is
+# written in deny.toml: an `id` (the GitHub advisory ID) and a `reason` that names the register
+# (docs/third-party/README.md § Accepted risks). META-SUPPRESS counts every line. None are
+# accepted now.
+accepted = []

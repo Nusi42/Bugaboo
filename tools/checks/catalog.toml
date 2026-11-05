@@ -665,11 +665,11 @@ status = "active"
 [[check]]
 id = "SEC-ADVISORIES"
 title = "No known vulnerabilities without a VEX statement"
-rule = "COMP-03"
-tool = "cargo-deny advisories + OSV for npm"
+rule = "COMP-03, coding-standards §5"
+tool = "xtask (cargo deny check advisories with deny.toml, whose ignore list holds the accepted advisories, each with a reason; npm audit for every package-lock.json, the tools for developers included, with the accepted advisories of tools/checks/npm-advisories.toml; both need the network, and a run that cannot reach it is a finding)"
 when = ["ci", "nightly"]
-files = ["Cargo.lock", "**/package-lock.json"]
-status = "planned"
+files = ["Cargo.lock", "**/package-lock.json", "deny.toml", "tools/checks/npm-advisories.toml"]
+status = "active"
 
 # ───────────── Data and privacy ─────────────
 [[check]]
