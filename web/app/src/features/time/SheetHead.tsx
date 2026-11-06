@@ -4,14 +4,21 @@ import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { dayOfMonth, weekdayName } from "../../shared/clock.ts";
 import { scope } from "./html-words.ts";
 import { NAME_COLUMNS, type DaysProps } from "./sheet-props.ts";
+import { breaksOpener } from "./breaks-opener.ts";
 
 /** The heading of a day: its weekday and number, *Today* under today and *Changed* where it was. */
 export function DayHeading({
   date,
-  today,
-  changed,
-  onHistory,
-}: Pick<DaysProps, "today" | "onHistory"> & { readonly date: string; readonly changed: boolean }) {
+  days,
+}: {
+  readonly date: string;
+  readonly days: Pick<
+    DaysProps,
+    "today" | "changed" | "onHistory" | "onBreaks" | "editable" | "dayOf"
+  >;
+}) {
+  const { today, changed, onHistory } = days;
+  const onBreaks = breaksOpener(days, date);
   return (
     <span {...partOf(part.sheetDayHeading)}>
       <span>
@@ -22,7 +29,7 @@ export function DayHeading({
       </span>
       {date === today ? <span {...partOf(part.sheetToday)}>{t("time.sheet.today")}</span> : null}
       <span {...partOf(part.sheetDayActions)}>
-        {changed ? (
+        {changed.includes(date) ? (
           <span {...partOf(part.sheetDayAction)}>
             <Button
               look={buttonLook.quiet}
@@ -35,14 +42,30 @@ export function DayHeading({
             </Button>
           </span>
         ) : null}
+        {onBreaks === undefined ? null : (
+          <span {...partOf(part.sheetDayAction)}>
+            <Button
+              look={buttonLook.quiet}
+              aria-label={t("time.breaks.open-of", { day: weekdayName(date, "long") })}
+              onPress={onBreaks}
+            >
+              {t("time.breaks.open")}
+            </Button>
+          </span>
+        )}
       </span>
     </span>
   );
 }
 
 /** The head of the grid: the names of the rows, the days of the week and the total. */
-export function SheetHead(props: Pick<DaysProps, "days" | "today" | "changed" | "onHistory">) {
-  const { days, today, changed, onHistory } = props;
+export function SheetHead(
+  props: Pick<
+    DaysProps,
+    "days" | "today" | "changed" | "onHistory" | "onBreaks" | "editable" | "dayOf"
+  >,
+) {
+  const { days, today } = props;
   return (
     <thead>
       <tr>
@@ -55,12 +78,7 @@ export function SheetHead(props: Pick<DaysProps, "days" | "today" | "changed" | 
             scope={scope.column}
             {...partOf(part.sheetHead, { states: [date === today && "today"] })}
           >
-            <DayHeading
-              date={date}
-              today={today}
-              changed={changed.includes(date)}
-              onHistory={onHistory}
-            />
+            <DayHeading date={date} days={props} />
           </th>
         ))}
         <th scope={scope.column} {...partOf(part.sheetHead)}>

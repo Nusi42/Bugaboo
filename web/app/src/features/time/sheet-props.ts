@@ -27,6 +27,8 @@ export interface DaysProps {
   /** The dates whose day was changed with a reason: they show *Changed*. */
   readonly changed: readonly string[];
   readonly onHistory: (date: string) => void;
+  /** Opens the window of the breaks of a day. */
+  readonly onBreaks: (date: string) => void;
 }
 
 /** The comparison of the week with the time booked on issues (one's own week only). */
@@ -40,6 +42,8 @@ export interface IssuesProps {
   readonly rows: readonly IssueRow[];
   /** Why the issue the person picked could not be added; none while it could. */
   readonly addProblem?: string | undefined;
+  /** Opens the details of the row of an issue (by its ID): its entries, one by one. */
+  readonly onDetails: (issue: string) => void;
   readonly activityName: string;
   readonly costCenterName: string;
   readonly booked: Readonly<Record<string, BookedDay>>;

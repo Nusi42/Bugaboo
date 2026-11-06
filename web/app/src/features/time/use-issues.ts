@@ -58,7 +58,10 @@ function useAddedIssues() {
  * added on the page, and the comparison with the working hours as the
  * server works it out.
  */
-export function useIssues(first: string): {
+export function useIssues(
+  first: string,
+  onDetails: (issue: string) => void,
+): {
   readonly issues: IssuesProps;
   readonly ready: boolean;
 } {
@@ -88,6 +91,7 @@ export function useIssues(first: string): {
       costCenterName: nameOr(costCenter, starters.costCenter, t("time.sheet.cost-center")),
       booked: days,
       week: week === undefined ? undefined : { booked: week.booked, notBooked: week.not_booked },
+      onDetails,
       addProblem: problem,
       onAdd: (key) => {
         void add(key);

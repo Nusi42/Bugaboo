@@ -77,3 +77,10 @@ export function itemArea(page: Page, name: string): Locator {
     ? page.getByRole("region", { name, exact: true })
     : page.getByRole("complementary", { name });
 }
+
+/** The row of an issue starts with its button *Details*, which Tab stops at first: it is passed with Tab. */
+export async function passDetailsButton(page: Page, issue: string): Promise<void> {
+  const details = page.getByRole("button", { name: t("time.sheet.details-of", { issue }) });
+  await expect(details).toBeFocused();
+  await page.keyboard.press("Tab");
+}

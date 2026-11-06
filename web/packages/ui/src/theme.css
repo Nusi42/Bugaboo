@@ -8637,6 +8637,17 @@ textarea,
   min-width: 0;
 }
 
+[data-part="sheet.issue-id"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+[data-part="sheet.issue"][data-variant~="stacked"] [data-part="sheet.issue-id"] {
+  justify-content: space-between;
+  width: 100%;
+}
+
 [data-part="sheet.issue-title"] {
   color: var(--fg-muted);
   font-size: var(--fs-base);

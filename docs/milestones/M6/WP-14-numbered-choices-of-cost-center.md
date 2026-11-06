@@ -39,4 +39,4 @@ The SSOT/DRY/ODR gate of coding-standards §1: one place writes a numbered choic
 
 ## Depends on
 
-WP-10 and WP-11 merged (both show *Cost center*; M6-F95 of WP-10 sends the names of choices with each entry).
+WP-10 and WP-11 merged (both show *Cost center*; WP-10 sends the names of choices with each entry).

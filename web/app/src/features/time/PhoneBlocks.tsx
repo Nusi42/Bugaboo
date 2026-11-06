@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import type { WorkDayField } from "./edits.ts";
 import { IssueName } from "./IssueRows.tsx";
-import { minutesOf } from "./rows.ts";
+import { detailsOpener, minutesOf } from "./rows.ts";
 import {
   breaksRule,
   cellKey,
@@ -100,7 +100,12 @@ export function IssuesBlock(props: {
         const shown = row.readableId ?? t("time.sheet.hidden-issue");
         return (
           <div key={row.issue} {...partOf(part.sheetLine)}>
-            <IssueName shown={shown} title={row.title} stacked />
+            <IssueName
+              shown={shown}
+              title={row.title}
+              stacked
+              onDetails={detailsOpener(row, issues.onDetails)}
+            />
             <TimeCell
               key={cellKey(row.issue, date, editing.revision)}
               label={cellLabel(days.region, shown, date)}

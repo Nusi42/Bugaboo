@@ -135,6 +135,7 @@ export {
 export { Announce } from "./Announce.tsx";
 export { IssueId } from "./IssueId.tsx";
 export { factSeparator } from "./facts.ts";
+export { focusFirstField, withId } from "./first-field.ts";
 export { Facts, Length, type Fact } from "./Length.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export {

@@ -567,6 +567,14 @@ export interface MessageArguments {
   "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "time.add.title": { issue: string | number };
+  "time.breaks.hint": { example: string | number };
+  "time.breaks.open-of": { day: string | number };
+  "time.breaks.title": { day: string | number };
+  "time.details.change-of": { day: string | number };
+  "time.details.change-title": { day: string | number; issue: string | number };
+  "time.details.change-title-narrow": { day: string | number; issue: string | number };
+  "time.details.entry": { day: string | number; length: string | number };
+  "time.details.title": { issue: string | number };
   "time.length.hours": { hours: number };
   "time.length.hours-and-minutes": { hours: string | number; minutes: string | number };
   "time.length.minutes": { minutes: number };
@@ -582,6 +590,7 @@ export interface MessageArguments {
   "time.sheet.cell-label": { day: string | number; row: string | number };
   "time.sheet.day-heading": { day: string | number; weekday: string | number };
   "time.sheet.day-tab": { day: string | number; weekday: string | number };
+  "time.sheet.details-of": { issue: string | number };
   "time.sheet.history-after": { times: string | number };
   "time.sheet.history-before": { times: string | number };
   "time.sheet.history-breaks": { spans: string | number };

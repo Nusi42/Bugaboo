@@ -14823,6 +14823,18 @@ part "sheet.name[variant=value]" {
     min-width 0
 }
 
+// The ID of an issue in a row, with the button that opens the details of the row at its end.
+part "sheet.issue-id" {
+    display flex
+    align-items center
+    gap "$space-3"
+}
+
+part "sheet.issue[variant=stacked] sheet.issue-id" {
+    justify-content space-between
+    width "100%"
+}
+
 part "sheet.issue-title" {
     use "quiet-text"
     display inline-block

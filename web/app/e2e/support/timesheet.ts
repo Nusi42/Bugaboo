@@ -7,7 +7,7 @@ import { addDays } from "../../src/shared/format.ts";
 import { paths } from "../../src/shared/paths.ts";
 import { type ApiSession } from "./api.ts";
 import { type MadeIssue } from "./issues.ts";
-import { layoutOf } from "./layout.ts";
+import { layoutOf, passDetailsButton } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 
 /** The day today as the computer of the test counts it (the browser of a test has the same zone). */
@@ -198,15 +198,11 @@ export const WHOLE_WEEK_MS = 150_000;
 /** The days of a week. */
 const DAYS_IN_WEEK = 7;
 
-/**
- * Gives the reason in the window of a past day. Until the shared window puts the focus on its first
- * field (WP-09 changes windows too), the field is focused here; the reason is typed and sent with
- * the keys.
- */
+/** Gives the reason in the window of a past day: typed and sent with the keys, the field has the focus. */
 async function giveReasonWithKeys(page: Page, reason: string): Promise<void> {
   const asking = page.getByRole("dialog");
   await expect(asking).toBeVisible();
-  await asking.getByRole("textbox").focus();
+  // The window puts the focus on its field when it opens.
   await expect(asking.getByRole("textbox")).toBeFocused();
   await page.keyboard.type(reason);
   await page.keyboard.press("Enter");
@@ -228,6 +224,9 @@ interface FillRow {
  */
 async function fillCell(page: Page, row: FillRow, column: number): Promise<void> {
   const cell = cellOf(page, row.name, column, row.exact);
+  if (!row.exact && column === 0) {
+    await passDetailsButton(page, row.name);
+  }
   await expect(cell).toBeFocused();
   await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.type(row.value);

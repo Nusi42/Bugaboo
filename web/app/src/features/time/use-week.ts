@@ -17,6 +17,8 @@ const ENTRY_FIELDS = fieldList<TimeEntry>([
   "id",
   "issue",
   "readable_id",
+  "note",
+  "billable",
   "issue_title",
   "date",
   "minutes",

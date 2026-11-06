@@ -99,6 +99,7 @@ test("time_10 on a phone changing a past day asks for a reason and keeps its his
   await end.press("Tab");
   const asking = page.getByRole("dialog");
   await expect(asking.getByText(t("time.sheet.reason-label"))).toBeVisible();
+  await expect(asking.getByRole("textbox")).toBeFocused();
   await asking.getByRole("textbox").fill("Forgot to record the day");
   await asking.getByRole("button", { name: t("time.sheet.reason-save"), exact: true }).click();
   await expect(asking).toHaveCount(0);

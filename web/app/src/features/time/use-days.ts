@@ -33,6 +33,9 @@ export interface DaysState {
   /** The date whose history is open. */
   readonly shown: string | undefined;
   readonly setShown: (date: string | undefined) => void;
+  /** The date whose breaks are open in their window. */
+  readonly breaksOf: string | undefined;
+  readonly setBreaksOf: (date: string | undefined) => void;
 }
 
 /** The days of a week as the rows draw them: what the server has, who may type, what changed. */
@@ -53,6 +56,7 @@ export function useDays(input: DaysInput): DaysState {
     entriesOf,
   });
   const [shown, setShown] = useState<string | undefined>();
+  const [breaksOf, setBreaksOf] = useState<string | undefined>();
   const history = useDayHistory(shown, person);
   const mayChange = changing && page?.may_change === true && !page.totals_only;
   const days: DaysProps = {
@@ -68,6 +72,17 @@ export function useDays(input: DaysInput): DaysState {
     // The server says which days were changed with a reason.
     changed: changedDates(page?.days),
     onHistory: setShown,
+    onBreaks: setBreaksOf,
   };
-  return { days, page, error: workDays.error, byDate, history, shown, setShown };
+  return {
+    days,
+    page,
+    error: workDays.error,
+    byDate,
+    history,
+    shown,
+    setShown,
+    breaksOf,
+    setBreaksOf,
+  };
 }

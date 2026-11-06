@@ -38,12 +38,7 @@ function Comparison({ days, issues, date }: IssuesDay) {
 function OneDay({ days, issues, date }: PhoneDay) {
   return (
     <section aria-label={weekdayName(date, "long")} {...partOf(part.sheetDay)}>
-      <DayHeading
-        date={date}
-        today={days.today}
-        changed={days.changed.includes(date)}
-        onHistory={days.onHistory}
-      />
+      <DayHeading date={date} days={days} />
       <h3 {...partOf(part.sheetSection)}>{t("time.sheet.work-day")}</h3>
       <WorkDayBlock props={days} date={date} />
       <DayWarnings named={false} warned={days.warned.filter((each) => each.date === date)} />

@@ -1,10 +1,17 @@
-import { useId, type DOMAttributes, type KeyboardEventHandler, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  type DOMAttributes,
+  type KeyboardEventHandler,
+  type ReactNode,
+} from "react";
 import { Button, Dialog, Heading } from "react-aria-components";
 
 import { ActionMenu, type ActionMenuTriggerProps } from "./ActionMenu.tsx";
 import { Icon } from "./Icon.tsx";
 import { iconName } from "./icons.ts";
 import { partOf } from "./parts.ts";
+import { focusFirstField } from "./first-field.ts";
 import { iconSize, windowState, type WindowState } from "./props.ts";
 import { part } from "./tokens.ts";
 import { windowEdges, windowSteps, type WindowEdge, type WindowStep } from "./window-size.ts";
@@ -154,6 +161,12 @@ function Controls({
 export function WindowFrame(props: WindowFrameProps) {
   const { title, labels, state, footer, resize, children } = props;
   const hint = useId();
+  const bodyId = useId();
+  // The focus goes where the person types first, as a dialog does (WCAG 2.4.3), not to the buttons
+  // of the title bar that stand before the form; a window with no box keeps it on the window.
+  useEffect(() => {
+    focusFirstField(bodyId);
+  }, [bodyId]);
   const draggable = state === windowState.normal;
   return (
     <Dialog {...partOf(part.window)} {...(draggable ? { "aria-describedby": hint } : {})}>
@@ -164,7 +177,9 @@ export function WindowFrame(props: WindowFrameProps) {
           </Heading>
           <Controls {...props} />
         </div>
-        <div {...partOf(part.windowBody)}>{children}</div>
+        <div id={bodyId} {...partOf(part.windowBody)}>
+          {children}
+        </div>
         {footer === undefined ? null : <div {...partOf(part.windowFooter)}>{footer}</div>}
         {draggable ? (
           <>

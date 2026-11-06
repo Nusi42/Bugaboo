@@ -1,4 +1,5 @@
 import { personName } from "../../shared/person.ts";
+import { BreaksWindow } from "./BreaksWindow.tsx";
 import { DayHistory } from "./DayHistory.tsx";
 import { ReasonWindow } from "./ReasonWindow.tsx";
 import { zoneOfDay } from "./sheet-model.ts";
@@ -10,7 +11,7 @@ export interface SheetWindowsProps {
   readonly person: string | undefined;
 }
 
-/** The windows over the week: the reason a change asks for, and the history of a day. */
+/** The windows over the week: the reason a change asks for, the breaks and the history of a day. */
 export function SheetWindows({ sheet, person }: SheetWindowsProps) {
   const { days, page, shown, history, byDate } = sheet;
   return (
@@ -20,6 +21,17 @@ export function SheetWindows({ sheet, person }: SheetWindowsProps) {
         region={days.region}
         other={person === undefined || page === undefined ? undefined : personName(page.person)}
       />
+      {sheet.breaksOf === undefined ? null : (
+        <BreaksWindow
+          date={sheet.breaksOf}
+          day={byDate[sheet.breaksOf]}
+          region={days.region}
+          editing={days.editing}
+          onClose={() => {
+            sheet.setBreaksOf(undefined);
+          }}
+        />
+      )}
       {shown === undefined ? null : (
         <DayHistory
           date={shown}

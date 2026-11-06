@@ -5,7 +5,7 @@ import { useState } from "react";
 import { dayOfMonth, weekdayName } from "../../shared/clock.ts";
 import { IssuePicker } from "../search/index.ts";
 import { scope } from "./html-words.ts";
-import { minutesOf, rowTotal, type IssueRow } from "./rows.ts";
+import { detailsOpener, minutesOf, rowTotal, type IssueRow } from "./rows.ts";
 import { cellKey, cellLabel, gridLength, readBooked } from "./sheet-model.ts";
 import type { DaysProps, IssuesProps } from "./sheet-props.ts";
 import { TimeCell } from "./TimeCell.tsx";
@@ -47,35 +47,61 @@ export function IssueName({
   shown,
   title,
   stacked = false,
+  onDetails,
 }: {
   readonly shown: string;
   readonly title: string;
   /** The title under the ID, as in a column of the grid. */
   readonly stacked?: boolean;
+  /** Opens the details of the row; none for a row of an issue the person cannot see. */
+  readonly onDetails?: (() => void) | undefined;
 }) {
   return (
     <span {...partOf(part.sheetIssue, { variants: [stacked && "stacked"] })}>
-      <IssueId id={shown} />
+      <span {...partOf(part.sheetIssueId)}>
+        <IssueId id={shown} />
+        {onDetails === undefined ? null : (
+          <Button
+            look={buttonLook.quiet}
+            aria-label={t("time.sheet.details-of", { issue: shown })}
+            onPress={onDetails}
+          >
+            {t("time.details.open")}
+          </Button>
+        )}
+      </span>
       <span {...partOf(part.sheetIssueTitle)}>{title}</span>
     </span>
   );
 }
 
-/** One row of *Time on issues*: the issue, its *Activity* and *Cost center*, a cell for each day and the total. */
-function IssueLine(props: Shared & { readonly row: IssueRow; readonly title: string }) {
-  const { wording, region, days, editing, row, title } = props;
-  const shown = row.readableId ?? t("time.sheet.hidden-issue");
+/** The *Activity* and the *Cost center* of a row, as the entries name them. */
+function FieldCells({ row }: { readonly row: IssueRow }) {
   return (
-    <tr>
-      <th scope={scope.row} {...partOf(part.sheetName)}>
-        <IssueName shown={shown} title={title} stacked />
-      </th>
+    <>
       <td title={row.activity} {...partOf(part.sheetName, { variants: ["value"] })}>
         {row.activity}
       </td>
       <td title={row.costCenter} {...partOf(part.sheetName, { variants: ["value"] })}>
         {row.costCenter}
       </td>
+    </>
+  );
+}
+
+/** One row of *Time on issues*: the issue, its *Activity* and *Cost center*, a cell for each day and the total. */
+function IssueLine(
+  props: Shared &
+    Pick<IssuesProps, "onDetails"> & { readonly row: IssueRow; readonly title: string },
+) {
+  const { wording, region, days, editing, row, title, onDetails } = props;
+  const shown = row.readableId ?? t("time.sheet.hidden-issue");
+  return (
+    <tr>
+      <th scope={scope.row} {...partOf(part.sheetName)}>
+        <IssueName shown={shown} title={title} stacked onDetails={detailsOpener(row, onDetails)} />
+      </th>
+      <FieldCells row={row} />
       {days.map((date, at) => {
         const entries = row.entries[date] ?? [];
         const text = gridLength(wording, entries.length === 0 ? undefined : minutesOf(entries));

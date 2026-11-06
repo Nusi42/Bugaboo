@@ -5704,6 +5704,30 @@ pub const TIME_ADD_BUTTON: MessageKey = MessageKey::new("time.add.button");
 /// The message `time.add.save`.
 pub const TIME_ADD_SAVE: MessageKey = MessageKey::new("time.add.save");
 
+/// The message `time.breaks.label`.
+pub const TIME_BREAKS_LABEL: MessageKey = MessageKey::new("time.breaks.label");
+
+/// The message `time.breaks.open`.
+pub const TIME_BREAKS_OPEN: MessageKey = MessageKey::new("time.breaks.open");
+
+/// The message `time.breaks.save`.
+pub const TIME_BREAKS_SAVE: MessageKey = MessageKey::new("time.breaks.save");
+
+/// The message `time.details.back`.
+pub const TIME_DETAILS_BACK: MessageKey = MessageKey::new("time.details.back");
+
+/// The message `time.details.change`.
+pub const TIME_DETAILS_CHANGE: MessageKey = MessageKey::new("time.details.change");
+
+/// The message `time.details.none`.
+pub const TIME_DETAILS_NONE: MessageKey = MessageKey::new("time.details.none");
+
+/// The message `time.details.open`.
+pub const TIME_DETAILS_OPEN: MessageKey = MessageKey::new("time.details.open");
+
+/// The message `time.details.save`.
+pub const TIME_DETAILS_SAVE: MessageKey = MessageKey::new("time.details.save");
+
 /// The message `time.entry.billable`.
 pub const TIME_ENTRY_BILLABLE: MessageKey = MessageKey::new("time.entry.billable");
 
@@ -11584,6 +11608,93 @@ pub fn time_add_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.breaks.hint`.
+#[must_use]
+pub fn time_breaks_hint(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.breaks.hint"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
+/// The message `time.breaks.open-of`.
+#[must_use]
+pub fn time_breaks_open_of(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.breaks.open-of"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.breaks.title`.
+#[must_use]
+pub fn time_breaks_title(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.breaks.title"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.details.change-of`.
+#[must_use]
+pub fn time_details_change_of(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.details.change-of"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.details.change-title`.
+#[must_use]
+pub fn time_details_change_title(
+    day: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.details.change-title"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+        ],
+    )
+}
+
+/// The message `time.details.change-title-narrow`.
+#[must_use]
+pub fn time_details_change_title_narrow(
+    day: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.details.change-title-narrow"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+        ],
+    )
+}
+
+/// The message `time.details.entry`.
+#[must_use]
+pub fn time_details_entry(day: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.details.entry"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("length", Value::Text(length.to_string())),
+        ],
+    )
+}
+
+/// The message `time.details.title`.
+#[must_use]
+pub fn time_details_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.details.title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `time.length.hours`.
 #[must_use]
 pub fn time_length_hours(hours: i64) -> Message {
@@ -11740,6 +11851,15 @@ pub fn time_sheet_day_tab(day: impl std::fmt::Display, weekday: impl std::fmt::D
             ("day", Value::Text(day.to_string())),
             ("weekday", Value::Text(weekday.to_string())),
         ],
+    )
+}
+
+/// The message `time.sheet.details-of`.
+#[must_use]
+pub fn time_sheet_details_of(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.details-of"),
+        vec![("issue", Value::Text(issue.to_string()))],
     )
 }
 
@@ -17561,6 +17681,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.add.button", "Add time"),
     ("time.add.save", "Add time"),
     ("time.add.title", "Add time on {issue}"),
+    (
+        "time.breaks.hint",
+        "One break on each line, from one time to another, like {example}.",
+    ),
+    ("time.breaks.label", "Breaks"),
+    ("time.breaks.open", "Breaks"),
+    ("time.breaks.open-of", "Breaks of {day}"),
+    ("time.breaks.save", "Save breaks"),
+    ("time.breaks.title", "Breaks on {day}"),
+    ("time.details.back", "Back to the list"),
+    ("time.details.change", "Change"),
+    ("time.details.change-of", "Change the time of {day}"),
+    ("time.details.change-title", "Change time on {issue}, {day}"),
+    ("time.details.change-title-narrow", "Change {issue}, {day}"),
+    ("time.details.entry", "{day} · {length}"),
+    ("time.details.none", "No time on this issue in this week."),
+    ("time.details.open", "Details"),
+    ("time.details.save", "Save change"),
+    ("time.details.title", "Time on {issue} this week"),
     ("time.entry.billable", "Billable"),
     ("time.entry.date", "Date"),
     (
@@ -17643,6 +17782,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.day-heading", "{weekday} {day}"),
     ("time.sheet.day-tab", "{weekday}\n{day}"),
     ("time.sheet.days", "Days of the week"),
+    ("time.sheet.details-of", "Details of {issue}"),
     (
         "time.sheet.empty",
         "Nothing is recorded for this week yet. Type a start into the Work day rows, or book time on an issue.",
@@ -17711,7 +17851,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.reason-title", "Change {day}"),
     (
         "time.sheet.several-entries",
-        "This cell holds more than one time entry. Change them one by one.",
+        "This cell holds more than one time entry. Change them one by one in the details of the row.",
     ),
     ("time.sheet.start", "Start"),
     ("time.sheet.start-first", "Type the start of the day first."),

@@ -77,3 +77,18 @@ export function issueRows(entries: readonly TimeEntry[], starters: Starters): re
 export function rowTotal(row: IssueRow, days: readonly string[]): number {
   return days.reduce((sum, day) => sum + minutesOf(row.entries[day] ?? []), 0);
 }
+
+/**
+ * The way into the details of a row: only a row of an issue the person can see has one (the ID of
+ * a hidden issue is not told), the same for the grid and for a phone.
+ */
+export function detailsOpener(
+  row: Pick<IssueRow, "issue" | "readableId">,
+  onDetails: (issue: string) => void,
+): (() => void) | undefined {
+  return row.readableId === undefined
+    ? undefined
+    : () => {
+        onDetails(row.issue);
+      };
+}
