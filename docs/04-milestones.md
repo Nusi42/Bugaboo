@@ -118,8 +118,8 @@ A session can end at any time, and a new one starts in the master and continues 
 | **M4** | Workflows, files and notifications | MVP | 12 |
 | **M5** | Search and lists | MVP | 12 |
 | **M6** | Time and working hours | MVP | 10 |
-| **M7** | Timeline and theme editor | MVP | 14 |
-| **M8** | Assistant, AI apps and agents | MVP | 24 |
+| **M7** | Assistant, AI apps and agents | MVP | 24 |
+| **M8** | Timeline and theme editor | MVP | 14 |
 | **M9** | Privacy, operations and the first release | MVP | 14 |
 | **M10** | Board, calendar, relation map and dashboards | 1.0 | 10 |
 | **M11** | Documents | 1.0 | 11 |
@@ -389,39 +389,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Tests and checks added:** Working-time rule tests (property tests on day boundaries and time zones, TEST-WORKING-TIME); one writer of dates and times on screens (TXT-DATES); TEST-CONCURRENT timer scenarios.
 
-## M7 — Timeline and theme editor
-
-**Phase:** MVP · **Goal:** Plan on a timeline and make Bugaboo look like your organization.
-
-**Features:**
-
-- `PLAN-01` Timeline
-- `PLAN-02` Dependencies
-- `PLAN-03` Drag to move or resize bars, with undo and a permission …
-- `PLAN-04` Group rows by project, goal, assigned person, release or …
-- `PLAN-08` Restricted issues are left out entirely; there are no …
-- `PLAN-10` The person on the bar
-- `PLAN-11` Away times
-- `PLAN-12` Plan by effort
-- `PLAN-13` Plan warnings
-- `PLAN-14` Time factor
-- `PLAN-15` Work hours and share in the project
-- `THM-03` theme editor
-- `THM-04` Custom themes at instance level or personal level
-- `UX-02` Touch-friendly targets and gestures
-
-**Work packages (outline):**
-
-- Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
-- People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings
-- Theme editor with readability ratings; personal and organization themes; import and export
-- Touch gestures and phone polish across all screens
-
-**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.
-
-**Tests and checks added:** STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.
-
-## M8 — Assistant, AI apps and agents
+## M7 — Assistant, AI apps and agents
 
 **Phase:** MVP · **Goal:** AI that helps as the person, never more; outside AI apps through MCP; and agents that work on their own on the issues a person hands over (ADR-0029).
 
@@ -467,6 +435,38 @@ A session can end at any time, and a new one starts in the master and continues 
 **Demo (exit):** Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.
 
 **Tests and checks added:** ARCH-AI-TOOLS active (every tool declares read or change and has a preview test); prompt-injection test set, also for agents and standing rules; assistant, MCP and agent entry points in SEC-MATRIX (an agent never does more than its person).
+
+## M8 — Timeline and theme editor
+
+**Phase:** MVP · **Goal:** Plan on a timeline and make Bugaboo look like your organization.
+
+**Features:**
+
+- `PLAN-01` Timeline
+- `PLAN-02` Dependencies
+- `PLAN-03` Drag to move or resize bars, with undo and a permission …
+- `PLAN-04` Group rows by project, goal, assigned person, release or …
+- `PLAN-08` Restricted issues are left out entirely; there are no …
+- `PLAN-10` The person on the bar
+- `PLAN-11` Away times
+- `PLAN-12` Plan by effort
+- `PLAN-13` Plan warnings
+- `PLAN-14` Time factor
+- `PLAN-15` Work hours and share in the project
+- `THM-03` theme editor
+- `THM-04` Custom themes at instance level or personal level
+- `UX-02` Touch-friendly targets and gestures
+
+**Work packages (outline):**
+
+- Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
+- People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings
+- Theme editor with readability ratings; personal and organization themes; import and export
+- Touch gestures and phone polish across all screens
+
+**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.
+
+**Tests and checks added:** STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.
 
 ## M9 — Privacy, operations and the first release
 
@@ -685,6 +685,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 ## Decisions
 
+- **Order after M6 (2026-11-06):** the maintainer moved the assistant, AI apps and agents ahead of the timeline: they are M7 now, and the timeline and theme editor M8. M7 starts when M6 has passed its exit review.
 - **Git host:** the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0037): `cargo xtask ci` on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.
 - **The master and work folders (ADR-0024, ADR-0039):** the master (marked with `BUGABOO_CHECKOUT_ROLE=master`) is never built in. All work happens in clones under `<work root>` (`bugaboo.win1` for the lead, `bugaboo.win2` and up for builders, each on its own branch `WINn`), so build output and `node_modules` stay out of the master, which may sit in a synced folder. `main` only moves by fast-forward after `cargo xtask ci` passed in `win1`. Only the master pushes to the public remote: `git -C <master> push github main`.
 

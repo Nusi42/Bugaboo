@@ -113,7 +113,7 @@ Points found while building M3 that were accepted for later. Each names where it
 | M3-F160 | The new-issue form had no window and the window no browser test | No screen used the window in WP-16 | Done in WP-17 (`windowForms.newIssue`, `window.spec.ts`) |
 | M3-F161 | The list, the issue page and the sub-issue rows did not use the parts of WP-16 | WP-16 built the parts, WP-17 the screens | Done in WP-17 |
 | M3-F162 | Quick search keeps its width of 560 (`size-palette`); it is a dialog, not a window | A palette is not a form people resize | Done in WP-17 (checked in the screenshots) |
-| M3-F163 | The timeline bar part is only a base (tint and edge); its place and dragging are not built | The timeline comes with M7 | M7 |
+| M3-F163 | The timeline bar part is only a base (tint and edge); its place and dragging are not built | The timeline comes with M8 | M8 |
 | M3-F164 | The mockup showed the old look | Done in WP-17 (`parts.css`) | Done in WP-17 |
 | M3-F165 | `fg-subtle` on tinted rows | Done in the WP-16 fix round (Midnight `fg-subtle` reaches 4.5 on every tint) | Done in WP-16 |
 | M3-F166 | The run-time allowance of THEME-ONLY and the list of types in `.oxlintrc.json` | Done in the WP-16 fix round (`RunTimeVariable` from tokens marked `run-time`; `HTMLElement` out of the list) | Done in WP-16 |

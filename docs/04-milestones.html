@@ -121,8 +121,8 @@
 <tr><td><strong>M4</strong></td><td>Workflows, files and notifications</td><td>MVP</td><td>12</td></tr>
 <tr><td><strong>M5</strong></td><td>Search and lists</td><td>MVP</td><td>12</td></tr>
 <tr><td><strong>M6</strong></td><td>Time and working hours</td><td>MVP</td><td>10</td></tr>
-<tr><td><strong>M7</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>14</td></tr>
-<tr><td><strong>M8</strong></td><td>Assistant, AI apps and agents</td><td>MVP</td><td>24</td></tr>
+<tr><td><strong>M7</strong></td><td>Assistant, AI apps and agents</td><td>MVP</td><td>24</td></tr>
+<tr><td><strong>M8</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>14</td></tr>
 <tr><td><strong>M9</strong></td><td>Privacy, operations and the first release</td><td>MVP</td><td>14</td></tr>
 <tr><td><strong>M10</strong></td><td>Board, calendar, relation map and dashboards</td><td>1.0</td><td>10</td></tr>
 <tr><td><strong>M11</strong></td><td>Documents</td><td>1.0</td><td>11</td></tr>
@@ -366,35 +366,7 @@
 <li>the four built-in themes look exactly as before the split into theme files.</li>
 </ul>
 <p><strong>Tests and checks added:</strong> Working-time rule tests (property tests on day boundaries and time zones, TEST-WORKING-TIME); one writer of dates and times on screens (TXT-DATES); TEST-CONCURRENT timer scenarios.</p>
-<h2 id="s10"><button class="sec" data-sec>§10</button>M7 — Timeline and theme editor</h2>
-<p><strong>Phase:</strong> MVP · <strong>Goal:</strong> Plan on a timeline and make Bugaboo look like your organization.</p>
-<p><strong>Features:</strong></p>
-<ul>
-<li><code>PLAN-01</code> Timeline</li>
-<li><code>PLAN-02</code> Dependencies</li>
-<li><code>PLAN-03</code> Drag to move or resize bars, with undo and a permission …</li>
-<li><code>PLAN-04</code> Group rows by project, goal, assigned person, release or …</li>
-<li><code>PLAN-08</code> Restricted issues are left out entirely; there are no …</li>
-<li><code>PLAN-10</code> The person on the bar</li>
-<li><code>PLAN-11</code> Away times</li>
-<li><code>PLAN-12</code> Plan by effort</li>
-<li><code>PLAN-13</code> Plan warnings</li>
-<li><code>PLAN-14</code> Time factor</li>
-<li><code>PLAN-15</code> Work hours and share in the project</li>
-<li><code>THM-03</code> theme editor</li>
-<li><code>THM-04</code> Custom themes at instance level or personal level</li>
-<li><code>UX-02</code> Touch-friendly targets and gestures</li>
-</ul>
-<p><strong>Work packages (outline):</strong></p>
-<ul>
-<li>Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list</li>
-<li>People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings</li>
-<li>Theme editor with readability ratings; personal and organization themes; import and export</li>
-<li>Touch gestures and phone polish across all screens</li>
-</ul>
-<p><strong>Demo (exit):</strong> Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.</p>
-<p><strong>Tests and checks added:</strong> STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.</p>
-<h2 id="s11"><button class="sec" data-sec>§11</button>M8 — Assistant, AI apps and agents</h2>
+<h2 id="s10"><button class="sec" data-sec>§10</button>M7 — Assistant, AI apps and agents</h2>
 <p><strong>Phase:</strong> MVP · <strong>Goal:</strong> AI that helps as the person, never more; outside AI apps through MCP; and agents that work on their own on the issues a person hands over (ADR-0029).</p>
 <p><strong>Features:</strong></p>
 <ul>
@@ -437,6 +409,34 @@
 </ul>
 <p><strong>Demo (exit):</strong> Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.</p>
 <p><strong>Tests and checks added:</strong> ARCH-AI-TOOLS active (every tool declares read or change and has a preview test); prompt-injection test set, also for agents and standing rules; assistant, MCP and agent entry points in SEC-MATRIX (an agent never does more than its person).</p>
+<h2 id="s11"><button class="sec" data-sec>§11</button>M8 — Timeline and theme editor</h2>
+<p><strong>Phase:</strong> MVP · <strong>Goal:</strong> Plan on a timeline and make Bugaboo look like your organization.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li><code>PLAN-01</code> Timeline</li>
+<li><code>PLAN-02</code> Dependencies</li>
+<li><code>PLAN-03</code> Drag to move or resize bars, with undo and a permission …</li>
+<li><code>PLAN-04</code> Group rows by project, goal, assigned person, release or …</li>
+<li><code>PLAN-08</code> Restricted issues are left out entirely; there are no …</li>
+<li><code>PLAN-10</code> The person on the bar</li>
+<li><code>PLAN-11</code> Away times</li>
+<li><code>PLAN-12</code> Plan by effort</li>
+<li><code>PLAN-13</code> Plan warnings</li>
+<li><code>PLAN-14</code> Time factor</li>
+<li><code>PLAN-15</code> Work hours and share in the project</li>
+<li><code>THM-03</code> theme editor</li>
+<li><code>THM-04</code> Custom themes at instance level or personal level</li>
+<li><code>UX-02</code> Touch-friendly targets and gestures</li>
+</ul>
+<p><strong>Work packages (outline):</strong></p>
+<ul>
+<li>Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list</li>
+<li>People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings</li>
+<li>Theme editor with readability ratings; personal and organization themes; import and export</li>
+<li>Touch gestures and phone polish across all screens</li>
+</ul>
+<p><strong>Demo (exit):</strong> Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.</p>
+<p><strong>Tests and checks added:</strong> STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.</p>
 <h2 id="s12"><button class="sec" data-sec>§12</button>M9 — Privacy, operations and the first release</h2>
 <p><strong>Phase:</strong> MVP · <strong>Goal:</strong> Everything needed to run the MVP for real: GDPR features, installers, backups, releases.</p>
 <p><strong>Features:</strong></p>
@@ -624,6 +624,7 @@
 <p><code>AUTH-05</code>, <code>ISS-15</code>, <code>WF-08</code>, <code>PLAN-07</code>, <code>AI-15</code>, <code>AI-16</code>, <code>NTF-06</code>, <code>NTF-07</code>, <code>NTF-08</code>, <code>NTF-09</code>, <code>DOC-10</code>. They stay possible: the architecture leaves room for each of them.</p>
 <h2 id="s20"><button class="sec" data-sec>§20</button>Decisions</h2>
 <ul>
+<li><strong>Order after M6 (2026-11-06):</strong> the maintainer moved the assistant, AI apps and agents ahead of the timeline: they are M7 now, and the timeline and theme editor M8. M7 starts when M6 has passed its exit review.</li>
 <li><strong>Git host:</strong> the repository stays local in its current folder for now; GitHub comes later, as the public home of the code only. Verification is local (ADR-0037): <code>cargo xtask ci</code> on this PC runs the full check on Windows and in WSL, against SQLite and PostgreSQL, and the pre-push hook runs the push checks.</li>
 <li><strong>The master and work folders (ADR-0024, ADR-0039):</strong> the master (marked with <code>BUGABOO_CHECKOUT_ROLE=master</code>) is never built in. All work happens in clones under <code>&lt;work root&gt;</code> (<code>bugaboo.win1</code> for the lead, <code>bugaboo.win2</code> and up for builders, each on its own branch <code>WINn</code>), so build output and <code>node_modules</code> stay out of the master, which may sit in a synced folder. <code>main</code> only moves by fast-forward after <code>cargo xtask ci</code> passed in <code>win1</code>. Only the master pushes to the public remote: <code>git -C &lt;master&gt; push github main</code>.</li>
 </ul>

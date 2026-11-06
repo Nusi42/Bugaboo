@@ -96,14 +96,14 @@ ARCH-LEAN is already active; WP-02 extends it. TXT-LITERAL, STY-TOKENS, ARCH-WEB
 
 Some M2 features are about things that come later (issues in M3, search in M5). M2 builds the part that exists now and the machinery that later milestones plug into:
 
-- **SEC-04, SEC-06:** the field catalogue, field masks and `Authorized<T>` work and are tested for every built-in field; the entry points of M2 (API answers, *Check access*) obey them. Each later entry point adds its row to SEC-MATRIX (issues M3, e-mail M4, search M5, assistant and AI apps M8, exports M9). Rules per issue type come with issue types (M3).
+- **SEC-04, SEC-06:** the field catalogue, field masks and `Authorized<T>` work and are tested for every built-in field; the entry points of M2 (API answers, *Check access*) obey them. Each later entry point adds its row to SEC-MATRIX (issues M3, e-mail M4, search M5, assistant and AI apps M7, exports M9). Rules per issue type come with issue types (M3).
 - **PRIV-12:** every kind of people information can be set; the kinds shown in M2 screens obey it through `PersonRef`. **PRIV-13:** random labels for removed people are made by `PersonRef`; the removal itself is PRIV-04 (M9).
 - **UX-05:** the shortcut system, `?` and the shortcuts of M2 screens; each later screen adds its own. The quick-search frame opens with `Ctrl+K` and goes to pages and projects; finding issues and running actions is CFG-08 (M5).
 - **PRJ-02:** settings and permissions are inherited down the tree; workflows, issue types, fields and layouts join when they exist.
 
 ## Later (not in M2)
 
-*See as …* (SEC-07, M12), restricted issues (SEC-05, V1), bot accounts (AUTH-08, M12), nested groups (L), company sign-in groups (AUTH-04, M12), the theme editor and own themes (THM-03, THM-04, M7), project accent colors (THM-05), the content of quick search (CFG-08, M5), *Remove a person* (PRIV-04, M9), the issues and everything else in the sample organization (M3 on), passkeys in the sample organization.
+*See as …* (SEC-07, M12), restricted issues (SEC-05, V1), bot accounts (AUTH-08, M12), nested groups (L), company sign-in groups (AUTH-04, M12), the theme editor and own themes (THM-03, THM-04, M8), project accent colors (THM-05), the content of quick search (CFG-08, M5), *Remove a person* (PRIV-04, M9), the issues and everything else in the sample organization (M3 on), passkeys in the sample organization.
 
 ## Questions for the maintainer
 

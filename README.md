@@ -96,7 +96,7 @@ Signing in with a password, a passkey or a two-step code; invitations and groups
 
 ## AI agents and Bugaboo as shared memory
 
-*Planned for milestone M8 of the [roadmap](docs/04-milestones.md). None of it is built yet.*
+*Planned for milestone M7 of the [roadmap](docs/04-milestones.md). None of it is built yet.*
 
 An AI agent starts fresh every time. It remembers nothing of yesterday and knows only what is written down where it can read it. A person keeps much of a task in their head; an agent cannot.
 

@@ -91,17 +91,17 @@
     <text class="code" x="517.5" y="98" text-anchor="middle">M6</text>
     <text class="count" x="517.5" y="121" text-anchor="middle">10</text>
   </g>
-  <g class="later" data-milestone="M7" data-features="14">
-    <title>M7: Timeline and theme editor, 14 features</title>
+  <g class="later" data-milestone="M7" data-features="24">
+    <title>M7: Assistant, AI apps and agents, 24 features</title>
     <rect class="tile" x="561" y="70" width="71" height="64" rx="12"/>
     <text class="code" x="596.5" y="98" text-anchor="middle">M7</text>
-    <text class="count" x="596.5" y="121" text-anchor="middle">14</text>
+    <text class="count" x="596.5" y="121" text-anchor="middle">24</text>
   </g>
-  <g class="later" data-milestone="M8" data-features="24">
-    <title>M8: Assistant, AI apps and agents, 24 features</title>
+  <g class="later" data-milestone="M8" data-features="14">
+    <title>M8: Timeline and theme editor, 14 features</title>
     <rect class="tile" x="640" y="70" width="71" height="64" rx="12"/>
     <text class="code" x="675.5" y="98" text-anchor="middle">M8</text>
-    <text class="count" x="675.5" y="121" text-anchor="middle">24</text>
+    <text class="count" x="675.5" y="121" text-anchor="middle">14</text>
   </g>
   <g class="later" data-milestone="M9" data-features="14">
     <title>M9: Privacy, operations and the first release, 14 features</title>

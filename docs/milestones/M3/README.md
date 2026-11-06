@@ -108,17 +108,17 @@ Some M3 features reach into later milestones. M3 builds the part that exists now
 
 - **ISS-02, ISS-01 (status):** issue types with their icon, fields and layout. Workflows are M4 (WF-01): until then every type uses one starting workflow (M3-Q1).
 - **ISS-03:** sub-issues and progress from the sub-issues the viewer can see; estimated time and time spent add up when time arrives (M6).
-- **ISS-04:** relations from the issue page and for many issues at once; dragging on the timeline comes with the timeline (M7).
+- **ISS-04:** relations from the issue page and for many issues at once; dragging on the timeline comes with the timeline (M8).
 - **ISS-05, ISS-07, ISS-17:** mentions, followers, *Ask … to finish* and *Edit anyway* are stored and shown in the app; e-mail and in-app notifications come in M4 (M3-Q3).
 - **CF-01:** every field type except *Release* (releases are ISS-08, V1) and *Pick one, then one more* (CF-02, V1).
-- **CF-06, TAG-04:** own fields, tags and labels in the API, permissions and history now; in search (M5), the timeline (M7) and boards (M10) when those arrive.
+- **CF-06, TAG-04:** own fields, tags and labels in the API, permissions and history now; in search (M5), the timeline (M8) and boards (M10) when those arrive.
 - **CF-08:** own fields on issues and projects; time entries and working days (M6), documents (M11) and releases (V1) use the same machinery later.
 - **CFG-01:** the issue page and the new-issue form; the board card comes with boards (M10); *See as …* is SEC-07 (M12).
 - **ISS-09:** fields, status, labels and moving to another project (M3-Q4); more than 1,000 issues run as a background job.
 
 ## Later (not in M3)
 
-Workflows and their editor (M4), notifications (M4), search and saved searches (M5), time (M6), the timeline and relation map (M7), restricted issues (SEC-05, V1), releases (ISS-08, V1), issue templates (ISS-10, V1), cloning and moving with field mapping (ISS-12, V1), internal comments (V1), look rules (CF-05, V1), live updates (ISS-14, V1; until then open issues are checked every 30 s), Tiptap (documents, M11).
+Workflows and their editor (M4), notifications (M4), search and saved searches (M5), time (M6), the timeline and relation map (M8), restricted issues (SEC-05, V1), releases (ISS-08, V1), issue templates (ISS-10, V1), cloning and moving with field mapping (ISS-12, V1), internal comments (V1), look rules (CF-05, V1), live updates (ISS-14, V1; until then open issues are checked every 30 s), Tiptap (documents, M11).
 
 ## Decisions the lead makes in WP-01
 

@@ -178,5 +178,5 @@ Each question has a proposal. Accepting all of them takes every proposal as writ
 - **M5-Q12: What stays out of M5.**
   - More than 1,000 issues for an access key (M3-F121) waits for automation (M12).
   - An event for a new tag (M3-F123) waits for a history of tags.
-  - A spinner on a busy button (M4-F95) waits for the theme editor (M7).
-  - Saved searches shown as board, timeline or calendar come with those views (M7, M10). M5 stores how a search is shown so they can use it.
+  - A spinner on a busy button (M4-F95) waits for the theme editor (M8).
+  - Saved searches shown as board, timeline or calendar come with those views (M8, M10). M5 stores how a search is shown so they can use it.

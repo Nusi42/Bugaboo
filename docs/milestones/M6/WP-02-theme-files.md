@@ -1,7 +1,7 @@
 # WP-02 — Theme files like the sister project: a base file and one file of colors per built-in theme
 
 **Wave 1, the first code package of M6 · Folder / branch:** `bugaboo.win2` / `WIN2`
-**Features:** THM-01 (the four built-in themes), THM-02, THM-06 (unchanged, proven again); the ground for THM-03 and THM-04 (M7). ADR-0026 with its amendment M6; follow-ups M5-F167, M5-F121.
+**Features:** THM-01 (the four built-in themes), THM-02, THM-06 (unchanged, proven again); the ground for THM-03 and THM-04 (M8). ADR-0026 with its amendment M6; follow-ups M5-F167, M5-F121.
 
 ## Goal
 

@@ -10,7 +10,7 @@ The UX design (`docs/02-ux-design.html`) says exactly what the concept shows, wi
 
 ## Owns
 
-`docs/02-ux-design.html`, `docs/glossary.md` (words only), `docs/04-milestones.md` (M7 outline and the definition of done), this milestone's README.
+`docs/02-ux-design.html`, `docs/glossary.md` (words only), `docs/04-milestones.md` (M8 outline and the definition of done), this milestone's README.
 
 ## Tasks
 
@@ -25,7 +25,7 @@ The UX design (`docs/02-ux-design.html`) says exactly what the concept shows, wi
 9. **§5.2 Roles and permissions:** the sample added, one page with five tabs: *Permissions* (one row per permission sentence, grouped by topic and foldable, one column per role, a tick box per cell, permissions that count only for the whole organization marked; clicking a role's name selects its column and shows the role beside it: what it is for, how many permissions, *Used by*, the two-step switch, *See as …*, *Make a copy*, *Reset to the starting permissions*, *Saved* and *Undo*); *Field permissions* and *Who sees people* (the same grid, each cell a choice of three words); *Who has which role* (person or group, role, *Where it counts*, rows *from ACME*, *No access* tinted red with what it wins over); *Check access* (a person and a project, the answer in a sentence with its reason, then what they can and can't do, each with why, and which role could); *See as …* shows an issue as a role sees it in a frame marked in the accent color where nothing can be changed: hidden fields left out, fields they can only see with a lock, people as *a Project lead* or *Someone*, only the buttons the role may use; on the phone, *Check access* as a list.
 10. **§3 Layout and §8:** the computer layout map (menu 64 or 240, list 320, text at most 780, Details 300–340) and that color never stands alone.
 11. **Glossary:** *Minimize*, *Maximize*, *Restore down* (window buttons, common words), *Deadline drivers*, *Not scheduled yet* if missing.
-12. **04-milestones.md:** M7's timeline outline points to UX §4.7; the definition of done gains "screens follow the ten rules of UX §1; the reviewer checks alignment, padding and state colors on every screenshot".
+12. **04-milestones.md:** M8's timeline outline points to UX §4.7; the definition of done gains "screens follow the ten rules of UX §1; the reviewer checks alignment, padding and state colors on every screenshot".
 
 ## Checks
 

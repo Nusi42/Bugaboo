@@ -13,7 +13,7 @@ M6 starts from M5 (`m5-done`; API v1 frozen at `m4-done`: new routes and optiona
 - **Speed:** the groups by *Assigned to* on 1 M issues are a known gap on SQLite (M5-F89, F170) and at the edge of their budget on PostgreSQL, like the preview of 5,000 issues (M5-F169).
 - **Screens:** the timer is drawn in UX design §4.9 and §3.3 but not built (M3-F178); the sidebar is taller than a window 600 px high (M5-F150); on the phone issue page two *More* buttons show (M5-F172); a group opens as a panel, a person and a role as pages (M5-F173); *Who sees people* picks roles another way than *Field permissions* (M5-F135); the colors of the label squares are as pale as the fills that carry text (M5-F149).
 
-Decided already: ADR-0006 (own fields of time entries and work days in `field_value`), ADR-0015 (every stored field marked; working hours are `employee_time`), ADR-0017 (jobs in the database), ADR-0018 (one settings registry), ADR-0022 and ADR-0025 (*Who sees people*, roles and groups, organization permissions given for the whole organization), ADR-0026 (the theme file), ADR-0030 (work times for planning are a separate thing, M7), architecture §5 *Working hours* and §7 (all moments in UTC, each work day keeps the person's time zone), UX design §4.9 (time and working hours) and §5.7 (two years for working hours).
+Decided already: ADR-0006 (own fields of time entries and work days in `field_value`), ADR-0015 (every stored field marked; working hours are `employee_time`), ADR-0017 (jobs in the database), ADR-0018 (one settings registry), ADR-0022 and ADR-0025 (*Who sees people*, roles and groups, organization permissions given for the whole organization), ADR-0026 (the theme file), ADR-0030 (work times for planning are a separate thing, M8), architecture §5 *Working hours* and §7 (all moments in UTC, each work day keeps the person's time zone), UX design §4.9 (time and working hours) and §5.7 (two years for working hours).
 
 M6 runs in **four waves**, then the exit visual pass and the exit waves. A wave starts when the previous one is merged to `main`. At most four builders run at once. **The first code package is the theme files (WP-02, a decision of the maintainer):** it is started first and merged first; no other package of wave 1 touches `design/`.
 
@@ -159,7 +159,7 @@ Each question has the lead's recommendation. Accepting all of them takes every r
 - **M6-Q8: The Germany preset (TIME-09).**
   - The three rules of TIME-09: at most 10 hours a day; breaks of 30 minutes after 6 hours and 45 minutes after 9; 11 hours of rest between two work days.
   - **Recommendation:** also the two details of the same law (ArbZG §4): a break counts only in parts of at least 15 minutes, and nobody works more than 6 hours in a row without a break. Without them a day with three breaks of 10 minutes would pass.
-  - Presets in M6: *Germany* and *No rules*. Administrators may change each number. Sundays, public holidays and the average over six months are not checked in M6 (public holidays come with M7).
+  - Presets in M6: *Germany* and *No rules*. Administrators may change each number. Sundays, public holidays and the average over six months are not checked in M6 (public holidays come with M8).
 - **M6-Q9: Past days, reasons and nights (TIME-08, TIME-10).**
   - A work day belongs to the date it starts on in the person's time zone and may end the next morning; it keeps its time zone.
   - A day is past from the next day on. Changing a past day asks for a reason in the person's own words (required). The old value stays in the history of the day.
@@ -179,7 +179,7 @@ Each question has the lead's recommendation. Accepting all of them takes every r
   - the four built-in themes look exactly as before the split into theme files.
 - **M6-Q13: What stays out of M6.**
   - Reports, permissions on other people's time entries, closed months and the payroll export (TIME-05, TIME-06, TIME-07, TIME-11) stay in M13.
-  - Public holidays, usual work days and away times stay in M7 (ADR-0030). M6 neither reads nor writes them.
+  - Public holidays, usual work days and away times stay in M8 (ADR-0030). M6 neither reads nor writes them.
   - The table of *Keep and delete rules* stays in M9; M6 deletes only old work days.
   - A team's view of working hours stays with the team reports (M13); M6 shows one person at a time.
   - A folder of its own for the nightly run (M5-F143) waits for the maintainer's word on a new folder; until then no full run crosses 03:00.

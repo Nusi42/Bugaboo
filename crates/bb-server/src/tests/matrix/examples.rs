@@ -7,7 +7,7 @@
 //! is refused for the reason the matrix expects and not because the body is wrong.
 //!
 //! The entry points of later milestones add their own tables next to this one (M3 issues, M4 e-mail,
-//! M5 search, M8 assistant and AI apps, M9 exports); this one is the API.
+//! M5 search, M7 assistant and AI apps, M9 exports); this one is the API.
 
 use bb_app::access::Permission;
 use bb_app::auth::CreateInvitation;

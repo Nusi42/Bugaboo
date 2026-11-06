@@ -14,7 +14,7 @@ All three are about employees, so they meet the rules we already have: working t
 
 ### 1. The person on the bar
 
-- Each bar shows the picture and first name of the person it is *Assigned to*, at its end (PLAN-10); *Group by person* gives one row per person, so overlapping work is visible. Both follow *Who sees people* for the viewer: *Role only* shows *"Someone (Team member)"* and offers no grouping by person, *Hidden* shows nobody. Enforced by: the test `plan_10_the_timeline_shows_people_only_as_who_sees_people_allows` (M7).
+- Each bar shows the picture and first name of the person it is *Assigned to*, at its end (PLAN-10); *Group by person* gives one row per person, so overlapping work is visible. Both follow *Who sees people* for the viewer: *Role only* shows *"Someone (Team member)"* and offers no grouping by person, *Hidden* shows nobody. Enforced by: the test `plan_10_the_timeline_shows_people_only_as_who_sees_people_allows` (M8).
 
 ### 2. Work times: when and how much a person works
 
@@ -40,7 +40,7 @@ All three are about employees, so they meet the rules we already have: working t
 - Bugaboo checks the plan and lists **plan warnings** (PLAN-13), each on the bar and in a list with what can be done:
   - *Away*: "Lea is away 26–30 Oct, while WEB-280 is planned for her";
   - *Not enough days*: "WEB-280 needs 6 work days, there are 3 before its due date";
-  - *Delay*: "WEB-280 now ends 2 days later, and WEB-284 after it moves too" (along dependencies; the full chain to the end date with *Deadline drivers*, PLAN-05); Enforced by: the test `plan_13_a_delay_moves_along_dependencies` (M7);
+  - *Delay*: "WEB-280 now ends 2 days later, and WEB-284 after it moves too" (along dependencies; the full chain to the end date with *Deadline drivers*, PLAN-05); Enforced by: the test `plan_13_a_delay_moves_along_dependencies` (M8);
   - *Too much at once*: "Lea has 9 hours planned on 27 Oct in Mobile app; her share there is 3.6 hours" (work hours times share, PLAN-15).
 - The way out is always a person's choice: *Move it after*, *Make it longer*, *Give it to someone else…* (opens the usual person picker, with no suggestion of whom, COMP-10), or *Keep and accept*. Accepted warnings stay visible in a faded form.
 - Warnings appear only for issues and people the viewer may see; a hidden person's away time shows at most as *"the assigned person is away"*.
@@ -61,6 +61,6 @@ All three are about employees, so they meet the rules we already have: working t
 
 ## Enforced by
 
-ARCH-PERSON-REF (people on bars come as `PersonRef`), SEC-MATRIX (rows for away times), the tests named above (M7), and review against PRIV-09 and COMP-10.
+ARCH-PERSON-REF (people on bars come as `PersonRef`), SEC-MATRIX (rows for away times), the tests named above (M8), and review against PRIV-09 and COMP-10.
 
 <!-- COMP-10 checked: nothing ranks, evaluates or picks people; no factor is kept per person; Bugaboo never suggests whom to give an issue. -->
