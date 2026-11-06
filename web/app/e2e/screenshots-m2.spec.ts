@@ -45,7 +45,12 @@ async function phoneScreens(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
   await shot(page, "05-keyboard-shortcuts-phone", MILESTONE);
   await page.goto(`${paths.shortcuts}?edit=go-home`);
-  await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
+  // A panel beside the list on a computer, a page of its own on a phone.
+  await expect(
+    page
+      .getByRole("complementary", { name: t("shortcut.go-home") })
+      .or(page.getByRole("region", { name: t("shortcut.go-home") })),
+  ).toBeVisible();
   await shot(page, "06-shortcut-editor-phone", MILESTONE);
 }
 

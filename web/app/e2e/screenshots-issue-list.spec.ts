@@ -76,6 +76,10 @@ test("cfg_02 pictures: two issues ticked, and the head of the list ticked", asyn
 test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their group color", async ({
   page,
 }) => {
+  test.skip(
+    layoutOf(page) === "phone",
+    "a phone shows cards, which have no row to hover and no focus ring of a row",
+  );
   await openList(page);
   await tickIssues(page, ["WEB-1"]);
   await focusRowByKeys(page, rowOf(page, webIssues.typo));

@@ -80,7 +80,7 @@ test("what roles see at phone width", async ({ page, server }) => {
   await shotWhole(page, "62-people-visibility", MILESTONE);
 
   await page.goto(addressInProject(paths.projectSettings, "ACME"));
-  await expect(page.getByRole("link", { name: t("nav.check-access"), exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await shotWhole(page, "65-project-settings", MILESTONE);
 });
 

@@ -39,7 +39,10 @@ export async function takeOfferedIn(page: Page, theme: Theme, project: string): 
   await signIn(page, ada);
   await openFromMenu(page, t("nav.issue-types"));
   await page.getByRole("button", { name: "Bug", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Bug" });
+  // A panel beside the list on a computer, a page of its own on a phone.
+  const panel = page
+    .getByRole("complementary", { name: "Bug" })
+    .or(page.getByRole("region", { name: "Bug" }));
   await expect(panel.getByRole("list", { name: t("projects.offered-in-list") })).toBeVisible();
   await take(page, theme, "offered-in", project);
 }
