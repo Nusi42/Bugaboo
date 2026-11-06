@@ -18,7 +18,7 @@ The number of a choice of an own choice field (store, API, the *Fields* page), t
 ## Tasks
 
 1. **The number of a choice:** a choice of an own choice field may have a number besides its name. The *Fields* page lets an administrator set it; a number is unique within the field. A field whose choices have numbers lists them by number; one without keeps the order the administrator set. *Cost center* is made with numbers; *Activity* has none.
-2. **Shown the same everywhere:** the choice box of a time entry, the *Stop timer* window, *Add time*, the timesheet, the project defaults of WP-11 and the search show "4100 Product development", the number in the code face, through one helper; no screen joins number and name by hand.
+2. **Shown the same everywhere:** the choice box of a time entry, the *Stop timer* window, *Add time*, the timesheet, the project defaults of WP-11 and the search show "4100 Product development" through one helper (the `shown_as` text of the server); no screen joins number and name by hand. Where a screen can draw more than plain text (badges, the field page, the timesheet) the number is in the code face; in a plain browser drop-down, which cannot mix faces, the number stays in the text face.
 3. **Search:** the search language finds a choice by its number or by its name (`cost center = 4100`), in the catalogue of the search, with the field permissions of QRY-05.
 4. **Stored data:** a migration adds the number; the choices that exist keep their names and get no number until an administrator sets one; the starter field of a new organization gets its numbers. The number of the migration comes from the lead in the order of merging.
 
