@@ -156,17 +156,3 @@ export async function setSignUpPolicy(
     body: { enabled: policy.enabled, domains: [...policy.domains], version },
   });
 }
-
-/** The lengths of the entries the person of the session has on a date (nothing for none). */
-export async function minutesOn(session: ApiSession, date: string): Promise<readonly number[]> {
-  const day = dataOf(
-    await session.client.GET("/api/v1/me/time-entries", {
-      params: { query: { from: date, to: date } },
-    }),
-  );
-  const minutes: number[] = [];
-  for (const entry of day.items) {
-    minutes.push(entry.minutes);
-  }
-  return minutes;
-}

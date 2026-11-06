@@ -1,13 +1,13 @@
-import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { addDays } from "../src/shared/format.ts";
 import { signedInAdmin } from "./support/access.ts";
-import { bob, minutesOn, signInThroughApi } from "./support/accounts.ts";
+import { bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, createIssue } from "./support/issues.ts";
-import { inOrder } from "./support/sequence.ts";
+import { changesSeen, inOrder } from "./support/sequence.ts";
+import { entriesBookedOn } from "./support/time.ts";
 import {
   bookOn,
   cellOf,
@@ -105,7 +105,6 @@ test("time_04 the whole week can be filled in with the keyboard alone", async ({
   // The issue has time on one day of the week, so its row is there to type into.
   const worker = await signInThroughApi(server, bob);
   await bookOn(worker, issue, addDays(WHOLE_WEEK, 2), 30);
-  await worker.dispose();
   await signIn(page, bob);
   await openWeek(page, WHOLE_WEEK);
   // The grid and the row of the issue are drawn before the first key is pressed.
@@ -117,7 +116,12 @@ test("time_04 the whole week can be filled in with the keyboard alone", async ({
   await expect(cellOf(page, t("time.sheet.start"), 0)).toBeFocused();
   // Every day is past, so each of its changes gives its reason in the window, with the keys only.
   await fillWeekWithKeys(page, issue.key);
-  // The server takes one change of the days a second, so the last ones are saved a little later.
+  // The saves wait in line, a second apart: reload when the last one (Sunday's) is on the server.
+  const sunday = addDays(WHOLE_WEEK, DAYS - 1);
+  const onSunday = async () =>
+    (await entriesBookedOn(worker, issue, { from: sunday, to: sunday })).map((e) => e.minutes);
+  await expect.poll(onSunday, { timeout: WHOLE_WEEK_MS / 2 }).toEqual([60]);
+  await worker.dispose();
   await expect(async () => {
     await page.reload();
     await inOrder(
@@ -224,16 +228,15 @@ test("time_04 two lengths typed one after the other into one cell book once and 
   await expect(cell).toHaveValue("2:00");
   await expect(cellOf(page, issue.key, 1, false)).toBeFocused();
   // The saves wait in line: reload when the server has the second, or the reload cuts the line.
-  await expect.poll(() => minutesOn(worker, week), { timeout: 30_000 }).toEqual([120]);
+  const onMonday = async () =>
+    (await entriesBookedOn(worker, issue, { from: week, to: week })).map((e) => e.minutes);
+  await expect.poll(onMonday, { timeout: 30_000 }).toEqual([120]);
   await page.reload();
   await expect(cellOf(page, issue.key, 0, false)).toHaveValue("2:00");
   // One entry on Monday and the one booked before on Tuesday: two entries, never three.
-  const entries = dataOf(
-    await worker.client.GET("/api/v1/me/time-entries", {
-      params: { query: { from: week, to: addDays(week, 6) } },
-    }),
+  expect(await entriesBookedOn(worker, issue, { from: week, to: addDays(week, 6) })).toHaveLength(
+    2,
   );
-  expect(entries.items).toHaveLength(2);
   await worker.dispose();
 });
 
@@ -244,6 +247,7 @@ test("time_08 two times typed one after the other into one cell of the work day 
   const column = columnOf(today());
   await openWeek(page, weekOf(today()));
   const start = cellOf(page, t("time.sheet.start"), column);
+  const changes = changesSeen(page);
   await start.fill("0:00");
   await start.press("Tab");
   await start.fill("0:01");
@@ -251,12 +255,9 @@ test("time_08 two times typed one after the other into one cell of the work day 
   // The week is read again meanwhile: the cell keeps what was typed last, and the focus stays.
   await expect(start).toHaveValue(/^12:01\sAM$/u);
   await expect(page.locator("input:focus")).toHaveCount(1);
-  await expect(async () => {
-    await page.reload();
-    await expect(cellOf(page, t("time.sheet.start"), column)).toHaveValue(/^12:01\sAM$/u, {
-      timeout: 2000,
-    });
-  }).toPass({ timeout: 30_000 });
+  await expect.poll(changes, { timeout: 30_000 }).toBeGreaterThanOrEqual(2);
+  await page.reload();
+  await expect(cellOf(page, t("time.sheet.start"), column)).toHaveValue(/^12:01\sAM$/u);
 });
 
 test("time_04 a second length that the server refuses stays in the cell with its sentence", async ({

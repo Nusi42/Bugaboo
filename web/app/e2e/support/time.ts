@@ -114,14 +114,18 @@ export interface BookedEntry {
   readonly fields: Readonly<Record<string, unknown>>;
 }
 
-/** The entries the person booked on an issue this week, in the order the server lists them. */
+/**
+ * The entries the person booked on an issue this week (or from one date to another), in the order
+ * the server lists them.
+ */
 export async function entriesBookedOn(
   session: ApiSession,
   issue: MadeIssue,
+  days?: { readonly from: string; readonly to: string },
 ): Promise<readonly BookedEntry[]> {
   const week = dataOf(
     await session.client.GET("/api/v1/me/time-entries", {
-      params: { query: { fields: "issue,minutes,note,billable,own_fields" } },
+      params: { query: { fields: "issue,minutes,note,billable,own_fields", ...days } },
     }),
   );
   const booked: BookedEntry[] = [];
