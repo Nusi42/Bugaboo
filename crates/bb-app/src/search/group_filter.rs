@@ -202,8 +202,8 @@ fn stands_for_only(names: &Names, links: &[ProjectLink], wanted: &Wanted) -> boo
             .is_some_and(|(_, list)| {
                 let same: Vec<ChoiceId> = list
                     .iter()
-                    .filter(|(name, _)| *name == key)
-                    .map(|(_, choice)| *choice)
+                    .filter(|each| each.keys.contains(&key))
+                    .map(|each| each.id)
                     .collect();
                 alone(&same, id)
             }),
@@ -414,7 +414,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                         .find(|choice| choice.id == *id)
                         .map(|choice| (definition.field.id, choice))
                 })
-                .map(|(field, choice)| Wanted::named(&choice.name, Thing::Choice(field, *id))),
+                .map(|(field, choice)| {
+                    Wanted::named(&choice.shown_as(), Thing::Choice(field, *id))
+                }),
             GroupKey::Group(id) => self
                 .group_name_of(viewer, *id, cache)
                 .await?
@@ -456,6 +458,7 @@ mod tests {
     use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LabelId, SequentialIds};
 
     use super::*;
+    use crate::search::KeyedChoice;
 
     fn names_of(wanted: &Wanted) -> String {
         wanted.name.clone().unwrap_or_default()
@@ -509,9 +512,16 @@ mod tests {
         );
         let wanted = Wanted::named("Major", Thing::Choice(field, major));
         let key = name_key("Major");
-        names.choices.push((field, vec![(key.clone(), major)]));
+        let keyed = |keys: Vec<String>, id| KeyedChoice {
+            keys,
+            id,
+            number: None,
+        };
+        names
+            .choices
+            .push((field, vec![keyed(vec![key.clone()], major)]));
         assert!(stands_for_only(&names, &[], &wanted));
-        names.choices[0].1.push((key, other));
+        names.choices[0].1.push(keyed(vec![key], other));
         assert!(!stands_for_only(&names, &[], &wanted));
     }
 

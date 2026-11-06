@@ -362,6 +362,7 @@ mod test_support {
                     id: ChoiceId::generate(source).unwrap(),
                     field: id,
                     name: (*name).to_owned(),
+                    number: None,
                     color: ChoiceColor::nth(usize::try_from(at).unwrap()),
                     icon: None,
                     position: at,

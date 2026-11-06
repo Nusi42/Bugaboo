@@ -25,7 +25,7 @@ use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Span, Test};
 mod suggest;
 
 use super::readable::Looked;
-use super::request::{Names, ProjectLink, UnknownName};
+use super::request::{KeyedChoice, Names, ProjectLink, UnknownName};
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, names_other_people};
 use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
@@ -250,7 +250,11 @@ fn seed(names: &mut Names, looked: &Looked) {
                 definition
                     .choices
                     .iter()
-                    .map(|choice| (name_key(&choice.name), choice.id))
+                    .map(|choice| KeyedChoice {
+                        keys: choice.search_keys(),
+                        id: choice.id,
+                        number: choice.number_value(),
+                    })
                     .collect(),
             ));
         }

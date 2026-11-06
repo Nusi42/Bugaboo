@@ -21,6 +21,8 @@ use crate::projects::ProjectRef;
 pub struct NewChoice {
     /// What it is called, as typed.
     pub name: String,
+    /// Its number, if it has one.
+    pub number: Option<String>,
     /// Its color; the next one in turn when left out.
     pub color: Option<ChoiceColor>,
     /// Its icon, if it has one.
@@ -89,6 +91,8 @@ pub struct AddChoice {
     pub version: i64,
     /// What it is called, as typed.
     pub name: String,
+    /// Its number, if it has one.
+    pub number: Option<String>,
     /// Its color; the next one in turn when left out.
     pub color: Option<ChoiceColor>,
     /// Its icon.
@@ -107,6 +111,8 @@ pub struct ChangeChoice {
     pub version: i64,
     /// A new name.
     pub name: Option<String>,
+    /// A new number; `Clear` takes it away.
+    pub number: Edit<String>,
     /// A new color.
     pub color: Option<ChoiceColor>,
     /// A new icon; `Clear` takes it away.
@@ -169,6 +175,14 @@ pub struct ChoiceView {
     pub id: ChoiceId,
     /// What it is called.
     pub name: String,
+    /// Its number, if it has one.
+    pub number: Option<String>,
+    /// The number and the name written as one (`4100 Product development`), the same text
+    /// everywhere a choice is shown as text.
+    pub shown_as: String,
+    /// The words a search reads for it (`FieldChoice::search_words`): what a person may type to
+    /// name the choice.
+    pub search_words: Vec<String>,
     /// Its color.
     pub color: ChoiceColor,
     /// Its icon.
@@ -182,6 +196,9 @@ impl From<&FieldChoice> for ChoiceView {
         Self {
             id: choice.id,
             name: choice.name.clone(),
+            number: choice.number.clone(),
+            shown_as: choice.shown_as(),
+            search_words: choice.search_words(),
             color: choice.color,
             icon: choice.icon,
             retired: choice.retired_at.is_some(),
@@ -314,10 +331,11 @@ pub struct Definition {
 }
 
 impl Definition {
-    /// The names of the choices a value of a *Pick one* or *Pick several* field holds (an ID, or a
-    /// list of them), in the order of the value; an ID that is no choice of the field has no name.
+    /// The texts of the choices (shown as) a value of a *Pick one* or *Pick several* field holds (an ID, or a
+    /// list of them), in the order of the value, each as [`FieldChoice::shown_as`]; an ID that is no
+    /// choice of the field has no text.
     #[must_use]
-    pub fn choice_names(&self, value: &Value) -> Vec<&str> {
+    pub fn choices_shown_as(&self, value: &Value) -> Vec<String> {
         let ids: Vec<&str> = match value {
             Value::Array(items) => items.iter().filter_map(Value::as_str).collect(),
             Value::String(text) => vec![text.as_str()],
@@ -326,7 +344,7 @@ impl Definition {
         ids.into_iter()
             .filter_map(|text| text.parse::<ChoiceId>().ok())
             .filter_map(|id| self.choices.iter().find(|choice| choice.id == id))
-            .map(|choice| choice.name.as_str())
+            .map(FieldChoice::shown_as)
             .collect()
     }
 }

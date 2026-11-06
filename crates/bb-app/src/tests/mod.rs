@@ -3,6 +3,7 @@
 //! server on it; the files below are the tests.
 
 mod check_access_types;
+mod choice_numbers;
 mod editing;
 mod event_members;
 mod events;

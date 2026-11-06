@@ -67,6 +67,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .map(|name| NewChoice {
                 name: Message::from(*name).render(),
+                number: None,
                 color: None,
                 icon: None,
             })

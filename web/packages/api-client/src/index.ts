@@ -70,6 +70,8 @@ export {
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export {
+  choiceNumberDigits,
+  choiceNumberPattern,
   decimalDigits,
   decimalParts,
   decimalWholeDigits,

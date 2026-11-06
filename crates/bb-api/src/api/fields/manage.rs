@@ -36,6 +36,7 @@ pub(super) async fn create_field(
         .into_iter()
         .map(|choice| NewChoice {
             name: choice.name,
+            number: choice.number,
             color: choice.color,
             icon: choice.icon,
         })
@@ -144,6 +145,7 @@ pub(super) async fn add_choice(
                 field: path_id::<FieldId>(&field)?,
                 version: body.version,
                 name: body.name,
+                number: body.number,
                 color: body.color,
                 icon: body.icon,
             },
@@ -152,7 +154,7 @@ pub(super) async fn add_choice(
     answer_authorized(&changed.map(|field| FieldBody::from(&field)))
 }
 
-/// Changes the name, color or icon of a choice, or retires it. Needs the permission *Manage
+/// Changes the name, number, color or icon of a choice, or retires it. Needs the permission *Manage
 /// fields*.
 #[utoipa::path(
     patch,
@@ -190,6 +192,7 @@ pub(super) async fn change_choice(
                 choice: path_id::<ChoiceId>(&choice)?,
                 version: body.version,
                 name: body.name,
+                number: body.number,
                 color: body.color,
                 icon: body.icon,
                 retired: body.retired,

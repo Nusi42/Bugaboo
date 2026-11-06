@@ -30,7 +30,7 @@ use bb_core::fields::{Field, FieldKey, ID_WORD, word_key};
 use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
-use bb_core::own_fields::{FieldFor, FieldType};
+use bb_core::own_fields::{FieldChoice, FieldFor, FieldType};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::workflow::WorkflowStatus;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
@@ -424,7 +424,12 @@ fn own_search_field(word: &str, definition: &Definition) -> SearchField {
         FieldType::Duration => SearchField::new(word, FieldKind::Duration),
         FieldType::Date | FieldType::DateTime => SearchField::new(word, FieldKind::Date),
         FieldType::PickOne | FieldType::PickSeveral => SearchField {
-            choices: once_each(definition.choices.iter().map(|choice| choice.name.clone())),
+            choices: once_each(
+                definition
+                    .choices
+                    .iter()
+                    .flat_map(FieldChoice::search_words),
+            ),
             ..SearchField::new(word, FieldKind::Choice)
         },
         FieldType::YesNo => SearchField::yes_no(word),

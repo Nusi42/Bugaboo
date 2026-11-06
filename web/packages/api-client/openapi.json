@@ -3640,7 +3640,7 @@
     "/api/v1/fields/{field}/choices/{choice}": {
       "patch": {
         "tags": ["fields"],
-        "summary": "Changes the name, color or icon of a choice, or retires it. Needs the permission *Manage\nfields*.",
+        "summary": "Changes the name, number, color or icon of a choice, or retires it. Needs the permission *Manage\nfields*.",
         "operationId": "changeChoice",
         "parameters": [
           {
@@ -15103,6 +15103,13 @@
             "type": "string",
             "description": "What it is called."
           },
+          "number": {
+            "type": ["string", "null"],
+            "description": "Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`.",
+            "maxLength": 9,
+            "minLength": 1,
+            "pattern": "^[0-9]{1,9}$"
+          },
           "version": {
             "type": "integer",
             "format": "int64",
@@ -15484,6 +15491,13 @@
           "name": {
             "type": ["string", "null"],
             "description": "A new name."
+          },
+          "number": {
+            "type": ["string", "null"],
+            "description": "Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`.",
+            "maxLength": 9,
+            "minLength": 1,
+            "pattern": "^[0-9]{1,9}$"
           },
           "retired": {
             "type": ["boolean", "null"],
@@ -17017,6 +17031,7 @@
           "file.incomplete",
           "file.no-room",
           "name.taken",
+          "choice.number-taken",
           "resource.not-found",
           "request.invalid",
           "request.unknown-field",
@@ -17195,7 +17210,7 @@
       "FieldChoiceBody": {
         "type": "object",
         "description": "A choice of a field.",
-        "required": ["id", "name", "color", "retired"],
+        "required": ["id", "name", "shown_as", "search_words", "color", "retired"],
         "properties": {
           "color": {
             "$ref": "#/components/schemas/ChoiceColor",
@@ -17220,9 +17235,27 @@
             "type": "string",
             "description": "What it is called."
           },
+          "number": {
+            "type": ["string", "null"],
+            "description": "Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`.",
+            "maxLength": 9,
+            "minLength": 1,
+            "pattern": "^[0-9]{1,9}$"
+          },
           "retired": {
             "type": "boolean",
             "description": "Whether it is retired: not offered for new values, kept on old ones."
+          },
+          "search_words": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The words a search reads for the choice: its number, its name and the two written together."
+          },
+          "shown_as": {
+            "type": "string",
+            "description": "The number and the name written as one (`4100 Product development`)."
           }
         }
       },
@@ -20080,6 +20113,13 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "number": {
+            "type": ["string", "null"],
+            "description": "Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`.",
+            "maxLength": 9,
+            "minLength": 1,
+            "pattern": "^[0-9]{1,9}$"
           }
         }
       },

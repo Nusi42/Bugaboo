@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 
 import { ownId, signInThroughApi } from "./accounts.ts";
 import { ana, signedInAdmin } from "./access.ts";
@@ -44,11 +44,11 @@ async function starterValues(admin: ApiSession): Promise<Readonly<Record<string,
   const starters = dataOf(await admin.client.GET("/api/v1/me/timer")).starters;
   const choose = async (mark: string, name: string): Promise<readonly [string, string]> => {
     const field = starters[mark] ?? "";
-    const known = dataOf(
+    const known: Schema<"FieldBody"> = dataOf(
       await admin.client.GET("/api/v1/fields/{field}", { params: { path: { field } } }),
     );
     // The starter fields come with some choices (*Development*, *Testing*); others are added.
-    const made = known.choices.some((each) => each.name === name)
+    const made: Schema<"FieldBody"> = known.choices.some((each) => each.name === name)
       ? known
       : dataOf(
           await admin.client.POST("/api/v1/fields/{field}/choices", {

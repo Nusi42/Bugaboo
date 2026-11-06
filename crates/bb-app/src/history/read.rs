@@ -238,10 +238,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(None);
         }
         if matches!(kind, FieldType::PickOne | FieldType::PickSeveral) {
-            let names = definition.choice_names(value);
-            return Ok((!names.is_empty()).then(|| ChangeValue::Names {
-                names: names.into_iter().map(str::to_owned).collect(),
-            }));
+            let names = definition.choices_shown_as(value);
+            return Ok((!names.is_empty()).then(|| ChangeValue::Names { names }));
         }
         let shown = self
             .display_value(actor, held, people, kind, value.clone())

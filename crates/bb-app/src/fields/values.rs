@@ -130,9 +130,8 @@ impl ItemValues {
                     .definitions
                     .iter()
                     .find(|definition| definition.field.id == field)?;
-                let names = definition.choice_names(value);
-                (!names.is_empty())
-                    .then(|| (key.clone(), names.into_iter().map(str::to_owned).collect()))
+                let names = definition.choices_shown_as(value);
+                (!names.is_empty()).then(|| (key.clone(), names))
             })
             .collect()
     }

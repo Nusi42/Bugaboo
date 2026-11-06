@@ -13,8 +13,11 @@ use bb_core::event::{EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, UserId};
 use bb_core::issue::IssueIcon;
-use bb_core::names::{is_new_or_changed, name_among};
-use bb_core::own_fields::{CHOICES_MAX, ChoiceColor, Edit, FieldChoice, FieldType};
+use bb_core::names::is_new_or_changed;
+use bb_core::own_fields::{
+    CHOICES_MAX, ChoiceColor, Edit, FieldChoice, FieldType, is_choice_number, keys_clash,
+    order_choices,
+};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
@@ -35,29 +38,39 @@ fn changed_member(choice: ChoiceId, part: &str) -> String {
     format!("{}.{choice}.{part}", member::CHOICE_CHANGED)
 }
 
-/// Whether another choice than `except` has the name (`bb_core::names`).
-fn name_taken(choices: &[FieldChoice], name: &str, except: Option<ChoiceId>) -> bool {
-    name_among(
-        choices
-            .iter()
-            .filter(|found| Some(found.id) != except)
-            .map(|found| found.name.as_str()),
-        name,
-    )
+/// The number of a choice as it is asked for: up to nine digits, kept as typed, or none.
+///
+/// # Errors
+/// `request.invalid` for a text that is not digits only, or is longer.
+pub(super) fn checked_number(number: Option<String>) -> Result<Option<String>, AppError> {
+    match number {
+        Some(number) if !is_choice_number(&number) => Err(ErrorCode::InvalidRequest.into()),
+        other => Ok(other),
+    }
 }
 
-/// Whether the choice, as it is written, has a name that is new or changed against the stored
-/// choices and that another choice has already: names stored before one rule told them apart stay
-/// as they are.
-fn renamed_into_a_taken_name(choices: &[FieldChoice], written: &FieldChoice) -> bool {
-    let renamed = is_new_or_changed(
-        choices
-            .iter()
-            .find(|choice| choice.id == written.id)
-            .map(|choice| choice.name.as_str()),
-        &written.name,
-    );
-    renamed && name_taken(choices, &written.name, Some(written.id))
+/// Why a choice, as it is written, may not be stored beside the others of its field: another choice
+/// is found by the same name, number or both together (`keys_clash`). `before` is the choice as it
+/// is stored, none for a new one: a name or a number that is not new or changed is not asked about,
+/// so what was stored before the rule stays as it is. The answer names the member the change
+/// touched: the number, the name, or the number when both were.
+pub(super) fn clash(
+    choices: &[FieldChoice],
+    before: Option<&FieldChoice>,
+    written: &FieldChoice,
+) -> Option<ErrorCode> {
+    let name_touched =
+        before.is_none_or(|stored| is_new_or_changed(Some(&stored.name), &written.name));
+    let number_touched =
+        written.number.is_some() && before.is_none_or(|stored| stored.number != written.number);
+    if !(name_touched || number_touched) || !keys_clash(choices, written) {
+        return None;
+    }
+    Some(if number_touched {
+        ErrorCode::ChoiceNumberTaken
+    } else {
+        ErrorCode::NameTaken
+    })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -102,9 +115,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if counted {
             definition.field.version = next(definition.field.version);
         }
-        definition
-            .choices
-            .sort_by_key(|choice| (choice.position, choice.id));
+        order_choices(&mut definition.choices);
         self.field_shown(actor, held, &definition).await
     }
 }
@@ -167,9 +178,7 @@ pub async fn add_choice<S: AuthStore>(
         .field_to_manage(&actor, input.field, input.version)
         .await?;
     let name = clean_name(&input.name)?;
-    if name_taken(&definition.choices, &name, None) {
-        return Err(ErrorCode::NameTaken.into());
-    }
+    let number = checked_number(input.number)?;
     if definition.choices.len() >= CHOICES_MAX {
         return Err(ErrorCode::LimitReached.into());
     }
@@ -178,6 +187,7 @@ pub async fn add_choice<S: AuthStore>(
             .map_err(|error| AppError::Internal(error.to_string()))?,
         field: input.field,
         name,
+        number,
         color: input
             .color
             .unwrap_or_else(|| ChoiceColor::nth(definition.choices.len())),
@@ -190,6 +200,9 @@ pub async fn add_choice<S: AuthStore>(
             .map_or(0, |last| last + 1),
         retired_at: None,
     };
+    if let Some(code) = clash(&definition.choices, None, &choice) {
+        return Err(code.into());
+    }
     let record = entity(RecordKind::Field, input.field);
     let event = ctx.event(
         by(actor.person.id),
@@ -197,7 +210,12 @@ pub async fn add_choice<S: AuthStore>(
         vec![
             set_to(
                 member::CHOICE_ADDED,
-                json!({ "id": choice.id, "name": choice.name, "color": choice.color.code() }),
+                json!({
+                    "id": choice.id,
+                    "name": choice.name,
+                    "number": choice.number,
+                    "color": choice.color.code(),
+                }),
             ),
             counted_up(input.version),
         ],
@@ -206,12 +224,9 @@ pub async fn add_choice<S: AuthStore>(
     let (why, write) = guarded::<S, _>(input.field, input.version, move |transaction, stopped| {
         Box::pin(async move {
             let known = S::field_definitions_in(transaction).await?;
-            let taken = known
-                .iter()
-                .find(|found| found.field.id == stored.field)
-                .is_some_and(|found| name_taken(&found.choices, &stored.name, None));
-            if taken {
-                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+            let known = known.iter().find(|found| found.field.id == stored.field);
+            if let Some(code) = known.and_then(|found| clash(&found.choices, None, &stored)) {
+                return Err(stopped.stop::<S>(code));
             }
             S::insert_choice(transaction, &stored).await
         })
@@ -223,7 +238,43 @@ pub async fn add_choice<S: AuthStore>(
     Ok(held.authorize(ctx.field_after(&actor, &held, definition, true).await?))
 }
 
-/// Changes the name, color, icon or retired state of a choice: what is `Some` is changed.
+/// What changed between two states of a choice, one change for each member that differs.
+fn choice_changes(before: &FieldChoice, after: &FieldChoice) -> Vec<FieldChange> {
+    let mut changes: Vec<FieldChange> = Vec::new();
+    let mut add = |part: &str, was: Value, now: Value| {
+        if was != now {
+            changes.push(FieldChange {
+                field: changed_member(after.id, part),
+                before: Some(was),
+                after: Some(now),
+            });
+        }
+    };
+    add(member::choice::NAME, json!(before.name), json!(after.name));
+    add(
+        member::choice::NUMBER,
+        json!(before.number),
+        json!(after.number),
+    );
+    add(
+        member::choice::COLOR,
+        json!(before.color.code()),
+        json!(after.color.code()),
+    );
+    add(
+        member::choice::ICON,
+        json!(before.icon.map(IssueIcon::code)),
+        json!(after.icon.map(IssueIcon::code)),
+    );
+    add(
+        member::choice::RETIRED,
+        json!(before.retired_at.is_some()),
+        json!(after.retired_at.is_some()),
+    );
+    changes
+}
+
+/// Changes the name, number, color, icon or retired state of a choice: what is `Some` is changed.
 ///
 /// # Errors
 /// As [`add_choice`], and `resource.not-found` for a choice the field does not have.
@@ -233,6 +284,7 @@ pub async fn change_choice<S: AuthStore>(
 ) -> Result<Authorized<FieldView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     if input.name.is_none()
+        && input.number.is_keep()
         && input.color.is_none()
         && input.icon.is_keep()
         && input.retired.is_none()
@@ -251,11 +303,14 @@ pub async fn change_choice<S: AuthStore>(
     let mut after = before.clone();
     if let Some(name) = &input.name {
         after.name = clean_name(name)?;
-        if is_new_or_changed(Some(&before.name), &after.name)
-            && name_taken(&definition.choices, &after.name, Some(after.id))
-        {
-            return Err(ErrorCode::NameTaken.into());
-        }
+    }
+    match input.number {
+        Edit::Keep => {}
+        Edit::Clear => after.number = None,
+        Edit::Set(number) => after.number = checked_number(Some(number))?,
+    }
+    if let Some(code) = clash(&definition.choices, Some(&before), &after) {
+        return Err(code.into());
     }
     if let Some(color) = input.color {
         after.color = color;
@@ -272,32 +327,7 @@ pub async fn change_choice<S: AuthStore>(
             None
         };
     }
-    let mut changes: Vec<FieldChange> = Vec::new();
-    let mut add = |part: &str, was: Value, now: Value| {
-        if was != now {
-            changes.push(FieldChange {
-                field: changed_member(after.id, part),
-                before: Some(was),
-                after: Some(now),
-            });
-        }
-    };
-    add(member::choice::NAME, json!(before.name), json!(after.name));
-    add(
-        member::choice::COLOR,
-        json!(before.color.code()),
-        json!(after.color.code()),
-    );
-    add(
-        member::choice::ICON,
-        json!(before.icon.map(IssueIcon::code)),
-        json!(after.icon.map(IssueIcon::code)),
-    );
-    add(
-        member::choice::RETIRED,
-        json!(before.retired_at.is_some()),
-        json!(after.retired_at.is_some()),
-    );
+    let mut changes = choice_changes(&before, &after);
     if changes.is_empty() {
         return Ok(held.authorize(ctx.field_after(&actor, &held, definition, false).await?));
     }
@@ -308,12 +338,13 @@ pub async fn change_choice<S: AuthStore>(
     let (why, write) = guarded::<S, _>(input.field, input.version, move |transaction, stopped| {
         Box::pin(async move {
             let known = S::field_definitions_in(transaction).await?;
-            let taken = known
-                .iter()
-                .find(|found| found.field.id == stored.field)
-                .is_some_and(|found| renamed_into_a_taken_name(&found.choices, &stored));
-            if taken {
-                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+            let known = known.iter().find(|found| found.field.id == stored.field);
+            let code = known.and_then(|found| {
+                let was = found.choices.iter().find(|choice| choice.id == stored.id);
+                clash(&found.choices, was, &stored)
+            });
+            if let Some(code) = code {
+                return Err(stopped.stop::<S>(code));
             }
             S::update_choice(transaction, &stored).await
         })

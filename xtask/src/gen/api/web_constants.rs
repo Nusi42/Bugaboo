@@ -561,6 +561,9 @@ pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
         .parse()
         .with_context(|| format!("DECIMAL_PARTS in {FIELDS_SOURCE} is not a number"))?;
     let whole_digits = (i64::MAX / parts_number).to_string().len();
+    // The number of a choice is written in the server; the constants are those of `bb-core`.
+    let choice_pattern = bb_core::own_fields::CHOICE_NUMBER_PATTERN;
+    let choice_digits = bb_core::own_fields::CHOICE_NUMBER_DIGITS_MAX;
     let prefix = text_const(text, "EDIT_PART_PREFIX")
         .with_context(|| format!("{FIELDS_SOURCE} has no `const EDIT_PART_PREFIX` that is text"))?;
     Ok(format!(
@@ -575,6 +578,12 @@ export const decimalDigits = {digits};
 
 /** The most digits the whole part of a decimal number of an own field has: the server keeps it in an i64 of parts. */
 export const decimalWholeDigits = {whole_digits};
+
+/** The most digits the number of a choice of an own field has (`4100`, `0410`): the one limit, written in the server. */
+export const choiceNumberDigits = {choice_digits};
+
+/** What the number of a choice of an own field looks like: digits only, as many as `choiceNumberDigits` says. */
+export const choiceNumberPattern = {choice_pattern:?};
 "
     ))
 }

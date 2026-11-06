@@ -113,6 +113,68 @@ async fn cf_01_every_field_type_stores_and_returns_its_value() -> TestResult {
 }
 
 #[tokio::test]
+async fn time_13_the_choices_of_a_field_come_back_with_their_numbers_ordered_by_number()
+-> TestResult {
+    each_database("time_13_numbers", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let mut made = definition(&mut source, FieldType::PickOne, 1);
+        // Stored in the order Minor, Major, Critical; numbered 5200, none, 4100.
+        made.choices[0].number = Some("5200".to_owned());
+        made.choices[2].number = Some("0410".to_owned());
+        let (field, major) = (made.field.id, made.choices[1].clone());
+        let stored = made.clone();
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::insert_field(tx, &stored).await })
+        })
+        .await?;
+        let read = async || -> Result<Vec<(String, Option<String>)>, StoreError> {
+            let all = storage.field_definitions().await?;
+            let found = all.iter().find(|each| each.field.id == field).unwrap();
+            Ok(found
+                .choices
+                .iter()
+                .map(|choice| (choice.name.clone(), choice.number.clone()))
+                .collect())
+        };
+        assert_eq!(
+            read().await?,
+            [
+                // The digits are kept as typed: 0410 comes back as 0410.
+                ("Critical".to_owned(), Some("0410".to_owned())),
+                ("Minor".to_owned(), Some("5200".to_owned())),
+                ("Major".to_owned(), None),
+            ]
+        );
+        // A number can be changed and taken away; a number used twice in a field is refused.
+        let mut again = major.clone();
+        again.number = Some("5200".to_owned());
+        let refused = changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::update_choice(tx, &again).await })
+        })
+        .await;
+        assert!(refused.is_err());
+        let mut cleared = made.choices[2].clone();
+        cleared.number = None;
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::update_choice(tx, &cleared).await })
+        })
+        .await?;
+        assert_eq!(
+            read().await?,
+            [
+                ("Minor".to_owned(), Some("5200".to_owned())),
+                ("Major".to_owned(), None),
+                ("Critical".to_owned(), None),
+            ]
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cf_07_combining_two_choices_moves_every_value_and_keeps_one_row_for_an_item_with_both()
 -> TestResult {
     each_database("cf_07_combine", async |db| {

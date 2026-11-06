@@ -27,6 +27,7 @@ use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, starting_own_field_level};
 use serde_json::{Value, json};
 
+use super::choices::{checked_number, clash};
 use super::member;
 use super::pattern::{Linear, is_usable};
 use super::types::{ChangeField, CreateField, Definition, FieldView, NewChoice};
@@ -202,22 +203,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let mut made: Vec<FieldChoice> = Vec::with_capacity(choices.len());
         for (position, choice) in (0_i64..).zip(choices) {
-            let name = clean_name(&choice.name)?;
-            if name_among(made.iter().map(|known| known.name.as_str()), &name) {
-                return Err(ErrorCode::NameTaken.into());
-            }
-            made.push(FieldChoice {
+            let written = FieldChoice {
                 id: bb_core::id::ChoiceId::generate(&mut self.ids())
                     .map_err(|error| AppError::Internal(error.to_string()))?,
                 field,
-                name,
+                name: clean_name(&choice.name)?,
+                number: checked_number(choice.number.clone())?,
                 color: choice
                     .color
                     .unwrap_or_else(|| ChoiceColor::nth(usize::try_from(position).unwrap_or(0))),
                 icon: choice.icon,
                 position,
                 retired_at: None,
-            });
+            };
+            if let Some(code) = clash(&made, None, &written) {
+                return Err(code.into());
+            }
+            made.push(written);
         }
         Ok(made)
     }
@@ -459,7 +461,7 @@ pub(crate) fn made_changes(definition: &Definition) -> Vec<FieldChange> {
                 definition
                     .choices
                     .iter()
-                    .map(|choice| choice.name.as_str())
+                    .map(FieldChoice::shown_as)
                     .collect::<Vec<_>>()
             ),
         ));

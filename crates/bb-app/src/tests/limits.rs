@@ -214,6 +214,7 @@ async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Out
             field: crowded.id,
             version: crowded.version,
             name: "One more".to_owned(),
+            number: None,
             color: None,
             icon: None,
         },

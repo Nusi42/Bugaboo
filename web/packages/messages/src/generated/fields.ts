@@ -29,7 +29,7 @@ export const messages = {
   "fields.default-help": "The value a new issue or project starts with. Leave it empty for none.",
   "fields.choices": "Choices",
   "fields.choices-help":
-    "Use the arrows to change the order. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
+    "Use the arrows to change the order of choices without a number. A choice with a number is listed by its number, before the others. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
   "fields.add-choice": "New choice",
   "fields.add-choice-button": "Add the choice",
   "fields.choice-up": "Move {name} up",

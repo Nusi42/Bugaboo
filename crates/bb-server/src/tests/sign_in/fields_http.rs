@@ -20,6 +20,7 @@ use super::rig::Rig;
 mod choices;
 mod levels;
 mod long_text;
+mod numbers;
 mod references;
 mod rules;
 

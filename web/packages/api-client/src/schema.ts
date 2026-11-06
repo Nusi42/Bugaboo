@@ -1113,7 +1113,7 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Changes the name, color or icon of a choice, or retires it. Needs the permission *Manage
+     * Changes the name, number, color or icon of a choice, or retires it. Needs the permission *Manage
      *     fields*.
      */
     patch: operations["changeChoice"];
@@ -4111,6 +4111,8 @@ export interface components {
       icon?: components["schemas"]["IssueIcon"] | null;
       /** @description What it is called. */
       name: string;
+      /** @description Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`. */
+      number?: string | null;
       /**
        * Format: int64
        * @description The version of the field the person looked at.
@@ -4300,6 +4302,8 @@ export interface components {
       icon?: components["schemas"]["IssueIcon"] | null;
       /** @description A new name. */
       name?: string | null;
+      /** @description Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`. */
+      number?: string | null;
       /** @description `true` retires the choice, `false` offers it again. */
       retired?: boolean | null;
       /**
@@ -5119,6 +5123,7 @@ export interface components {
       | "file.incomplete"
       | "file.no-room"
       | "name.taken"
+      | "choice.number-taken"
       | "resource.not-found"
       | "request.invalid"
       | "request.unknown-field"
@@ -5225,8 +5230,14 @@ export interface components {
       id: string;
       /** @description What it is called. */
       name: string;
+      /** @description Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`. */
+      number?: string | null;
       /** @description Whether it is retired: not offered for new values, kept on old ones. */
       retired: boolean;
+      /** @description The words a search reads for the choice: its number, its name and the two written together. */
+      search_words: string[];
+      /** @description The number and the name written as one (`4100 Product development`). */
+      shown_as: string;
     };
     /**
      * @description What an own field is added to.
@@ -6571,6 +6582,8 @@ export interface components {
       icon?: components["schemas"]["IssueIcon"] | null;
       /** @description What it is called. */
       name: string;
+      /** @description Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to 9 digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`. */
+      number?: string | null;
     };
     /**
      * @description The level to set, or `null` to take away what the project set for the role, so the level

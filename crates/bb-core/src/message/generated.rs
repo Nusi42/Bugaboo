@@ -817,6 +817,9 @@ pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
 /// The message `error.auth.wrong-setup-code`.
 pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
+/// The message `error.choice.number-taken`.
+pub const ERROR_CHOICE_NUMBER_TAKEN: MessageKey = MessageKey::new("error.choice.number-taken");
+
 /// The message `error.edit.in-progress`.
 pub const ERROR_EDIT_IN_PROGRESS: MessageKey = MessageKey::new("error.edit.in-progress");
 
@@ -13693,6 +13696,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That setup code is not right. Copy it again from the window where Bugaboo is running.",
     ),
     (
+        "error.choice.number-taken",
+        "Another choice of this field has that number. Choose another one.",
+    ),
+    (
         "error.edit.in-progress",
         "Someone is editing this right now. Try again when they have finished.",
     ),
@@ -14111,7 +14118,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.choices", "Choices"),
     (
         "fields.choices-help",
-        "Use the arrows to change the order. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
+        "Use the arrows to change the order of choices without a number. A choice with a number is listed by its number, before the others. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
     ),
     ("fields.choose", "Choose"),
     ("fields.choose-title", "Choose for {name}"),

@@ -6,6 +6,22 @@ use super::{
     ProjectId, ProjectRef, Rules, Scope, ScopeView, Serialize, ToSchema, Value, body_id,
 };
 use crate::lean::FieldSpec;
+use bb_core::own_fields::{CHOICE_NUMBER_DIGITS_MAX, CHOICE_NUMBER_PATTERN};
+use utoipa::openapi::schema::{Object, ObjectBuilder, SchemaType, Type};
+
+/// The schema of the number of a choice: text that fits [`CHOICE_NUMBER_PATTERN`] (digits only,
+/// one to [`CHOICE_NUMBER_DIGITS_MAX`] of them), or `null` for none.
+fn choice_number() -> Object {
+    ObjectBuilder::new()
+        .schema_type(SchemaType::from_iter([Type::String, Type::Null]))
+        .min_length(Some(1))
+        .max_length(Some(CHOICE_NUMBER_DIGITS_MAX))
+        .pattern(Some(CHOICE_NUMBER_PATTERN))
+        .description(Some(format!(
+            "Digits kept as typed (`0410` stays `0410`), unique within the field. A text that is not one to {CHOICE_NUMBER_DIGITS_MAX} digits is refused with `request.invalid`; a number another choice has, with `choice.number-taken`."
+        )))
+        .build()
+}
 
 /// A choice of a field.
 #[derive(Serialize, ToSchema)]
@@ -14,6 +30,12 @@ pub(crate) struct FieldChoiceBody {
     pub(super) id: String,
     /// What it is called.
     pub(super) name: String,
+    #[schema(schema_with = choice_number)]
+    pub(super) number: Option<String>,
+    /// The number and the name written as one (`4100 Product development`).
+    pub(super) shown_as: String,
+    /// The words a search reads for the choice: its number, its name and the two written together.
+    pub(super) search_words: Vec<String>,
     /// Its color, as a category token of the theme.
     pub(super) color: ChoiceColor,
     /// Its icon, if it has one.
@@ -27,6 +49,9 @@ impl From<&ChoiceView> for FieldChoiceBody {
         Self {
             id: choice.id.to_string(),
             name: choice.name.clone(),
+            number: choice.number.clone(),
+            shown_as: choice.shown_as.clone(),
+            search_words: choice.search_words.clone(),
             color: choice.color,
             icon: choice.icon,
             retired: choice.retired,
@@ -208,6 +233,8 @@ impl ScopeInput {
 pub(crate) struct NewFieldChoiceBody {
     /// What it is called.
     pub(super) name: String,
+    #[schema(schema_with = choice_number)]
+    pub(super) number: Option<String>,
     /// Its color; the next in turn when left out.
     pub(super) color: Option<ChoiceColor>,
     /// Its icon.
@@ -273,6 +300,8 @@ pub(crate) struct AddChoiceBody {
     pub(super) version: i64,
     /// What it is called.
     pub(super) name: String,
+    #[schema(schema_with = choice_number)]
+    pub(super) number: Option<String>,
     /// Its color; the next in turn when left out.
     pub(super) color: Option<ChoiceColor>,
     /// Its icon.
@@ -286,6 +315,9 @@ pub(crate) struct ChangeChoiceBody {
     pub(super) version: i64,
     /// A new name.
     pub(super) name: Option<String>,
+    #[serde(default, deserialize_with = "crate::api::null_or_value")]
+    #[schema(schema_with = choice_number)]
+    pub(super) number: Edit<String>,
     /// A new color.
     pub(super) color: Option<ChoiceColor>,
     /// A new icon; `null` takes it away.

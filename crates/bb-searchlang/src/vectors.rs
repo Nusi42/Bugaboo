@@ -54,6 +54,10 @@ pub const ACCEPTED: &[&str] = &[
     "",
     "sort by due, oldest first, title, A to Z",
     "status is Open",
+    // A number written for a field of choices is the text as typed: the digits of a tag keep their
+    // zeros, and the browser reads it the same way.
+    "tag is 007",
+    "tag in (007, 7)",
     "status IS NOT \"In progress\"",
     "status in (Open, \"In progress\")",
     "priority >= high",

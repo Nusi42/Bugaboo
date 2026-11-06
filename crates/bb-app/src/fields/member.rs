@@ -28,6 +28,7 @@ pub(crate) const CHOICE_COMBINED: &str = "choice-combined";
 /// The names of the members of a choice that changed.
 pub(crate) mod choice {
     pub(crate) const NAME: &str = "name";
+    pub(crate) const NUMBER: &str = "number";
     pub(crate) const COLOR: &str = "color";
     pub(crate) const ICON: &str = "icon";
     pub(crate) const RETIRED: &str = "retired";

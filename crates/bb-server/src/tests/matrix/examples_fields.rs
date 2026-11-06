@@ -45,6 +45,7 @@ async fn a_field_of(
                     .iter()
                     .map(|name| NewChoice {
                         name: (*name).to_owned(),
+                        number: None,
                         color: None,
                         icon: None,
                     })

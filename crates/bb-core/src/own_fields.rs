@@ -69,6 +69,30 @@ pub const SHORT_TEXT_MAX: usize = 1_000;
 /// millionths, so it sorts and adds up exactly on both databases.
 pub const DECIMAL_PARTS: i64 = 1_000_000;
 
+/// What the number of a choice looks like (`4100`, `0410`): digits only, one to nine of them. The
+/// one place that writes it: the limit below is read out of it, the API description carries it as
+/// the pattern of the number, and the browser gets it as a generated constant.
+pub const CHOICE_NUMBER_PATTERN: &str = "^[0-9]{1,9}$";
+
+/// The most digits the number of a choice has: the number after the comma of the pattern.
+pub const CHOICE_NUMBER_DIGITS_MAX: usize = most_digits_of(CHOICE_NUMBER_PATTERN);
+
+/// The number after the comma of a pattern like `^[0-9]{1,9}$`.
+const fn most_digits_of(pattern: &str) -> usize {
+    let bytes = pattern.as_bytes();
+    let mut at = 0;
+    while at < bytes.len() && bytes[at] != b',' {
+        at += 1;
+    }
+    let mut digits = 0;
+    at += 1;
+    while at < bytes.len() && bytes[at].is_ascii_digit() {
+        digits = digits * 10 + (bytes[at] - b'0') as usize;
+        at += 1;
+    }
+    digits
+}
+
 /// The name of the part of an issue that a long text field is: what an edit lock and a draft of
 /// the text are about (`field-<ID>`).
 ///
@@ -593,6 +617,11 @@ pub struct FieldChoice {
     /// What it is called. Free text that could name a person.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub name: String,
+    /// Its number, if it has one (*4100* of *4100 Product development*): up to nine digits kept as
+    /// typed, unique within the field. Digits that name no person; marked like the name only because
+    /// a text type cannot be marked as not personal.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub number: Option<String>,
     /// Its color.
     #[not_personal]
     pub color: ChoiceColor,
@@ -614,6 +643,8 @@ impl OwnField {
         FieldKey::Own(self.id)
     }
 }
+
+pub use crate::own_choices::{choice_shown_as, is_choice_number, keys_clash, order_choices};
 
 #[cfg(test)]
 mod tests {

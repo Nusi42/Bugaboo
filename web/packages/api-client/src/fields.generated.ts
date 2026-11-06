@@ -11,3 +11,9 @@ export const decimalDigits = 6;
 
 /** The most digits the whole part of a decimal number of an own field has: the server keeps it in an i64 of parts. */
 export const decimalWholeDigits = 13;
+
+/** The most digits the number of a choice of an own field has (`4100`, `0410`): the one limit, written in the server. */
+export const choiceNumberDigits = 9;
+
+/** What the number of a choice of an own field looks like: digits only, as many as `choiceNumberDigits` says. */
+export const choiceNumberPattern = "^[0-9]{1,9}$";

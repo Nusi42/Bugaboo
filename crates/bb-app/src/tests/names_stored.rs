@@ -172,6 +172,7 @@ async fn cf_02_two_stored_fields_and_choices_that_differ_only_in_spaces_can_be_r
                 choice,
                 version: version(first)?,
                 name: name.map(str::to_owned),
+                number: Edit::Keep,
                 color: None,
                 icon: Edit::Keep,
                 retired,

@@ -7,7 +7,7 @@
 //! what the person is told and what is offered cannot disagree.
 
 use crate::duration::{read_duration, starts_duration};
-use crate::fields::{FieldKind, ReadableFields};
+use crate::fields::{Field, FieldKind, ReadableFields};
 use crate::lexer::{Token, TokenKind, tokens};
 use crate::limits::{MAX_DEPTH, MAX_TEXT_BYTES};
 use crate::literal::short_name;
@@ -93,18 +93,37 @@ struct Parser<'a> {
 }
 
 impl Parser<'_> {
-    /// Whether a value of the field that `wanted` names may be an Issue. It may, unless the fields
-    /// are given and say that the field holds something else.
-    fn issue_expected(&self, wanted: &Situation) -> bool {
+    /// The field a value is asked for, when the fields are given and the situation is the value of
+    /// a field they have.
+    fn field_of(&self, wanted: &Situation) -> Option<&Field> {
         let (Situation::Value { field: word }
         | Situation::IsRest { field: word }
         | Situation::IsNotRest { field: word }) = wanted
         else {
-            return true;
+            return None;
         };
-        self.fields
-            .and_then(|fields| fields.field(word))
-            .is_none_or(|field| field.kind == FieldKind::Issue)
+        self.fields.and_then(|fields| fields.field(word))
+    }
+
+    /// Whether a value of the field that `wanted` names may be an Issue. It may, unless the fields
+    /// are given and say that the field holds something else.
+    fn issue_expected(&self, wanted: &Situation) -> bool {
+        let known = matches!(
+            wanted,
+            Situation::Value { .. } | Situation::IsRest { .. } | Situation::IsNotRest { .. }
+        );
+        !known
+            || self
+                .field_of(wanted)
+                .is_none_or(|field| field.kind == FieldKind::Issue)
+    }
+
+    /// Whether the field that `wanted` names holds a fixed list of choices: a number written for it
+    /// is then a word as typed (`0410` is not `410`), because a choice may have a number with
+    /// leading zeros.
+    fn choice_expected(&self, wanted: &Situation) -> bool {
+        self.field_of(wanted)
+            .is_some_and(|field| field.kind == FieldKind::Choice)
     }
 
     fn peek(&self) -> Option<&Token> {
@@ -581,6 +600,14 @@ impl Parser<'_> {
             Some(TokenKind::Number(number)) => {
                 if starts_duration(&self.tokens, self.at) {
                     return self.duration();
+                }
+                if self.choice_expected(&wanted) {
+                    // The digits as typed: `0410` finds the choice numbered `0410`, not `410`.
+                    let span = self.advance();
+                    return Ok(Operand::Text {
+                        text: self.text[span.start..span.end].to_owned(),
+                        span,
+                    });
                 }
                 Operand::Number {
                     number,

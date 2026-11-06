@@ -199,6 +199,7 @@ impl Compiler<'_> {
                 };
                 Ok((value, Kind::Whole))
             }
+            Domain::Choice(_) => Ok((self.choice_rank(&subject, domain, &pick)?, Kind::Whole)),
             named => {
                 let (table, id, name) =
                     names_of(named).ok_or(CompileError::Unsupported("sorting by this field"))?;
@@ -254,6 +255,31 @@ impl Compiler<'_> {
         let Subject::Column(value) = subject else {
             return Ok(Expr::null());
         };
+        self.rank_of(value, domain)
+    }
+
+    /// The place of the choice of an own field among the choices of the field, in the order the
+    /// choices have (by number, then as the administrator set): an issue with many values is placed
+    /// by the best of them, like a priority.
+    fn choice_rank(
+        &self,
+        subject: &Subject,
+        domain: Domain,
+        pick: &impl Fn(Expr) -> sea_query::FunctionCall,
+    ) -> Result<Expr, CompileError> {
+        match subject {
+            Subject::Column(value) => Ok(bigint(self.rank_of(value, domain)?)),
+            Subject::Linked(rows, value) => {
+                let mut rows = rows.select();
+                rows.clear_selects()
+                    .expr(pick(bigint(self.rank_of(value, domain)?)));
+                Ok(super::scalar(rows))
+            }
+        }
+    }
+
+    /// The place of `value` among the levels of its domain.
+    fn rank_of(&self, value: &Expr, domain: Domain) -> Result<Expr, CompileError> {
         let mut ranked: Option<sea_query::CaseStatement> = None;
         for (at, level) in self.levels(domain)?.into_iter().enumerate() {
             if level.is_empty() {

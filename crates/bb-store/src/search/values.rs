@@ -6,8 +6,11 @@
 //! may know, which the use case put in the request (decision 9 of ADR-0005 amendment M5). No
 //! comparison uses `LOWER`, `ILIKE` or a collation, so both databases answer alike.
 
-use bb_app::search::ProjectLink;
+use std::cmp::Ordering;
+
+use bb_app::search::{KeyedChoice, ProjectLink};
 use bb_core::fields::word_key;
+use bb_core::id::FieldId;
 use bb_core::issue::Priority;
 use bb_core::names::name_key;
 use bb_core::readable_id::ReadableId;
@@ -23,6 +26,17 @@ use crate::schema::IssueRow;
 
 fn values<T: Into<Value>>(found: impl IntoIterator<Item = T>) -> Vec<Value> {
     found.into_iter().map(Into::into).collect()
+}
+
+/// Whether a value stands where `operator` asks for, given how it compares with the one the
+/// operand names.
+fn kept(operator: Comparison, against_level: Ordering) -> bool {
+    match operator {
+        Comparison::Less => against_level == Ordering::Less,
+        Comparison::LessOrEqual => against_level != Ordering::Greater,
+        Comparison::Greater => against_level == Ordering::Greater,
+        Comparison::GreaterOrEqual => against_level != Ordering::Less,
+    }
 }
 
 impl Compiler<'_> {
@@ -56,7 +70,7 @@ impl Compiler<'_> {
                 .iter()
                 .filter(|(each, _)| *each == field)
                 .flat_map(|(_, choices)| choices.iter())
-                .map(|(_, id)| vec![Value::from(id.stored())])
+                .map(|each| vec![Value::from(each.id.stored())])
                 .collect(),
             _ => return Err(CompileError::Unsupported("an order among these values")),
         })
@@ -83,7 +97,9 @@ impl Compiler<'_> {
                 .choices
                 .iter()
                 .find(|(each, _)| *each == field)
-                .and_then(|(_, choices)| choices.iter().position(|(key, _)| *key == wanted)),
+                .and_then(|(_, choices)| {
+                    choices.iter().position(|each| each.keys.contains(&wanted))
+                }),
             _ => None,
         }
     }
@@ -228,6 +244,56 @@ impl Compiler<'_> {
         })
     }
 
+    /// A comparison of a choice of an own field: by the order of the choices. Where any choice of
+    /// the field has a number, only the choices with a number are compared (and one without a number
+    /// is no operand), so `above 4100` never finds a choice that has no number.
+    fn compares_choices(
+        &self,
+        field: FieldId,
+        subject: Expr,
+        operator: Comparison,
+        operand: &Operand,
+    ) -> Cond {
+        let wanted = name_key(&operand.spelling());
+        let Some((_, all)) = self
+            .request
+            .names
+            .choices
+            .iter()
+            .find(|(each, _)| *each == field)
+        else {
+            return nothing();
+        };
+        let numbered = all.iter().any(|each| each.number.is_some());
+        // The choices compared, each with the value it goes by: its number as a whole number (`0410`
+        // and `410` are equal), or its place where no choice has a number.
+        let compared: Vec<(u64, &KeyedChoice)> = all
+            .iter()
+            .enumerate()
+            .filter_map(|(at, each)| {
+                let value = if numbered {
+                    each.number
+                } else {
+                    u64::try_from(at).ok()
+                };
+                value.map(|value| (value, each))
+            })
+            .collect();
+        let Some(level) = compared
+            .iter()
+            .find(|(_, each)| each.keys.contains(&wanted))
+            .map(|(value, _)| *value)
+        else {
+            return nothing();
+        };
+        let chosen = compared
+            .iter()
+            .filter(|(value, _)| kept(operator, value.cmp(&level)))
+            .map(|(_, each)| Value::from(each.id.stored()))
+            .collect();
+        Self::among(subject, chosen)
+    }
+
     /// `subject` comes before or after the operand: by the order of the levels, of the numbers or
     /// of the time.
     pub(super) fn compares(
@@ -238,17 +304,13 @@ impl Compiler<'_> {
         operand: &Operand,
     ) -> Result<Cond, CompileError> {
         match domain {
-            Domain::Priority | Domain::StatusGroup | Domain::Choice(_) => {
+            Domain::Choice(field) => Ok(self.compares_choices(field, subject, operator, operand)),
+            Domain::Priority | Domain::StatusGroup => {
                 let Some(level) = self.level_of(domain, operand) else {
                     return Ok(nothing());
                 };
                 let levels = self.levels(domain)?;
-                let keep = |at: usize| match operator {
-                    Comparison::Less => at < level,
-                    Comparison::LessOrEqual => at <= level,
-                    Comparison::Greater => at > level,
-                    Comparison::GreaterOrEqual => at >= level,
-                };
+                let keep = |at: usize| kept(operator, at.cmp(&level));
                 let chosen = levels
                     .into_iter()
                     .enumerate()

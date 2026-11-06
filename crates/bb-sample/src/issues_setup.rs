@@ -212,6 +212,7 @@ pub(crate) async fn create_one_field(
                     .iter()
                     .map(|name| NewChoice {
                         name: name.clone(),
+                        number: None,
                         color: None,
                         icon: None,
                     })

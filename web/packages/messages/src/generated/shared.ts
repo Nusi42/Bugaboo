@@ -292,6 +292,7 @@ export const messages = {
   "error.file.no-room":
     "The server has no room for this file right now. Try again later, or tell your administrator.",
   "error.name.taken": "That name is already used. Choose another one.",
+  "error.choice.number-taken": "Another choice of this field has that number. Choose another one.",
   "error.project.move-lifts-no-access":
     "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
   "error.project.too-deep":

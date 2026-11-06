@@ -188,6 +188,8 @@ error_codes! {
     FileNoRoom => ("file.no-room", 507),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
+    /// Another choice of the same field has this number (TIME-13).
+    ChoiceNumberTaken => ("choice.number-taken", 409),
     /// There is no such thing, or the person may not know about it.
     NotFound => ("resource.not-found", 404),
     /// The request is not valid.

@@ -13,7 +13,7 @@ use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::{ChoiceId, EntityId, FieldId, IssueTypeId, ProjectId};
 use bb_core::issue::IssueIcon;
 use bb_core::own_fields::{
-    ChoiceColor, FieldChoice, FieldFor, FieldType, Look, OwnField, Rules, Scope,
+    ChoiceColor, FieldChoice, FieldFor, FieldType, Look, OwnField, Rules, Scope, order_choices,
 };
 use bb_core::own_fields_value::Cell;
 use jiff::Timestamp;
@@ -68,6 +68,7 @@ fn read_choice(row: &Row) -> Result<FieldChoice, StoreError> {
         id: row.id::<ChoiceId>(FieldChoiceRow::Id)?,
         field: row.id::<FieldId>(FieldChoiceRow::Field)?,
         name: row.get(FieldChoiceRow::Name)?,
+        number: row.get::<Option<String>>(FieldChoiceRow::Number)?,
         color: ChoiceColor::from_code(&row.get::<String>(FieldChoiceRow::Color)?)
             .ok_or(StoreError::Corrupt("a choice color"))?,
         icon: row
@@ -79,7 +80,9 @@ fn read_choice(row: &Row) -> Result<FieldChoice, StoreError> {
     })
 }
 
-async fn definitions_in(reader: &mut impl Reader) -> Result<Vec<Definition>, StoreError> {
+pub(crate) async fn definitions_in(
+    reader: &mut impl Reader,
+) -> Result<Vec<Definition>, StoreError> {
     let mut select = Query::select();
     select
         .columns([
@@ -149,6 +152,7 @@ async fn definitions_in(reader: &mut impl Reader) -> Result<Vec<Definition>, Sto
             FieldChoiceRow::Id,
             FieldChoiceRow::Field,
             FieldChoiceRow::Name,
+            FieldChoiceRow::Number,
             FieldChoiceRow::Color,
             FieldChoiceRow::Icon,
             FieldChoiceRow::Position,
@@ -162,6 +166,9 @@ async fn definitions_in(reader: &mut impl Reader) -> Result<Vec<Definition>, Sto
         if let Some(at) = position.get(&choice.field) {
             found[*at].choices.push(choice);
         }
+    }
+    for definition in &mut found {
+        order_choices(&mut definition.choices);
     }
     Ok(found)
 }
@@ -333,6 +340,7 @@ async fn insert_choice(
             FieldChoiceRow::Id,
             FieldChoiceRow::Field,
             FieldChoiceRow::Name,
+            FieldChoiceRow::Number,
             FieldChoiceRow::Color,
             FieldChoiceRow::Icon,
             FieldChoiceRow::Position,
@@ -342,6 +350,7 @@ async fn insert_choice(
             Expr::val(choice.id.stored()),
             Expr::val(choice.field.stored()),
             Expr::val(choice.name.as_str()),
+            Expr::val(choice.number.as_deref()),
             Expr::val(choice.color.code()),
             Expr::val(choice.icon.map(IssueIcon::code)),
             Expr::val(choice.position),
@@ -584,6 +593,7 @@ impl FieldStore for AuthStorage {
         update
             .table(FieldChoiceRow::Table)
             .value(FieldChoiceRow::Name, choice.name.as_str())
+            .value(FieldChoiceRow::Number, choice.number.as_deref())
             .value(FieldChoiceRow::Color, choice.color.code())
             .value(FieldChoiceRow::Icon, choice.icon.map(IssueIcon::code))
             .value(FieldChoiceRow::RetiredAt, choice.retired_at.map(to_micros))

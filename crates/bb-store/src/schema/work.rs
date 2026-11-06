@@ -107,6 +107,7 @@ pub(crate) enum FieldChoiceRow {
     Id,
     Field,
     Name,
+    Number,
     Color,
     Icon,
     Position,

@@ -23,9 +23,7 @@ fn definitions(state: &State) -> Vec<Definition> {
     let mut found = state.field_definitions.clone();
     found.sort_by_key(|definition| (definition.field.position, definition.field.id));
     for definition in &mut found {
-        definition
-            .choices
-            .sort_by_key(|choice| (choice.position, choice.id));
+        bb_core::own_fields::order_choices(&mut definition.choices);
     }
     found
 }

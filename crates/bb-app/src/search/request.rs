@@ -47,6 +47,19 @@ impl ProjectLink {
     }
 }
 
+/// A choice of an own field with the keys that find it: its name, its number and how it is shown
+/// (`name_key`), and its number read as a whole number (a comparison goes by it, and counts only the
+/// choices that have one, where any has).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeyedChoice {
+    /// The keys.
+    pub keys: Vec<String>,
+    /// The choice.
+    pub id: ChoiceId,
+    /// Its number as a whole number (`0410` is 410); none without a number.
+    pub number: Option<u64>,
+}
+
 /// What the names in a search stand for, resolved by the use case with the rules of the person
 /// before the statement is made (ADR-0005 amendment M5, decision 9): a name is the key of
 /// `bb_core::names::name_key`, and only things the person may know are in these lists, so a name
@@ -71,8 +84,9 @@ pub struct Names {
     pub issues: Vec<(String, IssueId)>,
     /// The names of the search that stand for nothing the person may know, with where they are.
     pub unknown: Vec<UnknownName>,
-    /// The choices of each own field with a list, in the order of the list.
-    pub choices: Vec<(FieldId, Vec<(String, ChoiceId)>)>,
+    /// The choices of each own field with a list, in the order of the list, each with the keys that
+    /// find it (its name, its number, how it is shown).
+    pub choices: Vec<(FieldId, Vec<KeyedChoice>)>,
     /// The tags the person may know, by the key of their name.
     pub tags: Vec<(String, Vec<TagId>)>,
     /// The labels the person may know, by the key of their name.

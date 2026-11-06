@@ -6,8 +6,23 @@ export function field(more: Partial<OwnField>): OwnField {
   return {
     applies_to: "issues",
     choices: [
-      { id: "minor", name: "Minor", color: "cat3", retired: false },
-      { id: "major", name: "Major", color: "cat4", icon: "flag", retired: true },
+      {
+        id: "minor",
+        name: "Minor",
+        shown_as: "Minor",
+        search_words: ["Minor"],
+        color: "cat3",
+        retired: false,
+      },
+      {
+        id: "major",
+        name: "Major",
+        shown_as: "Major",
+        search_words: ["Major"],
+        color: "cat4",
+        icon: "flag",
+        retired: true,
+      },
     ],
     help: "",
     id: "severity",

@@ -559,6 +559,7 @@ stored_tables! {
         Id => id,
         Field => field,
         Name => name,
+        Number => number,
         Color => color,
         Icon => icon,
         Position => position,

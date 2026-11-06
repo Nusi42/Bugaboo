@@ -39,6 +39,7 @@ pub(crate) fn new_field(
             .iter()
             .map(|name| NewChoice {
                 name: (*name).to_owned(),
+                number: None,
                 color: None,
                 icon: None,
             })
@@ -107,6 +108,7 @@ pub(crate) async fn add_choice_scenario(world: &World) -> Added {
                 field: field.id,
                 version: field.version,
                 name: "Critical".to_owned(),
+                number: None,
                 color: None,
                 icon: None,
             },
@@ -127,6 +129,7 @@ pub(crate) async fn change_choice_scenario(world: &World) -> Added {
                 choice: field.choices[0].id,
                 version: field.version,
                 name: Some("Small".to_owned()),
+                number: Edit::Keep,
                 color: None,
                 icon: Edit::Keep,
                 retired: None,
@@ -254,6 +257,7 @@ async fn cf_01_a_field_written_in_a_request_is_read_in_the_same_request() -> Res
             field: made.id,
             version: made.version,
             name: "Bakery".to_owned(),
+            number: None,
             color: None,
             icon: None,
         },

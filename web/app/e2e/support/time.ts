@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import type { ApiSession } from "./api.ts";
@@ -20,14 +20,14 @@ export async function choiceNamed(
   field: string,
   name: string,
 ): Promise<string> {
-  const shown = dataOf(
+  const shown: Schema<"FieldBody"> = dataOf(
     await session.client.GET("/api/v1/fields/{field}", { params: { path: { field } } }),
   );
   const found = shown.choices.find((choice) => choice.name === name);
   if (found !== undefined) {
     return found.id;
   }
-  const added = dataOf(
+  const added: Schema<"FieldBody"> = dataOf(
     await session.client.POST("/api/v1/fields/{field}/choices", {
       params: { path: { field } },
       body: { version: shown.version, name },

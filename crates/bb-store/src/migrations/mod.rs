@@ -63,6 +63,7 @@ mod m0031_time_entries;
 mod m0032_working_hours;
 mod m0033_issue_estimates;
 mod m0034_layout_time_fields;
+mod m0035_choice_numbers;
 #[cfg(test)]
 mod old_rows;
 
@@ -330,6 +331,11 @@ const ALL: &[Definition] = &[
         version: 34,
         name: "layout_time_fields",
         steps: m0034_layout_time_fields::steps,
+    },
+    Definition {
+        version: 35,
+        name: "choice_numbers",
+        steps: || Ok(m0035_choice_numbers::steps()),
     },
 ];
 
