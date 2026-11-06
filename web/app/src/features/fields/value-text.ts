@@ -146,6 +146,36 @@ export function isUnchanged(typed: string, shown: string, kept?: Kept): boolean 
   return typed === savedText(shown, kept);
 }
 
+/** What a box does with the text it is given. */
+export type Reading =
+  /** The text is what is saved already: nothing is sent. */
+  | { readonly kind: "unchanged" }
+  /** The text is no value: nothing is sent, and the sentence says why. */
+  | { readonly kind: "mistake"; readonly problem: string }
+  /** The text means this value: it is sent. */
+  | { readonly kind: "value"; readonly value: Sent };
+
+/** What the box of a field makes of the text typed in it, against the text it shows (`shown`). */
+export function readBox(
+  field: BoxField,
+  typed: string,
+  shown: string,
+  how: {
+    readonly kept?: Kept | undefined;
+    readonly inRow: boolean;
+    readonly readLength?: LengthReader | undefined;
+  },
+): Reading {
+  // A box left without a change is no change, also before the page read the value it sent.
+  if (how.inRow && isUnchanged(typed, shown, how.kept)) {
+    return { kind: "unchanged" };
+  }
+  const sent = sentFrom(field, typed, how.readLength);
+  return "problem" in sent
+    ? { kind: "mistake", problem: sent.problem }
+    : { kind: "value", value: sent.value };
+}
+
 /** How many of the stored unit make a day: a *Date* is stored in days, a *Date and time* in microseconds. */
 function partsPerDay(kind: OwnField["kind"]): number {
   return kind === "date" ? 1 : msPerDay * 1000;

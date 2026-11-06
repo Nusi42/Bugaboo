@@ -16,6 +16,7 @@ import {
   isDecimalText,
   decimalToMillionths,
   millionthsToDecimal,
+  readBox,
   wordsOfLines,
 } from "./value-text.ts";
 
@@ -120,5 +121,32 @@ describe("cf_03 the bounds of a range of days", () => {
 
   it("has no bound for text that is no day of the calendar", () => {
     expect(dayBound("date", "2026-02-30", bound.lowest)).toBeUndefined();
+  });
+});
+
+describe("time_03 what a box does with the text typed in it", () => {
+  const how = { inRow: false, readLength: reader };
+
+  it("tells a value, which is sent", () => {
+    expect(readBox(duration, "1:30", "", how)).toEqual({ kind: "value", value: 5400 });
+    // A box emptied sends nothing as the value, which takes the length away.
+    expect(readBox(duration, "", "1h 30m", how)).toEqual({ kind: "value", value: null });
+  });
+
+  it("tells a text that is no value, with the sentence that says why, and sends nothing", () => {
+    expect(readBox(duration, "soon", "", how)).toEqual({
+      kind: "mistake",
+      problem: "Type a length of time like 1:30, 1.5 or 1h 30m.",
+    });
+  });
+
+  it("tells a box in a row that was left without a change, which sends nothing and says nothing", () => {
+    const inRow = { inRow: true, readLength: reader };
+    expect(readBox(duration, "1h 30m", "1h 30m", inRow)).toEqual({ kind: "unchanged" });
+    // The text that was sent already counts as saved while the page still shows the old value.
+    const kept = { from: "1h", text: "1h 30m" };
+    expect(readBox(duration, "1h 30m", "1h", { ...inRow, kept })).toEqual({ kind: "unchanged" });
+    // A box of a form is sent at every change, also one that is the same as before.
+    expect(readBox(duration, "1h 30m", "1h 30m", how)).toEqual({ kind: "value", value: 5400 });
   });
 });

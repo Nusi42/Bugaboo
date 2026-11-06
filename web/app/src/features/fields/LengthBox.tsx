@@ -19,6 +19,10 @@ export interface LengthBoxProps {
   readonly inRow?: boolean;
   /** A hint under the box, for a box of a form: what can be typed. */
   readonly help?: string;
+  /** What the server said was wrong with the length, in words: shown at the box. */
+  readonly problem?: string | undefined;
+  /** Told when the text typed is no length, for a form that must not send it until it is mended. */
+  readonly onMistake?: () => void;
 }
 
 /**
@@ -26,7 +30,15 @@ export interface LengthBoxProps {
  * time*, *Time left*, TIME-03): the same box, reader and words as the length of an own field, so a
  * length is typed and written one way everywhere.
  */
-export function LengthBox({ name, minutes, onCommit, inRow = true, help = "" }: LengthBoxProps) {
+export function LengthBox({
+  name,
+  minutes,
+  onCommit,
+  inRow = true,
+  help = "",
+  problem,
+  onMistake,
+}: LengthBoxProps) {
   const field: BoxField = { name, kind: "duration", help, rules: { required: false } };
   return (
     <span {...partOf(part.lengthBox)}>
@@ -37,7 +49,9 @@ export function LengthBox({ name, minutes, onCommit, inRow = true, help = "" }: 
             value={minutes === undefined ? undefined : minutes * secondsPerMinute}
             inRow={inRow}
             live={!inRow}
+            problem={problem}
             readLength={readLength}
+            {...(onMistake === undefined ? {} : { onMistake })}
             onCommit={(sent) => {
               onCommit(typeof sent === "number" ? Math.floor(sent / secondsPerMinute) : null);
             }}
