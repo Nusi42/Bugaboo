@@ -22,6 +22,8 @@ export interface Context {
   readonly small: string;
   /** The readable IDs of the most issues one change to many issues names, from the big project. */
   readonly many: readonly string[];
+  /** The last week the person worked: its first and last date. */
+  readonly week: { readonly first: string; readonly last: string };
 }
 
 /** One kind of read, repeated `runs` times after the warm-up. */
@@ -44,6 +46,33 @@ async function issuePage(context: Context, round: number): Promise<number> {
   const issue = context.issues[round % context.issues.length] ?? "";
   const reads = pageReads(context.session, issue);
   return (await timed(() => Promise.all(reads.map(([, ask]) => ask())))).ms;
+}
+
+/** What the timesheet reads for a week at once: the work days, the entries and the comparison. */
+async function timesheetWeek(context: Context): Promise<number> {
+  const { first, last } = context.week;
+  const { client } = context.session;
+  return (
+    await timed(() =>
+      Promise.all([
+        client.GET("/api/v1/me/work-days", { params: { query: { from: first, to: last } } }),
+        client.GET("/api/v1/me/time-entries", { params: { query: { from: first, to: last } } }),
+        client.GET("/api/v1/me/work-days/booked", { params: { query: { date: first } } }),
+      ]),
+    )
+  ).ms;
+}
+
+/** The time entries of one issue (the list under *Time spent*). */
+async function issueTimeEntries(context: Context, round: number): Promise<number> {
+  const issue = context.issues[round % context.issues.length] ?? "";
+  return (
+    await timed(() =>
+      context.session.client.GET("/api/v1/issues/{issue}/time-entries", {
+        params: { path: { issue } },
+      }),
+    )
+  ).ms;
 }
 
 /** The first page of the list of a project. */
@@ -135,6 +164,20 @@ export const scenarios: readonly Scenario[] = [
           }),
         )
       ).ms,
+  },
+  {
+    // What the timesheet asks for when it opens a week (TIME-04): within the budget of a page.
+    name: "timesheet-week",
+    budget: "page",
+    runs: RUNS,
+    once: timesheetWeek,
+  },
+  {
+    // The entries listed on an issue (TIME-01).
+    name: "issue-time-entries",
+    budget: "page",
+    runs: RUNS,
+    once: issueTimeEntries,
   },
   {
     name: "notifications-count",

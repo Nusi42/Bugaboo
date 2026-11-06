@@ -7,7 +7,7 @@ import { inOrder } from "../../app/e2e/support/sequence.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { measure } from "./measure.ts";
 import { bigAndSmall } from "./projects.ts";
-import { firstIssues, someIssues } from "./reads.ts";
+import { firstIssues, lastWeek, someIssues } from "./reads.ts";
 import { type Context, type Scenario, scenarios } from "./scenarios.ts";
 
 /**
@@ -34,10 +34,12 @@ export async function run(folder: string, database: string, server: Instance): P
   );
   const projects = listed.items.map((item) => String(item.short_name));
   const places = await bigAndSmall(session, projects);
+  const week = await lastWeek(session);
   const context: Context = {
     session,
     issues: await someIssues(session, projects),
     many: await firstIssues(session, places.big, manyChangesIssuesMax),
+    week,
     ...places,
   };
   const measured: Record<string, unknown> = {};
