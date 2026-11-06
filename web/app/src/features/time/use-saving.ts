@@ -22,9 +22,13 @@ async function attempt(work: () => Promise<void>): Promise<Saved> {
 export function useSaving() {
   const [state, setState] = useState<SaveState>("idle");
   const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const waiting = useRef(0);
   const inLine = useCallback(<Result>(job: () => Promise<Result>): Promise<Result> => {
+    waiting.current += 1;
     const turn = queue.current.then(job);
-    queue.current = turn.then(doNothing, doNothing);
+    queue.current = turn.then(doNothing, doNothing).then(() => {
+      waiting.current -= 1;
+    });
     return turn;
   }, []);
   /** Saves at once, in the turn that is running. */
@@ -38,5 +42,7 @@ export function useSaving() {
     (work: () => Promise<void>) => inLine(() => saveNow(work)),
     [inLine, saveNow],
   );
-  return { state, run, inLine, saveNow };
+  /** Whether a change is waiting or on its way (read when the person leaves the page). */
+  const isBusy = useCallback(() => waiting.current > 0, []);
+  return { state, run, inLine, saveNow, isBusy };
 }

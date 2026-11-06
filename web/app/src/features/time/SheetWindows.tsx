@@ -1,3 +1,4 @@
+import { LeaveGuard } from "../../shared/editing/LeaveGuard.tsx";
 import { personName } from "../../shared/person.ts";
 import { BreaksWindow } from "./BreaksWindow.tsx";
 import { DayHistory } from "./DayHistory.tsx";
@@ -11,11 +12,15 @@ export interface SheetWindowsProps {
   readonly person: string | undefined;
 }
 
-/** The windows over the week: the reason a change asks for, the breaks and the history of a day. */
+/**
+ * The windows over the week: the reason a change asks for, the breaks and the history of a day, and
+ * the question before the page is left while a change is saved.
+ */
 export function SheetWindows({ sheet, person }: SheetWindowsProps) {
   const { days, page, shown, history, byDate } = sheet;
   return (
     <>
+      <LeaveGuard isBusy={days.editing.isBusy} />
       <ReasonWindow
         editing={days.editing}
         region={days.region}

@@ -659,6 +659,18 @@ pub const COMMON_DONE: MessageKey = MessageKey::new("common.done");
 /// The message `common.issue-id`.
 pub const COMMON_ISSUE_ID: MessageKey = MessageKey::new("common.issue-id");
 
+/// The message `common.leave-unsaved-leave`.
+pub const COMMON_LEAVE_UNSAVED_LEAVE: MessageKey = MessageKey::new("common.leave-unsaved-leave");
+
+/// The message `common.leave-unsaved-stay`.
+pub const COMMON_LEAVE_UNSAVED_STAY: MessageKey = MessageKey::new("common.leave-unsaved-stay");
+
+/// The message `common.leave-unsaved-text`.
+pub const COMMON_LEAVE_UNSAVED_TEXT: MessageKey = MessageKey::new("common.leave-unsaved-text");
+
+/// The message `common.leave-unsaved-title`.
+pub const COMMON_LEAVE_UNSAVED_TITLE: MessageKey = MessageKey::new("common.leave-unsaved-title");
+
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
 
@@ -13481,6 +13493,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.continue", "Continue"),
     ("common.done", "Done"),
     ("common.issue-id", "Issue ID, for example WEB-142"),
+    ("common.leave-unsaved-leave", "Leave"),
+    ("common.leave-unsaved-stay", "Stay"),
+    (
+        "common.leave-unsaved-text",
+        "A change is still being saved. If you leave now, it may be lost.",
+    ),
+    ("common.leave-unsaved-title", "Leave this page?"),
     ("common.loading", "Loading…"),
     ("common.nothing", "nothing"),
     ("common.off", "Off"),

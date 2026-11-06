@@ -17,3 +17,4 @@ export { shownSaveError } from "./save-error.ts";
 export { useEditLock, type EditLock } from "./use-edit-lock.ts";
 export { useVersionWatch } from "./use-version-watch.ts";
 export type { Watched } from "./version-watch.ts";
+export { LeaveGuard, type LeaveGuardProps } from "./LeaveGuard.tsx";

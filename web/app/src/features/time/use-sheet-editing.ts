@@ -17,6 +17,8 @@ import { useSaving } from "./use-saving.ts";
 export interface SheetEditing {
   /** *Saving…*, *Saved* or *Not saved yet*. */
   readonly state: SaveState;
+  /** Whether a typed change waits to be saved or is on its way. */
+  readonly isBusy: () => boolean;
   /** Counts up when a typed value is given up, so the cells show the saved values again. */
   readonly revision: number;
   /** The change of a day that waits for its reason. */
@@ -66,5 +68,5 @@ export function useSheetEditing(input: EditingInput): SheetEditing {
   const saving = useSaving();
   const editIssue = useIssueCells(saving, input.entriesOf);
   const dayCells = useDayCells(input, saving);
-  return { state: saving.state, editIssue, ...dayCells };
+  return { state: saving.state, isBusy: saving.isBusy, editIssue, ...dayCells };
 }

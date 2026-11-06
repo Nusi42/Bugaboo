@@ -61,6 +61,20 @@ describe("CellDraft and the server's way of writing", () => {
     expect(draft.syncHeld("1:30")).toBe(true);
   });
 
+  it("keeps the typed 2.5 until the cell is left when saves overlapped (M6-F180)", () => {
+    const draft = new CellDraft("");
+    draft.type("1:00");
+    const first = draft.saving("1:00");
+    draft.type("2.5");
+    const second = draft.saving("2.5");
+    first(true);
+    second(true);
+    // The server wrote 2:30 for 2.5 while the saves ran, so the held text is dropped: the box says
+    // 2.5, and it says 2:30 once a read after the saves arrives.
+    expect(draft.syncHeld("2:30")).toBe(false);
+    expect(draft.sync("2:30")).toBe(true);
+  });
+
   it("takes the server's way of writing a value after the save came back", () => {
     const { draft, done } = typedAndSent("", "1.5");
     done(true);
