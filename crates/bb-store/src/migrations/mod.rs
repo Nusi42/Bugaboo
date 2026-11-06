@@ -64,6 +64,7 @@ mod m0032_working_hours;
 mod m0033_issue_estimates;
 mod m0034_layout_time_fields;
 mod m0035_choice_numbers;
+mod m0036_issue_totals_index;
 #[cfg(test)]
 mod old_rows;
 
@@ -336,6 +337,11 @@ const ALL: &[Definition] = &[
         version: 35,
         name: "choice_numbers",
         steps: || Ok(m0035_choice_numbers::steps()),
+    },
+    Definition {
+        version: 36,
+        name: "issue_totals_index",
+        steps: || Ok(m0036_issue_totals_index::steps()),
     },
 ];
 

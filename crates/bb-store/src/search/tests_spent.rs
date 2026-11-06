@@ -2,6 +2,7 @@
 //! ARCH-DB-PARITY): the minutes of each issue of a list, the sum over the issues a search finds with
 //! the reader's sight in it, a person's minutes for each date, and one timer row for each person.
 
+use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
 use bb_app::time::TimeStore as _;
 use bb_app::time::spent::TimeSpentStore as _;
@@ -97,6 +98,54 @@ async fn arch_db_parity_time_spent_is_the_same_sum_through_the_list_the_search_a
                 (date(2027, 1, 14), Minutes::new(120)),
                 (date(2027, 1, 16), Minutes::new(60)),
             ]
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn arch_db_parity_the_sum_of_a_search_leaves_out_the_entries_of_an_issue_in_the_trash()
+-> TestResult {
+    each_database("time_spent_trash", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let (kept, trashed) = (data.issues[0].id, data.issues[1].id);
+        let entries = vec![
+            entry(&mut data.source, data.me, kept, (14, 60))?,
+            entry(&mut data.source, data.me, trashed, (14, 45))?,
+        ];
+        ChangeStore::record_change(storage, &event(&mut data.source, 7), move |tx| {
+            Box::pin(async move {
+                for each in &entries {
+                    AuthStorage::insert_time_entry(tx, each).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        let everything = request(&data, "", None, 1);
+        assert_eq!(
+            storage.spent_on_search(&everything).await.ok(),
+            Some(Minutes::new(105))
+        );
+        // Into the trash: its entries stay, but no search finds the issue, so its minutes are not summed.
+        ChangeStore::record_change(storage, &event(&mut data.source, 8), move |tx| {
+            Box::pin(async move {
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9)).await?;
+                Ok(())
+            })
+        })
+        .await?;
+        assert_eq!(
+            storage.spent_on_search(&everything).await.ok(),
+            Some(Minutes::new(60))
+        );
+        // The port still tells the minutes booked on the issue itself.
+        assert_eq!(
+            storage.spent_on_issues(&[trashed]).await?,
+            vec![(trashed, Minutes::new(45))]
         );
         Ok(())
     })

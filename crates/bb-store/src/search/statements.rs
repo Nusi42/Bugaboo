@@ -12,18 +12,18 @@ use bb_core::time::Minutes;
 use bb_core::time::range::LengthRange;
 use bb_searchlang::{MAX_CONTAINS_WORDS, MAX_SORT_KEYS};
 use sea_query::{
-    Alias, Cond, Expr, ExprTrait as _, Func, Iden, NullOrdering, Order, Query, SelectStatement,
-    UnionType, WithClause, WithQuery,
+    Alias, Cond, Expr, ExprTrait as _, Func, Iden, JoinType, NullOrdering, Order, Query,
+    SelectStatement, UnionType, WithClause, WithQuery,
 };
 
 use super::order::{GroupValue, Grouping, IdOf, Key, Kind, SortValue, bigint};
 use super::source::Repeats;
-use super::spent::minutes_spent;
+use super::spent::sum_of_minutes;
 use super::{CompileError, Compiler, Form};
 use crate::db::{Dialect, Row, Statement, StoredId as _};
 use crate::error::StoreError;
 use crate::issues::{issue_select, read_issue};
-use crate::schema::IssueRow;
+use crate::schema::{IssueRow, TimeEntryRow};
 use crate::sight::sight_condition;
 use crate::text_index::{TextScope, text_rows_up_to};
 
@@ -359,21 +359,28 @@ pub(crate) fn count_statement(
     Ok(finish(&compiler, select))
 }
 
-/// The sum of the minutes spent on the issues the search finds, in the column of the count: the
-/// minutes of each issue by the one expression of time spent, summed over the issues found.
+/// The sum of the minutes spent on the issues the search finds, in the column of the count: the one
+/// sum of time entries (`sum_of_minutes`) over the entries joined to the issues found.
 pub(crate) fn spent_statement(
     request: &SearchRequest,
     dialect: Dialect,
 ) -> Result<Built, CompileError> {
     let compiler = Compiler::new(request, dialect);
-    let spent = minutes_spent();
+    // The one sum of time entries, over the entries of the issues the search finds: read from the
+    // index of the entries by issue, without a lookup for each issue.
     let mut select = Query::select();
     select
         .expr_as(
-            Func::coalesce([bigint(Func::sum(spent).into()), Expr::val(0_i64)]),
+            Func::coalesce([bigint(sum_of_minutes()), Expr::val(0_i64)]),
             Counted,
         )
         .from(IssueRow::Table)
+        .join(
+            JoinType::InnerJoin,
+            TimeEntryRow::Table,
+            Expr::col((TimeEntryRow::Table, TimeEntryRow::Issue))
+                .equals((IssueRow::Table, IssueRow::Id)),
+        )
         .cond_where(found(&compiler)?);
     Ok(finish(&compiler, select))
 }
