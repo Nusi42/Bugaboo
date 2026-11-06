@@ -104,6 +104,8 @@ export async function clearTimer(session: ApiSession): Promise<void> {
 export interface BookedEntry {
   readonly minutes: number;
   readonly note: string;
+  /** Whether it is marked *Billable*; nothing while the organization does not offer the mark. */
+  readonly billable: boolean | undefined;
   /** The values of its own fields, by the key of the field. */
   readonly fields: Readonly<Record<string, unknown>>;
 }
@@ -115,13 +117,18 @@ export async function entriesBookedOn(
 ): Promise<readonly BookedEntry[]> {
   const week = dataOf(
     await session.client.GET("/api/v1/me/time-entries", {
-      params: { query: { fields: "issue,minutes,note,own_fields" } },
+      params: { query: { fields: "issue,minutes,note,billable,own_fields" } },
     }),
   );
   const booked: BookedEntry[] = [];
   for (const entry of week.items) {
     if (entry.issue === issue.id) {
-      booked.push({ minutes: entry.minutes, note: entry.note, fields: entry.own_fields ?? {} });
+      booked.push({
+        minutes: entry.minutes,
+        note: entry.note,
+        billable: entry.billable ?? undefined,
+        fields: entry.own_fields ?? {},
+      });
     }
   }
   return booked;
