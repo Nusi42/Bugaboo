@@ -95,7 +95,7 @@ impl Later for Large {
             contributors,
             cost_center: Some(cost_center),
         };
-        let bank = crate::large_state::read(
+        let mut bank = crate::large_state::read(
             world,
             &setup,
             cost_center,
@@ -104,6 +104,14 @@ impl Later for Large {
             (world.clock.now(), &words),
         )
         .await?;
+        bank.time = Some(
+            crate::time_fields::starter_fields(
+                world,
+                &token,
+                &self.layout.issues.work.time.cost_centers,
+            )
+            .await?,
+        );
         crate::large_write::run(
             world,
             &bank,

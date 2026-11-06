@@ -282,6 +282,10 @@
     "followersAtMost": 3,
     "notifiedPercent": 2,
     "checkNotifiedPercent": 100,
+    "timeEntriesPer100": 200,
+    "workWeeks": 13,
+    "leavePercent": 6,
+    "longDayPercent": 5,
     "batch": 2000,
     "bigProjectsShare": 60
   }

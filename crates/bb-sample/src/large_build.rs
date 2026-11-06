@@ -59,6 +59,7 @@ pub(crate) struct Bundle {
     pub(crate) parent: Option<IssueParent>,
     pub(crate) relation: Option<Relation>,
     pub(crate) attachments: Vec<Attachment>,
+    pub(crate) booked: Vec<crate::large_time::Booked>,
     pub(crate) events: Vec<DomainEvent>,
 }
 
@@ -226,6 +227,11 @@ impl Maker<'_> {
         events.extend(talk.events);
         let relation = self.relation(&mut facts, &mut events)?;
         let attachments = self.attachment(&mut facts, &mut events)?;
+        let booked = self.book_time(
+            index,
+            (facts.id, assigned_to.first().copied(), facts.created),
+            &mut events,
+        )?;
         let recent = &mut self.counters.recent[facts.place_at];
         recent.push_back(facts.id);
         if recent.len() > RECENT {
@@ -250,6 +256,7 @@ impl Maker<'_> {
             parent: done.parent,
             relation,
             attachments,
+            booked,
             events,
         })
     }

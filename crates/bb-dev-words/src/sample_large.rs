@@ -70,6 +70,16 @@ pub struct LargePlan {
     /// rules of what Guests and Contributors are told need notifications to look at, and in a
     /// small dataset the newest 2 % hold none of theirs.
     pub check_notified_percent: u32,
+    /// How many time entries there are on 100 issues (the people book on the issues they work
+    /// on).
+    pub time_entries_per_100: u32,
+    /// How many weeks of working days are recorded for the people who work, counted back from the
+    /// end of the dataset.
+    pub work_weeks: u32,
+    /// How many of 100 working days a person does not work (leave).
+    pub leave_percent: u32,
+    /// How many of 100 worked days are too long (a rule is broken).
+    pub long_day_percent: u32,
     /// How many issues one transaction writes.
     pub batch: u32,
     /// How many of 100 issues are in the biggest tenth of the projects.

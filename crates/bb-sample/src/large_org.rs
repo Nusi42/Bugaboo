@@ -89,6 +89,19 @@ pub(crate) struct Folk {
     pub(crate) role: StartingRole,
 }
 
+impl Folk {
+    /// Whether the person works in projects, so records their working hours and books time.
+    pub(crate) fn works(&self) -> bool {
+        [
+            StartingRole::Administrator,
+            StartingRole::ProjectLead,
+            StartingRole::TeamMember,
+            StartingRole::Contributor,
+        ]
+        .contains(&self.role)
+    }
+}
+
 /// A project that holds issues, and who may do what in it.
 #[derive(Clone, Debug)]
 pub(crate) struct Place {

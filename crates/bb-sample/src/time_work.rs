@@ -13,25 +13,22 @@ use std::collections::BTreeMap;
 
 use bb_app::access::StartingRole;
 use bb_app::auth::AppError;
-use bb_app::fields::{AddChoice, FieldQuery, add_choice, field};
 use bb_app::issues::{ChangeIssue, IssueQuery, change_issue, issue};
 use bb_app::settings::{ChangeSetting, ResetSetting, SettingsScope, change_setting, reset_setting};
-use bb_app::time::{AddTime, EntryDetails, StartTimer, TimeStore as _, add_time, start_timer};
+use bb_app::time::{AddTime, EntryDetails, StartTimer, add_time, start_timer};
 use bb_app::working_hours::{
     ChangeWorkDay, StartWorkDay, Tap, TapWorkDay, WorkingHoursStore as _, change_work_day,
     start_work_day, tap_work_day,
 };
 use bb_core::given::SetTo;
-use bb_core::id::FieldId;
 use bb_core::settings::{SECURITY_SESSION_IDLE_MINUTES, SettingValue};
 use bb_core::time::Minutes;
-use bb_core::time::entry::StarterField;
 use bb_core::working_time::Span;
 use bb_dev_words::sample::TimePlan;
 use jiff::SignedDuration;
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
-use serde_json::{Value, json};
+use serde_json::json;
 
 use crate::error::{SampleError, Step};
 use crate::issues::Maker;
@@ -39,6 +36,7 @@ use crate::issues_hands::Hands;
 use crate::issues_setup::json;
 use crate::issues_time::Calendar;
 use crate::random::SeededRandom;
+use crate::time_fields::{Starter, starter_fields};
 
 /// A different stream of random numbers than the issues and the work together use.
 const SALT: u64 = 0x54_49_4D_45;
@@ -233,66 +231,20 @@ impl Maker<'_, '_> {
             .ok_or(SampleError::PersonMissing)
     }
 
-    /// The IDs of *Activity* and *Cost center* (found by their marks, never by their names) and of
-    /// their choices; *Cost center* starts empty, so its choices of the plan are added first.
+    /// The IDs of *Activity* and *Cost center* and of their choices, as the entries need them.
     async fn time_fields(&mut self, plan: &TimePlan) -> Result<Fields, SampleError> {
-        let step = |error: &dyn std::fmt::Display| SampleError::step(Step::Time, &error);
-        let marks = self
-            .world
-            .storage
-            .starter_fields()
-            .await
-            .map_err(|error| step(&error))?;
-        let mark = |starter: StarterField| -> Result<FieldId, SampleError> {
-            marks
-                .iter()
-                .find(|found| found.starter == starter)
-                .map(|found| found.field)
-                .ok_or_else(|| SampleError::NotMade(starter.code().to_owned()))
-        };
-        let (activity, cost_center) = (
-            mark(StarterField::Activity)?,
-            mark(StarterField::CostCenter)?,
-        );
         let administrator = self.administrator()?;
         let token = self.hands.token(administrator).await?;
-        let ctx = self.world.services.ctx(self.world.request());
-        let read = |field_id: FieldId| FieldQuery {
-            session_token: token.clone(),
-            field: field_id,
+        let made = starter_fields(self.world, &token, &plan.cost_centers).await?;
+        let of = |starter: &Starter| {
+            (
+                starter.field.to_string(),
+                starter.choices.iter().map(ToString::to_string).collect(),
+            )
         };
-        let mut view = json(field(&ctx, read(cost_center)).await, Step::Time)?;
-        for center in &plan.cost_centers {
-            self.world.tick();
-            view = json(
-                add_choice(
-                    &ctx,
-                    AddChoice {
-                        session_token: token.clone(),
-                        field: cost_center,
-                        version: view["version"].as_i64().unwrap_or(1),
-                        name: center.name.clone(),
-                        number: Some(center.number.clone()),
-                        color: None,
-                        icon: None,
-                    },
-                )
-                .await,
-                Step::Time,
-            )?;
-        }
-        let choices = |view: &Value| -> Vec<String> {
-            view["choices"]
-                .as_array()
-                .map_or(&[][..], Vec::as_slice)
-                .iter()
-                .filter_map(|choice| choice["id"].as_str().map(str::to_owned))
-                .collect()
-        };
-        let activity_view = json(field(&ctx, read(activity)).await, Step::Time)?;
         Ok(Fields {
-            activity: (activity.to_string(), choices(&activity_view)),
-            cost_center: (cost_center.to_string(), choices(&view)),
+            activity: of(&made.activity),
+            cost_center: of(&made.cost_center),
         })
     }
 

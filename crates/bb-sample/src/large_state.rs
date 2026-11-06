@@ -59,6 +59,8 @@ pub(crate) struct Bank {
     pub(crate) kinds: Vec<RelationKindId>,
     pub(crate) fields: Vec<(FieldPlan, MadeField)>,
     pub(crate) cost_center: FieldId,
+    /// *Activity* and *Cost center* of time entries; set once the choices of the plan exist.
+    pub(crate) time: Option<crate::time_fields::StarterFields>,
     pub(crate) tags: Vec<Tag>,
     pub(crate) labels: Vec<Label>,
     pub(crate) ladders: Vec<Vec<Ladder>>,
@@ -237,6 +239,7 @@ pub(crate) async fn read(
             .zip(setup.fields.iter().cloned())
             .collect(),
         cost_center,
+        time: None,
         tags,
         labels,
         ladders,

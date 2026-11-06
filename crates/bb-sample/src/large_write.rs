@@ -86,6 +86,7 @@ async fn write_batch(storage: &AuthStorage, bundles: &[Bundle]) -> Result<(), Sa
                 for attachment in &bundle.attachments {
                     AuthStorage::insert_attachment(transaction, attachment).await?;
                 }
+                crate::large_time::insert_entries(transaction, &bundle.booked).await?;
             }
             Ok(())
         })
@@ -160,6 +161,9 @@ pub(crate) async fn run(
             Ok(())
         })
         .await?;
+
+    // The working hours of the people who work, as the use case stores them.
+    crate::large_time::write_days(world, org, &bank.plan, span.end).await?;
 
     // What a server does by itself: the history of every issue is read from the events, and the
     // notifications of the newest events are made (the older ones were read long ago).

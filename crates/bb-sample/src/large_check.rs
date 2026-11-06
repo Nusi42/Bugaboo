@@ -23,6 +23,8 @@ use bb_app::comments::CommentStore as _;
 use bb_app::history::HistoryStore as _;
 use bb_app::notifications::NotificationStore as _;
 use bb_app::tags::TagStore as _;
+use bb_app::time::TimeStore as _;
+use bb_app::time::spent::TimeSpentStore as _;
 use bb_app::workflows::{StatusFilter, WorkflowStore as _};
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::FieldKey;
@@ -150,36 +152,21 @@ impl Sample {
             .collect();
         let step = issues.len().div_ceil(SAMPLED_AT_MOST).max(1);
         let mut sampled = 0;
+        let mut booked = 0;
         for issue in issues.iter().step_by(step) {
             sampled += 1;
-            let about = EntityRef {
-                kind: RecordKind::Issue.into(),
-                id: issue.id.into(),
-            };
-            let events = database.events_about(&about, ROWS_AT_MOST).await?;
-            let counted_up = events
-                .iter()
-                .filter(|event| event.counted_version())
-                .count();
-            if i64::try_from(counted_up).unwrap_or(-1) + 1 != issue.version {
-                problems.push(format!(
-                    "the issue {} has the version {} but {counted_up} events that count a version up",
-                    issue.id, issue.version
-                ));
-            }
-            let rows = storage
-                .history_page(issue.id, None, None, 0, ROWS_AT_MOST)
-                .await?;
-            for event in &events {
-                if rows.iter().all(|row| row.event != event.id) {
-                    problems.push(format!(
-                        "the history of the issue {} has no row for the event {}",
-                        issue.id, event.id
-                    ));
-                }
-            }
+            self.check_history(issue, &mut problems).await?;
             self.hash_around(issue.id, (&tag_names, &label_names), &mut hasher)
                 .await?;
+            booked += self
+                .check_time(issue.id, &mut hasher, &mut problems)
+                .await?;
+        }
+        if check && booked == 0 {
+            problems.push(
+                "no sampled issue has a time entry, so the rules of time were not looked at"
+                    .to_owned(),
+            );
         }
         self.check_told(facts, &issues, check, &mut problems)
             .await?;
@@ -189,6 +176,71 @@ impl Sample {
             issues: issues.len(),
             sampled,
         })
+    }
+
+    /// Holds an issue against its events: its version counts the events that count one up, and
+    /// every event has its row in the history of the issue.
+    async fn check_history(
+        &self,
+        issue: &bb_core::issue::Issue,
+        problems: &mut Vec<String>,
+    ) -> Result<(), SampleError> {
+        let (storage, database) = (&self.storage, self.storage.database());
+        let about = EntityRef {
+            kind: RecordKind::Issue.into(),
+            id: issue.id.into(),
+        };
+        let events = database.events_about(&about, ROWS_AT_MOST).await?;
+        let counted_up = events
+            .iter()
+            .filter(|event| event.counted_version())
+            .count();
+        if i64::try_from(counted_up).unwrap_or(-1) + 1 != issue.version {
+            problems.push(format!(
+                "the issue {} has the version {} but {counted_up} events that count a version up",
+                issue.id, issue.version
+            ));
+        }
+        let rows = storage
+            .history_page(issue.id, None, None, 0, ROWS_AT_MOST)
+            .await?;
+        for event in &events {
+            if rows.iter().all(|row| row.event != event.id) {
+                problems.push(format!(
+                    "the history of the issue {} has no row for the event {}",
+                    issue.id, event.id
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Holds the time booked on a sampled issue against the one definition of time spent, and puts
+    /// how many entries there are and their minutes into the fingerprint.
+    async fn check_time(
+        &self,
+        issue: bb_core::id::IssueId,
+        hasher: &mut impl std::hash::Hasher,
+        problems: &mut Vec<String>,
+    ) -> Result<usize, SampleError> {
+        let storage = &self.storage;
+        let entries = storage.entries_of_issue(issue, None, ROWS_AT_MOST).await?;
+        let summed: u64 = entries
+            .iter()
+            .map(|entry| u64::from(entry.minutes.get()))
+            .sum();
+        let spent = storage.spent_on_issues(&[issue]).await?;
+        let stored = spent
+            .first()
+            .map_or(0, |(_, minutes)| u64::from(minutes.get()));
+        // An issue with more entries than one read holds is not summed whole.
+        if entries.len() < usize::try_from(ROWS_AT_MOST).unwrap_or(usize::MAX) && summed != stored {
+            problems.push(format!(
+                "the issue {issue} has {summed} minutes in its time entries but time spent says {stored}"
+            ));
+        }
+        (entries.len(), summed).hash(hasher);
+        Ok(entries.len())
     }
 
     /// Puts what hangs on a sampled issue into the fingerprint: its comments (how many and their
