@@ -62,6 +62,9 @@ mod m0030_saved_search_spacing;
 mod m0031_time_entries;
 mod m0032_working_hours;
 mod m0033_issue_estimates;
+mod m0034_layout_time_fields;
+#[cfg(test)]
+mod old_rows;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -322,6 +325,11 @@ const ALL: &[Definition] = &[
         version: 33,
         name: "issue_estimates",
         steps: || Ok(m0033_issue_estimates::steps()),
+    },
+    Definition {
+        version: 34,
+        name: "layout_time_fields",
+        steps: m0034_layout_time_fields::steps,
     },
 ];
 

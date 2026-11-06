@@ -213,50 +213,19 @@ mod tests {
     use bb_core::fields::{Field, FieldKey};
     use bb_core::id::{LayoutId, RoleId, SequentialIds};
     use bb_testing::{TestResult, each_database};
-    use sea_query::{Expr, Query};
+    use sea_query::Expr;
 
     use super::super::Database;
+    use super::super::old_rows::{insert, old_layout, old_role};
     use super::*;
     use crate::auth::AuthStorage;
     use crate::db::StoredId as _;
     use crate::policy::level_rules_of_roles_in;
-    use crate::schema::{LayoutRow, LayoutSectionRow, RoleRow};
     use crate::test_support::at;
 
-    /// Inserts one row of `values` into `table`, as a database of migration 30 holds it.
-    async fn insert<const N: usize>(
-        database: &Database,
-        table: impl sea_query::IntoIden,
-        columns: [DynIden; N],
-        values: [Expr; N],
-    ) -> TestResult {
-        let mut row = Query::insert();
-        row.into_table(table).columns(columns).values(values)?;
-        database.execute(&row).await?;
-        Ok(())
-    }
-
     /// A role of the old demo with its levels, as a database of migration 30 holds them.
-    async fn old_role(database: &Database, role: RoleId) -> TestResult {
-        insert(
-            database,
-            RoleRow::Table,
-            [
-                RoleRow::Id.into_iden(),
-                RoleRow::Name.into_iden(),
-                RoleRow::Position.into_iden(),
-                RoleRow::TwoStep.into_iden(),
-                RoleRow::Version.into_iden(),
-            ],
-            [
-                Expr::val(role.stored()),
-                Expr::val("Old demo role"),
-                Expr::val(0_i64),
-                Expr::val(false),
-                Expr::val(1_i64),
-            ],
-        )
-        .await?;
+    async fn old_demo_role(database: &Database, role: RoleId) -> TestResult {
+        old_role(database, role, 0).await?;
         // The old demo hid Cost center; a reset role held a level for every field.
         for (field, level) in [
             ("cost-center", "hidden"),
@@ -278,88 +247,6 @@ mod tests {
         Ok(())
     }
 
-    /// A layout of the issue page that places Cost center and Due date for the role and took
-    /// Activity off its form.
-    async fn old_layout(database: &Database, layout: LayoutId, role: RoleId) -> TestResult {
-        insert(
-            database,
-            LayoutRow::Table,
-            [
-                LayoutRow::Id.into_iden(),
-                LayoutRow::Kind.into_iden(),
-                LayoutRow::Version.into_iden(),
-            ],
-            [
-                Expr::val(layout.stored()),
-                Expr::val("issue-page"),
-                Expr::val(1_i64),
-            ],
-        )
-        .await?;
-        insert(
-            database,
-            LayoutSectionRow::Table,
-            [
-                LayoutSectionRow::Layout.into_iden(),
-                LayoutSectionRow::Position.into_iden(),
-                LayoutSectionRow::Tab.into_iden(),
-                LayoutSectionRow::Title.into_iden(),
-            ],
-            [
-                Expr::val(layout.stored()),
-                Expr::val(0_i64),
-                Expr::val("Details"),
-                Expr::val(""),
-            ],
-        )
-        .await?;
-        for (position, field) in [(0_i64, "cost-center"), (1, "due-date")] {
-            insert(
-                database,
-                LayoutFieldRow::Table,
-                [
-                    LayoutFieldRow::Layout.into_iden(),
-                    LayoutFieldRow::Field.into_iden(),
-                    LayoutFieldRow::Section.into_iden(),
-                    LayoutFieldRow::Position.into_iden(),
-                ],
-                [
-                    Expr::val(layout.stored()),
-                    Expr::val(field),
-                    Expr::val(0_i64),
-                    Expr::val(position),
-                ],
-            )
-            .await?;
-            insert(
-                database,
-                LayoutFieldRoleRow::Table,
-                [
-                    LayoutFieldRoleRow::Layout.into_iden(),
-                    LayoutFieldRoleRow::Field.into_iden(),
-                    LayoutFieldRoleRow::Role.into_iden(),
-                ],
-                [
-                    Expr::val(layout.stored()),
-                    Expr::val(field),
-                    Expr::val(role.stored()),
-                ],
-            )
-            .await?;
-        }
-        insert(
-            database,
-            LayoutOffFieldRow::Table,
-            [
-                LayoutOffFieldRow::Layout.into_iden(),
-                LayoutOffFieldRow::Field.into_iden(),
-            ],
-            [Expr::val(layout.stored()), Expr::val("activity")],
-        )
-        .await?;
-        Ok(())
-    }
-
     #[tokio::test]
     async fn time_13_migration_31_takes_the_retired_fields_out_of_levels_and_layouts() -> TestResult
     {
@@ -369,8 +256,18 @@ mod tests {
             let mut ids = SequentialIds::default();
             let role = RoleId::generate(&mut ids)?;
             let layout = LayoutId::generate(&mut ids)?;
-            old_role(&database, role).await?;
-            old_layout(&database, layout, role).await?;
+            old_demo_role(&database, role).await?;
+            // A layout of the issue page that places Cost center and Due date for the role and
+            // took Activity off its form.
+            old_layout(
+                &database,
+                layout,
+                "issue-page",
+                &[&["cost-center", "due-date"]],
+                &["activity"],
+                &[role],
+            )
+            .await?;
 
             assert_eq!(database.migrate_until(31, at(1)).await?, [31]);
 
