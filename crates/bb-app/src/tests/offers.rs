@@ -102,6 +102,7 @@ pub(super) fn new_issue(who: &str, project: &str, issue_type: IssueTypeId) -> Cr
         status: None,
         priority: None,
         assigned_to: None,
+        estimated_time: None,
         fields: BTreeMap::new(),
     }
 }

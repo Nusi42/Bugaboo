@@ -159,8 +159,8 @@ impl From<&CreateIssue> for Given {
             input.status.is_some(),
             input.priority.is_some(),
             input.assigned_to.is_some(),
-            // A new issue has no estimate and no time left yet: they are given by a change.
-            false,
+            input.estimated_time.is_some(),
+            // *Time left* starts equal to the estimate: nobody types it on a new issue.
             false,
         ])
     }

@@ -390,6 +390,7 @@ impl Maker<'_, '_> {
                     status: None,
                     priority: Some(planned.priority),
                     assigned_to: (!assigned.is_empty()).then_some(assigned),
+                    estimated_time: None,
                     fields,
                 },
             )

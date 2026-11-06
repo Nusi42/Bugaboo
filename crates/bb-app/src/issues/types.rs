@@ -46,6 +46,9 @@ pub struct CreateIssue {
     pub priority: Option<Priority>,
     /// The people it is assigned to; nobody when left out.
     pub assigned_to: Option<Vec<UserId>>,
+    /// Its *Estimated time*; none when left out. *Time left* starts equal to it: nobody typed
+    /// one, so it is worked out from the estimate and the time spent.
+    pub estimated_time: Option<Minutes>,
     /// The values of its own fields, by the key of the field; the defaults fill in the rest.
     pub fields: BTreeMap<String, Value>,
 }

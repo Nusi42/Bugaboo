@@ -3,7 +3,7 @@
 //! at once, and taking a typed *Time left* away makes it worked out again. Both databases.
 
 use axum::http::StatusCode;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
@@ -12,7 +12,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, Site, key_of, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
 use super::search_groups_http::{GROUPS, encoded};
 
 /// The route of a search of issues.
@@ -437,6 +437,163 @@ async fn time_03_a_group_of_lengths_has_the_filter_of_its_range() -> TestResult 
             .map(|item| item["readable_id"].clone())
             .collect();
         assert_eq!(keys, [json!(long)]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_03_a_new_issue_is_made_with_an_estimate_and_time_left_starts_equal_to_it()
+-> TestResult {
+    each_database("time_03_new_issue_estimate", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let path = format!("{PROJECTS}/{}/issues", site.acme);
+        let mut body = site.new_issue("Plan the release");
+        body["estimated_time"] = json!(90);
+        let made = ada.send("POST", &path, Some(body)).await?;
+        let key = key_of(&made)?;
+        assert_eq!(ok(&made)?["estimated_time"], 90, "{}", made.body);
+        let issue = issue_of(&mut ada, &key).await?;
+        assert_eq!(issue["estimated_time"], 90);
+        // Nobody typed *Time left*: it is worked out from the estimate and nothing spent.
+        let time = ada
+            .send("GET", &format!("{ISSUES}/{key}/time"), None)
+            .await?;
+        assert_eq!(
+            ok(&time)?["time_left"],
+            json!({"minutes": 90, "worked_out": true})
+        );
+        assert_eq!(ok(&time)?["estimated_time"], 90);
+        // The history of the new issue says the estimate it started with.
+        let history = changes_of(&mut ada, &key).await?;
+        assert!(
+            history
+                .iter()
+                .any(|item| item["change"]["field"] == "estimated-time"
+                    && item["change"]["after"]["value"] == 5400),
+            "{history:?}"
+        );
+        // An issue made without one has none, as before.
+        let plain = site.create(&mut ada, "No estimate").await?;
+        assert!(
+            ok(&plain)?.get("estimated_time").is_none(),
+            "{}",
+            plain.body
+        );
+        // A length below zero is no length, and nothing is made.
+        let mut wrong = site.new_issue("Wrong length");
+        wrong["estimated_time"] = json!(-5);
+        let refused = ada.send("POST", &path, Some(wrong)).await?;
+        assert_eq!(refused.status, StatusCode::BAD_REQUEST, "{}", refused.body);
+        let listed = ada.send("GET", &path, None).await?;
+        let titles: Vec<&Value> = ok(&listed)?["items"]
+            .as_array()
+            .map(|items| items.iter().map(|item| &item["title"]).collect())
+            .unwrap_or_default();
+        assert!(!titles.contains(&&json!("Wrong length")), "{titles:?}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_03_a_new_issue_takes_an_estimate_only_from_who_may_change_it() -> TestResult {
+    each_database("time_03_new_issue_estimate_level", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let role = site
+            .org
+            .role(
+                "Reporter",
+                &[Permission::SeeProjects, Permission::CreateIssues],
+            )
+            .await?;
+        for (field, level) in [
+            (Field::Title, FieldLevel::CanChange),
+            (Field::EstimatedTime, FieldLevel::CanSee),
+        ] {
+            rig.api()
+                .set_field_level(
+                    Rig::info(),
+                    SetFieldLevel {
+                        session_token: site.org.admin.session.clone(),
+                        role: role.id,
+                        project: None,
+                        issue_type: None,
+                        field: field.into(),
+                        level: Some(level),
+                    },
+                )
+                .await?;
+        }
+        let (mut bob, _) = site.person_holding(role.id, "bob", &site.acme).await?;
+        let path = format!("{PROJECTS}/{}/issues", site.acme);
+        let mut body = site.new_issue("Estimated by a reporter");
+        body["estimated_time"] = json!(60);
+        let refused = bob.send("POST", &path, Some(body)).await?;
+        assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.body);
+        // Without an estimate the same person makes the issue.
+        let made = bob
+            .send("POST", &path, Some(site.new_issue("No estimate")))
+            .await?;
+        assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn time_03_a_reader_without_the_estimate_finds_it_nowhere_in_an_issue_made_with_one()
+-> TestResult {
+    each_database("time_03_new_issue_estimate_hidden", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut body = site.new_issue("Estimated at once");
+        body["estimated_time"] = json!(90);
+        let made = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{}/issues", site.acme),
+                Some(body),
+            )
+            .await?;
+        let key = key_of(&made)?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        rig.api()
+            .set_field_level(
+                Rig::info(),
+                SetFieldLevel {
+                    session_token: site.org.admin.session.clone(),
+                    role: site
+                        .role_id(StartingRole::TeamMember)
+                        .parse()
+                        .map_err(|_| "no role ID")?,
+                    project: None,
+                    issue_type: None,
+                    field: Field::EstimatedTime.into(),
+                    level: Some(FieldLevel::Hidden),
+                },
+            )
+            .await?;
+        // The reader sees the issue and its history, and no estimate in either.
+        let issue = issue_of(&mut bob, &key).await?;
+        assert!(issue.get("estimated_time").is_none(), "{issue}");
+        let history = changes_of(&mut bob, &key).await?;
+        assert!(
+            history
+                .iter()
+                .all(|item| item["change"]["field"] != "estimated-time"),
+            "{history:?}"
+        );
+        // Who may read it finds it in both.
+        let history = changes_of(&mut ada, &key).await?;
+        assert!(
+            history
+                .iter()
+                .any(|item| item["change"]["field"] == "estimated-time"),
+            "{history:?}"
+        );
         Ok(())
     })
     .await

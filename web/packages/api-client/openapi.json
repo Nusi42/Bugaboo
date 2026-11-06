@@ -20116,6 +20116,12 @@
             "type": ["string", "null"],
             "description": "The long text, in Markdown. Empty when left out."
           },
+          "estimated_time": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.",
+            "minimum": 0
+          },
           "fields": {
             "type": "object",
             "description": "The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.",

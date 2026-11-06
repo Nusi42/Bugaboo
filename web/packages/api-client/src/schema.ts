@@ -6585,6 +6585,11 @@ export interface components {
       assigned_to?: string[] | null;
       /** @description The long text, in Markdown. Empty when left out. */
       description?: string | null;
+      /**
+       * Format: int32
+       * @description Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.
+       */
+      estimated_time?: number | null;
       /** @description The values of its own fields, by the key (ID) of the field. The defaults fill in the rest. */
       fields?: {
         [key: string]: unknown;

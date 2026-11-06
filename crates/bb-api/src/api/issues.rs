@@ -120,6 +120,9 @@ pub(crate) struct NewIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to. Nobody when left out.
     assigned_to: Option<Vec<String>>,
+    /// Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.
+    #[schema(value_type = Option<u32>)]
+    estimated_time: Option<Minutes>,
     /// The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.
     #[serde(default)]
     fields: BTreeMap<String, serde_json::Value>,
@@ -318,6 +321,7 @@ async fn create_issue(
                 status: status_in(body.status.as_deref())?,
                 priority: body.priority,
                 assigned_to,
+                estimated_time: body.estimated_time,
                 fields: body.fields,
             },
         )

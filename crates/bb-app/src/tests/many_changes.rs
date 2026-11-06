@@ -235,6 +235,7 @@ async fn iss_02_a_move_keeps_a_retired_type_and_names_it_in_memory() -> Outcome 
                     status: None,
                     priority: None,
                     assigned_to: None,
+                    estimated_time: None,
                     fields: BTreeMap::new(),
                 },
             )
@@ -398,6 +399,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
                     status: None,
                     priority: None,
                     assigned_to: None,
+                    estimated_time: None,
                     fields: BTreeMap::new(),
                 },
             )
@@ -529,6 +531,7 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
                 status: None,
                 priority: None,
                 assigned_to: None,
+                estimated_time: None,
                 fields: BTreeMap::new(),
             },
         )

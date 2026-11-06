@@ -63,6 +63,12 @@ pub fn issue_created(
             json!(assigned.iter().map(ToString::to_string).collect::<Vec<_>>()),
         ),
     ];
+    // The estimate is a member only when the issue was made with one.
+    changes.extend(
+        issue
+            .estimated_time
+            .map(|estimate| set_to(issue_member::ESTIMATED_TIME, json!(estimate))),
+    );
     changes.extend(own);
     changes
 }
