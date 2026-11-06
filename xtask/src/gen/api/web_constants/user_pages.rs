@@ -19,6 +19,11 @@ pub(crate) const SEARCH_LIMITS_PAGE: &str = "userDocs/issues/search-limits.md";
 /// The user page about the times and counts of notifications.
 pub(crate) const NOTIFICATION_NUMBERS_PAGE: &str = "userDocs/notifications/numbers.md";
 
+/// The user page about the numbers of time and working hours.
+pub(crate) const TIME_NUMBERS_PAGE: &str = "userDocs/working-hours/numbers.md";
+
+const TIME_LIMITS_SOURCE: &str = "crates/bb-app/src/time/limits.rs";
+
 const LIMITS_SOURCE: &str = "crates/bb-searchlang/src/limits.rs";
 const WORDS_SOURCE: &str = "crates/bb-core/src/text_words.rs";
 
@@ -154,11 +159,147 @@ fn notification_numbers(sources: &[Source]) -> anyhow::Result<String> {
     Ok(out)
 }
 
+/// A length in minutes in plain words: whole hours as hours, else minutes.
+fn minutes_said(minutes: u128) -> String {
+    const PER_HOUR: u128 = 60;
+    if minutes != 0 && minutes.is_multiple_of(PER_HOUR) {
+        counted(minutes / PER_HOUR, "hour", "hours")
+    } else {
+        counted(minutes, "minute", "minutes")
+    }
+}
+
+/// The default of a whole-number setting of the registry.
+fn default_of(key: &str) -> anyhow::Result<u128> {
+    match bb_core::settings::find(key).map(bb_core::settings::SettingDefinition::default) {
+        Some(bb_core::settings::DefaultValue::Integer(value)) => u128::try_from(value)
+            .with_context(|| format!("the default of `{key}` is {value}, which is below zero")),
+        _ => bail!("`{key}` is not a whole-number setting of the registry"),
+    }
+}
+
+/// The rows of the working-time rules of the preset *Germany*, from the defaults of the registry.
+fn rule_rows() -> anyhow::Result<Vec<Vec<String>>> {
+    let rule = |key: &str, what: &str, note: &str| -> anyhow::Result<Vec<String>> {
+        Ok(vec![
+            what.to_owned(),
+            minutes_said(default_of(key)?),
+            note.to_owned(),
+        ])
+    };
+    Ok(vec![
+        rule(
+            "working-hours.day-minutes-max",
+            "The longest work day",
+            "More is a warning.",
+        )?,
+        rule(
+            "working-hours.first-break-after-minutes",
+            "The first break is due after",
+            "Work of more than this needs a break.",
+        )?,
+        rule(
+            "working-hours.first-break-minutes",
+            "Length of the first break",
+            "The breaks of the day together.",
+        )?,
+        rule(
+            "working-hours.second-break-after-minutes",
+            "The longer break is due after",
+            "",
+        )?,
+        rule(
+            "working-hours.second-break-minutes",
+            "Length of the longer break",
+            "The breaks of the day together.",
+        )?,
+        rule(
+            "working-hours.shortest-break-minutes",
+            "The shortest break that counts",
+            "A shorter one is no break.",
+        )?,
+        rule(
+            "working-hours.in-a-row-minutes-max",
+            "The longest stretch without a break",
+            "",
+        )?,
+        rule(
+            "working-hours.rest-minutes-min",
+            "The rest between two work days",
+            "",
+        )?,
+    ])
+}
+
+/// The working-time rules of the preset *Germany*, the keep period and the limits of time on issues
+/// (the registry and the constants of the code).
+fn time_numbers(sources: &[Source]) -> anyhow::Result<String> {
+    let rules = rule_rows()?;
+    let limit = |name: &str| number(sources, TIME_LIMITS_SOURCE, name);
+    let entry_most = u128::from(bb_core::time::length::TIME_ENTRY_MINUTES_MAX.get());
+    let entry_least = u128::from(bb_core::time::length::TIME_ENTRY_MINUTES_MIN.get());
+    let keep = default_of("working-hours.keep-years")?;
+    let least = u128::try_from(bb_core::working_time::GERMANY_KEEP_YEARS_LEAST)
+        .context("the least keep period is below zero")?;
+    let time = vec![
+        vec![
+            "A time entry is at least".to_owned(),
+            minutes_said(entry_least),
+        ],
+        vec![
+            "A time entry is at most".to_owned(),
+            minutes_said(entry_most),
+        ],
+        vec![
+            "Time entries on one date".to_owned(),
+            format!("{} at most", limit("TIME_ENTRIES_PER_DAY_MAX")?),
+        ],
+        vec![
+            "The note of a time entry".to_owned(),
+            format!(
+                "{} at most",
+                counted(limit("TIME_NOTE_CHARS_MAX")?, "character", "characters")
+            ),
+        ],
+        vec![
+            "A timer shows a warning after".to_owned(),
+            counted(limit("LONG_TIMER_HOURS")?, "hour", "hours"),
+        ],
+        vec![
+            "Work days are kept at least".to_owned(),
+            format!(
+                "{} (with the preset Germany, never less than {})",
+                counted(keep, "year", "years"),
+                counted(least, "year", "years")
+            ),
+        ],
+    ];
+    let mut out = header("Numbers of working hours and time");
+    out.push_str("The rules of the preset *Germany* are the numbers an organization starts with; an administrator can change each one (see [The settings of working hours and time](README.md)). A rule that is broken only gives a warning.
+
+");
+    out.push_str(&table(&["Rule", "Number", "Note"], &rules));
+    out.push_str(
+        "
+The limits of time on issues and of the keep period:
+
+",
+    );
+    out.push_str(&table(&["What", "Number"], &time));
+    out.push_str(
+        "
+See [Time](../time/README.md) and [The timesheet](../time/timesheet.md).
+",
+    );
+    Ok(out)
+}
+
 /// The pages, each with its path.
 pub(crate) fn pages(sources: &[Source]) -> anyhow::Result<Vec<(&'static str, String)>> {
     Ok(vec![
         (SEARCH_LIMITS_PAGE, search_limits(sources)?),
         (NOTIFICATION_NUMBERS_PAGE, notification_numbers(sources)?),
+        (TIME_NUMBERS_PAGE, time_numbers(sources)?),
     ])
 }
 
@@ -206,6 +347,14 @@ mod tests {
                 &[("HOURS", 24), ("RESEND_AFTER_MINUTES", 10)],
             ),
             file(HANDLE_SOURCE, &[("CHANGE_EVERY_DAYS", 7)]),
+            file(
+                TIME_LIMITS_SOURCE,
+                &[
+                    ("TIME_ENTRIES_PER_DAY_MAX", 200),
+                    ("TIME_NOTE_CHARS_MAX", 2000),
+                    ("LONG_TIMER_HOURS", 10),
+                ],
+            ),
         ]
     }
 
@@ -228,6 +377,22 @@ mod tests {
         assert!(numbers.contains("24 hours"), "{numbers}");
         // One is said in the singular.
         assert!(numbers.contains("1 second "), "{numbers}");
+    }
+
+    #[test]
+    fn the_page_of_time_says_the_rules_of_germany_and_the_limits_of_the_code() {
+        let pages = pages(&sources()).unwrap();
+        let page = pages
+            .iter()
+            .find(|(each, _)| *each == TIME_NUMBERS_PAGE)
+            .map(|(_, text)| text.clone())
+            .unwrap();
+        assert!(page.contains("| The longest work day"), "{page}");
+        assert!(page.contains("10 hours"), "{page}");
+        assert!(page.contains("45 minutes"), "{page}");
+        assert!(page.contains("200 at most"), "{page}");
+        assert!(page.contains("24 hours"), "{page}");
+        assert!(page.contains("never less than 2 years"), "{page}");
     }
 
     #[test]

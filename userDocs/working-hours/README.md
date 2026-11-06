@@ -27,3 +27,8 @@ Everybody sees their own. The page lists the groups and people that hold a role 
 ## Defaults of a project
 
 In the settings of a project, **Defaults for time booked in this project** gives *Activity*, *Cost center* and every other field of time entries a default. Time booked on an issue starts with the value of the issue, else the value of its project, else the value of the project above. A sub-project shows **Set by the project above** until it sets its own value; **Reset to default** takes its own value away. The choices themselves are managed on the *Fields* page, like any own field.
+
+## More
+
+- [Numbers of working hours and time](numbers.md): the rules of the preset *Germany* and the limits, written from the code
+- [Who sees working hours, and how long they are kept](who-sees.md)
