@@ -29,3 +29,12 @@ export function changesSeen(page: Page): () => number {
   });
   return () => seen;
 }
+
+/** Waits for the answer to a change of a length that says it was changed meanwhile (409). */
+export function waitForRefusedChange(page: Page): Promise<unknown> {
+  const refused = new Set(["409"]);
+  return page.waitForResponse(
+    (response) =>
+      ["PATCH"].includes(response.request().method()) && refused.has(String(response.status())),
+  );
+}

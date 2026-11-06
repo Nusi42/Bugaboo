@@ -6,7 +6,7 @@ import { bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, createIssue } from "./support/issues.ts";
-import { changesSeen, inOrder } from "./support/sequence.ts";
+import { changesSeen, inOrder, waitForRefusedChange } from "./support/sequence.ts";
 import { entriesBookedOn } from "./support/time.ts";
 import {
   bookOn,
@@ -22,7 +22,6 @@ import {
   typeWithReason,
   chooseUtc,
   weekOf,
-  waitForRefusedChange,
   workedOn,
   expectDay,
   fillWeekWithKeys,

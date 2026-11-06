@@ -1,4 +1,4 @@
-import { dataOf, settingKeys } from "@bugaboo/api-client";
+import { dataOf, type Schema, settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
@@ -124,32 +124,37 @@ export async function bookOn(
 /** How long a change of a work day is tried again while the server holds it back. */
 const ONE_CHANGE_RETRY_MS = 10_000;
 
-/** Records a work day, as the person of the session; a past day comes with its reason. */
-export async function workedOn(
+/** Changes the work day of a date, as the person of the session; a past day needs its reason. */
+export async function changeWorkDay(
   session: ApiSession,
   date: string,
-  from: string,
-  to: string,
+  periods: readonly Schema<"SpanBody">[],
+  reason?: string,
 ): Promise<void> {
   const known = dataOf(
     await session.client.GET("/api/v1/me/work-days", {
       params: { query: { from: date, to: date } },
     }),
   );
-  const change = () =>
-    session.client.PATCH("/api/v1/me/work-days/{date}", {
+  // The server takes one change of a person's days a second: after the one before, try again.
+  await expect(async () => {
+    const answer = await session.client.PATCH("/api/v1/me/work-days/{date}", {
       params: { path: { date } },
       body: {
         version: known.days[0]?.version ?? 0,
-        periods: [{ start: `${date}T${from}:00Z`, end: `${date}T${to}:00Z` }],
+        periods: [...periods],
         breaks: [],
-        reason: "Typed in afterwards",
+        ...(reason === undefined ? {} : { reason }),
       },
     });
-  // The server takes one change of a person's days a second: after the one before, try again.
-  await expect(async () => {
-    dataOf(await change());
+    dataOf(answer);
   }).toPass({ timeout: ONE_CHANGE_RETRY_MS });
+}
+
+/** Records a work day from `from` to `to`, as the person of the session, with a reason for a past day. */
+export async function workedOn(session: ApiSession, date: string, from: string, to: string) {
+  const span = { start: `${date}T${from}:00Z`, end: `${date}T${to}:00Z` };
+  await changeWorkDay(session, date, [span], "Typed in afterwards");
 }
 
 /** Puts the person's time zone on UTC, so the times of a work day written through the API read as written. */
@@ -160,16 +165,20 @@ export async function chooseUtc(session: ApiSession): Promise<void> {
   });
 }
 
-/** Types into a cell of a past day, and gives the reason the window asks for. */
-export async function typeWithReason(page: Page, cell: Locator, value: string, reason: string) {
-  await typeInto(cell, value);
+/** Gives the reason the window of a past day's change asks for, and waits until the day shows *Changed*. */
+export async function giveReason(page: Page, reason: string) {
   const asking = page.getByRole("dialog");
   await asking.getByRole("textbox").fill(reason);
   await asking.getByRole("button", { name: t("time.sheet.reason-save"), exact: true }).click();
   await expect(asking).toHaveCount(0);
-  // The week is read again, and the day shows *Changed* once the new version is on the screen.
   await expect(historyButtons(page).first()).toBeVisible();
   await page.waitForLoadState("networkidle");
+}
+
+/** Types into a cell of a past day, and gives the reason the window asks for. */
+export async function typeWithReason(page: Page, cell: Locator, value: string, reason: string) {
+  await typeInto(cell, value);
+  await giveReason(page, reason);
 }
 
 /** Opens the week at the day of the tab (a phone shows one day) and waits for its warning sentence. */
@@ -201,8 +210,6 @@ const DAYS_IN_WEEK = 7;
 /** Gives the reason in the window of a past day: typed and sent with the keys, the field has the focus. */
 async function giveReasonWithKeys(page: Page, reason: string): Promise<void> {
   const asking = page.getByRole("dialog");
-  await expect(asking).toBeVisible();
-  // The window puts the focus on its field when it opens.
   await expect(asking.getByRole("textbox")).toBeFocused();
   await page.keyboard.type(reason);
   await page.keyboard.press("Enter");
@@ -285,13 +292,4 @@ export async function tabThrough(page: Page, count: number): Promise<Reached> {
     }),
   );
   return { texts, boxes };
-}
-
-/** Waits for the answer to a change of a length that says it was changed meanwhile (409). */
-export function waitForRefusedChange(page: Page): Promise<unknown> {
-  const refused = new Set(["409"]);
-  return page.waitForResponse(
-    (response) =>
-      ["PATCH"].includes(response.request().method()) && refused.has(String(response.status())),
-  );
 }
