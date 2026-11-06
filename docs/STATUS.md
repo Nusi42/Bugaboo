@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M6, Time and working hours, [plan](milestones/M6/README.md): 12 work packages in 4 waves. Every recommendation of the plan's questions M6-Q1 to M6-Q13 is taken. Its first package is the theme structure of the sister project (M5-F167).
 - **Done:** M0 to M5 (`m0-done` to `m5-done`).
-- **Wave:** 1 and 2 are merged: WP-01 to WP-08. Wave 3 runs: WP-09 is merged; WP-10 and WP-11 are building (merge order WP-10, WP-11). The open Dependabot alerts of GitHub are fixed and closed. The faster local runs are merged (Rust tests with cargo-nextest, the sample organization made in the background, checks side by side); a folder runs `cargo xtask setup` once after it rebases onto them. Branches are now rebased onto `WIN1` and fast-forwarded, never merged (ADR-0041, GIT-LINEAR).
+- **Wave:** 1 and 2 are merged: WP-01 to WP-08. Wave 3 runs: WP-09 and WP-10 are merged; WP-11 rebases onto them and lands last. The open Dependabot alerts of GitHub are fixed and closed. The faster local runs are merged (Rust tests with cargo-nextest, the sample organization made in the background, checks side by side); a folder runs `cargo xtask setup` once after it rebases onto them. Branches are now rebased onto `WIN1` and fast-forwarded, never merged (ADR-0041, GIT-LINEAR).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M6)
@@ -22,7 +22,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-07 | Estimates and totals | merged (six fix rounds) | `win4` / `WIN4` | Wave 2 |
 | WP-08 | The maintainer's decisions on settings screens, label squares and IDs | merged (three fix rounds) | `win5` / `WIN5` | Wave 2 |
 | WP-09 | The timer and the work day on screen | merged (five fix rounds) | `win2` / `WIN2` | Wave 3 |
-| WP-10 | The timesheet | building | `win3` / `WIN3` | Wave 3 |
+| WP-10 | The timesheet | merged (five fix rounds) | `win3` / `WIN3` | Wave 3 |
 | WP-11 | The settings of working hours and time | building | `win4` / `WIN4` | Wave 3 |
 | WP-12 | Sample part 5, timers under load, speed, the exit demo | planned | `win2` / `WIN2` | Wave 4 |
 | WP-13 | The time fields in layouts and an estimate when an issue is made | planned | `win3` / `WIN3` | Wave 4 |
@@ -46,7 +46,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-Wave 3 of M6 runs: WP-09 in `win2`, WP-10 in `win3` and WP-11 in `win4`, merged in that order; WP-09 is merged; WP-10 rebases onto it and wires its time-entry form, then WP-11 rebases and lands last. The passkeys run on the stable webauthn-rs 0.6.2 (M6-F127, M1-F36 done). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on.
+Wave 3 of M6 runs: WP-09 in `win2`, WP-10 in `win3` and WP-11 in `win4`, merged in that order; WP-09 and WP-10 are merged; WP-11 rebases onto them and lands last. The passkeys run on the stable webauthn-rs 0.6.2 (M6-F127, M1-F36 done). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
