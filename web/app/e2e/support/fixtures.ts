@@ -36,11 +36,36 @@ const REFUSED = /^Failed to load resource: the server responded with a status of
 /** The notice of a browser that a measured list asks for another round of measuring (no defect). */
 const RESIZE_NOTICE = /^ResizeObserver loop completed with undelivered notifications\.$/u;
 
+/**
+ * What WebKit writes as an error of the page when a navigation cuts a read that is still on its way (M6-F133):
+ * `/localhost:47310/api/v1/me/timer due to access control checks.`, with no `error` or `unhandledrejection` event
+ * of the page. Only the two reads that every page of the app starts count, and only in WebKit and within a
+ * few seconds after a navigation or the closing of a page; any other path or time is a defect.
+ */
+const CUT_READS = ["/api/v1/me/timer", "/api/v1/notifications/unread"] as const;
+const CUT_NOTICE = new RegExp(
+  String.raw`^/localhost:\d+(${CUT_READS.join("|")}) due to access control checks\.$`,
+  "u",
+);
+
+/** How long after a navigation or the closing of a page WebKit may still tell about a read that it cut (it was 6.4 s in the slowest runs). */
+const CUT_NOTICE_MS = 10_000;
+
 /** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
 const tolerances = new Tolerances();
 
 /** Collects the defects of every page that a context opens, now and later. */
 export function watchApp(context: BrowserContext): void {
+  let navigatedAt = Number.NEGATIVE_INFINITY;
+  context.on("page", (page) => {
+    page.on("framenavigated", () => {
+      navigatedAt = Date.now();
+    });
+    page.on("close", () => {
+      navigatedAt = Date.now();
+    });
+  });
+  const inWebKit = context.browser()?.browserType().name() === "webkit";
   context.on("console", (message: ConsoleLine) => {
     const text = message.text();
     if (message.type() === "error" && !REFUSED.test(text) && !tolerances.expects(context, text)) {
@@ -48,10 +73,12 @@ export function watchApp(context: BrowserContext): void {
     }
   });
   // An uncaught error is never expected, whatever the network does. The one notice that WebKit gives
-  // when a list that is drawn by what is on screen measures its rows is no error of the app.
+  // when a list that is drawn by what is on screen measures its rows is no error of the app, nor is a read
+  // that a navigation cut (`CUT_READS`).
   context.on("weberror", (error) => {
     const { message } = error.error();
-    if (!RESIZE_NOTICE.test(message)) {
+    const cut = inWebKit && Date.now() - navigatedAt < CUT_NOTICE_MS && CUT_NOTICE.test(message);
+    if (!RESIZE_NOTICE.test(message) && !cut) {
       reports.push(`uncaught: ${message}`);
     }
   });
