@@ -1,8 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { ActionOverlay, Alert, alertTone, Icon, iconName, partOf, part } from "@bugaboo/ui";
+import { ActionOverlay, AnswerNote, alertTone, Icon, iconName, partOf, part } from "@bugaboo/ui";
 import { Button } from "react-aria-components";
 
+import { IdsIn } from "./IdsIn.tsx";
+import { askTime } from "./time-asks.ts";
 import { timerActions, timerMenuTitle } from "./timer-actions.ts";
 import { TimerMenuHeading } from "./TimerMenuHeading.tsx";
 import { RunsLongWords } from "./RunsLong.tsx";
@@ -64,9 +66,37 @@ export function TimerChip({ running, serverOffsetMs, narrow = false }: TimerChip
   );
 }
 
-/** The warning of a timer that runs longer than a work day, on the timer itself. */
+/**
+ * The warning of a timer that runs longer than a work day, on the timer itself (UX §6.1): it says
+ * what to do and offers both ways on, *Stop* and *Change start time* for a timer that was forgotten.
+ */
 export function LongTimer({ running }: { readonly running: Schema<"RunningItem"> }) {
-  return running.runs_long ? (
-    <Alert tone={alertTone.warning}>{t("time.timer.runs-long")}</Alert>
-  ) : null;
+  if (!running.runs_long) {
+    return null;
+  }
+  const issue = running.readable_id ?? undefined;
+  return (
+    <AnswerNote
+      tone={alertTone.warning}
+      text={
+        issue === undefined ? (
+          t("time.timer.runs-long")
+        ) : (
+          <IdsIn sentence={t("time.timer.runs-long-on", { issue })} ids={[issue]} />
+        )
+      }
+      main={{
+        label: t("time.timer.stop"),
+        onPress: () => {
+          askTime({ kind: "stop" });
+        },
+      }}
+      other={{
+        label: t("time.timer.change-start"),
+        onPress: () => {
+          askTime({ kind: "start-time" });
+        },
+      }}
+    />
+  );
 }

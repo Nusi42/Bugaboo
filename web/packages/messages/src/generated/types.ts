@@ -637,6 +637,7 @@ export interface MessageArguments {
   "time.throw-away.title": { issue: string | number };
   "time.timer.menu-of": { clock: string | number; issue: string | number };
   "time.timer.running": { issue: string | number };
+  "time.timer.runs-long-on": { issue: string | number };
   "time.timer.saved": { issue: string | number; length: string | number };
   "time.timer.stop-on": { issue: string | number };
   "time.timer.too-short": { issue: string | number };

@@ -227,6 +227,10 @@ tokens {
     // column: the offers to undo keep out of it (one rule for the page and for the offers).
     size "gap-details" "$space-5"
     size "size-details-room" "calc($size-details + $gap-details)"
+    // The warning that floats at the bottom of the start side beside the sidebar (the one of a timer that runs
+    // long), and the room it takes: the offers to undo leave that room free.
+    size "size-floating-note" "$size-dialog"
+    size "size-floating-note-room" "calc($size-floating-note + $space-4)"
     size "size-reading" "75ch"
     size "size-main" "780px"
     // The thin line between two sections of the main column of an issue stands in this far from each side, so it
@@ -1523,6 +1527,14 @@ part "alert[variant=warning]" {
 part "alert[variant=info]" {
     border-color "$accent"
     background "$accent-soft"
+}
+
+// The text of a note and its two answers side by side, on a new line when the room is short.
+part "answer-note" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
 }
 
 // ───────────── Link ─────────────
@@ -5171,12 +5183,18 @@ part "timer-notice[variant=floating]" {
     position fixed
     inset-inline-start "calc($size-sidebar + $space-4)"
     bottom "$space-4"
-    max-width "$size-dialog"
+    max-width "$size-floating-note"
     z-index "$z-panel"
 }
 
 part "timer-notice[variant=narrow]" {
     inset-inline-start "calc($size-sidebar-narrow + $space-4)"
+}
+
+// While a field is typed in, the warning steps aside (the chip of the timer still shows it), so it never covers
+// the field; it comes back when the focus leaves the field (UX §4.9).
+part "timer-notice[variant=away]" {
+    visibility hidden
 }
 
 // The timer is one button: the issue it runs on and how long, which opens the list *Stop · Switch issue ·
@@ -5642,6 +5660,13 @@ part "undo-host[variant=wide]" {
     box-sizing border-box
 }
 
+// While the warning of a timer floats at the bottom of the start side, the offers stand beside it, in the
+// room that is left, and cover neither it nor the page it stands on (UX §4.9).
+part "undo-host[variant=beside-note]" {
+    box-sizing border-box
+    padding-inline-start "$size-floating-note-room"
+}
+
 part "undo-host.offer" {
     display flex
     flex-wrap wrap
@@ -5934,8 +5959,7 @@ part "issue-section.actions" {
     gap "$space-2"
 }
 
-// The draft a refused save left (`draft-note`) stands like the other notes of the issue.
-part "issue-note" "draft-note" {
+part "issue-note" {
     display flex
     flex-wrap wrap
     align-items center

@@ -28,6 +28,9 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
   const running = reading?.timer.running ?? undefined;
   const short = useShortWindow();
   const onHome = useLocation().pathname === paths.home;
+  // The warning of a timer that runs long floats beside the sidebar too: a sidebar with many groups is full
+  // and would cut it off at the bottom, and the warning must be seen without scrolling.
+  const floats = place === "sidebar" && (short || narrow || running?.runs_long === true);
   const withTimer = running !== undefined || notice !== null;
   // Home of a phone has the timer at its top, so the bar has none there: one chip and one notice.
   if (place === "bar" && (!withTimer || onHome)) {
@@ -42,11 +45,7 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
       {running === undefined || reading === undefined ? null : (
         <TimerChip running={running} serverOffsetMs={reading.serverOffsetMs} narrow={narrow} />
       )}
-      <Tells
-        floating={place === "sidebar" && (short || narrow)}
-        narrow={narrow}
-        running={running}
-      />
+      <Tells floating={floats} narrow={narrow} running={running} />
     </section>
   );
 }

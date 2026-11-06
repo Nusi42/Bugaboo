@@ -553,7 +553,7 @@ sort by priority, highest first</div>
 
     <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">A long timer · a day left open</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
       <div class="timer-mini u-margin-0"><span class="dot-live"></span>WEB-142 <span class="mono u-margin-left-auto">10:12</span></div>
-      <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span>Your timer on WEB-142 has run for more than 10 hours. Stop it, or change its start time if you forgot it.</span></div>
+      <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span>Your timer on WEB-142 has run longer than a work day. Stop it, or change its start time if you forgot it.</span></div>
       <div class="dialog-demo u-margin-0"><div class="dh">When did your work day on Thursday end?</div><div class="db">
         <div class="u-font-size-12-5px">You started at 7:40 and did not end the day. Bugaboo never ends a day by itself.</div>
         <div class="field"><label>End on Thursday</label><input type="text" value="17:45" readonly></div>
@@ -611,7 +611,7 @@ sort by priority, highest first</div>
     <ul>
       <li>The <b>timer</b> is always visible: at the bottom of the sidebar on computers, at the top of Home on phones, beside <i>Spent</i> on the issue page, and in the bar of an open issue on a phone (the app's bottom bar is hidden while an issue is open on a phone; <i>Back</i> leads out). Tap it for <i>Stop · Switch issue · Change start time · Throw away</i>. One timer per person, the same on every device; closing the browser does not stop it.</li>
       <li><b>Switch issue:</b> starting the timer on another issue saves the time so far on the first one, with its defaults, without a window.</li>
-      <li><b>A long timer</b> (longer than the longest day of the working-time rules, 10 hours) shows a warning on the timer and sends one notification.</li>
+      <li><b>A long timer</b> (longer than the longest day of the working-time rules, 10 hours) shows a warning on the timer and sends one notification. The sentence with its two answers (<i>Stop</i>, filled, and <i>Change start time</i>) is a note that floats over the page at the bottom of the start side, beside the sidebar, so it is seen without scrolling however many groups the sidebar has; the sidebar does not fold for it. It steps aside while a field is typed in and is back when the focus leaves the field, and the timer in the sidebar keeps its warning mark. The offers to undo (§6.1) stand beside it, in the room that is left, and never over it. On a phone the note sits above the bottom bar, under the timer row.</li>
       <li><b>Add time</b> on the issue page and in the timesheet books time by hand, with a date and a length.</li>
       <li><b>Stopping the timer</b> asks for an optional note and shows <b>Activity</b> and <b>Cost center</b>, already filled in from the issue (or its project). Time is kept in whole minutes; under one minute nothing is saved, and the window says so. <b>Billable</b> shows as a box once an administrator switches it on.</li>
       <li><b>Activity</b> (<i>Development, Testing, Documentation, Meetings, Support</i>) and <b>Cost center</b> (number and name) are ordinary fields: admins can rename them, change the lists, make them required, or add more fields to time entries.</li>
@@ -1208,7 +1208,7 @@ sort by priority, highest first</div>
       <li><b>Empty:</b> one sentence and a button.</li>
       <li><b>Error:</b> shown next to the cause, in plain words, with what to do. A short code for support sits at the end, never a technical dump.</li>
       <li><b>Offline:</b> a slim bar; recently opened issues stay readable.</li>
-      <li><b>Notes</b> come in three kinds: blue tells, orange asks you to act, red says something did not happen. The way on is always a button inside the note (<i>Compare and save</i>, <i>Keep their value</i>, <i>Use mine: High</i>).</li>
+      <li><b>Notes</b> come in three kinds: blue tells, orange asks you to act, red says something did not happen. The way on is always a button inside the note (<i>Compare and save</i>, <i>Keep their value</i>, <i>Use mine: High</i>). A note that stays until it is answered and floats over the page (the warning of a long timer, §4.9) stands at the bottom of the start side beside the sidebar. It never covers a field that is typed in: it steps aside while the focus is in a field. The offers to undo stand beside it, not over it. On a phone the note sits above the bottom bar, under the timer row.</li>
     </ul>
 
     <h3 id="s6-2"><button type="button" class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>

@@ -813,7 +813,7 @@ export const messages = {
   "notifications.let-go": "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
   "notifications.long-timer":
-    "Your timer has been running for a long time. Stop it when you are done",
+    "Your timer has been running for longer than a work day. Stop it when you are done.",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",

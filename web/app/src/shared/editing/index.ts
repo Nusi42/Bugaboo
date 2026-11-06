@@ -7,7 +7,7 @@ export { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
 export type { LockState } from "./edit-lock-state.ts";
 export { editedThing } from "./edited-thing.ts";
 export { CustomizeEditable, type CustomizeEditableProps } from "./CustomizeEditable.tsx";
-export { DraftNote, type DraftAnswer } from "./DraftNote.tsx";
+export { DraftNote } from "./DraftNote.tsx";
 export { LockedEditor, type Saving } from "./LockedEditor.tsx";
 export { usedNowText, type UsedNowWords } from "./used-now.ts";
 export { RemoveEditable, type RemoveWords } from "./RemoveEditable.tsx";

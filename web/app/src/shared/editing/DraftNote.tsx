@@ -1,19 +1,12 @@
-import { Alert, Button, buttonLook, partOf, part } from "@bugaboo/ui";
-
-/** One of the two answers of a note about a draft. */
-export interface DraftAnswer {
-  readonly label: string;
-  readonly onPress: () => void;
-  readonly isPending?: boolean;
-}
+import { AnswerNote, type NoteAnswer } from "@bugaboo/ui";
 
 export interface DraftNoteProps {
   /** What the note says. */
   readonly text: string;
   /** *Continue* or *Put my changes back*: the answer that takes the draft up (the one filled button). */
-  readonly take?: DraftAnswer | undefined;
+  readonly take?: NoteAnswer | undefined;
   /** *Throw away*: the answer that lets it go. */
-  readonly drop: DraftAnswer;
+  readonly drop: NoteAnswer;
 }
 
 /**
@@ -22,19 +15,5 @@ export interface DraftNoteProps {
  * issue and the editors of layouts and workflows (ISS-17, ADR-0019).
  */
 export function DraftNote({ text, take, drop }: DraftNoteProps) {
-  return (
-    <Alert>
-      <div {...partOf(part.draftNote)}>
-        <span>{text}</span>
-        {take === undefined ? null : (
-          <Button look={buttonLook.primary} onPress={take.onPress}>
-            {take.label}
-          </Button>
-        )}
-        <Button isPending={drop.isPending ?? false} onPress={drop.onPress}>
-          {drop.label}
-        </Button>
-      </div>
-    </Alert>
-  );
+  return <AnswerNote text={text} main={take} other={drop} />;
 }

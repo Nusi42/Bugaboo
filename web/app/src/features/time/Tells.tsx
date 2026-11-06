@@ -1,6 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { partOf, part } from "@bugaboo/ui";
 
+import { useFloatingNote } from "../../shared/floating-note.ts";
+import { useTyping } from "../../shared/use-typing.ts";
 import { LongTimer } from "./TimerChip.tsx";
 import { TimerNotice } from "./TimerNotice.tsx";
 
@@ -19,8 +21,17 @@ export function Tells({
   readonly narrow: boolean;
   readonly running: Schema<"RunningItem"> | undefined;
 }) {
+  // The warning that floats steps aside while a field is typed in, and the offers to undo stand
+  // beside it while it shows (UX §4.9).
+  const typing = useTyping();
+  const floats = floating && running?.runs_long === true;
+  useFloatingNote(floats && !typing);
   return (
-    <div {...partOf(part.timerNotice, { variants: [floating && "floating", narrow && "narrow"] })}>
+    <div
+      {...partOf(part.timerNotice, {
+        variants: [floating && "floating", narrow && "narrow", floats && typing && "away"],
+      })}
+    >
       {running === undefined ? null : <LongTimer running={running} />}
       <TimerNotice />
     </div>

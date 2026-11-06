@@ -25,9 +25,13 @@ test("time_01 a timer that runs longer than a work day is marked on the timer", 
   // The mark is in the button, and the warning is in its name.
   await expect(chip.locator("svg")).toBeVisible();
   await expect(chip).toHaveAccessibleName(new RegExp(t("time.timer.runs-long"), "u"));
-  // The sentence is shown too, beside the timer or over the page.
-  await expect(
-    page.getByRole("status").filter({ hasText: t("time.timer.runs-long") }),
-  ).toBeVisible();
+  // The sentence is shown too, beside the timer or over the page, with both ways on.
+  const note = page
+    .getByRole("status")
+    .filter({ hasText: t("time.timer.runs-long-on", { issue: issue.key }) });
+  await expect(note).toBeVisible();
+  await expect(note.getByRole("button", { name: t("time.timer.stop"), exact: true })).toBeVisible();
+  await note.getByRole("button", { name: t("time.timer.change-start"), exact: true }).click();
+  await expect(page.getByRole("dialog", { name: t("time.start-time.title") })).toBeVisible();
   await dispose();
 });

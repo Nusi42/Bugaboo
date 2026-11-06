@@ -23,6 +23,8 @@ export const messages = {
   "time.timer.change-start": "Change start time",
   "time.timer.throw-away": "Throw away",
   "time.timer.runs-long": "This timer has run longer than a work day.",
+  "time.timer.runs-long-on":
+    "Your timer on {issue} has run longer than a work day. Stop it, or change its start time if you forgot it.",
   "time.timer.too-short": "Less than a minute on {issue}, so no time was saved.",
   "time.timer.saved": "Saved {length} on {issue}.",
   "time.timer.bar": "Timer",

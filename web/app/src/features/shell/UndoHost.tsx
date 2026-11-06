@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Button, Icon, iconName, iconSize, partOf, part, SentenceWithName } from "@bugaboo/ui";
 
+import { useFloatingNoteShows } from "../../shared/floating-note.ts";
 import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { useUndoOffers } from "../../shared/use-optimistic.ts";
@@ -63,6 +64,7 @@ export function UndoHost({
   readonly wide?: boolean;
 }) {
   const offers = useUndoOffers();
+  const besideNote = useFloatingNoteShows() && !inFlow;
   useShortcuts(
     offers.length === 0
       ? {}
@@ -77,7 +79,9 @@ export function UndoHost({
   );
   return (
     <div
-      {...partOf(part.undoHost, { variants: [inFlow ? "in-flow" : "over-page", wide && "wide"] })}
+      {...partOf(part.undoHost, {
+        variants: [inFlow ? "in-flow" : "over-page", wide && "wide", besideNote && "beside-note"],
+      })}
       role={politeStatus}
     >
       {offers

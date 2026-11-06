@@ -12382,6 +12382,15 @@ pub fn time_timer_running(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.timer.runs-long-on`.
+#[must_use]
+pub fn time_timer_runs_long_on(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.timer.runs-long-on"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `time.timer.saved`.
 #[must_use]
 pub fn time_timer_saved(issue: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
@@ -15597,7 +15606,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notifications.long-timer",
-        "Your timer has been running for a long time. Stop it when you are done",
+        "Your timer has been running for longer than a work day. Stop it when you are done.",
     ),
     ("notifications.mark-all-read", "Mark all as read"),
     ("notifications.mark-read", "Mark as read"),
@@ -18281,6 +18290,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "time.timer.runs-long",
         "This timer has run longer than a work day.",
+    ),
+    (
+        "time.timer.runs-long-on",
+        "Your timer on {issue} has run longer than a work day. Stop it, or change its start time if you forgot it.",
     ),
     ("time.timer.saved", "Saved {length} on {issue}."),
     ("time.timer.start", "Start timer"),

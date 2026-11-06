@@ -1,5 +1,6 @@
 export { autoComplete, type AutoComplete } from "./autocomplete.ts";
 export { Alert, type AlertProps } from "./Alert.tsx";
+export { AnswerNote, type AnswerNoteProps, type NoteAnswer } from "./AnswerNote.tsx";
 export {
   applyAppearance,
   applyChoices,
