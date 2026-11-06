@@ -200,11 +200,11 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// A person by name, to those who manage people (they always see names, M2-Q3). The place of
 /// the viewer's evaluation decides *Who sees people*; a viewer who does not see names gets the
 /// resolved reference, which is not a name.
-fn shown(viewer: &Evaluation, person: &Person) -> PersonRef {
+fn shown(viewer: &Evaluation, person: &Person, context: PeopleContext) -> PersonRef {
     resolve(
         viewer,
         PeopleKind::ProjectMembers,
-        PeopleContext::Management,
+        context,
         Target {
             id: person.id,
             name: &person.display_name,
@@ -287,7 +287,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Vec::new()
         };
         Ok(PersonLine {
-            person: shown(viewer, person),
+            person: shown(viewer, person, PeopleContext::Management),
             email: person.email.clone(),
             groups,
             roles,
@@ -372,8 +372,9 @@ fn person_choice(
     viewer: &Evaluation,
     person: &Person,
     already_in: Option<bool>,
+    context: PeopleContext,
 ) -> Option<ChoiceView> {
-    match shown(viewer, person) {
+    match shown(viewer, person, context) {
         PersonRef::Name { id, name } => Some(ChoiceView {
             id: id.to_string(),
             name,
@@ -408,6 +409,7 @@ pub async fn member_choices<S: AuthStore>(
     let page = ctx
         .people_choices(
             &access,
+            PeopleContext::Management,
             input.search.as_deref(),
             input.cursor.as_deref(),
             input.limit,
@@ -418,10 +420,11 @@ pub async fn member_choices<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// A page of people to choose from, by name, as the viewer may see them.
+    /// A page of people to choose from, by name, as the viewer may see them in `context`.
     pub(crate) async fn people_choices(
         &self,
         viewer: &Evaluation,
+        context: PeopleContext,
         search: Option<&str>,
         cursor: Option<&str>,
         limit: u32,
@@ -439,7 +442,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut shown = Vec::new();
         let mut items = Vec::new();
         for person in &page.items {
-            if let Some(choice) = person_choice(viewer, person, already_in(person)) {
+            if let Some(choice) = person_choice(viewer, person, already_in(person), context) {
                 shown.push(person);
                 items.push(choice);
             }

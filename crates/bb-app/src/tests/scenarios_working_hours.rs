@@ -48,6 +48,7 @@ pub(crate) async fn typed(world: &World, date: Date) -> Result<ChangedWorkDay, A
             periods: vec![Span::closed(at(8)?, at(16)?)],
             breaks: Vec::new(),
             reason: Some("Typed in afterwards".to_owned()),
+            device_zone: None,
         },
     )
     .await?

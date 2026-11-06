@@ -568,6 +568,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("changeMyWorkDay"),
     Example::with("getMyWorkDayHistory", &[Quirk::NamesAMissingThing]),
     Example::route("getMyBookedWeek"),
+    Example::route("listPeopleOfWorkDays"),
     Example::with("listWorkDaysOfPerson", &[Quirk::HidesThePerson]),
     Example::with("changeWorkDayOfPerson", &[Quirk::HidesThePerson]),
     Example::with(

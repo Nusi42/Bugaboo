@@ -157,9 +157,10 @@ use crate::workflows::{
 };
 use crate::working_hours::{
     BookedWeek, BookedWeekQuery, ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, DeletedWorkDays,
-    OldWorkDays, OldWorkDaysQuery, StartWorkDay, TapWorkDay, WorkDayHistory, WorkDayHistoryQuery,
-    WorkDaysPage, WorkDaysQuery, booked_week, change_work_day, delete_old_work_days, old_work_days,
-    start_work_day, tap_work_day, work_day_history, work_days,
+    OldWorkDays, OldWorkDaysQuery, PeopleOfHoursQuery, StartWorkDay, TapWorkDay, WorkDayHistory,
+    WorkDayHistoryQuery, WorkDaysPage, WorkDaysQuery, booked_week, change_work_day,
+    delete_old_work_days, old_work_days, people_of_hours, start_work_day, tap_work_day,
+    work_day_history, work_days,
 };
 
 #[cfg(test)]
@@ -575,6 +576,8 @@ use_cases! {
     work_day_history(WorkDayHistoryQuery) -> Authorized<WorkDayHistory>;
     /// One's own week compared with the time booked on issues.
     booked_week(BookedWeekQuery) -> Authorized<BookedWeek>;
+    /// The people whose working hours the reader may open, to choose one from.
+    people_of_hours(PeopleOfHoursQuery) -> Authorized<ChoicePage>;
     /// How many work days are older than the keep period.
     old_work_days(OldWorkDaysQuery) -> Authorized<OldWorkDays>;
     /// Deletes the work days older than the keep period.

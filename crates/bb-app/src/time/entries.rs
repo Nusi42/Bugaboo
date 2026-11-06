@@ -308,20 +308,24 @@ impl<S: AuthStore> Ctx<'_, S> {
                 None if actor.key.is_some() => continue,
                 None => Arc::clone(&organization),
             };
+            let shown = values.shown(&held, issue.map(|issue| issue.issue_type), entry.id.into());
+            let own_field_names = values.names(&shown);
+            let (readable_id, issue_title) = match line {
+                Some(line) => (Some(line.key), line.title),
+                None => (None, None),
+            };
             let view = TimeEntryView {
                 id: entry.id,
                 issue: entry.issue,
-                readable_id: line.map(|line| line.key),
+                readable_id,
+                issue_title,
                 date: entry.date,
                 minutes: entry.minutes,
                 note: entry.note.clone(),
                 billable: billable.then_some(entry.billable),
                 started_at: entry.started_at,
-                own_fields: values.shown(
-                    &held,
-                    issue.map(|issue| issue.issue_type),
-                    entry.id.into(),
-                ),
+                own_fields: shown,
+                own_field_names,
                 version: entry.version,
             };
             views.push(held.authorize(view));

@@ -52,6 +52,9 @@ pub trait WorkingHoursStore: SettingsStore + TimeSpentStore + 'static {
         fn work_day_by_id(id: WorkDayId) -> Option<StoredDay>;
         /// The newest `limit` events of the changes of a work day, oldest first.
         fn work_day_events(id: WorkDayId, limit: u64) -> Vec<DomainEvent>;
+        /// Which of these work days have a change with a reason: the days that show *Changed*.
+        /// One grouped read for the whole week, never one read for each day.
+        fn work_days_with_reasons(ids: Vec<WorkDayId>) -> Vec<WorkDayId>;
         /// How many work days each person has with a date before `before`, by person; a person
         /// without such days is left out. Counted when asked: no job counts them.
         fn old_work_days(before: Date) -> Vec<OldDays>;

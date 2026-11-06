@@ -27,6 +27,7 @@ export const roleName = {
   projectLead: t("starting-role.project-lead"),
   teamMember: t("starting-role.team-member"),
   viewer: t("starting-role.viewer"),
+  hr: t("starting-role.hr"),
   contributor: t("starting-role.contributor"),
   guest: t("starting-role.guest"),
 } as const;

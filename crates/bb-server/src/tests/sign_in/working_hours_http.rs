@@ -11,10 +11,9 @@ use serde_json::{Value, json};
 
 use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{Site, ok};
-use super::perf_queries::{Counter, assert_as_many_statements, assert_same_statements};
 use super::rig::{PASSWORD, Rig};
 
-const MINE: &str = "/api/v1/me/work-days";
+pub(super) const MINE: &str = "/api/v1/me/work-days";
 const OLD: &str = "/api/v1/work-days/old";
 /// The date of the clock of the tests (2027-01-15 08:00 UTC); people who chose no zone count in UTC.
 const TODAY: &str = "2027-01-15";
@@ -22,7 +21,7 @@ const YESTERDAY: &str = "2027-01-14";
 const HOUR: i64 = 3600;
 const MINUTE: i64 = 60;
 
-fn days(reply: &Reply) -> Vec<Value> {
+pub(super) fn days(reply: &Reply) -> Vec<Value> {
     reply.body["days"].as_array().cloned().unwrap_or_default()
 }
 
@@ -51,7 +50,7 @@ async fn start(browser: &mut Browser) -> Result<Reply, Failure> {
 }
 
 /// A day that starts and ends at these moments of `date`, with no break.
-fn times(date: &str, from: &str, to: &str, version: i64, reason: Option<&str>) -> Value {
+pub(super) fn times(date: &str, from: &str, to: &str, version: i64, reason: Option<&str>) -> Value {
     json!({
         "version": version,
         "periods": [{"start": format!("{date}T{from}:00Z"), "end": format!("{date}T{to}:00Z")}],
@@ -374,6 +373,70 @@ async fn time_12_without_the_permission_another_persons_days_answer_like_a_perso
 }
 
 #[tokio::test]
+async fn time_12_the_people_to_choose_from_are_offered_to_hr_by_name_and_to_nobody_else()
+-> TestResult {
+    each_database("time_12_people_to_choose", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (mut hana, mut bob, bob_id) = hana_and_bob(&rig, &site).await?;
+        let found = hana
+            .send("GET", "/api/v1/work-days/people?search=bob", None)
+            .await?;
+        let items = ok(&found)?["items"].as_array().cloned().unwrap_or_default();
+        assert_eq!(items.len(), 1, "{}", found.body);
+        assert_eq!(items[0]["id"], bob_id);
+        assert_eq!(items[0]["name"], "Bob Baker");
+        // Names and IDs only: no hours, no counts, no e-mail address.
+        assert_eq!(items[0].as_object().map(serde_json::Map::len), Some(2));
+        let refused = bob.send("GET", "/api/v1/work-days/people", None).await?;
+        assert_eq!(
+            (refused.status, refused.code()),
+            (StatusCode::FORBIDDEN, "access.forbidden")
+        );
+        Ok(())
+    })
+    .await
+}
+
+/// A past day nobody has recorded yet.
+const EARLIER: &str = "2027-01-05";
+
+#[tokio::test]
+async fn time_10_a_day_typed_afterwards_is_marked_changed_takes_the_device_zone_and_totals_the_week()
+-> TestResult {
+    each_database("time_10_changed_flag", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (_hana, mut bob, _) = hana_and_bob(&rig, &site).await?;
+        let path = format!("/api/v1/me/work-days/{EARLIER}");
+        let mut body = times(EARLIER, "08:00", "16:00", 0, Some("Typed in afterwards"));
+        body["device_zone"] = json!("Europe/Berlin");
+        let saved = bob.send("PATCH", &path, Some(body)).await?;
+        assert_eq!(ok(&saved)?["zone"], "Europe/Berlin");
+        let read = bob
+            .send(
+                "GET",
+                &format!("/api/v1/me/work-days?from={EARLIER}&to={EARLIER}"),
+                None,
+            )
+            .await?;
+        assert_eq!(ok(&read)?["days"][0]["changed"], true);
+        // The week is one answer with its total: the browser adds nothing up.
+        let booked = bob
+            .send(
+                "GET",
+                &format!("/api/v1/me/work-days/booked?date={EARLIER}"),
+                None,
+            )
+            .await?;
+        assert_eq!(ok(&booked)?["week"]["worked"], 480);
+        assert_eq!(booked.body["week"]["not_booked"], 480);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn time_12_an_administrator_does_not_see_working_hours_until_given_hr() -> TestResult {
     each_database("time_12_admin_needs_hr", async |db| {
         let (rig, app) = rig_and_app(db).await?;
@@ -577,57 +640,6 @@ async fn priv_09_working_hours_are_in_no_search_list_or_order() -> TestResult {
         for word in ["workDay", "work_day", "breaks", "workingHours"] {
             assert!(!text.contains(word), "the search knows {word}");
         }
-        Ok(())
-    })
-    .await
-}
-
-/// The most statements a stretch of work days runs, however many days it has: the session, the
-/// rights of the person, the settings, and three reads of the days (days, periods, breaks).
-const DAYS_AT_MOST: usize = 24;
-
-#[tokio::test]
-async fn perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_five() -> TestResult
-{
-    each_database("perf_05_work_days", async |db| {
-        let (rig, app) = rig_and_app(db).await?;
-        let (_site, mut ada) = Site::start(&rig, &app).await?;
-        let first = jiff::civil::date(2026, 11, 1);
-        for offset in 0..40 {
-            let date = first
-                .checked_add(jiff::Span::new().days(offset))?
-                .to_string();
-            rig.clock.advance(1);
-            let made = ada
-                .send(
-                    "PATCH",
-                    &format!("{MINE}/{date}"),
-                    Some(times(
-                        &date,
-                        "08:00",
-                        "16:00",
-                        0,
-                        Some("From the paper list"),
-                    )),
-                )
-                .await?;
-            ok(&made)?;
-        }
-        let range = |count: i64| -> Result<String, Failure> {
-            let last = first.checked_add(jiff::Span::new().days(count - 1))?;
-            Ok(format!("{MINE}?from={first}&to={last}"))
-        };
-        let mut counter = Counter::on(&rig.database);
-        ok(&ada.send("GET", &range(5)?, None).await?)?;
-        counter.take();
-        let five = ada.send("GET", &range(5)?, None).await?;
-        assert_eq!(days(&five).len(), 5);
-        let (on_five, five_log) = counter.take_logged();
-        let forty = ada.send("GET", &range(40)?, None).await?;
-        assert_eq!(days(&forty).len(), 40);
-        let (on_forty, forty_log) = counter.take_logged();
-        assert_same_statements(&five_log, &forty_log);
-        assert_as_many_statements(on_five, on_forty, DAYS_AT_MOST, "a longer stretch of days");
         Ok(())
     })
     .await

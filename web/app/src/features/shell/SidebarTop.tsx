@@ -10,8 +10,15 @@ import { NavButton } from "./NavItem.tsx";
 import { openOverlay } from "./overlay-state.ts";
 import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
 
-/** Quick search, a new issue, the start page, notifications and the page of Search. */
-export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onNavigate">) {
+/**
+ * Quick search, a new issue, the start page, notifications, the timesheet and the page of Search.
+ * `folded`: the group at the bottom is one button with the timesheet in its menu.
+ */
+export function Top({
+  narrow,
+  onNavigate,
+  folded,
+}: Pick<PlaceLinkProps, "narrow" | "onNavigate"> & { readonly folded: boolean }) {
   const overrides = useShortcutOverrides();
   const unread = useUnreadCountText();
   const searchKeys = keysOf("quick-search", overrides)[0] ?? "";
@@ -47,6 +54,7 @@ export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onN
         onNavigate={onNavigate}
         count={unread}
       />
+      {folded ? null : <PlaceLink path={paths.time} narrow={narrow} onNavigate={onNavigate} />}
       <PlaceLink path={paths.search} narrow={narrow} onNavigate={onNavigate} />
     </ul>
   );

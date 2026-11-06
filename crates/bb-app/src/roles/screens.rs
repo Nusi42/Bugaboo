@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::id::RoleId;
 use bb_policy::guards::ensure_no_escalation;
-use bb_policy::{Authorized, Counts, Masked, Permission, Place, Topic};
+use bb_policy::{Authorized, Counts, Masked, PeopleContext, Permission, Place, Topic};
 use serde::Serialize;
 
 use super::types::RoleRef;
@@ -132,6 +132,7 @@ pub async fn assignment_choices<S: AuthStore>(
         ChoiceKind::Person => {
             ctx.people_choices(
                 &access,
+                PeopleContext::Management,
                 input.search.as_deref(),
                 input.cursor.as_deref(),
                 input.limit,

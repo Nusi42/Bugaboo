@@ -20,9 +20,18 @@ export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate
 const above = "top start";
 
 /** The items of the group: *My settings*, *Organization settings*, the list of shortcuts, and narrowing the bar. */
-function Items({ narrow, inDrawer, organizationSettings, onNavigate }: BottomProps) {
+function Items({
+  narrow,
+  inDrawer,
+  organizationSettings,
+  onNavigate,
+  withTimesheet = false,
+}: BottomProps & { readonly withTimesheet?: boolean }) {
   return (
     <>
+      {withTimesheet ? (
+        <PlaceLink path={paths.time} narrow={narrow} onNavigate={onNavigate} />
+      ) : null}
       <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
       {organizationSettings ? (
         <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />
@@ -62,6 +71,7 @@ function MenuItems(props: BottomProps) {
     <ul {...partOf(part.sidebarList)}>
       <Items
         {...props}
+        withTimesheet
         narrow={false}
         onNavigate={() => {
           state?.close();

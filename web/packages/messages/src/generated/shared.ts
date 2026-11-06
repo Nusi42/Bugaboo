@@ -167,6 +167,7 @@ export const messages = {
   "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
   "common.choose-role": "Choose a role",
   "common.cancel": "Cancel",
+  "common.weekday-date": "{weekday}, {date}",
   "common.loading": "Loading…",
   "common.try-again": "Try again",
   "common.save": "Save",
@@ -576,11 +577,11 @@ export const messages = {
   "time.length.hours": "{hours, plural, one {# hour} other {# hours}}",
   "time.length.minutes": "{minutes, plural, one {# minute} other {# minutes}}",
   "time.length.hours-and-minutes": "{hours} {minutes}",
-  "time.length.not-a-length": "Type a length of time like 1:30, {decimal} or 1h 30m.",
   "time.length.zero":
     "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
   "time.length.too-long": "One entry is at most {hours} hours.",
   "time.timer.start": "Start timer",
+  "time.others.title": "Working hours of others",
   "field-example.text": "For example: Customer name",
   "field-example.long-text": "For example: Notes",
   "field-example.whole-number": "For example: Affected users",
@@ -788,12 +789,14 @@ export const messages = {
   "error.mail.insecure":
     "The mail server is set to send its user name or password without encryption to another computer. Switch encryption on, or use a mail server on this computer.",
   "nav.notifications": "Notifications",
+  "nav.timesheet": "Timesheet",
   "nav.notification-settings": "Notification settings",
   "nav.handle": "Handle",
   "nav.mail-server": "E-mail and notifications",
   "nav.group.hearing": "Notifications and mentions",
   "nav.group.connections": "Connections",
   "shortcut.go-notifications": "Go to Notifications",
+  "shortcut.go-timesheet": "Go to the Timesheet",
   "notifications.mentioned": "{who} mentioned you",
   "notifications.assigned": "{who} assigned this issue to you",
   "notifications.commented": "{who} wrote a comment",
@@ -816,6 +819,17 @@ export const messages = {
   "permission.change-working-hours-of-others":
     "Change other people's work days, always with a reason",
   "starting-role.hr": "HR",
+  "working-time.preset.germany": "Germany",
+  "working-time.preset.no-rules": "No rules",
+  "working-time.warning.long-day": "{worked} worked. The rules allow {most} a day at most.",
+  "working-time.warning.short-break":
+    "{worked} worked and only {breaks} of break. The rules ask for {needed} of break after {after} of work.",
+  "working-time.warning.no-break":
+    "{worked} worked and no break. The rules ask for {needed} of break after {after} of work.",
+  "working-time.warning.long-stretch":
+    "{stretch} of work in a row. The rules allow {most} at most before a break of at least {shortest}.",
+  "working-time.warning.short-rest":
+    "Only {rest} of rest since the work day before. The rules ask for at least {needed}.",
   "setting.working-hours.preset.name": "Working-time rules",
   "setting.working-hours.preset.help":
     "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",

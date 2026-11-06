@@ -52,6 +52,9 @@ export function useShell(): {
     "go-notifications": () => {
       void navigate({ to: paths.notifications });
     },
+    "go-timesheet": () => {
+      void navigate({ to: paths.time });
+    },
   });
   return {
     person: {

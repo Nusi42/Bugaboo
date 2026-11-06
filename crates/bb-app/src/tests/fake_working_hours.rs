@@ -113,6 +113,22 @@ impl WorkingHoursStore for FakeStore {
         Ok(self.read(|state| state.work_days.iter().find(|day| day.day.id == id).cloned()))
     }
 
+    async fn work_days_with_reasons(
+        &self,
+        ids: Vec<WorkDayId>,
+    ) -> Result<Vec<WorkDayId>, FakeError> {
+        let state = self.lock();
+        Ok(ids
+            .into_iter()
+            .filter(|id| {
+                state
+                    .events
+                    .iter()
+                    .any(|event| about(event, &[(*id).into()]) && event.reason.is_some())
+            })
+            .collect())
+    }
+
     async fn work_day_events(
         &self,
         id: WorkDayId,

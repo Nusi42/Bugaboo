@@ -130,6 +130,17 @@ fn time_09_ten_hours_and_a_minute_warns_and_is_still_recorded() {
 }
 
 #[test]
+fn time_09_a_day_without_any_break_says_no_break_and_not_zero_minutes() {
+    let rules = germany();
+    let start = at("2026-10-05T07:00:00Z");
+    let found = warnings(&day(start, 421, &[]), None, Some(&rules));
+    assert_eq!(
+        found[0].said().render(),
+        "7 hours 1 minute worked and no break. The rules ask for 30 minutes of break after 6 hours of work."
+    );
+}
+
+#[test]
 fn time_09_breaks_under_fifteen_minutes_do_not_count() {
     let rules = germany();
     let start = at("2026-10-05T07:00:00Z");

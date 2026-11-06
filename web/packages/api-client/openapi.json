@@ -14390,6 +14390,81 @@
         "x-permission": "change-organization-settings"
       }
     },
+    "/api/v1/work-days/people": {
+      "get": {
+        "tags": ["working-hours"],
+        "summary": "The people whose working hours the reader may open, by name, a page at a time, to choose one\nfrom. Needs *See working hours of others*. Names and IDs only: no hours, no counts.",
+        "operationId": "listPeopleOfWorkDays",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Words that every found name holds, without regard to capitals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people to choose from.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-working-hours-of-others"
+      }
+    },
     "/api/v1/workflows": {
       "get": {
         "tags": ["workflows"],
@@ -15291,10 +15366,32 @@
           }
         }
       },
+      "BookedTotalsBody": {
+        "type": "object",
+        "description": "What the days of a week add up to, in whole minutes.",
+        "required": ["worked", "booked", "not_booked"],
+        "properties": {
+          "booked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The time booked on issues in the week."
+          },
+          "not_booked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "*Working hours not booked on issues* in the week; below zero when more was booked."
+          },
+          "worked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The working hours of the week."
+          }
+        }
+      },
       "BookedWeekBody": {
         "type": "object",
         "description": "One's own week compared with the time booked on issues.",
-        "required": ["days", "truncated"],
+        "required": ["days", "week", "truncated"],
         "properties": {
           "days": {
             "type": "array",
@@ -15306,6 +15403,10 @@
           "truncated": {
             "type": "boolean",
             "description": "Never true: a week has seven days."
+          },
+          "week": {
+            "$ref": "#/components/schemas/BookedTotalsBody",
+            "description": "What the days add up to."
           }
         }
       },
@@ -15984,6 +16085,10 @@
               "$ref": "#/components/schemas/SpanBody"
             },
             "description": "The breaks."
+          },
+          "device_zone": {
+            "type": ["string", "null"],
+            "description": "The time zone of the device (`Europe/Berlin`); it counts only for one's own date that has\nno work day yet, and only when the person and the organization chose no zone."
           },
           "periods": {
             "type": "array",
@@ -24622,7 +24727,16 @@
       "TimeEntryItem": {
         "type": "object",
         "description": "One of the person's own time entries.",
-        "required": ["id", "issue", "date", "minutes", "note", "own_fields", "version"],
+        "required": [
+          "id",
+          "issue",
+          "date",
+          "minutes",
+          "note",
+          "own_fields",
+          "own_field_names",
+          "version"
+        ],
         "properties": {
           "billable": {
             "type": ["boolean", "null"],
@@ -24640,6 +24754,10 @@
             "type": "string",
             "description": "The internal ID of the issue."
           },
+          "issue_title": {
+            "type": ["string", "null"],
+            "description": "The title of the issue while the person sees it and its role shows the field. A list gives\nit only when asked for (`fields`); the answers of booking and changing always have it."
+          },
           "minutes": {
             "type": "integer",
             "format": "int32",
@@ -24649,6 +24767,19 @@
           "note": {
             "type": "string",
             "description": "The note, plain text: shown as text, never as HTML."
+          },
+          "own_field_names": {
+            "type": "object",
+            "description": "The names of the choices those values hold (a *Pick one* or *Pick several* field), by the key\n(ID) of the field; only when asked for (`fields`).",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "own_fields": {
             "$ref": "#/components/schemas/OwnValues",
@@ -25161,6 +25292,10 @@
               "$ref": "#/components/schemas/SpanBody"
             },
             "description": "The breaks, in order."
+          },
+          "changed": {
+            "type": ["boolean", "null"],
+            "description": "Whether a change of the day has a reason: it shows *Changed* and has a history to open.\nThe answer to a change does not work it out and leaves it out; a read of the week does."
           },
           "date": {
             "type": "string",

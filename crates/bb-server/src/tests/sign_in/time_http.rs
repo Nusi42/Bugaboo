@@ -114,7 +114,11 @@ async fn set_on_project(
 }
 
 /// Books time by hand on an issue; the answer.
-async fn book(browser: &mut Browser, issue: &str, minutes: u32) -> Result<Reply, Failure> {
+pub(super) async fn book(
+    browser: &mut Browser,
+    issue: &str,
+    minutes: u32,
+) -> Result<Reply, Failure> {
     browser
         .send(
             "POST",
@@ -592,13 +596,20 @@ async fn time_13_a_person_with_a_role_in_one_project_sees_the_fields_of_their_ow
         let week = tom
             .send(
                 "GET",
-                &format!("{MY_ENTRIES}?from=2027-01-11&to=2027-01-17&fields=id,own_fields"),
+                &format!("{MY_ENTRIES}?from=2027-01-11&to=2027-01-17&fields=id,own_fields,own_field_names"),
                 None,
             )
             .await?;
         assert_eq!(
             ok(&week)?["items"][0]["own_fields"][&activity],
             json!(testing),
+            "{}",
+            week.body
+        );
+        // The server says the name of the choice, so a row can show it to a reader who sees no field list.
+        assert_eq!(
+            ok(&week)?["items"][0]["own_field_names"][&activity],
+            json!(["Testing"]),
             "{}",
             week.body
         );

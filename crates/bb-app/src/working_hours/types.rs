@@ -86,6 +86,9 @@ pub struct ChangeWorkDay {
     /// Why, in the person's own words: needed for another person's day and for one's own past
     /// day (ADR-0035, decision 7).
     pub reason: Option<String>,
+    /// The time zone of the device of the person who asks; it counts only for a date that has no
+    /// work day yet, and only when the person and the organization chose no zone.
+    pub device_zone: Option<String>,
 }
 
 /// The history of one work day: its changes with the old and the new times, who and why.
@@ -105,6 +108,18 @@ pub struct BookedWeekQuery {
     pub session_token: String,
     /// A date of the week.
     pub date: Date,
+}
+
+/// The people whose working hours the reader may open, to choose one from.
+pub struct PeopleOfHoursQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// Words that every found person holds in their name.
+    pub search: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many people the page holds at most.
+    pub limit: u32,
 }
 
 /// How many work days are older than the keep period, for each person and in total.
@@ -138,6 +153,8 @@ pub struct WorkDayView {
     pub runs: bool,
     /// Counts up with every change.
     pub version: i64,
+    /// Whether a change of the day has a reason: it shows *Changed* and has a history to open.
+    pub changed: bool,
 }
 
 /// The total of one week.
@@ -222,6 +239,19 @@ pub struct BookedDay {
 pub struct BookedWeek {
     /// The seven days, in order.
     pub days: Vec<BookedDay>,
+    /// The week: what the days add up to, worked out here and nowhere else.
+    pub week: BookedTotals,
+}
+
+/// What the days of a week add up to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BookedTotals {
+    /// The working hours of the week.
+    pub worked: i64,
+    /// The time booked on issues in the week.
+    pub booked: i64,
+    /// *Working hours not booked on issues* in the week.
+    pub not_booked: i64,
 }
 
 impl Masked for BookedWeek {}

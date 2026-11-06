@@ -15,6 +15,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
 - [Files](files/README.md): adding files to issues and comments, previews, downloads, limits
 - [Notifications](notifications/README.md): the page, Notification settings, your handle, and the mail server
+- [Time and working hours](time/README.md): the timesheet and working hours of others
 - [Writing text](writing/README.md): the marks, the buttons and the preview for descriptions and comments
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations

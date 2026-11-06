@@ -17,7 +17,7 @@ use super::types::{WeekTotal, WorkDayView, WorkDaysPage, WorkDaysQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// A stored day as its reader sees it; what runs counts until `now`.
-pub(super) fn view_of(day: &StoredDay, now: Timestamp) -> WorkDayView {
+pub(super) fn view_of(day: &StoredDay, now: Timestamp, changed: bool) -> WorkDayView {
     WorkDayView {
         date: day.day.date,
         zone: day.day.zone.clone(),
@@ -26,6 +26,7 @@ pub(super) fn view_of(day: &StoredDay, now: Timestamp) -> WorkDayView {
         runs: day.times.runs(),
         times: day.times.clone(),
         version: day.day.version,
+        changed,
     }
 }
 
@@ -129,7 +130,16 @@ pub async fn work_days<S: AuthStore>(
     let views: Vec<WorkDayView> = if totals_only {
         Vec::new()
     } else {
-        stored.iter().map(|day| view_of(day, now)).collect()
+        // One grouped read for the whole stretch tells which days have a change with a reason.
+        let changed = ctx
+            .store()
+            .work_days_with_reasons(stored.iter().map(|day| day.day.id).collect())
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        stored
+            .iter()
+            .map(|day| view_of(day, now, changed.contains(&day.day.id)))
+            .collect()
     };
     let page = WorkDaysPage {
         person: ctx.person_of(&whose).await?,

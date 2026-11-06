@@ -72,7 +72,7 @@ impl Finish {
     ) -> Result<Authorized<ChangedWorkDay>, AppError> {
         match written {
             Ok(day) => Ok(whose.evaluation.authorize(ChangedWorkDay {
-                day: super::read::view_of(&day, self.now),
+                day: super::read::view_of(&day, self.now, false),
             })),
             Err(error) => Err(match self.why.said() {
                 Some(ErrorCode::VersionChanged) => stale(self.viewer, self.stored.as_ref()),
@@ -402,7 +402,10 @@ pub async fn change_work_day<S: AuthStore>(
     }
     let (zone_name, zone) = match &stored {
         Some(stored) => (stored.day.zone.clone(), zone_of(&stored.day.zone)),
-        None => ctx.zone_for(whose.person, None).await?,
+        None => {
+            ctx.zone_for(whose.person, input.device_zone.as_deref())
+                .await?
+        }
     };
     if reason.is_none() && (!whose.own || is_past(input.date, &zone, ctx.now())) {
         return Err(ErrorCode::ReasonNeeded.into());

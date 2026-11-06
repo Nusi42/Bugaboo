@@ -117,6 +117,26 @@ impl ItemValues {
         OwnValues(shown)
     }
 
+    /// The names of the choices the values of `shown` hold, by the key of the field: for a *Pick
+    /// one* or *Pick several* field only, the names of its choices in the order of the value. It
+    /// names what the reader already sees in `shown` and nothing else; the screen joins them.
+    pub(crate) fn names(&self, shown: &OwnValues) -> BTreeMap<String, Vec<String>> {
+        shown
+            .0
+            .iter()
+            .filter_map(|(key, value)| {
+                let field = FieldKey::from_code(key)?.own()?;
+                let definition = self
+                    .definitions
+                    .iter()
+                    .find(|definition| definition.field.id == field)?;
+                let names = definition.choice_names(value);
+                (!names.is_empty())
+                    .then(|| (key.clone(), names.into_iter().map(str::to_owned).collect()))
+            })
+            .collect()
+    }
+
     /// The kind of an own field, by its key; none for a key that names no field.
     pub(crate) fn kind_of(&self, key: &str) -> Option<FieldType> {
         let field = FieldKey::from_code(key)?.own()?;

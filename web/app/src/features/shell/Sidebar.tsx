@@ -35,6 +35,8 @@ export function Sidebar({
 }: SidebarProps) {
   // In a low window the sections stand closer, so the timer and the work day fit (M5-F150).
   const short = useShortWindow() && !inDrawer;
+  // Where the group at the bottom is one button, *Timesheet* is in its menu: the sidebar stays low.
+  const folded = useShortWindow() && !(inDrawer || locked);
   return (
     <nav
       {...partOf(part.sidebar, {
@@ -45,7 +47,7 @@ export function Sidebar({
       <span {...partOf(part.sidebarBrand, { variants: [narrow && "narrow"] })}>
         {t("app.name")}
       </span>
-      <Top narrow={narrow} onNavigate={onNavigate} />
+      <Top narrow={narrow} onNavigate={onNavigate} folded={folded} />
       <Sections narrow={narrow} onNavigate={onNavigate} />
       <TimeSlot place={timePlace.sidebar} narrow={narrow} />
       <Bottom

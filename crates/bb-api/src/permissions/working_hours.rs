@@ -22,6 +22,11 @@ pub(super) const ROUTES: &[Route] = &[
     ),
     route("getMyBookedWeek", Declared::SignedIn, Answer::NeverStored),
     route(
+        "listPeopleOfWorkDays",
+        Declared::Permission(Permission::SeeWorkingHoursOfOthers),
+        Answer::NeverStored,
+    ),
+    route(
         "listWorkDaysOfPerson",
         Declared::Permission(Permission::SeeWorkingHoursOfOthers),
         Answer::NeverStored,

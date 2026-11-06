@@ -50,6 +50,7 @@ pub(super) fn working_hours_request(
         "endWorkDay" => ("POST", format!("{MINE}/end"), tap),
         "changeMyWorkDay" => ("PATCH", format!("{MINE}/{date}"), Some(a_change(&date))),
         "getMyWorkDayHistory" => ("GET", format!("{MINE}/{date}/history"), None),
+        "listPeopleOfWorkDays" => ("GET", "/api/v1/work-days/people?search=a".into(), None),
         "getMyBookedWeek" => ("GET", format!("{MINE}/booked?date={date}"), None),
         "listWorkDaysOfPerson" => ("GET", format!("{others}?from={date}&to={date}"), None),
         "changeWorkDayOfPerson" => ("PATCH", format!("{others}/{date}"), Some(a_change(&date))),

@@ -47,3 +47,8 @@ If you forgot to end a work day, a note says so with **Say when it ended**. The 
 ## A low window
 
 A window lower than 720 pixels folds **My settings**, **Organization settings**, **Keyboard shortcuts** and **Narrow the menu** behind one button, **Settings and more**, so the timer and the work day fit. A person without saved searches sees no heading for them.
+
+## The timesheet and working hours
+
+- [The timesheet](timesheet.md): your week in one grid, typing lengths and times, warnings and reasons
+- [Working hours of others](working-hours-of-others.md): looking at one other person's week

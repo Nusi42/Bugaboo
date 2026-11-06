@@ -150,6 +150,16 @@ tokens {
     size "size-col-step" "16px"
     size "size-col-value" "96px"
     size "size-col-changed" "80px"
+    // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font, and the box around it.
+    size "size-sheet-day" "76px"
+    // One day of the timesheet on a phone, where the names stand beside the box and there is room for it.
+    size "size-sheet-day-phone" "96px"
+    // The columns of the grid of the timesheet, the same for every week: an issue (ID over title), its Activity and Cost center, and the total.
+    // With the seven days they fit the card of a computer (1280 wide) with room to spare.
+    size "size-sheet-col-issue" "112px"
+    size "size-sheet-col-field" "72px"
+    size "size-sheet-col-cost-center" "88px"
+    size "size-sheet-col-total" "64px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
     size "size-window-width-min" "560px"
@@ -4947,6 +4957,11 @@ part "app-layout.inner[variant=wide]" {
 // An item of a list on a phone is a screen of its own: the page column and what else the content holds give way to it.
 part "item-screen" {
     use "page-body"
+}
+
+// The timesheet is a wide page: its column takes what the window leaves, so seven days, the names and the total fit.
+part "app-layout.inner:has(sheet)" {
+    use "page-column-wide"
 }
 
 part "app-layout.main:has(item-screen) app-layout.inner" {
@@ -14571,4 +14586,328 @@ part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=
 part "list-main list-scroll" {
     flex "0 1 auto"
     min-height "$size-list-scroll-least"
+}
+
+// ───────────── Timesheet (TIME-04, UX §4.9) ─────────────
+//
+// The week as one table: the names of the rows, one column for each day and the total. A cell is a box that is typed
+// in; a figure the server works out is a length in the code font. Warnings stand under the work-day rows in the warning
+// color and never in a box of their own; a wrong value is marked in place.
+
+part "sheet" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+// The week links stay on one line, on a phone too: the arrows around the week, then *This week*.
+part "sheet.bar" {
+    display flex
+    flex-wrap nowrap
+    align-items center
+    gap "$space-2"
+}
+
+part "sheet.bar-action" {
+    flex none
+    white-space nowrap
+}
+
+// The label of the week wraps where the phone has no room for it in one line.
+part "sheet.week" {
+    use "quiet-text"
+    min-width 0
+}
+
+// The buttons under a day of the grid (*Changed*, *Breaks*) end where the day ends; each is in a box of its own that
+// holds its words as wide as they are.
+part "sheet.day-actions" {
+    display flex
+    flex-direction column
+    align-items flex-end
+}
+
+part "sheet.day-action" {
+    display flex
+}
+
+// Who the week is of, with the ways to choose another person and to change: it wraps on a phone.
+part "sheet.who" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+// What a change of a day is about, in the reason window: the size of the text of the page.
+part "sheet.change" {
+    margin 0
+    font-size "$fs-base"
+}
+
+// The grid scrolls sideways on a narrow window; the ring of a cell is not cut at its edge.
+part "sheet.scroll" {
+    use "ring-room"
+    use "ring-room-flush"
+    overflow-x auto
+}
+
+part "sheet.col[variant=issue]" {
+    width "$size-sheet-col-issue"
+}
+
+part "sheet.col[variant=field]" {
+    width "$size-sheet-col-field"
+}
+
+part "sheet.col[variant=cost-center]" {
+    width "$size-sheet-col-cost-center"
+}
+
+part "sheet.col[variant=day]" {
+    width "calc($size-sheet-day + 2 * $space-1)"
+}
+
+part "sheet.col[variant=total]" {
+    width "$size-sheet-col-total"
+}
+
+part "sheet.table" {
+    width "100%"
+    table-layout fixed
+    border-collapse collapse
+    font-size "$fs-base"
+}
+
+part "sheet.name" {
+    padding "$space-1 $space-1"
+    color "$fg"
+    font-weight "$weight-regular"
+    text-align start
+    vertical-align middle
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+// The heads end where the figures and the typed times end: the box of a cell, its edge and the room inside it.
+part "sheet.head" {
+    use "control-label"
+    padding "$space-1 calc($space-1 + $space-2 + $border-width) $space-1 $space-1"
+    text-align end
+    vertical-align top
+    white-space nowrap
+}
+
+part "sheet.head[state=today]" {
+    color "$accent-fg"
+}
+
+part "sheet.day-heading" {
+    display flex
+    flex-direction column
+    align-items flex-end
+}
+
+part "sheet.today" {
+    display block
+}
+
+part "sheet.cell" {
+    padding "$space-1"
+    text-align end
+    vertical-align top
+}
+
+// A figure the server works out stands in the middle of the row, level with the boxes beside it.
+part "sheet.cell[variant=figure]" {
+    vertical-align middle
+}
+
+part "sheet.figure" {
+    use "length"
+    display inline-block
+    padding "$space-1 $space-2"
+    border "$border-width solid transparent"
+}
+
+part "sheet.figure[state=warning]" {
+    color "$warning"
+}
+
+part "sheet.input" {
+    use "control-box"
+    use "length"
+    width "100%"
+    padding "$space-1 $space-2"
+    color "$fg"
+    font-size "$fs-ui"
+    text-align end
+}
+
+part "sheet.input:focus-visible" {
+    use "ring"
+}
+
+part "sheet.input[state=invalid]" {
+    border-color "$danger"
+}
+
+part "sheet.input[state=warning]" {
+    border-color "$warning"
+    color "$warning"
+}
+
+part "sheet.input[state=saving]" {
+    use "busy"
+}
+
+part "sheet.input[state=readonly]" {
+    border-color transparent
+    background transparent
+}
+
+part "sheet.line sheet.input" {
+    width "$size-sheet-day-phone"
+    flex none
+}
+
+part "sheet.problem" {
+    display block
+    color "$danger"
+    font-size "$fs-sm"
+    text-align start
+    text-wrap balance
+}
+
+part "sheet.note" {
+    display block
+    color "$fg-muted"
+    font-size "$fs-sm"
+    text-align start
+    text-wrap balance
+}
+
+part "sheet.warnings" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding-block "$space-2"
+}
+
+part "sheet.warning" {
+    display flex
+    align-items flex-start
+    gap "$space-2"
+    color "$warning"
+    font-size "$fs-base"
+    line-height "$lh-text"
+}
+
+part "sheet.issue" {
+    display flex
+    align-items baseline
+    gap "$space-2"
+    min-width 0
+}
+
+part "sheet.issue[variant=stacked]" {
+    flex-direction column
+    align-items flex-start
+    gap 0
+}
+
+part "sheet.name[variant=value]" {
+    min-width 0
+}
+
+part "sheet.issue-title" {
+    use "quiet-text"
+    display inline-block
+    max-width "$size-col-title-least"
+    vertical-align bottom
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "sheet.issue[variant=stacked] sheet.issue-title" {
+    display block
+    max-width "100%"
+}
+
+part "sheet.phone" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+// The seven days are one row that fits the phone: each tab has the weekday over the number of the day.
+part "sheet.phone tabs" {
+    flex-wrap nowrap
+}
+
+part "sheet.phone tab" {
+    flex "1 1 0"
+    min-width 0
+    padding-inline "$space-1"
+    text-align center
+    white-space pre-line
+}
+
+part "sheet.day" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+// A button that stands at the start edge of a column: *Add an issue*, *Change* in the list of entries.
+// On a phone the day and its changes stand at the start edge like the rest.
+part "sheet.day sheet.day-heading" {
+    align-items flex-start
+}
+
+part "sheet.day sheet.day-actions" {
+    align-items flex-start
+}
+
+part "sheet.add" {
+    align-self flex-start
+}
+
+part "sheet.section" {
+    use "control-label"
+    margin 0
+}
+
+part "sheet.block" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding "$space-2 $space-3"
+}
+
+part "sheet.line" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    min-height "$size-target-compact"
+}
+
+part "sheet.history" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "sheet.history-entry" {
+    use "surface-box"
+    use "column-wrap"
+    padding "$space-2 $space-3"
 }

@@ -126,6 +126,7 @@ export interface MessageArguments {
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
   "common.show-all": { count: number };
+  "common.weekday-date": { date: string | number; weekday: string | number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
   "conflict.sentence": {
@@ -572,6 +573,35 @@ export interface MessageArguments {
   "time.length.not-a-length": { decimal: string | number };
   "time.length.too-long": { hours: string | number };
   "time.length.zero": { minutes: number };
+  "time.others.changing": { person: string | number };
+  "time.others.person-is": { person: string | number };
+  "time.others.pick-take": { person: string | number };
+  "time.others.reading": { person: string | number };
+  "time.others.week-of-person": { date: string | number; person: string | number };
+  "time.others.week-worked": { worked: string | number };
+  "time.sheet.cell-label": { day: string | number; row: string | number };
+  "time.sheet.day-heading": { day: string | number; weekday: string | number };
+  "time.sheet.day-tab": { day: string | number; weekday: string | number };
+  "time.sheet.history-after": { times: string | number };
+  "time.sheet.history-before": { times: string | number };
+  "time.sheet.history-breaks": { spans: string | number };
+  "time.sheet.history-by": { at: string | number; person: string | number };
+  "time.sheet.history-end": { time: string | number };
+  "time.sheet.history-made": { times: string | number };
+  "time.sheet.history-of": { day: string | number };
+  "time.sheet.history-reason": { reason: string | number };
+  "time.sheet.history-start": { time: string | number };
+  "time.sheet.history-title": { day: string | number };
+  "time.sheet.negative-length": { length: string | number };
+  "time.sheet.reason-change-end": { after: string | number; before: string | number };
+  "time.sheet.reason-change-start": { after: string | number; before: string | number };
+  "time.sheet.reason-new-end": { after: string | number };
+  "time.sheet.reason-new-start": { after: string | number };
+  "time.sheet.reason-other": { person: string | number };
+  "time.sheet.reason-own-past": { day: string | number };
+  "time.sheet.reason-title": { day: string | number };
+  "time.sheet.warning-of-day": { day: string | number; sentence: string | number };
+  "time.sheet.week-of": { date: string | number };
   "time.stop.nothing": { issue: string | number };
   "time.stop.title": { issue: string | number };
   "time.stop.worked": { length: string | number; title: string | number };
@@ -619,4 +649,22 @@ export interface MessageArguments {
   "workflows.uses-organization": { name: string | number };
   "workflows.uses-project": { name: string | number; project: string | number };
   "workflows.uses-starting": { name: string | number };
+  "working-time.warning.long-day": { most: string | number; worked: string | number };
+  "working-time.warning.long-stretch": {
+    most: string | number;
+    shortest: string | number;
+    stretch: string | number;
+  };
+  "working-time.warning.no-break": {
+    after: string | number;
+    needed: string | number;
+    worked: string | number;
+  };
+  "working-time.warning.short-break": {
+    after: string | number;
+    breaks: string | number;
+    needed: string | number;
+    worked: string | number;
+  };
+  "working-time.warning.short-rest": { needed: string | number; rest: string | number };
 }

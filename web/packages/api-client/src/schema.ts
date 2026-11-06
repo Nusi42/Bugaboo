@@ -3881,6 +3881,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/work-days/people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people whose working hours the reader may open, by name, a page at a time, to choose one
+     *     from. Needs *See working hours of others*. Names and IDs only: no hours, no counts.
+     */
+    get: operations["listPeopleOfWorkDays"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/workflows": {
     parameters: {
       query?: never;
@@ -4219,12 +4239,32 @@ export interface components {
        */
       worked: number;
     };
+    /** @description What the days of a week add up to, in whole minutes. */
+    BookedTotalsBody: {
+      /**
+       * Format: int64
+       * @description The time booked on issues in the week.
+       */
+      booked: number;
+      /**
+       * Format: int64
+       * @description *Working hours not booked on issues* in the week; below zero when more was booked.
+       */
+      not_booked: number;
+      /**
+       * Format: int64
+       * @description The working hours of the week.
+       */
+      worked: number;
+    };
     /** @description One's own week compared with the time booked on issues. */
     BookedWeekBody: {
       /** @description The seven days, in order. */
       days: components["schemas"]["BookedDayBody"][];
       /** @description Never true: a week has seven days. */
       truncated: boolean;
+      /** @description What the days add up to. */
+      week: components["schemas"]["BookedTotalsBody"];
     };
     /** @description The smallest and the largest value of a whole-number setting. */
     BoundsBody: {
@@ -4545,6 +4585,11 @@ export interface components {
     ChangeWorkDayBody: {
       /** @description The breaks. */
       breaks: components["schemas"]["SpanBody"][];
+      /**
+       * @description The time zone of the device (`Europe/Berlin`); it counts only for one's own date that has
+       *     no work day yet, and only when the person and the organization chose no zone.
+       */
+      device_zone?: string | null;
       /** @description The periods of work. */
       periods: components["schemas"]["SpanBody"][];
       /**
@@ -8872,12 +8917,24 @@ export interface components {
       /** @description The internal ID of the issue. */
       issue: string;
       /**
+       * @description The title of the issue while the person sees it and its role shows the field. A list gives
+       *     it only when asked for (`fields`); the answers of booking and changing always have it.
+       */
+      issue_title?: string | null;
+      /**
        * Format: int32
        * @description How long, in whole minutes.
        */
       minutes: number;
       /** @description The note, plain text: shown as text, never as HTML. */
       note: string;
+      /**
+       * @description The names of the choices those values hold (a *Pick one* or *Pick several* field), by the key
+       *     (ID) of the field; only when asked for (`fields`).
+       */
+      own_field_names: {
+        [key: string]: string[];
+      };
       /** @description The values of its own fields the person may see, by the key (ID) of the field. */
       own_fields: components["schemas"]["OwnValues"];
       /** @description The readable ID of the issue (WEB-142) while the person sees it. */
@@ -9141,6 +9198,11 @@ export interface components {
     WorkDayBody: {
       /** @description The breaks, in order. */
       breaks: components["schemas"]["SpanBody"][];
+      /**
+       * @description Whether a change of the day has a reason: it shows *Changed* and has a history to open.
+       *     The answer to a change does not work it out and leaves it out; a read of the week does.
+       */
+      changed?: boolean | null;
       /** @description Its date: the person's day of its first start. */
       date: string;
       /**
@@ -17415,6 +17477,43 @@ export interface operations {
           "application/json": components["schemas"]["DeletedBody"];
         };
       };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listPeopleOfWorkDays: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description Words that every found name holds, without regard to capitals. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people to choose from. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChoiceItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];

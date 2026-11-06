@@ -176,7 +176,7 @@ type Rereading = Readonly<{
  * again (it has no data to keep): it is cancelled first, so the screen is left with a read that
  * began after the change.
  */
-function reread(filters: Rereading): void {
+export function reread(filters: Rereading): void {
   void queryClient.cancelQueries(filters).then(() => queryClient.invalidateQueries(filters));
 }
 
@@ -243,17 +243,17 @@ export function refreshRelationKinds(): void {
   reread({ queryKey: queryKeys.relationKinds.all });
 }
 
-/**
- * Reads again every query made by `api.query` (its key starts with the method and the route) whose
- * route starts with one of `routes`.
- */
-function refreshRoutes(routes: readonly string[]): void {
-  reread({
-    predicate: (query: Readonly<{ queryKey: readonly unknown[] }>) => {
-      const route = query.queryKey[1];
-      return typeof route === "string" && routes.some((each) => route.startsWith(each));
-    },
-  });
+/** A query of `api.query` whose route starts with one of `routes` (its key starts with the method and the route). */
+export function routeStartsWith(routes: readonly string[]) {
+  return (query: Readonly<{ queryKey: readonly unknown[] }>): boolean => {
+    const route = query.queryKey[1];
+    return typeof route === "string" && routes.some((each) => route.startsWith(each));
+  };
+}
+
+/** Reads again every query of `api.query` whose route starts with one of `routes`. */
+export function refreshRoutes(routes: readonly string[]): void {
+  reread({ predicate: routeStartsWith(routes) });
 }
 
 /** A file was added, deleted or brought back: its list and the history (M4-F50) are read again. */

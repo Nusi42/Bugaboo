@@ -7,6 +7,8 @@
 //! spent*. No route of time takes an order: a person's own entries come by date, those of an issue
 //! newest first, so nothing orders or ranks people by their time (ADR-0035, decision 9).
 
+use std::collections::BTreeMap;
+
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::time::{
@@ -42,16 +44,21 @@ const ISSUE_LIST: &str = "issue-time-entries";
 /// The name of the member that holds the values of own fields.
 const OWN_FIELDS: &str = "own_fields";
 
-const MINE_FIELDS: [FieldSpec; 10] = [
+/// The name of the member that holds the names of the choices those values hold.
+const OWN_FIELD_NAMES: &str = "own_field_names";
+
+const MINE_FIELDS: [FieldSpec; 12] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("issue"),
     FieldSpec::by_default("readable_id"),
+    FieldSpec::on_request("issue_title"),
     FieldSpec::by_default("date"),
     FieldSpec::by_default("minutes"),
     FieldSpec::by_default("note"),
     FieldSpec::on_request("billable"),
     FieldSpec::on_request("started_at"),
     FieldSpec::on_request(OWN_FIELDS),
+    FieldSpec::on_request(OWN_FIELD_NAMES),
     FieldSpec::by_default("version"),
 ];
 
@@ -74,6 +81,10 @@ pub(crate) struct TimeEntryItem {
     /// The readable ID of the issue (WEB-142) while the person sees it.
     #[serde(skip_serializing_if = "Option::is_none")]
     readable_id: Option<String>,
+    /// The title of the issue while the person sees it and its role shows the field. A list gives
+    /// it only when asked for (`fields`); the answers of booking and changing always have it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    issue_title: Option<String>,
     /// The date (YYYY-MM-DD).
     date: String,
     /// How long, in whole minutes.
@@ -89,6 +100,9 @@ pub(crate) struct TimeEntryItem {
     started_at: Option<String>,
     /// The values of its own fields the person may see, by the key (ID) of the field.
     own_fields: OwnValues,
+    /// The names of the choices those values hold (a *Pick one* or *Pick several* field), by the key
+    /// (ID) of the field; only when asked for (`fields`).
+    own_field_names: BTreeMap<String, Vec<String>>,
     /// Counts up with every change. A change is made on the version that was looked at.
     version: i64,
 }
@@ -96,6 +110,7 @@ pub(crate) struct TimeEntryItem {
 impl Masked for TimeEntryItem {
     fn mask(value: &mut MaskedValue, mask: &FieldMask) {
         drop_hidden_own_fields(value, OWN_FIELDS, mask);
+        drop_hidden_own_fields(value, OWN_FIELD_NAMES, mask);
     }
 }
 
@@ -105,12 +120,14 @@ impl From<&TimeEntryView> for TimeEntryItem {
             id: view.id.to_string(),
             issue: view.issue.to_string(),
             readable_id: view.readable_id.clone(),
+            issue_title: view.issue_title.clone(),
             date: view.date.to_string(),
             minutes: view.minutes.get(),
             note: view.note.clone(),
             billable: view.billable,
             started_at: view.started_at.map(|at| at.to_string()),
             own_fields: view.own_fields.clone(),
+            own_field_names: view.own_field_names.clone(),
             version: view.version,
         }
     }
@@ -490,12 +507,14 @@ mod tests {
             id: String::new(),
             issue: String::new(),
             readable_id: Some(String::new()),
+            issue_title: Some(String::new()),
             date: String::new(),
             minutes: 0,
             note: String::new(),
             billable: Some(false),
             started_at: Some(String::new()),
             own_fields: OwnValues::default(),
+            own_field_names: BTreeMap::new(),
             version: 1,
         };
         crate::lean::assert_fields_are_the_keys_of(&MINE_FIELDS, &mine);

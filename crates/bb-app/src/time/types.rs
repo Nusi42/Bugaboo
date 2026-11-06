@@ -205,6 +205,8 @@ pub struct TimeEntryView {
     pub issue: IssueId,
     /// The readable ID of the issue while the person sees it.
     pub readable_id: Option<String>,
+    /// The title of the issue while the person sees it and its role shows the field.
+    pub issue_title: Option<String>,
     /// The date.
     pub date: Date,
     /// How long, in whole minutes.
@@ -217,6 +219,8 @@ pub struct TimeEntryView {
     pub started_at: Option<Timestamp>,
     /// The values of its own fields that the person may see, by the key of the field.
     pub own_fields: OwnValues,
+    /// The names of the choices those values hold, by the key of the field.
+    pub own_field_names: BTreeMap<String, Vec<String>>,
     /// Counts up with every change.
     pub version: i64,
 }

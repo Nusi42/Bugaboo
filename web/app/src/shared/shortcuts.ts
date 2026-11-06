@@ -47,6 +47,13 @@ export const shortcutDefinitions = [
     button: "nav.notifications",
   },
   {
+    id: "go-timesheet",
+    keys: ["g t"],
+    message: "shortcut.go-timesheet",
+    where: "everywhere",
+    button: "nav.timesheet",
+  },
+  {
     id: "new-issue",
     keys: ["c"],
     message: "shortcut.new-issue",

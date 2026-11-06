@@ -12,7 +12,7 @@ use bb_core::working_time::Totals;
 use bb_policy::{Authorized, Place};
 
 use super::read::view_of;
-use super::types::{BookedDay, BookedWeek, BookedWeekQuery};
+use super::types::{BookedDay, BookedTotals, BookedWeek, BookedWeekQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// The person's own week with the time booked on issues each day.
@@ -38,7 +38,7 @@ pub async fn booked_week<S: AuthStore>(
         .stored_days(person, first, last)
         .await?
         .iter()
-        .map(|day| (day.day.date, view_of(day, now).totals))
+        .map(|day| (day.day.date, view_of(day, now, false).totals))
         .collect();
     let booked: BTreeMap<_, Minutes> = ctx
         .store()
@@ -47,7 +47,7 @@ pub async fn booked_week<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
         .collect();
-    let days = dates
+    let days: Vec<BookedDay> = dates
         .into_iter()
         .map(|date| {
             let worked = worked
@@ -63,8 +63,14 @@ pub async fn booked_week<S: AuthStore>(
             }
         })
         .collect();
+    let sum = |of: fn(&BookedDay) -> i64| days.iter().map(of).sum::<i64>();
+    let week = BookedTotals {
+        worked: sum(|day| i64::from(day.worked.get())),
+        booked: sum(|day| i64::from(day.booked.get())),
+        not_booked: sum(|day| day.not_booked),
+    };
     Ok(ctx
         .evaluation_of(&actor, Place::Organization)
         .await?
-        .authorize(BookedWeek { days }))
+        .authorize(BookedWeek { days, week }))
 }

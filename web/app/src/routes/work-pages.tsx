@@ -21,6 +21,7 @@ import { useSearchNavigation, useSearchState } from "./search-address.ts";
 export { projectIssueTypesRoute, projectLabelsRoute } from "./project-offer-pages.tsx";
 export { projectWorkflowsRoute, workflowsRoute } from "./workflow-pages.tsx";
 export { savedSearchRoute, searchRoute } from "./search-pages.tsx";
+export { timeOfPersonRoute, timeOthersRoute, timeRoute } from "./time-pages.tsx";
 
 // The screens of work (issue types) are loaded when they are first opened, so the first page stays
 // small (coding-standards section 6).

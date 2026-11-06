@@ -17,9 +17,9 @@ const TIME_ENTRIES: &str = "crates/bb-server/src/tests/sign_in/time_perf_http.rs
 
 /// The reads that must not grow with the number of rows.
 pub(super) const REQUIRED: [Required; 14] = [
-    // A stretch of work days reads its days, periods and breaks once, whatever its length.
+    // A stretch of work days reads its days, periods, breaks and changed days once each, however long.
     Required::both("perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_five")
-        .within("crates/bb-server/src/tests/sign_in/working_hours_http.rs"),
+        .within("crates/bb-server/src/tests/sign_in/working_hours_perf.rs"),
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),

@@ -11,3 +11,5 @@ export { useTimerOn } from "./use-timer-on.ts";
 export { TimerBarButton } from "./TimerBarButton.tsx";
 export { TimerButton, type TimerButtonProps } from "./TimerButton.tsx";
 export { useEntryDefaults } from "./use-entry-defaults.ts";
+export { TimesheetPage, type TimesheetPageProps } from "./TimesheetPage.tsx";
+export { OthersPage, type OthersPageProps } from "./OthersPage.tsx";

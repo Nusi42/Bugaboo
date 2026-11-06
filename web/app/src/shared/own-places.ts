@@ -15,6 +15,31 @@ export const ownPlaces: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.time,
+    name: "nav.timesheet",
+    icon: iconName.clock,
+    // A destination of the menu like the start page: it has no Back.
+    parent: null,
+    listed: true,
+  },
+  {
+    // *Working hours of others*: one person's week, only for a holder of the permission.
+    path: paths.timeOthers,
+    name: "time.others.title",
+    icon: iconName.clock,
+    parent: paths.time,
+    anyOf: ["see-working-hours-of-others"],
+    listed: true,
+  },
+  {
+    path: paths.timeOfPerson,
+    name: "time.others.title",
+    icon: iconName.clock,
+    parent: paths.timeOthers,
+    anyOf: ["see-working-hours-of-others"],
+    listed: false,
+  },
+  {
     path: paths.mySettings,
     name: "nav.my-settings",
     icon: iconName.settings,

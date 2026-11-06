@@ -10,6 +10,7 @@
 //!   others*, as *Totals only* allows).
 //! - `history.rs`: the changes of one day, who and why.
 //! - `booked.rs`: one's own week compared with the time booked on issues.
+//! - `people.rs`: the people to choose from on *Working hours of others*, by name.
 //! - `old.rs`: the days older than the keep period, counted and deleted only when an administrator
 //!   says so.
 //!
@@ -21,6 +22,7 @@ mod change;
 mod day;
 mod history;
 mod old;
+mod people;
 mod read;
 mod store;
 mod types;
@@ -30,6 +32,7 @@ pub use booked::booked_week;
 pub use change::{change_work_day, start_work_day, tap_work_day};
 pub use history::work_day_history;
 pub use old::{delete_old_work_days, old_work_days};
+pub use people::people_of_hours;
 pub use read::work_days;
 pub use store::{OldDays, WorkingHoursStore};
 pub use types::*;

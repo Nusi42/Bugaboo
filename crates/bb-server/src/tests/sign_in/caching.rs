@@ -6,7 +6,7 @@
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_app::context::SystemIds;
 use bb_app::many_changes::ManyChangeStore;
 use bb_app::ports::ChangeStore;
@@ -21,6 +21,7 @@ use tower::ServiceExt as _;
 
 use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
 use super::issues_site::id_of;
+use super::policy_rig::Org;
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -199,6 +200,15 @@ fn with_query(template: &str, filled: &str, project: &str, project_id: &str) -> 
     }
 }
 
+/// Ada signed in, with *HR* given: an administrator holds no permission of working hours until
+/// given it, and the routes of the working hours of others are asked as a person who may see them.
+async fn ada_with_hr(rig: &Rig, app: &axum::Router) -> Result<Browser, Failure> {
+    let org = Org::start(rig).await?;
+    let hr = org.starting_roles().await?[StartingRole::Hr.code()];
+    org.give_everywhere(&org.admin, hr).await?;
+    Browser::signed_in_as(app, ADA_EMAIL).await
+}
+
 /// A work day of the person on the date the routes that name one are asked about.
 async fn a_work_day(ada: &mut Browser) -> Result<(), Failure> {
     let made = ada
@@ -234,7 +244,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut ada = ada_with_hr(&rig, &app).await?;
 
         // A role and a project for the routes that name one.
         let role = a_role(&rig).await?;

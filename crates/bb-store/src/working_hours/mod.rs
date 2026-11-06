@@ -301,6 +301,32 @@ impl WorkingHoursStore for AuthStorage {
         Ok(events)
     }
 
+    async fn work_days_with_reasons(
+        &self,
+        ids: Vec<WorkDayId>,
+    ) -> Result<Vec<WorkDayId>, StoreError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = Query::select();
+        select
+            .column(Event::EntityId)
+            .from(Event::Table)
+            .and_where(Expr::col(Event::EntityKind).eq(RecordKind::WorkDay.code()))
+            .and_where(
+                Expr::col(Event::EntityId)
+                    .is_in(ids.iter().map(|id| id.stored()).collect::<Vec<_>>()),
+            )
+            .and_where(Expr::col(Event::Reason).is_not_null())
+            .group_by_col(Event::EntityId);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.id(Event::EntityId))
+            .collect()
+    }
+
     async fn old_work_days(&self, before: Date) -> Result<Vec<OldDays>, StoreError> {
         old::count(&mut self.database(), before, None).await
     }

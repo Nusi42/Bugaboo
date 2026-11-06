@@ -67,6 +67,15 @@ impl Warning {
                 breaks,
                 needed,
                 after,
+            } if breaks.get() == 0 => Said::with(
+                &message::working_time_warning_no_break("", "", ""),
+                vec![length(after), length(needed), length(worked)],
+            ),
+            Self::ShortBreak {
+                worked,
+                breaks,
+                needed,
+                after,
             } => Said::with(
                 &message::working_time_warning_short_break("", "", "", ""),
                 vec![

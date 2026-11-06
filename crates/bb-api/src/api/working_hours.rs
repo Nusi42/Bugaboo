@@ -117,6 +117,10 @@ pub(crate) struct WorkDayBody {
     runs: bool,
     /// Counts up with every change. A change is made on the version that was looked at.
     version: i64,
+    /// Whether a change of the day has a reason: it shows *Changed* and has a history to open.
+    /// The answer to a change does not work it out and leaves it out; a read of the week does.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    changed: Option<bool>,
 }
 
 impl From<&WorkDayView> for WorkDayBody {
@@ -130,6 +134,7 @@ impl From<&WorkDayView> for WorkDayBody {
             warnings: view.warnings.iter().map(WarningBody::from).collect(),
             runs: view.runs,
             version: view.version,
+            changed: Some(view.changed),
         }
     }
 }
@@ -138,7 +143,10 @@ impl Masked for WorkDayBody {}
 
 impl From<&ChangedWorkDay> for WorkDayBody {
     fn from(changed: &ChangedWorkDay) -> Self {
-        Self::from(&changed.day)
+        Self {
+            changed: None,
+            ..Self::from(&changed.day)
+        }
     }
 }
 
@@ -279,11 +287,24 @@ pub(crate) struct BookedDayBody {
     not_booked: i64,
 }
 
+/// What the days of a week add up to, in whole minutes.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct BookedTotalsBody {
+    /// The working hours of the week.
+    worked: i64,
+    /// The time booked on issues in the week.
+    booked: i64,
+    /// *Working hours not booked on issues* in the week; below zero when more was booked.
+    not_booked: i64,
+}
+
 /// One's own week compared with the time booked on issues.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BookedWeekBody {
     /// The seven days, in order.
     days: Vec<BookedDayBody>,
+    /// What the days add up to.
+    week: BookedTotalsBody,
     /// Never true: a week has seven days.
     truncated: bool,
 }
@@ -303,6 +324,11 @@ impl From<&BookedWeek> for BookedWeekBody {
                     not_booked: day.not_booked,
                 })
                 .collect(),
+            week: BookedTotalsBody {
+                worked: week.week.worked,
+                booked: week.week.booked,
+                not_booked: week.week.not_booked,
+            },
             truncated: false,
         }
     }
@@ -370,6 +396,10 @@ pub(crate) struct ChangeWorkDayBody {
     /// Why, in the person's own words: needed for another person's day and for one's own past
     /// day, at most `REASON_CHARS_MAX` characters.
     reason: Option<String>,
+    /// The time zone of the device (`Europe/Berlin`); it counts only for one's own date that has
+    /// no work day yet, and only when the person and the organization chose no zone.
+    #[serde(default)]
+    device_zone: Option<String>,
 }
 
 impl ChangeWorkDayBody {

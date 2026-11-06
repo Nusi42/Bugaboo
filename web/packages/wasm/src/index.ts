@@ -78,7 +78,7 @@ export interface Wording {
 }
 
 /** Whether a value read from the answer of the module is words: a text, a list or a message. */
-function isSaid(value: unknown): value is Said {
+export function isSaid(value: unknown): value is Said {
   if (typeof value === "string" || typeof value === "number") {
     return true;
   }

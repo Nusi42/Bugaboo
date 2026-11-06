@@ -244,9 +244,16 @@ async fn change_my_work_day(
     let read = read_date(&date).ok_or_else(invalid).and_then(|date| {
         let ApiJson(body) = body?;
         let (periods, breaks) = body.times()?;
-        Ok((date, body.version, periods, breaks, body.reason))
+        Ok((
+            date,
+            body.version,
+            periods,
+            breaks,
+            body.reason,
+            body.device_zone,
+        ))
     });
-    let (date, version, periods, breaks, reason) =
+    let (date, version, periods, breaks, reason, device_zone) =
         auth.after_who_asks(&info, &session_token, read).await?;
     let day = auth
         .api()?
@@ -260,6 +267,7 @@ async fn change_my_work_day(
                 periods,
                 breaks,
                 reason,
+                device_zone,
             },
         )
         .await?;

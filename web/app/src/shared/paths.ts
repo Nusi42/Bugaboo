@@ -8,6 +8,9 @@ import { appPaths } from "@bugaboo/api-client";
 export const paths = {
   home: "/",
   notifications: appPaths.notifications,
+  time: "/time",
+  timeOthers: "/time/people",
+  timeOfPerson: "/time/people/$person",
   setup: "/setup",
   signIn: appPaths.signIn,
   secondStep: "/sign-in/second-step",

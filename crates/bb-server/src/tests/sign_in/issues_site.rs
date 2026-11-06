@@ -74,6 +74,11 @@ impl<'a> Site<'a> {
         ))
     }
 
+    /// The ID of the role that starts with this name.
+    pub(super) fn role_id(&self, role: StartingRole) -> String {
+        self.roles[role.code()].to_string()
+    }
+
     /// A person with the starting role for the whole organization, signed in.
     pub(super) async fn person(
         &self,

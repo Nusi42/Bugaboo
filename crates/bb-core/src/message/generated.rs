@@ -2929,6 +2929,9 @@ pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
 /// The message `nav.themes`.
 pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
+/// The message `nav.timesheet`.
+pub const NAV_TIMESHEET: MessageKey = MessageKey::new("nav.timesheet");
+
 /// The message `notification.kind.assigned`.
 pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
 
@@ -5407,6 +5410,9 @@ pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
 /// The message `shortcut.go-notifications`.
 pub const SHORTCUT_GO_NOTIFICATIONS: MessageKey = MessageKey::new("shortcut.go-notifications");
 
+/// The message `shortcut.go-timesheet`.
+pub const SHORTCUT_GO_TIMESHEET: MessageKey = MessageKey::new("shortcut.go-timesheet");
+
 /// The message `shortcut.in-lists`.
 pub const SHORTCUT_IN_LISTS: MessageKey = MessageKey::new("shortcut.in-lists");
 
@@ -5715,6 +5721,164 @@ pub const TIME_ENTRY_LENGTH_HINT: MessageKey = MessageKey::new("time.entry.lengt
 
 /// The message `time.entry.note`.
 pub const TIME_ENTRY_NOTE: MessageKey = MessageKey::new("time.entry.note");
+
+/// The message `time.others.change`.
+pub const TIME_OTHERS_CHANGE: MessageKey = MessageKey::new("time.others.change");
+
+/// The message `time.others.choose`.
+pub const TIME_OTHERS_CHOOSE: MessageKey = MessageKey::new("time.others.choose");
+
+/// The message `time.others.done`.
+pub const TIME_OTHERS_DONE: MessageKey = MessageKey::new("time.others.done");
+
+/// The message `time.others.other-person`.
+pub const TIME_OTHERS_OTHER_PERSON: MessageKey = MessageKey::new("time.others.other-person");
+
+/// The message `time.others.pick-clear`.
+pub const TIME_OTHERS_PICK_CLEAR: MessageKey = MessageKey::new("time.others.pick-clear");
+
+/// The message `time.others.pick-legend`.
+pub const TIME_OTHERS_PICK_LEGEND: MessageKey = MessageKey::new("time.others.pick-legend");
+
+/// The message `time.others.pick-list`.
+pub const TIME_OTHERS_PICK_LIST: MessageKey = MessageKey::new("time.others.pick-list");
+
+/// The message `time.others.pick-more`.
+pub const TIME_OTHERS_PICK_MORE: MessageKey = MessageKey::new("time.others.pick-more");
+
+/// The message `time.others.pick-none`.
+pub const TIME_OTHERS_PICK_NONE: MessageKey = MessageKey::new("time.others.pick-none");
+
+/// The message `time.others.pick-search`.
+pub const TIME_OTHERS_PICK_SEARCH: MessageKey = MessageKey::new("time.others.pick-search");
+
+/// The message `time.others.title`.
+pub const TIME_OTHERS_TITLE: MessageKey = MessageKey::new("time.others.title");
+
+/// The message `time.others.totals-only-note`.
+pub const TIME_OTHERS_TOTALS_ONLY_NOTE: MessageKey =
+    MessageKey::new("time.others.totals-only-note");
+
+/// The message `time.sheet.activity`.
+pub const TIME_SHEET_ACTIVITY: MessageKey = MessageKey::new("time.sheet.activity");
+
+/// The message `time.sheet.add-issue`.
+pub const TIME_SHEET_ADD_ISSUE: MessageKey = MessageKey::new("time.sheet.add-issue");
+
+/// The message `time.sheet.booked`.
+pub const TIME_SHEET_BOOKED: MessageKey = MessageKey::new("time.sheet.booked");
+
+/// The message `time.sheet.breaks`.
+pub const TIME_SHEET_BREAKS: MessageKey = MessageKey::new("time.sheet.breaks");
+
+/// The message `time.sheet.breaks-as-times`.
+pub const TIME_SHEET_BREAKS_AS_TIMES: MessageKey = MessageKey::new("time.sheet.breaks-as-times");
+
+/// The message `time.sheet.cannot-clear`.
+pub const TIME_SHEET_CANNOT_CLEAR: MessageKey = MessageKey::new("time.sheet.cannot-clear");
+
+/// The message `time.sheet.changed`.
+pub const TIME_SHEET_CHANGED: MessageKey = MessageKey::new("time.sheet.changed");
+
+/// The message `time.sheet.cost-center`.
+pub const TIME_SHEET_COST_CENTER: MessageKey = MessageKey::new("time.sheet.cost-center");
+
+/// The message `time.sheet.day-empty`.
+pub const TIME_SHEET_DAY_EMPTY: MessageKey = MessageKey::new("time.sheet.day-empty");
+
+/// The message `time.sheet.days`.
+pub const TIME_SHEET_DAYS: MessageKey = MessageKey::new("time.sheet.days");
+
+/// The message `time.sheet.empty`.
+pub const TIME_SHEET_EMPTY: MessageKey = MessageKey::new("time.sheet.empty");
+
+/// The message `time.sheet.end`.
+pub const TIME_SHEET_END: MessageKey = MessageKey::new("time.sheet.end");
+
+/// The message `time.sheet.facts-separator`.
+pub const TIME_SHEET_FACTS_SEPARATOR: MessageKey = MessageKey::new("time.sheet.facts-separator");
+
+/// The message `time.sheet.hidden-issue`.
+pub const TIME_SHEET_HIDDEN_ISSUE: MessageKey = MessageKey::new("time.sheet.hidden-issue");
+
+/// The message `time.sheet.history-no-times`.
+pub const TIME_SHEET_HISTORY_NO_TIMES: MessageKey = MessageKey::new("time.sheet.history-no-times");
+
+/// The message `time.sheet.history-older`.
+pub const TIME_SHEET_HISTORY_OLDER: MessageKey = MessageKey::new("time.sheet.history-older");
+
+/// The message `time.sheet.history-running`.
+pub const TIME_SHEET_HISTORY_RUNNING: MessageKey = MessageKey::new("time.sheet.history-running");
+
+/// The message `time.sheet.issue`.
+pub const TIME_SHEET_ISSUE: MessageKey = MessageKey::new("time.sheet.issue");
+
+/// The message `time.sheet.list-separator`.
+pub const TIME_SHEET_LIST_SEPARATOR: MessageKey = MessageKey::new("time.sheet.list-separator");
+
+/// The message `time.sheet.next-week`.
+pub const TIME_SHEET_NEXT_WEEK: MessageKey = MessageKey::new("time.sheet.next-week");
+
+/// The message `time.sheet.not-a-time`.
+pub const TIME_SHEET_NOT_A_TIME: MessageKey = MessageKey::new("time.sheet.not-a-time");
+
+/// The message `time.sheet.not-booked`.
+pub const TIME_SHEET_NOT_BOOKED: MessageKey = MessageKey::new("time.sheet.not-booked");
+
+/// The message `time.sheet.not-breaks`.
+pub const TIME_SHEET_NOT_BREAKS: MessageKey = MessageKey::new("time.sheet.not-breaks");
+
+/// The message `time.sheet.previous-week`.
+pub const TIME_SHEET_PREVIOUS_WEEK: MessageKey = MessageKey::new("time.sheet.previous-week");
+
+/// The message `time.sheet.reason-change-breaks`.
+pub const TIME_SHEET_REASON_CHANGE_BREAKS: MessageKey =
+    MessageKey::new("time.sheet.reason-change-breaks");
+
+/// The message `time.sheet.reason-label`.
+pub const TIME_SHEET_REASON_LABEL: MessageKey = MessageKey::new("time.sheet.reason-label");
+
+/// The message `time.sheet.reason-required`.
+pub const TIME_SHEET_REASON_REQUIRED: MessageKey = MessageKey::new("time.sheet.reason-required");
+
+/// The message `time.sheet.reason-save`.
+pub const TIME_SHEET_REASON_SAVE: MessageKey = MessageKey::new("time.sheet.reason-save");
+
+/// The message `time.sheet.several-entries`.
+pub const TIME_SHEET_SEVERAL_ENTRIES: MessageKey = MessageKey::new("time.sheet.several-entries");
+
+/// The message `time.sheet.start`.
+pub const TIME_SHEET_START: MessageKey = MessageKey::new("time.sheet.start");
+
+/// The message `time.sheet.start-first`.
+pub const TIME_SHEET_START_FIRST: MessageKey = MessageKey::new("time.sheet.start-first");
+
+/// The message `time.sheet.start-held`.
+pub const TIME_SHEET_START_HELD: MessageKey = MessageKey::new("time.sheet.start-held");
+
+/// The message `time.sheet.this-week`.
+pub const TIME_SHEET_THIS_WEEK: MessageKey = MessageKey::new("time.sheet.this-week");
+
+/// The message `time.sheet.time-on-issues`.
+pub const TIME_SHEET_TIME_ON_ISSUES: MessageKey = MessageKey::new("time.sheet.time-on-issues");
+
+/// The message `time.sheet.title`.
+pub const TIME_SHEET_TITLE: MessageKey = MessageKey::new("time.sheet.title");
+
+/// The message `time.sheet.today`.
+pub const TIME_SHEET_TODAY: MessageKey = MessageKey::new("time.sheet.today");
+
+/// The message `time.sheet.total`.
+pub const TIME_SHEET_TOTAL: MessageKey = MessageKey::new("time.sheet.total");
+
+/// The message `time.sheet.week-worked`.
+pub const TIME_SHEET_WEEK_WORKED: MessageKey = MessageKey::new("time.sheet.week-worked");
+
+/// The message `time.sheet.work-day`.
+pub const TIME_SHEET_WORK_DAY: MessageKey = MessageKey::new("time.sheet.work-day");
+
+/// The message `time.sheet.working-hours`.
+pub const TIME_SHEET_WORKING_HOURS: MessageKey = MessageKey::new("time.sheet.working-hours");
 
 /// The message `time.start-time.day`.
 pub const TIME_START_TIME_DAY: MessageKey = MessageKey::new("time.start-time.day");
@@ -6591,6 +6755,21 @@ pub fn common_show_all(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("common.show-all"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `common.weekday-date`.
+#[must_use]
+pub fn common_weekday_date(
+    date: impl std::fmt::Display,
+    weekday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.weekday-date"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
     )
 }
 
@@ -11465,6 +11644,309 @@ pub fn time_length_zero(minutes: i64) -> Message {
     )
 }
 
+/// The message `time.others.changing`.
+#[must_use]
+pub fn time_others_changing(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.changing"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `time.others.person-is`.
+#[must_use]
+pub fn time_others_person_is(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.person-is"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `time.others.pick-take`.
+#[must_use]
+pub fn time_others_pick_take(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.pick-take"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `time.others.reading`.
+#[must_use]
+pub fn time_others_reading(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.reading"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `time.others.week-of-person`.
+#[must_use]
+pub fn time_others_week_of_person(
+    date: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.week-of-person"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `time.others.week-worked`.
+#[must_use]
+pub fn time_others_week_worked(worked: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.others.week-worked"),
+        vec![("worked", Value::Text(worked.to_string()))],
+    )
+}
+
+/// The message `time.sheet.cell-label`.
+#[must_use]
+pub fn time_sheet_cell_label(day: impl std::fmt::Display, row: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.cell-label"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("row", Value::Text(row.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.day-heading`.
+#[must_use]
+pub fn time_sheet_day_heading(
+    day: impl std::fmt::Display,
+    weekday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.day-heading"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.day-tab`.
+#[must_use]
+pub fn time_sheet_day_tab(day: impl std::fmt::Display, weekday: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.day-tab"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.history-after`.
+#[must_use]
+pub fn time_sheet_history_after(times: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-after"),
+        vec![("times", Value::Text(times.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-before`.
+#[must_use]
+pub fn time_sheet_history_before(times: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-before"),
+        vec![("times", Value::Text(times.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-breaks`.
+#[must_use]
+pub fn time_sheet_history_breaks(spans: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-breaks"),
+        vec![("spans", Value::Text(spans.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-by`.
+#[must_use]
+pub fn time_sheet_history_by(
+    at: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-by"),
+        vec![
+            ("at", Value::Text(at.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.history-end`.
+#[must_use]
+pub fn time_sheet_history_end(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-end"),
+        vec![("time", Value::Text(time.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-made`.
+#[must_use]
+pub fn time_sheet_history_made(times: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-made"),
+        vec![("times", Value::Text(times.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-of`.
+#[must_use]
+pub fn time_sheet_history_of(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-of"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-reason`.
+#[must_use]
+pub fn time_sheet_history_reason(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-reason"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-start`.
+#[must_use]
+pub fn time_sheet_history_start(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-start"),
+        vec![("time", Value::Text(time.to_string()))],
+    )
+}
+
+/// The message `time.sheet.history-title`.
+#[must_use]
+pub fn time_sheet_history_title(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.history-title"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.sheet.negative-length`.
+#[must_use]
+pub fn time_sheet_negative_length(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.negative-length"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `time.sheet.reason-change-end`.
+#[must_use]
+pub fn time_sheet_reason_change_end(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-change-end"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.reason-change-start`.
+#[must_use]
+pub fn time_sheet_reason_change_start(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-change-start"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.reason-new-end`.
+#[must_use]
+pub fn time_sheet_reason_new_end(after: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-new-end"),
+        vec![("after", Value::Text(after.to_string()))],
+    )
+}
+
+/// The message `time.sheet.reason-new-start`.
+#[must_use]
+pub fn time_sheet_reason_new_start(after: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-new-start"),
+        vec![("after", Value::Text(after.to_string()))],
+    )
+}
+
+/// The message `time.sheet.reason-other`.
+#[must_use]
+pub fn time_sheet_reason_other(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-other"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `time.sheet.reason-own-past`.
+#[must_use]
+pub fn time_sheet_reason_own_past(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-own-past"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.sheet.reason-title`.
+#[must_use]
+pub fn time_sheet_reason_title(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.reason-title"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `time.sheet.warning-of-day`.
+#[must_use]
+pub fn time_sheet_warning_of_day(
+    day: impl std::fmt::Display,
+    sentence: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.warning-of-day"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("sentence", Value::Text(sentence.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.week-of`.
+#[must_use]
+pub fn time_sheet_week_of(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.week-of"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
 /// The message `time.stop.nothing`.
 #[must_use]
 pub fn time_stop_nothing(issue: impl std::fmt::Display) -> Message {
@@ -12056,6 +12538,23 @@ pub fn working_time_warning_long_stretch(
     )
 }
 
+/// The message `working-time.warning.no-break`.
+#[must_use]
+pub fn working_time_warning_no_break(
+    after: impl std::fmt::Display,
+    needed: impl std::fmt::Display,
+    worked: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("working-time.warning.no-break"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("needed", Value::Text(needed.to_string())),
+            ("worked", Value::Text(worked.to_string())),
+        ],
+    )
+}
+
 /// The message `working-time.warning.short-break`.
 #[must_use]
 pub fn working_time_warning_short_break(
@@ -12625,6 +13124,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.show-fewer", "Show fewer"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
+    ("common.weekday-date", "{weekday}, {date}"),
     (
         "common.words-failed",
         "These words could not be loaded. Check your connection and try again.",
@@ -14605,6 +15105,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
+    ("nav.timesheet", "Timesheet"),
     ("notification.kind.assigned", "An issue is assigned to you"),
     (
         "notification.kind.edit-notice",
@@ -16892,6 +17393,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcut.focus-search-bar", "Go to the search bar"),
     ("shortcut.go-home", "Go to the start page"),
     ("shortcut.go-notifications", "Go to Notifications"),
+    ("shortcut.go-timesheet", "Go to the Timesheet"),
     ("shortcut.in-lists", "Where a list is shown"),
     (
         "shortcut.intro",
@@ -17092,6 +17594,141 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "time.length.zero",
         "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
     ),
+    ("time.others.change", "Change"),
+    (
+        "time.others.changing",
+        "Every change needs a reason. {person} is told about it.",
+    ),
+    ("time.others.choose", "Choose a person to see their week."),
+    ("time.others.done", "Done"),
+    ("time.others.other-person", "Choose another person"),
+    ("time.others.person-is", "Person: {person}"),
+    ("time.others.pick-clear", "Clear the search"),
+    ("time.others.pick-legend", "People"),
+    (
+        "time.others.pick-list",
+        "People whose working hours you may see",
+    ),
+    ("time.others.pick-more", "Show more people"),
+    ("time.others.pick-none", "Nobody found."),
+    ("time.others.pick-search", "Find a person"),
+    ("time.others.pick-take", "Open the week of {person}"),
+    (
+        "time.others.reading",
+        "You see this week as it is until you choose Change. {person} is told about every change, with your reason.",
+    ),
+    ("time.others.title", "Working hours of others"),
+    (
+        "time.others.totals-only-note",
+        "Your organization shows only week totals of other people: no days, starts, ends or breaks, and no changes while it is on.",
+    ),
+    ("time.others.week-of-person", "{person} · week of {date}"),
+    ("time.others.week-worked", "{worked} worked"),
+    ("time.sheet.activity", "Activity"),
+    ("time.sheet.add-issue", "Add an issue"),
+    ("time.sheet.booked", "Booked on issues"),
+    ("time.sheet.breaks", "Breaks"),
+    (
+        "time.sheet.breaks-as-times",
+        "Type the times of the breaks, like 12:10-12:40, not their total.",
+    ),
+    (
+        "time.sheet.cannot-clear",
+        "A start or an end cannot be taken away. Type another time.",
+    ),
+    ("time.sheet.cell-label", "{row}, {day}"),
+    ("time.sheet.changed", "Changed"),
+    ("time.sheet.cost-center", "Cost center"),
+    ("time.sheet.day-empty", "No time booked on this day yet."),
+    ("time.sheet.day-heading", "{weekday} {day}"),
+    ("time.sheet.day-tab", "{weekday}\n{day}"),
+    ("time.sheet.days", "Days of the week"),
+    (
+        "time.sheet.empty",
+        "Nothing is recorded for this week yet. Type a start into the Work day rows, or book time on an issue.",
+    ),
+    ("time.sheet.end", "End"),
+    ("time.sheet.facts-separator", " · "),
+    ("time.sheet.hidden-issue", "An issue you cannot see"),
+    ("time.sheet.history-after", "Now: {times}"),
+    ("time.sheet.history-before", "Before: {times}"),
+    ("time.sheet.history-breaks", "Breaks {spans}"),
+    ("time.sheet.history-by", "{person} · {at}"),
+    ("time.sheet.history-end", "End {time}"),
+    ("time.sheet.history-made", "Recorded: {times}"),
+    ("time.sheet.history-no-times", "no times"),
+    ("time.sheet.history-of", "Changed, history of {day}"),
+    ("time.sheet.history-older", "Older changes are left out."),
+    ("time.sheet.history-reason", "Reason: {reason}"),
+    ("time.sheet.history-running", "still running"),
+    ("time.sheet.history-start", "Start {time}"),
+    ("time.sheet.history-title", "History of {day}"),
+    ("time.sheet.issue", "Issue"),
+    ("time.sheet.list-separator", ", "),
+    ("time.sheet.negative-length", "−{length}"),
+    ("time.sheet.next-week", "Next week"),
+    (
+        "time.sheet.not-a-time",
+        "Type a time of day like 8:05 or 17:15.",
+    ),
+    (
+        "time.sheet.not-booked",
+        "Working hours not booked on issues",
+    ),
+    (
+        "time.sheet.not-breaks",
+        "Type each break from one time to another, like 12:10-12:40, with a comma between breaks.",
+    ),
+    ("time.sheet.previous-week", "Previous week"),
+    (
+        "time.sheet.reason-change-breaks",
+        "The old breaks stay in the history of the day.",
+    ),
+    (
+        "time.sheet.reason-change-end",
+        "End: {before} → {after}. The old end, {before}, stays in the history of the day.",
+    ),
+    (
+        "time.sheet.reason-change-start",
+        "Start: {before} → {after}. The old start, {before}, stays in the history of the day.",
+    ),
+    ("time.sheet.reason-label", "Why are you changing this day?"),
+    ("time.sheet.reason-new-end", "End: {after}."),
+    ("time.sheet.reason-new-start", "Start: {after}."),
+    (
+        "time.sheet.reason-other",
+        "{person} is told about this change, with your reason.",
+    ),
+    (
+        "time.sheet.reason-own-past",
+        "{day} is past, so a reason is needed.",
+    ),
+    (
+        "time.sheet.reason-required",
+        "Say in a few words why this day changes.",
+    ),
+    ("time.sheet.reason-save", "Save change"),
+    ("time.sheet.reason-title", "Change {day}"),
+    (
+        "time.sheet.several-entries",
+        "This cell holds more than one time entry. Change them one by one.",
+    ),
+    ("time.sheet.start", "Start"),
+    ("time.sheet.start-first", "Type the start of the day first."),
+    (
+        "time.sheet.start-held",
+        "Start noted. Type the end of the day to save the day.",
+    ),
+    ("time.sheet.this-week", "This week"),
+    ("time.sheet.time-on-issues", "Time on issues"),
+    ("time.sheet.title", "Timesheet"),
+    ("time.sheet.today", "Today"),
+    ("time.sheet.total", "Total"),
+    ("time.sheet.warning-of-day", "{day}: {sentence}"),
+    ("time.sheet.week-of", "Week of {date}"),
+    ("time.sheet.week-worked", "Working hours of the week"),
+    ("time.sheet.work-day", "Work day"),
+    ("time.sheet.working-hours", "Working hours"),
     ("time.start-time.day", "Day"),
     (
         "time.start-time.not-a-time",
@@ -17449,6 +18086,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "working-time.warning.long-stretch",
         "{stretch} of work in a row. The rules allow {most} at most before a break of at least {shortest}.",
+    ),
+    (
+        "working-time.warning.no-break",
+        "{worked} worked and no break. The rules ask for {needed} of break after {after} of work.",
     ),
     (
         "working-time.warning.short-break",

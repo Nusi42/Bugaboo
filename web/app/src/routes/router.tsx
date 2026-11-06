@@ -32,6 +32,9 @@ import {
   relationKindsRoute,
   savedSearchRoute,
   searchRoute,
+  timeOfPersonRoute,
+  timeOthersRoute,
+  timeRoute,
   workflowsRoute,
 } from "./work-pages.tsx";
 import {
@@ -74,6 +77,9 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     homeRoute,
     notificationsRoute,
+    timeRoute,
+    timeOthersRoute,
+    timeOfPersonRoute,
     searchRoute,
     savedSearchRoute,
     projectRoute,
