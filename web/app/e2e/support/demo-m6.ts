@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { signInThroughApi } from "./accounts.ts";
 import { ana, good } from "./demo-m6-common.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
-import { startedTheDayEarlier } from "./demo-m6-setup.ts";
+import { giveTheIssueItsDefaults, startedTheDayEarlier } from "./demo-m6-setup.ts";
 import { type Instance } from "./server.ts";
 import { chipOf } from "./time-scene.ts";
 import { startedMinutesAgo } from "./time.ts";
@@ -42,6 +42,7 @@ export async function anaStartsHerDayAndStopsATimer(page: Page, server: Instance
     }),
   );
   const key = String(found.items[0]?.readable_id);
+  await giveTheIssueItsDefaults(server, key);
   await signIn(page, ana());
   await page.goto("/");
   await tap(page, "time.work-day.start");

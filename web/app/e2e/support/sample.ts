@@ -128,6 +128,15 @@ export function sampleAdministrator(): SamplePerson {
   return somebody("an Administrator", (person) => person.role === "administrator");
 }
 
+/** The first cost center the sample makes, as `tools/dev/sample.json` writes it. */
+export function sampleCostCenter(): { readonly number: string; readonly name: string } {
+  const [first] = layout.issues.work.time.costCenters;
+  if (first === undefined) {
+    throw new Error("The sample makes no cost center.");
+  }
+  return first;
+}
+
 /** A person of the sample by name, for the people the demos name (Ana Moreno, Ben Hale). */
 export function sampleNamed(name: string): SamplePerson {
   return somebody(`called ${name}`, (person) => person.name === name);
