@@ -20,7 +20,8 @@ use bb_app::access::StartingRole;
 use bb_app::context::Clock as _;
 use bb_core::edit::{DRAFT_KEPT_BY, LEASE_SECONDS};
 use bb_load_check::{
-    Afterwards, Book, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows, locks_beyond_lease,
+    Afterwards, Book, Dayed, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows,
+    locks_beyond_lease,
 };
 
 mod work;
@@ -84,6 +85,10 @@ struct Person {
     hidden_field: String,
     /// A Guest works on their own issue only; the Team members work on all of them.
     guest: bool,
+    /// The date and the version of the person's day, once they started it.
+    day: Option<(String, i64)>,
+    /// How many taps of the day were made, which tap comes next.
+    taps: usize,
 }
 
 impl Person {
@@ -167,6 +172,50 @@ impl Person {
         if let Some(key) = saved["entry"]["readable_id"].as_str() {
             book(&self.book)?.timed.push(key.to_owned());
         }
+        Ok(())
+    }
+
+    /// Taps the person's day while the others work: starts it, then breaks and ends it over and
+    /// over. A change the server kept is written down as a version of that day with its event; what
+    /// the rules refuse (a change within a second of the last one, a tap the day does not allow) is
+    /// not.
+    async fn day(&mut self) -> Result<(), Failure> {
+        self.taps += 1;
+        let reply = match &self.day {
+            Some((_, version)) if !self.taps.is_multiple_of(4) => {
+                let path = ["break/start", "break/end", "end"][self.taps % 3];
+                self.browser
+                    .send(
+                        "POST",
+                        &format!("/api/v1/me/work-days/{path}"),
+                        Some(json!({"version": version})),
+                    )
+                    .await?
+            }
+            _ => {
+                self.browser
+                    .send("POST", "/api/v1/me/work-days/start", Some(json!({})))
+                    .await?
+            }
+        };
+        if reply.status != StatusCode::OK {
+            // The rules at work: the next tap starts again.
+            let code = reply.code();
+            if code == "limit.reached"
+                || code == "edit.version-changed"
+                || code.starts_with("working-hours.")
+            {
+                self.day = None;
+                return Ok(());
+            }
+            return Err(format!("a tap of the day: {}: {}", reply.status, reply.body).into());
+        }
+        let date = reply.body["date"].as_str().ok_or("a day without a date")?;
+        self.day = Some((date.to_owned(), version_in(&reply.body)?));
+        book(&self.book)?.days.push(Dayed {
+            person: self.holder.clone(),
+            date: date.to_owned(),
+        });
         Ok(())
     }
 
@@ -315,6 +364,7 @@ impl Person {
                 3 => {
                     self.comment(&work, round).await?;
                     self.time(&work).await?;
+                    self.day().await?;
                     self.read(&work).await?;
                 }
                 4 | 5 => {
@@ -376,6 +426,8 @@ async fn the_crowd(
     book(shared)?.issues.clone_from(&everything);
     work::note_who_is_judged(shared, &guest_id.to_string(), &hidden_field)?;
     let person = |number, holder: String, browser, issues, guest| Person {
+        day: None,
+        taps: 0,
         number,
         holder,
         browser,
@@ -486,6 +538,8 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
             "no status was changed under the workflow"
         );
         assert!(!book.files.is_empty(), "no file was added");
+        assert!(!book.timed.is_empty(), "no stop of a timer saved time");
+        assert!(!book.days.is_empty(), "no change of a work day was kept");
         assert!(ended(DraftEnd::Refused), "no save was refused");
         assert!(ended(DraftEnd::Vanished), "no editor vanished");
         // Once the leases are over nobody holds a lock, and the purge takes the rows.

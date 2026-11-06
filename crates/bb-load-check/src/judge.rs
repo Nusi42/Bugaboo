@@ -25,6 +25,7 @@ use bb_app::access::StartingRole;
 use bb_core::ErrorCode;
 
 use crate::book::{Book, DraftEnd, last_drafts};
+use crate::days::days_are_kept_once;
 use crate::facts::{Facts, IssueFacts, LockRow, NotificationFacts};
 
 /// When the run is looked at.
@@ -366,6 +367,7 @@ fn time_is_saved_once(book: &Book, issue: &IssueFacts) -> Vec<String> {
 pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String> {
     let mut found = book.broken.clone();
     found.extend(reads_went_up(book));
+    found.extend(days_are_kept_once(book, facts));
     for issue in &facts.issues {
         found.extend(events_and_versions(book, issue));
         found.extend(last_description(book, issue));
@@ -383,8 +385,8 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::book::{Drafted, Kept, Searched, Seen, Work};
-    use crate::facts::StoredDraft;
+    use crate::book::{Dayed, Drafted, Kept, Searched, Seen, Work};
+    use crate::facts::{DayFacts, StoredDraft};
 
     const LEASE: i64 = 60;
     const NOW: i64 = 10_000;
@@ -437,6 +439,14 @@ mod tests {
         }
     }
 
+    /// A change of the work day of `p1`.
+    fn day_change() -> Dayed {
+        Dayed {
+            person: "p1".to_owned(),
+            date: "2027-01-14".to_owned(),
+        }
+    }
+
     /// A run of one issue that went well: made, a title change, a description save, a comment.
     fn good_run() -> (Book, Facts) {
         let book = Book {
@@ -470,6 +480,7 @@ mod tests {
             guests: vec!["guest".to_owned()],
             hidden_from_guests: vec!["secret-field".to_owned()],
             timed: Vec::new(),
+            days: vec![day_change(), day_change()],
             searched: vec![
                 search("p1", true, &["A-1", "A-2"], Some(2)),
                 search("guest", true, &["A-2"], Some(1)),
@@ -511,6 +522,13 @@ mod tests {
                 key: "A-1".to_owned(),
                 text: Some("Text of p1".to_owned()),
             }],
+            days: vec![DayFacts {
+                person: "p1".to_owned(),
+                date: "2027-01-14".to_owned(),
+                version: 2,
+                events: 2,
+                warnings_as_the_rules_find_them: true,
+            }],
         };
         (book, facts)
     }
@@ -538,6 +556,22 @@ mod tests {
         assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
         facts.issues[0].event_versions = vec![3, 3];
         assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+    }
+
+    #[test]
+    fn test_concurrent_a_work_day_change_without_its_version_event_or_warnings_is_found() {
+        let (book, mut facts) = good_run();
+        facts.days[0].version = 3;
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+        let (book, mut facts) = good_run();
+        facts.days[0].events = 1;
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+        let (book, mut facts) = good_run();
+        facts.days[0].warnings_as_the_rules_find_them = false;
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+        let (mut book, facts) = good_run();
+        book.days.pop();
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 2);
     }
 
     #[test]

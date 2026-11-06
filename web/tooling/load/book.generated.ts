@@ -71,6 +71,14 @@ export interface Searched {
   readonly refused?: string;
 }
 
+/** A change of a work day that the server kept: a start, a tap of a break, an end, a change typed afterwards. */
+export interface Dayed {
+  /** The ID of the person whose day it is. */
+  readonly person: string;
+  /** The date of the day (`2027-01-14`). */
+  readonly date: string;
+}
+
 /** Everything the people did that counts, in the order it happened to each of them. */
 export interface Book {
   /** The issues of the run. */
@@ -95,4 +103,6 @@ export interface Book {
   readonly searched?: readonly Searched[];
   /** The readable ID of the issue of every time entry a stop of a timer saved (architecture §11, "Timers and working hours start and stop at the same time"). */
   readonly timed?: readonly string[];
+  /** Every change of a work day that the server kept (architecture §11, "Timers and working hours start and stop at the same time"): each is a version of the day with its event. */
+  readonly days?: readonly Dayed[];
 }

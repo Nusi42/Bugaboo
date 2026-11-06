@@ -15,7 +15,7 @@ use jiff::civil::Date;
 use sea_query::{Expr, ExprTrait as _, Iden, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Reader, Row, StoredId, Transaction, from_micros, to_micros};
+use crate::db::{Database, Reader, Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::events::{event_columns, read_event};
 use crate::locks::{LockClass, lock_key};
@@ -184,6 +184,19 @@ async fn write_spans(transaction: &mut Transaction, day: &StoredDay) -> Result<(
 
 fn warnings_text(warnings: &[Warning]) -> Result<String, StoreError> {
     Ok(serde_json::to_string(warnings)?)
+}
+
+impl Database {
+    /// Every work day of a person, oldest first: what the check after a load run reads.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_work_days(&self, person: UserId) -> Result<Vec<StoredDay>, StoreError> {
+        let mut select = days_of(person);
+        select.order_by(WorkDayRow::Date, Order::Asc);
+        stored_days(&mut &*self, &select).await
+    }
 }
 
 impl WorkingHoursStore for AuthStorage {

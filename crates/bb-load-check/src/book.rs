@@ -98,6 +98,16 @@ pub struct Searched {
     pub refused: Option<String>,
 }
 
+/// A change of a work day that the server kept: a start, a tap of a break, an end, a change typed
+/// afterwards.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Dayed {
+    /// The ID of the person whose day it is.
+    pub person: String,
+    /// The date of the day (`2027-01-14`).
+    pub date: String,
+}
+
 /// Everything the people did that counts, in the order it happened to each of them.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Book {
@@ -129,6 +139,10 @@ pub struct Book {
     /// §11, "Timers and working hours start and stop at the same time").
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub timed: Vec<String>,
+    /// Every change of a work day that the server kept (architecture §11, "Timers and working
+    /// hours start and stop at the same time"): each is a version of the day with its event.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub days: Vec<Dayed>,
 }
 
 impl Book {

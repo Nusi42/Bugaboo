@@ -7,7 +7,9 @@ use bb_core::edit::{DraftTarget, EditWhat};
 use bb_core::event::{DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{EntityId, IssueId, UserId};
+use bb_core::settings::Layers;
 use bb_core::technical::TechnicalName;
+use bb_core::working_time::{Rules, warnings};
 use bb_store::Database;
 
 use crate::book::{Book, DraftEnd, last_drafts};
@@ -39,6 +41,22 @@ pub struct IssueFacts {
     pub attachments: usize,
     /// The person and the start of each time entry on the issue that a timer saved.
     pub timer_entries: Vec<(String, i64)>,
+}
+
+/// What the database holds about one work day the people changed.
+#[derive(Debug)]
+pub struct DayFacts {
+    /// The ID of the person whose day it is.
+    pub person: String,
+    /// The date of the day.
+    pub date: String,
+    /// The version the day has.
+    pub version: i64,
+    /// How many events are about the day.
+    pub events: usize,
+    /// Whether the warnings the day holds are the ones the rules of the preset *Germany* find in
+    /// its times and the day before it.
+    pub warnings_as_the_rules_find_them: bool,
 }
 
 /// A notification of a person the run judges by what they may see.
@@ -84,6 +102,8 @@ pub struct Facts {
     pub drafts: Vec<StoredDraft>,
     /// The notifications of the Guests of the book.
     pub notifications: Vec<NotificationFacts>,
+    /// The work days the book names.
+    pub days: Vec<DayFacts>,
 }
 
 fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
@@ -123,6 +143,49 @@ pub async fn lock_rows(database: &Database) -> Result<Vec<LockRow>, Failure> {
             expires_at: lock.expires_at.as_second(),
         })
         .collect())
+}
+
+/// The work days the book names, with their versions, their events and whether their warnings are
+/// what the rules find.
+async fn work_days(database: &Database, book: &Book) -> Result<Vec<DayFacts>, Failure> {
+    let rules = Rules::of(&Layers::default());
+    let mut people: Vec<&String> = book.days.iter().map(|day| &day.person).collect();
+    people.sort();
+    people.dedup();
+    let mut found = Vec::new();
+    for holder in people {
+        let person: UserId = holder.parse().map_err(|e| describe(holder, e))?;
+        let days = database.stored_work_days(person).await?;
+        for (at, stored) in days.iter().enumerate() {
+            let date = stored.day.date.to_string();
+            if !book
+                .days
+                .iter()
+                .any(|day| &day.person == holder && day.date == date)
+            {
+                continue;
+            }
+            let before = at.checked_sub(1).and_then(|before| days.get(before));
+            let events = database
+                .events_about(
+                    &EntityRef {
+                        kind: RecordKind::WorkDay.into(),
+                        id: stored.day.id.into(),
+                    },
+                    MOST_EVENTS,
+                )
+                .await?;
+            found.push(DayFacts {
+                person: holder.clone(),
+                date,
+                version: stored.day.version,
+                events: events.len(),
+                warnings_as_the_rules_find_them: stored.day.warnings
+                    == warnings(&stored.times, before.map(|day| &day.times), rules.as_ref()),
+            });
+        }
+    }
+    Ok(found)
 }
 
 /// Reads what the rules look at: the issues of the book, every lock row and the drafts the book
@@ -180,6 +243,7 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
             });
         }
     }
+    facts.days = work_days(database, book).await?;
     facts.locks = lock_rows(database).await?;
     for drafted in last_drafts(book) {
         if drafted.ending == DraftEnd::Saved {
