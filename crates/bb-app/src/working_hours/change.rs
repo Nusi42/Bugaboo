@@ -11,11 +11,11 @@
 //! it, with the rules in force at that change, and stored with the days. A rule never refuses
 //! anything (TIME-09).
 
-use bb_core::event::{DomainEvent, FieldChange, RecordKind};
+use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{UserId, WorkDayId};
 use bb_core::time::day::date_of;
 use bb_core::time::zone;
-use bb_core::version::{FIELD as VERSION, FIRST_VERSION, counted_up, next};
+use bb_core::version::{FIRST_VERSION, next};
 use bb_core::wording::Region;
 use bb_core::working_time::record::{StoredDay, WorkDay};
 use bb_core::working_time::{Rules, Times, is_past, warnings};
@@ -24,17 +24,15 @@ use bb_policy::{Authorized, Place};
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
 use jiff::{SignedDuration, Timestamp};
-use serde_json::{Value, json};
 
 use super::day::{check, in_order, not_in_the_future, started, tapped};
 use super::types::{ChangeWorkDay, ChangedWorkDay, StartWorkDay, Tap, TapWorkDay};
 use super::whose::Whose;
 use super::{CHANGES_PER_SECOND, REASON_CHARS_MAX};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal};
 use crate::editing::Stale;
 use crate::input::clean_text;
-use crate::member::work_day as member;
 use crate::ports::BoxFuture;
 use crate::projects::Why;
 
@@ -81,11 +79,6 @@ impl Finish {
             }),
         }
     }
-}
-
-/// The times of a day as they go into its events.
-fn json_of(times: &Times) -> Value {
-    json!({ "periods": times.periods, "breaks": times.breaks })
 }
 
 /// The shortest time between two changes of one person's days.
@@ -276,16 +269,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 None,
             ),
         };
-        let changes = vec![
-            set_to(member::PERSON, json!(plan.person.to_string())),
-            set_to(member::DATE, json!(plan.date.to_string())),
-            FieldChange {
-                field: member::TIMES.to_owned(),
-                before: plan.stored.as_ref().map(|stored| json_of(&stored.times)),
-                after: Some(json_of(&plan.times)),
-            },
-            version.map_or_else(|| set_to(VERSION, json!(FIRST_VERSION)), counted_up),
-        ];
+        let changes = crate::event_members::work_day_recorded(
+            plan.person,
+            plan.date,
+            plan.stored.as_ref().map(|stored| &stored.times),
+            &plan.times,
+            version,
+        );
         let mut event = self.event(
             by(actor.person.id),
             entity(RecordKind::WorkDay, id),

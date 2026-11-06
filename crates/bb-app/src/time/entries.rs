@@ -46,23 +46,7 @@ impl NewEntry {
     /// What the entry says in its event: its issue, date, length, note, *Billable*, start and the
     /// values of its own fields.
     pub(super) fn changes(&self) -> Vec<FieldChange> {
-        let entry = &self.entry;
-        let mut changes = vec![
-            set_to(member::ISSUE, json!(entry.issue.to_string())),
-            set_to(member::DATE, json!(entry.date.to_string())),
-            set_to(member::MINUTES, json!(entry.minutes)),
-        ];
-        if !entry.note.is_empty() {
-            changes.push(set_to(member::NOTE, json!(entry.note)));
-        }
-        if entry.billable {
-            changes.push(set_to(member::BILLABLE, json!(true)));
-        }
-        if let Some(started) = entry.started_at {
-            changes.push(set_to(member::STARTED_AT, json!(started.to_string())));
-        }
-        changes.extend(self.values.changes());
-        changes
+        crate::event_members::time_entry_booked(&self.entry, self.values.changes())
     }
 
     /// Writes the entry and its values inside the change. A person whose date holds as many

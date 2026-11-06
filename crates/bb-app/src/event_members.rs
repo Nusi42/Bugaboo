@@ -14,14 +14,19 @@ use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
 use bb_core::project::Project;
 use bb_core::relation::Relation;
-use bb_core::version::counted_up;
+use bb_core::time::entry::TimeEntry;
+use bb_core::version::{FIELD as VERSION, FIRST_VERSION, counted_up};
 use bb_core::workflow::StatusKey;
+use bb_core::working_time::Times;
+use jiff::civil::Date;
 use serde_json::{Value, json};
 
 use crate::auth::set_to;
 use crate::files::member as file_member;
 use crate::issues::member as issue_member;
 use crate::member::comment as comment_member;
+use crate::member::time_entry as time_member;
+use crate::member::work_day as work_day_member;
 use crate::tags::NameRef;
 use crate::tags::labels_changed;
 use bb_core::tags::Label;
@@ -34,6 +39,52 @@ pub(crate) fn difference(name: &str, was: Value, now: Value) -> Option<FieldChan
         before: Some(was),
         after: Some(now),
     })
+}
+
+/// A new time entry: its issue, date, length, note, *Billable*, start and then the values of its
+/// own fields (`own`). The use case *Add time* and the large dataset build the event with this.
+#[must_use]
+pub fn time_entry_booked(entry: &TimeEntry, own: Vec<FieldChange>) -> Vec<FieldChange> {
+    let mut changes = vec![
+        set_to(time_member::ISSUE, json!(entry.issue.to_string())),
+        set_to(time_member::DATE, json!(entry.date.to_string())),
+        set_to(time_member::MINUTES, json!(entry.minutes)),
+    ];
+    if !entry.note.is_empty() {
+        changes.push(set_to(time_member::NOTE, json!(entry.note)));
+    }
+    if entry.billable {
+        changes.push(set_to(time_member::BILLABLE, json!(true)));
+    }
+    if let Some(started) = entry.started_at {
+        changes.push(set_to(time_member::STARTED_AT, json!(started.to_string())));
+    }
+    changes.extend(own);
+    changes
+}
+
+/// A work day made or changed: whose it is, its date, its times before (none for a new day) and
+/// after, and its version counting up. The use cases of working hours and the large dataset build
+/// the event with this.
+#[must_use]
+pub fn work_day_recorded(
+    person: UserId,
+    date: Date,
+    before: Option<&Times>,
+    after: &Times,
+    version_before: Option<i64>,
+) -> Vec<FieldChange> {
+    let json_of = |times: &Times| json!({ "periods": times.periods, "breaks": times.breaks });
+    vec![
+        set_to(work_day_member::PERSON, json!(person.to_string())),
+        set_to(work_day_member::DATE, json!(date.to_string())),
+        FieldChange {
+            field: work_day_member::TIMES.to_owned(),
+            before: before.map(json_of),
+            after: Some(json_of(after)),
+        },
+        version_before.map_or_else(|| set_to(VERSION, json!(FIRST_VERSION)), counted_up),
+    ]
 }
 
 /// A new issue: its project, type, title, description, status, priority, who reported it and the
