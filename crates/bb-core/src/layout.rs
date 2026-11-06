@@ -66,8 +66,18 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::ReportedBy,
             Field::Tags,
             Field::Labels,
+            Field::EstimatedTime,
+            Field::TimeLeft,
+            Field::TimeSpent,
         ],
-        LayoutKind::NewIssue => &[Field::Description, Field::Priority, Field::AssignedTo],
+        // *Time left* starts from the estimate and *Time spent* is the total of the time entries,
+        // so only the estimate is asked for.
+        LayoutKind::NewIssue => &[
+            Field::Description,
+            Field::Priority,
+            Field::AssignedTo,
+            Field::EstimatedTime,
+        ],
     }
 }
 
@@ -191,6 +201,13 @@ impl LayoutContent {
                     built_in(&[Field::ReportedBy, Field::Tags, Field::Labels])
                         .into_iter()
                         .chain(own.iter().copied())
+                        // The lengths of time stand last, where the Details showed them before
+                        // layouts could place them.
+                        .chain(built_in(&[
+                            Field::EstimatedTime,
+                            Field::TimeLeft,
+                            Field::TimeSpent,
+                        ]))
                         .collect(),
                 ),
             ],
@@ -574,6 +591,41 @@ mod tests {
         let page = LayoutContent::starting(LayoutKind::IssuePage, &[], &[team]);
         assert_eq!(page.check(LayoutKind::IssuePage), Ok(()));
         assert!(page.placed().count() > form.placed().count());
+    }
+
+    #[test]
+    fn time_03_the_lengths_of_time_are_fields_a_layout_places() {
+        let lengths = [Field::EstimatedTime, Field::TimeLeft, Field::TimeSpent];
+        // The issue page places all three, in the order the Details always showed them.
+        for field in lengths {
+            assert!(built_in_fields(LayoutKind::IssuePage).contains(&field));
+        }
+        let (_, team, _) = ids();
+        let page = LayoutContent::starting(LayoutKind::IssuePage, &[], &[team]);
+        let placed: Vec<FieldKey> = page.placed().map(|placed| placed.field).collect();
+        assert_eq!(
+            placed[placed.len() - 3..],
+            lengths.map(FieldKey::from),
+            "{placed:?}"
+        );
+        // The new-issue form asks for the estimate only: *Time left* is worked out from it and
+        // *Time spent* is the total of the time entries, never typed.
+        assert!(built_in_fields(LayoutKind::NewIssue).contains(&Field::EstimatedTime));
+        for field in [Field::TimeLeft, Field::TimeSpent] {
+            let form = LayoutContent::of_sections(vec![SectionContent {
+                tab: String::new(),
+                title: String::new(),
+                fields: vec![PlacedField {
+                    field: field.into(),
+                    roles: vec![team],
+                }],
+            }]);
+            assert_eq!(
+                form.check(LayoutKind::NewIssue),
+                Err(Problem::NotPlaceable),
+                "{field:?}"
+            );
+        }
     }
 
     #[test]

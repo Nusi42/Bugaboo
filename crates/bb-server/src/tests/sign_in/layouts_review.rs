@@ -375,3 +375,99 @@ async fn cf_03_a_required_field_with_a_default_is_not_asked_for_on_the_form() ->
     })
     .await
 }
+
+/// The keys of the fields an editor places, section by section.
+fn placed_in(editor: &Value) -> Vec<String> {
+    editor["sections"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|section| section["fields"].as_array().into_iter().flatten())
+        .filter_map(|row| row["field"].as_str().map(str::to_owned))
+        .collect()
+}
+
+/// The keys of the fields an editor offers to add.
+fn offered_in(editor: &Value) -> Vec<String> {
+    editor["available"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| row["field"].as_str().map(str::to_owned))
+        .collect()
+}
+
+#[tokio::test]
+async fn time_03_the_lengths_of_time_are_fields_a_layout_places_like_any_other() -> TestResult {
+    each_database("time_03_layout_fields", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let lengths = ["estimated-time", "time-left", "time-spent"];
+        let mut lena = reader_of(
+            &site,
+            &rig,
+            "lena@example.test",
+            &LEAD,
+            &[
+                ("estimated-time", None, FieldLevel::Hidden),
+                ("time-left", None, FieldLevel::CanSee),
+                ("time-spent", None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+
+        // The issue page places all three, last, where the Details showed them before.
+        let page = ok(&ada
+            .send(
+                "POST",
+                LAYOUTS,
+                Some(json!({"project": "ACME", "kind": "issue-page"})),
+            )
+            .await?)?
+        .clone();
+        let placed = placed_in(&page);
+        assert_eq!(placed[placed.len() - 3..], lengths, "{placed:?}");
+        assert!(lengths.iter().all(|key| !offered_in(&page).contains(&(*key).to_owned())));
+
+        // The new-issue form offers the estimate only: *Time left* is worked out from it and *Time
+        // spent* is the total of the time entries.
+        let form = customize(&mut ada, "ACME").await?;
+        let offered = offered_in(&form);
+        assert!(offered.contains(&"estimated-time".to_owned()), "{offered:?}");
+        assert!(!offered.contains(&"time-left".to_owned()), "{offered:?}");
+        assert!(!offered.contains(&"time-spent".to_owned()), "{offered:?}");
+        let team = role_named(&form, "Administrator")?;
+        let (layout, version) = slot(&form)?;
+        let lock = token_of(&take_lock(&mut ada, &layout, AN_EDITOR).await?)?;
+        let typed = save(
+            &mut ada,
+            &layout,
+            &version,
+            &lock,
+            json!([{"tab": "", "title": "", "fields": [{"field": "time-spent", "roles": [&team]}]}]),
+        )
+        .await?;
+        assert_eq!(typed.status, StatusCode::BAD_REQUEST, "{}", typed.body);
+        let estimate = save(
+            &mut ada,
+            &layout,
+            &version,
+            &lock,
+            json!([{"tab": "", "title": "", "fields": [{"field": "estimated-time", "roles": [&team]}]}]),
+        )
+        .await?;
+        ok(&estimate)?;
+        assert_eq!(form_of(&mut ada, "ACME", "new-issue").await?, ["estimated-time"]);
+
+        // Field permissions win: who may not see the estimate is not shown it anywhere, and who
+        // may not change it is not asked for it on the new-issue form.
+        let shown = form_of(&mut lena, "ACME", "issue-page").await?;
+        assert!(!shown.contains(&"estimated-time".to_owned()), "{shown:?}");
+        assert!(shown.contains(&"time-left".to_owned()), "{shown:?}");
+        assert!(shown.contains(&"time-spent".to_owned()), "{shown:?}");
+        let asked = form_of(&mut lena, "ACME", "new-issue").await?;
+        assert!(!asked.contains(&"estimated-time".to_owned()), "{asked:?}");
+        Ok(())
+    })
+    .await
+}
