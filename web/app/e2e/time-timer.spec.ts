@@ -29,7 +29,7 @@ test("time_01 stop timer shows activity and cost center from the issue", async (
   const activity = await starterField(admin, "activity");
   const costCenter = await starterField(admin, "cost-center");
   const testing = await choiceNamed(admin, activity, "Testing");
-  const product = await choiceNamed(admin, costCenter, "4100 Product development");
+  const product = await choiceNamed(admin, costCenter, "Product development", "4100");
   await setTimeDefault(admin, issue, activity, testing);
   await setTimeDefault(admin, issue, costCenter, product);
   await startTimerOn(admin, issue);

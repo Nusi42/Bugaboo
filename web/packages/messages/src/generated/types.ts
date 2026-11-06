@@ -159,6 +159,8 @@ export interface MessageArguments {
   "fields.choice-down": { name: string | number };
   "fields.choice-drag": { name: string | number };
   "fields.choice-icon": { name: string | number };
+  "fields.choice-number-hint": { max: string | number };
+  "fields.choice-number-invalid": { max: string | number };
   "fields.choice-up": { name: string | number };
   "fields.choose-title": { name: string | number };
   "fields.chosen-count": { count: number };

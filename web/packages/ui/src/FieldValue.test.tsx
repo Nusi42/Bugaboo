@@ -12,6 +12,7 @@ const words = {
   three: "cat3",
   nine: "cat9",
   one: "cat1",
+  number: "0410",
 } as const;
 
 /** The part each look emits. */
@@ -47,5 +48,22 @@ describe("cf_04 every look of a value is a part of the theme", () => {
     expect(markup).toContain("<progress");
     expect(markup).toContain('aria-label="Critical"');
     expect(markup).toContain('value="1"');
+  });
+});
+
+describe("time_13 the number of a choice stands before its name in the code font", () => {
+  it("draws the number as a part of its own in a badge and in plain text, and nothing without one", () => {
+    for (const look of ["badge", "plain-text"] as const) {
+      const numbered = renderToStaticMarkup(
+        <FieldValue look={look} text={text.value} number={words.number} color={words.one} />,
+      );
+      expect(numbered).toContain(
+        `<span data-part="choice-number">${words.number}</span> ${text.value}`,
+      );
+      const plain = renderToStaticMarkup(
+        <FieldValue look={look} text={text.value} color={words.one} />,
+      );
+      expect(plain).not.toContain("choice-number");
+    }
   });
 });

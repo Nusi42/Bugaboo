@@ -8,6 +8,6 @@ export { OwnFieldInput, type OwnFieldInputProps } from "./OwnFieldInput.tsx";
 export { OwnFieldsOfProject } from "./OwnFieldsOfProject.tsx";
 export { TimeDefaultsOfProject } from "./TimeDefaultsOfProject.tsx";
 export { useFieldName } from "./use-field-name.ts";
-export { timeEntryFieldsFor, useFields, type OwnField } from "./fields.ts";
+export { choicesHeldIn, timeEntryFieldsFor, useFields, type OwnField } from "./fields.ts";
 export { registerFields } from "./register.ts";
 export { ProjectsToUse, type ProjectChoice, type ProjectsToUseWords } from "./ProjectsToUse.tsx";

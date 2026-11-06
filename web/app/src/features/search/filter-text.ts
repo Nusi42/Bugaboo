@@ -12,6 +12,7 @@ import type {
   Date as CalendarDate,
   Decimal,
   Expr,
+  Field,
   Operand,
   SearchLanguage,
   TimeWord,
@@ -22,7 +23,7 @@ import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { durationText } from "../../shared/own-value-text.ts";
 import type { FieldTest } from "../../shared/search-tree.ts";
-import type { FieldNameOf } from "./field-name-context.ts";
+import type { ChoiceOfWord, ChoiceShown, FieldNameOf } from "./field-name-context.ts";
 
 /** The number a decimal stands for, with its digits after the point. */
 export function decimalText({ value, scale }: Decimal): string {
@@ -90,22 +91,26 @@ const unitWords: Readonly<Record<Unit, (count: number) => string>> = {
   month: (count) => t("search.bar.last-months", { count }),
 };
 
-/** What a test comes to in words, without the name of the field. */
-export function testText(test: FieldTest): string {
+/**
+ * What a test comes to in words, without the name of the field. `shown` is how each value is
+ * written when it names a choice (`4100 Product development`), in the order of the values: the
+ * typed word stands in its place where the value names no choice.
+ */
+export function testText(test: FieldTest, shown: readonly (string | undefined)[] = []): string {
   if (test.type === "is") {
-    return operandText(test.value);
+    return shown[0] ?? operandText(test.value);
   }
   if (test.type === "is_not") {
-    return t("search.bar.not", { value: operandText(test.value) });
+    return t("search.bar.not", { value: shown[0] ?? operandText(test.value) });
   }
   if (test.type === "compare") {
     return t("search.bar.compared", {
       comparison: comparisonText(test.operator, test.value.type === "date"),
-      value: operandText(test.value),
+      value: shown[0] ?? operandText(test.value),
     });
   }
   if (test.type === "in") {
-    return listText(test.values.map(operandText));
+    return listText(test.values.map((value, at) => shown[at] ?? operandText(value)));
   }
   if (test.type === "contains") {
     return t("search.bar.contains", { text: test.text.text });
@@ -131,6 +136,18 @@ export interface FilterLabel {
   readonly value: string;
   /** Whether the button is shown as text (dashed) because Simple search has no picker for it. */
   readonly asText: boolean;
+  /** The choices the value names, in the order of the words: the button draws their numbers in the code font. */
+  readonly choices?: readonly ChoiceShown[] | undefined;
+}
+
+/** The values of a test that may name a choice: the one value, or the values of a list. */
+function operandsOf(test: FieldTest): readonly Operand[] {
+  if (test.type === "in") {
+    return test.values;
+  }
+  return test.type === "is" || test.type === "is_not" || test.type === "compare"
+    ? [test.value]
+    : [];
 }
 
 /** The text of a filter, as the language writes it. */
@@ -153,9 +170,22 @@ export function filterLabel(
   language: SearchLanguage,
   filter: Expr,
   nameOf: FieldNameOf,
+  choiceOf: ChoiceOfWord = () => null,
 ): FilterLabel {
   if (filter.type === "field") {
-    return { name: nameOf(filter.field.word), value: testText(filter.test), asText: false };
+    const named = operandsOf(filter.test).map((operand) =>
+      choiceOf(filter.field.word, operandText(operand)),
+    );
+    const choices = named.filter((choice) => choice !== null);
+    return {
+      name: nameOf(filter.field.word),
+      value: testText(
+        filter.test,
+        named.map((choice) => choice?.shownAs),
+      ),
+      asText: false,
+      ...(choices.length === 0 ? {} : { choices }),
+    };
   }
   if (filter.type === "or") {
     return {
@@ -165,4 +195,17 @@ export function filterLabel(
     };
   }
   return { name: undefined, value: sourceOf(language, filter), asText: true };
+}
+
+/**
+ * The words of a choice of the field as a list shows them: a choice of an own field once, as every
+ * screen writes it (`4100 Product development`), not once for each word the search knows it by.
+ */
+export function shownChoices(field: Field, choiceOf: ChoiceOfWord): readonly string[] {
+  return [...new Set(field.choices.map((word) => shownWord(field, choiceOf, word)))];
+}
+
+/** One word as a choice of the field is shown, or the word itself when it names no own choice. */
+export function shownWord(field: Field, choiceOf: ChoiceOfWord, word: string): string {
+  return choiceOf(field.word, word)?.shownAs ?? word;
 }

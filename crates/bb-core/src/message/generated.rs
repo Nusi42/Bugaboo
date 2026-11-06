@@ -1274,6 +1274,9 @@ pub const FIELDS_BASICS: MessageKey = MessageKey::new("fields.basics");
 /// The message `fields.choice-name`.
 pub const FIELDS_CHOICE_NAME: MessageKey = MessageKey::new("fields.choice-name");
 
+/// The message `fields.choice-number`.
+pub const FIELDS_CHOICE_NUMBER: MessageKey = MessageKey::new("fields.choice-number");
+
 /// The message `fields.choice-offer-again`.
 pub const FIELDS_CHOICE_OFFER_AGAIN: MessageKey = MessageKey::new("fields.choice-offer-again");
 
@@ -1306,6 +1309,9 @@ pub const FIELDS_CREATE_TITLE: MessageKey = MessageKey::new("fields.create-title
 
 /// The message `fields.default-help`.
 pub const FIELDS_DEFAULT_HELP: MessageKey = MessageKey::new("fields.default-help");
+
+/// The message `fields.default-value`.
+pub const FIELDS_DEFAULT_VALUE: MessageKey = MessageKey::new("fields.default-value");
 
 /// The message `fields.field-choices`.
 pub const FIELDS_FIELD_CHOICES: MessageKey = MessageKey::new("fields.field-choices");
@@ -7317,6 +7323,24 @@ pub fn fields_choice_icon(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.choice-icon"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.choice-number-hint`.
+#[must_use]
+pub fn fields_choice_number_hint(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-number-hint"),
+        vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `fields.choice-number-invalid`.
+#[must_use]
+pub fn fields_choice_number_invalid(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-number-invalid"),
+        vec![("max", Value::Text(max.to_string()))],
     )
 }
 
@@ -14112,6 +14136,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.choice-drag", "Drag {name}"),
     ("fields.choice-icon", "Icon of {name}"),
     ("fields.choice-name", "Name of the choice"),
+    ("fields.choice-number", "Number of the choice (optional)"),
+    (
+        "fields.choice-number-hint",
+        "Up to {max} digits, kept as typed (0410 stays 0410). No other choice of this field may have the same number.",
+    ),
+    (
+        "fields.choice-number-invalid",
+        "Type digits only, up to {max}, or leave the box empty.",
+    ),
     ("fields.choice-offer-again", "Offer this choice again"),
     ("fields.choice-retire", "Retire this choice"),
     ("fields.choice-up", "Move {name} up"),
@@ -14147,6 +14180,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "fields.default-help",
         "The value a new issue or project starts with. Leave it empty for none.",
     ),
+    ("fields.default-value", "Default value"),
     ("fields.field-choices", "Choices"),
     (
         "fields.field-choices-help",

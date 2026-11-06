@@ -1,21 +1,21 @@
 import { t } from "@bugaboo/messages";
-import { Checkbox, SelectField, TextField, part, partOf } from "@bugaboo/ui";
-import type { Field, Operand, SearchLanguage, TimeWord } from "@bugaboo/wasm-search";
+import { SelectField, TextField } from "@bugaboo/ui";
+import type { Operand, TimeWord } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
-import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
-import { dayText, operandText, timeWordText } from "./filter-text.ts";
+import {
+  dayOf,
+  decimalOf,
+  nothingPicked,
+  numberTyped,
+  textOperand,
+  type ValueInputProps,
+} from "./filter-draft.ts";
+import { dayText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
-import { NameChoice } from "./NameChoice.tsx";
+import { ChoiceBoxes, ChoiceSelect, NamedValue } from "./PickedInputs.tsx";
 import { CALENDAR, unbroken } from "../../shared/format.ts";
 import { nowhere } from "../../shared/search-tree.ts";
-
-export interface ValueInputProps {
-  readonly field: Field;
-  readonly language: SearchLanguage;
-  readonly values: readonly Operand[];
-  readonly onValues: (values: readonly Operand[]) => void;
-}
 
 const timeWords: readonly TimeWord[] = [
   "today",
@@ -25,71 +25,8 @@ const timeWords: readonly TimeWord[] = [
   "this_month",
 ];
 
-/** The word of a choice that is not one: the first line of a list with nothing picked yet. */
-const nothingPicked = "";
-
 function timeOperand(word: TimeWord): Operand {
   return { type: "time", word, span: nowhere };
-}
-
-/** Several choices of a fixed list, ticked (`status in (Open, Done)`). */
-function ChoiceBoxes({ field, values, onValues }: ValueInputProps) {
-  const chosen = new Set(values.map((value) => operandText(value)));
-  return (
-    <fieldset {...partOf(part.searchList)}>
-      {field.choices.map((choice) => (
-        <Checkbox
-          key={choice}
-          label={choice}
-          isSelected={chosen.has(choice)}
-          onChange={(on) => {
-            const others = values.filter((value) => operandText(value) !== choice);
-            onValues(on ? [...others, textOperand(choice)] : others);
-          }}
-        />
-      ))}
-    </fieldset>
-  );
-}
-
-/** One choice of a fixed list. */
-function ChoiceSelect({ field, values, onValues }: ValueInputProps) {
-  const [first] = values;
-  return (
-    <SelectField
-      label={t("search.bar.value")}
-      choices={[
-        { value: nothingPicked, label: t("search.bar.pick") },
-        ...field.choices.map((choice) => ({ value: choice, label: choice })),
-      ]}
-      value={first === undefined ? nothingPicked : operandText(first)}
-      onChange={(next) => {
-        onValues(next === nothingPicked ? [] : [textOperand(next)]);
-      }}
-    />
-  );
-}
-
-/** A person or a project, found by name; for a person, the one who searches may be chosen as *me*. */
-function NamedValue({ field, language, values, onValues }: ValueInputProps) {
-  const [first] = values;
-  return (
-    <NameChoice
-      language={language}
-      what={field.kind === "person" ? "people" : "projects"}
-      chosen={first?.type === "me" ? t("search.bar.me") : first?.type === "text" ? first.text : ""}
-      onChoose={(name) => {
-        onValues([textOperand(name)]);
-      }}
-      {...(field.kind === "person"
-        ? {
-            onChooseMe: () => {
-              onValues([{ type: "me", span: nowhere }]);
-            },
-          }
-        : {})}
-    />
-  );
 }
 
 /** A text or a number, typed: the value is only kept while it is one the field takes. */
@@ -133,7 +70,11 @@ function DurationValue({ language, values, onValues }: ValueInputProps) {
   // An example never breaks across two lines (*1 hour / 30 minutes*): its blanks do not break.
   const example = (minutes: number): string =>
     unbroken(language.operandSource({ type: "duration", minutes, span: nowhere }));
-  const examples = { hours: example(120), minutes: example(45), both: example(90) };
+  const examples = {
+    hours: example(120),
+    minutes: example(45),
+    both: example(90),
+  };
   // The language writes and reads the length of time, in its own words.
   const [typed, setTyped] = useState(
     first?.type === "duration" ? language.operandSource(first) : "",
@@ -173,7 +114,10 @@ function DateValue({ values, onValues }: ValueInputProps) {
         label={t("search.bar.when")}
         choices={[
           { value: nothingPicked, label: t("search.bar.a-day") },
-          ...timeWords.map((each) => ({ value: each, label: timeWordText(each) })),
+          ...timeWords.map((each) => ({
+            value: each,
+            label: timeWordText(each),
+          })),
         ]}
         value={word ?? nothingPicked}
         onChange={(next) => {

@@ -31,7 +31,7 @@ async function giveDefaults(admin: ApiSession, issue: MadeIssue): Promise<void> 
     admin,
     issue,
     costCenter,
-    await choiceNamed(admin, costCenter, "4100 Product development"),
+    await choiceNamed(admin, costCenter, "Product development", "4100"),
   );
 }
 

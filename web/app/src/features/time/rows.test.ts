@@ -1,32 +1,7 @@
-import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
+import { entry, find, starters } from "./rows-testing.ts";
 import { issueRows, rowTotal, startersOf } from "./rows.ts";
-
-type Entry = Schema<"TimeEntryItem">;
-
-function entry(
-  issue: string,
-  readable: string,
-  date: string,
-  minutes: number,
-  activity = "Development",
-): Entry {
-  return {
-    id: `${issue}-${date}-${minutes}`,
-    issue,
-    readable_id: readable,
-    date,
-    minutes,
-    note: "",
-    own_fields: { a1: `id-of-${activity}`, c1: "id-of-cost-center" },
-    // The server says the names of the choices; the browser shows them as they come.
-    own_field_names: { a1: [activity], c1: ["4100 Product development"] },
-    version: 1,
-  };
-}
-
-const starters = startersOf({ activity: "a1", "cost-center": "c1" });
 
 describe("time_04 the rows of time on issues", () => {
   it("makes one row for each issue, by its readable ID", () => {
@@ -37,15 +12,17 @@ describe("time_04 the rows of time on issues", () => {
         entry("i2", "WEB-141", "2026-10-06", 90),
       ],
       starters,
+      find,
     );
     expect(rows.map((row) => row.readableId)).toEqual(["WEB-9", "WEB-141"]);
   });
 
   it("reads Activity and Cost center from the entries by the IDs of the starter fields", () => {
-    const rows = issueRows([entry("i1", "WEB-1", "2026-10-05", 30)], starters);
+    const rows = issueRows([entry("i1", "WEB-1", "2026-10-05", 30)], starters, find);
+    // The cost center keeps its number apart from its name, so a screen draws the number in the code font.
     expect(rows[0]).toMatchObject({
-      activity: "Development",
-      costCenter: "4100 Product development",
+      activity: [{ shown_as: "Development" }],
+      costCenter: [{ number: "4100", name: "Product development" }],
     });
   });
 
@@ -53,8 +30,11 @@ describe("time_04 the rows of time on issues", () => {
     const rows = issueRows(
       [entry("i1", "WEB-1", "2026-10-05", 30), entry("i1", "WEB-1", "2026-10-06", 30, "Testing")],
       starters,
+      find,
     );
-    expect(rows[0]).toMatchObject({ activity: "Development, Testing" });
+    expect(rows[0]).toMatchObject({
+      activity: [{ shown_as: "Development" }, { shown_as: "Testing" }],
+    });
   });
 
   it("adds up a cell and a row", () => {
@@ -66,13 +46,16 @@ describe("time_04 the rows of time on issues", () => {
         entry("i1", "WEB-1", "2026-10-12", 500),
       ],
       starters,
+      find,
     );
     const days = ["2026-10-05", "2026-10-06"];
     expect(rows[0]?.entries["2026-10-05"]).toHaveLength(2);
     expect(rows.map((row) => rowTotal(row, days))).toEqual([105]);
   });
+});
 
-  it("has no starter fields when the timer does not name them", () => {
+describe("time_04 the starter fields of the timer", () => {
+  it("are none when the timer does not name them", () => {
     expect(startersOf({})).toEqual({ activity: undefined, costCenter: undefined });
   });
 });

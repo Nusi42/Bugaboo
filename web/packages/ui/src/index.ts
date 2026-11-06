@@ -133,6 +133,7 @@ export {
   type StoreGetter,
 } from "./storage.ts";
 export { Announce } from "./Announce.tsx";
+export { ChoiceText } from "./ChoiceText.tsx";
 export { IssueId } from "./IssueId.tsx";
 export { factSeparator } from "./facts.ts";
 export { focusFirstField, withId } from "./first-field.ts";

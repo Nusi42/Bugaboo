@@ -16,7 +16,7 @@ function InheritedNote({
   readonly source: string | undefined;
 }) {
   return (
-    <div {...partOf(part.row)}>
+    <div {...partOf(part.row, { variants: ["note"] })}>
       <p {...partOf(part.settingsSource)}>
         {source === undefined
           ? t("fields.time-default-hidden-source")

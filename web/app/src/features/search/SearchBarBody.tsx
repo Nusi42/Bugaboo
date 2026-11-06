@@ -4,9 +4,10 @@ import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 import type { ReactNode } from "react";
 
 import { AdvancedSearch } from "./AdvancedSearch.tsx";
-import { FieldNames } from "./field-name-context.ts";
+import { ChoiceWords, FieldNames } from "./field-name-context.ts";
 import { HelpButton } from "./HelpButton.tsx";
 import { SimpleSearch } from "./SimpleSearch.tsx";
+import { useChoiceWordsOf } from "./use-choice-words.ts";
 import { barMode, type SearchBarState } from "./use-search-bar.ts";
 
 export interface SearchBarBodyProps {
@@ -21,27 +22,30 @@ export interface SearchBarBodyProps {
 /** The bar itself: the mode, the filters or the box, and the buttons at the end. */
 export function SearchBarBody({ language, fields, names, bar, actions }: SearchBarBodyProps) {
   const simple = bar.mode === barMode.simple && bar.search !== null;
+  const choiceOf = useChoiceWordsOf(language);
   return (
-    <FieldNames value={(word) => names[word] ?? word}>
-      <div {...partOf(part.searchBarHead)}>
-        {simple && bar.search !== null ? (
-          <SimpleSearch language={language} fields={fields} bar={bar} search={bar.search} />
-        ) : null}
-        <div {...partOf(part.searchBarActions)}>
-          <Button
-            look={buttonLook.quiet}
-            isDisabled={!simple && !bar.canBeSimple}
-            onPress={() => {
-              bar.switchTo(simple ? barMode.advanced : barMode.simple);
-            }}
-          >
-            {simple ? t("search.bar.to-advanced") : t("search.bar.to-simple")}
-          </Button>
-          <HelpButton language={language} fields={fields} bar={bar} />
-          {actions}
+    <ChoiceWords value={choiceOf}>
+      <FieldNames value={(word) => names[word] ?? word}>
+        <div {...partOf(part.searchBarHead)}>
+          {simple && bar.search !== null ? (
+            <SimpleSearch language={language} fields={fields} bar={bar} search={bar.search} />
+          ) : null}
+          <div {...partOf(part.searchBarActions)}>
+            <Button
+              look={buttonLook.quiet}
+              isDisabled={!simple && !bar.canBeSimple}
+              onPress={() => {
+                bar.switchTo(simple ? barMode.advanced : barMode.simple);
+              }}
+            >
+              {simple ? t("search.bar.to-advanced") : t("search.bar.to-simple")}
+            </Button>
+            <HelpButton language={language} fields={fields} bar={bar} />
+            {actions}
+          </div>
         </div>
-      </div>
-      {simple ? null : <AdvancedSearch language={language} fields={fields} bar={bar} />}
-    </FieldNames>
+        {simple ? null : <AdvancedSearch language={language} fields={fields} bar={bar} />}
+      </FieldNames>
+    </ChoiceWords>
   );
 }

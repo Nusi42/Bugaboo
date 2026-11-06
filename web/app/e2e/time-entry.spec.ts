@@ -80,7 +80,7 @@ test("time_02 the history says the fields of booked time in the sentence of the 
     admin,
     issue,
     costCenter,
-    await choiceNamed(admin, costCenter, "4100 Product development"),
+    await choiceNamed(admin, costCenter, "Product development", "4100"),
   );
   await admin.dispose();
   await signIn(page, ada);

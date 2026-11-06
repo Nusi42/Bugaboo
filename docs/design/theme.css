@@ -66,11 +66,13 @@
   --size-col-step: 16px;
   --size-col-value: 96px;
   --size-col-changed: 80px;
+  --size-sheet-text-top: calc(var(--space-1) + (var(--size-control) - 1lh) / 2);
+  --size-choice-number-box: calc(14ch + 2 * var(--space-3));
   --size-sheet-day: 76px;
   --size-sheet-day-phone: 96px;
   --size-sheet-col-issue: 112px;
-  --size-sheet-col-field: 72px;
-  --size-sheet-col-cost-center: 88px;
+  --size-sheet-col-field: 96px;
+  --size-sheet-col-cost-center: 136px;
   --size-sheet-col-total: 64px;
   --size-window: 760px;
   --size-window-width-min: 560px;

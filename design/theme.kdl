@@ -150,15 +150,21 @@ tokens {
     size "size-col-step" "16px"
     size "size-col-value" "96px"
     size "size-col-changed" "80px"
+    // Where the text of a cell of the grid of the timesheet starts: level with the first line of the boxes of lengths (the room
+    // the box has above its text, and the room around the box).
+    size "size-sheet-text-top" "calc($space-1 + ($size-control - 1lh) / 2)"
+    // The box of the number of a choice (up to nine digits in the code font, with the box around them).
+    size "size-choice-number-box" "calc(14ch + 2 * $space-3)"
     // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font, and the box around it.
     size "size-sheet-day" "76px"
     // One day of the timesheet on a phone, where the names stand beside the box and there is room for it.
     size "size-sheet-day-phone" "96px"
     // The columns of the grid of the timesheet, the same for every week: an issue (ID over title), its Activity and Cost center, and the total.
-    // With the seven days they fit the card of a computer (1280 wide) with room to spare.
+    // With the seven days they fit the card of a computer (1280 wide). Activity and Cost center wrap to a second line
+    // instead of being cut short (a cost center is a number and a name: `4100 Product development`).
     size "size-sheet-col-issue" "112px"
-    size "size-sheet-col-field" "72px"
-    size "size-sheet-col-cost-center" "88px"
+    size "size-sheet-col-field" "96px"
+    size "size-sheet-col-cost-center" "136px"
     size "size-sheet-col-total" "64px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
@@ -2126,6 +2132,12 @@ part "issue-id" {
     color "$fg-muted"
 }
 
+// The number of a choice (`4100` of `4100 Product development`): in the code font like a length and a time, in the
+// color of the choice it stands in (TIME-13).
+part "choice-number" {
+    use "length"
+}
+
 part "picker.name issue-id" {
     margin-inline-end "$space-2"
 }
@@ -3609,6 +3621,12 @@ part "row" {
     gap "$space-3"
 }
 
+// What a default of a project is while the project sets none: where it comes from and the value, with room under
+// the value inside the box of the setting (at least 12 px, also on a phone).
+part "row[variant=note]" {
+    padding-block-end "$space-3"
+}
+
 // The last item of a row stands at its end (the button that sends a comment, after the one that adds files).
 part "row.end" {
     margin-inline-start auto
@@ -3768,6 +3786,22 @@ part "length" {
 // The box of a length in a row of the Details: what is typed is a length too.
 part "length-box field.input" {
     use "length"
+}
+
+// The box of the number of a choice on the field page: in the code font like the boxes of lengths, about as wide as
+// twelve digits.
+part "length-box[variant=number]" {
+    display block
+}
+
+part "length-box[variant=number] field.input" {
+    max-width "$size-choice-number-box"
+}
+
+// The hint and the error under the box of the number use the same width: the hint is not balanced into a narrower block
+// than the error under it.
+part "length-box[variant=number] field.description" {
+    text-wrap wrap
 }
 
 // Facts side by side (*10h estimated · 6h 40m left · 3h 20m spent*): a fact never breaks inside, and a line breaks only
@@ -6734,12 +6768,14 @@ part "field-sample.theme" {
     font-size "$fs-sm"
 }
 
+// A choice of the field page: its parts (title, name and number, color, icon, combine) stand one under the other, so
+// every choice looks alike whatever its parts need.
 part "field-choice" {
     display flex
-    flex-wrap wrap
-    align-items center
+    flex-direction column
+    align-items stretch
     gap "$space-2"
-    padding "$space-2"
+    padding "$space-3"
     border "$border-width solid $border-subtle"
     border-radius "$r-ctl"
     background "$bg-surface"
@@ -13374,6 +13410,7 @@ part "draggable" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+    min-height "$size-control"
 }
 
 part "layout-field.name" {
@@ -14702,12 +14739,14 @@ part "sheet.table" {
     font-size "$fs-base"
 }
 
+// Every cell of a row of the grid starts at the top, level with the first line of the boxes of lengths: the text
+// of a name is put down by the room the box has above its text, so a row of two or three lines stays one row.
 part "sheet.name" {
-    padding "$space-1 $space-1"
+    padding "$size-sheet-text-top $space-1 $space-1 $space-1"
     color "$fg"
     font-weight "$weight-regular"
     text-align start
-    vertical-align middle
+    vertical-align top
     overflow hidden
     text-overflow ellipsis
     white-space nowrap
@@ -14742,9 +14781,9 @@ part "sheet.cell" {
     vertical-align top
 }
 
-// A figure the server works out stands in the middle of the row, level with the boxes beside it.
+// A figure the server works out stands level with the first line of the boxes beside it.
 part "sheet.cell[variant=figure]" {
-    vertical-align middle
+    padding-top "$size-sheet-text-top"
 }
 
 part "sheet.figure" {
@@ -14841,8 +14880,26 @@ part "sheet.issue[variant=stacked]" {
     gap 0
 }
 
+// One choice of a cell of the grid, a line of its own: its number at the start, its name beside it, and a long name
+// wraps under itself, never under the number.
+part "choice-line" {
+    display grid
+    grid-template-columns "auto 1fr"
+    column-gap "$space-1"
+}
+
+// The name of the issue starts with its ID and the button that opens its details; the button is as tall as a box, so
+// the line already stands level with the first line of the boxes and the cell has no room of its own above it.
+part "sheet.name[variant=issue]" {
+    padding-top "$space-1"
+}
+
+// The choices of a row (Activity, Cost center) are written in full, on a second line when they need one.
 part "sheet.name[variant=value]" {
     min-width 0
+    overflow visible
+    white-space normal
+    overflow-wrap anywhere
 }
 
 // The ID of an issue in a row, with the button that opens the details of the row at its end.

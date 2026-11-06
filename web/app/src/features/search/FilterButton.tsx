@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Button, IconButton, iconName, part, partOf } from "@bugaboo/ui";
+import type { ReactNode } from "react";
+import { Button, ChoiceText, IconButton, iconName, part, partOf } from "@bugaboo/ui";
 
 import type { FilterLabel } from "./filter-text.ts";
 
@@ -16,6 +17,25 @@ function spoken(label: FilterLabel): string {
   return label.name === undefined
     ? label.value
     : t("search.bar.name-value", { name: label.name, value: label.value });
+}
+
+/** The value of a filter: its words, with the choices it names (each with its number in the code font). */
+function Value({ label }: { readonly label: FilterLabel }) {
+  const parts: ReactNode[] = [];
+  let rest = label.value;
+  for (const choice of label.choices ?? []) {
+    const at = rest.indexOf(choice.shownAs);
+    if (at < 0) {
+      // The words do not hold the choice as written: the plain words are the truth.
+      return label.value;
+    }
+    parts.push(
+      rest.slice(0, at),
+      <ChoiceText key={choice.shownAs} number={choice.number} name={choice.name} />,
+    );
+    rest = rest.slice(at + choice.shownAs.length);
+  }
+  return [...parts, rest];
 }
 
 /**
@@ -35,7 +55,9 @@ export function FilterButton({ label, onChange, onRemove }: FilterButtonProps) {
           </span>
         )}
         {label.name === undefined ? null : " "}
-        <span {...partOf(part.searchFilterValue)}>{label.value}</span>
+        <span {...partOf(part.searchFilterValue)}>
+          <Value label={label} />
+        </span>
       </Button>
       <IconButton
         icon={iconName.close}

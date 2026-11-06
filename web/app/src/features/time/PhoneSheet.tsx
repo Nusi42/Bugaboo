@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { dayOfMonth, weekdayName } from "../../shared/clock.ts";
 import { DayWarnings } from "./DayWarnings.tsx";
-import { AddIssue } from "./IssueRows.tsx";
+import { AddIssue } from "./AddIssue.tsx";
 import { Figure, IssuesBlock, WorkDayBlock } from "./PhoneBlocks.tsx";
 import { gridLength } from "./sheet-model.ts";
 import type { DaysProps, IssuesProps } from "./sheet-props.ts";

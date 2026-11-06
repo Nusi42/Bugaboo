@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { useFieldName } from "../fields/index.ts";
+import { choicesHeldIn, useFieldName, useFields } from "../fields/index.ts";
 import { issueRows, type IssueRow } from "./rows.ts";
 import type { IssuesProps } from "./sheet-props.ts";
 import { useBookedWeek, useStarters, useWeekEntries } from "./use-week.ts";
@@ -44,8 +44,8 @@ function useAddedIssues() {
       issue: found.issue.id,
       readableId: found.issue.readable_id ?? key,
       title: found.issue.title ?? "",
-      activity: "",
-      costCenter: "",
+      activity: [],
+      costCenter: [],
       entries: {},
     };
     setAdded((was) => [...was.filter((each) => each.issue !== row.issue), row]);
@@ -69,7 +69,9 @@ export function useIssues(
   const starters = useStarters();
   const booked = useBookedWeek(first);
   const { added, add, problem } = useAddedIssues();
-  const fromEntries = issueRows(entries.entries, starters);
+  // Retired fields too: the entries that were booked with them keep their choices on the sheet.
+  const fields = useFields({ retired: true }).data?.fields ?? [];
+  const fromEntries = issueRows(entries.entries, starters, choicesHeldIn(fields));
   const rows = [
     ...fromEntries,
     ...added.filter((row) => !fromEntries.some((each) => each.issue === row.issue)),

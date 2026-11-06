@@ -14,3 +14,21 @@ export const FieldNames = createContext<FieldNameOf>((word) => word);
 export function useFieldName(): FieldNameOf {
   return useContext(FieldNames);
 }
+
+/** A choice of an own field as a button shows it: its number, its name, and the two written together. */
+export interface ChoiceShown {
+  readonly number: string | null | undefined;
+  readonly name: string;
+  readonly shownAs: string;
+}
+
+/** The choice a word names in the field of a word (`budget`), as the person's fields have it. */
+export type ChoiceOfWord = (field: string, word: string) => ChoiceShown | null;
+
+/** The choice a word of the search names in an own field, by the word of the field; the bar provides it from the fields. */
+export const ChoiceWords = createContext<ChoiceOfWord>(() => null);
+
+/** The function that finds the choice a typed word names. */
+export function useChoiceWords(): ChoiceOfWord {
+  return useContext(ChoiceWords);
+}

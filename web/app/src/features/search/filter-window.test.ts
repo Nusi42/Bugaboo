@@ -3,6 +3,7 @@ import { testSearchLanguage } from "../../shared/search-language-testing.ts";
 import { describe, expect, it } from "vitest";
 
 import { dayOf, decimalOf, draftOf, filterOf, testOf, type Draft } from "./filter-draft.ts";
+import { choicesNamed } from "./filter-testing.ts";
 import { filterLabel, operandText, testText } from "./filter-text.ts";
 import { nowhere, type FieldFilter } from "../../shared/search-tree.ts";
 
@@ -87,6 +88,28 @@ describe("qry_02 a filter button says what the filter says", () => {
     expect(label.name).toBe("<status>");
     expect(label.value).toBe("not Done");
     expect(label.asText).toBe(false);
+  });
+
+  it("shows a choice it names as every choice is shown, with its number apart", () => {
+    const choice = { number: "4100", name: "Open", shownAs: "4100 Open" };
+    const found = () => choice;
+    const label = filterLabel(language, filterOfText("status is not 4100"), nameOf, found);
+    expect(label.value).toBe("not 4100 Open");
+    expect(label.choices).toEqual([choice]);
+    // A word that names no choice stays as it was typed.
+    expect(filterLabel(language, filterOfText("status is Done"), nameOf).choices).toBe(undefined);
+  });
+
+  it("draws every choice of a list it names, and keeps the words of the others", () => {
+    const open = { number: "4100", name: "Open", shownAs: "4100 Open" };
+    const label = filterLabel(
+      language,
+      filterOfText("status in (Open, Done)"),
+      nameOf,
+      choicesNamed(open),
+    );
+    expect(label.value).toBe("4100 Open and Done");
+    expect(label.choices).toEqual([open]);
   });
 
   it("words a length of time as the issue page does", () => {

@@ -19,11 +19,11 @@ export interface OwnColumn {
 /** The fields of the organization by their search word, which is made from their name by one rule of the language. */
 export type OwnColumns = Readonly<Record<string, OwnColumn>>;
 
-/** The names of the choices of a field by their IDs. */
+/** The texts of the choices of a field by their IDs (`shown_as`: the number and the name, as the server writes them). */
 function choicesOf(
   choices: readonly Schema<"FieldChoiceBody">[] | null | undefined,
 ): Readonly<Record<string, string>> {
-  return Object.fromEntries((choices ?? []).map((choice) => [choice.id, choice.name]));
+  return Object.fromEntries((choices ?? []).map((choice) => [choice.id, choice.shown_as]));
 }
 
 /** The column a field stands for, by its search word; nothing for a field that came without what a column needs. */

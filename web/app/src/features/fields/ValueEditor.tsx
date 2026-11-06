@@ -69,7 +69,7 @@ function PickOneEditor({
   const current = typeof value === "string" ? value : "";
   const choices = pickable(field, current === "" ? [] : [current]).map((choice) => ({
     value: choice.id,
-    label: choice.name,
+    label: choice.shown_as,
   }));
   const mayBeEmpty = field.rules.required !== true || current === "";
   return (
@@ -100,7 +100,7 @@ function PickSeveralEditor({ field, value, onCommit, problem, inRow = false }: V
       {pickable(field, current).map((choice) => (
         <Checkbox
           key={choice.id}
-          label={choice.name}
+          label={choice.shown_as}
           isSelected={current.includes(choice.id)}
           onChange={(on) => {
             const next = on

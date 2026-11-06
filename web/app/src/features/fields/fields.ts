@@ -184,6 +184,21 @@ export function choiceOf(field: OwnField, id: string): Choice | undefined {
   return field.choices.find((choice) => choice.id === id);
 }
 
+/** Whether the choice has a number: a numbered choice stands where its number puts it, not where the buttons move it. */
+export function isNumbered(choice: Choice): boolean {
+  return choice.number !== undefined && choice.number !== null;
+}
+
+/** The choices with these IDs of a field, in the order the field lists them, found in the fields the browser has read. */
+export function choicesHeldIn(
+  fields: readonly OwnField[],
+): (field: string, held: readonly string[]) => readonly Choice[] {
+  return (field, held) =>
+    fields
+      .find((each) => each.id === field)
+      ?.choices.filter((choice) => held.includes(choice.id)) ?? [];
+}
+
 /** The own fields made for `appliesTo` that reach an issue of this type: used in its project and its issue type, not retired. */
 function reachingIssue(
   fields: readonly OwnField[],

@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 import { ada, bob, cleo } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { inFourThemesOf } from "./support/choice-pictures.ts";
 import { inFourChosenThemes, inLightAndDarkChosen } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -29,18 +30,30 @@ test("the page of the working hours of the organization", async ({ page }) => {
 
 test("the time defaults in the settings of a project and of its sub-project", async ({ page }) => {
   await signIn(page, ada);
-  await inFourChosenThemes(page, "project-defaults", MILESTONE, paths.appearance, async () => {
-    await page.goto(addressInProject(paths.projectSettings, "WEB"));
-    await expect(
-      page.getByRole("region", { name: t("fields.time-defaults-project"), exact: true }),
-    ).toBeVisible();
-  });
-  await inFourChosenThemes(page, "sub-project-defaults", MILESTONE, paths.appearance, async () => {
-    await page.goto(addressInProject(paths.projectSettings, "APP"));
-    await expect(
-      page.getByText(t("fields.time-default-source", { project: "Website" })),
-    ).toBeVisible();
-  });
+  // Only the part of the page about the defaults: the page also shows settings that only the test
+  // server has (M6-F174).
+  const defaults = () =>
+    page.getByRole("region", { name: t("fields.time-defaults-project"), exact: true });
+  await inFourThemesOf(
+    page,
+    defaults,
+    { name: "project-defaults", milestone: MILESTONE },
+    async () => {
+      await page.goto(addressInProject(paths.projectSettings, "WEB"));
+      await expect(defaults()).toBeVisible();
+    },
+  );
+  await inFourThemesOf(
+    page,
+    defaults,
+    { name: "sub-project-defaults", milestone: MILESTONE },
+    async () => {
+      await page.goto(addressInProject(paths.projectSettings, "APP"));
+      await expect(
+        page.getByText(t("fields.time-default-source", { project: "Website" })),
+      ).toBeVisible();
+    },
+  );
 });
 
 test("the card of who sees working hours for somebody who may not read the roles", async ({

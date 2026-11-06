@@ -1,36 +1,22 @@
-import { issueIconWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
-  Alert,
-  alertTone,
   buttonLook,
   ConfirmDialog,
   FieldValue,
-  Form,
   IconButton,
   iconName,
   SelectField,
-  SubmitButton,
-  Switch,
-  TextField,
   partOf,
   part,
 } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
-import { ColorChoice } from "../../shared/ColorChoice.tsx";
 import { DraggableHead } from "../../shared/drag-and-drop.tsx";
-import { messageOf } from "../../shared/errors.ts";
 import { badgeLook, choiceKind, plainText, type Choice, type OwnField } from "./fields.ts";
+import { ChoiceLook } from "./ChoiceLook.tsx";
+import { ChoiceName } from "./ChoiceName.tsx";
+import type { Place } from "./choice-order.ts";
 import { useChangeChoice } from "./use-change-field.ts";
-
-/** Words of the HTML standard and marks that are not text for people. */
-const noIcon = "none";
-
-const iconChoices = [
-  { value: noIcon, label: t("fields.no-icon") },
-  ...issueIconWords.map((word) => ({ value: word, label: t(`issue-icon.${word}`) })),
-];
 
 /** Sends a change of the choice, on the version of the field the person looked at. */
 type Send = (more: Readonly<Record<string, unknown>>) => void;
@@ -38,8 +24,8 @@ type Send = (more: Readonly<Record<string, unknown>>) => void;
 export interface ChoiceRowProps {
   readonly field: OwnField;
   readonly choice: Choice;
-  readonly first: boolean;
-  readonly last: boolean;
+  /** Where it stands among the choices put in order by hand; none for a choice with a number. */
+  readonly place: Place | undefined;
   readonly onMove: (by: -1 | 1) => void;
   /** Whether the choice can be dragged to another place: not on a phone, where the buttons are the way. */
   readonly canDrag: boolean;
@@ -54,101 +40,45 @@ export interface ChoiceRowProps {
 function ChoiceTitle({
   field,
   choice,
-  first,
-  last,
+  place,
   canDrag,
   onMove,
-}: Pick<ChoiceRowProps, "field" | "choice" | "first" | "last" | "canDrag" | "onMove">) {
+}: Pick<ChoiceRowProps, "field" | "choice" | "place" | "canDrag" | "onMove">) {
   return (
     <DraggableHead
       kind={choiceKind}
       id={choice.id}
-      label={t("fields.choice-drag", { name: choice.name })}
-      canDrag={canDrag}
+      label={t("fields.choice-drag", { name: choice.shown_as })}
+      canDrag={canDrag && place !== undefined}
     >
       <FieldValue
         look={field.look === plainText ? badgeLook : field.look}
         text={choice.name}
+        number={choice.number}
         color={choice.color}
         icon={choice.icon ?? undefined}
       />
-      <IconButton
-        icon={iconName.up}
-        label={t("fields.choice-up", { name: choice.name })}
-        isDisabled={first}
-        onPress={() => {
-          onMove(-1);
-        }}
-      />
-      <IconButton
-        icon={iconName.down}
-        label={t("fields.choice-down", { name: choice.name })}
-        isDisabled={last}
-        onPress={() => {
-          onMove(1);
-        }}
-      />
+      {place === undefined ? null : (
+        <>
+          <IconButton
+            icon={iconName.up}
+            label={t("fields.choice-up", { name: choice.shown_as })}
+            isDisabled={place.first}
+            onPress={() => {
+              onMove(-1);
+            }}
+          />
+          <IconButton
+            icon={iconName.down}
+            label={t("fields.choice-down", { name: choice.shown_as })}
+            isDisabled={place.last}
+            onPress={() => {
+              onMove(1);
+            }}
+          />
+        </>
+      )}
     </DraggableHead>
-  );
-}
-
-/** The name of the choice, saved with its own button. */
-function ChoiceName({
-  choice,
-  send,
-  pending,
-}: {
-  readonly choice: Choice;
-  readonly send: Send;
-  readonly pending: boolean;
-}) {
-  const [name, setName] = useState(choice.name);
-  return (
-    <Form
-      onSubmit={() => {
-        send({ name: name.trim() });
-      }}
-    >
-      <TextField
-        label={t("fields.choice-name")}
-        requiredMessage={t("error.field.required")}
-        value={name}
-        onChange={setName}
-      />
-      <div {...partOf(part.row)}>
-        <SubmitButton isPending={pending}>{t("common.save")}</SubmitButton>
-      </div>
-    </Form>
-  );
-}
-
-/** The color and icon of the choice, and the switch that retires it. */
-function ChoiceLook({ choice, send }: { readonly choice: Choice; readonly send: Send }) {
-  return (
-    <>
-      <ColorChoice
-        legend={t("fields.choice-color", { name: choice.name })}
-        value={choice.color}
-        onChange={(color) => {
-          send({ color });
-        }}
-      />
-      <SelectField
-        label={t("fields.choice-icon", { name: choice.name })}
-        choices={iconChoices}
-        value={choice.icon ?? noIcon}
-        onChange={(icon) => {
-          send({ icon: icon === noIcon ? null : icon });
-        }}
-      />
-      <Switch
-        label={choice.retired ? t("fields.choice-offer-again") : t("fields.choice-retire")}
-        isSelected={choice.retired}
-        onChange={(retired) => {
-          send({ retired });
-        }}
-      />
-    </>
   );
 }
 
@@ -163,17 +93,17 @@ function ChoiceCombine({
     <div {...partOf(part.row)}>
       <SelectField
         label={t("fields.combine-into")}
-        choices={others.map((other) => ({ value: other.id, label: other.name }))}
+        choices={others.map((other) => ({ value: other.id, label: other.shown_as }))}
         value={into}
         onChange={setInto}
       />
       <ConfirmDialog
         triggerLabel={t("fields.combine")}
-        triggerName={t("fields.combine-name", { name: choice.name })}
-        title={t("fields.combine-title", { name: choice.name })}
+        triggerName={t("fields.combine-name", { name: choice.shown_as })}
+        title={t("fields.combine-title", { name: choice.shown_as })}
         text={t("fields.combine-text", {
-          name: choice.name,
-          into: others.find((other) => other.id === into)?.name ?? "",
+          name: choice.shown_as,
+          into: others.find((other) => other.id === into)?.shown_as ?? "",
         })}
         confirmLabel={t("fields.combine")}
         cancelLabel={t("common.cancel")}
@@ -200,12 +130,11 @@ export function ChoiceRow(props: ChoiceRowProps) {
     <li {...partOf(part.fieldChoice)}>
       {props.before}
       <ChoiceTitle {...props} />
-      <ChoiceName choice={choice} send={send} pending={change.isPending} />
+      <ChoiceName choice={choice} send={send} pending={change.isPending} failure={change.error} />
       <ChoiceLook choice={choice} send={send} />
       {others.length > 0 && !choice.retired ? (
         <ChoiceCombine choice={choice} others={others} onCombine={props.onCombine} />
       ) : null}
-      {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </li>
   );
 }

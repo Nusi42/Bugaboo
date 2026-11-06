@@ -23,7 +23,6 @@ const ENTRY_FIELDS = fieldList<TimeEntry>([
   "date",
   "minutes",
   "own_fields",
-  "own_field_names",
   "version",
 ]);
 

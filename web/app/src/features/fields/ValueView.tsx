@@ -54,6 +54,7 @@ function ChoiceValue({
     <FieldValue
       look={field.look}
       text={choice?.name ?? t("fields.unknown-choice")}
+      number={choice?.number}
       color={choice?.color}
       icon={choice?.icon ?? undefined}
     />

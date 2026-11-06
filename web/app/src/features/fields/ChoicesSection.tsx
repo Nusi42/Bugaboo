@@ -1,95 +1,94 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Card,
-  Form,
-  SubmitButton,
-  TextField,
-  useLayout,
-  partOf,
-  part,
-} from "@bugaboo/ui";
-import { useState } from "react";
+import { Alert, alertTone, Card, useLayout, partOf, part } from "@bugaboo/ui";
 
 import { DropSlot } from "../../shared/drag-and-drop.tsx";
 import { messageOf } from "../../shared/errors.ts";
+import { AddChoice } from "./AddChoice.tsx";
 import { ChoiceRow } from "./ChoiceRow.tsx";
+import { orderable, orderAfterDrop, orderAfterMove, placeOf } from "./choice-order.ts";
 import { choiceKind, type OwnField } from "./fields.ts";
-import { useAddChoice, useCombineChoices, useReorderChoices } from "./use-change-field.ts";
+import { useCombineChoices, useReorderChoices } from "./use-change-field.ts";
 
-/** The new order after the choice at `from` goes to `to`. */
-function moved(ids: readonly string[], from: number, to: number): string[] {
-  const next = [...ids];
-  const [taken] = next.splice(from, 1);
-  if (taken !== undefined) {
-    next.splice(to, 0, taken);
-  }
-  return next;
-}
-
-/** Puts the choices in the order the buttons ask for. */
+/**
+ * Puts the choices in the order the buttons ask for. Only the choices without a number are put in
+ * order by hand (a number places the others), so every place here counts among those.
+ */
 function useChoiceOrder(field: OwnField) {
   const reorder = useReorderChoices();
-  const ids = field.choices.map((choice) => choice.id);
+  const send = (order: readonly string[]) => {
+    reorder.mutate({
+      params: { path: { field: field.id } },
+      body: { version: field.version, order: [...order] },
+    });
+  };
   return {
     error: reorder.error,
     /** Choices can be dragged: not on a phone, where the buttons are the way. */
     canDrag: useLayout() !== "phone",
+    /** The choice at `at` among those without a number goes up or down by one. */
     move: (at: number, by: number) => {
-      reorder.mutate({
-        params: { path: { field: field.id } },
-        body: { version: field.version, order: moved(ids, at, at + by) },
-      });
+      send(orderAfterMove(field.choices, at, at + by));
     },
-    /** A choice was dropped before the choice at `before` (the end of the list when it is `ids.length`). */
+    /** A choice was dropped before the one at `before` among those without a number (their count for the end). */
     drop: (dropped: string, before: number) => {
-      const from = ids.indexOf(dropped);
-      if (from < 0) {
-        return;
+      const order = orderAfterDrop(field.choices, dropped, before);
+      if (order !== undefined) {
+        send(order);
       }
-      reorder.mutate({
-        params: { path: { field: field.id } },
-        body: {
-          version: field.version,
-          order: moved(ids, from, from < before ? before - 1 : before),
-        },
-      });
     },
   };
 }
 
-/** The form that adds a choice at the end. */
-function AddChoice({ field }: { readonly field: OwnField }) {
-  const [name, setName] = useState("");
-  const add = useAddChoice();
+/** What the list needs of the way the choices are put in order. */
+interface Reordering {
+  readonly canDrag: boolean;
+  readonly move: (at: number, by: number) => void;
+  readonly drop: (dropped: string, before: number) => void;
+}
+
+/** The list of the choices; the arrows and the places to drop count among the choices without a number. */
+function ChoiceRows({
+  field,
+  order,
+  onCombine,
+}: {
+  readonly field: OwnField;
+  readonly order: Reordering;
+  readonly onCombine: (choice: string, into: string) => void;
+}) {
   return (
-    <Form
-      onSubmit={() => {
-        add.mutate(
-          {
-            params: { path: { field: field.id } },
-            body: { version: field.version, name: name.trim() },
-          },
-          {
-            onSuccess: () => {
-              setName("");
-            },
-          },
+    <ul {...partOf(part.list)} aria-label={t("fields.choices")}>
+      {field.choices.map((choice) => {
+        const place = placeOf(field.choices, choice.id);
+        return (
+          <ChoiceRow
+            key={choice.id}
+            field={field}
+            choice={choice}
+            place={place}
+            canDrag={order.canDrag}
+            before={
+              place === undefined ? null : (
+                <DropSlot
+                  kind={choiceKind}
+                  enabled={order.canDrag}
+                  onDrop={(dropped) => {
+                    order.drop(dropped, place.at);
+                  }}
+                />
+              )
+            }
+            others={field.choices.filter((other) => other.id !== choice.id && !other.retired)}
+            onMove={(by) => {
+              order.move(place?.at ?? 0, by);
+            }}
+            onCombine={(into) => {
+              onCombine(choice.id, into);
+            }}
+          />
         );
-      }}
-    >
-      <TextField
-        label={t("fields.add-choice")}
-        requiredMessage={t("error.field.required")}
-        value={name}
-        onChange={setName}
-      />
-      <div {...partOf(part.row)}>
-        <SubmitButton isPending={add.isPending}>{t("fields.add-choice-button")}</SubmitButton>
-      </div>
-      {add.isError ? <Alert tone={alertTone.danger}>{messageOf(add.error)}</Alert> : null}
-    </Form>
+      })}
+    </ul>
   );
 }
 
@@ -102,46 +101,26 @@ export function ChoicesSection({ field }: { readonly field: OwnField }) {
   const order = useChoiceOrder(field);
   const combine = useCombineChoices();
   const failure = order.error ?? combine.error;
+  const rest = orderable(field.choices);
   return (
     <Card heading={t("fields.choices")}>
       <p {...partOf(part.muted)}>{t("fields.choices-help")}</p>
       {failure === null ? null : <Alert tone={alertTone.danger}>{messageOf(failure)}</Alert>}
-      <ul {...partOf(part.list)} aria-label={t("fields.choices")}>
-        {field.choices.map((choice, at) => (
-          <ChoiceRow
-            key={choice.id}
-            field={field}
-            choice={choice}
-            first={at === 0}
-            last={at === field.choices.length - 1}
-            canDrag={order.canDrag}
-            before={
-              <DropSlot
-                kind={choiceKind}
-                enabled={order.canDrag}
-                onDrop={(dropped) => {
-                  order.drop(dropped, at);
-                }}
-              />
-            }
-            others={field.choices.filter((other) => other.id !== choice.id && !other.retired)}
-            onMove={(by) => {
-              order.move(at, by);
-            }}
-            onCombine={(into) => {
-              combine.mutate({
-                params: { path: { field: field.id, choice: choice.id } },
-                body: { version: field.version, into },
-              });
-            }}
-          />
-        ))}
-      </ul>
+      <ChoiceRows
+        field={field}
+        order={order}
+        onCombine={(choice, into) => {
+          combine.mutate({
+            params: { path: { field: field.id, choice } },
+            body: { version: field.version, into },
+          });
+        }}
+      />
       <DropSlot
         kind={choiceKind}
         enabled={order.canDrag}
         onDrop={(dropped) => {
-          order.drop(dropped, field.choices.length);
+          order.drop(dropped, rest.length);
         }}
       />
       <AddChoice field={field} />

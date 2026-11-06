@@ -1,8 +1,11 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 import { setTimeout as sleep } from "node:timers/promises";
 
+import { signedInAdmin } from "./access.ts";
 import type { ApiSession } from "./api.ts";
-import { versionOf, type MadeIssue } from "./issues.ts";
+import { createIssue, versionOf, type MadeIssue } from "./issues.ts";
+import { choiceBody } from "./fields.ts";
+import type { Instance } from "./server.ts";
 
 /** The key of the own field a starter field of time entries is (`activity`, `cost-center`), as the timer says. */
 export async function starterField(session: ApiSession, mark: string): Promise<string> {
@@ -14,11 +17,12 @@ export async function starterField(session: ApiSession, mark: string): Promise<s
   return found;
 }
 
-/** The ID of the choice of a field with this name, made when the field has none yet. */
+/** The ID of the choice of a field with this name, made (with the number, if one is given) when the field has none yet. */
 export async function choiceNamed(
   session: ApiSession,
   field: string,
   name: string,
+  number?: string,
 ): Promise<string> {
   const shown: Schema<"FieldBody"> = dataOf(
     await session.client.GET("/api/v1/fields/{field}", { params: { path: { field } } }),
@@ -30,7 +34,7 @@ export async function choiceNamed(
   const added: Schema<"FieldBody"> = dataOf(
     await session.client.POST("/api/v1/fields/{field}/choices", {
       params: { path: { field } },
-      body: { version: shown.version, name },
+      body: choiceBody(shown.version, name, number),
     }),
   );
   const made = added.choices.find((choice) => choice.name === name);
@@ -132,4 +136,19 @@ export async function entriesBookedOn(
     }
   }
   return booked;
+}
+
+/** An issue of the project WEB whose time starts with the cost center *4100 Product development*. */
+export async function issueStartingWithProductDevelopment(server: Instance): Promise<MadeIssue> {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Printer jams");
+  const costCenter = await starterField(admin, "cost-center");
+  await setTimeDefault(
+    admin,
+    issue,
+    costCenter,
+    await choiceNamed(admin, costCenter, "Product development", "4100"),
+  );
+  await admin.dispose();
+  return issue;
 }

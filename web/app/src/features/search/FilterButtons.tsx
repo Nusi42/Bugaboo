@@ -1,7 +1,7 @@
 import type { Expr, SearchLanguage } from "@bugaboo/wasm-search";
 
 import { FilterButton } from "./FilterButton.tsx";
-import { useFieldName } from "./field-name-context.ts";
+import { useChoiceWords, useFieldName } from "./field-name-context.ts";
 import { filterLabel, sourceOf } from "./filter-text.ts";
 
 export interface FilterButtonsProps {
@@ -21,10 +21,11 @@ function keyOf(language: SearchLanguage, filter: Expr, index: number): string {
 /** The filters as buttons (UX design section 4.3): the rows of a list of filters, in the search bar and in an *Any of*. */
 export function FilterButtons({ language, filters, onChange, onRemove }: FilterButtonsProps) {
   const nameOf = useFieldName();
+  const choiceOf = useChoiceWords();
   return filters.map((filter, index) => (
     <FilterButton
       key={keyOf(language, filter, index)}
-      label={filterLabel(language, filter, nameOf)}
+      label={filterLabel(language, filter, nameOf, choiceOf)}
       onChange={() => {
         onChange(filter, index);
       }}

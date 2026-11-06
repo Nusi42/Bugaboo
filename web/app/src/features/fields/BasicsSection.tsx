@@ -41,6 +41,19 @@ function Flags({ field }: { readonly field: OwnField }) {
   );
 }
 
+/**
+ * The field as the box of its default shows it: called *Default value* (not by the name of the field),
+ * with no help text of the field and no *required*, since the default may stay empty.
+ */
+function asDefaultBox(field: OwnField): OwnField {
+  return {
+    ...field,
+    name: t("fields.default-value"),
+    help: "",
+    rules: { ...field.rules, required: false },
+  };
+}
+
 /** The value a new issue or project starts with. */
 function DefaultValue({ field }: { readonly field: OwnField }) {
   const change = useChangeField();
@@ -49,7 +62,7 @@ function DefaultValue({ field }: { readonly field: OwnField }) {
       <p {...partOf(part.muted)}>{t("fields.default-help")}</p>
       <ValueEditor
         key={field.version}
-        field={field}
+        field={asDefaultBox(field)}
         value={field.default_value}
         isPending={change.isPending}
         onCommit={(value: Sent) => {

@@ -26,6 +26,7 @@ export const messages = {
   "fields.create": "Create the field",
   "fields.basics": "Basics",
   "fields.never-to-assistant": "Never send this field to the assistant",
+  "fields.default-value": "Default value",
   "fields.default-help": "The value a new issue or project starts with. Leave it empty for none.",
   "fields.choices": "Choices",
   "fields.choices-help":
@@ -36,6 +37,10 @@ export const messages = {
   "fields.choice-down": "Move {name} down",
   "fields.choice-drag": "Drag {name}",
   "fields.choice-name": "Name of the choice",
+  "fields.choice-number": "Number of the choice (optional)",
+  "fields.choice-number-hint":
+    "Up to {max} digits, kept as typed (0410 stays 0410). No other choice of this field may have the same number.",
+  "fields.choice-number-invalid": "Type digits only, up to {max}, or leave the box empty.",
   "fields.choice-color": "Color of {name}",
   "fields.choice-icon": "Icon of {name}",
   "fields.no-icon": "No icon",

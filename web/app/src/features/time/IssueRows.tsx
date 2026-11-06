@@ -1,46 +1,16 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, IssueId, partOf, part } from "@bugaboo/ui";
-import { useState } from "react";
 
 import { dayOfMonth, weekdayName } from "../../shared/clock.ts";
-import { IssuePicker } from "../search/index.ts";
 import { scope } from "./html-words.ts";
+import { AddIssue } from "./AddIssue.tsx";
+import { FieldCells } from "./FieldCells.tsx";
 import { detailsOpener, minutesOf, rowTotal, type IssueRow } from "./rows.ts";
 import { cellKey, cellLabel, gridLength, readBooked } from "./sheet-model.ts";
 import type { DaysProps, IssuesProps } from "./sheet-props.ts";
 import { TimeCell } from "./TimeCell.tsx";
 
 type Shared = Pick<DaysProps, "wording" | "region" | "days" | "editing">;
-
-/** *Add an issue*: the finder of issues by ID or by words of the title opens in the place of the button. */
-export function AddIssue({ onAdd, addProblem }: Pick<IssuesProps, "onAdd" | "addProblem">) {
-  const [open, setOpen] = useState(false);
-  const problem =
-    addProblem === undefined ? null : <span {...partOf(part.sheetProblem)}>{addProblem}</span>;
-  if (!open) {
-    return (
-      <span {...partOf(part.sheetAdd)}>
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            setOpen(true);
-          }}
-        >
-          {t("time.sheet.add-issue")}
-        </Button>
-        {problem}
-      </span>
-    );
-  }
-  return (
-    <IssuePicker
-      onPick={(key) => {
-        onAdd(key);
-        setOpen(false);
-      }}
-    />
-  );
-}
 
 /** The name of an issue in a row: its ID and its title. */
 export function IssueName({
@@ -75,20 +45,6 @@ export function IssueName({
   );
 }
 
-/** The *Activity* and the *Cost center* of a row, as the entries name them. */
-function FieldCells({ row }: { readonly row: IssueRow }) {
-  return (
-    <>
-      <td title={row.activity} {...partOf(part.sheetName, { variants: ["value"] })}>
-        {row.activity}
-      </td>
-      <td title={row.costCenter} {...partOf(part.sheetName, { variants: ["value"] })}>
-        {row.costCenter}
-      </td>
-    </>
-  );
-}
-
 /** One row of *Time on issues*: the issue, its *Activity* and *Cost center*, a cell for each day and the total. */
 function IssueLine(
   props: Shared &
@@ -98,7 +54,7 @@ function IssueLine(
   const shown = row.readableId ?? t("time.sheet.hidden-issue");
   return (
     <tr>
-      <th scope={scope.row} {...partOf(part.sheetName)}>
+      <th scope={scope.row} {...partOf(part.sheetName, { variants: ["issue"] })}>
         <IssueName shown={shown} title={title} stacked onDetails={detailsOpener(row, onDetails)} />
       </th>
       <FieldCells row={row} />

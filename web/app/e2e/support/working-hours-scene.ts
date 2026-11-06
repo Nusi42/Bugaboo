@@ -6,7 +6,7 @@ import { expect, type Page } from "@playwright/test";
 import { createGroup, giveGroupRole } from "./access.ts";
 import { createAdmin } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
-import { fieldOf } from "./fields.ts";
+import { choiceBody, fieldOf } from "./fields.ts";
 import { createProject } from "./projects.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
@@ -42,12 +42,17 @@ export async function createDays(session: ApiSession, dates: readonly string[]):
 }
 
 /** Adds a choice to the starter field of time entries with this name. */
-export async function addChoice(admin: ApiSession, fieldName: string, name: string) {
+export async function addChoice(
+  admin: ApiSession,
+  fieldName: string,
+  name: string,
+  number?: string,
+) {
   const field = await fieldOf(admin, fieldName);
   dataOf(
     await admin.client.POST("/api/v1/fields/{field}/choices", {
       params: { path: { field: field.id } },
-      body: { version: field.version, name },
+      body: choiceBody(field.version, name, number),
     }),
   );
 }
@@ -75,8 +80,8 @@ export async function prepareWorkingHours(server: Instance): Promise<void> {
   const admin = await createAdmin(server);
   const web = await createProject(admin, "WEB", "Website");
   await createProject(admin, "APP", "Mobile app", web);
-  await addChoice(admin, "Cost center", "4100 Product development");
-  await setDefault(admin, "WEB", "Cost center", "4100 Product development");
+  await addChoice(admin, "Cost center", "Product development", "4100");
+  await setDefault(admin, "WEB", "Cost center", "Product development");
   await createGroup(admin, "Payroll").then((group) => giveGroupRole(admin, group, "HR", null));
   await createDays(admin, ["2020-03-02", "2020-03-03", daysAgo(10)]);
   await admin.dispose();

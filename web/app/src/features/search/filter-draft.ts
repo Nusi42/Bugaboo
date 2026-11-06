@@ -4,7 +4,15 @@
  * draft; the tree of the filter is made from it, and the printer of the search language writes
  * the text (ADR-0005).
  */
-import type { Comparison, Decimal, Field, Operand, Operator, Unit } from "@bugaboo/wasm-search";
+import type {
+  Comparison,
+  Decimal,
+  Field,
+  Operand,
+  Operator,
+  SearchLanguage,
+  Unit,
+} from "@bugaboo/wasm-search";
 
 import { isCalendarDay } from "../../shared/format.ts";
 import { decimalText } from "./filter-text.ts";
@@ -14,6 +22,17 @@ import {
   type FieldFilter,
   type FieldTest,
 } from "../../shared/search-tree.ts";
+
+/** What the inputs for the values of a filter get: the field, the values now and where a change goes. */
+export interface ValueInputProps {
+  readonly field: Field;
+  readonly language: SearchLanguage;
+  readonly values: readonly Operand[];
+  readonly onValues: (values: readonly Operand[]) => void;
+}
+
+/** The word of a choice that is not one: the first line of a list with nothing picked yet. */
+export const nothingPicked = "";
 
 export interface Draft {
   readonly operator: Operator;

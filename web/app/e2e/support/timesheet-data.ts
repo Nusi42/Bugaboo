@@ -1,5 +1,3 @@
-import { dataOf, type Schema } from "@bugaboo/api-client";
-
 import { ownId, signInThroughApi } from "./accounts.ts";
 import { ana, signedInAdmin } from "./access.ts";
 import { createPerson, bob } from "./accounts.ts";
@@ -9,6 +7,7 @@ import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 import { addDays } from "../../src/shared/format.ts";
 import { type ApiSession } from "./api.ts";
+import { choiceNamed, starterField } from "./time.ts";
 import { bookOn, chooseUtc, workedOn } from "./timesheet.ts";
 
 /** How long to wait between two changes of work days, which the server takes one a second. */
@@ -41,27 +40,15 @@ export async function anaWorked(server: Instance): Promise<string> {
 
 /** The value of *Activity* and of *Cost center* an entry is booked with, by the ID of each field. */
 async function starterValues(admin: ApiSession): Promise<Readonly<Record<string, string>>> {
-  const starters = dataOf(await admin.client.GET("/api/v1/me/timer")).starters;
-  const choose = async (mark: string, name: string): Promise<readonly [string, string]> => {
-    const field = starters[mark] ?? "";
-    const known: Schema<"FieldBody"> = dataOf(
-      await admin.client.GET("/api/v1/fields/{field}", { params: { path: { field } } }),
-    );
-    // The starter fields come with some choices (*Development*, *Testing*); others are added.
-    const made: Schema<"FieldBody"> = known.choices.some((each) => each.name === name)
-      ? known
-      : dataOf(
-          await admin.client.POST("/api/v1/fields/{field}/choices", {
-            params: { path: { field } },
-            body: { version: known.version, name },
-          }),
-        );
-    return [field, made.choices.find((each) => each.name === name)?.id ?? ""];
-  };
-  return Object.fromEntries([
-    await choose("activity", "Development"),
-    await choose("cost-center", "4100 Product"),
+  const [activity, costCenter] = await Promise.all([
+    starterField(admin, "activity"),
+    starterField(admin, "cost-center"),
   ]);
+  // The starter fields come with some choices (*Development*, *Testing*); others are added.
+  return {
+    [activity]: await choiceNamed(admin, activity, "Development"),
+    [costCenter]: await choiceNamed(admin, costCenter, "Product development", "4100"),
+  };
 }
 
 /** Bob's week: five work days, one of them long, and time on two issues. */

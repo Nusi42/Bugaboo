@@ -35,6 +35,7 @@ function Samples({ field, look }: { readonly field: OwnField; readonly look: Loo
             key={choice.id}
             look={look}
             text={choice.name}
+            number={choice.number}
             color={choice.color}
             icon={choice.icon ?? undefined}
           />

@@ -1,6 +1,7 @@
 import type { choiceColorWords, lookWords } from "@bugaboo/api-client";
 import type { ReactNode } from "react";
 
+import { ChoiceText } from "./ChoiceText.tsx";
 import { IssueTypeIcon, type IssueTypeIconName } from "./IssueTypeIcon.tsx";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
@@ -16,6 +17,8 @@ export interface FieldValueProps {
   readonly look: FieldLook;
   /** What the value says, already in the person's language. */
   readonly text: string;
+  /** The number of the choice, drawn in front of the text in the code font (`4100 Product development`). */
+  readonly number?: string | null | undefined;
   /** The color of the choice, for a badge and a pill; none shows the neutral color. */
   readonly color?: ChoiceColorName | undefined;
   /** The icon of the choice, for a badge and a pill. */
@@ -41,13 +44,14 @@ function Label({
   color,
   icon,
   text,
-}: Pick<FieldValueProps, "color" | "icon" | "text"> & {
+  number,
+}: Pick<FieldValueProps, "color" | "icon" | "text" | "number"> & {
   readonly partName: typeof part.fieldBadge | typeof part.fieldPill;
 }) {
   return (
     <span {...partOf(partName, { variants: color === undefined ? [] : [color] })}>
       {icon === undefined ? null : <IssueTypeIcon name={icon} />}
-      {text}
+      <ChoiceText number={number} name={text} />
     </span>
   );
 }
@@ -85,8 +89,12 @@ function avatar({ text, initialsFrom }: FieldValueProps): ReactNode {
   );
 }
 
-function plainText({ text }: FieldValueProps): ReactNode {
-  return <span {...partOf(part.fieldText)}>{text}</span>;
+function plainText({ text, number }: FieldValueProps): ReactNode {
+  return (
+    <span {...partOf(part.fieldText)}>
+      <ChoiceText number={number} name={text} />
+    </span>
+  );
 }
 
 /** How each look shows a value: one function for each look, so a new look cannot be forgotten. */

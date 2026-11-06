@@ -115,3 +115,8 @@ export async function preparePickers(server: Instance): Promise<void> {
   ]);
   await admin.dispose();
 }
+
+/** The body that adds a choice: with its number when it has one (an absent number is none, never `undefined`). */
+export function choiceBody(version: number, name: string, number?: string) {
+  return { version, name, ...(number === undefined ? {} : { number }) };
+}
