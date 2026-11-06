@@ -129,6 +129,51 @@ pub struct WorkPlan {
     /// The names of the own fields that Contributors may not read, so a search that reads one
     /// never reaches them.
     pub hidden_from_contributors: Vec<String>,
+    /// The working hours, time entries, estimates and timers (M6, TIME-01 to TIME-13).
+    pub time: TimePlan,
+}
+
+/// A choice of *Cost center* the sample adds: its number and its name.
+#[derive(Clone, Debug, Deserialize)]
+pub struct CostCenterPlan {
+    /// The number, digits (`4100`).
+    pub number: String,
+    /// The name (`Product development`).
+    pub name: String,
+}
+
+/// The working hours and the time on issues of the sample: the weeks the people recorded, how many
+/// time entries they booked, which days broke a rule or were changed afterwards, and the timers
+/// left running. The counts are those of the full sample and are scaled like the issues.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimePlan {
+    /// How many weeks of working days are recorded, counted back from the end of the sample.
+    pub weeks: u32,
+    /// How many time entries are booked in all.
+    pub entries: u32,
+    /// How many employees a small sample has at least: a sample of few issues records the hours of
+    /// the first few employees (the people of the demos first), so it stays quick to make.
+    pub employees_at_least: u32,
+    /// How many of a hundred working days a person does not work (leave).
+    pub leave_percent: u32,
+    /// How many of a hundred worked days break a working-time rule (a day that is too long, or a
+    /// long day without a break).
+    pub rule_breaking_percent: u32,
+    /// How many days people changed afterwards, with a reason, on their own.
+    pub changed_by_person: u32,
+    /// How many days somebody with the role *HR* changed, with a reason.
+    pub changed_by_hr: u32,
+    /// How many timers are left running at the end.
+    pub running_timers: u32,
+    /// How many of a hundred issues have an *Estimated time*.
+    pub estimated_percent: u32,
+    /// The choices of *Cost center* the sample adds, each a number and a name.
+    pub cost_centers: Vec<CostCenterPlan>,
+    /// The reasons people give for a change of their own day.
+    pub person_reasons: Vec<String>,
+    /// The reasons *HR* gives for a change of the day of somebody else.
+    pub hr_reasons: Vec<String>,
 }
 
 /// A saved search of the sample: who made it, whom it is shared with, and the project that shows

@@ -14,6 +14,7 @@ pub mod database;
 pub mod sample;
 mod sample_issues;
 mod sample_large;
+mod sample_time;
 mod sample_work;
 
 pub use sample_large::LargePlan;

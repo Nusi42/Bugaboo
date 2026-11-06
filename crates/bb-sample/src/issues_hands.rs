@@ -37,6 +37,8 @@ pub(crate) struct Hands<'a, 'w> {
     /// How many people work on a day.
     a_day: usize,
     sessions: BTreeMap<usize, Session>,
+    /// How long a session may idle before it is signed in again.
+    idle: i64,
 }
 
 impl<'a, 'w> Hands<'a, 'w> {
@@ -57,7 +59,15 @@ impl<'a, 'w> Hands<'a, 'w> {
             workers,
             a_day: (changes / calendar_days.max(1) / CHANGES_EACH).clamp(1, PEOPLE_A_DAY),
             sessions: BTreeMap::new(),
+            idle: IDLE_SECONDS,
         })
+    }
+
+    /// The hands for an organization whose sessions may idle for `seconds` (its setting), so a
+    /// person who acts a few times a day is not signed in again each time.
+    pub(crate) const fn idling(mut self, seconds: i64) -> Self {
+        self.idle = seconds;
+        self
     }
 
     /// The person (a place in the plan of the people) a pick stands for, on the day of a working second: one
@@ -79,7 +89,7 @@ impl<'a, 'w> Hands<'a, 'w> {
         let now = self.world.clock.now().as_second();
         let previous = match self.sessions.get(&person) {
             Some(session)
-                if now - session.used < IDLE_SECONDS && now - session.signed_in < AGE_SECONDS =>
+                if now - session.used < self.idle && now - session.signed_in < AGE_SECONDS =>
             {
                 let token = session.token.clone();
                 if let Some(session) = self.sessions.get_mut(&person) {

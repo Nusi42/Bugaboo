@@ -187,7 +187,7 @@ pub(crate) mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::sample::Layout;
+    use crate::sample::{Layout, WorkPlan};
 
     /// A dump that has exactly what the plan says for `asked` issues.
     pub(crate) fn made(plan: &IssuePlan, asked: u32) -> Value {
@@ -269,6 +269,22 @@ pub(crate) mod tests {
             "own_changes": { "contributor": counts.contributor_changes },
             "asked_for_who": 3,
             "follows": { "viewer": counts.viewer_follows },
+            "time": made_time(work, asked, full),
+        })
+    }
+
+    /// The part `time` of a dump that has what the plan says.
+    fn made_time(work: &WorkPlan, asked: u32, full: u32) -> Value {
+        let counts = work.time.counts(asked, full);
+        json!({
+            "work_days": 100,
+            "entries": counts.entries,
+            "entries_with_activity": counts.entries,
+            "entries_with_cost_center": counts.entries,
+            "changed_by_person": counts.changed_by_person,
+            "changed_by_hr": counts.changed_by_hr,
+            "running_timers": counts.running_timers,
+            "estimated_issues": u64::from(work.time.estimated_percent) * u64::from(asked) / 100,
         })
     }
 

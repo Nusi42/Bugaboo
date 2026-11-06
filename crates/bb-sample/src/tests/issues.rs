@@ -40,8 +40,10 @@ async fn the_issues_are_the_same_from_the_same_seed_on_both_databases() -> TestR
     each_database("the_issues_are_the_same_from_the_same_seed", async |db| {
         let (here, built_in) = (tempfile::tempdir()?, tempfile::tempdir()?);
         let on_this_database =
-            dump_of(made(&Target::Address(db.url().to_owned()), here.path()).await?).await?;
-        let on_the_built_in = dump_of(made(&Target::BuiltIn, built_in.path()).await?).await?;
+            dump_of(Box::pin(made(&Target::Address(db.url().to_owned()), here.path())).await?)
+                .await?;
+        let on_the_built_in =
+            dump_of(Box::pin(made(&Target::BuiltIn, built_in.path())).await?).await?;
         assert_eq!(
             on_this_database,
             on_the_built_in,
@@ -58,7 +60,8 @@ async fn test_sample_data_issues_match_the_plan() -> TestResult {
     each_database("test_sample_data_issues_match_the_plan", async |db| {
         let folder = tempfile::tempdir()?;
         let text =
-            dump_of(made(&Target::Address(db.url().to_owned()), folder.path()).await?).await?;
+            dump_of(Box::pin(made(&Target::Address(db.url().to_owned()), folder.path())).await?)
+                .await?;
         let dump: Value = serde_json::from_str(&text)?;
         let plan = Layout::bundled()?.issues;
         let problems = plan.problems(ISSUES, db.kind().code(), &dump);

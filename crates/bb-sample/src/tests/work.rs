@@ -160,7 +160,7 @@ async fn no_notification_tells_a_guest_of_an_issue_they_did_not_report() -> Test
 async fn att_04_the_files_of_the_sample_are_pictures_and_pdfs_that_all_have_a_preview() -> TestResult
 {
     let folder = tempfile::tempdir()?;
-    let dump = dump_of(&Target::BuiltIn, folder.path()).await?;
+    let dump = Box::pin(dump_of(&Target::BuiltIn, folder.path())).await?;
     let files = &dump["issues"]["work"]["files"];
     let total = files["total"].as_u64().unwrap_or(0);
     assert!(total > 0);
@@ -176,7 +176,7 @@ async fn att_04_the_files_of_the_sample_are_pictures_and_pdfs_that_all_have_a_pr
 async fn wf_04_the_project_with_a_workflow_of_its_own_asks_for_the_person_who_starts_work()
 -> TestResult {
     let folder = tempfile::tempdir()?;
-    let dump = dump_of(&Target::BuiltIn, folder.path()).await?;
+    let dump = Box::pin(dump_of(&Target::BuiltIn, folder.path())).await?;
     let work = &dump["issues"]["work"];
     let plan = bb_dev_words::sample::Layout::bundled()?
         .issues

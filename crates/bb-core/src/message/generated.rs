@@ -4020,6 +4020,9 @@ pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
 /// The message `sample.step.text-index`.
 pub const SAMPLE_STEP_TEXT_INDEX: MessageKey = MessageKey::new("sample.step.text-index");
 
+/// The message `sample.step.time`.
+pub const SAMPLE_STEP_TIME: MessageKey = MessageKey::new("sample.step.time");
+
 /// The message `sample.step.workflows`.
 pub const SAMPLE_STEP_WORKFLOWS: MessageKey = MessageKey::new("sample.step.workflows");
 
@@ -16485,6 +16488,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.text-index",
         "building the index of the text search",
     ),
+    ("sample.step.time", "recording working hours and time"),
     (
         "sample.step.workflows",
         "creating the workflow of a project",

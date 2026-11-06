@@ -227,7 +227,31 @@
           "projectList": null
         }
       ],
-      "hiddenFromContributors": ["Customer"]
+      "hiddenFromContributors": ["Customer"],
+      "time": {
+        "weeks": 26,
+        "entries": 20000,
+        "employeesAtLeast": 6,
+        "leavePercent": 6,
+        "ruleBreakingPercent": 5,
+        "changedByPerson": 3,
+        "changedByHr": 3,
+        "runningTimers": 4,
+        "estimatedPercent": 33,
+        "costCenters": [
+          { "number": "4100", "name": "Product development" },
+          { "number": "4200", "name": "Operations" },
+          { "number": "4300", "name": "Customer support" },
+          { "number": "4400", "name": "Marketing" },
+          { "number": "4500", "name": "Administration" }
+        ],
+        "personReasons": [
+          "Forgot to tap at the end of the day",
+          "Left earlier than I noted",
+          "The call with the customer ran over"
+        ],
+        "hrReasons": ["Corrected with the employee", "Payroll check of the month"]
+      }
     }
   },
   "large": {

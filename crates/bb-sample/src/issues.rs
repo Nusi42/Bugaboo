@@ -129,6 +129,7 @@ impl Later for Everything {
         let work_since = world.clock.now();
         let full: u32 = names.projects.iter().map(|project| project.issues).sum();
         maker.work_together(self.issues, full).await?;
+        maker.work_hours(&calendar, self.issues, full).await?;
         self.left = maker.leave_states_behind().await?;
         self.left.work_since = Some(work_since);
         // What a server does every day (the job `history.catch-up`): the history of every issue
@@ -147,6 +148,15 @@ impl Later for Everything {
             .catch_up_text_index()
             .await
             .map_err(|error| SampleError::step(Step::TextIndex, &error))?;
+        // And the notifications are made from the events (every round of the job runner does it), so
+        // the first page that lists them does not read every event of the working hours first: that
+        // took seconds on a computer at work and timed out under load.
+        world
+            .services
+            .ctx(world.request())
+            .catch_up_notifications()
+            .await
+            .map_err(|error| SampleError::step(Step::Notifications, &error))?;
         Ok(())
     }
 }
@@ -339,9 +349,7 @@ impl Maker<'_, '_> {
         for (step, planned) in self.plan.steps.iter().zip(moments) {
             let moment = planned.max(last + 1);
             last = moment;
-            self.world
-                .clock
-                .set(jiff::Timestamp::from_second(moment).map_err(|_| SampleError::Start(moment))?);
+            self.world.move_clock_to(moment)?;
             let person = self.hands.person(step.at, step.lane);
             match step.action {
                 Action::Create(at) => self.create(at, person).await?,

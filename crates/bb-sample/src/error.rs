@@ -84,6 +84,8 @@ pub enum Step {
     SavedSearches,
     /// Running the jobs that were queued.
     Jobs,
+    /// Recording working hours and time, estimates and timers.
+    Time,
 }
 
 impl Step {
@@ -125,6 +127,7 @@ impl Step {
             Self::Notifications => message::SAMPLE_STEP_NOTIFICATIONS,
             Self::SavedSearches => message::SAMPLE_STEP_SAVED_SEARCHES,
             Self::Jobs => message::SAMPLE_STEP_JOBS,
+            Self::Time => message::SAMPLE_STEP_TIME,
         })
     }
 }

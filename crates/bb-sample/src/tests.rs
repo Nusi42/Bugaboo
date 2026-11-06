@@ -16,6 +16,7 @@ use serde_json::Value;
 
 mod issues;
 mod searches;
+mod time;
 mod work;
 
 use crate::{

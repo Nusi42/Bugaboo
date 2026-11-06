@@ -30,9 +30,7 @@ impl Maker<'_, '_> {
     /// another has a draft of a description waiting.
     pub(crate) async fn leave_states_behind(&mut self) -> Result<LeftBehind, SampleError> {
         let end = self.world.start.as_second() - 120;
-        self.world
-            .clock
-            .set(jiff::Timestamp::from_second(end).map_err(|_| SampleError::Start(end))?);
+        self.world.move_clock_to(end)?;
         let count = self.plan.issues.len();
         let (locked, drafted) = (count / 2, count / 3);
         let (holder, writer) = (self.hands.workers[0], self.hands.workers[1]);

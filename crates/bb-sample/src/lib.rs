@@ -24,6 +24,7 @@ mod comments;
 mod dump;
 mod dump_issues;
 mod dump_organization;
+mod dump_time;
 mod dump_work;
 mod error;
 mod fields;
@@ -55,6 +56,7 @@ mod relations;
 mod searches;
 #[cfg(test)]
 mod tests;
+mod time_work;
 mod together;
 mod together_files;
 mod together_reading;

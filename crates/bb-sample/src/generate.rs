@@ -126,6 +126,17 @@ impl World<'_> {
     pub fn tick(&self) {
         self.clock.advance(1);
     }
+
+    /// Sets the clock to a moment, in seconds since 1970: the one place the stages of the sample
+    /// move the clock to a moment of their own.
+    ///
+    /// # Errors
+    /// [`SampleError::Start`] for a moment that no clock can show.
+    pub fn move_clock_to(&self, moment: i64) -> Result<(), SampleError> {
+        self.clock
+            .set(Timestamp::from_second(moment).map_err(|_| SampleError::Start(moment))?);
+        Ok(())
+    }
 }
 
 /// The extension point: what comes after the people. [`crate::Organization`] fills it in with the

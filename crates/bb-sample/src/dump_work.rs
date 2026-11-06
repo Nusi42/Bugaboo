@@ -81,6 +81,8 @@ pub(crate) struct DumpWork {
     own_changes: BTreeMap<String, u64>,
     /// Issues followed by Viewers.
     follows: BTreeMap<String, u64>,
+    /// Working hours and time on issues.
+    time: crate::dump_time::DumpTime,
 }
 
 /// The role as the dump counts it: Administrators and Team members do the work of the team.
@@ -113,6 +115,7 @@ impl Sample {
         self.files_of(&mut work, issues).await?;
         self.notifications_of(&mut work, &roles, issues).await?;
         self.count_roles(&mut work, &roles, events);
+        work.time = self.time_of(&roles, events, issues).await?;
         Ok(work)
     }
 

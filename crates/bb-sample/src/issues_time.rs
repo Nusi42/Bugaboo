@@ -38,6 +38,11 @@ impl Calendar {
         }
     }
 
+    /// The numbers of the working days (days since 1970), in order.
+    pub(crate) fn days(&self) -> &[i64] {
+        &self.days
+    }
+
     /// How many working seconds there are.
     pub(crate) fn length(&self) -> i64 {
         i64::try_from(self.days.len()).unwrap_or(0) * WORK_DAY
