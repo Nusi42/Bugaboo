@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 
 import { addDays } from "../src/shared/format.ts";
 import { signedInAdmin } from "./support/access.ts";
-import { bob, signInThroughApi } from "./support/accounts.ts";
+import { bob, minutesOn, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, createIssue } from "./support/issues.ts";
@@ -223,10 +223,10 @@ test("time_04 two lengths typed one after the other into one cell book once and 
   // The week is read again meanwhile: the cell stays, with its value, and the focus stays.
   await expect(cell).toHaveValue("2:00");
   await expect(cellOf(page, issue.key, 1, false)).toBeFocused();
-  await expect(async () => {
-    await page.reload();
-    await expect(cellOf(page, issue.key, 0, false)).toHaveValue("2:00", { timeout: 2000 });
-  }).toPass({ timeout: 30_000 });
+  // The saves wait in line: reload when the server has the second, or the reload cuts the line.
+  await expect.poll(() => minutesOn(worker, week), { timeout: 30_000 }).toEqual([120]);
+  await page.reload();
+  await expect(cellOf(page, issue.key, 0, false)).toHaveValue("2:00");
   // One entry on Monday and the one booked before on Tuesday: two entries, never three.
   const entries = dataOf(
     await worker.client.GET("/api/v1/me/time-entries", {

@@ -3,13 +3,16 @@
  * text is taken (`sync`) only when no save of this cell waits, and then when it is the value sent
  * last, or when nothing newer was typed and the cell is not the one the person is in. So a text
  * that was read before the last save came back never replaces what was typed after it, and a
- * refused save leaves the draft where it was.
+ * refused save leaves the draft where it was. When saves overlap, a text that came while they were
+ * on their way may be older than the last of them, so it is never taken when they are done: only a
+ * text read after that (or the value sent last) can replace what was typed.
  */
 export class CellDraft {
   private latest: string;
   private synced: string;
   private sent: string | null = null;
   private waiting = 0;
+  private overlapped = false;
   private focused = false;
 
   constructor(text: string) {
@@ -39,6 +42,7 @@ export class CellDraft {
   /** A save of `value` is on its way; the function it returns is told how it went. */
   saving(value: string): (saved: boolean) => void {
     this.sent = value;
+    this.overlapped ||= this.waiting > 0;
     this.waiting += 1;
     return (saved) => {
       this.waiting -= 1;
@@ -50,6 +54,19 @@ export class CellDraft {
     };
   }
 
+  /**
+   * Takes the `text` read while saves were on its way, once they are done; says whether it did.
+   * It is dropped when the saves overlapped, as it may be older than the last one.
+   */
+  syncHeld(text: string): boolean {
+    if (this.waiting > 0) {
+      return false;
+    }
+    const overlapped = this.overlapped;
+    this.overlapped = false;
+    return (!overlapped || text === this.sent) && this.sync(text);
+  }
+
   /** Takes the saved `text` into the box when it may (see above); says whether it did. */
   sync(text: string): boolean {
     const own = text === this.sent;
@@ -58,7 +75,7 @@ export class CellDraft {
       return false;
     }
     this.synced = text;
-    if (!(own ? this.latest === this.sent : untouched)) {
+    if (!(untouched || (own && this.latest === this.sent))) {
       return false;
     }
     this.latest = text;

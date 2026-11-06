@@ -68,7 +68,7 @@ function useDraft(text: string) {
       const answer = draft.saving(value);
       return (saved) => {
         answer(saved);
-        if (draft.sync(shown.current)) {
+        if (draft.syncHeld(shown.current)) {
           setTyped(shown.current);
         }
       };
