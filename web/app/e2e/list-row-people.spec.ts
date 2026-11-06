@@ -17,7 +17,7 @@ test("ux_4_2 on a computer a line of people too long for its column ends in dots
   test.skip(layoutOf(page) !== "computer", "the rows of a computer have a column for the people");
   await signIn(page, sampleAdministrator());
   await page.goto(
-    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
+    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Freya Rossi"')}`,
   );
   const two = partIn(page, "list-row.cell", "person")
     .filter({ hasText: /\sand\s/u })
@@ -37,7 +37,7 @@ test("iss_01 pictures: a line of two people on a phone breaks only between the n
   test.skip(layoutOf(page) !== "phone", "the line of people wraps on a phone");
   await signIn(page, sampleAdministrator());
   await page.goto(
-    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
+    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Freya Rossi"')}`,
   );
   await expect(page.getByText(/\sand\s/u).first()).toBeVisible();
   await listInFourThemes(page, "people-two");

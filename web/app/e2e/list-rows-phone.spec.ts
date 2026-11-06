@@ -34,9 +34,9 @@ test("ux_4_2 the people of a row on a phone are written out on more lines, never
 }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await signIn(page, sampleAdministrator());
-  // The rows of a project have the box to tick, so the least room; Niko Eriksen shares some issues with a second person.
+  // The rows of a project have the box to tick, so the least room; Freya Rossi shares some issues with a second person.
   await page.goto(
-    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Niko Eriksen"')}`,
+    `${projectIssuesAddress("SHOP")}?s=${encodeURIComponent('assigned to is "Freya Rossi"')}`,
   );
   const rows = page.locator("[data-part='list-row'][data-variant~='phone']");
   await expect(rows.first()).toBeVisible();
@@ -46,7 +46,7 @@ test("ux_4_2 the people of a row on a phone are written out on more lines, never
   const cut = await cutWords(people);
   expect(cut).toEqual([]);
   await expectNoOverlap(page);
-  // A line breaks only between two names, never inside one ("Niko / Eriksen"): each name is one piece on one line.
+  // A line breaks only between two names, never inside one ("Freya / Rossi"): each name is one piece on one line.
   const two = people.filter({ hasText: /\sand\s/u }).first();
   const names = partIn(two, "unbroken-word");
   await expect(names).toHaveCount(2);
