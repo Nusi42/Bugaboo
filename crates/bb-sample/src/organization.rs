@@ -85,8 +85,8 @@ struct GroupRule {
 
 const TEAM_MEMBER: RoleKey = RoleKey::Starting(StartingRole::TeamMember);
 
-/// The eight groups of architecture §11.
-const GROUPS: [GroupRule; 8] = [
+/// The nine groups of architecture §11.
+const GROUPS: [GroupRule; 9] = [
     GroupRule {
         key: "backend",
         of: StartingRole::TeamMember,
@@ -134,6 +134,12 @@ const GROUPS: [GroupRule; 8] = [
         of: StartingRole::Contributor,
         grants: RoleKey::Starting(StartingRole::Contributor),
         on: &["WEB"],
+    },
+    GroupRule {
+        key: "payroll",
+        of: StartingRole::Hr,
+        grants: RoleKey::Starting(StartingRole::Hr),
+        on: &[],
     },
 ];
 
@@ -246,7 +252,7 @@ impl Builder<'_> {
     }
 
     /// Contributors: the first ones (Ana is the first) in the group *External*, the others on a
-    /// project each. Viewers: all through the group *Management*. Guests: a project each.
+    /// project each. Viewers: all through the group *Management*. *HR*: through the group *Payroll*. Guests: a project each.
     fn the_others(&mut self) {
         for (at, person) in self.of(StartingRole::Contributor).into_iter().enumerate() {
             if at < EXTERNAL_CONTRIBUTORS {
@@ -265,6 +271,11 @@ impl Builder<'_> {
         }
         for person in self.of(StartingRole::Viewer) {
             if let Some(rule) = GROUPS.iter().find(|rule| rule.of == StartingRole::Viewer) {
+                self.join(rule.key, person);
+            }
+        }
+        for person in self.of(StartingRole::Hr) {
+            if let Some(rule) = GROUPS.iter().find(|rule| rule.of == StartingRole::Hr) {
                 self.join(rule.key, person);
             }
         }

@@ -21,24 +21,27 @@ use crate::random::SeededRandom;
 pub const EMAIL_DOMAIN: &str = "bugaboo.example";
 
 /// The mix of roles of the 50 people (architecture §11).
-pub const ROLE_MIX: [(StartingRole, usize); 6] = [
+pub const ROLE_MIX: [(StartingRole, usize); 7] = [
     (StartingRole::Administrator, 2),
     (StartingRole::ProjectLead, 4),
     (StartingRole::TeamMember, 30),
     (StartingRole::Contributor, 8),
-    (StartingRole::Viewer, 4),
+    (StartingRole::Viewer, 3),
     (StartingRole::Guest, 2),
+    (StartingRole::Hr, 1),
 ];
 
 /// How many people the sample has.
 pub const PEOPLE: usize = 50;
 
 /// The people the demos name, the same whatever the seed: the administrator who runs the demo (the
-/// first person, made with the setup code), Ana (the person whose access is checked) and Ben.
-const FIXED: [(&str, &str, StartingRole); 3] = [
+/// first person, made with the setup code), Ana (the person whose access is checked), Ben, and
+/// Hana, who holds *HR* through the group *Payroll*.
+const FIXED: [(&str, &str, StartingRole); 4] = [
     ("Ada", "Brandt", StartingRole::Administrator),
     ("Ana", "Moreno", StartingRole::Contributor),
     ("Ben", "Hale", StartingRole::TeamMember),
+    ("Hana", "Weiss", StartingRole::Hr),
 ];
 
 /// Who gets a code app for the tests of the second step, by role: a few people, never the people

@@ -1,7 +1,7 @@
 # Written for Bugaboo, from nothing but our own choice of common given names and family names
 # from many places. No third-party name data (TEST-SAMPLE-DATA). Plain letters only, so every name
-# can be part of an e-mail address. The fixed people of the demos are Ada Brandt, Ana Moreno and
-# Ben Hale.
+# can be part of an e-mail address. The fixed people of the demos are Ada Brandt, Ana Moreno,
+# Ben Hale and Hana Weiss.
 
 first = [
   "Ada",
@@ -135,6 +135,7 @@ last = [
   "Varga",
   "Vega",
   "Weber",
+  "Weiss",
   "Winter",
   "Yamada",
   "Yilmaz",

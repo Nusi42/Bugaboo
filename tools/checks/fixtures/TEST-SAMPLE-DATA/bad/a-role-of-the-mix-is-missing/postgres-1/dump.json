@@ -59,6 +59,12 @@
       "members": [
         "ana.moreno@bugaboo.example"
       ]
+    },
+    {
+      "name": "Payroll",
+      "members": [
+        "hana.weiss@bugaboo.example"
+      ]
     }
   ],
   "roles": [
@@ -105,7 +111,16 @@
       "permissions": [
         "see-projects"
       ],
-      "held_by": 4
+      "held_by": 3
+    },
+    {
+      "name": "HR",
+      "starting": "hr",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 1
     }
   ],
   "projects": [

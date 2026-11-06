@@ -26,10 +26,10 @@
 //!    (`crates/bb-sample/data/names.toml`), so no real person is in it;
 //! 4. no password, code-app secret or access key of `sign-in.txt` appears in any other file of a
 //!    run;
-//! 5. the dump has the eight groups and the four projects with their sub-projects of
+//! 5. the dump has the nine groups and the four projects with their sub-projects of
 //!    architecture §11 (their names are written once, in `tools/dev/sample.json`);
 //! 6. every role of the mix of architecture §11 (2 Administrators, 4 Project leads, 30 Team
-//!    members, 8 Contributors, 4 Viewers, 2 Guests) is in the dump and held by that many people;
+//!    members, 8 Contributors, 3 Viewers, 2 Guests, 1 HR) is in the dump and held by that many people;
 //! 7. every project has a Project lead, its own or one from a project above it;
 //! 8. the issues of the dump are the issues of the plan in `tools/dev/sample.json`, scaled to the
 //!    number the run was asked to make and within its tolerance: per project, place and type,
@@ -60,13 +60,14 @@ const EMAIL_DOMAIN: &str = "bugaboo.example";
 /// The mix of roles of the 50 people (architecture §11), by the key of the starting role. Written
 /// out here on purpose, apart from the program that makes the people: the check is an independent
 /// witness, and fails if the program ever leaves the mix.
-const ROLE_MIX: [(&str, u64); 6] = [
+const ROLE_MIX: [(&str, u64); 7] = [
     ("administrator", 2),
     ("project-lead", 4),
     ("team-member", 30),
     ("contributor", 8),
-    ("viewer", 4),
+    ("viewer", 3),
     ("guest", 2),
+    ("hr", 1),
 ];
 /// The step of `cargo xtask ci` that runs the real check.
 const CI_SOURCE: &str = "xtask/src/ci.rs";

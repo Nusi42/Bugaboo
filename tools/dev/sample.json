@@ -21,7 +21,8 @@
       "support": "Support",
       "docs": "Docs",
       "management": "Management",
-      "external": "External"
+      "external": "External",
+      "payroll": "Payroll"
     },
     "roles": {
       "support-agent": "Support agent",

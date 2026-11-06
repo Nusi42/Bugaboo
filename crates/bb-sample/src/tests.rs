@@ -172,7 +172,7 @@ async fn every_sample_change_has_its_event_and_the_security_log_verifies() -> Te
         assert_eq!(count(SecurityAction::TwoStepEnabled), 5);
         assert_eq!(count(SecurityAction::StartingRolesCreated), 1);
         // The organization came from the same use cases: a security-log entry for each.
-        assert_eq!(count(SecurityAction::GroupCreated), 8);
+        assert_eq!(count(SecurityAction::GroupCreated), 9);
         assert_eq!(count(SecurityAction::ProjectCreated), 8);
         assert_eq!(count(SecurityAction::RoleCreated), 2);
         assert_eq!(
@@ -289,8 +289,8 @@ fn members<'a>(dump: &'a Value, key: &str) -> Result<&'a Vec<Value>, Failure> {
         .ok_or_else(|| format!("the dump has no {key}"))?)
 }
 
-/// The eight groups, each with members.
-fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
+/// The nine groups, each with members.
+fn the_nine_groups(dump: &Value) -> Result<(), Failure> {
     let mut groups: BTreeMap<&str, usize> = BTreeMap::new();
     for group in members(dump, "groups")? {
         groups.insert(
@@ -307,6 +307,7 @@ fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
             "Frontend",
             "Management",
             "Mobile",
+            "Payroll",
             "QA",
             "Support"
         ]
@@ -315,8 +316,7 @@ fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
     Ok(())
 }
 
-/// Every starting role with the mix of the plan of the people (a role outside the mix, HR, is
-/// there and held by nobody), and the two custom roles.
+/// Every starting role with the mix of the plan of the people (HR is held by Hana, through the group *Payroll*), and the two custom roles.
 fn the_roles(dump: &Value) -> Result<(), Failure> {
     let mut roles: BTreeMap<&str, (bool, u64)> = BTreeMap::new();
     for role in members(dump, "roles")? {
@@ -415,7 +415,7 @@ async fn the_sample_holds_the_groups_roles_and_projects_of_architecture_11() -> 
             let dump: Value = serde_json::from_str(&sample.dump().await?.to_json()?)?;
             sample.close().await;
 
-            the_eight_groups(&dump)?;
+            the_nine_groups(&dump)?;
             the_roles(&dump)?;
             the_projects(&dump)?;
             the_rows_and_levels(&dump)?;
@@ -511,8 +511,9 @@ async fn the_sample_shows_the_role_mix_through_check_access() -> TestResult {
                     ("Project lead", 4),
                     ("Team member", 30),
                     ("Contributor", 8),
-                    ("Viewer", 4),
+                    ("Viewer", 3),
                     ("Guest", 2),
+                    ("HR", 1),
                     ("Support agent", 3),
                     ("Security reviewer", 5),
                 ])
