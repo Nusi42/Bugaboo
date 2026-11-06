@@ -119,6 +119,19 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 
 The hidden field of the demo is *Customer*, an own field that Contributors cannot read (the lead), and not *Cost center*: until M6 that is a built-in field of time entries which no search reads yet, so it would not show the answer of an unknown field. That the run on 1 M issues meets its budget is the nightly benchmark (*Speed on 1 M issues*).
 
+### The M6 exit demo on the sample
+
+`web/app/e2e/m6-exit-demo.spec.ts` (the steps are in `web/app/e2e/support/demo-m6.ts`, `demo-m6-hours.ts` and `demo-m6-people.ts`) runs it in `cargo xtask ci`, on a phone and a computer, with axe in the four themes at every step; with `BB_SCREENSHOT_DIR` set the same run takes the pictures of the review page (`M6/demo/<step>-<phone|computer>-<theme>.png`, ten pictures of six steps, four themes). It starts from the sample: Ana Moreno (a Contributor on *Website*), Ben Hale (a Team member) and Hana Weiss (*HR*, through the group *Payroll*), and the working hours the sample recorded. By hand, with `cargo xtask dev --sample`:
+
+1. Ana starts her work day, starts the timer on an issue of *Website*, and stops it: the window *Stop timer* has *Activity* and *Cost center* (the timer's start is moved back so the window has a time to book), and *Save time* books it.
+2. Ana takes a break and ends her day with the buttons of the work day.
+3. The timesheet of a week with a long day (the day was typed afterwards, from six to seven in the evening) says it in the warning color.
+4. Ana changes the end of yesterday to 18:35 and gives her reason; the day shows *Changed*, and its history says who, when, what and why. On a phone, one day at a time, the same change is made through the same use case.
+5. Ben, who does not hold *See working hours of others*, is told there is no such page, and the menu has no entry.
+6. Hana opens the week of Ana in *Working hours of others* and sees its days; with *Totals only* switched on by an Administrator she sees the total of the week and nothing else.
+
+Enforced by: TEST-SAMPLE-DATA (the sample the demo runs on).
+
 ### Saved searches of the sample (M5 WP-10)
 
 The plan is `issues.work.savedSearches` of `tools/dev/sample.json` and the stage `searches.rs` of `bb-sample` makes them through the use cases after the people have worked together: eight searches by people of every role, private and shared with groups and with Website, one that Website shows as its list, and one that reads the own field *Customer*, which the stage hides from Contributors (`hiddenFromContributors`). A search that is shared with a group is made by an Administrator, because sharing with a group needs *Manage groups* or *Share searches* for the whole organization, which the roles of the sample give to nobody else. `qry_06_every_role_saved_a_search_and_the_shared_ones_reach_only_who_reads_them` reads the lists of every person of the sample back through the use cases on both databases: every search is in the list of its maker, the ones shared with a project reach a Contributor, none that reads *Customer* does, and the project list is the one the plan chose.
