@@ -558,6 +558,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             targets.push((definition, value));
         }
+        // In the order of the fields, not of their random IDs: so the changes of an event come in
+        // the same order every time.
+        targets.sort_by_key(|(definition, _)| definition.field.position);
         let mut sets: Vec<Set> = Vec::new();
         for (definition, json) in targets {
             let field = &definition.field;
