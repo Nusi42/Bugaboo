@@ -46,7 +46,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-Wave 3 of M6 runs: WP-09 in `win2`, WP-10 in `win3` and WP-11 in `win4`, merged in that order; WP-09 is merged; WP-10 rebases onto it and wires its time-entry form, then WP-11 rebases and lands last. `win5` takes webauthn-rs 0.6.2 next (M6-F127, M1-F36). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on.
+Wave 3 of M6 runs: WP-09 in `win2`, WP-10 in `win3` and WP-11 in `win4`, merged in that order; WP-09 is merged; WP-10 rebases onto it and wires its time-entry form, then WP-11 rebases and lands last. The passkeys run on the stable webauthn-rs 0.6.2 (M6-F127, M1-F36 done). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
