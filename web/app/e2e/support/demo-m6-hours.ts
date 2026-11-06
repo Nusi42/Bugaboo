@@ -36,7 +36,10 @@ export async function aLongDayShowsItsWarning(page: Page, server: Instance): Pro
   await session.dispose();
   await signIn(page, ana());
   await openWeek(page, long);
-  await expect(page.getByText(/hours? .*worked/u).first()).toBeVisible();
+  const warning = page.getByText(/hours? .*worked/u).first();
+  await expect(warning).toBeVisible();
+  // On a phone the warning is below the first screen: the picture shows it.
+  await warning.scrollIntoViewIfNeeded();
   await good(page, "03-the-warning-of-a-long-day");
 }
 
