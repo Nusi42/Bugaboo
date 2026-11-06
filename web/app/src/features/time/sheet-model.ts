@@ -94,7 +94,7 @@ function notALength(mistake: Said | null): string {
 }
 
 /** The dash a break is written with, and read with; the reader also takes an en dash typed by hand. */
-export const BREAK_DASH = "-";
+const BREAK_DASH = "-";
 
 /** `12:10-12:40` and `10:00-10:15, 12:10-12:40`: the breaks as times, a comma between breaks. */
 const BREAK = new RegExp(String.raw`^(.+?)\s*[${BREAK_DASH}\u2013]\s*(.+)$`, "u");
