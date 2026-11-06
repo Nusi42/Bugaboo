@@ -1,4 +1,4 @@
-import { partWords } from "./tokens.ts";
+import { windowHandleEdges } from "./tokens.ts";
 
 /** How big a window is, in pixels. */
 export interface WindowSize {
@@ -13,10 +13,10 @@ export interface WindowElement {
 }
 
 /** A place to drag: the four edges and the four corners, as the theme file names them. */
-export type WindowEdge = (typeof partWords)["window.handle"]["variant"][number];
+export type WindowEdge = (typeof windowHandleEdges)[number];
 
 /** All the places to drag, in the order the theme file names them. */
-export const windowEdges: readonly WindowEdge[] = partWords["window.handle"].variant;
+export const windowEdges: readonly WindowEdge[] = windowHandleEdges;
 
 /** Which way an edge moves a size: `1` when the pointer going right (or down) makes it bigger. */
 interface Sides {

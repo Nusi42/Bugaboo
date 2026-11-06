@@ -1,7 +1,7 @@
-import { partWords } from "./tokens.ts";
+import { listCellColumns } from "./tokens.ts";
 
 /** A column of the issue list: the theme file names them as the variants of a cell. */
-export type ListColumn = (typeof partWords)["list-row.cell"]["variant"][number];
+export type ListColumn = (typeof listCellColumns)[number];
 
 /**
  * Where each column stands, from the start (UX §4.2, R9): tick box, status, ID, project, type, title,
@@ -25,7 +25,7 @@ const position = {
 } as const satisfies Readonly<Record<ListColumn, number>>;
 
 /** The columns in the order they stand, for the header and for every row. */
-export const listColumns: readonly ListColumn[] = partWords["list-row.cell"].variant.toSorted(
+export const listColumns: readonly ListColumn[] = listCellColumns.toSorted(
   (first, second) => position[first] - position[second],
 );
 

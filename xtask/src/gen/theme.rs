@@ -651,8 +651,41 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         );
     }
     out.push_str("} as const;\n");
+    runtime_words_ts(file, &mut out)?;
     Ok(out)
 }
+
+/// The few lists of words that code reads while it runs, each exported on its own: the table of
+/// `partWords` is for types, and it stays out of the first page's code when no runtime code uses it.
+fn runtime_words_ts(file: &ThemeFile, out: &mut String) -> anyhow::Result<()> {
+    for (part, constant, doc) in RUNTIME_WORDS {
+        let words = file
+            .part_words()
+            .into_iter()
+            .find(|words| words.part == part)
+            .with_context(|| format!("the theme file has no part `{part}`"))?;
+        let _ = write!(
+            out,
+            "\n/** {doc} */\nexport const {constant} = [{}] as const;\n",
+            quoted(words.variants.iter().cloned())
+        );
+    }
+    Ok(())
+}
+
+/// The variants of a part that code reads at run time: the part, the name of the constant and what it is.
+const RUNTIME_WORDS: [(&str, &str, &str); 2] = [
+    (
+        "window.handle",
+        "windowHandleEdges",
+        "The places of a window to drag: the variants of the part `window.handle`.",
+    ),
+    (
+        "list-row.cell",
+        "listCellColumns",
+        "The columns of the issue list: the variants of the part `list-row.cell`.",
+    ),
+];
 
 // ───────────── Rust ─────────────
 

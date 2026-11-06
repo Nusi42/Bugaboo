@@ -1540,3 +1540,23 @@ export const partWords = {
   "sheet.history": { variant: [], state: [] },
   "sheet.history-entry": { variant: [], state: [] },
 } as const;
+
+/** The places of a window to drag: the variants of the part `window.handle`. */
+export const windowHandleEdges = ["e", "w", "s", "n", "se", "nw", "ne", "sw"] as const;
+
+/** The columns of the issue list: the variants of the part `list-row.cell`. */
+export const listCellColumns = [
+  "select",
+  "status",
+  "type",
+  "key",
+  "title",
+  "labels",
+  "priority",
+  "person",
+  "project",
+  "value",
+  "length",
+  "changed",
+  "action",
+] as const;
