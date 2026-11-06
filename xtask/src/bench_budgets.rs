@@ -53,7 +53,7 @@ pub(crate) struct Scenario {
 }
 
 /// What a scenario took in a run, as the driver writes it.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub(crate) struct Measured {
     pub(crate) budget: String,
     #[serde(default)]
@@ -61,6 +61,27 @@ pub(crate) struct Measured {
     pub(crate) p95: f64,
     #[serde(default)]
     pub(crate) p99: f64,
+    /// How many runs were made, how many of them the server stopped for taking longer than the
+    /// limit of a search, and how many were not made after that.
+    #[serde(default)]
+    pub(crate) made: u32,
+    #[serde(default, rename = "tooSlow")]
+    pub(crate) too_slow: u32,
+    #[serde(default)]
+    pub(crate) skipped: u32,
+}
+
+impl Measured {
+    /// A sentence that says the number is the limit of a search, not a time, when the server stopped
+    /// runs; none when it did not.
+    pub(crate) fn cut_off(&self) -> Option<String> {
+        (self.too_slow > 0).then(|| {
+            format!(
+                "{} of {} runs were stopped by the limit of a search and {} were not made after that, so the number is that limit, not a time.",
+                self.too_slow, self.made, self.skipped
+            )
+        })
+    }
 }
 
 impl Budgets {
@@ -218,10 +239,13 @@ pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Mea
                 measured.budget
             )),
             Some(allowed) if measured.p95 > allowed => {
-                let sentence = format!(
+                let mut sentence = format!(
                     "The scenario {name} took {:.1} ms at the 95th percentile, over its budget of {allowed} ms ({}).",
                     measured.p95, measured.budget
                 );
+                if let Some(cut) = measured.cut_off() {
+                    sentence = format!("{sentence} {cut}");
+                }
                 match budgets.gap_of(name, database) {
                     Some(gap) if measured.p95 <= gap.p95_ms_at_most => judged.known.push(format!(
                         "{sentence} Known gap {}: {}",
@@ -296,6 +320,29 @@ p95_ms = 1
     }
 
     #[test]
+    fn a_run_that_the_server_stopped_says_that_the_number_is_the_limit() {
+        let run = BTreeMap::from([(
+            "project-time-totals".to_owned(),
+            Measured {
+                budget: "page".to_owned(),
+                p95: 2016.2,
+                made: 7,
+                too_slow: 3,
+                skipped: 193,
+                ..Measured::default()
+            },
+        )]);
+        let found = over(&budgets(), "sqlite", &run);
+        assert_eq!(found.failures.len(), 1);
+        assert!(
+            found.failures[0].contains(
+                "3 of 7 runs were stopped by the limit of a search and 193 were not made"
+            ),
+            "{found:?}"
+        );
+    }
+
+    #[test]
     fn a_result_over_a_budget_fails_with_the_scenario_the_number_and_the_budget() {
         let run = BTreeMap::from([
             (
@@ -305,6 +352,7 @@ p95_ms = 1
                     p50: 0.0,
                     p95: 123.4,
                     p99: 0.0,
+                    ..Measured::default()
                 },
             ),
             (
@@ -314,6 +362,7 @@ p95_ms = 1
                     p50: 0.0,
                     p95: 299.0,
                     p99: 0.0,
+                    ..Measured::default()
                 },
             ),
         ]);
@@ -345,6 +394,7 @@ reason = \"slow\"
                 p50: 0.0,
                 p95: 560.0,
                 p99: 0.0,
+                ..Measured::default()
             },
         )]);
         let took = |p95: f64| {
@@ -355,6 +405,7 @@ reason = \"slow\"
                     p50: 0.0,
                     p95,
                     p99: 0.0,
+                    ..Measured::default()
                 },
             )])
         };

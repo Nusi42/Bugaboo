@@ -105,12 +105,15 @@ fn table(budgets: &Budgets, database: DatabaseKind, result: &DriverResult) {
     ));
     for (name, measured) in &result.scenarios {
         output::info(&format!(
-            "  {name}: p50 {:.1}, p95 {:.1}, p99 {:.1}; budget {} ms ({})",
+            "  {name}: p50 {:.1}, p95 {:.1}, p99 {:.1}; budget {} ms ({}){}",
             measured.p50,
             measured.p95,
             measured.p99,
             budgets.p95_ms(&measured.budget).unwrap_or_default(),
-            measured.budget
+            measured.budget,
+            measured
+                .cut_off()
+                .map_or_else(String::new, |cut| format!(" - {cut}"))
         ));
     }
 }
