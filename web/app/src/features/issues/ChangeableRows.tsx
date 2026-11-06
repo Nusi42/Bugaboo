@@ -9,7 +9,7 @@ import { rowStatus } from "./row-status.ts";
 import type { IssueBlockProps } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
-export { TimeRows } from "./TimeRows.tsx";
+export { EstimateRow, LeftRow, RunningTimerRow, SpentRows, TotalRows } from "./TimeRows.tsx";
 
 export interface ChangeableRowsProps {
   readonly blocks: IssueBlockProps;

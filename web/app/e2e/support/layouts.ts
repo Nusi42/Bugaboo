@@ -64,12 +64,24 @@ interface Placed {
   readonly roles: readonly string[];
 }
 
-/** Saves the layout of a form with these fields at the end of its first section. */
-async function putFieldsInFirstSection(
+/** A section of a layout as a save takes it. */
+export interface SavedSection {
+  readonly tab: string;
+  readonly title: string;
+  readonly fields: readonly {
+    readonly field: Schema<"EditorFieldBody">["field"];
+    readonly roles: readonly string[];
+  }[];
+}
+
+/**
+ * Saves the sections of a layout under the lock of an editor that takes it and lets it go: the one
+ * way the tests save a layout through the API.
+ */
+export async function saveLayoutSections(
   admin: ApiSession,
-  editor: Schema<"LayoutEditorBody">,
   slot: NonNullable<Schema<"LayoutEditorBody">["layout"]>,
-  placed: readonly Placed[],
+  sections: readonly SavedSection[],
 ): Promise<void> {
   const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart } as const;
   const taken = dataOf(
@@ -80,6 +92,31 @@ async function putFieldsInFirstSection(
   if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing the layout.");
   }
+  dataOf(
+    await admin.client.PUT("/api/v1/layouts/{layout}", {
+      params: { path: { layout: slot.id } },
+      body: {
+        version: slot.version,
+        lock_token: taken.lock_token,
+        sections: sections.map((section) => ({
+          ...section,
+          fields: section.fields.map((each) => ({ field: each.field, roles: [...each.roles] })),
+        })),
+      },
+    }),
+  );
+  await admin.client.POST("/api/v1/edit-locks/let-go", {
+    body: { target: what, lock_token: taken.lock_token },
+  });
+}
+
+/** Saves the layout of a form with these fields at the end of its first section. */
+async function putFieldsInFirstSection(
+  admin: ApiSession,
+  editor: Schema<"LayoutEditorBody">,
+  slot: NonNullable<Schema<"LayoutEditorBody">["layout"]>,
+  placed: readonly Placed[],
+): Promise<void> {
   const sections = editor.sections.map((section) => ({
     tab: section.tab,
     title: section.title,
@@ -93,15 +130,7 @@ async function putFieldsInFirstSection(
       ...placed.map((each) => ({ field: each.field, roles: [...each.roles] })),
     ],
   });
-  dataOf(
-    await admin.client.PUT("/api/v1/layouts/{layout}", {
-      params: { path: { layout: slot.id } },
-      body: { version: slot.version, lock_token: taken.lock_token, sections },
-    }),
-  );
-  await admin.client.POST("/api/v1/edit-locks/let-go", {
-    body: { target: what, lock_token: taken.lock_token },
-  });
+  await saveLayoutSections(admin, slot, sections);
 }
 
 /** Saves the layout of *Bug* in the project WEB with *Review deadline* (for every role) at the end of the first section. */

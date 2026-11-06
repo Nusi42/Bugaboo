@@ -17,7 +17,7 @@ export function boxWords(field: BoxField, error?: string, inRow = false) {
   return {
     label: labelOf(field),
     ...(inRow ? { hideLabel: true } : {}),
-    ...(field.help === "" ? {} : { description: field.help }),
+    ...(field.help === undefined || field.help === "" ? {} : { description: field.help }),
     ...(error === undefined ? {} : { errorMessage: error }),
   };
 }

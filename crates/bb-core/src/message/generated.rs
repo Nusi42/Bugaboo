@@ -2165,6 +2165,9 @@ pub const ISSUES_DETAILS: MessageKey = MessageKey::new("issues.details");
 /// The message `issues.draft-kept`.
 pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
 
+/// The message `issues.estimate-wrong`.
+pub const ISSUES_ESTIMATE_WRONG: MessageKey = MessageKey::new("issues.estimate-wrong");
+
 /// The message `issues.everywhere`.
 pub const ISSUES_EVERYWHERE: MessageKey = MessageKey::new("issues.everywhere");
 
@@ -5789,8 +5792,13 @@ pub const TIME_ENTRY_FROM_ISSUE: MessageKey = MessageKey::new("time.entry.from-i
 /// The message `time.entry.length`.
 pub const TIME_ENTRY_LENGTH: MessageKey = MessageKey::new("time.entry.length");
 
-/// The message `time.entry.length-hint`.
-pub const TIME_ENTRY_LENGTH_HINT: MessageKey = MessageKey::new("time.entry.length-hint");
+/// The message `time.entry.length-example-colon`.
+pub const TIME_ENTRY_LENGTH_EXAMPLE_COLON: MessageKey =
+    MessageKey::new("time.entry.length-example-colon");
+
+/// The message `time.entry.length-example-short`.
+pub const TIME_ENTRY_LENGTH_EXAMPLE_SHORT: MessageKey =
+    MessageKey::new("time.entry.length-example-short");
 
 /// The message `time.entry.note`.
 pub const TIME_ENTRY_NOTE: MessageKey = MessageKey::new("time.entry.note");
@@ -8937,13 +8945,13 @@ pub fn layouts_inherited_project(project: impl std::fmt::Display) -> Message {
 #[must_use]
 pub fn layouts_limited_form(
     field: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    roles: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.limited-form"),
         vec![
             ("field", Value::Text(field.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("roles", Value::Text(roles.to_string())),
         ],
     )
 }
@@ -8952,13 +8960,13 @@ pub fn layouts_limited_form(
 #[must_use]
 pub fn layouts_limited_page(
     field: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    roles: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.limited-page"),
         vec![
             ("field", Value::Text(field.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("roles", Value::Text(roles.to_string())),
         ],
     )
 }
@@ -11874,6 +11882,23 @@ pub fn time_details_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.entry.length-hint`.
+#[must_use]
+pub fn time_entry_length_hint(
+    colon: impl std::fmt::Display,
+    decimal: impl std::fmt::Display,
+    short: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.entry.length-hint"),
+        vec![
+            ("colon", Value::Text(colon.to_string())),
+            ("decimal", Value::Text(decimal.to_string())),
+            ("short", Value::Text(short.to_string())),
+        ],
+    )
+}
+
 /// The message `time.length.hours`.
 #[must_use]
 pub fn time_length_hours(hours: i64) -> Message {
@@ -14760,6 +14785,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.draft-kept",
         "Your draft is kept if you close this form.",
     ),
+    (
+        "issues.estimate-wrong",
+        "Write the estimated time as a length first, like 1:30, then you can create the issue and start another.",
+    ),
     ("issues.everywhere", "all projects"),
     ("issues.group-by", "Group by"),
     ("issues.group-by-none", "No grouping"),
@@ -15104,12 +15133,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "layouts.limited-form",
-        "{role} cannot fill in {field}: the field permissions do not allow it.",
+        "{roles} cannot fill in {field}: the field permissions do not allow it.",
     ),
     ("layouts.limited-link", "Open field permissions"),
     (
         "layouts.limited-page",
-        "{role} cannot see {field}: the field permissions hide it.",
+        "{roles} cannot see {field}: the field permissions hide it.",
     ),
     (
         "layouts.lost",
@@ -17984,9 +18013,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These start with the values of the issue and its project. Change them if this time was different.",
     ),
     ("time.entry.length", "Length"),
+    ("time.entry.length-example-colon", "1:30"),
+    ("time.entry.length-example-short", "90m"),
     (
         "time.entry.length-hint",
-        "1:30, 1.5 and 90m all mean ninety minutes.",
+        "{colon}, {decimal} and {short} all mean ninety minutes.",
     ),
     ("time.entry.note", "What did you do? (optional)"),
     (

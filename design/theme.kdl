@@ -3368,6 +3368,16 @@ part "window.footer" {
     border-top "$border-width solid $divider"
 }
 
+// What a phone keeps out of the footer, below the form: the usual gap between fields stands between
+// the last field, with its hint or its problem, and these buttons.
+part "window.more-actions" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    margin-block-start "$gap-fields"
+    min-width 0
+}
+
 part "window.footer-note" {
     display flex
     flex-wrap wrap

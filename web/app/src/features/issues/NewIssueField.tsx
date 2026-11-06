@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
-import { OwnFieldInput } from "../fields/index.ts";
+import { LengthBox, OwnFieldInput } from "../fields/index.ts";
 import { AssignedPicker } from "./AssignedPicker.tsx";
 import { ChangeAssigned } from "./AssignedRow.tsx";
 import { priorityChoices } from "./issue-choices.ts";
@@ -60,6 +60,28 @@ function AssignedField({
   );
 }
 
+/** *Estimated time* on the form: a length the person types; a text that is none holds the form back. */
+function EstimateField({
+  values,
+  problem,
+  onChange,
+}: Omit<NewIssueFieldProps, "field" | "project">) {
+  return (
+    <LengthBox
+      name={t("issue-field.estimated-time")}
+      minutes={values.estimatedTime ?? undefined}
+      inRow={false}
+      problem={problem}
+      onCommit={(estimatedTime) => {
+        onChange({ ...values, estimatedTime, estimateWrong: false });
+      }}
+      onMistake={() => {
+        onChange({ ...values, estimateWrong: true });
+      }}
+    />
+  );
+}
+
 /** One field of the form: a built-in field by its word, an own field by its ID. */
 export function NewIssueField(props: NewIssueFieldProps) {
   const { field, values, project, problem, onChange } = props;
@@ -90,6 +112,8 @@ export function NewIssueField(props: NewIssueFieldProps) {
       );
     case "assigned-to":
       return <AssignedField values={values} project={project} onChange={onChange} />;
+    case "estimated-time":
+      return <EstimateField values={values} problem={problem} onChange={onChange} />;
     default:
       return (
         <OwnFieldInput

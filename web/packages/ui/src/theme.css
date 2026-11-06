@@ -3350,6 +3350,14 @@ textarea,
   border-top: var(--border-width) solid var(--divider);
 }
 
+[data-part="window.more-actions"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-block-start: var(--gap-fields);
+  min-width: 0;
+}
+
 [data-part="window.footer-note"] {
   display: flex;
   flex-wrap: wrap;

@@ -2,7 +2,15 @@ import { t } from "@bugaboo/messages";
 import { NameValueList, Skeleton, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { AssignedToRow, PriorityRow, TimeRows } from "./ChangeableRows.tsx";
+import {
+  AssignedToRow,
+  EstimateRow,
+  LeftRow,
+  PriorityRow,
+  RunningTimerRow,
+  SpentRows,
+  TotalRows,
+} from "./ChangeableRows.tsx";
 import { useAfterDelay } from "../../shared/use-optimistic.ts";
 import { inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
@@ -22,10 +30,13 @@ const fields = {
   assignedTo: "assigned-to",
   priority: "priority",
   reportedBy: "reported-by",
+  estimatedTime: "estimated-time",
+  timeLeft: "time-left",
+  timeSpent: "time-spent",
 } as const satisfies Record<string, FieldWord>;
 
-/** The key of the group of the lengths of time, which no layout places. */
-const timeRows = "time";
+/** The keys of the groups that stand beside *Time spent*: the running timer and the totals. */
+const [timerKey, totalsKey] = ["timer", "totals"];
 
 /** The groups of rows of the Details: the built-in fields, then what other packages add. */
 function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "changes">) {
@@ -43,9 +54,25 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
       node: <FixedRows key={fields.reportedBy} blocks={blocks} />,
     },
     {
-      // No layout places the lengths of time yet: they come after the fields the layout places.
-      places: "end",
-      node: <TimeRows key={timeRows} blocks={blocks} changes={changes} />,
+      places: [fields.estimatedTime],
+      node: <EstimateRow key={fields.estimatedTime} blocks={blocks} changes={changes} />,
+    },
+    {
+      places: [fields.timeLeft],
+      node: <LeftRow key={fields.timeLeft} blocks={blocks} changes={changes} />,
+    },
+    {
+      places: [fields.timeSpent],
+      node: <SpentRows key={fields.timeSpent} blocks={blocks} />,
+    },
+    {
+      // A running timer shows whatever the layout says, beside *Time spent* when it is placed.
+      places: [fields.timeSpent],
+      node: <RunningTimerRow key={timerKey} blocks={blocks} />,
+    },
+    {
+      places: [fields.timeSpent],
+      node: <TotalRows key={totalsKey} blocks={blocks} />,
     },
   ];
   const added = issueBlocks(issueSlots.details).map((entry) => ({

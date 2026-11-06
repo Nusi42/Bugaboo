@@ -46,7 +46,6 @@ export function EntryChangeForm({
       ) : null}
       <LengthBox
         name={t("time.entry.length")}
-        help={t("time.entry.length-hint")}
         minutes={minutes}
         inRow={false}
         onCommit={(committed) => {

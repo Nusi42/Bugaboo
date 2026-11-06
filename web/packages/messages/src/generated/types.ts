@@ -320,8 +320,8 @@ export interface MessageArguments {
   "layouts.field-up": { name: string | number };
   "layouts.fields-of": { number: string | number };
   "layouts.inherited-project": { project: string | number };
-  "layouts.limited-form": { field: string | number; role: string | number };
-  "layouts.limited-page": { field: string | number; role: string | number };
+  "layouts.limited-form": { field: string | number; roles: string | number };
+  "layouts.limited-page": { field: string | number; roles: string | number };
   "layouts.project-title": { project: string | number };
   "layouts.roles-form": { name: string | number };
   "layouts.roles-page": { name: string | number };
@@ -587,6 +587,11 @@ export interface MessageArguments {
   "time.details.change-title-narrow": { day: string | number; issue: string | number };
   "time.details.entry": { day: string | number; length: string | number };
   "time.details.title": { issue: string | number };
+  "time.entry.length-hint": {
+    colon: string | number;
+    decimal: string | number;
+    short: string | number;
+  };
   "time.length.hours": { hours: number };
   "time.length.hours-and-minutes": { hours: string | number; minutes: string | number };
   "time.length.minutes": { minutes: number };

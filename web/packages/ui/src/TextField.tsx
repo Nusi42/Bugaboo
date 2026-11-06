@@ -21,7 +21,7 @@ const inputModes = { text: "text", email: "email" } as const;
 const descriptionSlot = "description";
 
 /** The hint of a field: its explanation or an example, read with the field. */
-function Hint({ text }: { readonly text: string | undefined }) {
+function Hint({ text }: { readonly text: ReactNode }) {
   return text === undefined ? null : (
     <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
       {text}
@@ -32,8 +32,8 @@ function Hint({ text }: { readonly text: string | undefined }) {
 export interface TextFieldProps {
   /** The visible name of the field, already in the person's language. */
   readonly label: string;
-  /** Help under the name, for example what the field is for. */
-  readonly description?: string;
+  /** Help under the name, for example what the field is for; words, or words with lengths drawn in the code font. */
+  readonly description?: ReactNode;
   /** The hint stands under the label and above the box (an example of what to type), not under the box. */
   readonly hintAbove?: boolean;
   /** What to say when the field is empty. Without it the field may be empty. */

@@ -26,7 +26,9 @@ export type OwnField = Schema<"FieldBody">;
  * be filled in. An own field is one; a length of the issue itself (*Estimated time*, *Time left*)
  * is another, which is no own field.
  */
-export type BoxField = Pick<OwnField, "name" | "kind" | "help"> & {
+export type BoxField = Pick<OwnField, "name" | "kind"> & {
+  /** The help under the box, in words; a length box has none of its own (it draws `LengthHint`). */
+  readonly help?: OwnField["help"];
   readonly rules: Pick<OwnField["rules"], "required">;
 };
 /** A choice of a *Pick one* or *Pick several* field. */

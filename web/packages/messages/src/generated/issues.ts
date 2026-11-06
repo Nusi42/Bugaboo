@@ -26,6 +26,8 @@ export const messages = {
     "Choose an issue type first, then you can create the issue and start another.",
   "issues.missing-project":
     "Choose a project first, then you can create the issue and start another.",
+  "issues.estimate-wrong":
+    "Write the estimated time as a length first, like 1:30, then you can create the issue and start another.",
   "issues.ready-to-create": "Nothing is missing: you can create the issue.",
   "issues.refused-at-field": "{field}: {reason}",
   "issues.created": "{key} was created.",

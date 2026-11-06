@@ -9,7 +9,6 @@ export const messages = {
   "time.add.save": "Add time",
   "time.entry.date": "Date",
   "time.entry.length": "Length",
-  "time.entry.length-hint": "1:30, 1.5 and 90m all mean ninety minutes.",
   "time.entry.note": "What did you do? (optional)",
   "time.entry.billable": "Billable",
   "time.entry.from-issue":

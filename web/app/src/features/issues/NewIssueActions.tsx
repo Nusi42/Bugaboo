@@ -50,6 +50,9 @@ function missingForCreate(form: NewIssue) {
   if (form.values.title.trim() === "") {
     return "issues.missing-title";
   }
+  if (form.values.estimateWrong) {
+    return "issues.estimate-wrong";
+  }
   // A project that offers no type says so by the type; the footer does not ask for one as well.
   return form.noType || canCreate(form.values) ? undefined : "issues.missing-type";
 }
@@ -135,7 +138,7 @@ export function NewIssueMoreActions({
 }: Omit<NewIssueActionsProps, "formId">) {
   const missing = missingForCreate(form);
   return (
-    <div {...partOf(part.stack)}>
+    <div {...partOf(part.windowMoreActions)}>
       <CreateAnother form={form} missing={missing} why={whyId} onMade={onMade} />
       <Button look={buttonLook.quiet} onPress={onClose}>
         {t("common.cancel")}

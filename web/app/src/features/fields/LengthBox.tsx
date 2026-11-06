@@ -3,6 +3,7 @@ import { partOf, part } from "@bugaboo/ui";
 
 import { WithLengthReader } from "../../shared/with-length-reader.tsx";
 import type { BoxField } from "./fields.ts";
+import { LengthHint } from "./LengthHint.tsx";
 import { TextEditor } from "./TextEditor.tsx";
 
 export interface LengthBoxProps {
@@ -17,8 +18,6 @@ export interface LengthBoxProps {
    * has a visible name and sends every change at once, as a box of a form does.
    */
   readonly inRow?: boolean;
-  /** A hint under the box, for a box of a form: what can be typed. */
-  readonly help?: string;
   /** What the server said was wrong with the length, in words: shown at the box. */
   readonly problem?: string | undefined;
   /** Told when the text typed is no length, for a form that must not send it until it is mended. */
@@ -28,18 +27,18 @@ export interface LengthBoxProps {
 /**
  * A box in a row of the Details for a length of the issue itself, in whole minutes (*Estimated
  * time*, *Time left*, TIME-03): the same box, reader and words as the length of an own field, so a
- * length is typed and written one way everywhere.
+ * length is typed and written one way everywhere. A box of a form (not in a row) says under itself
+ * what can be typed; a box in a row of the Details keeps no room for a hint.
  */
 export function LengthBox({
   name,
   minutes,
   onCommit,
   inRow = true,
-  help = "",
   problem,
   onMistake,
 }: LengthBoxProps) {
-  const field: BoxField = { name, kind: "duration", help, rules: { required: false } };
+  const field: BoxField = { name, kind: "duration", rules: { required: false } };
   return (
     <span {...partOf(part.lengthBox)}>
       <WithLengthReader>
@@ -50,6 +49,7 @@ export function LengthBox({
             inRow={inRow}
             live={!inRow}
             problem={problem}
+            hint={inRow ? undefined : <LengthHint />}
             readLength={readLength}
             {...(onMistake === undefined ? {} : { onMistake })}
             onCommit={(sent) => {

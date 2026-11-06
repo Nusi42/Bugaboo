@@ -1,4 +1,3 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
@@ -6,16 +5,16 @@ import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-import { LengthIn, MinutesLength, SpentRow, TimerRow, WithSubIssuesRow } from "./TimeFacts.tsx";
+import { LengthIn, MinutesLength, SpentRow, WithSubIssuesRow } from "./TimeFacts.tsx";
 import { hasTotals, lengthWords, timeLeftOf } from "./time-words.ts";
 import { useIssueTime } from "./use-issue-time.ts";
 
 /** *Estimated time*: a box for who may change it, the length for who may only read it. */
-function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
-  const { issue, mask } = blocks;
+export function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
+  const { issue, mask, form } = blocks;
   const name = t("issue-field.estimated-time");
   const minutes = issue.estimated_time ?? undefined;
-  if (!mask.sees("estimated-time")) {
+  if (!form.shows("estimated-time") || !mask.sees("estimated-time")) {
     return null;
   }
   return (
@@ -40,18 +39,16 @@ function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
  * estimate and the time spent and said quietly beside it, and typing one makes it count until it is
  * cleared.
  */
-function LeftRow({
-  blocks,
-  changes,
-  time,
-}: ChangeableRowsProps & { readonly time: Schema<"IssueTimeBody"> | undefined }) {
-  const { issue, mask } = blocks;
+export function LeftRow({ blocks, changes }: ChangeableRowsProps) {
+  const { issue, mask, form } = blocks;
+  const time = useIssueTime(blocks.readableId).data ?? undefined;
   const name = t("issue-field.time-left");
   const typed = timeLeftOf(issue);
   const typedMinutes = typed === undefined || typed.worked_out ? undefined : typed.minutes;
   const left = time?.time_left ?? undefined;
   const workedOut = left?.worked_out === true ? left.minutes : undefined;
-  if (!mask.sees("time-left")) {
+  // A worked-out *Time left* is no member of the issue: the time of the issue holds it.
+  if (!form.shows("time-left") || !(mask.sees("time-left") || left !== undefined)) {
     return null;
   }
   const changeable = mask.changes("time-left");
@@ -83,24 +80,34 @@ function LeftRow({
 }
 
 /**
- * The lengths of time of the issue itself in the Details (TIME-03, ADR-0035 decision 4):
- * *Estimated time* and *Time left*, which change in place like any field, *Time spent*, which is
- * read and never typed, and the totals with the sub-issues. Each follows its own level. They are
- * fields of the issue and stand among its rows, apart from the defaults for time booked on it.
+ * *Time spent*, which is read and never typed, with *Add time* and the timer button beside it
+ * (TIME-03, ADR-0035 decision 4). It follows its own level and stands where the layout puts
+ * *Time spent*.
  */
-export function TimeRows({ blocks, changes }: ChangeableRowsProps) {
-  const time = useIssueTime(blocks.readableId).data ?? undefined;
-  const spent = time?.time_spent ?? undefined;
-  const totals = time?.with_sub_issues;
-  return (
-    <>
-      <EstimateRow blocks={blocks} changes={changes} />
-      <LeftRow blocks={blocks} changes={changes} time={time} />
-      {spent === undefined ? null : <SpentRow blocks={blocks} minutes={spent} />}
-      <TimerRow blocks={blocks} />
-      {totals === undefined || totals === null || !hasTotals(totals) ? null : (
-        <WithSubIssuesRow totals={totals} />
-      )}
-    </>
+export function SpentRows({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
+  const spent = useIssueTime(blocks.readableId).data?.time_spent ?? undefined;
+  return spent === undefined || !blocks.form.shows("time-spent") ? null : (
+    <SpentRow blocks={blocks} minutes={spent} />
   );
 }
+
+/**
+ * The totals with the sub-issues, below *Time spent* and shown with it: they add up the three
+ * lengths of the sub-issues the person may read.
+ */
+export function TotalRows({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
+  const totals = useIssueTime(blocks.readableId).data?.with_sub_issues;
+  return totals === undefined ||
+    totals === null ||
+    !hasTotals(totals) ||
+    !blocks.form.shows("time-spent") ? null : (
+    <WithSubIssuesRow totals={totals} />
+  );
+}
+
+/**
+ * *Your timer* while it runs on this issue. It shows wherever the layout puts the lengths of time,
+ * and when it places none: a timer that runs is never hidden. It stands beside *Time spent* when
+ * the layout places it, else last.
+ */
+export { TimerRow as RunningTimerRow } from "./TimeFacts.tsx";

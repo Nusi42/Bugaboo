@@ -1,5 +1,5 @@
 import { fieldKind, TextField } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { WithLengthReader, type LengthReader } from "../../shared/with-length-reader.tsx";
 import { boxWords } from "./box-words.ts";
@@ -12,6 +12,8 @@ import { readBox, textOf, type Kept } from "./value-text.ts";
 type TextEditorProps = Omit<ValueEditorProps, "field"> & {
   readonly field: BoxField;
   readonly readLength?: LengthReader;
+  /** The hint under the box when it is words with lengths in them, which a text cannot hold. */
+  readonly hint?: ReactNode | undefined;
   /** Told when the text typed is no value, so a form can hold back what it sends. */
   readonly onMistake?: () => void;
 };
@@ -60,6 +62,7 @@ export function TextEditor({
   inRow = false,
   readLength,
   onMistake,
+  hint,
 }: TextEditorProps) {
   const [text, setText] = useSynced(textOf(field, value));
   const { commit, local } = useCommit({ field, value, inRow, readLength, onCommit, onMistake });
@@ -75,6 +78,7 @@ export function TextEditor({
     >
       <TextField
         {...boxWords(field, local ?? problem, inRow)}
+        {...(hint === undefined ? {} : { description: hint })}
         kind={field.kind === "long-text" ? fieldKind.multiline : fieldKind.text}
         value={text}
         onChange={(typed) => {

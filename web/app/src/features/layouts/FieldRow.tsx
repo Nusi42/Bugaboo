@@ -1,14 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Checkbox, IconButton, iconName, Link, SelectField, partOf, part } from "@bugaboo/ui";
+import { Checkbox, IconButton, iconName, SelectField, partOf, part } from "@bugaboo/ui";
 
 import type { Schema } from "@bugaboo/api-client";
 import type { ReactNode } from "react";
 import { DraggableHead } from "../../shared/drag-and-drop.tsx";
 import { fieldNameOf } from "../../shared/field-names.ts";
-import { paths } from "../../shared/paths.ts";
 import { fieldKind } from "./field-kind.ts";
 import type { FormKind } from "./layouts.ts";
 import type { Row } from "./editor-model.ts";
+import { RolesLimited } from "./RolesLimited.tsx";
 
 /** A role the editor can tick. */
 type Role = Schema<"NamedRef">;
@@ -65,19 +65,7 @@ function RoleBoxes({
           />
         ))}
       </fieldset>
-      {limited.map((role) => (
-        <p key={role.id} {...partOf(part.layoutFieldLimited)}>
-          <span {...partOf(part.issueNote)}>
-            <span>
-              {t(kind === "issue-page" ? "layouts.limited-page" : "layouts.limited-form", {
-                role: role.name,
-                field: name,
-              })}
-            </span>
-            <Link href={paths.fieldPermissions}>{t("layouts.limited-link")}</Link>
-          </span>
-        </p>
-      ))}
+      <RolesLimited kind={kind} field={name} roles={limited.map((role) => role.name)} />
     </>
   );
 }

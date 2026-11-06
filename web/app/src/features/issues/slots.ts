@@ -1,4 +1,4 @@
-import type { Schema } from "@bugaboo/api-client";
+import { issueMemberOf, type Schema } from "@bugaboo/api-client";
 import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
@@ -140,7 +140,7 @@ export function maskOf(detail: Readonly<IssueDetail>): IssueFieldMask {
   const changeable = new Set<string>(detail.changeable);
   const own = detail.issue.own_fields ?? {};
   return {
-    sees: (key) => key in detail.issue || key in own || changeable.has(key),
+    sees: (key) => issueMemberOf(key) in detail.issue || key in own || changeable.has(key),
     changes: (key) => detail.may_change && changeable.has(key),
   };
 }

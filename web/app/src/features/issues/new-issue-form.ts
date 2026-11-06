@@ -13,6 +13,10 @@ export interface NewIssueValues {
   readonly priority: Schema<"Priority">;
   /** The people it is assigned to. */
   readonly assignedTo: readonly NamedPerson[];
+  /** *Estimated time* in whole minutes; none until one is typed. */
+  readonly estimatedTime: number | null;
+  /** The text in the box of the estimate is no length: the form is not sent until it is mended. */
+  readonly estimateWrong: boolean;
   /** The values of own fields as the API takes them, by the key of the field. */
   readonly fields: Readonly<Record<string, unknown>>;
 }
@@ -24,6 +28,8 @@ export const emptyForm: NewIssueValues = {
   description: "",
   priority: newIssuePriority,
   assignedTo: [],
+  estimatedTime: null,
+  estimateWrong: false,
   fields: {},
 };
 
@@ -33,6 +39,7 @@ export function hasWriting(values: NewIssueValues): boolean {
     values.title.trim() !== "" ||
     values.description.trim() !== "" ||
     values.assignedTo.length > 0 ||
+    values.estimatedTime !== null ||
     Object.keys(values.fields).length > 0
   );
 }
@@ -55,6 +62,11 @@ function peopleOf(found: unknown): readonly NamedPerson[] {
     const name: unknown = Reflect.get(each, "name");
     return typeof id === "string" && typeof name === "string" ? [{ id, name }] : [];
   });
+}
+
+/** The estimate of a draft: whole minutes, or nothing. */
+function estimateOf(found: unknown): number | null {
+  return typeof found === "number" && Number.isSafeInteger(found) && found >= 0 ? found : null;
 }
 
 /** The values of own fields of a draft: an object, or nothing. */
@@ -85,6 +97,8 @@ export function decodeDraft(text: string): NewIssueValues | undefined {
           description,
           priority,
           assignedTo: peopleOf(read("assignedTo")),
+          estimatedTime: estimateOf(read("estimatedTime")),
+          estimateWrong: false,
           fields: fieldsOf(read("fields")),
         }
       : undefined;
@@ -116,7 +130,7 @@ export function offersNoType(read: boolean, types: readonly unknown[]): boolean 
 
 /** Whether the form can be sent: it has a title and a type. */
 export function canCreate(values: NewIssueValues): boolean {
-  return values.title.trim() !== "" && values.issueType !== "";
+  return values.title.trim() !== "" && values.issueType !== "" && !values.estimateWrong;
 }
 
 /** The values of own fields for which `keep` says yes. */
@@ -141,6 +155,8 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
     description: shows("description") ? values.description : emptyForm.description,
     priority: shows("priority") ? values.priority : emptyForm.priority,
     assignedTo: shows("assigned-to") ? values.assignedTo : emptyForm.assignedTo,
+    estimatedTime: shows("estimated-time") ? values.estimatedTime : emptyForm.estimatedTime,
+    estimateWrong: shows("estimated-time") ? values.estimateWrong : emptyForm.estimateWrong,
     fields: fieldsWhere(values.fields, (key) => shows(key)),
   };
 }
@@ -162,6 +178,7 @@ export function bodyOf(values: NewIssueValues) {
     ...(values.assignedTo.length === 0
       ? {}
       : { assigned_to: values.assignedTo.map((person) => person.id) }),
+    ...(values.estimatedTime === null ? {} : { estimated_time: values.estimatedTime }),
     ...(Object.keys(fields).length === 0 ? {} : { fields }),
   };
 }

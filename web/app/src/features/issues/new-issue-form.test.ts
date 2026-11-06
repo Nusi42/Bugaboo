@@ -19,6 +19,8 @@ const filled: NewIssueValues = {
   description: "Steps",
   priority: "high",
   assignedTo: [{ id: "u1", name: "Ada" }],
+  estimatedTime: 90,
+  estimateWrong: false,
   fields: { f1: "Acme" },
 };
 
@@ -62,6 +64,7 @@ describe("iss_11 the form of a new issue", () => {
     expect(hasWriting({ ...emptyForm, issueType: "t1", priority: "high" })).toBe(false);
     expect(hasWriting({ ...emptyForm, description: "Notes" })).toBe(true);
     expect(hasWriting({ ...emptyForm, fields: { f1: "x" } })).toBe(true);
+    expect(hasWriting({ ...emptyForm, estimatedTime: 0 })).toBe(true);
   });
 
   it("turns into the text of a draft and back", () => {
@@ -89,7 +92,14 @@ describe("iss_11 the form of a new issue", () => {
 describe("iss_11 what the form of a new issue sends", () => {
   it("sends the usual priority and an empty description as nothing", () => {
     expect(
-      bodyOf({ ...filled, priority: "normal", description: " ", assignedTo: [], fields: {} }),
+      bodyOf({
+        ...filled,
+        priority: "normal",
+        description: " ",
+        assignedTo: [],
+        estimatedTime: null,
+        fields: {},
+      }),
     ).toEqual({ issue_type: "t1", title: "Login fails" });
     expect(bodyOf(filled)).toEqual({
       issue_type: "t1",
@@ -97,8 +107,40 @@ describe("iss_11 what the form of a new issue sends", () => {
       description: "Steps",
       priority: "high",
       assigned_to: ["u1"],
+      estimated_time: 90,
       fields: { f1: "Acme" },
     });
+  });
+
+  it("sends an estimate of no time as an estimate, and none as nothing", () => {
+    expect(bodyOf({ ...filled, estimatedTime: 0 }).estimated_time).toBe(0);
+    expect(bodyOf({ ...filled, estimatedTime: null })).not.toHaveProperty("estimated_time");
+  });
+});
+
+describe("time_03 the estimate on the form of a new issue", () => {
+  it("is not sent while the box holds no length", () => {
+    expect(canCreate({ ...filled, estimateWrong: true })).toBe(false);
+    expect(canCreate({ ...filled, estimateWrong: false })).toBe(true);
+  });
+
+  it("is a minute count in a draft, and nothing for anything else", () => {
+    const draft = (estimatedTime: unknown) =>
+      decodeDraft(JSON.stringify({ ...filled, estimatedTime }))?.estimatedTime;
+    expect(draft(45)).toBe(45);
+    expect(draft(-1)).toBeNull();
+    expect(draft(1.5)).toBeNull();
+    expect(draft("1:30")).toBeNull();
+    expect(draft(null)).toBeNull();
+    // A wrong box is not kept: the draft comes back with the last length that was good.
+    expect(decodeDraft(encodeDraft({ ...filled, estimateWrong: true }))?.estimateWrong).toBe(false);
+  });
+
+  it("is put back to nothing when the layout does not show it", () => {
+    const short = forForm(filled, (field) => field !== "estimated-time");
+    expect(short.estimatedTime).toBeNull();
+    expect(short.estimateWrong).toBe(false);
+    expect(forForm({ ...filled, estimateWrong: true }, () => true).estimateWrong).toBe(true);
   });
 });
 

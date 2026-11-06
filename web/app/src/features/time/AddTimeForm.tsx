@@ -34,7 +34,6 @@ export function AddTimeForm({ id, issue, defaults, state, problem, onSubmit }: A
       />
       <LengthBox
         name={t("time.entry.length")}
-        help={t("time.entry.length-hint")}
         minutes={state.minutes ?? undefined}
         inRow={false}
         onCommit={state.setMinutes}
