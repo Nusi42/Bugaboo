@@ -14,6 +14,10 @@ A layout is a list of **sections**. Give a section a title, and put it under a *
 
 Each field has a handle. Drag it into a section or onto the list *Fields that are not on this form* to take it off. Everything a drag does has buttons too, so it works with a keyboard, with assistive technology and on a phone, where there are no handles (the handle is not read out by assistive technology): **Move up**, **Move down**, **Move to another section**, **Take off this form**, and **Add to a section** for the fields that are not on the form.
 
+## The lengths of time
+
+*Estimated time*, *Time left* and *Time spent* are fields like the others. The issue page can place all three, and the usual layout puts them last. The new-issue form can place *Estimated time*: a new issue created with one starts with *Time left* equal to it. *Time spent* is the total of the time entries, so it is shown and never typed, and the new-issue form does not offer it. The totals with the sub-issues are shown only when *Time spent* is placed.
+
 ## Roles
 
 Under each field is a list of roles with a box each: the roles the field is shown to (on the new-issue form: asked from). A field you add starts with every role ticked. Choosing roles needs the permission "Decide what roles see" as well: without it you move fields, but you see no role names, a field keeps the roles it has, and a field you add is shown to every role. A field that you take off the form keeps the roles it had, so if you add it again, it is shown to the same roles as before. A field that was never on the form is shown to every role.
