@@ -585,3 +585,28 @@ async fn ai_21_preview_stop_timer_says_what_it_would_record_and_saves_nothing() 
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_04_for_an_outside_provider_people_are_named_by_role_and_the_asker_as_you() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let (bob, _) = bob_with_a_role(&world, &every_field()).await?;
+    let key = issue_with(&world, "WEB", "A title", "d", BTreeMap::new()).await?;
+    let by_role = |who: String| {
+        let (world, key) = (&world, key.clone());
+        async move {
+            let mut query = call(&who, "get_issue", json!({"issue": key}));
+            query.people = PeopleMode::RoleOnly;
+            call_tool(&world.ctx(), query)
+                .await
+                .map(|answer| answer.into_value().text)
+        }
+    };
+    // Ada wrote it: to herself she is "you", and to Bob she is her role, never her name.
+    let ada = by_role(token(&world)).await?;
+    assert!(ada.contains("reported_by: you"), "{ada}");
+    let theirs = by_role(bob).await?;
+    assert!(theirs.contains("reported_by: a Administrator"), "{theirs}");
+    assert!(!theirs.contains("Ada"), "{theirs}");
+    Ok(())
+}
