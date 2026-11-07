@@ -287,9 +287,10 @@ where
 
 /// What an app asked for when it sent the person to the consent step.
 #[derive(Deserialize, Serialize, ToSchema, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
 pub(crate) struct AuthorizationParams {
-    /// The ID of the app (`client_id`).
-    client_id: String,
+    /// The ID of the app, as it registered (`client_id` in the words of OAuth).
+    client: String,
     /// `code`.
     response_type: String,
     /// The address to come back to (`redirect_uri`).
@@ -312,7 +313,7 @@ pub(crate) struct AuthorizationParams {
 impl From<AuthorizationParams> for AuthorizationRequest {
     fn from(params: AuthorizationParams) -> Self {
         Self {
-            client_id: params.client_id,
+            client_id: params.client,
             response_type: params.response_type,
             return_address: params.redirect_uri,
             challenge: params.code_challenge,
@@ -545,35 +546,32 @@ async fn take_back_app(
     Ok(done())
 }
 
-/// A web address apps may come back to.
+/// The fields of an allowed web address that can be asked for.
+const ADDRESS_FIELDS: [FieldSpec; 2] = [
+    FieldSpec::by_default("address"),
+    FieldSpec::by_default("added_at"),
+];
+/// The name of the list, so its cursors are its own.
+const ADDRESSES_LIST: &str = "app-addresses";
+
+/// A web address apps may come back to, in a list: the fields that can be asked for.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct WebAddressBody {
+pub(crate) struct WebAddressItem {
     /// The address, as an app has to write it.
-    address: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    address: Option<String>,
     /// When an administrator allowed it.
-    added_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    added_at: Option<String>,
 }
 
-/// The web addresses apps may come back to.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WebAddressesBody {
-    /// The addresses, by address.
-    items: Vec<WebAddressBody>,
-}
+impl Masked for WebAddressItem {}
 
-impl Masked for WebAddressesBody {}
-
-impl From<bb_app::auth::WebAddresses> for WebAddressesBody {
-    fn from(addresses: bb_app::auth::WebAddresses) -> Self {
+impl From<&bb_app::auth::WebAddressView> for WebAddressItem {
+    fn from(each: &bb_app::auth::WebAddressView) -> Self {
         Self {
-            items: addresses
-                .items
-                .into_iter()
-                .map(|each| WebAddressBody {
-                    address: each.address,
-                    added_at: each.added_at.to_string(),
-                })
-                .collect(),
+            address: Some(each.address.clone()),
+            added_at: Some(each.added_at.to_string()),
         }
     }
 }
@@ -585,24 +583,35 @@ pub(crate) struct WebAddressRequest {
     address: String,
 }
 
-/// The web addresses an administrator allowed (*Apps that may sign in*).
+/// The web addresses an administrator allowed (*Apps that may sign in*), by address.
 #[utoipa::path(
     get,
     path = "/api/v1/oauth/web-addresses",
     operation_id = "listAppAddresses",
     tag = "oauth",
-    responses((status = 200, description = "The allowed addresses.", body = WebAddressesBody), NotSignedInAnswer, ForbiddenAnswer)
+    params(ListParams),
+    responses((status = 200, description = "The allowed addresses.", body = Page<WebAddressItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_app_addresses(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
     let found = auth
         .api()?
         .web_addresses(info, WebAddressesQuery { session_token })
         .await?;
-    answer_authorized(&found.map(WebAddressesBody::from))
+    let list = found.map(|found| Listed {
+        items: found.items.iter().map(WebAddressItem::from).collect(),
+        next: None,
+    });
+    let fields = params.fields_readable(&ADDRESS_FIELDS, &list.hidden_properties())?;
+    Ok(super::auth::answer(Page::of_authorized(
+        ADDRESSES_LIST,
+        &list,
+        &fields,
+    )?))
 }
 
 /// Allows a web address for AI apps.
@@ -612,7 +621,7 @@ async fn list_app_addresses(
     operation_id = "addAppAddress",
     tag = "oauth",
     request_body = WebAddressRequest,
-    responses((status = 200, description = "The allowed addresses.", body = WebAddressesBody), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer)
+    responses((status = 204, description = "Allowed."), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn add_app_address(
     State(auth): State<AuthHandle>,
@@ -621,8 +630,7 @@ async fn add_app_address(
     body: Result<ApiJson<WebAddressRequest>, ApiError>,
 ) -> Result<Response, ApiError> {
     let ApiJson(body) = auth.after_who_asks(&info, &session_token, body).await?;
-    let found = auth
-        .api()?
+    auth.api()?
         .add_web_address(
             info,
             AddWebAddress {
@@ -631,7 +639,7 @@ async fn add_app_address(
             },
         )
         .await?;
-    answer_authorized(&found.map(WebAddressesBody::from))
+    Ok(done())
 }
 
 /// Takes a web address away: apps that registered with it are refused at their next sign-in.
@@ -689,8 +697,8 @@ mod tests {
             on_this_computer: true,
             scope: KeyChoice::SeeOnly,
             projects: Vec::new(),
-            allowed_at: Default::default(),
-            last_used_at: Some(Default::default()),
+            allowed_at: <_>::default(),
+            last_used_at: Some(<_>::default()),
         });
         assert_fields_are_the_keys_of(&APP_FIELDS, &item);
     }

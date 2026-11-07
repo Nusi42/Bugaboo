@@ -21,7 +21,7 @@ use tokio::time::Instant;
 /// idle time (ADR-0042).
 pub(crate) const IDLE: Duration = Duration::from_secs(SESSION_IDLE_MINUTES * 60);
 /// How often the sweeper looks for sessions that have been idle too long.
-const SWEEP_EVERY: Duration = Duration::from_secs(60);
+const SWEEP_EVERY: Duration = Duration::from_mins(1);
 
 struct Open {
     run: RunId,

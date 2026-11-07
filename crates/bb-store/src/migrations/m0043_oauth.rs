@@ -19,7 +19,8 @@ use crate::schema::{
     OAuthWebAddressRow, PersonRow, ProjectRow,
 };
 
-pub(super) fn steps() -> Vec<Step> {
+/// The tables of the apps and the grants.
+fn grant_steps() -> Vec<Step> {
     vec![
         Step::Table(
             Table::create()
@@ -99,6 +100,12 @@ pub(super) fn steps() -> Vec<Step> {
                 )
                 .to_owned(),
         ),
+    ]
+}
+
+/// The tables of the projects of a grant, the tokens, the codes and the web addresses.
+fn token_steps() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(OAuthTokenRow::Table)
@@ -184,4 +191,10 @@ pub(super) fn steps() -> Vec<Step> {
                 .to_owned(),
         ),
     ]
+}
+
+pub(super) fn steps() -> Vec<Step> {
+    let mut steps = grant_steps();
+    steps.extend(token_steps());
+    steps
 }

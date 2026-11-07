@@ -467,21 +467,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            JobKind::CleanOldGrants => Box::pin(self.run_daily(JobKind::CleanOldGrants, async {
-                crate::auth::clean_old_grants(self).await.map(|cleaned| {
-                    tracing::info!(
-                        secrets = cleaned.secrets,
-                        grants = cleaned.grants,
-                        clients = cleaned.clients,
-                        "old grants of AI apps were cleared"
-                    );
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "old grants of AI apps could not be cleared");
-                JobFailure::of(&error, FAILED, job)
-            }),
+            JobKind::CleanOldGrants => self.clean_old_grants_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
@@ -490,6 +476,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::PreviewFile
             | JobKind::TimersLongRunning => Err(misrouted(job, kind)),
         }
+    }
+
+    /// The daily round of `oauth.clean-old-grants` (in a function of its own, so `do_daily_job`
+    /// stays short).
+    async fn clean_old_grants_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::CleanOldGrants, async {
+            crate::auth::clean_old_grants(self).await.map(|cleaned| {
+                tracing::info!(
+                    secrets = cleaned.secrets,
+                    grants = cleaned.grants,
+                    clients = cleaned.clients,
+                    "old grants of AI apps were cleared"
+                );
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "old grants of AI apps could not be cleared");
+            JobFailure::of(&error, FAILED, job)
+        })
     }
 
     /// The daily round of `statistics.refresh` (in a function of its own, so `do_daily_job` stays

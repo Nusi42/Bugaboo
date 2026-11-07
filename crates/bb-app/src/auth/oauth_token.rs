@@ -93,7 +93,6 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The tokens of a grant, to be written, and the answer to give once.
     fn new_tokens(
-        &self,
         grant: &OAuthGrant,
         now: Timestamp,
     ) -> Result<([OAuthToken; 2], TokenAnswer), AppError> {
@@ -269,7 +268,7 @@ pub async fn exchange_token<S: AuthStore>(
         }
     };
     ctx.slot_given_back(&slot);
-    let (rows, answer) = ctx.new_tokens(&verified.grant, now)?;
+    let (rows, answer) = Ctx::<S>::new_tokens(&verified.grant, now)?;
     let (secret, kind, grant) = (verified.secret, verified.kind, verified.grant.id);
     let first = ctx
         .store()

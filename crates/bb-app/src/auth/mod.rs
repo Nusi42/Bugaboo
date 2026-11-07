@@ -757,7 +757,7 @@ use_cases! {
     /// Lists the web addresses AI apps may come back to.
     web_addresses(WebAddressesQuery) -> Authorized<WebAddresses>;
     /// Allows a web address for AI apps.
-    add_web_address(AddWebAddress) -> Authorized<WebAddresses>;
+    add_web_address(AddWebAddress) -> Done;
     /// Takes a web address away.
     remove_web_address(RemoveWebAddress) -> Done;
     /// Shows the timer of the person.

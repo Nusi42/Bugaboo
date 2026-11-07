@@ -134,13 +134,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             && request.response_type == "code";
         let scope = asked_scope(&request.scope);
         let resource_ok = request.resource.is_empty() || request.resource == self.mcp_resource();
-        match (challenge_ok, scope, resource_ok) {
-            (true, Some(scope), true) => Ok((client, scope)),
-            _ => {
-                self.note(SecurityAction::OAuthRefused, None, None).await;
-                Err(AppError::Refused(ErrorCode::InvalidRequest))
-            }
+        if let (true, Some(scope), true) = (challenge_ok, scope, resource_ok) {
+            return Ok((client, scope));
         }
+        self.note(SecurityAction::OAuthRefused, None, None).await;
+        Err(AppError::Refused(ErrorCode::InvalidRequest))
     }
 
     /// The resource a token is for: the MCP server of this server.
@@ -240,7 +238,7 @@ pub async fn authorization<S: AuthStore>(
 ) -> Result<Authorized<AuthorizationView>, AppError> {
     let record = ctx.active(&input.session_token).await?;
     if !ctx.apps_may_sign_in().await? {
-        return Err(AppError::Refused(ErrorCode::Forbidden));
+        return Err(AppError::Refused(ErrorCode::AiOff));
     }
     let (client, asked) = ctx.checked_request(&input.request).await?;
     let access = ctx.evaluate(record.person.id, Place::Organization).await?;
@@ -250,6 +248,31 @@ pub async fn authorization<S: AuthStore>(
             .is_some_and(|read| read.kind() == ReturnKind::OnThisComputer),
         asked,
     }))
+}
+
+/// The answer to *Cancel*: back to the app with `access_denied` and the state it gave.
+fn turned_down(request: &AuthorizationRequest) -> AuthorizationAnswer {
+    let mut pairs = vec![("error", OAuthProblem::AccessDenied.code())];
+    if !request.state.is_empty() {
+        pairs.push(("state", request.state.as_str()));
+    }
+    AuthorizationAnswer {
+        redirect_to: with_query(&request.return_address, &pairs),
+    }
+}
+
+/// The projects a grant is for, each once; `request.invalid` for too many.
+fn chosen_projects(projects: &[ProjectId]) -> Result<Vec<ProjectId>, AppError> {
+    let projects: Vec<ProjectId> = projects
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    if projects.len() > MOST_GRANT_PROJECTS {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    Ok(projects)
 }
 
 /// The person says *Allow* or *Cancel*. *Allow* makes the grant and a code; either way the browser
@@ -265,38 +288,19 @@ pub async fn decide_authorization<S: AuthStore>(
 ) -> Result<Authorized<AuthorizationAnswer>, AppError> {
     let record = ctx.active(&input.session_token).await?;
     if !ctx.apps_may_sign_in().await? {
-        return Err(AppError::Refused(ErrorCode::Forbidden));
+        return Err(AppError::Refused(ErrorCode::AiOff));
     }
     let (client, asked) = ctx.checked_request(&input.request).await?;
     let person = record.person.id;
     let access = ctx.evaluate(person, Place::Organization).await?;
-    let state = [("state", input.request.state.as_str())];
-    let state: &[(&str, &str)] = if input.request.state.is_empty() {
-        &[]
-    } else {
-        &state
-    };
     if !input.allow {
-        let mut pairs = vec![("error", OAuthProblem::AccessDenied.code())];
-        pairs.extend_from_slice(state);
-        return Ok(access.authorize(AuthorizationAnswer {
-            redirect_to: with_query(&input.request.return_address, &pairs),
-        }));
+        return Ok(access.authorize(turned_down(&input.request)));
     }
     // The person may narrow what the app asked and never widen it.
     if !input.scope.is_for_apps() || !asked.covers_choice(input.scope) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    let projects: Vec<ProjectId> = input
-        .projects
-        .iter()
-        .copied()
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    if projects.len() > MOST_GRANT_PROJECTS {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    let projects = chosen_projects(&input.projects)?;
     let actor = Actor {
         person: record.person.clone(),
         key: None,

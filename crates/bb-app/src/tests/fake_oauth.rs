@@ -60,7 +60,7 @@ impl OAuthStore for FakeStore {
                 .filter(|found| found.grant.person == person && found.grant.ended_at.is_none())
                 .cloned()
                 .collect();
-            found.sort_by(|a, b| b.grant.allowed_at.cmp(&a.grant.allowed_at));
+            found.sort_by_key(|each| std::cmp::Reverse(each.grant.allowed_at));
             found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             found
         }))

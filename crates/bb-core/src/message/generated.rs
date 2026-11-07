@@ -786,6 +786,96 @@ pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-fil
 /// The message `config.tls-files-unused`.
 pub const CONFIG_TLS_FILES_UNUSED: MessageKey = MessageKey::new("config.tls-files-unused");
 
+/// The message `connect.acts-as`.
+pub const CONNECT_ACTS_AS: MessageKey = MessageKey::new("connect.acts-as");
+
+/// The message `connect.allow`.
+pub const CONNECT_ALLOW: MessageKey = MessageKey::new("connect.allow");
+
+/// The message `connect.cancel`.
+pub const CONNECT_CANCEL: MessageKey = MessageKey::new("connect.cancel");
+
+/// The message `connect.going-back`.
+pub const CONNECT_GOING_BACK: MessageKey = MessageKey::new("connect.going-back");
+
+/// The message `connect.going-back-help`.
+pub const CONNECT_GOING_BACK_HELP: MessageKey = MessageKey::new("connect.going-back-help");
+
+/// The message `connect.invalid`.
+pub const CONNECT_INVALID: MessageKey = MessageKey::new("connect.invalid");
+
+/// The message `connect.off`.
+pub const CONNECT_OFF: MessageKey = MessageKey::new("connect.off");
+
+/// The message `connect.only-see`.
+pub const CONNECT_ONLY_SEE: MessageKey = MessageKey::new("connect.only-see");
+
+/// The message `connect.page`.
+pub const CONNECT_PAGE: MessageKey = MessageKey::new("connect.page");
+
+/// The message `connect.projects`.
+pub const CONNECT_PROJECTS: MessageKey = MessageKey::new("connect.projects");
+
+/// The message `connect.projects-all`.
+pub const CONNECT_PROJECTS_ALL: MessageKey = MessageKey::new("connect.projects-all");
+
+/// The message `connect.projects-some`.
+pub const CONNECT_PROJECTS_SOME: MessageKey = MessageKey::new("connect.projects-some");
+
+/// The message `connect.unknown`.
+pub const CONNECT_UNKNOWN: MessageKey = MessageKey::new("connect.unknown");
+
+/// The message `connect.where-computer`.
+pub const CONNECT_WHERE_COMPUTER: MessageKey = MessageKey::new("connect.where-computer");
+
+/// The message `connect.where-web`.
+pub const CONNECT_WHERE_WEB: MessageKey = MessageKey::new("connect.where-web");
+
+/// The message `connected-apps.empty`.
+pub const CONNECTED_APPS_EMPTY: MessageKey = MessageKey::new("connected-apps.empty");
+
+/// The message `connected-apps.intro`.
+pub const CONNECTED_APPS_INTRO: MessageKey = MessageKey::new("connected-apps.intro");
+
+/// The message `connected-apps.list`.
+pub const CONNECTED_APPS_LIST: MessageKey = MessageKey::new("connected-apps.list");
+
+/// The message `connected-apps.note`.
+pub const CONNECTED_APPS_NOTE: MessageKey = MessageKey::new("connected-apps.note");
+
+/// The message `connected-apps.row.never-used`.
+pub const CONNECTED_APPS_ROW_NEVER_USED: MessageKey =
+    MessageKey::new("connected-apps.row.never-used");
+
+/// The message `connected-apps.row.where-computer`.
+pub const CONNECTED_APPS_ROW_WHERE_COMPUTER: MessageKey =
+    MessageKey::new("connected-apps.row.where-computer");
+
+/// The message `connected-apps.row.where-web`.
+pub const CONNECTED_APPS_ROW_WHERE_WEB: MessageKey =
+    MessageKey::new("connected-apps.row.where-web");
+
+/// The message `connected-apps.take-back`.
+pub const CONNECTED_APPS_TAKE_BACK: MessageKey = MessageKey::new("connected-apps.take-back");
+
+/// The message `connected-apps.take-back-confirm`.
+pub const CONNECTED_APPS_TAKE_BACK_CONFIRM: MessageKey =
+    MessageKey::new("connected-apps.take-back-confirm");
+
+/// The message `connected-apps.take-back-text`.
+pub const CONNECTED_APPS_TAKE_BACK_TEXT: MessageKey =
+    MessageKey::new("connected-apps.take-back-text");
+
+/// The message `connected-apps.take-back-title`.
+pub const CONNECTED_APPS_TAKE_BACK_TITLE: MessageKey =
+    MessageKey::new("connected-apps.take-back-title");
+
+/// The message `connected-apps.taken-back`.
+pub const CONNECTED_APPS_TAKEN_BACK: MessageKey = MessageKey::new("connected-apps.taken-back");
+
+/// The message `connected-apps.title`.
+pub const CONNECTED_APPS_TITLE: MessageKey = MessageKey::new("connected-apps.title");
+
 /// The message `cookie.csrf.purpose`.
 pub const COOKIE_CSRF_PURPOSE: MessageKey = MessageKey::new("cookie.csrf.purpose");
 
@@ -3011,6 +3101,9 @@ pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
 
 /// The message `nav.check-access`.
 pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
+
+/// The message `nav.connected-apps`.
+pub const NAV_CONNECTED_APPS: MessageKey = MessageKey::new("nav.connected-apps");
 
 /// The message `nav.field-permissions`.
 pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permissions");
@@ -7403,6 +7496,42 @@ pub fn conflict_sentence_plain(
             ("timed", Value::Text(timed.to_owned())),
             ("who", Value::Text(who.to_string())),
         ],
+    )
+}
+
+/// The message `connect.title`.
+#[must_use]
+pub fn connect_title(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connect.title"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
+/// The message `connected-apps.row.allowed`.
+#[must_use]
+pub fn connected_apps_row_allowed(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connected-apps.row.allowed"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `connected-apps.row.last-used`.
+#[must_use]
+pub fn connected_apps_row_last_used(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connected-apps.row.last-used"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `connected-apps.take-back-name`.
+#[must_use]
+pub fn connected_apps_take_back_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connected-apps.take-back-name"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -14198,6 +14327,80 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Not saved: {who} changed this issue{timed, select, true { {ago}} other {}}.",
     ),
     (
+        "connect.acts-as",
+        "It will act as you and can never do more than you can.",
+    ),
+    ("connect.allow", "Allow"),
+    ("connect.cancel", "Cancel"),
+    ("connect.going-back", "Going back to the app…"),
+    (
+        "connect.going-back-help",
+        "If nothing happens, you can close this page.",
+    ),
+    (
+        "connect.invalid",
+        "The request of the app is not one Bugaboo can answer. Go back to the app and start again.",
+    ),
+    (
+        "connect.off",
+        "AI apps are switched off in this organization, so nothing was allowed.",
+    ),
+    (
+        "connect.only-see",
+        "See and change is offered only when the app asks for it. This app asked to see only.",
+    ),
+    ("connect.page", "Connect an app"),
+    ("connect.projects", "In which projects"),
+    ("connect.projects-all", "All projects I can see"),
+    ("connect.projects-some", "Only some projects"),
+    ("connect.title", "{app} wants to work with your account"),
+    (
+        "connect.unknown",
+        "This request does not come from an app Bugaboo knows, so nothing was allowed. Go back to the app and start again.",
+    ),
+    (
+        "connect.where-computer",
+        "It comes back to this computer. The name is the app’s own; Bugaboo can’t check it.",
+    ),
+    (
+        "connect.where-web",
+        "It comes back to a web address your administrator allowed. The name is the app’s own; Bugaboo can’t check it.",
+    ),
+    (
+        "connected-apps.empty",
+        "No app is connected to your account.",
+    ),
+    (
+        "connected-apps.intro",
+        "AI apps that work with your account. Each does at most what you can do, and only what you allowed.",
+    ),
+    ("connected-apps.list", "Your connected apps"),
+    (
+        "connected-apps.note",
+        "Taking back ends what the app may do at once, and it must ask you again. Remembering your answer for each app, and the details of what an app did, come later.",
+    ),
+    ("connected-apps.row.allowed", "Allowed {when}"),
+    ("connected-apps.row.last-used", "Last used {when}"),
+    ("connected-apps.row.never-used", "Never used"),
+    ("connected-apps.row.where-computer", "On this computer"),
+    ("connected-apps.row.where-web", "On a web address"),
+    ("connected-apps.take-back", "Take back"),
+    ("connected-apps.take-back-confirm", "Take back"),
+    (
+        "connected-apps.take-back-name",
+        "Take back what {name} may do",
+    ),
+    (
+        "connected-apps.take-back-text",
+        "The app stops working at once and has to ask you again. Nothing it already did is undone.",
+    ),
+    (
+        "connected-apps.take-back-title",
+        "Take back what this app may do?",
+    ),
+    ("connected-apps.taken-back", "The app was taken back."),
+    ("connected-apps.title", "Connected apps"),
+    (
         "cookie.csrf.purpose",
         "Protects you from other websites that try to get Bugaboo to do something in your name.",
     ),
@@ -16144,6 +16347,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
+    ("nav.connected-apps", "Connected apps"),
     ("nav.field-permissions", "Field permissions"),
     ("nav.fields", "Fields"),
     ("nav.group.connections", "Connections"),

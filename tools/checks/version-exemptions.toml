@@ -261,3 +261,10 @@ reason = "A question reads and saves nothing; a change it proposes carries the v
 [[exempt]]
 routes = ["POST /api/v1/assistant/apply"]
 reason = "The version is inside the input of the proposal, which a signed reference ties to what was shown; a version that moved on is refused with the newer value like any change."
+routes = [
+  "POST /api/v1/oauth/authorization",
+  "DELETE /api/v1/oauth/apps/{app}",
+  "POST /api/v1/oauth/web-addresses",
+  "POST /api/v1/oauth/web-addresses/remove",
+]
+reason = "An app is allowed once and taken back for good, and an allowed address is added or taken away as a whole: there is no value on a screen that two people could change at the same time and overwrite (M7 WP-05)."

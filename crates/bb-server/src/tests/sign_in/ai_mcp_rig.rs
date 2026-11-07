@@ -192,7 +192,7 @@ pub(super) async fn sign_in_app(
         .ok_or("no client ID")?
         .to_owned();
     let request = json!({
-        "client_id": client,
+        "client": client,
         "response_type": "code",
         "redirect_uri": RETURN_AT,
         "code_challenge": pkce_challenge(VERIFIER),
@@ -204,7 +204,7 @@ pub(super) async fn sign_in_app(
         .send(
             "GET",
             &format!(
-                "/api/v1/oauth/authorization?client_id={client}&response_type=code&redirect_uri={}&code_challenge={}&code_challenge_method=S256&scope={asked}&state=state-1",
+                "/api/v1/oauth/authorization?client={client}&response_type=code&redirect_uri={}&code_challenge={}&code_challenge_method=S256&scope={asked}&state=state-1",
                 bb_core::oauth::percent_encode(RETURN_AT),
                 pkce_challenge(VERIFIER)
             ),

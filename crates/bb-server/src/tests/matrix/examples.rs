@@ -518,6 +518,13 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("confirmAiAgreement"),
     Example::route("getWhatGoesWhere"),
     Example::route("tryAiProvider"),
+    Example::route("getAuthorization"),
+    Example::route("decideAuthorization"),
+    Example::route("listConnectedApps"),
+    Example::with("takeBackApp", &[Quirk::NamesAMissingThing]),
+    Example::route("listAppAddresses"),
+    Example::route("addAppAddress"),
+    Example::with("removeAppAddress", &[Quirk::NamesAMissingThing]),
     Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),
     Example::with(

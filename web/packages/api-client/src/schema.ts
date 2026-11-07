@@ -3070,7 +3070,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** The web addresses an administrator allowed (*Apps that may sign in*). */
+    /** The web addresses an administrator allowed (*Apps that may sign in*), by address. */
     get: operations["listAppAddresses"];
     put?: never;
     /** Allows a web address for AI apps. */
@@ -4935,8 +4935,8 @@ export interface components {
     };
     /** @description What an app asked for when it sent the person to the consent step. */
     AuthorizationParams: {
-      /** @description The ID of the app (`client_id`). */
-      client_id: string;
+      /** @description The ID of the app, as it registered (`client_id` in the words of OAuth). */
+      client: string;
       /** @description The PKCE challenge. */
       code_challenge: string;
       /** @description `S256`. */
@@ -8154,6 +8154,13 @@ export interface components {
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_WebAddressItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["WebAddressItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
     /** @description An issue to put under another one, or to take out. */
     ParentBody: {
       /**
@@ -10292,25 +10299,20 @@ export interface components {
       /** @description The sentence, as message keys with their words, which the screen writes from its catalog. */
       words: Record<string, unknown>;
     };
-    /** @description A web address apps may come back to. */
-    WebAddressBody: {
+    /** @description A web address apps may come back to, in a list: the fields that can be asked for. */
+    WebAddressItem: {
       /**
        * Format: date-time
        * @description When an administrator allowed it.
        */
-      added_at: string;
+      added_at?: string | null;
       /** @description The address, as an app has to write it. */
-      address: string;
+      address?: string | null;
     };
     /** @description A web address to allow or to take away. */
     WebAddressRequest: {
       /** @description The return address, such as `https://app.example.com/callback`. */
       address: string;
-    };
-    /** @description The web addresses apps may come back to. */
-    WebAddressesBody: {
-      /** @description The addresses, by address. */
-      items: components["schemas"]["WebAddressBody"][];
     };
     /** @description The time worked in one week. */
     WeekBody: {
@@ -16828,11 +16830,9 @@ export interface operations {
   };
   getAuthorization: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID of the app (`client_id`). */
-        client_id: string;
+      query: {
+        /** @description The ID of the app, as it registered (`client_id` in the words of OAuth). */
+        client: string;
         /** @description `code`. */
         response_type: string;
         /** @description The address to come back to (`redirect_uri`). */
@@ -16842,12 +16842,14 @@ export interface operations {
         /** @description `S256`. */
         code_challenge_method: string;
         /** @description What the app asks to be allowed: `see-only` or `see-and-change`. */
-        scope: string;
+        scope?: string;
         /** @description The resource the token is for. */
-        resource: string;
+        resource?: string;
         /** @description What the app wants back unchanged. */
-        state: string;
+        state?: string;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;
@@ -16906,7 +16908,14 @@ export interface operations {
   };
   listAppAddresses: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -16920,10 +16929,11 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WebAddressesBody"];
+          "application/json": components["schemas"]["Page_WebAddressItem"];
         };
       };
       304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
@@ -16944,14 +16954,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The allowed addresses. */
-      200: {
+      /** @description Allowed. */
+      204: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": components["schemas"]["WebAddressesBody"];
-        };
+        content?: never;
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];

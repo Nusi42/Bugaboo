@@ -116,7 +116,7 @@ async fn ai_22_registration_and_the_token_endpoint_speak_the_words_of_oauth() ->
                 Some(json!({"address": "https://app.example.com/cb"})),
             )
             .await?;
-        assert_eq!(allowed.status, StatusCode::OK, "{}", allowed.body);
+        assert_eq!(allowed.status, StatusCode::NO_CONTENT, "{}", allowed.body);
         let registered = mcp
             .post_json(
                 "/oauth/register",

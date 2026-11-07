@@ -7,7 +7,6 @@ use bb_core::event::RecordKind;
 use bb_core::oauth::{MCP_PATH, MOST_WEB_ADDRESSES, OAuthWebAddress, ReturnAddress, ReturnKind};
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::days;
-use bb_policy::guards::Refusal;
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
 
@@ -60,7 +59,7 @@ pub async fn web_addresses<S: AuthStore>(
 pub async fn add_web_address<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddWebAddress,
-) -> Result<Authorized<WebAddresses>, AppError> {
+) -> Result<Done, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     ctx.require(
         &actor,
@@ -107,13 +106,7 @@ pub async fn add_web_address<S: AuthStore>(
         None,
     )
     .await;
-    web_addresses(
-        ctx,
-        WebAddressesQuery {
-            session_token: input.session_token,
-        },
-    )
-    .await
+    Ok(Done)
 }
 
 /// Takes a web address away. Apps that registered with it are refused at their next sign-in.
@@ -145,7 +138,7 @@ pub async fn remove_web_address<S: AuthStore>(
                 if S::delete_oauth_web_address(transaction, &wanted).await? {
                     Ok(())
                 } else {
-                    Err(S::refused(Refusal::TooMuch))
+                    Err(S::aborted())
                 }
             })
         })

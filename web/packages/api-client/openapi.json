@@ -10835,9 +10835,9 @@
         "operationId": "getAuthorization",
         "parameters": [
           {
-            "name": "client_id",
-            "in": "path",
-            "description": "The ID of the app (`client_id`).",
+            "name": "client",
+            "in": "query",
+            "description": "The ID of the app, as it registered (`client_id` in the words of OAuth).",
             "required": true,
             "schema": {
               "type": "string"
@@ -10845,7 +10845,7 @@
           },
           {
             "name": "response_type",
-            "in": "path",
+            "in": "query",
             "description": "`code`.",
             "required": true,
             "schema": {
@@ -10854,7 +10854,7 @@
           },
           {
             "name": "redirect_uri",
-            "in": "path",
+            "in": "query",
             "description": "The address to come back to (`redirect_uri`).",
             "required": true,
             "schema": {
@@ -10863,7 +10863,7 @@
           },
           {
             "name": "code_challenge",
-            "in": "path",
+            "in": "query",
             "description": "The PKCE challenge.",
             "required": true,
             "schema": {
@@ -10872,7 +10872,7 @@
           },
           {
             "name": "code_challenge_method",
-            "in": "path",
+            "in": "query",
             "description": "`S256`.",
             "required": true,
             "schema": {
@@ -10881,27 +10881,27 @@
           },
           {
             "name": "scope",
-            "in": "path",
+            "in": "query",
             "description": "What the app asks to be allowed: `see-only` or `see-and-change`.",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "resource",
-            "in": "path",
+            "in": "query",
             "description": "The resource the token is for.",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "state",
-            "in": "path",
+            "in": "query",
             "description": "What the app wants back unchanged.",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -11008,8 +11008,27 @@
     "/api/v1/oauth/web-addresses": {
       "get": {
         "tags": ["oauth"],
-        "summary": "The web addresses an administrator allowed (*Apps that may sign in*).",
+        "summary": "The web addresses an administrator allowed (*Apps that may sign in*), by address.",
         "operationId": "listAppAddresses",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The allowed addresses.",
@@ -11021,13 +11040,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebAddressesBody"
+                  "$ref": "#/components/schemas/Page_WebAddressItem"
                 }
               }
             }
           },
           "304": {
             "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -11063,15 +11085,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "The allowed addresses.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WebAddressesBody"
-                }
-              }
-            }
+          "204": {
+            "description": "Allowed."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -17722,16 +17737,16 @@
         "type": "object",
         "description": "What an app asked for when it sent the person to the consent step.",
         "required": [
-          "client_id",
+          "client",
           "response_type",
           "redirect_uri",
           "code_challenge",
           "code_challenge_method"
         ],
         "properties": {
-          "client_id": {
+          "client": {
             "type": "string",
-            "description": "The ID of the app (`client_id`)."
+            "description": "The ID of the app, as it registered (`client_id` in the words of OAuth)."
           },
           "code_challenge": {
             "type": "string",
@@ -24412,6 +24427,24 @@
           }
         }
       },
+      "Page_WebAddressItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebAddressItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "ParentBody": {
         "type": "object",
         "description": "An issue to put under another one, or to take out.",
@@ -28477,18 +28510,17 @@
           }
         }
       },
-      "WebAddressBody": {
+      "WebAddressItem": {
         "type": "object",
-        "description": "A web address apps may come back to.",
-        "required": ["address", "added_at"],
+        "description": "A web address apps may come back to, in a list: the fields that can be asked for.",
         "properties": {
           "added_at": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "When an administrator allowed it.",
             "format": "date-time"
           },
           "address": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "The address, as an app has to write it."
           }
         }
@@ -28501,20 +28533,6 @@
           "address": {
             "type": "string",
             "description": "The return address, such as `https://app.example.com/callback`."
-          }
-        }
-      },
-      "WebAddressesBody": {
-        "type": "object",
-        "description": "The web addresses apps may come back to.",
-        "required": ["items"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WebAddressBody"
-            },
-            "description": "The addresses, by address."
           }
         }
       },
