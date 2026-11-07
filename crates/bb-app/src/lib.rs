@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod access;
+pub mod agent_work;
 pub mod agents;
 pub mod ai;
 pub mod auth;

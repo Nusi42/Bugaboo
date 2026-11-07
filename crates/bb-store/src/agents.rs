@@ -1,7 +1,7 @@
 //! The adapter of the port of agents (`bb_app::agents::AgentStore`): the records of agents, and
 //! the empty implementation of their work (AI-30, ADR-0029).
 
-use bb_app::agents::{AgentStore, AgentWork, AgentWorkStore};
+use bb_app::agents::AgentStore;
 use bb_app::auth::AccessKeyRecord;
 use bb_core::agent::{Agent, AgentState};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
@@ -75,14 +75,6 @@ async fn update_at(
         .and_where(Expr::col(AgentRow::Version).eq(version));
     set(&mut update);
     Ok(transaction.execute(&update).await? > 0)
-}
-
-impl AgentWorkStore for AuthStorage {
-    /// Until hand-overs and standing rules exist, no agent has work: it may do nothing but read
-    /// its own record.
-    async fn agent_work(&self, _agent: AgentId) -> Result<AgentWork, StoreError> {
-        Ok(AgentWork::default())
-    }
 }
 
 impl AgentStore for AuthStorage {

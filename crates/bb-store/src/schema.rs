@@ -60,6 +60,7 @@ macro_rules! stored_tables {
 }
 
 mod access;
+mod agent_work;
 mod agents;
 mod ai;
 mod comments;
@@ -75,6 +76,7 @@ mod work;
 mod working_hours;
 
 pub(crate) use access::*;
+pub(crate) use agent_work::*;
 pub(crate) use agents::*;
 pub(crate) use ai::*;
 pub(crate) use comments::*;
@@ -95,6 +97,7 @@ pub(crate) use working_hours::*;
 pub fn tables() -> Vec<StoredTable> {
     let mut tables = Vec::new();
     tables.extend(access::tables());
+    tables.extend(agent_work::tables());
     tables.extend(agents::tables());
     tables.extend(ai::tables());
     tables.extend(comments::tables());

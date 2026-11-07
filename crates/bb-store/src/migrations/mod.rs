@@ -70,6 +70,7 @@ mod m0038_ai_tools;
 mod m0039_agents;
 mod m0040_runs;
 mod m0041_assistant_references;
+mod m0042_agent_work;
 mod m0043_oauth;
 mod m0044_shown_moments;
 #[cfg(test)]
@@ -374,6 +375,11 @@ const ALL: &[Definition] = &[
         version: 41,
         name: "assistant_references",
         steps: || Ok(m0041_assistant_references::steps()),
+    },
+    Definition {
+        version: 42,
+        name: "agent_work",
+        steps: || Ok(m0042_agent_work::steps()),
     },
     Definition {
         version: 43,

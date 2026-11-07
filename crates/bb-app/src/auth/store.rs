@@ -336,6 +336,7 @@ pub trait AuthStore:
     + AccessKeyStore
     + super::oauth_store::OAuthStore
     + crate::agents::AgentStore
+    + crate::agent_work::AgentWorkRecords
     + EditStore
     + PolicyStore
     + ProjectStore

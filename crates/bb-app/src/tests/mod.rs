@@ -14,6 +14,7 @@ mod event_members;
 mod events;
 mod failures;
 mod fake;
+mod fake_agent_work;
 mod fake_agents;
 mod fake_ai;
 mod fake_ai_tools;

@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 mod access_keys;
+mod agent_work;
 mod agents;
 mod ai;
 mod ai_tools;

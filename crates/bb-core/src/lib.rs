@@ -11,6 +11,7 @@ pub mod words;
 pub mod access;
 pub mod access_key;
 pub mod agent;
+pub mod agent_records;
 pub mod agent_work;
 pub mod ai;
 pub mod app_paths;

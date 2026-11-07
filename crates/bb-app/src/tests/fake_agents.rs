@@ -10,12 +10,42 @@ use crate::auth::AccessKeyRecord;
 impl AgentWorkStore for FakeStore {
     async fn agent_work(&self, agent: AgentId) -> Result<AgentWork, FakeError> {
         Ok(self.read(|state| {
-            state
+            let mut work = state
                 .agent_work
                 .iter()
                 .find(|(id, _)| *id == agent)
                 .map(|(_, work)| work.clone())
-                .unwrap_or_default()
+                .unwrap_or_default();
+            let records = &state.work;
+            for held in records
+                .works
+                .iter()
+                .filter(|w| w.agent == agent && records.is_open(w))
+            {
+                work.issues.insert(held.issue);
+                work.projects.extend(
+                    state
+                        .issues
+                        .iter()
+                        .find(|issue| issue.id == held.issue)
+                        .map(|issue| issue.project),
+                );
+            }
+            for rule in records
+                .rules
+                .iter()
+                .filter(|r| r.agent == agent && r.state == bb_core::agent_records::GrantState::Open)
+            {
+                work.projects.insert(rule.project);
+                work.issues.extend(
+                    records
+                        .matches
+                        .iter()
+                        .filter(|m| m.rule == rule.id)
+                        .map(|m| m.issue),
+                );
+            }
+            work
         }))
     }
 }

@@ -2,11 +2,12 @@
 //! databases. Split from `db.rs`, which holds the pools, the transactions and the statements.
 
 use bb_core::id::{
-    AccessKeyId, AgentId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId,
-    EventId, FieldId, GrantId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId,
-    LabelGroupId, LabelId, LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId,
-    ProjectId, RelationId, RelationKindId, RoleId, RunId, SavedSearchId, SessionId, TagId,
-    TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
+    AccessKeyId, AgentId, AgentNoteId, AgentWorkId, AssignmentId, AttachmentId, AttemptId,
+    ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GrantId, GroupId, HandOverId,
+    IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
+    NotificationId, OAuthClientId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, RunId,
+    SavedSearchId, SessionId, StandingRuleId, TagId, TimeEntryId, ToolCallId, UploadId, UserId,
+    WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -119,6 +120,11 @@ stored_ids!(
     AgentId => "an agent ID",
     GrantId => "a grant ID",
     OAuthClientId => "an app ID",
+    HandOverId => "a hand-over ID",
+    StandingRuleId => "a standing rule ID",
+    AgentWorkId => "an agent work ID",
+    AttemptId => "an attempt ID",
+    AgentNoteId => "an agent note ID",
     AssignmentId => "an assignment ID",
     AttachmentId => "an attachment ID",
     UploadId => "an upload ID",
