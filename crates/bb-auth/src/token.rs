@@ -36,6 +36,12 @@ pub enum Purpose {
     SignUpAddress,
     /// The secret of an access key.
     AccessKey,
+    /// The code an AI app gets after *Allow*.
+    OAuthCode,
+    /// The access token of an AI app.
+    OAuthAccess,
+    /// The token that renews the access token of an AI app.
+    OAuthRefresh,
 }
 
 impl Purpose {
@@ -46,6 +52,9 @@ impl Purpose {
             Self::SetupCode => b"bugaboo.setup-code.v1",
             Self::BackupCode => b"bugaboo.backup-code.v1",
             Self::AccessKey => b"bugaboo.access-key.v1",
+            Self::OAuthCode => b"bugaboo.oauth-code.v1",
+            Self::OAuthAccess => b"bugaboo.oauth-access.v1",
+            Self::OAuthRefresh => b"bugaboo.oauth-refresh.v1",
             Self::SignUpAddress => b"bugaboo.sign-up-address.v1",
         }
     }
@@ -87,7 +96,8 @@ impl SecretToken {
     ) -> Result<Self, AuthError> {
         loop {
             let token = Self(Zeroizing::new(fresh()?));
-            if !looks_like_access_key(&token.encode()) {
+            let text = token.encode();
+            if !looks_like_access_key(&text) && !crate::oauth::looks_like_oauth_secret(&text) {
                 return Ok(token);
             }
         }

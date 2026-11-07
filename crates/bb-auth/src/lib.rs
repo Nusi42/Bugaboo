@@ -15,6 +15,7 @@ mod csrf;
 mod device;
 mod email;
 mod error;
+mod oauth;
 mod passkeys;
 mod password;
 mod signed_link;
@@ -27,6 +28,10 @@ pub use csrf::{CsrfKey, KEY_LENGTH as CSRF_KEY_LENGTH};
 pub use device::Device;
 pub use email::{EmailAddress, domain_is_listed, listed_domains};
 pub use error::AuthError;
+pub use oauth::{
+    OAuthKind, OAuthSecret, is_pkce_challenge, is_pkce_verifier, looks_like_oauth_access_token,
+    looks_like_oauth_secret, pkce_challenge, pkce_proves,
+};
 pub use passkeys::{
     CHALLENGE_LIFETIME, ChallengeId, DiscoverableMatch, PasskeyCheck, Passkeys, RelyingParty,
     StoredCredential, public_origin,

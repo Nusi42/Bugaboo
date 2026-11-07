@@ -38,6 +38,7 @@ pub mod migration;
 pub mod names;
 pub mod network;
 pub mod notification;
+pub mod oauth;
 pub mod offer;
 pub mod outbox;
 pub mod own_choices;

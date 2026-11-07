@@ -155,6 +155,21 @@ words! {
         /// A tool was turned away: it does not exist, the key or the app may not use it, or it names
         /// something kept from AI.
         AiToolRefused => "ai_tool.refused",
+        /// An AI app registered itself.
+        OAuthClientRegistered => "oauth_client.registered",
+        /// A person pressed *Allow*: a grant was made for an AI app.
+        OAuthGrantCreated => "oauth_grant.created",
+        /// A person took an AI app's access back.
+        OAuthGrantTakenBack => "oauth_grant.taken_back",
+        /// A grant ended because *Sign out everywhere* ended every grant of the person.
+        OAuthGrantEndedBySignOut => "oauth_grant.ended_by_sign_out",
+        /// A grant ended because an old renewing token or a code was used again.
+        OAuthGrantEndedByReuse => "oauth_grant.ended_by_reuse",
+        /// An AI app was turned away at sign-in: an address it did not register, a code without its
+        /// proof, or an address nobody allowed.
+        OAuthRefused => "oauth.refused",
+        /// An administrator allowed or took away a web address for AI apps.
+        OAuthAddressChanged => "oauth_address.changed",
     }
 }
 

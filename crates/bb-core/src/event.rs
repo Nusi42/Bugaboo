@@ -160,6 +160,10 @@ words! {
         Label => "label",
         /// A group of labels (TAG-02).
         LabelGroup => "label_group",
+        /// An AI app that registered itself (AI-22).
+        OAuthClient => "oauth_client",
+        /// What a person allowed an AI app (AI-22).
+        OAuthGrant => "oauth_grant",
         /// A passkey.
         Passkey => "passkey",
         /// A person.
