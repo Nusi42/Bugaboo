@@ -479,16 +479,7 @@ async fn ai_38_two_undos_with_one_preview_put_back_once_and_record_one_undo() ->
 #[tokio::test]
 async fn ai_38_an_undone_run_says_who_undid_it_and_what_became_of_each_field() -> Outcome {
     use crate::runs::{FieldOutcome, get_run};
-    let world = World::new().await?;
-    let admin = token(&world);
-    let project = a_project(&world, "ACME").await?;
-    let first = an_issue(&world, project).await?;
-    let second = an_issue(&world, project).await?;
-    let person = world.ctx().session_actor(&admin).await?.person.id;
-    let run = open(&world, &admin, person).await?;
-    for each in [first, second] {
-        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
-    }
+    let (world, admin, run, [_, second]) = a_run_of_two().await?;
     let query = || RunQuery {
         session_token: admin.clone(),
         run,
@@ -611,6 +602,23 @@ async fn ai_38_the_preview_leaves_out_unreadable_fields_and_names_a_comment() ->
     Ok(())
 }
 
+/// A run of an app session that changed the priority of two issues: the world, the session of the
+/// administrator, the run and the issues.
+async fn a_run_of_two()
+-> Result<(World, String, RunId, [IssueId; 2]), Box<dyn std::error::Error + Send + Sync>> {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let first = an_issue(&world, project).await?;
+    let second = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    for each in [first, second] {
+        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
+    }
+    Ok((world, admin, run, [first, second]))
+}
+
 async fn outcomes_of(
     world: &World,
     session: &str,
@@ -683,16 +691,7 @@ async fn ai_38_a_change_between_the_plan_and_the_write_is_not_overwritten() -> O
 /// recorded, so the run does not offer to put it back again.
 #[tokio::test]
 async fn ai_38_a_busy_database_stops_the_undo_and_what_went_back_is_recorded() -> Outcome {
-    let world = World::new().await?;
-    let admin = token(&world);
-    let project = a_project(&world, "ACME").await?;
-    let first = an_issue(&world, project).await?;
-    let second = an_issue(&world, project).await?;
-    let person = world.ctx().session_actor(&admin).await?.person.id;
-    let run = open(&world, &admin, person).await?;
-    for each in [first, second] {
-        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
-    }
+    let (world, admin, run, _) = a_run_of_two().await?;
     let preview = preview_of(&world, &admin, run).await?;
     world.store.keep_a_change_busy_after(1);
     let stopped = undo(&world, &admin, run, preview).await;

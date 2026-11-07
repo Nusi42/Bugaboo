@@ -398,19 +398,18 @@ async fn ai_30_the_nearest_switch_decides_when_the_parent_is_off_and_the_child_o
     Ok(())
 }
 
-#[tokio::test]
-async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent() -> Outcome {
-    let world = World::new().await?;
-    let admin = token(&world);
-    let project = a_project(&world, "WEB").await?;
-    // A guest sees people by their role only, and sees the issues they reported.
-    let guest = member(&world, "guest@example.test", StartingRole::Guest, project).await?;
-    let issue_id = create_issue(
+/// An issue the person made, for the tests of what a reader who made it is told.
+async fn an_issue_of(
+    world: &World,
+    project: ProjectId,
+    session: &str,
+) -> Result<bb_core::id::IssueId, Box<dyn std::error::Error + Send + Sync>> {
+    Ok(create_issue(
         &world.ctx(),
         CreateIssue {
-            session_token: guest.session_token.clone(),
+            session_token: session.to_owned(),
             project: project.to_string(),
-            issue_type: a_type(&world).await?,
+            issue_type: a_type(world).await?,
             title: "Nothing happens".to_owned(),
             description: None,
             status: None,
@@ -422,7 +421,17 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
     )
     .await?
     .into_value()
-    .id;
+    .id)
+}
+
+#[tokio::test]
+async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "WEB").await?;
+    // A guest sees people by their role only, and sees the issues they reported.
+    let guest = member(&world, "guest@example.test", StartingRole::Guest, project).await?;
+    let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
     give_work(&world, fixer, project);
@@ -504,24 +513,7 @@ async fn ai_04_the_mark_of_a_text_names_the_agent_only_to_a_reader_told_its_pers
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     let guest = member(&world, "guest@example.test", StartingRole::Guest, project).await?;
-    let issue_id = create_issue(
-        &world.ctx(),
-        CreateIssue {
-            session_token: guest.session_token.clone(),
-            project: project.to_string(),
-            issue_type: a_type(&world).await?,
-            title: "Nothing happens".to_owned(),
-            description: None,
-            status: None,
-            priority: None,
-            assigned_to: None,
-            estimated_time: None,
-            fields: BTreeMap::new(),
-        },
-    )
-    .await?
-    .into_value()
-    .id;
+    let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
     give_work(&world, fixer, project);
