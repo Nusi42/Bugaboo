@@ -959,6 +959,17 @@ pub const ERROR_ACCESS_TOO_MUCH: MessageKey = MessageKey::new("error.access.too-
 /// The message `error.access.would-lock-out`.
 pub const ERROR_ACCESS_WOULD_LOCK_OUT: MessageKey = MessageKey::new("error.access.would-lock-out");
 
+/// The message `error.agent-work.already-open`.
+pub const ERROR_AGENT_WORK_ALREADY_OPEN: MessageKey =
+    MessageKey::new("error.agent-work.already-open");
+
+/// The message `error.agent-work.budget-reached`.
+pub const ERROR_AGENT_WORK_BUDGET_REACHED: MessageKey =
+    MessageKey::new("error.agent-work.budget-reached");
+
+/// The message `error.agent-work.not-ready`.
+pub const ERROR_AGENT_WORK_NOT_READY: MessageKey = MessageKey::new("error.agent-work.not-ready");
+
 /// The message `error.ai.address-invalid`.
 pub const ERROR_AI_ADDRESS_INVALID: MessageKey = MessageKey::new("error.ai.address-invalid");
 
@@ -14764,6 +14775,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.access.would-lock-out",
         "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
+    ),
+    (
+        "error.agent-work.already-open",
+        "This agent already has this issue handed over.",
+    ),
+    (
+        "error.agent-work.budget-reached",
+        "The agent used all the attempts it was given on this issue.",
+    ),
+    (
+        "error.agent-work.not-ready",
+        "The work is not waiting for that.",
     ),
     (
         "error.ai.address-invalid",

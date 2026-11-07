@@ -935,6 +935,9 @@ export const messages = {
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help":
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+  "error.agent-work.already-open": "This agent already has this issue handed over.",
+  "error.agent-work.not-ready": "The work is not waiting for that.",
+  "error.agent-work.budget-reached": "The agent used all the attempts it was given on this issue.",
   "error.ai.off": "AI is off here.",
   "error.ai.unavailable": "The AI provider did not answer.",
   "error.ai.not-set-up":

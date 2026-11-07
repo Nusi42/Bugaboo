@@ -64,6 +64,14 @@ error_codes! {
     SecondStepRequired => ("auth.second-step-required", 403),
     /// An access key was used where no key may go: the owner's own sign-in data.
     AccessKeyNotAllowed => ("auth.access-key-not-allowed", 403),
+    /// The agent already has work on this issue that has not ended (one open hand-over for an
+    /// issue and an agent).
+    AgentWorkOpen => ("agent-work.already-open", 409),
+    /// The work is not in the state the request needs (an answer to a question that was answered,
+    /// a review of work that is not ready).
+    AgentWorkNotReady => ("agent-work.not-ready", 409),
+    /// The agent used all the attempts the hand-over gave it.
+    AgentWorkBudget => ("agent-work.budget-reached", 409),
     /// The request needs a signed-in person.
     NotSignedIn => ("auth.not-signed-in", 401),
     /// The person can see the thing but may not do this to it.

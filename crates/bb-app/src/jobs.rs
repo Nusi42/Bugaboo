@@ -68,6 +68,10 @@ bb_core::words! {
         /// amendment M6): queued for each start of a timer; the payload names the person and the
         /// start, and a timer that stopped or started again meanwhile leaves it nothing to do.
         TimersLongRunning => "timers.long-running",
+        /// Ending a hand-over that ran out (ADR-0029, decision 3, ADR-0017 amendment M7): queued
+        /// for each hand-over for its end; the payload names the hand-over, and one that ended
+        /// before leaves it nothing to do.
+        HandOverRunsOut => "agents.hand-over-runs-out",
     }
 }
 
@@ -90,7 +94,8 @@ impl JobKind {
             | Self::RenewIds
             | Self::MailSend
             | Self::PreviewFile
-            | Self::TimersLongRunning => false,
+            | Self::TimersLongRunning
+            | Self::HandOverRunsOut => false,
         }
     }
 
@@ -113,7 +118,8 @@ impl JobKind {
             | Self::RenewIds
             | Self::MailSend
             | Self::PreviewFile
-            | Self::TimersLongRunning => Rhythm::FromTheStart,
+            | Self::TimersLongRunning
+            | Self::HandOverRunsOut => Rhythm::FromTheStart,
         }
     }
 
@@ -355,6 +361,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     );
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::HandOverRunsOut => Box::pin(self.run_hand_over_runs_out(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a hand-over could not be ended");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             JobKind::TimersLongRunning => Box::pin(self.run_long_timer(&job.payload))
                 .await
                 .map_err(|error| {
@@ -474,7 +486,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RenewIds
             | JobKind::MailSend
             | JobKind::PreviewFile
-            | JobKind::TimersLongRunning => Err(misrouted(job, kind)),
+            | JobKind::TimersLongRunning
+            | JobKind::HandOverRunsOut => Err(misrouted(job, kind)),
         }
     }
 
@@ -544,7 +557,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             // Nobody waits for the note of a long timer: a timer that is not told runs on as
             // before.
-            Some(JobKind::TimersLongRunning) | None => Ok(()),
+            Some(JobKind::TimersLongRunning | JobKind::HandOverRunsOut) | None => Ok(()),
         };
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");

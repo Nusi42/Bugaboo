@@ -22,7 +22,9 @@ use crate::projects::{ProjectsQuery, projects};
 use crate::settings::{ChangeSetting, SettingsQuery, SettingsScope, change_setting, settings};
 use bb_core::history::HistoryTab;
 
-use super::agents::{a_team_agent, an_agent, give_work, key_of, key_request, list, refused};
+use super::agents::{
+    a_team_agent, an_agent, give_work, give_work_on, key_of, key_request, list, refused,
+};
 
 // ---- Switches, maximums, the most agents and a person who is gone ----
 
@@ -434,7 +436,7 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
     let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work(&world, fixer, project);
+    give_work_on(&world, fixer, project, issue_id);
     let version = issue(
         &world.ctx(),
         IssueQuery {

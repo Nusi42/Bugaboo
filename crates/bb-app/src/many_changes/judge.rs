@@ -120,7 +120,10 @@ const WORDED: [(ErrorCode, SkipReason); 13] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 83] = [
+const UNWORDED: [ErrorCode; 86] = [
+    ErrorCode::AgentWorkOpen,
+    ErrorCode::AgentWorkNotReady,
+    ErrorCode::AgentWorkBudget,
     ErrorCode::WrongCredentials,
     ErrorCode::ChoiceNumberTaken,
     ErrorCode::WrongSecondStepCode,

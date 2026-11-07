@@ -299,6 +299,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
             | RecordKind::Agent
+            | RecordKind::AgentWork
+            | RecordKind::HandOver
+            | RecordKind::StandingRule
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower

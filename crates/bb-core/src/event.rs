@@ -136,6 +136,12 @@ words! {
         AccessKey => "access_key",
         /// An agent (AI-30).
         Agent => "agent",
+        /// The work on one issue that was handed to an agent (AI-33).
+        AgentWork => "agent_work",
+        /// Issues handed to an agent (AI-31).
+        HandOver => "hand_over",
+        /// A saved search an agent works on (AI-32).
+        StandingRule => "standing_rule",
         /// A file added to an issue or a comment (ATT-01).
         Attachment => "attachment",
         /// One run of a change to many issues (ISS-09).

@@ -40,6 +40,9 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, WhoMayChange, WhoMayChangeQuery,
     field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
+use crate::agent_work::{
+    AgentWorkQuery, HandOver, HandOverView, IssueAgentWork, hand_over, issue_agent_work,
+};
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
     HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
@@ -763,6 +766,10 @@ use_cases! {
     add_web_address(AddWebAddress) -> Done;
     /// Takes a web address away.
     remove_web_address(RemoveWebAddress) -> Done;
+    /// Hands issues over to one of the person's agents.
+    hand_over(HandOver) -> Authorized<HandOverView>;
+    /// Shows the agent work on an issue.
+    issue_agent_work(AgentWorkQuery) -> Authorized<IssueAgentWork>;
     /// Shows the timer of the person.
     timer(TimerQuery) -> Authorized<TimerView>;
     /// Starts the timer of the person on an issue.

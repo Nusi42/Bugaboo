@@ -64,7 +64,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         place: Where,
     ) -> Result<Option<Arc<Evaluation>>, AppError> {
-        if !is_in_place(issue, place) {
+        if !is_in_place(issue, place) || !self.agent_may_see(actor, issue.id).await? {
             return Ok(None);
         }
         let held = match self
@@ -76,6 +76,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(error) => return Err(error),
         };
         Ok(seen_by(&held, issue, place).then_some(held))
+    }
+
+    /// Whether the actor may see this issue at all: a person does; an agent only the issues of its
+    /// open hand-overs and of the issues its standing rules found, however much its person may
+    /// see in the project (ADR-0029, decision 3).
+    async fn agent_may_see(&self, actor: &Actor, issue: IssueId) -> Result<bool, AppError> {
+        let Some(agent) = actor.agent() else {
+            return Ok(true);
+        };
+        let work = self
+            .store()
+            .agent_work(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(work.issues.contains(&issue))
     }
 
     /// The answer for a comment or a relation that is not there: it does the work that one whose

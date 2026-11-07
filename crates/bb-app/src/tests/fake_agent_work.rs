@@ -311,6 +311,20 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .collect())
     }
 
+    async fn works_of_hand_over_in(
+        tx: &mut Tx,
+        hand_over: HandOverId,
+    ) -> Result<Vec<IssueWork>, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .works
+            .iter()
+            .filter(|w| w.hand_over == hand_over)
+            .cloned()
+            .collect())
+    }
+
     async fn work_on_issue_in(tx: &mut Tx, issue: IssueId) -> Result<Vec<IssueWork>, FakeError> {
         let mut found: Vec<IssueWork> = tx
             .state

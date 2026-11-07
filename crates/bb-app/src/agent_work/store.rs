@@ -78,6 +78,8 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn results_of(attempt: AttemptId) -> Vec<AttemptResult> = results_of_in;
         /// The question with this ID.
         fn question(id: AgentNoteId) -> Option<Question> = question_in;
+        /// The work of a hand-over, one piece for each issue.
+        fn works_of_hand_over(hand_over: HandOverId) -> Vec<IssueWork> = works_of_hand_over_in;
         /// All the work on an issue, newest first.
         fn work_on_issue(issue: IssueId) -> Vec<IssueWork> = work_on_issue_in;
         /// The work of one agent, by ID, after `after`, at most `limit`.

@@ -103,6 +103,17 @@ impl AgentWorkRecords for AuthStorage {
         .await
     }
 
+    async fn works_of_hand_over_in(
+        transaction: &mut Transaction,
+        hand_over: HandOverId,
+    ) -> Result<Vec<IssueWork>, StoreError> {
+        let mut select = work_select();
+        select
+            .and_where(Expr::col(IssueWorkRow::HandOver).eq(hand_over.stored()))
+            .order_by(IssueWorkRow::Id, Order::Asc);
+        all(transaction, &select, read_work).await
+    }
+
     async fn work_on_issue_in(
         transaction: &mut Transaction,
         issue: IssueId,

@@ -96,6 +96,7 @@ table! {
     "reset_setting" => s::reset_setting_scenario,
     "lock_setting" => s::lock_setting_scenario,
     "create_agent" => super::agents::create_agent_scenario,
+    "hand_over" => super::agent_work::hand_over_scenario,
     "rename_agent" => super::agents::rename_agent_scenario,
     "change_agent" => super::agents::change_agent_scenario,
     "stop_all_agents" => super::agents::stop_all_agents_scenario,

@@ -116,6 +116,25 @@ pub(super) fn give_work(world: &World, agent: AgentId, project: ProjectId) {
     }
 }
 
+/// Gives the agent work on one issue of a project, as a hand-over will.
+pub(super) fn give_work_on(
+    world: &World,
+    agent: AgentId,
+    project: ProjectId,
+    issue: bb_core::id::IssueId,
+) {
+    give_work(world, agent, project);
+    let mut shared = world.store.lock();
+    if let Some((_, held)) = shared
+        .state
+        .agent_work
+        .iter_mut()
+        .find(|(id, _)| *id == agent)
+    {
+        held.issues.insert(issue);
+    }
+}
+
 pub(super) fn list(session: &str) -> ProjectsQuery {
     ProjectsQuery {
         session_token: session.to_owned(),
@@ -460,7 +479,7 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
     let issue_id = an_issue(&world, project).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work(&world, fixer, project);
+    give_work_on(&world, fixer, project, issue_id);
     let shown = issue(
         &world.ctx(),
         IssueQuery {
