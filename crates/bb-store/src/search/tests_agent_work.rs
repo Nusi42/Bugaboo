@@ -51,6 +51,29 @@ impl Made {
     }
 }
 
+/// The storage of a test, the issues of the search tests, a person and one agent of theirs.
+struct Given {
+    fixture: crate::test_support::Fixture,
+    data: Data,
+    owner: UserId,
+    fixer: AgentId,
+}
+
+async fn given(
+    db: &bb_testing::TestDatabase,
+) -> Result<Given, Box<dyn std::error::Error + Send + Sync>> {
+    let fixture = crate::test_support::fixture(db).await?;
+    let data = seed(&fixture.storage).await;
+    let owner = a_stored_person(&fixture.storage).await?;
+    let fixer = an_agent(&fixture.storage, owner, "Fixer", 1).await?;
+    Ok(Given {
+        fixture,
+        data,
+        owner,
+        fixer,
+    })
+}
+
 /// A hand-over of the agent for these issues, with its work; the powers and fields ticked.
 async fn hand_over(
     storage: &AuthStorage,
@@ -189,11 +212,13 @@ async fn close(
 async fn ai_33_closed_work_is_not_reached_and_a_hand_over_of_two_issues_keeps_the_other()
 -> TestResult {
     each_database("ai_33_closed_work", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let mut made = Made::new();
         let (_, works) = hand_over(
             storage,
@@ -252,11 +277,13 @@ async fn ai_33_closed_work_is_not_reached_and_a_hand_over_of_two_issues_keeps_th
 #[tokio::test]
 async fn ai_31_an_agent_has_one_open_work_for_an_issue_whatever_two_requests_do() -> TestResult {
     each_database("ai_31_one_open_work", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let helper = an_agent(storage, owner, "Helper", 2).await?;
         let mut made = Made::new();
         let issue = data.issues[0].id;
@@ -317,18 +344,15 @@ async fn ai_31_an_agent_has_one_open_work_for_an_issue_whatever_two_requests_do(
 async fn ai_31_the_allowance_follows_the_ticks_and_ends_with_the_hand_over_and_the_rule()
 -> TestResult {
     each_database("ai_31_allowance", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let mut made = Made::new();
-        let (a, b, c, d) = (
-            data.issues[0].id,
-            data.issues[1].id,
-            data.issues[2].id,
-            data.issues[3].id,
-        );
+        let [a, b, c, d] = [0, 1, 2, 3].map(|at| data.issues[at].id);
         hand_over(
             storage,
             &mut made,
@@ -389,18 +413,15 @@ async fn ai_31_the_allowance_follows_the_ticks_and_ends_with_the_hand_over_and_t
 #[tokio::test]
 async fn ai_33_a_search_of_an_agent_is_cut_to_its_open_work_and_its_rules() -> TestResult {
     each_database("ai_33_cut_to_work", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let mut made = Made::new();
-        let (a, b, c, d) = (
-            data.issues[0].id,
-            data.issues[1].id,
-            data.issues[2].id,
-            data.issues[3].id,
-        );
+        let [a, b, c, d] = [0, 1, 2, 3].map(|at| data.issues[at].id);
         let (_, works) = hand_over(
             storage,
             &mut made,
@@ -462,11 +483,13 @@ async fn ai_33_a_search_of_an_agent_is_cut_to_its_open_work_and_its_rules() -> T
 #[tokio::test]
 async fn ai_33_the_details_of_a_page_of_work_are_read_together_and_in_order() -> TestResult {
     each_database("ai_33_details", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let helper = an_agent(storage, owner, "Helper", 2).await?;
         let mut made = Made::new();
         let issue = data.issues[0].id;
@@ -565,11 +588,13 @@ async fn ai_33_the_details_of_a_page_of_work_are_read_together_and_in_order() ->
 #[tokio::test]
 async fn ai_33_writes_of_work_count_versions_and_end_only_what_is_open() -> TestResult {
     each_database("ai_33_versions", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let mut made = Made::new();
         let (record, works) = hand_over(
             storage,
@@ -629,11 +654,13 @@ async fn ai_33_writes_of_work_count_versions_and_end_only_what_is_open() -> Test
 async fn ai_33_agent_state_finds_every_state_until_a_review_and_agent_only_who_still_works()
 -> TestResult {
     each_database("ai_33_agent_state_forms", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let mut made = Made::new();
         let issues: Vec<IssueId> = data.issues.iter().take(4).map(|issue| issue.id).collect();
         let (_, works) = hand_over(
@@ -703,11 +730,13 @@ async fn ai_33_agent_state_finds_every_state_until_a_review_and_agent_only_who_s
 #[tokio::test]
 async fn ai_33_the_work_on_an_issue_is_cut_in_the_statement_and_to_the_agent() -> TestResult {
     each_database("ai_33_work_on_issue", async |db| {
-        let fixture = crate::test_support::fixture(db).await?;
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
         let storage = &fixture.storage;
-        let data = seed(storage).await;
-        let owner = a_stored_person(storage).await?;
-        let fixer = an_agent(storage, owner, "Fixer", 1).await?;
         let helper = an_agent(storage, owner, "Helper", 2).await?;
         let mut made = Made::new();
         let issue = data.issues[0].id;
