@@ -71,9 +71,9 @@ test("8. A time entry in the history, for the person who booked it", async ({ pa
   await aTimeEntryInTheHistoryOfItsBooker(page, server);
 });
 
-test("9. The same time entry in the history, for another reader", async ({ page, server }) => {
+test("9. The same time entry in the history, for another reader", async ({ page }) => {
   test.setTimeout(STEP_TIMEOUT_MS);
-  await aTimeEntryInTheHistoryOfAnotherReader(page, server);
+  await aTimeEntryInTheHistoryOfAnotherReader(page);
 });
 
 test("10. The permissions of working hours have their glossary names", async ({ page }) => {

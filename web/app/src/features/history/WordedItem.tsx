@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { factSeparator, Length, SentenceWithName, SentenceWithValues } from "@bugaboo/ui";
+import { factJoinerHeld, Length, SentenceWithName, SentenceWithValues } from "@bugaboo/ui";
 
 import { fileSentence } from "../../shared/file-sentence.ts";
 import { durationText, minutesText } from "../../shared/own-value-text.ts";
@@ -24,9 +24,6 @@ function changeLengths(item: Schema<"HistoryEntryItem">): readonly string[] {
   return [...lengthOf(item.change?.before), ...lengthOf(item.change?.after)];
 }
 
-/** A word joiner and a space that does not break before a separator hold it to what stands before it (a length is drawn as a box of its own), so a line never starts with one. */
-const NO_BREAK_SPACE = "⁠ ";
-
 /** No own fields beside a sentence. */
 const noFields: readonly string[] = [];
 
@@ -50,12 +47,12 @@ export function WordedItem({
             ? [timeSentence(wording, item), timeLengths(item)]
             : [changeSentence(wording, item), changeLengths(item)];
         return (
-          <>
+          <span>
             <SentenceWithValues sentence={sentence} values={lengths}>
               {(length) => <Length text={length} />}
             </SentenceWithValues>
-            {fields.map((field) => `${NO_BREAK_SPACE}${factSeparator} ${field}`)}
-          </>
+            {fields.map((field) => `${factJoinerHeld}${field}`)}
+          </span>
         );
       }}
     </WithWording>

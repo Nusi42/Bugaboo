@@ -71,25 +71,25 @@ const dateStyles = {
 } as const;
 
 /** A space that does not break the line, and a hyphen that does not (U+00A0, U+2011). */
-const NO_BREAK_SPACE = "\u00A0";
-const NO_BREAK_HYPHEN = "\u2011";
+const SPACE_OF_A_DATE = "\u00A0";
+const HYPHEN_OF_A_DATE = "\u2011";
 
 /**
  * Dates and times never wrap in the middle (UX review of M4, A4): a line breaks before a date,
  * not inside it. The spaces and the hyphens of the text become ones that hold it together.
  */
 export function unbroken(text: string): string {
-  return keepingHyphens(text.replaceAll(" ", NO_BREAK_SPACE));
+  return keepingHyphens(text.replaceAll(" ", SPACE_OF_A_DATE));
 }
 
 /** A text that may break at its spaces but never at a hyphen (*With / sub-issues*, never *With sub- / issues*). */
 export function keepingHyphens(text: string): string {
-  return text.replaceAll("-", NO_BREAK_HYPHEN);
+  return text.replaceAll("-", HYPHEN_OF_A_DATE);
 }
 
 /** The words as they are written for an e-mail or a file, where a space is a space and a hyphen a hyphen. */
 export function plainWords(text: string): string {
-  return text.replaceAll(NO_BREAK_SPACE, " ").replaceAll(NO_BREAK_HYPHEN, "-");
+  return text.replaceAll(SPACE_OF_A_DATE, " ").replaceAll(HYPHEN_OF_A_DATE, "-");
 }
 
 /** The clock of a region at a moment, as numbers: the year, the month (1 to 12), the day, and the time on a 24 hour clock. */

@@ -3363,8 +3363,8 @@ part "overlay.modal[variant=full] window.title-bar" {
     border-radius 0
 }
 
-// The same bar as every page of a phone: Back in the color of a quiet button, the title at its side, one line (M5 exit, O13).
-// A long title (the history of a day with its weekday and date) takes up to two lines, so the date is not cut off.
+// The title in the bar of a screen: next to Back, at most two lines, so the date of a long title (the history of a
+// day with its weekday and date) is not cut off.
 part "overlay.modal[variant=full] window.title" {
     padding 0
     line-height "$lh-tight"

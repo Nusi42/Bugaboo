@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-import { factSeparator } from "./facts.ts";
+import { factMark } from "./facts.ts";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 
@@ -23,7 +23,7 @@ export function Facts({ items }: { readonly items: readonly Fact[] }) {
         <Fragment key={item.key}>
           {at === 0 ? null : " "}
           <span {...partOf(part.factLineItem)}>
-            {at === 0 ? null : `${factSeparator} `}
+            {at === 0 ? null : factMark}
             {item.node}
           </span>
         </Fragment>

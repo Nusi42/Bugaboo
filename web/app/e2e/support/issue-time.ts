@@ -1,6 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { factSeparator } from "@bugaboo/ui";
+import { factJoiner } from "@bugaboo/ui";
 import type { Page } from "@playwright/test";
 
 import { isRecord } from "../../src/shared/is-record.ts";
@@ -57,7 +57,7 @@ export function totalsText(estimated: string, left: string, spent: string): stri
     t("issues.total-estimated", { length: estimated }),
     t("issues.total-left", { length: left }),
     t("issues.total-spent", { length: spent }),
-  ].join(` ${factSeparator} `);
+  ].join(factJoiner);
 }
 
 /** An item of the history as the server sends it. */

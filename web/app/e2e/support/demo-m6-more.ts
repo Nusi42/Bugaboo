@@ -3,7 +3,8 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signInThroughApi } from "./accounts.ts";
-import { ana, days, good } from "./demo-m6-common.ts";
+import { bookedByAna, bookedIssue } from "./demo-m6-booking.ts";
+import { ana, good } from "./demo-m6-common.ts";
 import { timerOn } from "./demo-m6.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
 import { sampleAdministrator, sampleNamed } from "./sample.ts";
@@ -63,23 +64,6 @@ async function historyAs(
   await good(page, step);
 }
 
-/** Books 45 minutes on the issue as Ana, so its history has a time entry. */
-async function bookedByAna(server: Instance): Promise<string> {
-  const key = await firstIssue(server);
-  const session = await signInThroughApi(server, ana());
-  dataOf(
-    await session.client.POST("/api/v1/me/time-entries", {
-      body: {
-        issue: key,
-        date: days().today,
-        minutes: 45,
-      },
-    }),
-  );
-  await session.dispose();
-  return key;
-}
-
 /** Step 8: a time entry in the history of an issue, as the person who booked it. */
 export async function aTimeEntryInTheHistoryOfItsBooker(
   page: Page,
@@ -89,16 +73,8 @@ export async function aTimeEntryInTheHistoryOfItsBooker(
 }
 
 /** Step 9: the same time entry in the history, as another reader. */
-export async function aTimeEntryInTheHistoryOfAnotherReader(
-  page: Page,
-  server: Instance,
-): Promise<void> {
-  await historyAs(
-    page,
-    await firstIssue(server),
-    sampleNamed("Ben Hale"),
-    "08-b-history-as-another-reader",
-  );
+export async function aTimeEntryInTheHistoryOfAnotherReader(page: Page): Promise<void> {
+  await historyAs(page, bookedIssue, sampleNamed("Ben Hale"), "08-b-history-as-another-reader");
 }
 
 /** Step 10: the names of the permissions of working hours on the page of the role *HR*. */
