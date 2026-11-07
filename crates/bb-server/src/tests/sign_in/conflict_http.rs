@@ -9,6 +9,7 @@ use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
+mod agent_work;
 mod agents;
 mod issues;
 mod labels;
@@ -23,7 +24,11 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 46] = [
+const VERSIONED: [&str; 50] = [
+    "answerAgentQuestion",
+    "approveAgentPlan",
+    "reviewAgentWork",
+    "changeStandingRule",
     "changeMyWorkDay",
     "changeWorkDayOfPerson",
     "startBreak",
@@ -149,6 +154,9 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
             prepare_records(id, ada).await
         }
         "changeAgent" | "handAgent" => agents::prepare(id, ada).await,
+        "answerAgentQuestion" | "approveAgentPlan" | "reviewAgentWork" | "changeStandingRule" => {
+            agent_work::prepare(id, site, ada).await
+        }
         "setFieldNeverSentToAi" | "setProjectNeverSentToAi" => prepare_marks(id, ada).await,
         "stopTimer" | "switchTimer" | "changeTimerStart" | "throwAwayTimer" | "changeTimeEntry"
         | "deleteTimeEntry" => time::entries(id, site, ada).await,

@@ -20,8 +20,9 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
-    AgentId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
-    RelationKindId, RoleId, SavedSearchId, TagId, TimeEntryId, UserId, WorkDayId, WorkflowId,
+    AgentId, AgentWorkId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId,
+    ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId, TimeEntryId, UserId,
+    WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -295,6 +296,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(failed)?
                 .filter(|agent| agent.person == stale.viewer)
                 .map(|agent| agent.version),
+            RecordKind::AgentWork | RecordKind::StandingRule => {
+                self.agent_record_version(stale, kind, bytes).await?
+            }
             // Only a person who may change the day was told it is stale (`working_hours`).
             RecordKind::WorkDay => found(WorkDayId::from_bytes(bytes).ok(), |id| {
                 store.work_day_by_id(id)
@@ -305,6 +309,41 @@ impl<S: AuthStore> Ctx<'_, S> {
             _ => return self.version_by_kind(stale).await,
         };
         Ok(version)
+    }
+
+    /// The version of work on an issue, told to the people who answer for it, or of a standing
+    /// rule, told to its person.
+    async fn agent_record_version(
+        &self,
+        stale: &Stale,
+        kind: RecordKind,
+        bytes: [u8; 16],
+    ) -> Result<Option<i64>, AppError> {
+        let store = self.store();
+        let failed = |error| internal::<S>(&error);
+        Ok(if kind == RecordKind::AgentWork {
+            let id = AgentWorkId::from_bytes(bytes).ok();
+            match found(id, |id| store.issue_work(id)).await.map_err(failed)? {
+                Some(work)
+                    if store
+                        .people_of_work(work.id)
+                        .await
+                        .map_err(failed)?
+                        .contains(&stale.viewer) =>
+                {
+                    Some(work.version)
+                }
+                _ => None,
+            }
+        } else {
+            found(StandingRuleId::from_bytes(bytes).ok(), |id| {
+                store.standing_rule(id)
+            })
+            .await
+            .map_err(failed)?
+            .filter(|rule| rule.person == stale.viewer)
+            .map(|rule| rule.version)
+        })
     }
 
     /// The version of a field, a kind of relation, a layout, a group of labels, a label or a tag.

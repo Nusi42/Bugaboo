@@ -78,6 +78,12 @@ mod tests {
         let made_later = [
             NotificationKind::LongTimer.code(),
             NotificationKind::WorkDayChanged.code(),
+            NotificationKind::AgentAsks.code(),
+            NotificationKind::PlanWaits.code(),
+            NotificationKind::ReadyForReview.code(),
+            NotificationKind::AgentGaveUp.code(),
+            NotificationKind::RuleRunsOutSoon.code(),
+            NotificationKind::AgentStopped.code(),
         ];
         let renamed: Vec<&str> = hyphenated::<NotificationKind>()
             .into_iter()
