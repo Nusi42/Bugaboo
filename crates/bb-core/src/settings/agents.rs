@@ -56,4 +56,41 @@ settings! {
         lockable: false,
         bounds: (1, 100),
     }
+
+    /// Whether an attempt of an agent is accepted by itself when its checks pass (ADR-0029,
+    /// decision 6, M7-Q8): off at the start; a project can switch it on, and a hand-over can turn it
+    /// off again.
+    AGENTS_ACCEPT_BY_ITSELF: Bool = {
+        key: "agents.accept-by-itself",
+        name: message::SETTING_AGENTS_ACCEPT_BY_ITSELF_NAME,
+        default: false,
+        levels: [Organization, Project],
+        changed_by: Administrators,
+        help: message::SETTING_AGENTS_ACCEPT_BY_ITSELF_HELP,
+        lockable: false,
+    }
+
+    /// After how many days a hand-over ends when the person set no end (ADR-0029, decision 3).
+    AGENTS_HAND_OVER_DAYS: Integer = {
+        key: "agents.hand-over-days",
+        name: message::SETTING_AGENTS_HAND_OVER_DAYS_NAME,
+        default: 14,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_AGENTS_HAND_OVER_DAYS_HELP,
+        lockable: false,
+        bounds: (1, 90),
+    }
+
+    /// After how many days a standing rule ends when the person set no end, at most 90.
+    AGENTS_RULE_DAYS: Integer = {
+        key: "agents.rule-days",
+        name: message::SETTING_AGENTS_RULE_DAYS_NAME,
+        default: 30,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_AGENTS_RULE_DAYS_HELP,
+        lockable: false,
+        bounds: (1, 90),
+    }
 }

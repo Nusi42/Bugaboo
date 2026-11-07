@@ -9,6 +9,7 @@ use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId,
 };
+use bb_core::workflow::StatusKey;
 use bb_policy::PersonRef;
 use jiff::Timestamp;
 
@@ -248,8 +249,19 @@ pub struct ReviewWork {
     pub answer: ReviewAnswer,
     /// The note; it joins the brief with *Send back*.
     pub note: Option<String>,
+    /// With *Accept*: the status the issue moves to, as the workflow's own change (the one the
+    /// workflow proposes is offered first on screen).
+    pub status: Option<StatusKey>,
     /// The version of the work the person saw.
     pub version: i64,
+}
+
+/// Mark that a person looked at work that was accepted by itself.
+pub struct LookAtWork {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The work.
+    pub work: AgentWorkId,
 }
 
 /// A standing rule to make.

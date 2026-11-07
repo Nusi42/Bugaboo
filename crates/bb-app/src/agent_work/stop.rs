@@ -38,6 +38,24 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
     Ok(())
 }
 
+/// Closes the work with a review. The hand-over ends with its last piece of open work.
+pub(crate) async fn close_work_of<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    hand_over: &HandOver,
+    works: &[IssueWork],
+    work: bb_core::id::AgentWorkId,
+    accepted_by_itself: bool,
+) -> Result<(), S::Error> {
+    S::close_work(transaction, work, accepted_by_itself).await?;
+    let others_open = works
+        .iter()
+        .any(|other| other.id != work && !other.closed && other.state.is_open());
+    if !others_open && !S::end_hand_over(transaction, hand_over.id, hand_over.version).await? {
+        return Err(S::aborted());
+    }
+    Ok(())
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The work of the job of a hand-over that ran out: ends the hand-over and stops its open
     /// work. A hand-over that ended before, or is not there, leaves nothing to do.

@@ -32,6 +32,7 @@ impl FakeAgentWork {
     /// Whether the work is open: not an end, and its hand-over still gives work.
     pub(crate) fn is_open(&self, work: &IssueWork) -> bool {
         work.state.is_open()
+            && !work.closed
             && self
                 .hand_overs
                 .iter()
@@ -408,6 +409,18 @@ impl AgentWorkRecords for super::fake::FakeStore {
                 w.version += 1;
             })
             .is_some())
+    }
+
+    async fn close_work(
+        tx: &mut Tx,
+        id: AgentWorkId,
+        accepted_by_itself: bool,
+    ) -> Result<(), FakeError> {
+        if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
+            w.closed = true;
+            w.accepted_by_itself = accepted_by_itself;
+        }
+        Ok(())
     }
 
     async fn mark_work_seen(tx: &mut Tx, id: AgentWorkId) -> Result<(), FakeError> {

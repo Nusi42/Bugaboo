@@ -169,6 +169,10 @@ pub struct IssueWork {
     /// Why the agent gave up, when it did.
     #[personal(category = "content", basis = "contract")]
     pub gave_up: Option<String>,
+    /// Whether the work ended with a review: accepted, or thrown away. A hand-over of several
+    /// issues goes on for the others.
+    #[not_personal]
+    pub closed: bool,
     /// Whether the work was accepted by itself and nobody has looked at it yet.
     #[not_personal]
     pub accepted_by_itself: bool,

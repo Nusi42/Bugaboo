@@ -115,6 +115,7 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(id_column(IssueWorkRow::Person))
                 .col(text(IssueWorkRow::State))
                 .col(maybe_text(IssueWorkRow::GaveUp))
+                .col(flag(IssueWorkRow::Closed))
                 .col(flag(IssueWorkRow::AcceptedByItself))
                 .col(number(IssueWorkRow::MadeAt))
                 .col(number(IssueWorkRow::Version))

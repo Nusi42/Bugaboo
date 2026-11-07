@@ -41,7 +41,10 @@ use crate::access::{
     field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
 use crate::agent_work::{
-    AgentWorkQuery, HandOver, HandOverView, IssueAgentWork, hand_over, issue_agent_work,
+    AgentWorkQuery, AnswerQuestion, ApprovePlan, AskQuestion, AttachResult, EndAttempt, HandOver,
+    HandOverView, IssueAgentWork, LookAtWork, ReportAttempt, ReviewWork, WorkView, answer_question,
+    approve_plan, ask_question, attach_result, end_attempt, hand_over, issue_agent_work,
+    look_at_work, report_attempt, review_work,
 };
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
@@ -770,6 +773,22 @@ use_cases! {
     hand_over(HandOver) -> Authorized<HandOverView>;
     /// Shows the agent work on an issue.
     issue_agent_work(AgentWorkQuery) -> Authorized<IssueAgentWork>;
+    /// An agent reports its attempt: the plan, the time and the cost it reports.
+    report_attempt(ReportAttempt) -> Authorized<WorkView>;
+    /// An agent asks a question and waits for the answer.
+    ask_question(AskQuestion) -> Authorized<WorkView>;
+    /// An agent attaches a link or a check to its attempt.
+    attach_result(AttachResult) -> Authorized<WorkView>;
+    /// An agent says its attempt is ready, or gives up.
+    end_attempt(EndAttempt) -> Authorized<WorkView>;
+    /// Answers the question of an agent.
+    answer_question(AnswerQuestion) -> Authorized<WorkView>;
+    /// Approves the plan of an agent, or answers it with a note.
+    approve_plan(ApprovePlan) -> Authorized<WorkView>;
+    /// Accepts the result of an agent or sends it back.
+    review_work(ReviewWork) -> Authorized<WorkView>;
+    /// Marks work that was accepted by itself as looked at.
+    look_at_work(LookAtWork) -> Authorized<WorkView>;
     /// Shows the timer of the person.
     timer(TimerQuery) -> Authorized<TimerView>;
     /// Starts the timer of the person on an issue.

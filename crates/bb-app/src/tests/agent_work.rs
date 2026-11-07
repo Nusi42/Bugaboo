@@ -243,22 +243,19 @@ async fn ai_33_open_work_becomes_stopped_when_the_person_loses_access() -> Outco
     Ok(())
 }
 
-// ---- Scenarios of the table of events: each says how many events its call appended ----
-
-use super::scenarios::{Added, measured, text};
-
-pub(crate) async fn hand_over_scenario(world: &World) -> Added {
-    let project = a_project(world, "WEB").await?;
-    let agent = an_agent(world, &token(world), "Fixer")
-        .await
-        .map_err(text)?;
-    let issue = an_issue(world, project).await?;
-    measured(
-        &world.store,
-        hand_over(
-            &world.ctx(),
-            plain_hand_over(&token(world), agent, &[issue]),
-        ),
+#[tokio::test]
+async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    crate::agents::stop_all_agents(
+        &world.ctx(),
+        crate::agents::StopAllAgents {
+            session_token: given.team.session_token.clone(),
+        },
     )
-    .await
+    .await?;
+    let stored = world.store.lock().state.work.clone();
+    assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
+    assert_eq!(stored.hand_overs[0].state, GrantState::Ended);
+    Ok(())
 }

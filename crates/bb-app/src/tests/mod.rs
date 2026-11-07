@@ -3,6 +3,8 @@
 //! server on it; the files below are the tests.
 
 mod agent_work;
+mod agent_work_review;
+mod agent_work_scenarios;
 mod agents;
 mod agents_more;
 mod ai_setup;

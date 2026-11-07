@@ -48,6 +48,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?
             .is_empty()
         {
+            // The person has lost the right to agents: the work they gave stops (AI-33).
+            self.stop_work_of_agent(found.id).await?;
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
         // Agents off for the organization refuse every agent; off for a project, they work nowhere

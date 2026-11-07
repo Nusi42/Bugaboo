@@ -107,8 +107,12 @@ pub async fn hand_over<S: AuthStore>(
     }
     let note = note_of(&input.note)?;
     let now = ctx.now();
+    let days = match input.days {
+        Some(days) => days,
+        None => ctx.hand_over_days().await?,
+    };
     let ends_at =
-        hand_over_end(now, input.days).map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
+        hand_over_end(now, Some(days)).map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
     let may_create = ctx.projects_where(person, Permission::CreateAgents).await?;
     let off = ctx.projects_with_agents_off(person).await?;
     let id = HandOverId::generate(&mut ctx.ids());
@@ -134,6 +138,7 @@ pub async fn hand_over<S: AuthStore>(
             person,
             state: AgentWorkState::WaitingForTheAgent,
             gave_up: None,
+            closed: false,
             accepted_by_itself: false,
             made_at: now,
             version: 1,

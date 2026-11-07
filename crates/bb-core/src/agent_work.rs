@@ -8,14 +8,35 @@
 
 use jiff::{SignedDuration, Timestamp};
 
-/// A hand-over ends after this many days unless the person set another end (ADR-0029, decision 3).
-pub const DEFAULT_HAND_OVER_DAYS: i64 = 14;
-/// The longest a hand-over can last, so no work stays open for good.
-pub const MOST_HAND_OVER_DAYS: i64 = 90;
-/// A standing rule runs out after this many days unless set otherwise.
-pub const DEFAULT_RULE_DAYS: i64 = 30;
-/// The longest a standing rule can last, however often it is set or renewed.
-pub const MOST_RULE_DAYS: i64 = 90;
+use crate::settings::{AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, DefaultValue, SettingDefinition};
+
+/// The default of a whole-number setting, or 0 for a setting that is none.
+const fn default_days(definition: &SettingDefinition) -> i64 {
+    match definition.default() {
+        DefaultValue::Integer(days) => days,
+        _ => 0,
+    }
+}
+
+/// The largest value of a bounded whole-number setting, or 0 for one that is not.
+const fn most_days(definition: &SettingDefinition) -> i64 {
+    match definition.bounds() {
+        Some((_, most)) => most,
+        None => 0,
+    }
+}
+
+/// A hand-over ends after this many days unless the person set another end (ADR-0029, decision
+/// 3); the number is the default of the setting `agents.hand-over-days`, written there once.
+pub const DEFAULT_HAND_OVER_DAYS: i64 = default_days(AGENTS_HAND_OVER_DAYS.definition());
+/// The longest a hand-over can last, so no work stays open for good (the bound of the setting).
+pub const MOST_HAND_OVER_DAYS: i64 = most_days(AGENTS_HAND_OVER_DAYS.definition());
+/// A standing rule runs out after this many days unless set otherwise (the default of the setting
+/// `agents.rule-days`).
+pub const DEFAULT_RULE_DAYS: i64 = default_days(AGENTS_RULE_DAYS.definition());
+/// The longest a standing rule can last, however often it is set or renewed (the bound of the
+/// setting).
+pub const MOST_RULE_DAYS: i64 = most_days(AGENTS_RULE_DAYS.definition());
 /// The notification *A standing rule runs out soon* comes this many days before the end.
 pub const RULE_WARNING_DAYS: i64 = 3;
 /// The most issues one hand-over names.

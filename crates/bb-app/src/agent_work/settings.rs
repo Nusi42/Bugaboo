@@ -1,0 +1,51 @@
+//! The settings of agent work, read where the use cases need them (ADR-0018, amendment M7).
+
+use bb_core::id::ProjectId;
+use bb_core::settings::{
+    AGENTS_ACCEPT_BY_ITSELF, AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, SettingValue,
+};
+
+use crate::auth::{AppError, AuthStore, Ctx, internal};
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether the project accepts the result of an agent by itself when its checks pass: the
+    /// nearest value in the chain of the project, else the organization's, which is off at the
+    /// start (M7-Q8).
+    pub(crate) async fn project_accepts_by_itself(
+        &self,
+        project: ProjectId,
+    ) -> Result<bool, AppError> {
+        let own = self
+            .store()
+            .project_values(AGENTS_ACCEPT_BY_ITSELF.definition())
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        for each in self.chain_of(project).await?.into_iter().rev() {
+            if let Some(SettingValue::Bool(on)) = own
+                .iter()
+                .find(|(found, _)| *found == each)
+                .map(|(_, value)| value)
+            {
+                return Ok(*on);
+            }
+        }
+        let layers = self.setting_layers_of(None).await?;
+        Ok(layers.get(&AGENTS_ACCEPT_BY_ITSELF).unwrap_or(false))
+    }
+
+    /// After how many days a hand-over ends when its maker set no end.
+    pub(crate) async fn hand_over_days(&self) -> Result<i64, AppError> {
+        let layers = self.setting_layers_of(None).await?;
+        Ok(layers
+            .get(&AGENTS_HAND_OVER_DAYS)
+            .unwrap_or(bb_core::agent_work::DEFAULT_HAND_OVER_DAYS))
+    }
+
+    /// After how many days a standing rule ends when its maker set no end.
+    pub(crate) async fn rule_days(&self) -> Result<i64, AppError> {
+        let layers = self.setting_layers_of(None).await?;
+        Ok(layers
+            .get(&AGENTS_RULE_DAYS)
+            .unwrap_or(bb_core::agent_work::DEFAULT_RULE_DAYS))
+    }
+}

@@ -216,6 +216,7 @@ impl AgentWorkRecords for AuthStorage {
                 IssueWorkRow::Person,
                 IssueWorkRow::State,
                 IssueWorkRow::GaveUp,
+                IssueWorkRow::Closed,
                 IssueWorkRow::AcceptedByItself,
                 IssueWorkRow::MadeAt,
                 IssueWorkRow::Version,
@@ -228,6 +229,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(work.person.stored()),
                 Expr::val(work.state.code()),
                 Expr::val(work.gave_up.clone()),
+                Expr::val(work.closed),
                 Expr::val(work.accepted_by_itself),
                 Expr::val(to_micros(work.made_at)),
                 Expr::val(work.version),
@@ -261,6 +263,21 @@ impl AgentWorkRecords for AuthStorage {
             },
         )
         .await
+    }
+
+    async fn close_work(
+        transaction: &mut Transaction,
+        id: AgentWorkId,
+        accepted_by_itself: bool,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(IssueWorkRow::Table)
+            .value(IssueWorkRow::Closed, true)
+            .value(IssueWorkRow::AcceptedByItself, accepted_by_itself)
+            .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
+        transaction.execute(&update).await?;
+        Ok(())
     }
 
     async fn mark_work_seen(

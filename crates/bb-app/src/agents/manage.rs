@@ -409,11 +409,15 @@ pub async fn change_agent<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::set_agent_state(transaction, id, to, version).await? {
-                    Ok(())
-                } else {
-                    Err(S::aborted())
+                if !S::set_agent_state(transaction, id, to, version).await? {
+                    return Err(S::aborted());
                 }
+                if to == AgentState::Stopped {
+                    // The work it was given stops with it (ADR-0029, decision 2).
+                    S::stop_work_of_agent(transaction, id).await?;
+                    S::end_grants_of_agent(transaction, id).await?;
+                }
+                Ok(())
             })
         })
         .await
@@ -464,7 +468,13 @@ pub async fn stop_all_agents<S: AuthStore>(
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::stop_agents_of(transaction, person).await.map(drop) })
+            Box::pin(async move {
+                for agent in S::stop_agents_of(transaction, person).await? {
+                    S::stop_work_of_agent(transaction, agent).await?;
+                    S::end_grants_of_agent(transaction, agent).await?;
+                }
+                Ok(())
+            })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
@@ -575,6 +585,9 @@ pub async fn accept_agent<S: AuthStore>(
                     return Err(S::refused(Refusal::TooMuch));
                 }
                 S::delete_keys_of_agent(transaction, id).await?;
+                // The work was handed over by the person who had the agent; it stops.
+                S::stop_work_of_agent(transaction, id).await?;
+                S::end_grants_of_agent(transaction, id).await?;
                 if S::hand_agent_to(transaction, id, person, version).await? {
                     Ok(())
                 } else {
