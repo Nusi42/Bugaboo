@@ -23,6 +23,7 @@ use super::types::{
     RestoreAttachment,
 };
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::projects::Why;
 
@@ -216,6 +217,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             .into());
         }
+        self.ensure_agent_may_member(&actor, issue.id, issue_member::ATTACHMENTS)
+            .await?;
         let (before, after) = if into_trash {
             (None, Some(json!(self.now().to_string())))
         } else {

@@ -12,7 +12,7 @@ use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
 use super::members::member;
-use super::stop::close_work_of;
+use super::stop::{Closing, close_work_of};
 use super::types::{AnswerQuestion, ApprovePlan, LookAtWork, ReviewWork, WorkView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
@@ -242,14 +242,20 @@ pub async fn look_at_work<S: AuthStore>(
     let acting = ctx
         .work_to_answer(&input.session_token, input.work, None)
         .await?;
-    let event = ctx.work_event(acting.actor.person.id, &acting.work, acting.work.state)?;
-    let id = acting.work.id;
+    let event = ctx.work_event_unchanged(acting.actor.person.id, &acting.work)?;
+    let (id, version) = (acting.work.id, acting.work.version);
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::mark_work_seen(transaction, id).await })
+            Box::pin(async move {
+                if S::mark_work_seen(transaction, id, version).await? {
+                    Ok(())
+                } else {
+                    Err(S::aborted())
+                }
+            })
         })
         .await
-        .map_err(|error| internal::<S>(&error))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
     ctx.after_review(&acting).await
 }
 
@@ -283,13 +289,21 @@ pub async fn review_work<S: AuthStore>(
         ReviewAnswer::SendBack => return Err(ErrorCode::InvalidRequest.into()),
         ReviewAnswer::ThrowAway => (AgentWorkState::Stopped, true),
     };
-    if input.verdict == ReviewAnswer::ThrowAway {
-        ctx.throw_away_attempts(&input.session_token, &acting)
-            .await?;
-    }
-    if input.verdict == ReviewAnswer::Accept {
-        ctx.move_status(&input.session_token, &acting, input.status)
-            .await?;
+    // What changes the issue (undoing the attempts, moving the status) is done by the one request
+    // that claimed the work on the version the person looked at; a second review at the same
+    // moment is told the work changed.
+    let moves_status = input.verdict == ReviewAnswer::Accept && input.status.is_some();
+    let mut version = acting.work.version;
+    if input.verdict == ReviewAnswer::ThrowAway || moves_status {
+        ctx.claim_for_review(&acting).await?;
+        version += 1;
+        if input.verdict == ReviewAnswer::ThrowAway {
+            ctx.throw_away_attempts(&input.session_token, &acting)
+                .await?;
+        } else {
+            ctx.move_status(&input.session_token, &acting, input.status)
+                .await?;
+        }
     }
     let review = Review {
         id: AgentNoteId::generate(&mut ctx.ids()),
@@ -319,7 +333,7 @@ pub async fn review_work<S: AuthStore>(
             set_to(member::AGENT, json!(acting.work.agent.to_string())),
             set_to(member::REVIEW, json!(review.answer.code())),
             set_to(member::WORK_STATE, json!(next.code())),
-            bb_core::version::counted_up(acting.work.version),
+            bb_core::version::counted_up(version),
         ],
     )?;
     let work = acting.work.clone();
@@ -327,13 +341,17 @@ pub async fn review_work<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::insert_review(transaction, &review).await?;
-                if !S::set_work_state(transaction, work.id, next, None, false, work.version).await?
-                {
+                if !S::set_work_state(transaction, work.id, next, None, false, version).await? {
                     return Err(S::aborted());
                 }
                 if ends {
-                    close_work_of::<S>(transaction, &hand_over, &works, work.id, false, false)
-                        .await?;
+                    let closing = Closing {
+                        work: work.id,
+                        version: version + 1,
+                        accepted_by_itself: false,
+                        status_pending: false,
+                    };
+                    close_work_of::<S>(transaction, &hand_over, &works, closing).await?;
                 }
                 Ok(())
             })
@@ -374,15 +392,48 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         for run in attempts.iter().rev().filter_map(|attempt| attempt.run) {
             let mut version = runs.preview_undo(run).await?.version;
-            // Something may change between the preview and the undo: the newer preview is used once.
-            for _ in 0..2 {
+            // Something may change between the preview and the undo: the newer preview is used,
+            // twice at most. A run that is still not undone then stops the review: the work is
+            // never marked *Stopped* with changes left.
+            let mut undone = false;
+            for _ in 0..3 {
                 match runs.undo_run(run, &version, &by, self.now()).await? {
-                    UndoOutcome::Undone(_) => break,
+                    UndoOutcome::Undone(_) => {
+                        undone = true;
+                        break;
+                    }
                     UndoOutcome::Changed(newer) => version = newer.version,
                 }
             }
+            if !undone {
+                return Err(ErrorCode::VersionChanged.into());
+            }
         }
         Ok(())
+    }
+
+    /// Claims the work for one review, counting its version up on the version the person looked
+    /// at; of two reviews at the same moment one is told the work changed.
+    async fn claim_for_review(&self, acting: &Acting) -> Result<(), AppError> {
+        let event = self.work_event_unchanged(acting.actor.person.id, &acting.work)?;
+        let work = acting.work.clone();
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    let claimed = S::set_work_state(
+                        transaction,
+                        work.id,
+                        work.state,
+                        work.gave_up.as_deref(),
+                        work.accepted_by_itself,
+                        work.version,
+                    )
+                    .await?;
+                    if claimed { Ok(()) } else { Err(S::aborted()) }
+                })
+            })
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))
     }
 
     /// Moves the status of the issue to the one the reviewer picked, as the reviewer, through the
@@ -404,19 +455,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         change_issue(
             self,
-            ChangeIssue {
-                session_token: token.to_owned(),
-                issue: issue.id.to_string(),
-                version: issue.version,
-                issue_type: None,
-                title: None,
-                status: Some(status),
-                priority: None,
-                estimated_time: None,
-                time_left: None,
-                assigned_to: None,
-                fields: std::collections::BTreeMap::default(),
-            },
+            ChangeIssue::status(token, issue.id.to_string(), issue.version, status),
         )
         .await
         .map(|_| ())

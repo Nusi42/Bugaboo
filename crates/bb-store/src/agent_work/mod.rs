@@ -26,14 +26,15 @@ use crate::schema::{
     ReviewRow, RuleMatchRow, StandingRuleRow,
 };
 
-/// Keeps the work that is open: its state is not an end, and its hand-over still gives work (an
-/// accepted hand-over ended, and its work with it).
+/// Keeps the work that is open: its state is not an end, no review closed it, and its hand-over
+/// still gives work (an accepted hand-over ended, and its work with it).
 pub(super) fn only_open_work(select: &mut SelectStatement) {
     let mut open = Query::select();
     open.column(HandOverRow::Id)
         .from(HandOverRow::Table)
         .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
     select
+        .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
         .and_where(
             Expr::col((IssueWorkRow::Table, IssueWorkRow::State)).is_not_in([
                 AgentWorkState::Stopped.code(),
@@ -41,6 +42,57 @@ pub(super) fn only_open_work(select: &mut SelectStatement) {
             ]),
         )
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open));
+}
+
+/// The open work of an agent at `now`, joined to its hand-over: the one definition of the work an
+/// agent reaches, for what it may read and change and for what its searches find.
+pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .from(IssueWorkRow::Table)
+        .inner_join(
+            HandOverRow::Table,
+            Expr::col((HandOverRow::Table, HandOverRow::Id))
+                .equals((IssueWorkRow::Table, IssueWorkRow::HandOver)),
+        )
+        .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()))
+        .and_where(Expr::col((HandOverRow::Table, HandOverRow::EndsAt)).gt(to_micros(now)));
+    only_open_work(&mut select);
+    select
+}
+
+/// The standing rules of an agent that work at `now`.
+pub(super) fn open_rules_of_agent(agent: AgentId, now: Timestamp) -> SelectStatement {
+    let mut rules = rule_select();
+    rules
+        .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
+        .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
+        .and_where(Expr::col(StandingRuleRow::EndsAt).gt(to_micros(now)));
+    rules
+}
+
+/// The issues an agent reaches at `now`: those of its open work and those its open rules found.
+pub(crate) fn issues_of_agent(agent: AgentId, now: Timestamp) -> sea_query::Cond {
+    let mut work = open_work_of_agent(agent, now);
+    work.column((IssueWorkRow::Table, IssueWorkRow::Issue));
+    let mut found = Query::select();
+    found
+        .column((RuleMatchRow::Table, RuleMatchRow::Issue))
+        .from(RuleMatchRow::Table)
+        .inner_join(
+            StandingRuleRow::Table,
+            Expr::col((StandingRuleRow::Table, StandingRuleRow::Id))
+                .equals((RuleMatchRow::Table, RuleMatchRow::Rule)),
+        )
+        .and_where(Expr::col((StandingRuleRow::Table, StandingRuleRow::Agent)).eq(agent.stored()))
+        .and_where(
+            Expr::col((StandingRuleRow::Table, StandingRuleRow::State))
+                .eq(GivingState::Open.code()),
+        )
+        .and_where(Expr::col((StandingRuleRow::Table, StandingRuleRow::EndsAt)).gt(to_micros(now)));
+    sea_query::Cond::any()
+        .add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(work))
+        .add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found))
 }
 
 pub(super) fn word<T: bb_core::words::Word>(
@@ -324,32 +376,28 @@ pub(super) fn after<I: StoredId>(
 impl AgentWorkStore for AuthStorage {
     /// The issues of the open work of the agent, and of the issues its open rules found, and the
     /// projects of both and of the rules.
-    async fn agent_work(&self, agent: AgentId) -> Result<AgentWork, StoreError> {
-        self.read_snapshot_work(agent).await
+    async fn agent_work(&self, agent: AgentId, now: Timestamp) -> Result<AgentWork, StoreError> {
+        self.read_snapshot_work(agent, now).await
     }
 }
 
 impl AuthStorage {
-    async fn read_snapshot_work(&self, agent: AgentId) -> Result<AgentWork, StoreError> {
+    async fn read_snapshot_work(
+        &self,
+        agent: AgentId,
+        now: Timestamp,
+    ) -> Result<AgentWork, StoreError> {
         let mut work = AgentWork::default();
-        let mut open = Query::select();
+        let mut open = open_work_of_agent(agent, now);
         open.column((IssueRow::Table, IssueRow::Id))
             .column((IssueRow::Table, IssueRow::Project))
             .column((HandOverRow::Table, HandOverRow::Powers))
             .column((HandOverRow::Table, HandOverRow::Fields))
-            .from(IssueWorkRow::Table)
             .inner_join(
                 IssueRow::Table,
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueWorkRow::Table, IssueWorkRow::Issue)),
-            )
-            .inner_join(
-                HandOverRow::Table,
-                Expr::col((HandOverRow::Table, HandOverRow::Id))
-                    .equals((IssueWorkRow::Table, IssueWorkRow::HandOver)),
-            )
-            .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()));
-        only_open_work(&mut open);
+            );
         for row in self.database().fetch_all(&open).await? {
             let issue = row.id::<IssueId>(IssueRow::Id)?;
             work.issues.insert(issue);
@@ -364,10 +412,8 @@ impl AuthStorage {
                 .or_default()
                 .add(Allowance::of_hand_over(&powers, &fields));
         }
-        let mut rules = rule_select();
-        rules
-            .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
-            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()));
+        // The rules that work and the issues they found, in two reads whatever their number.
+        let rules = open_rules_of_agent(agent, now);
         let rules: Vec<StandingRule> = self
             .database()
             .fetch_all(&rules)
@@ -378,19 +424,34 @@ impl AuthStorage {
         for rule in &rules {
             work.projects.insert(rule.project);
             work.creates_in.extend(rule.creates_in);
-            let mut found = Query::select();
-            found
-                .column(RuleMatchRow::Issue)
-                .from(RuleMatchRow::Table)
-                .and_where(Expr::col(RuleMatchRow::Rule).eq(rule.id.stored()));
-            for row in self.database().fetch_all(&found).await? {
-                let issue = row.id::<IssueId>(RuleMatchRow::Issue)?;
-                work.issues.insert(issue);
-                work.allowances
-                    .entry(issue)
-                    .or_default()
-                    .add(Allowance::of_rule(&rule.fields));
-            }
+        }
+        if rules.is_empty() {
+            return Ok(work);
+        }
+        let mut found = Query::select();
+        found
+            .column(RuleMatchRow::Rule)
+            .column(RuleMatchRow::Issue)
+            .from(RuleMatchRow::Table)
+            .and_where(
+                Expr::col(RuleMatchRow::Rule).is_in(
+                    rules
+                        .iter()
+                        .map(|rule| rule.id.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            );
+        for row in self.database().fetch_all(&found).await? {
+            let rule = row.id::<StandingRuleId>(RuleMatchRow::Rule)?;
+            let issue = row.id::<IssueId>(RuleMatchRow::Issue)?;
+            let Some(rule) = rules.iter().find(|held| held.id == rule) else {
+                continue;
+            };
+            work.issues.insert(issue);
+            work.allowances
+                .entry(issue)
+                .or_default()
+                .add(Allowance::of_rule(&rule.fields));
         }
         Ok(work)
     }

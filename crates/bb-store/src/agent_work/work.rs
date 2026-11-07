@@ -1,8 +1,64 @@
 //! The work on an issue: attempts, results, questions and reviews.
 
-use bb_app::agent_work::AgentWorkRecords;
+use bb_app::agent_work::{AgentWorkRecords, WorkDetails};
 
 use super::*;
+
+fn results_select() -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns([
+            AttemptResultRow::Id,
+            AttemptResultRow::Attempt,
+            AttemptResultRow::Kind,
+            AttemptResultRow::Label,
+            AttemptResultRow::Link,
+            AttemptResultRow::Outcome,
+        ])
+        .from(AttemptResultRow::Table);
+    select
+}
+
+fn read_result(row: &Row) -> Result<AttemptResult, StoreError> {
+    let outcome = row
+        .get::<Option<String>>(AttemptResultRow::Outcome)?
+        .map(|code| CheckResult::from_code(&code).ok_or(StoreError::Corrupt("a check result")))
+        .transpose()?;
+    Ok(AttemptResult {
+        id: row.id(AttemptResultRow::Id)?,
+        attempt: row.id(AttemptResultRow::Attempt)?,
+        kind: word::<ResultKind>(row, AttemptResultRow::Kind)?,
+        label: row.get(AttemptResultRow::Label)?,
+        link: row.get(AttemptResultRow::Link)?,
+        outcome,
+    })
+}
+
+fn reviews_select() -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns([
+            ReviewRow::Id,
+            ReviewRow::Work,
+            ReviewRow::Answer,
+            ReviewRow::Note,
+            ReviewRow::By,
+            ReviewRow::At,
+        ])
+        .from(ReviewRow::Table);
+    select
+}
+
+fn read_review(row: &Row) -> Result<Review, StoreError> {
+    Ok(Review {
+        id: row.id(ReviewRow::Id)?,
+        work: row.id(ReviewRow::Work)?,
+        answer: word::<ReviewAnswer>(row, ReviewRow::Answer)?,
+        note: row.get(ReviewRow::Note)?,
+        by: row.optional_id(ReviewRow::By)?,
+        at: row.time(ReviewRow::At)?,
+    })
+}
 
 impl AgentWorkRecords for AuthStorage {
     async fn issue_work_in(
@@ -71,36 +127,11 @@ impl AgentWorkRecords for AuthStorage {
         transaction: &mut Transaction,
         attempt: AttemptId,
     ) -> Result<Vec<AttemptResult>, StoreError> {
-        let mut select = Query::select();
+        let mut select = results_select();
         select
-            .columns([
-                AttemptResultRow::Id,
-                AttemptResultRow::Attempt,
-                AttemptResultRow::Kind,
-                AttemptResultRow::Label,
-                AttemptResultRow::Link,
-                AttemptResultRow::Outcome,
-            ])
-            .from(AttemptResultRow::Table)
             .and_where(Expr::col(AttemptResultRow::Attempt).eq(attempt.stored()))
             .order_by(AttemptResultRow::Id, Order::Asc);
-        all(transaction, &select, |row| {
-            let outcome = row
-                .get::<Option<String>>(AttemptResultRow::Outcome)?
-                .map(|code| {
-                    CheckResult::from_code(&code).ok_or(StoreError::Corrupt("a check result"))
-                })
-                .transpose()?;
-            Ok(AttemptResult {
-                id: row.id(AttemptResultRow::Id)?,
-                attempt: row.id(AttemptResultRow::Attempt)?,
-                kind: word::<ResultKind>(row, AttemptResultRow::Kind)?,
-                label: row.get(AttemptResultRow::Label)?,
-                link: row.get(AttemptResultRow::Link)?,
-                outcome,
-            })
-        })
-        .await
+        all(transaction, &select, read_result).await
     }
 
     async fn works_of_hand_over_in(
@@ -117,12 +148,96 @@ impl AgentWorkRecords for AuthStorage {
     async fn work_on_issue_in(
         transaction: &mut Transaction,
         issue: IssueId,
+        agent: Option<AgentId>,
+        limit: u64,
     ) -> Result<Vec<IssueWork>, StoreError> {
         let mut select = work_select();
         select
             .and_where(Expr::col(IssueWorkRow::Issue).eq(issue.stored()))
-            .order_by(IssueWorkRow::Id, Order::Desc);
+            .order_by(IssueWorkRow::Id, Order::Desc)
+            .limit(limit);
+        if let Some(agent) = agent {
+            select.and_where(Expr::col(IssueWorkRow::Agent).eq(agent.stored()));
+        }
         all(transaction, &select, read_work).await
+    }
+
+    async fn details_of_works_in(
+        transaction: &mut Transaction,
+        works: Vec<IssueWork>,
+    ) -> Result<WorkDetails, StoreError> {
+        let mut details = WorkDetails::default();
+        if works.is_empty() {
+            return Ok(details);
+        }
+        let work_ids: Vec<Vec<u8>> = works.iter().map(|work| work.id.stored()).collect();
+        let mut hand_over_ids: Vec<Vec<u8>> =
+            works.iter().map(|work| work.hand_over.stored()).collect();
+        hand_over_ids.sort();
+        hand_over_ids.dedup();
+        let mut hand_overs = hand_over_select();
+        hand_overs.and_where(Expr::col(HandOverRow::Id).is_in(hand_over_ids));
+        details.hand_overs = all(transaction, &hand_overs, read_hand_over).await?;
+        let mut questions = question_select();
+        questions
+            .and_where(Expr::col(QuestionRow::Work).is_in(work_ids.clone()))
+            .order_by(QuestionRow::Id, Order::Asc);
+        details.questions = all(transaction, &questions, read_question).await?;
+        let mut attempts = attempt_select();
+        attempts
+            .and_where(Expr::col(AttemptRow::Work).is_in(work_ids.clone()))
+            .order_by(AttemptRow::Number, Order::Asc);
+        details.attempts = all(transaction, &attempts, read_attempt).await?;
+        let attempt_ids: Vec<Vec<u8>> = details
+            .attempts
+            .iter()
+            .map(|attempt| attempt.id.stored())
+            .collect();
+        if !attempt_ids.is_empty() {
+            let mut results = results_select();
+            results
+                .and_where(Expr::col(AttemptResultRow::Attempt).is_in(attempt_ids))
+                .order_by(AttemptResultRow::Id, Order::Asc);
+            details.results = all(transaction, &results, read_result).await?;
+        }
+        let mut reviews = reviews_select();
+        reviews
+            .and_where(Expr::col(ReviewRow::Work).is_in(work_ids))
+            .order_by(ReviewRow::Id, Order::Asc);
+        details.reviews = all(transaction, &reviews, read_review).await?;
+        Ok(details)
+    }
+
+    async fn agent_has_open_giving_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+    ) -> Result<bool, StoreError> {
+        let mut work = Query::select();
+        work.expr(Expr::val(1))
+            .from(IssueWorkRow::Table)
+            .and_where(Expr::col(IssueWorkRow::Agent).eq(agent.stored()))
+            .limit(1);
+        only_open_work(&mut work);
+        let mut hand_overs = Query::select();
+        hand_overs
+            .expr(Expr::val(1))
+            .from(HandOverRow::Table)
+            .and_where(Expr::col(HandOverRow::Agent).eq(agent.stored()))
+            .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()))
+            .limit(1);
+        let mut rules = Query::select();
+        rules
+            .expr(Expr::val(1))
+            .from(StandingRuleRow::Table)
+            .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
+            .limit(1);
+        for select in [work, hand_overs, rules] {
+            if transaction.fetch_optional(&select).await?.is_some() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     async fn work_of_agent_in(
@@ -145,30 +260,11 @@ impl AgentWorkRecords for AuthStorage {
         transaction: &mut Transaction,
         work: AgentWorkId,
     ) -> Result<Vec<Review>, StoreError> {
-        let mut select = Query::select();
+        let mut select = reviews_select();
         select
-            .columns([
-                ReviewRow::Id,
-                ReviewRow::Work,
-                ReviewRow::Answer,
-                ReviewRow::Note,
-                ReviewRow::By,
-                ReviewRow::At,
-            ])
-            .from(ReviewRow::Table)
             .and_where(Expr::col(ReviewRow::Work).eq(work.stored()))
             .order_by(ReviewRow::Id, Order::Asc);
-        all(transaction, &select, |row| {
-            Ok(Review {
-                id: row.id(ReviewRow::Id)?,
-                work: row.id(ReviewRow::Work)?,
-                answer: word::<ReviewAnswer>(row, ReviewRow::Answer)?,
-                note: row.get(ReviewRow::Note)?,
-                by: row.optional_id(ReviewRow::By)?,
-                at: row.time(ReviewRow::At)?,
-            })
-        })
-        .await
+        all(transaction, &select, read_review).await
     }
 
     async fn people_of_work_in(
@@ -272,30 +368,44 @@ impl AgentWorkRecords for AuthStorage {
         id: AgentWorkId,
         accepted_by_itself: bool,
         status_pending: bool,
-    ) -> Result<(), StoreError> {
-        let mut update = Query::update();
-        update
-            .table(IssueWorkRow::Table)
-            .value(IssueWorkRow::Closed, true)
-            .value(IssueWorkRow::AcceptedByItself, accepted_by_itself)
-            .value(IssueWorkRow::StatusPending, status_pending)
-            .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
-        transaction.execute(&update).await?;
-        Ok(())
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        update_at(
+            transaction,
+            IssueWorkRow::Table,
+            IssueWorkRow::Id,
+            id.stored(),
+            IssueWorkRow::Version,
+            version,
+            |update| {
+                update
+                    .value(IssueWorkRow::Closed, true)
+                    .value(IssueWorkRow::AcceptedByItself, accepted_by_itself)
+                    .value(IssueWorkRow::StatusPending, status_pending);
+            },
+        )
+        .await
     }
 
     async fn mark_work_seen(
         transaction: &mut Transaction,
         id: AgentWorkId,
-    ) -> Result<(), StoreError> {
-        let mut update = Query::update();
-        update
-            .table(IssueWorkRow::Table)
-            .value(IssueWorkRow::AcceptedByItself, false)
-            .value(IssueWorkRow::StatusPending, false)
-            .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
-        transaction.execute(&update).await?;
-        Ok(())
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        update_at(
+            transaction,
+            IssueWorkRow::Table,
+            IssueWorkRow::Id,
+            id.stored(),
+            IssueWorkRow::Version,
+            version,
+            |update| {
+                update
+                    .value(IssueWorkRow::AcceptedByItself, false)
+                    .value(IssueWorkRow::StatusPending, false);
+            },
+        )
+        .await
     }
 
     async fn insert_attempt(

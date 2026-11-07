@@ -7,6 +7,7 @@
 
 use bb_app::search::FieldTarget;
 use bb_app::search::OwnReach;
+use bb_core::agent_work::AgentWorkState;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::FieldId;
 use bb_core::own_fields::FieldType;
@@ -333,11 +334,22 @@ fn agent_subject(target: FieldTarget) -> (Subject, Domain) {
     } else {
         Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
     };
-    (Subject::Linked(open_work_rows(), subject), Domain::Text)
+    // *Agent* is who works on the issue now: not work that was stopped or given up. *Agent state*
+    // finds every state the work is in until a review closes it, those two included.
+    let mut rows = work_rows_not_closed();
+    if target == FieldTarget::Agent {
+        rows = rows.and(
+            Expr::col((IssueWorkRow::Table, IssueWorkRow::State)).is_not_in([
+                AgentWorkState::Stopped.code(),
+                AgentWorkState::AgentGaveUp.code(),
+            ]),
+        );
+    }
+    (Subject::Linked(rows, subject), Domain::Text)
 }
 
 /// The agent work on an issue that has not been closed by a review.
-fn open_work_rows() -> Rows {
+fn work_rows_not_closed() -> Rows {
     Rows::keyed(IssueWorkRow::Table, IssueWorkRow::Issue)
         .and(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
 }

@@ -16,6 +16,7 @@ use serde_json::json;
 
 use super::types::{AddRelation, RelationView, RemoveRelation};
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::member::relation as member;
 use crate::projects::Why;
@@ -248,6 +249,8 @@ pub async fn remove_relation<S: AuthStore>(
     if !held_from.may_change_issue(from.reported_by) && !held_to.may_change_issue(to.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
+    ctx.ensure_agent_may_member(&actor, from.id, issue_member::RELATIONS)
+        .await?;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Relation, relation.id),

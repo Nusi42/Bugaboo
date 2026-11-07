@@ -298,10 +298,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
         bb_core::ErrorCode::Forbidden
     ));
     // A list or a search of the agent is cut to its work; the person's is not.
-    for (session, expected) in [
-        (&given.key, Some(vec![issue_id])),
-        (&given.team.session_token, None),
-    ] {
+    for (session, expected) in [(&given.key, true), (&given.team.session_token, false)] {
         let _ = search(
             &world.ctx(),
             SearchQuery {
@@ -322,7 +319,10 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
             .last()
             .cloned()
             .ok_or("no search")?;
-        assert_eq!(asked.only, expected);
+        assert_eq!(asked.only.is_some(), expected);
+        if expected {
+            assert_eq!(asked.only.map(|work| work.agent), Some(given.agent));
+        }
     }
     let _ = other;
     Ok(())

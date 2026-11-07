@@ -185,7 +185,7 @@ pub(crate) mod member {
     }
 
     pub(crate) const PROJECT: &str = "project";
-    pub(crate) const ISSUE_TYPE: &str = "issue-type";
+    pub(crate) const ISSUE_TYPE: &str = bb_core::agent_work::issue_member::ISSUE_TYPE;
     /// The readable ID of the issue.
     pub(crate) const KEY: &str = "key";
     pub(crate) const TITLE: &str = Field::Title.code();

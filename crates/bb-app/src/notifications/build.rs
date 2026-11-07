@@ -45,8 +45,6 @@ use crate::outbox_reader::read_all;
 mod agent_work;
 mod work_days;
 
-use agent_work::doer_in_person;
-
 /// What one batch of events looks up once: people, their settings, the followers that lost
 /// access.
 struct Round {
@@ -647,7 +645,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         subject: &Subject<'_>,
         hears: Vec<Hears>,
     ) -> Result<(), AppError> {
-        let by = doer_in_person(subject.event);
+        let by = subject.event.actor.person_themselves();
         // What every follower chose is read together, before the first one is judged.
         let everyone: Vec<UserId> = hears.iter().map(|hear| hear.person).collect();
         self.preload_layers(round, &everyone).await?;

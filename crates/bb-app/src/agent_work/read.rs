@@ -1,10 +1,11 @@
 //! Reading the agent work on an issue (AI-33): who works on it, what the brief says, the attempts,
 //! the questions and the reviews.
 
-use bb_core::agent_records::{GivingState, IssueWork, ProposalState};
+use bb_core::agent_records::{GivingState, HandOver, IssueWork, ProposalState};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext};
 
+use super::store::WorkDetails;
 use super::types::{
     AgentWorkQuery, AttemptView, IssueAgentWork, MOST_SHOWN_ON_AN_ISSUE, ProposalView,
     QuestionView, ResultView, ReviewView, WorkView, WorkedOnBy,
@@ -18,14 +19,47 @@ impl<S: AuthStore> Ctx<'_, S> {
         viewer: &Evaluation,
         work: &IssueWork,
     ) -> Result<WorkView, AppError> {
-        let store = self.store();
-        let failed = |error| internal::<S>(&error);
-        let hand_over = store
-            .hand_over(work.hand_over)
+        self.work_views(viewer, std::slice::from_ref(work))
+            .await?
+            .pop()
+            .ok_or_else(|| AppError::Internal("a piece of work without a view".to_owned()))
+    }
+
+    /// Pieces of work as the viewer may see them: whatever belongs to them is read together, so
+    /// a page costs the same few statements however many pieces it holds (PERF-N1).
+    pub(crate) async fn work_views(
+        &self,
+        viewer: &Evaluation,
+        works: &[IssueWork],
+    ) -> Result<Vec<WorkView>, AppError> {
+        let details = self
+            .store()
+            .details_of_works(works.to_vec())
             .await
-            .map_err(failed)?
+            .map_err(|error| internal::<S>(&error))?;
+        let mut views = Vec::with_capacity(works.len());
+        for work in works {
+            views.push(self.work_view_in(viewer, work, &details).await?);
+        }
+        Ok(views)
+    }
+
+    async fn work_view_in(
+        &self,
+        viewer: &Evaluation,
+        work: &IssueWork,
+        details: &WorkDetails,
+    ) -> Result<WorkView, AppError> {
+        let hand_over: &HandOver = details
+            .hand_overs
+            .iter()
+            .find(|found| found.id == work.hand_over)
             .ok_or_else(|| AppError::Internal("a piece of work without a hand-over".to_owned()))?;
-        let questions = store.questions_of(work.id).await.map_err(failed)?;
+        let questions: Vec<_> = details
+            .questions
+            .iter()
+            .filter(|question| question.work == work.id)
+            .collect();
         let mut brief = Vec::new();
         if !hand_over.note.is_empty() {
             brief.push(hand_over.note.clone());
@@ -35,34 +69,38 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .iter()
                 .filter_map(|question| question.answer.clone()),
         );
-        let mut attempts = Vec::new();
-        for attempt in store.attempts_of(work.id).await.map_err(failed)? {
-            let results = store
-                .results_of(attempt.id)
-                .await
-                .map_err(failed)?
-                .into_iter()
-                .map(|result| ResultView {
-                    kind: result.kind,
-                    label: result.label,
-                    link: result.link,
-                    outcome: result.outcome,
-                })
-                .collect();
-            attempts.push(AttemptView {
+        let attempts = details
+            .attempts
+            .iter()
+            .filter(|attempt| attempt.work == work.id)
+            .map(|attempt| AttemptView {
                 id: attempt.id,
                 number: attempt.number,
-                plan: attempt.plan,
+                plan: attempt.plan.clone(),
                 plan_approved: attempt.plan_approved,
                 reported_minutes: attempt.reported_minutes,
                 reported_cost: attempt.reported_cost,
                 started_at: attempt.started_at,
                 ended_at: attempt.ended_at,
-                results,
-            });
-        }
+                results: details
+                    .results
+                    .iter()
+                    .filter(|result| result.attempt == attempt.id)
+                    .map(|result| ResultView {
+                        kind: result.kind,
+                        label: result.label.clone(),
+                        link: result.link.clone(),
+                        outcome: result.outcome,
+                    })
+                    .collect(),
+            })
+            .collect();
         let mut reviews = Vec::new();
-        for review in store.reviews_of(work.id).await.map_err(failed)? {
+        for review in details
+            .reviews
+            .iter()
+            .filter(|review| review.work == work.id)
+        {
             let by = match review.by {
                 Some(person) => Some(
                     self.person_ref(
@@ -77,7 +115,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             reviews.push(ReviewView {
                 answer: review.answer,
-                note: review.note,
+                note: review.note.clone(),
                 by,
                 at: review.at,
             });
@@ -87,15 +125,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             hand_over: work.hand_over,
             agent: work.agent,
             state: work.state,
-            open: hand_over.state == GivingState::Open && work.state.is_open(),
+            open: hand_over.state == GivingState::Open && work.state.is_open() && !work.closed,
             brief,
             attempts,
             questions: questions
                 .into_iter()
                 .map(|question| QuestionView {
                     id: question.id,
-                    text: question.text,
-                    answer: question.answer,
+                    text: question.text.clone(),
+                    answer: question.answer.clone(),
                     asked_at: question.asked_at,
                 })
                 .collect(),
@@ -121,40 +159,53 @@ pub async fn issue_agent_work<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     let failed = |error| internal::<S>(&error);
-    let mut all = ctx.store().work_on_issue(issue.id).await.map_err(failed)?;
+    // An agent sees its own work on the issue, never that of another agent.
+    let only = actor.agent();
+    let mut all = ctx
+        .store()
+        .work_on_issue(issue.id, only, MOST_SHOWN_ON_AN_ISSUE as u64 + 1)
+        .await
+        .map_err(failed)?;
     let mut truncated = all.len() > MOST_SHOWN_ON_AN_ISSUE;
     all.truncate(MOST_SHOWN_ON_AN_ISSUE);
-    let mut work = Vec::with_capacity(all.len());
-    let mut worked_on_by: Vec<WorkedOnBy> = Vec::new();
-    for found in &all {
-        let view = ctx.work_view(&held, found).await?;
-        if view.open && !worked_on_by.iter().any(|shown| shown.agent == found.agent) {
-            let agent = ctx
-                .store()
-                .agent(found.agent)
-                .await
-                .map_err(failed)?
-                .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
-            worked_on_by.push(WorkedOnBy {
-                agent: agent.id,
-                name: agent.name,
-                person: ctx
-                    .person_ref(
-                        &held,
-                        PeopleKind::ProjectMembers,
-                        PeopleContext::Ordinary,
-                        agent.person,
-                    )
-                    .await?,
-            });
+    let views = ctx.work_views(&held, &all).await?;
+    let mut open_agents: Vec<bb_core::id::AgentId> = Vec::new();
+    for (found, view) in all.iter().zip(&views) {
+        if view.open && !open_agents.contains(&found.agent) {
+            open_agents.push(found.agent);
         }
-        work.push(view);
     }
+    let agents = ctx
+        .store()
+        .agents_by_ids(open_agents.clone())
+        .await
+        .map_err(failed)?;
+    let mut worked_on_by: Vec<WorkedOnBy> = Vec::new();
+    for id in open_agents {
+        let agent = agents
+            .iter()
+            .find(|found| found.id == id)
+            .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
+        worked_on_by.push(WorkedOnBy {
+            agent: agent.id,
+            name: agent.name.clone(),
+            person: ctx
+                .person_ref(
+                    &held,
+                    PeopleKind::ProjectMembers,
+                    PeopleContext::Ordinary,
+                    agent.person,
+                )
+                .await?,
+        });
+    }
+    let work = views;
     let mut waiting = ctx
         .store()
         .proposals_on(issue.id, Some(ProposalState::Open))
         .await
         .map_err(failed)?;
+    waiting.retain(|proposal| only.is_none_or(|agent| proposal.agent == agent));
     truncated |= waiting.len() > MOST_SHOWN_ON_AN_ISSUE;
     waiting.truncate(MOST_SHOWN_ON_AN_ISSUE);
     let proposals = waiting

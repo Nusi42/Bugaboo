@@ -20,7 +20,7 @@ pub use readable::{FieldName, ReadableFieldsQuery, SearchFields, SearchScope, re
 pub(crate) use readable::{Looked, lengths_readable_in, readable_of, word_is_taken};
 pub use request::{
     GroupCount, GroupKey, KeyedChoice, LengthTotals, Names, OwnReach, ProjectLink, SearchFailure,
-    SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText,
+    SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText, WorkOf,
 };
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,

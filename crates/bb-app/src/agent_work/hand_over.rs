@@ -3,13 +3,17 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
+use bb_core::access::FieldLevel;
 use bb_core::agent_records::{GivingState, HandOver as HandOverRecord, IssueWork};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end, missing_in_brief,
+    AgentWorkState, BriefPart, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end, issue_member,
+    missing_in_brief,
 };
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
+use bb_core::fields::FieldKey;
 use bb_core::id::{AgentWorkId, EntityId, HandOverId, IssueId};
 use bb_core::issue::Issue;
+use bb_core::own_fields::FieldFor;
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
 
@@ -35,34 +39,86 @@ fn note_of(text: &str) -> Result<String, AppError> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What the brief lacks for an issue: the description, *Steps to reproduce* and *Done when*,
-    /// each when it is empty. It is told and never stops a hand-over.
-    pub(crate) async fn brief_missing(&self, issue: &Issue) -> Result<Vec<BriefPart>, AppError> {
+    /// Refuses a hand-over that names a member an agent can never be given: one that is no member
+    /// of an issue, an own field that is retired or not for issues, and any field that holds
+    /// people (COMP-10).
+    async fn ensure_nameable(&self, fields: &[String]) -> Result<(), AppError> {
+        for field in fields {
+            if issue_member::NAMEABLE.contains(&field.as_str()) {
+                continue;
+            }
+            let usable = self.own_field_named(field).await?.is_some_and(|found| {
+                found.field.applies_to == FieldFor::Issues
+                    && found.field.retired_at.is_none()
+                    && !found.field.kind.holds_people()
+            });
+            if !usable {
+                return Err(ErrorCode::InvalidRequest.into());
+            }
+        }
+        Ok(())
+    }
+
+    /// What the brief lacks for each issue: the description, *Steps to reproduce* and *Done when*,
+    /// each when it is empty and the reader may see it. It is told and never stops a hand-over.
+    /// The values of all the issues are read together (PERF-N1).
+    async fn briefs_missing(
+        &self,
+        issues: &[(Issue, std::sync::Arc<bb_policy::Evaluation>)],
+    ) -> Result<Vec<Vec<BriefPart>>, AppError> {
         let catalogue = self.field_catalogue().await?;
         let kind = EntityKind::from(RecordKind::Issue);
         let values = self
             .store()
-            .field_values(kind, vec![EntityId::from(issue.id)])
+            .field_values(
+                kind,
+                issues
+                    .iter()
+                    .map(|(issue, _)| EntityId::from(issue.id))
+                    .collect(),
+            )
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let text_of = |wanted: &str| -> String {
+        let named = |wanted: &str| {
             catalogue
                 .iter()
                 .filter(|definition| definition.field.name.trim().eq_ignore_ascii_case(wanted))
-                .flat_map(|definition| {
-                    values
-                        .iter()
-                        .filter(move |held| held.field == definition.field.id)
-                })
-                .flat_map(|held| held.cells.iter().filter_map(|cell| cell.text.clone()))
+                .map(|definition| definition.field.id)
                 .collect::<Vec<_>>()
-                .join("\n")
         };
-        Ok(missing_in_brief(
-            &issue.description,
-            &text_of(STEPS_FIELD),
-            &text_of(DONE_WHEN_FIELD),
-        ))
+        let (steps, done_when) = (named(STEPS_FIELD), named(DONE_WHEN_FIELD));
+        Ok(issues
+            .iter()
+            .map(|(issue, held)| {
+                // The text of the fields of that name the reader may see; none when they see none.
+                let text_of = |fields: &[bb_core::id::FieldId]| -> Option<String> {
+                    let seen: Vec<_> = fields
+                        .iter()
+                        .filter(|field| {
+                            held.field_level_for(Some(issue.issue_type), FieldKey::Own(**field))
+                                >= FieldLevel::CanSee
+                        })
+                        .collect();
+                    // No such field at all: the brief lacks it. One the reader may not see: unknown.
+                    (seen.is_empty() == fields.is_empty()).then(|| {
+                        values
+                            .iter()
+                            .filter(|held| {
+                                held.entity == EntityId::from(issue.id)
+                                    && seen.contains(&&held.field)
+                            })
+                            .flat_map(|held| held.cells.iter().filter_map(|cell| cell.text.clone()))
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    })
+                };
+                missing_in_brief(
+                    &issue.description,
+                    text_of(&steps).as_deref(),
+                    text_of(&done_when).as_deref(),
+                )
+            })
+            .collect())
     }
 }
 
@@ -84,7 +140,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?;
         let off = self.projects_with_agents_off(person).await?;
         let mut works: Vec<IssueWork> = Vec::new();
-        let mut handed: Vec<HandedIssue> = Vec::new();
+        let mut issues = Vec::new();
         let mut seen: BTreeSet<IssueId> = BTreeSet::new();
         for address in addresses {
             let (issue, held) = self.visible_issue(actor, address).await?;
@@ -111,13 +167,19 @@ impl<S: AuthStore> Ctx<'_, S> {
                 made_at: now,
                 version: 1,
             };
-            handed.push(HandedIssue {
-                work: work.id,
-                issue: issue.id,
-                missing: self.brief_missing(&issue).await?,
-            });
             works.push(work);
+            issues.push((issue, held));
         }
+        let missing = self.briefs_missing(&issues).await?;
+        let handed = works
+            .iter()
+            .zip(missing)
+            .map(|(work, missing)| HandedIssue {
+                work: work.id,
+                issue: work.issue,
+                missing,
+            })
+            .collect();
         Ok((works, handed))
     }
 }
@@ -193,6 +255,7 @@ pub async fn hand_over<S: AuthStore>(
     {
         return Err(ErrorCode::InvalidRequest.into());
     }
+    ctx.ensure_nameable(&input.fields).await?;
     let note = note_of(&input.note)?;
     let now = ctx.now();
     let days = match input.days {

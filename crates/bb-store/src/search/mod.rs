@@ -313,7 +313,9 @@ impl SearchStore for AuthStorage {
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-mod tests_agent;
+pub(super) mod tests_agent;
+#[cfg(test)]
+mod tests_agent_work;
 #[cfg(test)]
 mod tests_ai;
 #[cfg(test)]

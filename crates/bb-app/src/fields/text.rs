@@ -73,6 +73,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &SaveFieldText,
     ) -> Result<(Arc<Evaluation>, Issue, Definition), AppError> {
         let (held, current) = self.issue_to_change(actor, &input.issue).await?;
+        self.ensure_agent_may_member(actor, current.id, &input.field.to_string())
+            .await?;
         let key = FieldKey::Own(input.field);
         let definition = self
             .field_catalogue()

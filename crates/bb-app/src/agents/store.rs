@@ -9,6 +9,7 @@ use std::future::Future;
 use bb_core::agent::{Agent, AgentState};
 use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
+use jiff::Timestamp;
 
 use crate::auth::AccessKeyRecord;
 use crate::ports::ChangeStore;
@@ -34,8 +35,8 @@ pub struct AgentWork {
 /// fills it (agent work); until then every agent has no work.
 pub trait AgentWorkStore: ChangeStore + 'static {
     reads! {
-        /// The work of one agent.
-        fn agent_work(agent: AgentId) -> AgentWork;
+        /// The work of one agent at `now`: hand-overs and rules that ran out do not count.
+        fn agent_work(agent: AgentId, now: Timestamp) -> AgentWork;
     }
 }
 
@@ -44,6 +45,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
     queries! {
         /// The agent with this ID.
         fn agent(id: AgentId) -> Option<Agent> = agent_in;
+        /// The agents with these IDs, read together.
+        fn agents_by_ids(ids: Vec<AgentId>) -> Vec<Agent> = agents_by_ids_in;
         /// How many agents a person is responsible for.
         fn agent_count_of(person: UserId) -> i64 = agent_count_of_in;
         /// How many keys an agent has.

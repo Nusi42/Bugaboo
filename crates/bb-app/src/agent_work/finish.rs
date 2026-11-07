@@ -93,19 +93,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         *locked(&self.accepting) = Some(issue.id);
         let moved = change_issue(
             self,
-            ChangeIssue {
-                session_token: token.to_owned(),
-                issue: issue.id.to_string(),
-                version: issue.version,
-                issue_type: None,
-                title: None,
-                status: Some(only),
-                priority: None,
-                estimated_time: None,
-                time_left: None,
-                assigned_to: None,
-                fields: std::collections::BTreeMap::default(),
-            },
+            ChangeIssue::status(token, issue.id.to_string(), issue.version, only),
         )
         .await;
         *locked(&self.accepting) = None;

@@ -42,6 +42,16 @@ impl Actor {
         }
     }
 
+    /// The person who did it as themselves: not the person responsible for an agent that did it
+    /// (that person still hears of what the agent did), and none for Bugaboo itself.
+    #[must_use]
+    pub const fn person_themselves(self) -> Option<UserId> {
+        match self {
+            Self::Person(person) => Some(person),
+            Self::Agent { .. } | Self::System => None,
+        }
+    }
+
     /// The agent, if an agent did it.
     #[must_use]
     pub const fn agent(self) -> Option<AgentId> {

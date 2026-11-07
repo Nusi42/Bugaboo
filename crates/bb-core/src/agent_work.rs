@@ -143,16 +143,21 @@ words! {
 
 crate::words_in_api!(BriefPart, "A part of a brief taken from the issue.");
 
-/// The parts of the brief that the issue leaves empty, in the order of [`BriefPart`].
+/// The parts of the brief that the issue leaves empty, in the order of [`BriefPart`]. A part the
+/// reader may not see (`None`) is not named: whether it is empty is not theirs to learn.
 #[must_use]
-pub fn missing_in_brief(description: &str, steps: &str, done_when: &str) -> Vec<BriefPart> {
+pub fn missing_in_brief(
+    description: &str,
+    steps: Option<&str>,
+    done_when: Option<&str>,
+) -> Vec<BriefPart> {
     [
-        (BriefPart::Description, description),
+        (BriefPart::Description, Some(description)),
         (BriefPart::StepsToReproduce, steps),
         (BriefPart::DoneWhen, done_when),
     ]
     .into_iter()
-    .filter(|(_, text)| text.trim().is_empty())
+    .filter(|(_, text)| text.is_some_and(|text| text.trim().is_empty()))
     .map(|(part, _)| part)
     .collect()
 }
@@ -222,9 +227,65 @@ impl RulePower {
     }
 }
 
-/// The keys of the members of an issue that hold people. An agent never changes one of them,
-/// whatever it was given (ADR-0029, decision 3; COMP-10).
-pub const PEOPLE_FIELDS: [&str; 3] = ["assigned_to", "followers", "reported_by"];
+/// The members of an issue an agent can be given to change, by their keys: the word of the field
+/// in the catalogue (`Field::code`) as events and levels name it.
+pub mod issue_member {
+    use crate::fields::Field;
+
+    /// The issue type.
+    pub const ISSUE_TYPE: &str = "issue-type";
+    /// The title.
+    pub const TITLE: &str = Field::Title.code();
+    /// The description.
+    pub const DESCRIPTION: &str = Field::Description.code();
+    /// The status: only when the hand-over ticked it.
+    pub const STATUS: &str = Field::Status.code();
+    /// The priority.
+    pub const PRIORITY: &str = Field::Priority.code();
+    /// *Estimated time*.
+    pub const ESTIMATED_TIME: &str = Field::EstimatedTime.code();
+    /// *Time left*.
+    pub const TIME_LEFT: &str = Field::TimeLeft.code();
+    /// The labels.
+    pub const LABELS: &str = Field::Labels.code();
+    /// The tags.
+    pub const TAGS: &str = Field::Tags.code();
+    /// The relations of an issue: an agent links related issues without being given anything, and
+    /// takes a link away only when it was given this.
+    pub const RELATIONS: &str = "relations";
+    /// The comments of an issue: an agent adds its own, and edits, deletes or restores one only
+    /// when it was given this.
+    pub const COMMENTS: &str = "comments";
+    /// The attachments of an issue: an agent attaches results, and deletes or restores a file only
+    /// when it was given this.
+    pub const ATTACHMENTS: &str = "attachments";
+    /// *Assigned to*: holds people.
+    pub const ASSIGNED_TO: &str = Field::AssignedTo.code();
+    /// *Reported by*: holds people.
+    pub const REPORTED_BY: &str = Field::ReportedBy.code();
+    /// The followers of an issue: hold people.
+    pub const FOLLOWERS: &str = "followers";
+
+    /// The members a hand-over can name next to the own fields of the catalogue; the status is
+    /// ticked as a power, never named.
+    pub const NAMEABLE: [&str; 11] = [
+        TITLE,
+        DESCRIPTION,
+        PRIORITY,
+        ESTIMATED_TIME,
+        TIME_LEFT,
+        ISSUE_TYPE,
+        LABELS,
+        TAGS,
+        RELATIONS,
+        COMMENTS,
+        ATTACHMENTS,
+    ];
+
+    /// The members that hold people. An agent never changes one of them, whatever it was given
+    /// (ADR-0029, decision 3; COMP-10).
+    pub const PEOPLE: [&str; 3] = [ASSIGNED_TO, FOLLOWERS, REPORTED_BY];
+}
 
 /// What an agent may change on one issue, from the hand-overs and standing rules it works under
 /// (ADR-0029, decision 3). Reading, commenting, reporting and attaching are always allowed and are
@@ -283,7 +344,7 @@ impl Allowance {
     /// the status only when it was ticked.
     #[must_use]
     pub fn may_change(&self, member: &str, status_member: &str) -> bool {
-        if PEOPLE_FIELDS.contains(&member) {
+        if issue_member::PEOPLE.contains(&member) {
             return false;
         }
         if member == status_member {
@@ -300,9 +361,9 @@ impl RuleField {
     #[must_use]
     pub const fn issue_member(self) -> Option<&'static str> {
         match self {
-            Self::Type => Some("issue_type"),
-            Self::Labels => Some("labels"),
-            Self::Tags => Some("tags"),
+            Self::Type => Some(issue_member::ISSUE_TYPE),
+            Self::Labels => Some(issue_member::LABELS),
+            Self::Tags => Some(issue_member::TAGS),
             Self::DuplicateOf | Self::FoundInRelease => None,
         }
     }
@@ -371,12 +432,17 @@ mod tests {
 
     #[test]
     fn ai_31_the_brief_names_what_is_missing_and_does_not_stop_the_hand_over() {
-        let missing = missing_in_brief("Crash on save", "  ", "");
+        let missing = missing_in_brief("Crash on save", Some("  "), Some(""));
         assert_eq!(
             missing,
             vec![BriefPart::StepsToReproduce, BriefPart::DoneWhen]
         );
-        assert!(missing_in_brief("a", "b", "c").is_empty());
+        assert!(missing_in_brief("a", Some("b"), Some("c")).is_empty());
+        // A part the reader may not see is not named, empty or not.
+        assert_eq!(
+            missing_in_brief("a", None, Some("")),
+            vec![BriefPart::DoneWhen]
+        );
     }
 
     #[test]
@@ -407,11 +473,14 @@ mod tests {
     fn ai_32_an_agent_never_changes_a_member_that_holds_people_or_the_status_unasked() {
         let hand_over = Allowance::of_hand_over(
             &[HandOverPower::ChangeFields],
-            &["title".to_owned(), "assigned_to".to_owned()],
+            &[
+                issue_member::TITLE.to_owned(),
+                issue_member::ASSIGNED_TO.to_owned(),
+            ],
         );
         assert!(hand_over.may_change("title", "status"));
         assert!(
-            !hand_over.may_change("assigned_to", "status"),
+            !hand_over.may_change("assigned-to", "status"),
             "people never"
         );
         assert!(!hand_over.may_change("status", "status"), "not ticked");
@@ -419,7 +488,7 @@ mod tests {
         let status = Allowance::of_hand_over(&[HandOverPower::ChangeStatus], &[]);
         assert!(status.may_change("status", "status"));
         let rule = Allowance::of_rule(&[RuleField::Type, RuleField::Labels]);
-        assert!(rule.may_change("issue_type", "status"));
+        assert!(rule.may_change("issue-type", "status"));
         assert!(!rule.may_change("status", "status"));
     }
 

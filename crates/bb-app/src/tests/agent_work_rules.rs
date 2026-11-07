@@ -18,6 +18,8 @@ use crate::agent_work::{
 };
 use crate::auth::{AppError, Started};
 use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
+use crate::settings::{ChangeSetting, SettingsScope, change_setting};
+use bb_core::settings::SettingValue;
 
 fn change(key: &str, issue_id: IssueId, version: i64) -> ChangeIssue {
     ChangeIssue {
@@ -79,15 +81,28 @@ async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked
         issue: issue_id,
         ..
     } = ground(&world).await?;
+    // A hand-over cannot even name a member that holds people, or one that is not a member.
+    for refused_field in ["assigned-to", "reported-by", "followers", "no-such-member"] {
+        let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
+        asked.powers = vec![HandOverPower::ChangeFields];
+        asked.fields = vec!["title".to_owned(), refused_field.to_owned()];
+        assert!(
+            refused(
+                &hand_over(&world.ctx(), asked).await.unwrap_err(),
+                ErrorCode::InvalidRequest
+            ),
+            "{refused_field}"
+        );
+    }
     let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
     asked.powers = vec![HandOverPower::ChangeFields];
-    asked.fields = vec!["title".to_owned(), "assigned_to".to_owned()];
+    asked.fields = vec!["title".to_owned()];
     hand_over(&world.ctx(), asked).await?;
     let version = version_of(&world, &key, issue_id).await?;
     let mut title = change(&key, issue_id, version);
     title.title = Some("Fixed title".to_owned());
     change_issue(&world.ctx(), title).await?;
-    // A member that holds people is refused even when the hand-over names it.
+    // A member that holds people is refused: the hand-over could not name it.
     let version = version_of(&world, &key, issue_id).await?;
     let mut people = change(&key, issue_id, version);
     people.assigned_to = Some(vec![team.person.id]);
@@ -504,5 +519,76 @@ async fn ai_32_applying_a_proposed_tag_puts_it_on_the_issue_as_the_person() -> O
     )
     .await?;
     assert_eq!(world.store.lock().state.issue_tags.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_32_a_rule_proposes_only_for_an_issue_it_found() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    // The job of the matches did not run: the rule found nothing, so there is nothing to propose.
+    let to = another_type(&world, type_of(&world, &given).await?).await?;
+    let proposal = || ProposeChange {
+        session_token: given.key.clone(),
+        rule: rule.id,
+        issue: given.issue.to_string(),
+        field: RuleField::Type,
+        after: json!(to.to_string()),
+    };
+    let none = propose_change(&world.ctx(), proposal()).await;
+    assert!(refused(&none.unwrap_err(), ErrorCode::NotFound));
+    Ok(())
+}
+
+async fn switch_agents(world: &World, scope: SettingsScope, on: bool) -> Outcome {
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: super::scenarios::token(world),
+            scope,
+            key: "agents.enabled".to_owned(),
+            value: SettingValue::Bool(on),
+        },
+    )
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    let renew = |version: i64| ChangeStandingRule {
+        session_token: given.team.session_token.clone(),
+        rule: rule.id,
+        renew: true,
+        days: None,
+        version,
+    };
+    // Off for the project the rule works in: no renewal, but it can be stopped.
+    switch_agents(&world, SettingsScope::Project(given.project), false).await?;
+    let refusal = change_standing_rule(&world.ctx(), renew(rule.version)).await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+    switch_agents(&world, SettingsScope::Project(given.project), true).await?;
+    let later = change_standing_rule(&world.ctx(), renew(rule.version))
+        .await?
+        .into_value();
+    assert_eq!(later.state, GivingState::Open);
+    // A rule that may create issues in a project where agents are off is not made.
+    let other = super::scenarios::a_project(&world, "OTHER").await?;
+    let team_role =
+        super::workflows_rules::starting_role(&world, bb_policy::StartingRole::TeamMember).await?;
+    super::workflows_rules::assign(&world, &given.team, team_role, other).await?;
+    let mut creating = rule_request(&given, Vec::new());
+    creating.creates_in = Some(other);
+    create_standing_rule(&world.ctx(), creating).await?;
+    switch_agents(&world, SettingsScope::Project(other), false).await?;
+    let mut off = rule_request(&given, Vec::new());
+    off.creates_in = Some(other);
+    let refusal = create_standing_rule(&world.ctx(), off).await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
     Ok(())
 }

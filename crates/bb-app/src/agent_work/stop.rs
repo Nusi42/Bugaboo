@@ -11,6 +11,18 @@ use serde_json::{Value, json};
 use super::members::{member, payload};
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
 
+/// Which work a review or an accept by itself closes, and how.
+pub(crate) struct Closing {
+    /// The work.
+    pub(crate) work: bb_core::id::AgentWorkId,
+    /// The version it has when it is closed.
+    pub(crate) version: i64,
+    /// Whether it was accepted by itself and still waits for a person to look at it.
+    pub(crate) accepted_by_itself: bool,
+    /// Whether the status stays and a person chooses the next one.
+    pub(crate) status_pending: bool,
+}
+
 /// Ends the hand-over and stops the work of it that is open, inside a change. A hand-over that
 /// changed since it was read stops the change.
 pub(crate) async fn end_and_stop<S: AuthStore>(
@@ -38,16 +50,31 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
     Ok(())
 }
 
-/// Closes the work with a review. The hand-over ends with its last piece of open work.
+/// Closes the work, which is at `version`, with a review. The hand-over ends with its last piece of
+/// open work. Work that changed since it was read stops the change.
 pub(crate) async fn close_work_of<S: AuthStore>(
     transaction: &mut S::Transaction,
     hand_over: &HandOver,
     works: &[IssueWork],
-    work: bb_core::id::AgentWorkId,
-    accepted_by_itself: bool,
-    status_pending: bool,
+    closing: Closing,
 ) -> Result<(), S::Error> {
-    S::close_work(transaction, work, accepted_by_itself, status_pending).await?;
+    let Closing {
+        work,
+        version,
+        accepted_by_itself,
+        status_pending,
+    } = closing;
+    if !S::close_work(
+        transaction,
+        work,
+        accepted_by_itself,
+        status_pending,
+        version,
+    )
+    .await?
+    {
+        return Err(S::aborted());
+    }
     let others_open = works
         .iter()
         .any(|other| other.id != work && !other.closed && other.state.is_open());
@@ -126,6 +153,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// An internal error when the store fails.
     pub(crate) async fn stop_work_of_agent(&self, agent: AgentId) -> Result<(), AppError> {
+        // Nothing left to end: no event and no notification (a refused request asks every time).
+        if !self
+            .store()
+            .agent_has_open_giving(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
+            return Ok(());
+        }
         let event = self.event(
             EventActor::System,
             entity(RecordKind::Agent, agent),

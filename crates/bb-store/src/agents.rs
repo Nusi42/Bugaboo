@@ -92,6 +92,25 @@ impl AgentStore for AuthStorage {
             .transpose()
     }
 
+    async fn agents_by_ids_in(
+        transaction: &mut Transaction,
+        ids: Vec<AgentId>,
+    ) -> Result<Vec<Agent>, StoreError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = agent_select();
+        select.and_where(
+            Expr::col(AgentRow::Id).is_in(ids.iter().map(|id| id.stored()).collect::<Vec<_>>()),
+        );
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_agent)
+            .collect()
+    }
+
     async fn agent_count_of_in(
         transaction: &mut Transaction,
         person: UserId,

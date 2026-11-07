@@ -57,14 +57,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !self.agents_on_in_the_organization().await? {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
-        let work = self
-            .store()
-            .agent_work(found.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        let work = self.work_of_agent_now(found.id).await?;
         let off = self.projects_with_agents_off(found.person).await?;
         *crate::auth::locked(&self.acting_agent) = Some((found.id, found.person));
-        Ok(Narrowing::agent(work.projects, off))
+        Ok(Narrowing::agent(work.projects.clone(), off))
     }
 
     /// The projects where `person` holds `permission`, for the whole organization read once.

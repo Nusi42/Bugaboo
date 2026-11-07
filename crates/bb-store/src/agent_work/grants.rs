@@ -70,6 +70,35 @@ impl GrantStore for AuthStorage {
         all(transaction, &select, read_rule).await
     }
 
+    async fn known_matches_in(
+        transaction: &mut Transaction,
+        rule: StandingRuleId,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueId>, StoreError> {
+        if issues.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = Query::select();
+        select
+            .column(RuleMatchRow::Issue)
+            .from(RuleMatchRow::Table)
+            .and_where(Expr::col(RuleMatchRow::Rule).eq(rule.stored()))
+            .and_where(
+                Expr::col(RuleMatchRow::Issue).is_in(
+                    issues
+                        .iter()
+                        .map(|issue| issue.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            );
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.id(RuleMatchRow::Issue))
+            .collect()
+    }
+
     async fn proposals_on_in(
         transaction: &mut Transaction,
         issue: IssueId,
@@ -323,13 +352,20 @@ impl GrantStore for AuthStorage {
         hand_overs
             .table(HandOverRow::Table)
             .value(HandOverRow::State, GivingState::Ended.code())
-            .and_where(Expr::col(HandOverRow::Agent).eq(agent.stored()));
+            .value(HandOverRow::Version, Expr::col(HandOverRow::Version).add(1))
+            .and_where(Expr::col(HandOverRow::Agent).eq(agent.stored()))
+            .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
         transaction.execute(&hand_overs).await?;
         let mut rules = Query::update();
         rules
             .table(StandingRuleRow::Table)
             .value(StandingRuleRow::State, GivingState::Ended.code())
-            .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()));
+            .value(
+                StandingRuleRow::Version,
+                Expr::col(StandingRuleRow::Version).add(1),
+            )
+            .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()));
         transaction.execute(&rules).await?;
         Ok(())
     }

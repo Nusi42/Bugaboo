@@ -7,15 +7,23 @@
 //!   proposes and `rule_match` each issue that came under the rule, once.
 //! - Lists inside a record (powers, fields) are JSON text. Moments are microseconds.
 //!
+//! - `issue_work_one_open` lets an agent have one piece of open work for an issue.
+//!
 //! Nothing is written into the tables.
 
 use sea_query::{ColumnDef, Index, Table};
 
 use super::{Step, id_column};
+use crate::db::FixedSql;
 use crate::schema::{
     AttemptResultRow, AttemptRow, HandOverRow, IssueWorkRow, ProposalRow, QuestionRow, ReviewRow,
     RuleMatchRow, StandingRuleRow,
 };
+
+/// An agent has at most one piece of open work for an issue, whatever two requests do at the same
+/// moment: the states that end work are `stopped` and `agent-gave-up`, and a review closes it
+/// (`AgentWorkState::is_open`).
+const ONE_OPEN_WORK: &str = "CREATE UNIQUE INDEX issue_work_one_open ON issue_work (agent, issue)      WHERE closed = false AND state NOT IN ('stopped', 'agent-gave-up')";
 
 fn text(name: impl sea_query::Iden + 'static) -> ColumnDef {
     let mut column = ColumnDef::new(name);
@@ -143,6 +151,12 @@ fn work_steps() -> Vec<Step> {
                 .col(IssueWorkRow::Issue)
                 .to_owned(),
         ),
+        // An agent has at most one piece of open work for an issue, whatever two requests do at the
+        // same moment.
+        Step::Sql(FixedSql {
+            sqlite: vec![ONE_OPEN_WORK],
+            postgres: vec![ONE_OPEN_WORK],
+        }),
         Step::Index(
             Index::create()
                 .name("issue_work_by_agent")

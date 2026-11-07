@@ -75,18 +75,11 @@ pub(super) fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
         .add(found_by(compiler)?))
 }
 
-/// The issues a search is cut to, for an agent: those of its work.
+/// The issues a search is cut to, for an agent: those of its work, read by the store.
 fn only_condition(request: &SearchRequest) -> Cond {
-    match &request.only {
+    match request.only {
         None => Cond::all(),
-        Some(issues) => Cond::all().add(
-            Expr::col((IssueRow::Table, IssueRow::Id)).is_in(
-                issues
-                    .iter()
-                    .map(|issue| issue.stored())
-                    .collect::<Vec<_>>(),
-            ),
-        ),
+        Some(work) => Cond::all().add(crate::agent_work::issues_of_agent(work.agent, work.at)),
     }
 }
 
@@ -164,6 +157,7 @@ pub(crate) fn place_statement(request: &SearchRequest, plan: &SortPlan, after: I
     select
         .from(IssueRow::Table)
         .cond_where(sight_condition(&request.sight))
+        .cond_where(only_condition(request))
         .and_where(Expr::col((IssueRow::Table, IssueRow::Id)).eq(after.stored()))
         .limit(1);
     Built::Plain(select)
@@ -313,7 +307,12 @@ pub(crate) fn page_statement(
     let mut pieces = Vec::new();
     for stream in &streams {
         for sight in &sights {
-            pieces.push(Cond::all().add(sight_condition(sight)).add(stream.clone()));
+            pieces.push(
+                Cond::all()
+                    .add(sight_condition(sight))
+                    .add(only_condition(request))
+                    .add(stream.clone()),
+            );
         }
     }
     let mut select = issue_select();

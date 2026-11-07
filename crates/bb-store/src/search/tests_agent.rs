@@ -17,22 +17,26 @@ use crate::test_support::{at, event, person};
 use bb_app::auth::AccountStore as _;
 use bb_app::ports::ChangeStore as _;
 
-fn agent_fields() -> Vec<Searchable> {
+pub(super) fn agent_fields() -> Vec<Searchable> {
     vec![
         Searchable {
             field: Field::unordered("agent"),
             target: FieldTarget::Agent,
         },
         Searchable {
-            field: Field::new("agent state", FieldKind::Choice)
-                .with_choices(&["waiting-for-you", "agent-working"]),
+            field: Field::new("agent state", FieldKind::Choice).with_choices(
+                &AgentWorkState::ALL
+                    .iter()
+                    .map(|state| state.code())
+                    .collect::<Vec<_>>(),
+            ),
             target: FieldTarget::AgentState,
         },
     ]
 }
 
 /// An agent of the person, stored.
-async fn an_agent(
+pub(super) async fn an_agent(
     storage: &AuthStorage,
     person: UserId,
     name: &str,
@@ -76,7 +80,7 @@ async fn an_agent(
 
 /// Work of the agent on an issue in the given state.
 /// A person of the tests, stored, whose agents can be stored.
-async fn a_stored_person(storage: &AuthStorage) -> Result<UserId, crate::StoreError> {
+pub(super) async fn a_stored_person(storage: &AuthStorage) -> Result<UserId, crate::StoreError> {
     let mut source = bb_core::id::SequentialIds::default();
     let made = person(&mut source, "owner@example.test");
     let stored = made.clone();

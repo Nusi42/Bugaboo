@@ -18,7 +18,7 @@ use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
 use super::members::{member, waiting_for};
-use super::stop::close_work_of;
+use super::stop::{Closing, close_work_of};
 use super::types::{AskQuestion, AttachResult, EndAttempt, ReportAttempt, WorkView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
@@ -75,6 +75,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         state: AgentWorkState,
     ) -> Result<DomainEvent, AppError> {
         self.work_event_waiting(by, work, state, None)
+    }
+
+    /// The event of a change to a piece of work that leaves its state as it is (an attached result,
+    /// a look): the version counts up, so a stale reader of the work is told, and nobody is told
+    /// of a new state.
+    pub(super) fn work_event_unchanged(
+        &self,
+        by: bb_core::id::UserId,
+        work: &IssueWork,
+    ) -> Result<DomainEvent, AppError> {
+        self.event(
+            crate::auth::by(by),
+            entity(RecordKind::AgentWork, work.id),
+            vec![
+                set_to(member::ISSUE, json!(work.issue.to_string())),
+                set_to(member::AGENT, json!(work.agent.to_string())),
+                set_to(member::HAND_OVER, json!(work.hand_over.to_string())),
+                counted_up(work.version),
+            ],
+        )
     }
 
     /// The same, saying what the work waits for when it waits for a person: a question or a plan
@@ -352,7 +372,7 @@ pub async fn attach_result<S: AuthStore>(
         link,
         outcome,
     };
-    let event = ctx.work_event(mine.actor.person.id, &mine.work, mine.work.state)?;
+    let event = ctx.work_event_unchanged(mine.actor.person.id, &mine.work)?;
     let (work, stored) = (mine.work.clone(), result);
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -420,64 +440,102 @@ pub async fn end_attempt<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let checks: Vec<CheckResult> = results.iter().filter_map(|result| result.outcome).collect();
     let by_itself = reason.is_none() && ctx.accepts_by_itself_in(&mine, &checks).await?;
-    let status_pending = by_itself && !ctx.move_after_accept(&input.session_token, &mine).await?;
-    if reason.is_none() {
-        // Before the work ends: an agent whose hand-over ended sees the issue no more.
-        ctx.write_summary(&input.session_token, &mine, &attempt)
-            .await?;
-    }
+    // The end is claimed first, on the version the agent read: of two requests that end the same
+    // attempt at the same moment one wins, and only the winner writes the summary or moves the
+    // status.
     let event = ctx.work_event(mine.actor.person.id, &mine.work, next)?;
-    let works = ctx
-        .store()
-        .works_of_hand_over(mine.hand_over.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let gave_up = reason.is_some();
-    let closed = attempt.clone();
-    let (work, hand_over, stored) = (mine.work.clone(), mine.hand_over.clone(), attempt);
+    let (work, stored) = (mine.work.clone(), attempt.clone());
+    let reason_kept = reason.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::update_attempt(transaction, &stored).await?;
-                if !S::set_work_state(
+                if S::set_work_state(
                     transaction,
                     work.id,
                     next,
-                    reason.as_deref(),
+                    reason_kept.as_deref(),
                     false,
                     work.version,
                 )
                 .await?
                 {
-                    return Err(S::aborted());
+                    Ok(())
+                } else {
+                    Err(S::aborted())
                 }
-                if by_itself {
-                    close_work_of::<S>(
-                        transaction,
-                        &hand_over,
-                        &works,
-                        work.id,
-                        true,
-                        status_pending,
-                    )
-                    .await?;
-                }
-                Ok(())
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+    let gave_up = reason.is_some();
+    let after = ctx.finish_ended_attempt(&input.session_token, &mine, by_itself, gave_up);
     let ended = if gave_up {
         RunEnd::Failed
     } else {
         RunEnd::Done
     };
-    ctx.close_attempt_run(&input.session_token, &mine, &closed, ended)
+    let finished = after.await;
+    ctx.close_attempt_run(&input.session_token, &mine, &attempt, ended)
         .await?;
+    finished?;
     ctx.work_after(&mine, mine.work.id).await
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// What the winner of the end of an attempt does next, as the agent, while it still reaches the
+    /// issue: the short comment, and after an accept by itself the move of the status and the end
+    /// of the work.
+    async fn finish_ended_attempt(
+        &self,
+        token: &str,
+        mine: &Mine,
+        by_itself: bool,
+        gave_up: bool,
+    ) -> Result<(), AppError> {
+        let failed = |error| internal::<S>(&error);
+        let attempt = self
+            .store()
+            .attempts_of(mine.work.id)
+            .await
+            .map_err(failed)?
+            .pop()
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        if gave_up {
+            return Ok(());
+        }
+        self.write_summary(token, mine, &attempt).await?;
+        if !by_itself {
+            return Ok(());
+        }
+        let status_pending = !self.move_after_accept(token, mine).await?;
+        let works = self
+            .store()
+            .works_of_hand_over(mine.hand_over.id)
+            .await
+            .map_err(failed)?;
+        let work = IssueWork {
+            version: mine.work.version + 1,
+            ..mine.work.clone()
+        };
+        let event = self.work_event_unchanged(mine.actor.person.id, &work)?;
+        let hand_over = mine.hand_over.clone();
+        let closing = Closing {
+            work: work.id,
+            version: work.version,
+            accepted_by_itself: true,
+            status_pending,
+        };
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    close_work_of::<S>(transaction, &hand_over, &works, closing).await
+                })
+            })
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))
+    }
+
     /// Whether the attempt is accepted by itself (M7-Q8): the project allows it, the hand-over did
     /// not turn it off, and it has at least one check and every check passed.
     async fn accepts_by_itself_in(

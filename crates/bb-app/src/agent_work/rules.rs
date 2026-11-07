@@ -59,6 +59,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(jobs)
     }
 
+    /// Refuses to renew a rule that could not be made now: the person needs *Create agents that
+    /// work for you* in its project (and in the project it creates in), agents are on there, the
+    /// agent is still the person's and works, and the person can still open the saved search.
+    async fn ensure_rule_may_work(
+        &self,
+        person: &bb_core::person::Person,
+        rule: &RuleRecord,
+    ) -> Result<(), AppError> {
+        let agent = self
+            .store()
+            .agent(rule.agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|found| found.person == person.id && found.may_act())
+            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let allowed = self
+            .projects_where(agent.person, Permission::CreateAgents)
+            .await?;
+        let off = self.projects_with_agents_off(agent.person).await?;
+        let in_reach =
+            |project: bb_core::id::ProjectId| allowed.contains(&project) && !off.contains(&project);
+        if !in_reach(rule.project) || !rule.creates_in.is_none_or(in_reach) {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        let actor = Actor {
+            person: person.clone(),
+            key: None,
+        };
+        self.open_search(&actor, rule.search).await?;
+        Ok(())
+    }
+
     /// The rule, when the person made it (or an administrator may see it): anybody else is told
     /// there is no such rule.
     async fn rule_of(
@@ -109,7 +141,7 @@ pub async fn create_standing_rule<S: AuthStore>(
     }
     if input
         .creates_in
-        .is_some_and(|project| !allowed.contains(&project))
+        .is_some_and(|project| !allowed.contains(&project) || off.contains(&project))
     {
         return Err(ErrorCode::Forbidden.into());
     }
@@ -201,6 +233,9 @@ pub async fn change_standing_rule<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     let now = ctx.now();
+    if input.renew {
+        ctx.ensure_rule_may_work(&record.person, &found).await?;
+    }
     let (ends_at, ended) = if input.renew {
         let days = match input.days {
             Some(days) => days,
@@ -321,6 +356,16 @@ pub async fn propose_change<S: AuthStore>(
         return Err(ErrorCode::AgentWorkNotReady.into());
     }
     if !ctx.chain_of(found.project).await?.contains(&rule.project) {
+        return Err(AppError::Refused(ErrorCode::NotFound));
+    }
+    // Only an issue the rule found: the agent reads others only through a hand-over.
+    if ctx
+        .store()
+        .known_matches(rule.id, vec![found.id])
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .is_empty()
+    {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
     let before = match input.field {
@@ -450,19 +495,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
                 change_issue(
                     self,
-                    ChangeIssue {
-                        session_token: token.to_owned(),
-                        issue: proposal.issue.to_string(),
-                        version: current.version,
-                        issue_type: Some(issue_type),
-                        title: None,
-                        status: None,
-                        priority: None,
-                        estimated_time: None,
-                        time_left: None,
-                        assigned_to: None,
-                        fields: std::collections::BTreeMap::default(),
-                    },
+                    ChangeIssue::issue_type(
+                        token,
+                        proposal.issue.to_string(),
+                        current.version,
+                        issue_type,
+                    ),
                 )
                 .await
                 .map(|_| ())
@@ -646,7 +684,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(crate::search::stopped)?;
             let last = hits.last().map(|hit| hit.issue.id);
-            fresh.extend(hits.iter().map(|hit| hit.issue.id));
+            // Which of this page the rule knows already: read for the page, never for all.
+            let page: Vec<IssueId> = hits.iter().map(|hit| hit.issue.id).collect();
+            let known = self
+                .store()
+                .known_matches(rule.id, page.clone())
+                .await
+                .map_err(failed)?;
+            fresh.extend(page.into_iter().filter(|issue| !known.contains(issue)));
             match last {
                 Some(last) if hits.len() as u64 >= prepared.request.limit => {
                     prepared.request.after = Some(last);
@@ -655,12 +700,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         let now = self.now();
-        let known = self
-            .store()
-            .matches_of(rule.id, None, u64::from(u32::MAX))
-            .await
-            .map_err(failed)?;
-        fresh.retain(|issue| !known.iter().any(|each| each.issue == *issue));
         if fresh.is_empty() {
             return Ok(());
         }

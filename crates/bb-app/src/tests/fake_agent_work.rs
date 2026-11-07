@@ -12,7 +12,7 @@ use bb_core::id::{
 use jiff::Timestamp;
 
 use super::fake::{FakeError, Tx};
-use crate::agent_work::{AgentWorkRecords, GrantStore};
+use crate::agent_work::{AgentWorkRecords, GrantStore, WorkDetails};
 
 /// Everything stored about agent work.
 #[derive(Clone, Default)]
@@ -117,6 +117,21 @@ impl GrantStore for super::fake::FakeStore {
             .iter()
             .filter(|r| r.project == project && r.state == GivingState::Open)
             .cloned()
+            .collect())
+    }
+
+    async fn known_matches_in(
+        tx: &mut Tx,
+        rule: StandingRuleId,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueId>, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .matches
+            .iter()
+            .filter(|found| found.rule == rule && issues.contains(&found.issue))
+            .map(|found| found.issue)
             .collect())
     }
 
@@ -248,12 +263,20 @@ impl GrantStore for super::fake::FakeStore {
             .work
             .hand_overs
             .iter_mut()
-            .filter(|h| h.agent == agent)
+            .filter(|h| h.agent == agent && h.state == GivingState::Open)
         {
             h.state = GivingState::Ended;
+            h.version += 1;
         }
-        for r in tx.state.work.rules.iter_mut().filter(|r| r.agent == agent) {
+        for r in tx
+            .state
+            .work
+            .rules
+            .iter_mut()
+            .filter(|r| r.agent == agent && r.state == GivingState::Open)
+        {
             r.state = GivingState::Ended;
+            r.version += 1;
         }
         Ok(())
     }
@@ -337,16 +360,79 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .collect())
     }
 
-    async fn work_on_issue_in(tx: &mut Tx, issue: IssueId) -> Result<Vec<IssueWork>, FakeError> {
+    async fn details_of_works_in(
+        tx: &mut Tx,
+        works: Vec<IssueWork>,
+    ) -> Result<WorkDetails, FakeError> {
+        let state = &tx.state.work;
+        let of_work = |id: AgentWorkId| works.iter().any(|work| work.id == id);
+        let attempts: Vec<Attempt> = state
+            .attempts
+            .iter()
+            .filter(|attempt| of_work(attempt.work))
+            .cloned()
+            .collect();
+        Ok(WorkDetails {
+            hand_overs: state
+                .hand_overs
+                .iter()
+                .filter(|held| works.iter().any(|work| work.hand_over == held.id))
+                .cloned()
+                .collect(),
+            questions: state
+                .questions
+                .iter()
+                .filter(|question| of_work(question.work))
+                .cloned()
+                .collect(),
+            results: state
+                .results
+                .iter()
+                .filter(|result| attempts.iter().any(|attempt| attempt.id == result.attempt))
+                .cloned()
+                .collect(),
+            attempts,
+            reviews: state
+                .reviews
+                .iter()
+                .filter(|review| of_work(review.work))
+                .cloned()
+                .collect(),
+        })
+    }
+
+    async fn agent_has_open_giving_in(tx: &mut Tx, agent: AgentId) -> Result<bool, FakeError> {
+        let state = &tx.state.work;
+        Ok(state
+            .works
+            .iter()
+            .any(|work| work.agent == agent && state.is_open(work))
+            || state
+                .hand_overs
+                .iter()
+                .any(|held| held.agent == agent && held.state == GivingState::Open)
+            || state
+                .rules
+                .iter()
+                .any(|rule| rule.agent == agent && rule.state == GivingState::Open))
+    }
+
+    async fn work_on_issue_in(
+        tx: &mut Tx,
+        issue: IssueId,
+        agent: Option<AgentId>,
+        limit: u64,
+    ) -> Result<Vec<IssueWork>, FakeError> {
         let mut found: Vec<IssueWork> = tx
             .state
             .work
             .works
             .iter()
-            .filter(|w| w.issue == issue)
+            .filter(|w| w.issue == issue && agent.is_none_or(|agent| w.agent == agent))
             .cloned()
             .collect();
         found.reverse();
+        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }
 
@@ -427,21 +513,36 @@ impl AgentWorkRecords for super::fake::FakeStore {
         id: AgentWorkId,
         accepted_by_itself: bool,
         status_pending: bool,
-    ) -> Result<(), FakeError> {
-        if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
-            w.closed = true;
-            w.accepted_by_itself = accepted_by_itself;
-            w.status_pending = status_pending;
-        }
-        Ok(())
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .works
+            .iter_mut()
+            .find(|w| w.id == id && w.version == version)
+            .map(|w| {
+                w.closed = true;
+                w.accepted_by_itself = accepted_by_itself;
+                w.status_pending = status_pending;
+                w.version += 1;
+            })
+            .is_some())
     }
 
-    async fn mark_work_seen(tx: &mut Tx, id: AgentWorkId) -> Result<(), FakeError> {
-        if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
-            w.accepted_by_itself = false;
-            w.status_pending = false;
-        }
-        Ok(())
+    async fn mark_work_seen(tx: &mut Tx, id: AgentWorkId, version: i64) -> Result<bool, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .works
+            .iter_mut()
+            .find(|w| w.id == id && w.version == version)
+            .map(|w| {
+                w.accepted_by_itself = false;
+                w.status_pending = false;
+                w.version += 1;
+            })
+            .is_some())
     }
 
     async fn insert_attempt(tx: &mut Tx, attempt: &Attempt) -> Result<(), FakeError> {

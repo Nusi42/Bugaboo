@@ -7,21 +7,13 @@
 
 use bb_core::agent_work::AgentWorkState;
 use bb_core::event::DomainEvent;
-use bb_core::id::{AgentId, AgentWorkId, IssueId, StandingRuleId, UserId};
+use bb_core::id::{AgentId, AgentWorkId, IssueId, StandingRuleId};
 use bb_core::notification::{NotificationKind, Once};
 
 use super::{Hears, Keeps, Round, Subject};
 use crate::agent_work::{event_member, waiting_for};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::event_members::text_set;
-
-/// The person who did it as themselves; the person of an agent still hears of what it did.
-pub(super) const fn doer_in_person(event: &DomainEvent) -> Option<UserId> {
-    match event.actor {
-        bb_core::event::Actor::Person(person) => Some(person),
-        _ => None,
-    }
-}
 
 /// The kind a new state of agent work is told as, if it is told at all.
 fn kind_of(state: &str, waiting: Option<&str>) -> Option<NotificationKind> {

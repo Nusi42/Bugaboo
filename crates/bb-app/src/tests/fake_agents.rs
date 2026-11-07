@@ -8,7 +8,11 @@ use crate::agents::{AgentStore, AgentWork, AgentWorkStore};
 use crate::auth::AccessKeyRecord;
 
 impl AgentWorkStore for FakeStore {
-    async fn agent_work(&self, agent: AgentId) -> Result<AgentWork, FakeError> {
+    async fn agent_work(
+        &self,
+        agent: AgentId,
+        now: jiff::Timestamp,
+    ) -> Result<AgentWork, FakeError> {
         Ok(self.read(|state| {
             let mut work = state
                 .agent_work
@@ -21,6 +25,12 @@ impl AgentWorkStore for FakeStore {
                 .works
                 .iter()
                 .filter(|w| w.agent == agent && records.is_open(w))
+                .filter(|w| {
+                    records
+                        .hand_overs
+                        .iter()
+                        .any(|h| h.id == w.hand_over && h.ends_at > now)
+                })
             {
                 work.issues.insert(held.issue);
                 if let Some(hand_over) = records.hand_overs.iter().find(|h| h.id == held.hand_over)
@@ -41,7 +51,9 @@ impl AgentWorkStore for FakeStore {
                 );
             }
             for rule in records.rules.iter().filter(|r| {
-                r.agent == agent && r.state == bb_core::agent_records::GivingState::Open
+                r.agent == agent
+                    && r.state == bb_core::agent_records::GivingState::Open
+                    && r.ends_at > now
             }) {
                 work.projects.insert(rule.project);
                 work.creates_in.extend(rule.creates_in);
@@ -78,6 +90,16 @@ fn change(tx: &mut Tx, id: AgentId, version: i64, set: impl FnOnce(&mut Agent)) 
 impl AgentStore for FakeStore {
     async fn agent_in(tx: &mut Tx, id: AgentId) -> Result<Option<Agent>, FakeError> {
         Ok(tx.state.agents.iter().find(|agent| agent.id == id).cloned())
+    }
+
+    async fn agents_by_ids_in(tx: &mut Tx, ids: Vec<AgentId>) -> Result<Vec<Agent>, FakeError> {
+        Ok(tx
+            .state
+            .agents
+            .iter()
+            .filter(|agent| ids.contains(&agent.id))
+            .cloned()
+            .collect())
     }
 
     async fn agent_count_of_in(tx: &mut Tx, person: UserId) -> Result<i64, FakeError> {

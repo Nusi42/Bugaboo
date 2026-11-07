@@ -85,12 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(true);
         };
-        let work = self
-            .store()
-            .agent_work(agent)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(work.issues.contains(&issue))
+        Ok(self.work_of_agent_now(agent).await?.issues.contains(&issue))
     }
 
     /// The answer for a comment or a relation that is not there: it does the work that one whose

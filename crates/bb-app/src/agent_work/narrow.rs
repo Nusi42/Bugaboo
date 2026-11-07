@@ -3,28 +3,22 @@
 //! the status only when it was ticked. Reading, commenting, reporting, attaching and linking
 //! related issues need nothing.
 
+use std::sync::Arc;
+
 use bb_core::ErrorCode;
-use bb_core::id::IssueId;
+use bb_core::id::{AgentId, IssueId};
 
 use crate::access::Actor;
+use crate::agents::AgentWork;
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::issues::ChangeIssue;
 
-/// The members of an issue that a hand-over or a rule can allow an agent to change, by their keys
-/// (the others are the keys of the fields of the catalogue and of own fields).
+/// The members of an issue that a hand-over or a rule can allow an agent to change, by their keys:
+/// the ones events and levels name (`issues::member`) and the one thing no hand-over gives.
 pub(crate) mod issue_member {
-    /// The member of an issue that a change of its status writes.
-    pub(crate) const STATUS: &str = "status";
-    /// The description of an issue.
-    pub(crate) const DESCRIPTION: &str = "description";
-    /// The project an issue is in.
-    pub(crate) const PROJECT: &str = "project";
-    /// The labels of an issue.
-    pub(crate) const LABELS: &str = "labels";
-    /// The tags of an issue.
-    pub(crate) const TAGS: &str = "tags";
-    /// Putting an issue under another as its sub-issue.
-    pub(crate) const PARENT: &str = "parent";
+    pub(crate) use crate::issues::member::{DESCRIPTION, LABELS, PARENT, PROJECT, STATUS, TAGS};
+    pub(crate) use bb_core::agent_work::issue_member::{ATTACHMENTS, COMMENTS, RELATIONS};
+
     /// Deleting an issue: no hand-over gives it.
     pub(crate) const DELETE: &str = "delete";
 }
@@ -34,14 +28,15 @@ use issue_member::STATUS;
 /// The members of the issue a change names, by their keys: the ones of the catalogue and the own
 /// fields.
 fn members_of(input: &ChangeIssue) -> Vec<String> {
+    use bb_core::agent_work::issue_member as key;
     let named = [
-        (input.issue_type.is_some(), "issue_type"),
-        (input.title.is_some(), "title"),
+        (input.issue_type.is_some(), key::ISSUE_TYPE),
+        (input.title.is_some(), key::TITLE),
         (input.status.is_some(), STATUS),
-        (input.priority.is_some(), "priority"),
-        (input.estimated_time.is_some(), "estimated_time"),
-        (input.time_left.is_some(), "time_left"),
-        (input.assigned_to.is_some(), "assigned_to"),
+        (input.priority.is_some(), key::PRIORITY),
+        (input.estimated_time.is_some(), key::ESTIMATED_TIME),
+        (input.time_left.is_some(), key::TIME_LEFT),
+        (input.assigned_to.is_some(), key::ASSIGNED_TO),
     ];
     named
         .into_iter()
@@ -52,6 +47,43 @@ fn members_of(input: &ChangeIssue) -> Vec<String> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The work of an agent now, read once for the request.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn work_of_agent_now(
+        &self,
+        agent: AgentId,
+    ) -> Result<Arc<AgentWork>, AppError> {
+        if let Some(held) = locked(&self.agent_work).get(&agent) {
+            return Ok(Arc::clone(held));
+        }
+        let read = Arc::new(
+            self.store()
+                .agent_work(agent, self.now())
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        );
+        locked(&self.agent_work).insert(agent, Arc::clone(&read));
+        Ok(read)
+    }
+
+    /// The own field of the catalogue a member names, when it names one.
+    pub(crate) async fn own_field_named(
+        &self,
+        member: &str,
+    ) -> Result<Option<crate::fields::Definition>, AppError> {
+        let Ok(id) = member.parse::<bb_core::id::FieldId>() else {
+            return Ok(None);
+        };
+        Ok(self
+            .field_catalogue()
+            .await?
+            .iter()
+            .find(|definition| definition.field.id == id)
+            .cloned())
+    }
+
     /// Refuses a change by an agent to a member its work does not allow. A person is not asked.
     /// What the agent then changes belongs to the run of its attempt.
     ///
@@ -66,8 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(());
         };
-        let store_failed = |error| internal::<S>(&error);
-        let work = self.store().agent_work(agent).await.map_err(store_failed)?;
+        let work = self.work_of_agent_now(agent).await?;
         let allowance = work.allowances.get(&issue).cloned().unwrap_or_default();
         let by_the_system = *locked(&self.accepting) == Some(issue);
         let allowed = members.iter().all(|member| {
@@ -75,6 +106,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         });
         if !allowed {
             return Err(ErrorCode::Forbidden.into());
+        }
+        // Whatever it was given: never an own field that holds people.
+        for member in members {
+            let named = self.own_field_named(member).await?;
+            if named.is_some_and(|definition| definition.field.kind.holds_people()) {
+                return Err(ErrorCode::Forbidden.into());
+            }
         }
         if let Some(run) = self.run_of_attempt_on(agent, issue).await? {
             self.set_run(Some(run));
@@ -93,24 +131,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
-    /// The issues a search of the actor is cut to: for an agent, those of its work; `None` for a
-    /// person.
-    ///
-    /// # Errors
-    /// An internal error when the store fails.
-    pub(crate) async fn issues_of_work(
-        &self,
-        actor: &Actor,
-    ) -> Result<Option<Vec<IssueId>>, AppError> {
-        let Some(agent) = actor.agent() else {
-            return Ok(None);
-        };
-        let work = self
-            .store()
-            .agent_work(agent)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(Some(work.issues.into_iter().collect()))
+    /// The work a search of the actor is cut to: for an agent, its own; `None` for a person.
+    pub(crate) fn cut_to_work(&self, actor: &Actor) -> Option<crate::search::WorkOf> {
+        actor.agent().map(|agent| crate::search::WorkOf {
+            agent,
+            at: self.now(),
+        })
     }
 
     /// Refuses a new issue by an agent unless a hand-over lets it create sub-issues or a standing
@@ -126,11 +152,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(());
         };
-        let work = self
-            .store()
-            .agent_work(agent)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        let work = self.work_of_agent_now(agent).await?;
         if work.creates_in.contains(&project)
             || work
                 .allowances
@@ -160,7 +182,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The run of the attempt that runs now on the issue for the agent, if there is one.
     async fn run_of_attempt_on(
         &self,
-        agent: bb_core::id::AgentId,
+        agent: AgentId,
         issue: IssueId,
     ) -> Result<Option<bb_core::id::RunId>, AppError> {
         let store_failed = |error| internal::<S>(&error);

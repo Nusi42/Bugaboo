@@ -98,6 +98,8 @@ pub async fn restore_issue<S: AuthStore>(
     if !held.may_delete_issue(issue.reported_by) {
         return Err(ErrorCode::NotFound.into());
     }
+    ctx.ensure_agent_may_member(&actor, issue.id, issue_member::DELETE)
+        .await?;
     let id = issue.id;
     let event = ctx.event(
         by(actor.person.id),

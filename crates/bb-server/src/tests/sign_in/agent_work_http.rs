@@ -158,3 +158,55 @@ async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_tick
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_01_a_hand_over_cannot_name_a_member_that_holds_people_or_is_none() -> TestResult {
+    each_database("sec_01_hand_over_members", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut given = given(&site, &mut ada).await?;
+        let agent = given.person.send("GET", "/api/v1/agents", None).await?.body["items"][0]["id"]
+            .as_str()
+            .ok_or("no agent")?
+            .to_owned();
+        let more = key_of(&site.create(&mut ada, "One more").await?)?;
+        for member in ["assigned-to", "reported-by", "followers", "nope"] {
+            let refused = given
+                .person
+                .send(
+                    "POST",
+                    "/api/v1/hand-overs",
+                    Some(json!({
+                        "agent": agent,
+                        "issues": [more],
+                        "powers": ["change-fields"],
+                        "fields": ["title", member],
+                    })),
+                )
+                .await?;
+            assert_eq!(
+                refused.code(),
+                "request.invalid",
+                "{member}: {}",
+                refused.body
+            );
+        }
+        // The title alone is fine.
+        let fine = given
+            .person
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(json!({
+                    "agent": agent,
+                    "issues": [more],
+                    "powers": ["change-fields"],
+                    "fields": ["title"],
+                })),
+            )
+            .await?;
+        assert_eq!(fine.status, StatusCode::OK, "{}", fine.body);
+        Ok(())
+    })
+    .await
+}

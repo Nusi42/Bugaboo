@@ -37,6 +37,8 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn open_rules_in(project: ProjectId) -> Vec<StandingRule> = open_rules_in_in;
         /// The proposals on an issue, newest first.
         fn proposals_on(issue: IssueId, state: Option<ProposalState>) -> Vec<Proposal> = proposals_on_in;
+        /// Which of these issues came under the rule already.
+        fn known_matches(rule: StandingRuleId, issues: Vec<IssueId>) -> Vec<IssueId> = known_matches_in;
         /// The issues that came under a rule, by issue, after `after`, at most `limit`.
         fn matches_of(rule: StandingRuleId, after: Option<IssueId>, limit: u64) -> Vec<RuleMatch> = matches_of_in;
     }
@@ -62,6 +64,22 @@ pub trait GrantStore: AgentWorkStore + 'static {
     }
 }
 
+/// Everything that belongs to a number of pieces of work, read together: a page of work costs the
+/// same few statements whatever its length (PERF-N1).
+#[derive(Clone, Debug, Default)]
+pub struct WorkDetails {
+    /// The hand-overs the work was given by.
+    pub hand_overs: Vec<HandOver>,
+    /// The questions, oldest first.
+    pub questions: Vec<Question>,
+    /// The attempts, oldest first.
+    pub attempts: Vec<Attempt>,
+    /// What the attempts attached.
+    pub results: Vec<AttemptResult>,
+    /// The reviews, oldest first.
+    pub reviews: Vec<Review>,
+}
+
 /// What the work on an issue needs from storage.
 pub trait AgentWorkRecords: GrantStore + 'static {
     queries! {
@@ -82,8 +100,13 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn question(id: AgentNoteId) -> Option<Question> = question_in;
         /// The work of a hand-over, one piece for each issue.
         fn works_of_hand_over(hand_over: HandOverId) -> Vec<IssueWork> = works_of_hand_over_in;
-        /// All the work on an issue, newest first.
-        fn work_on_issue(issue: IssueId) -> Vec<IssueWork> = work_on_issue_in;
+        /// The work on an issue, newest first, at most `limit`; only the work of `agent` when it is
+        /// given.
+        fn work_on_issue(issue: IssueId, agent: Option<AgentId>, limit: u64) -> Vec<IssueWork> = work_on_issue_in;
+        /// What belongs to these pieces of work, read together.
+        fn details_of_works(works: Vec<IssueWork>) -> WorkDetails = details_of_works_in;
+        /// Whether an agent has anything left to end: open work, an open hand-over or an open rule.
+        fn agent_has_open_giving(agent: AgentId) -> bool = agent_has_open_giving_in;
         /// The work of one agent, by ID, after `after`, at most `limit`.
         fn work_of_agent(agent: AgentId, after: Option<AgentWorkId>, limit: u64) -> Vec<IssueWork> = work_of_agent_in;
         /// The reviews of a piece of work, oldest first.
@@ -104,11 +127,13 @@ pub trait AgentWorkRecords: GrantStore + 'static {
             accepted_by_itself: bool,
             version: i64
         ) -> bool;
-        /// Ends the work with a review; whether it was accepted by itself and still waits for a
-        /// person to look at it.
-        fn close_work(id: AgentWorkId, accepted_by_itself: bool, status_pending: bool) -> ();
-        /// Marks that a person looked at work that was accepted by itself.
-        fn mark_work_seen(id: AgentWorkId) -> ();
+        /// Ends the work with a review, counting its version up; whether it was at `version`.
+        /// `accepted_by_itself` and `status_pending` say whether it still waits for a person to
+        /// look at it.
+        fn close_work(id: AgentWorkId, accepted_by_itself: bool, status_pending: bool, version: i64) -> bool;
+        /// Marks that a person looked at work that was accepted by itself, counting its version
+        /// up; whether it was at `version`.
+        fn mark_work_seen(id: AgentWorkId, version: i64) -> bool;
         /// Adds an attempt.
         fn insert_attempt(attempt: &Attempt) -> ();
         /// Writes what the attempt now holds: its plan, the approval, what the agent reported and

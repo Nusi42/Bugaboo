@@ -223,7 +223,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             blocking_kinds: blocking,
             own_reach: looked.own_reach.clone(),
             withheld_text: withheld.map_or_else(WithheldText::default, Withheld::text),
-            only: self.issues_of_work(actor).await?,
+            only: self.cut_to_work(actor),
             after: None,
             limit: 0,
         };

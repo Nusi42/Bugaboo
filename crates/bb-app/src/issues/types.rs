@@ -81,6 +81,49 @@ pub struct ChangeIssue {
     pub fields: BTreeMap<String, Value>,
 }
 
+impl ChangeIssue {
+    /// A change that names nothing yet, to the issue at `version`.
+    #[must_use]
+    pub fn of(session_token: &str, issue: String, version: i64) -> Self {
+        Self {
+            session_token: session_token.to_owned(),
+            issue,
+            version,
+            issue_type: None,
+            title: None,
+            status: None,
+            priority: None,
+            estimated_time: None,
+            time_left: None,
+            assigned_to: None,
+            fields: BTreeMap::default(),
+        }
+    }
+
+    /// A change of the status only.
+    #[must_use]
+    pub fn status(session_token: &str, issue: String, version: i64, status: StatusKey) -> Self {
+        Self {
+            status: Some(status),
+            ..Self::of(session_token, issue, version)
+        }
+    }
+
+    /// A change of the issue type only.
+    #[must_use]
+    pub fn issue_type(
+        session_token: &str,
+        issue: String,
+        version: i64,
+        issue_type: IssueTypeId,
+    ) -> Self {
+        Self {
+            issue_type: Some(issue_type),
+            ..Self::of(session_token, issue, version)
+        }
+    }
+}
+
 /// Move an issue into another project.
 pub struct MoveIssue {
     /// The secret of the session of the request.
