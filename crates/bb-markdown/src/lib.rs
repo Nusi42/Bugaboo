@@ -71,6 +71,12 @@ pub struct Options {
     /// places do not move: a token that stays plain still has its place in the list. The browser
     /// preview leaves it empty.
     pub plain_tokens: Vec<usize>,
+    /// The text is an answer of the assistant (AI-05, SEC-RICHTEXT): no picture is ever shown, not
+    /// even from our own origin or an allowed host, and a picture or a link shows its full address
+    /// beside its words, so a label cannot hide where a link goes. Issue IDs and names stay text, so
+    /// the answer holds no token and nothing in it is resolved or linked on its own. The browser
+    /// preview never sets it.
+    pub ai_answer: bool,
 }
 
 /// The result of [`render`].

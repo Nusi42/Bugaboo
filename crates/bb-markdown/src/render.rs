@@ -46,8 +46,15 @@ pub fn render(text: &str, options: &Options) -> Rendered {
 
 /// An image that is not allowed and shows as a link to its address.
 struct ImageAsLink {
-    url: String,
     has_text: bool,
+}
+
+/// A link that is open: where it goes, and the image it was made from, if it was one.
+struct OpenLink {
+    url: String,
+    image: Option<ImageAsLink>,
+    /// The words of the link are its address already (an address in angle brackets).
+    shows_address: bool,
 }
 
 /// What the pipeline remembers while the events go by.
@@ -57,8 +64,8 @@ struct State {
     kept: Vec<bool>,
     /// Inside a code block: no tokens there.
     in_code_block: bool,
-    /// For each open link: the image it was made from, if it was one.
-    links: Vec<Option<ImageAsLink>>,
+    /// For each open link.
+    links: Vec<OpenLink>,
     /// For each open image: was it turned into a link?
     images: Vec<bool>,
     /// How many images and links are open inside the description of an image: they only add to
@@ -79,7 +86,7 @@ impl State {
     ) {
         match event {
             Event::Start(tag) => self.start(tag, options, out),
-            Event::End(tag) => self.end(tag, out),
+            Event::End(tag) => self.end(tag, options, out),
             // Raw HTML is no HTML: it is text, and shows as text (SEC-13).
             Event::Html(html) | Event::InlineHtml(html) => {
                 self.mark_text();
@@ -87,8 +94,10 @@ impl State {
             }
             Event::Text(text) => {
                 self.mark_text();
-                let plain_place =
-                    self.in_code_block || !self.links.is_empty() || !self.images.is_empty();
+                let plain_place = options.ai_answer
+                    || self.in_code_block
+                    || !self.links.is_empty()
+                    || !self.images.is_empty();
                 if plain_place || *text != *source {
                     out.push(Item::Event(Event::Text(text.into_string().into())));
                 } else {
@@ -138,13 +147,14 @@ impl State {
                 title,
                 id,
                 ..
-            } if !urls::image_allowed(&dest_url, &options.image_hosts) => {
+            } if options.ai_answer || !urls::image_allowed(&dest_url, &options.image_hosts) => {
                 self.images.push(true);
                 dropped = !urls::link_allowed(&dest_url);
-                self.links.push(Some(ImageAsLink {
+                self.links.push(OpenLink {
                     url: dest_url.to_string(),
-                    has_text: false,
-                }));
+                    image: Some(ImageAsLink { has_text: false }),
+                    shows_address: false,
+                });
                 Tag::Link {
                     link_type: LinkType::Inline,
                     dest_url,
@@ -156,8 +166,16 @@ impl State {
                 self.images.push(false);
                 tag
             }
-            Tag::Link { ref dest_url, .. } => {
-                self.links.push(None);
+            Tag::Link {
+                ref dest_url,
+                link_type,
+                ..
+            } => {
+                self.links.push(OpenLink {
+                    url: dest_url.to_string(),
+                    image: None,
+                    shows_address: matches!(link_type, LinkType::Autolink | LinkType::Email),
+                });
                 dropped = !urls::link_allowed(dest_url);
                 tag
             }
@@ -179,7 +197,7 @@ impl State {
         }
     }
 
-    fn end(&mut self, tag: TagEnd, out: &mut Vec<Item>) {
+    fn end(&mut self, tag: TagEnd, options: &Options, out: &mut Vec<Item>) {
         if matches!(tag, TagEnd::Image) && self.inner_images > 0 {
             self.inner_images -= 1;
             return;
@@ -197,12 +215,21 @@ impl State {
         match tag {
             TagEnd::CodeBlock => self.in_code_block = false,
             TagEnd::Link => {
-                // A link made of an image without a description shows its address.
-                if let Some(Some(image)) = self.links.pop()
-                    && !image.has_text
+                if let Some(link) = self.links.pop()
                     && keep
                 {
-                    out.push(Item::Event(Event::Text(image.url.into())));
+                    match link.image {
+                        // A link made of an image without a description shows its address.
+                        Some(image) if !image.has_text => {
+                            out.push(Item::Event(Event::Text(link.url.into())));
+                        }
+                        // An answer of the assistant shows where every link goes.
+                        _ if options.ai_answer && !link.shows_address => {
+                            let address = format!(" ({})", link.url);
+                            out.push(Item::Event(Event::Text(address.into())));
+                        }
+                        _ => {}
+                    }
                 }
             }
             _ => {}
@@ -214,7 +241,10 @@ impl State {
 
     /// Notes that text came: an image shown as a link needs its address as text otherwise.
     fn mark_text(&mut self) {
-        if let Some(Some(image)) = self.links.last_mut() {
+        if let Some(OpenLink {
+            image: Some(image), ..
+        }) = self.links.last_mut()
+        {
             image.has_text = true;
         }
     }
