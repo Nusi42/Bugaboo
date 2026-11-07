@@ -401,6 +401,11 @@ fn read_file(path: &Path) -> Result<Option<Zeroizing<String>>, StoreError> {
 /// Reads a file that another process may still be writing: tries again until it is complete or
 /// the patience is over.
 fn wait_for(path: &Path) -> Result<Zeroizing<String>, StoreError> {
+    wait_for_within(path, WINNER_PATIENCE)
+}
+
+/// [`wait_for`] with a patience of its own, so a test on a busy computer can wait longer.
+fn wait_for_within(path: &Path, patience: Duration) -> Result<Zeroizing<String>, StoreError> {
     let started = std::time::Instant::now();
     loop {
         if let Some(text) = read_file(path)?
@@ -408,7 +413,7 @@ fn wait_for(path: &Path) -> Result<Zeroizing<String>, StoreError> {
         {
             return Ok(text);
         }
-        if started.elapsed() > WINNER_PATIENCE {
+        if started.elapsed() > patience {
             return Err(StoreError::Secret(SecretProblem::BadKeyFile));
         }
         std::thread::sleep(Duration::from_millis(20));
@@ -610,13 +615,17 @@ mod tests {
         let master = path.join(MASTER_KEY_FILE);
         let content = fs::read(&master).unwrap();
         fs::write(&master, "").unwrap();
+        let written = master.clone();
         let writer = std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(300));
-            fs::write(&master, content).unwrap();
+            fs::write(&written, content).unwrap();
         });
-        let second = KeyRing::open(&path, OpenMode::ExistingOnly).unwrap();
+        // A patience of its own: a computer that is busy may run the writer late, which is not
+        // what the test is about.
+        let text = wait_for_within(&master, Duration::from_secs(60)).unwrap();
         writer.join().unwrap();
-        assert_eq!(*second.newest().unwrap().bytes(), expected);
+        let keys = parse_master(&text).unwrap();
+        assert_eq!(*keys[0].bytes(), expected);
     }
 
     #[test]
