@@ -457,3 +457,31 @@ pub(crate) async fn decide_proposal_scenario(world: &World) -> Added {
     )
     .await
 }
+
+#[tokio::test]
+async fn ai_32_a_change_to_an_issue_where_a_rule_works_queues_the_job_of_the_matches() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    made(&world, &given).await?;
+    let waiting = |world: &World| {
+        world
+            .store
+            .lock()
+            .state
+            .jobs
+            .iter()
+            .filter(|job| job.kind.as_str() == "agents.rule-matches")
+            .count()
+    };
+    let before = waiting(&world);
+    an_issue(&world, given.project).await?;
+    world.ctx().catch_up_notifications().await?;
+    assert!(waiting(&world) > before, "the reader queued the job");
+    // Many changes of one round queue it once for the project.
+    let after_one = waiting(&world);
+    an_issue(&world, given.project).await?;
+    an_issue(&world, given.project).await?;
+    world.ctx().catch_up_notifications().await?;
+    assert_eq!(waiting(&world), after_one + 1);
+    Ok(())
+}

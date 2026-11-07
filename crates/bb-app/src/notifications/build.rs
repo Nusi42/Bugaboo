@@ -45,6 +45,8 @@ use crate::outbox_reader::read_all;
 mod agent_work;
 mod work_days;
 
+use agent_work::doer_in_person;
+
 /// What one batch of events looks up once: people, their settings, the followers that lost
 /// access.
 struct Round {
@@ -63,6 +65,8 @@ struct Round {
     rows: Vec<Notification>,
     /// The followers who may not see the issue any more.
     drops: Vec<(IssueId, UserId)>,
+    /// The projects with a standing rule where an issue changed: one job of matches for each.
+    rule_projects: std::collections::BTreeSet<bb_core::id::ProjectId>,
 }
 
 /// Who might hear of an event, and in what order of importance (the first kind the person wants
@@ -126,15 +130,6 @@ fn may_hear(
 /// The person who did it, if a person did.
 const fn doer(event: &DomainEvent) -> Option<UserId> {
     event.actor.person()
-}
-
-/// The person who did it as themselves: an agent that acts for a person is not the person, so the
-/// person still hears of what it did (ADR-0029).
-const fn doer_in_person(event: &DomainEvent) -> Option<UserId> {
-    match event.actor {
-        bb_core::event::Actor::Person(person) => Some(person),
-        _ => None,
-    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -235,6 +230,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             mail_on: self.mail_is_on().await?,
             rows: Vec::new(),
             drops: Vec::new(),
+            rule_projects: std::collections::BTreeSet::new(),
         };
         for (_, event) in &events {
             self.notifications_of_event(&mut round, event).await?;
@@ -245,6 +241,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(failed)?;
         self.drop_followers(&round.drops).await?;
+        self.queue_rule_matches(&round.rule_projects).await?;
         Ok(u64::try_from(events.len()).unwrap_or(u64::MAX))
     }
 
@@ -451,6 +448,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
+        self.note_projects_with_rules(round, &issue).await?;
         let mut hears: Vec<Hears> = newly_assigned(&event.changes)
             .into_iter()
             .map(|person| Hears {
@@ -616,8 +614,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        // Only a change to many issues tells its person: the end of a session of an app or of an
-        // attempt of an agent is told by the agent work, not as a run.
+        // Only a change to many issues tells its person; an attempt is told by the agent work.
         if run.kind != bb_core::run::RunKind::ManyChanges
             || !run_status_of(&event.changes).is_some_and(ManyChangeStatus::is_over)
         {
