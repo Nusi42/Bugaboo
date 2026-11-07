@@ -390,6 +390,7 @@ impl Rig {
             },
             changes: vec![],
             reason: None,
+            run: None,
         };
         self.database
             .set_setting(

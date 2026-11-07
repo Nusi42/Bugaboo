@@ -53,6 +53,7 @@ mod tags;
 #[cfg(feature = "testing")]
 mod testing;
 pub mod text_index;
+mod text_marks;
 mod time;
 mod workflows;
 mod working_hours;
@@ -311,6 +312,7 @@ mod test_support {
                 after: Some(serde_json::json!("Printer jams")),
             }],
             reason: Some("Reported".to_owned()),
+            run: None,
         }
     }
 

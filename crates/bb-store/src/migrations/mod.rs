@@ -68,6 +68,7 @@ mod m0036_issue_totals_index;
 mod m0037_ai_agreement;
 mod m0038_ai_tools;
 mod m0039_agents;
+mod m0040_runs;
 #[cfg(test)]
 mod old_rows;
 
@@ -360,6 +361,11 @@ const ALL: &[Definition] = &[
         version: 39,
         name: "agents",
         steps: || Ok(m0039_agents::steps()),
+    },
+    Definition {
+        version: 40,
+        name: "runs",
+        steps: || Ok(m0040_runs::steps()),
     },
 ];
 

@@ -14,6 +14,7 @@ async fn iss_17_a_write_that_breaks_is_no_stale_version() -> TestResult {
             entity: stage.note.clone(),
             changes: Vec::new(),
             reason: None,
+            run: None,
         };
         let error = stage
             .rig()

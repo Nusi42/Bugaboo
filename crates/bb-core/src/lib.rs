@@ -32,6 +32,7 @@ pub mod layout;
 pub mod lookup;
 pub mod mail;
 pub mod many_changes;
+pub mod mark;
 pub mod message;
 pub mod migration;
 pub mod names;

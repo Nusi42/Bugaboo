@@ -30,6 +30,9 @@ async fn changed<T: Send>(
 fn a_run(source: &mut impl IdSource, issues: usize) -> ManyChangeRun {
     ManyChangeRun {
         id: RunId::generate(source).unwrap(),
+        kind: bb_core::run::RunKind::ManyChanges,
+        app: None,
+        agent: None,
         person: UserId::generate(source),
         action: json!({"kind": "delete"}),
         items: (0..issues)

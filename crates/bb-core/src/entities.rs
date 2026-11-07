@@ -26,6 +26,7 @@ crate::entities! {
     crate::access_key::AccessKeyPermission,
     crate::access_key::AccessKeyProject,
     crate::many_changes::ManyChangeRun,
+    crate::mark::TextMark,
     crate::comment::Comment,
     crate::sign_up_invitation::SignUpInvitation,
     crate::sign_up_invitation::SignUpMail,

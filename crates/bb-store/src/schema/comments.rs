@@ -28,6 +28,19 @@ pub(crate) enum CommentVersionRow {
     SavedAt,
 }
 
+/// How a text that AI wrote was written (COMP-08, COMP-09): one row for each such part of a record.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum TextMarkRow {
+    #[iden = "text_mark"]
+    Table,
+    EntityKind,
+    EntityId,
+    Part,
+    WrittenBy,
+    App,
+    Agent,
+}
+
 /// The people a comment puts into *Mentions* (ISS-05).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum MentionRow {
@@ -105,5 +118,13 @@ stored_tables! {
         Record => record,
         RecordKind => record_kind,
         Changes => changes,
+    },
+    TextMarkRow => bb_core::mark::TextMark {
+        EntityKind => entity_kind,
+        EntityId => entity_id,
+        Part => part,
+        WrittenBy => written_by,
+        App => app,
+        Agent => agent,
     },
 }

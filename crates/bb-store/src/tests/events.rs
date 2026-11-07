@@ -263,3 +263,74 @@ async fn the_store_is_the_adapter_of_the_change_port() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_38_an_event_written_in_a_run_carries_the_run() -> TestResult {
+    each_database("ai_38_event_in_run", async |db| {
+        let database = open(db).await?;
+        let mut ids = ids();
+        let (mut inside, outside) = (event(&mut ids, 5), event(&mut ids, 6));
+        inside.run = Some(bb_core::id::RunId::generate(&mut ids)?);
+        database.record_change(&inside, async |_| Ok(())).await?;
+        database.record_change(&outside, async |_| Ok(())).await?;
+        assert_eq!(
+            database.events_about(&inside.entity, 10).await?[0].run,
+            inside.run
+        );
+        assert_eq!(
+            database.events_about(&outside.entity, 10).await?[0].run,
+            None
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn comp_09_a_text_is_marked_by_the_actor_and_the_channel_and_a_person_keeps_the_mark()
+-> TestResult {
+    each_database("comp_09_text_mark", async |db| {
+        let database = open(db).await?;
+        let mut ids = ids();
+        let comment = EntityKind::new("comment")?;
+        let mut written = event(&mut ids, 5);
+        written.entity.kind = comment.clone();
+        written.changes = vec![FieldChange {
+            field: "text".to_owned(),
+            before: None,
+            after: Some(serde_json::json!("Done by the agent")),
+        }];
+        let agent = AgentId::generate(&mut ids);
+        let person = bb_core::id::UserId::generate(&mut ids);
+        written.actor = Actor::Agent { agent, person };
+        database.record_change(&written, async |_| Ok(())).await?;
+        let mut by_hand = event(&mut ids, 6);
+        by_hand.entity = written.entity.clone();
+        by_hand.changes = vec![FieldChange {
+            field: "text".to_owned(),
+            before: Some(serde_json::json!("Done by the agent")),
+            after: Some(serde_json::json!("Done by the agent, checked")),
+        }];
+        database.record_change(&by_hand, async |_| Ok(())).await?;
+        let marks = database
+            .text_marks_of(&comment, &[written.entity.id])
+            .await?;
+        assert_eq!(marks.len(), 1);
+        assert_eq!(marks[0].written_by, bb_core::mark::WrittenBy::Agent);
+        assert_eq!(marks[0].agent, Some(agent));
+        assert_eq!(marks[0].part.as_str(), "text");
+        // A person's own comment has no mark.
+        let mut own = event(&mut ids, 7);
+        own.entity.kind = comment.clone();
+        own.changes = by_hand.changes.clone();
+        database.record_change(&own, async |_| Ok(())).await?;
+        assert!(
+            database
+                .text_marks_of(&comment, &[own.entity.id])
+                .await?
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}

@@ -473,6 +473,9 @@ async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_
     }
     let run = ManyChangeRun {
         id: RunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        kind: bb_core::run::RunKind::ManyChanges,
+        app: None,
+        agent: None,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items: issues
@@ -632,6 +635,9 @@ pub(super) async fn run_with_a_step_waiting(
     let now = world.ctx().now();
     let run = ManyChangeRun {
         id: RunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        kind: bb_core::run::RunKind::ManyChanges,
+        app: None,
+        agent: None,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items,

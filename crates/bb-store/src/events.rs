@@ -39,9 +39,21 @@ const ACTOR_SYSTEM: &str = "system";
 /// an ID begins with its time and ends in random bits, so two events of one millisecond have no
 /// order there. The caller adds what it looks for.
 fn committed_events(order: Order) -> sea_query::SelectStatement {
+    committed_events_of(order, event_columns().len())
+}
+
+/// The same with the first `columns` of [`event_columns`]: the readers that go through the events
+/// for what they hold (the history, the notifications, the text index) do not read the run, which
+/// also lets the rebuild of the text index in an old migration run before the column exists.
+fn committed_events_of(order: Order, columns: usize) -> sea_query::SelectStatement {
     let mut select = Query::select();
     select
-        .columns(event_columns().map(|column| (Event::Table, column)))
+        .columns(
+            event_columns()
+                .into_iter()
+                .take(columns)
+                .map(|column| (Event::Table, column)),
+        )
         .from(Outbox::Table)
         .inner_join(
             Event::Table,
@@ -255,7 +267,7 @@ impl Database {
         limit: u64,
     ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
         let done = self.outbox_position(consumer).await?;
-        let mut select = committed_events(Order::Asc);
+        let mut select = committed_events_of(Order::Asc, WITHOUT_RUN);
         select
             .column((Outbox::Table, Outbox::Position))
             .column((Outbox::Table, Outbox::CreatedAt))
@@ -265,7 +277,7 @@ impl Database {
             .await?
             .iter()
             .map(|row| {
-                let event = read_event(row)?;
+                let event = read_event_without_run(row)?;
                 let entry = OutboxEntry {
                     position: row.get(Outbox::Position)?,
                     event_id: event.id,
@@ -466,8 +478,18 @@ pub(crate) async fn append_events(
 
     let mut position = first;
     for chunk in events.chunks(rows_per_insert(event_columns().len())) {
+        // The column of the run is written only for events of a run, so an event outside a run is
+        // written the way it always was (the tests of the older migrations write events with this
+        // code on a database that does not have the column yet).
+        let with_run = chunk.iter().any(|event| event.run.is_some());
         let mut insert = Query::insert();
-        insert.into_table(Event::Table).columns(event_columns());
+        insert
+            .into_table(Event::Table)
+            .columns(
+                event_columns()
+                    .into_iter()
+                    .take(if with_run { 10 } else { 9 }),
+            );
         let mut outbox = Query::insert();
         outbox.into_table(Outbox::Table).columns([
             Outbox::Position,
@@ -476,18 +498,22 @@ pub(crate) async fn append_events(
         ]);
         for event in chunk {
             let (actor_kind, actor_id) = actor_columns(event.actor);
+            let mut values = vec![
+                Expr::val(event.id.stored()),
+                Expr::val(to_micros(event.time)),
+                Expr::val(actor_kind),
+                Expr::val(actor_id),
+                Expr::val(event.channel.code()),
+                Expr::val(event.entity.kind.as_str()),
+                Expr::val(event.entity.id.stored()),
+                Expr::val(serde_json::to_string(&event.changes)?),
+                Expr::val(event.reason.clone()),
+            ];
+            if with_run {
+                values.push(Expr::val(event.run.map(|run| run.stored())));
+            }
             insert
-                .values([
-                    Expr::val(event.id.stored()),
-                    Expr::val(to_micros(event.time)),
-                    Expr::val(actor_kind),
-                    Expr::val(actor_id),
-                    Expr::val(event.channel.code()),
-                    Expr::val(event.entity.kind.as_str()),
-                    Expr::val(event.entity.id.stored()),
-                    Expr::val(serde_json::to_string(&event.changes)?),
-                    Expr::val(event.reason.clone()),
-                ])
+                .values(values)
                 .map_err(|_| StoreError::Corrupt("an event"))?;
             outbox
                 .values([
@@ -501,10 +527,10 @@ pub(crate) async fn append_events(
         transaction.execute(&insert).await?;
         transaction.execute(&outbox).await?;
     }
-    Ok(())
+    crate::text_marks::mark_texts(transaction, events).await
 }
 
-pub(crate) fn event_columns() -> [Event; 9] {
+pub(crate) fn event_columns() -> [Event; 10] {
     [
         Event::Id,
         Event::Time,
@@ -515,6 +541,7 @@ pub(crate) fn event_columns() -> [Event; 9] {
         Event::EntityId,
         Event::Changes,
         Event::Reason,
+        Event::Run,
     ]
 }
 
@@ -551,7 +578,11 @@ fn actor_of(row: &Row) -> Result<Actor, StoreError> {
     }
 }
 
-pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
+/// How many of [`event_columns`] come before the run: what an event had before runs existed.
+const WITHOUT_RUN: usize = 9;
+
+/// An event read without its run (`run` is empty), from the first [`WITHOUT_RUN`] columns.
+pub(crate) fn read_event_without_run(row: &Row) -> Result<DomainEvent, StoreError> {
     let actor = actor_of(row)?;
     let changes: Vec<FieldChange> = serde_json::from_str(&row.get::<String>(Event::Changes)?)?;
     Ok(DomainEvent {
@@ -567,6 +598,15 @@ pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
         },
         changes,
         reason: row.get(Event::Reason)?,
+        run: None,
+    })
+}
+
+/// An event read with its run, from all of [`event_columns`].
+pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
+    Ok(DomainEvent {
+        run: row.optional_id(Event::Run)?,
+        ..read_event_without_run(row)?
     })
 }
 

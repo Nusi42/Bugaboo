@@ -188,6 +188,7 @@ mod tests {
             },
             changes,
             reason: None,
+            run: None,
         }
     }
 

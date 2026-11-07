@@ -134,9 +134,19 @@ pub struct ManyChangeRun {
     /// The ID of the run.
     #[not_personal]
     pub id: RunId,
+    /// What the run is of: a change to many issues, a session of an AI app or an attempt of an
+    /// agent (AI-38). The last two hold no action and no items.
+    #[not_personal]
+    pub kind: crate::run::RunKind,
     /// Who asked for it: the changes are made as this person.
     #[personal(category = "activity", basis = "contract")]
     pub person: UserId,
+    /// The name an AI app gave itself, for a session of an app.
+    #[personal(category = "activity", basis = "legitimate_interests")]
+    pub app: Option<String>,
+    /// The agent, for an attempt.
+    #[personal(category = "activity", basis = "legitimate_interests")]
+    pub agent: Option<crate::id::AgentId>,
     /// What the change is, as the use case wrote it. It can hold what a person typed (a value).
     #[personal(category = "content", basis = "legitimate_interests")]
     pub action: serde_json::Value,

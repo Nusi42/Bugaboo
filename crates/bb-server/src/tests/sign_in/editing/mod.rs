@@ -301,6 +301,7 @@ impl<'a> Stage<'a> {
                 after: Some(json!(text)),
             }],
             reason: None,
+            run: None,
         };
         let (notes, note) = (self.notes.clone(), self.note.clone());
         self.rig()

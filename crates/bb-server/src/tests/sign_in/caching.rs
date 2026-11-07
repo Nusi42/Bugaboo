@@ -45,6 +45,9 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     let mut ids = SystemIds;
     let run = ManyChangeRun {
         id: RunId::generate(&mut ids)?,
+        kind: bb_core::run::RunKind::ManyChanges,
+        app: None,
+        agent: None,
         person: person.parse().map_err(|_| "no person")?,
         action: json!({"kind": "delete"}),
         items: Vec::new(),
@@ -66,6 +69,7 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
         },
         changes: Vec::new(),
         reason: None,
+        run: None,
     };
     let stored = run.clone();
     ChangeStore::record_change(&rig.storage, &event, move |transaction| {

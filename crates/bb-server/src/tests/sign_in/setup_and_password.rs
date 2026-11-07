@@ -267,6 +267,7 @@ async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_i
                 },
                 changes: vec![],
                 reason: None,
+                run: None,
             }
         };
         let (store, stored) = (&rig.storage, weak.clone());

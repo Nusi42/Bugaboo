@@ -47,6 +47,7 @@ fn event(source: &mut impl IdSource, key: &str) -> DomainEvent {
             after: None,
         }],
         reason: None,
+        run: None,
     }
 }
 

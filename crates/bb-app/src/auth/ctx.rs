@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
-use bb_core::id::{AgentId, EventId, IdSource, SessionId, UserId};
+use bb_core::id::{AgentId, EventId, IdSource, RunId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::notification::mail_batch;
 use bb_core::sign_in::SecurityAction;
@@ -189,6 +189,7 @@ impl<S> AuthServices<S> {
             policies: Mutex::default(),
             via_key: AtomicBool::new(false),
             acting_agent: Mutex::default(),
+            run: Mutex::default(),
             image_hosts: Mutex::default(),
             known: Known::default(),
             acting: None,
@@ -313,6 +314,10 @@ pub struct Ctx<'a, S> {
     /// What the request changes is recorded as made by the agent (AI-30), in the one place that
     /// makes events ([`Self::event_maker`]), so no use case can record the agent as its person.
     pub(crate) acting_agent: Mutex<Option<(AgentId, UserId)>>,
+    /// The run the request works inside (a session of an AI app, an attempt of an agent, a change
+    /// to many issues): every event of the request carries it, made in the one place that makes
+    /// events ([`Self::event_maker`]).
+    pub(crate) run: Mutex<Option<RunId>>,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
@@ -360,6 +365,7 @@ pub(crate) struct EventMaker {
     actor: Actor,
     channel: Channel,
     reason: Option<String>,
+    run: Option<RunId>,
 }
 
 impl EventMaker {
@@ -378,6 +384,7 @@ impl EventMaker {
             entity,
             changes,
             reason: self.reason.clone(),
+            run: self.run,
         })
     }
 }
@@ -493,7 +500,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Channel::Ui
             },
             reason: locked(&self.reason).clone(),
+            run: *locked(&self.run),
         }
+    }
+
+    /// Makes the events of the changes that follow carry `run`, until it is set again or taken
+    /// away with `None`.
+    pub(crate) fn set_run(&self, run: Option<RunId>) {
+        *locked(&self.run) = run;
     }
 
     /// Makes the events of the changes that follow carry `reason`, until it is set again.

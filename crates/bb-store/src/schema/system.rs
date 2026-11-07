@@ -14,6 +14,7 @@ pub(crate) enum Event {
     EntityId,
     Changes,
     Reason,
+    Run,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -214,6 +215,7 @@ stored_tables! {
         EntityId => entity,
         Changes => changes,
         Reason => reason,
+        Run => run,
     },
     Job => bb_core::job::Job {
         Id => id,

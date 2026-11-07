@@ -11,6 +11,7 @@ use bb_core::id::{RunId, UserId};
 use bb_core::many_changes::{
     ManyChangeItem, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, RunsToEnd,
 };
+use bb_core::run::RunKind;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
 
@@ -27,7 +28,10 @@ fn run_select() -> SelectStatement {
     select
         .columns([
             ManyChangeRunRow::Id,
+            ManyChangeRunRow::Kind,
             ManyChangeRunRow::Person,
+            ManyChangeRunRow::App,
+            ManyChangeRunRow::Agent,
             ManyChangeRunRow::Action,
             ManyChangeRunRow::Items,
             ManyChangeRunRow::Status,
@@ -48,7 +52,11 @@ fn read_run(row: &Row) -> Result<ManyChangeRun, StoreError> {
         serde_json::from_str(&row.get::<String>(ManyChangeRunRow::Skipped)?)?;
     Ok(ManyChangeRun {
         id: row.id::<RunId>(ManyChangeRunRow::Id)?,
+        kind: RunKind::from_code(&row.get::<String>(ManyChangeRunRow::Kind)?)
+            .ok_or(StoreError::Corrupt("the kind of a run"))?,
         person: row.id::<UserId>(ManyChangeRunRow::Person)?,
+        app: row.get(ManyChangeRunRow::App)?,
+        agent: row.optional_id(ManyChangeRunRow::Agent)?,
         action: serde_json::from_str(&row.get::<String>(ManyChangeRunRow::Action)?)?,
         items,
         status: ManyChangeStatus::from_code(&row.get::<String>(ManyChangeRunRow::Status)?)
@@ -149,7 +157,10 @@ impl ManyChangeStore for AuthStorage {
             .into_table(ManyChangeRunRow::Table)
             .columns([
                 ManyChangeRunRow::Id,
+                ManyChangeRunRow::Kind,
                 ManyChangeRunRow::Person,
+                ManyChangeRunRow::App,
+                ManyChangeRunRow::Agent,
                 ManyChangeRunRow::Action,
                 ManyChangeRunRow::Items,
                 ManyChangeRunRow::Status,
@@ -161,7 +172,10 @@ impl ManyChangeStore for AuthStorage {
             ])
             .values([
                 Expr::val(run.id.stored()),
+                Expr::val(run.kind.code()),
                 Expr::val(run.person.stored()),
+                Expr::val(run.app.clone()),
+                Expr::val(run.agent.map(|agent| agent.stored())),
                 Expr::val(serde_json::to_string(&run.action)?),
                 Expr::val(serde_json::to_string(&run.items)?),
                 Expr::val(run.status.code()),

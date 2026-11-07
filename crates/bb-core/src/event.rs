@@ -278,6 +278,11 @@ pub struct DomainEvent {
         basis = "legal_obligation"
     )]
     pub reason: Option<String>,
+    /// The run (AI-38) the change belongs to: an event made inside a session of an AI app, an
+    /// attempt of an agent or a change to many issues carries it. Set by the one event maker of
+    /// the context; an event outside a run has none.
+    #[not_personal]
+    pub run: Option<crate::id::RunId>,
 }
 
 impl DomainEvent {
@@ -334,6 +339,7 @@ mod tests {
                 after: Some(json!("Fixing")),
             }],
             reason: Some("Started work".to_owned()),
+            run: None,
         }
     }
 

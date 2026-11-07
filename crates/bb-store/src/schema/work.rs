@@ -404,7 +404,10 @@ pub(crate) enum ManyChangeRunRow {
     #[iden = "change_run"]
     Table,
     Id,
+    Kind,
     Person,
+    App,
+    Agent,
     Action,
     Items,
     Status,
@@ -624,7 +627,10 @@ stored_tables! {
     },
     ManyChangeRunRow => bb_core::many_changes::ManyChangeRun {
         Id => id,
+        Kind => kind,
         Person => person,
+        App => app,
+        Agent => agent,
         Action => action,
         Items => items,
         Status => status,

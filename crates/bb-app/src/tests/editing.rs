@@ -48,6 +48,7 @@ fn changed_by_ada(world: &World, notes: &TestNotes) -> Result<EntityRef, String>
             counted_up(1),
         ],
         reason: None,
+        run: None,
     };
     world.store.lock().events.push(event);
     Ok(record)
@@ -172,6 +173,7 @@ async fn iss_17_a_kind_of_record_decides_which_changes_a_conflict_shows_and_peop
             counted_up(1),
         ],
         reason: None,
+        run: None,
     };
     world.store.lock().events.push(event);
     let stale = Stale {
@@ -206,6 +208,7 @@ async fn iss_17_a_conflict_finds_the_version_event_however_many_events_came_afte
             entity: note.clone(),
             changes,
             reason: None,
+            run: None,
         })
     };
     world.store.lock().events.push(event(

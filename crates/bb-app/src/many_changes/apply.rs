@@ -167,6 +167,9 @@ pub async fn apply_many_changes<S: AuthStore>(
     let mut ids = ctx.ids();
     let run = ManyChangeRun {
         id: RunId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?,
+        kind: bb_core::run::RunKind::ManyChanges,
+        app: None,
+        agent: None,
         person: actor.person.id,
         action: serde_json::to_value(&input.action)
             .map_err(|error| AppError::Internal(error.to_string()))?,
