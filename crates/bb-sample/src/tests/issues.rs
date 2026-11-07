@@ -75,7 +75,7 @@ async fn test_sample_data_issues_match_the_plan() -> TestResult {
 async fn the_sample_has_its_issues_made_by_people_over_many_months_and_nothing_more() -> TestResult
 {
     let folder = tempfile::tempdir()?;
-    let text = dump_of(made(&Target::BuiltIn, folder.path()).await?).await?;
+    let text = dump_of(Box::pin(made(&Target::BuiltIn, folder.path())).await?).await?;
     let dump: Value = serde_json::from_str(&text)?;
     let events = dump["events"].as_array().ok_or("no events")?;
     // The first issue event is long before the end of the sample, the last one close to it.
