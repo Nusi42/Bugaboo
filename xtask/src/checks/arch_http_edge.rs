@@ -7,7 +7,8 @@
 //!
 //! - an HTTP crate (a server, a client, a WebSocket or an OpenAPI helper) is a normal or build
 //!   dependency of `bb-api` and `bb-mcp` only. Tests may use them anywhere, and `xtask` is the
-//!   developer's tool, not part of the product;
+//!   developer's tool, not part of the product. One exception: the one client for calls that
+//!   leave the server (`ureq`) is the dependency of the AI adapter `bb-ai` only (ADR-0013);
 //! - the adapter crates (they implement the ports of `bb-app`) are normal dependencies of the
 //!   wiring crates only: `bb-server`, the developer program `bb-sample` that makes the sample
 //!   organization through the same use cases (M2 WP-06), and the developer program
@@ -49,6 +50,16 @@ const HTTP_CRATES: [&str; 25] = [
 /// The crates that may use them.
 const HTTP_CRATES_ALLOWED_IN: [&str; 3] = ["bb-api", "bb-mcp", "xtask"];
 
+/// The one client for calls that leave the server, and the only crate that may use it: the AI
+/// adapter calls the provider the administrator chose. No other client crate is allowed there, and
+/// no other crate may use this one.
+const OUTGOING_CLIENT: (&str, &str) = ("ureq", "bb-ai");
+
+/// Whether the crate `user` may depend on the HTTP crate `http_crate`.
+fn may_use(user: &str, http_crate: &str) -> bool {
+    HTTP_CRATES_ALLOWED_IN.contains(&user) || (http_crate, user) == OUTGOING_CLIENT
+}
+
 /// Crates that implement the ports of `bb-app`.
 const ADAPTERS: [&str; 4] = ["bb-store", "bb-files", "bb-ai", "bb-notify"];
 
@@ -77,7 +88,7 @@ fn evaluate(packages: &[Package]) -> Vec<Finding> {
             let shipped = dependency.kind.as_deref() != Some("dev");
             if shipped
                 && HTTP_CRATES.contains(&dependency.name.as_str())
-                && !HTTP_CRATES_ALLOWED_IN.contains(&name)
+                && !may_use(name, dependency.name.as_str())
             {
                 findings.push(Finding::at(
                     name,
@@ -156,6 +167,21 @@ mod tests {
     fn good_example_the_load_check_reads_through_the_store() {
         let packages = [with("bb-load-check", &[("bb-store", None)])];
         assert!(evaluate(&packages).is_empty());
+    }
+
+    #[test]
+    fn good_example_the_ai_adapter_has_the_outgoing_client() {
+        let packages = [with("bb-ai", &[("ureq", None), ("bb-app", None)])];
+        assert!(evaluate(&packages).is_empty());
+    }
+
+    #[test]
+    fn bad_example_the_ai_adapter_gets_no_other_client_and_no_other_crate_gets_this_one() {
+        let packages = [
+            with("bb-ai", &[("reqwest", None), ("axum", None)]),
+            with("bb-notify", &[("ureq", None)]),
+        ];
+        assert_eq!(evaluate(&packages).len(), 3);
     }
 
     #[test]
