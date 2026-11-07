@@ -17,6 +17,8 @@ type HmacSha256 = Hmac<Sha256>;
 
 /// Keeps the signature apart from any other use of the key.
 const DOMAIN: &[u8] = b"bugaboo.link.v1";
+/// Keeps a signature that also covers data outside the token apart from a link's.
+const BOUND_DOMAIN: &[u8] = b"bugaboo.bound.v1";
 /// The length of the signature in bytes.
 const SIGNATURE_LENGTH: usize = 32;
 /// The longest token that is read: the claim of a link is a few dozen bytes, so a longer one is
@@ -46,6 +48,17 @@ impl LinkKey {
         Some(mac)
     }
 
+    /// The signature of a claim and of `bound`, which travels beside the token and not in it. The
+    /// length of the claim goes first, so a byte cannot move from one to the other.
+    fn bound_mac(&self, claim: &[u8], bound: &[u8]) -> Option<HmacSha256> {
+        let mut mac = HmacSha256::new_from_slice(self.0.as_slice()).ok()?;
+        mac.update(BOUND_DOMAIN);
+        mac.update(&u32::try_from(claim.len()).ok()?.to_be_bytes());
+        mac.update(claim);
+        mac.update(bound);
+        Some(mac)
+    }
+
     /// The token for `claim`: the claim and its signature, as text for an address.
     #[must_use]
     pub fn sign(&self, claim: &[u8]) -> Option<String> {
@@ -54,6 +67,32 @@ impl LinkKey {
         bytes.extend_from_slice(claim);
         bytes.extend_from_slice(&signature);
         Some(Base64UrlUnpadded::encode_string(&bytes))
+    }
+
+    /// The token for `claim` that is also bound to `bound`: the data (a change that was shown to a
+    /// person, say) is too long for the token, so it travels beside it, and the token opens only
+    /// together with the same data ([`Self::open_bound`]).
+    #[must_use]
+    pub fn sign_bound(&self, claim: &[u8], bound: &[u8]) -> Option<String> {
+        let signature = self.bound_mac(claim, bound)?.finalize().into_bytes();
+        let mut bytes = Vec::with_capacity(claim.len() + SIGNATURE_LENGTH);
+        bytes.extend_from_slice(claim);
+        bytes.extend_from_slice(&signature);
+        Some(Base64UrlUnpadded::encode_string(&bytes))
+    }
+
+    /// The claim of `token`, if this key signed it for exactly `bound`. A token of
+    /// [`Self::sign`] never opens here, and the other way round.
+    #[must_use]
+    pub fn open_bound(&self, token: &str, bound: &[u8]) -> Option<Vec<u8>> {
+        if token.len() > TOKEN_CHARS_MAX {
+            return None;
+        }
+        let bytes = Base64UrlUnpadded::decode_vec(token).ok()?;
+        let claim_length = bytes.len().checked_sub(SIGNATURE_LENGTH)?;
+        let (claim, signature) = bytes.split_at(claim_length);
+        self.bound_mac(claim, bound)?.verify_slice(signature).ok()?;
+        Some(claim.to_vec())
     }
 
     /// The claim of `token`, if the token is one this key signed. The comparison takes the same
@@ -105,6 +144,23 @@ mod tests {
         for bad in ["", "x", &token[1..], &format!("{token}A"), &"A".repeat(300)] {
             assert_eq!(key.open(bad), None, "{bad}");
         }
+    }
+
+    #[test]
+    fn ai_05_a_bound_token_opens_only_with_the_data_it_was_made_for() {
+        let key = key(3);
+        let token = key.sign_bound(b"claim", b"change one").unwrap();
+        assert_eq!(
+            key.open_bound(&token, b"change one").as_deref(),
+            Some(&b"claim"[..])
+        );
+        assert_eq!(key.open_bound(&token, b"change two"), None);
+        assert_eq!(self::key(4).open_bound(&token, b"change one"), None);
+        // Not interchangeable with a link, and no byte moves between the claim and the data.
+        assert_eq!(key.open(&token), None);
+        assert_eq!(key.open_bound(&key.sign(b"claim").unwrap(), b""), None);
+        let moved = key.sign_bound(b"claimc", b"hange one").unwrap();
+        assert_ne!(moved, token);
     }
 
     #[test]
