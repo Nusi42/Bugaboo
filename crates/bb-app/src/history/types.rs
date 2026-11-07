@@ -132,6 +132,15 @@ pub enum HistoryWhat {
     },
 }
 
+/// How a change belongs to a run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub enum RunMarkKind {
+    /// The change was made in a run.
+    Made,
+    /// The change is the undo of a run.
+    Undid,
+}
+
 /// An agent as the history names it: its ID and its name.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AgentLabel {
@@ -153,10 +162,10 @@ pub struct HistoryItem {
     /// The agent that did it, when an agent did: `by` is then the person responsible for it, and
     /// the row reads *"Fixer, agent of Ada Brandt"*.
     pub agent: Option<AgentLabel>,
-    /// The run the change was made in, when it was made in one.
+    /// Whether the change was made in a run, or is the undo of one.
+    pub run_mark: Option<RunMarkKind>,
+    /// The run the change was made in or undid, only for a reader who may open it.
     pub run: Option<RunId>,
-    /// The run the change is the undo of, when it is one.
-    pub undid_run: Option<RunId>,
     /// What happened.
     pub what: HistoryWhat,
 }

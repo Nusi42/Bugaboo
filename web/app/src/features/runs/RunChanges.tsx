@@ -3,11 +3,17 @@ import { Alert, alertTone, Button, Card, IssueId, Link, partOf, part } from "@bu
 
 import { changeArrowText } from "../../shared/change-line.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { formatDateTime } from "../../shared/format.ts";
 import { issueAddress } from "../../shared/paths.ts";
 import { itemsOf } from "../../shared/paged.ts";
 import { WithWording } from "../../shared/with-wording.tsx";
-import { outcomeText, useRunChanges, type RunChange, type RunField } from "./runs.ts";
+import {
+  changeWhenText,
+  outcomeText,
+  useRunChanges,
+  type Run,
+  type RunChange,
+  type RunField,
+} from "./runs.ts";
 
 /** The issue of a change: its ID as a link to it, and what it is about. */
 function IssueCell({ issue }: { readonly issue: RunChange["issue"] }) {
@@ -27,7 +33,13 @@ function rowKey(item: RunChange, field: RunField): string {
 }
 
 /** One row for each field that changed: the issue, what changed (and what became of it), and when. */
-function ChangeRows({ items }: { readonly items: readonly Readonly<RunChange>[] }) {
+function ChangeRows({
+  run,
+  items,
+}: {
+  readonly run: Run;
+  readonly items: readonly Readonly<RunChange>[];
+}) {
   return (
     <WithWording>
       {(wording) => (
@@ -44,7 +56,7 @@ function ChangeRows({ items }: { readonly items: readonly Readonly<RunChange>[] 
                     <div>{changeArrowText(wording, field)}</div>
                     {outcome === undefined ? null : <div {...partOf(part.muted)}>{outcome}</div>}
                   </td>
-                  <td {...partOf(part.runTableCell)}>{formatDateTime(item.at)}</td>
+                  <td {...partOf(part.runTableCell)}>{changeWhenText(run, item.at)}</td>
                 </tr>
               );
             }),
@@ -56,8 +68,8 @@ function ChangeRows({ items }: { readonly items: readonly Readonly<RunChange>[] 
 }
 
 /** The changes of a run as a table, a page at a time. */
-export function RunChanges({ run }: { readonly run: string }) {
-  const read = useRunChanges(run);
+export function RunChanges({ found }: { readonly found: Run }) {
+  const read = useRunChanges(found.id);
   if (read.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(read.error)}</Alert>;
   }
@@ -78,7 +90,7 @@ export function RunChanges({ run }: { readonly run: string }) {
               <th {...partOf(part.runTableHead)}>{t("runs.column-when")}</th>
             </tr>
           </thead>
-          <ChangeRows items={items} />
+          <ChangeRows run={found} items={items} />
         </table>
       )}
       {read.hasNextPage ? (

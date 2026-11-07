@@ -34,7 +34,7 @@ function RunContent({ run, found }: { readonly run: string; readonly found: Run 
       >
         <p {...partOf(part.muted)}>{runStateText(found)}</p>
       </Card>
-      <RunChanges run={run} />
+      <RunChanges found={found} />
       <UndoRun run={run} found={found} />
     </div>
   );

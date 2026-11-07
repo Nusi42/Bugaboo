@@ -34,6 +34,7 @@ export const messages = {
     "Goes back ({count}): {count, plural, =0 {nothing.} one {# change.} other {# changes.}}",
   "runs.skipped-title": "Skipped ({count})",
   "runs.skip-line": "{issue} {field}: {reason}",
+  "runs.skip-line-comment": "{issue} comment: {reason}",
   "runs.skip-by": "{person} changed it afterwards, so that change stays.",
   "runs.skip-changed": "It was changed afterwards, so that change stays.",
   "runs.skip-gone": "The issue is gone.",

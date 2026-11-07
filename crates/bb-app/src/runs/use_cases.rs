@@ -120,6 +120,8 @@ pub struct UndoSkipView {
     pub issue: Option<IssueLine>,
     /// The field, in the words of the history.
     pub field: String,
+    /// The name of an own field; none for a field of the catalogue.
+    pub name: Option<String>,
     /// Why it stays.
     pub kind: UndoSkipKind,
     /// Somebody changed it afterwards and it was the reader.
@@ -185,6 +187,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         skips: &[UndoSkip],
     ) -> Result<Vec<UndoSkipView>, AppError> {
         let mut maker = self.line_maker().await?;
+        let reader = self.change_reader().await?;
         let mut views = Vec::new();
         for skip in skips {
             let issue = match super::issue_of(&skip.entity) {
@@ -205,6 +208,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 by,
                 issue,
                 field: skip.field.clone(),
+                name: reader.own_field_name(&skip.field),
                 kind: skip.kind,
                 by_you: skip.by.and_then(EventActor::person) == Some(actor.person.id),
                 at: skip.at,
@@ -256,6 +260,11 @@ pub async fn run_changes<S: AuthStore>(
             .or_default()
             .push(event.entity.id);
     }
+    let kept = if undone {
+        ctx.kept_reasons(input.run).await?
+    } else {
+        super::outcome::KeptReasons::new()
+    };
     let mut later = Vec::new();
     if undone {
         for (kind, ids) in &by_kind {
@@ -290,8 +299,15 @@ pub async fn run_changes<S: AuthStore>(
         for change in changes {
             let outcome = if undone {
                 Some(
-                    ctx.outcome_of(&held, input.run, place, &event, &change.field, &later)
-                        .await?,
+                    ctx.outcome_of(
+                        &held,
+                        input.run,
+                        place,
+                        &event,
+                        &change.field,
+                        (&later, &kept),
+                    )
+                    .await?,
                 )
             } else {
                 None
@@ -352,31 +368,44 @@ pub async fn undo_run<S: AuthStore>(
         app: None,
         agent: None,
     };
-    let outcome = RunsOf::new(ctx, &actor, &input.session_token)
+    let runs = RunsOf::new(ctx, &actor, &input.session_token);
+    let outcome = runs
         .undo_run(input.run, &input.version, &by, ctx.now())
         .await?;
     let view = match outcome {
         UndoOutcome::Undone(done) => {
-            // The undo is a fact of the run too: the run says it was undone and how far. An undo
-            // that put nothing back (another one was first) is no fact.
+            // The undo is a fact of the run too, with the reason each field stayed. An undo that
+            // put nothing back (another one was first) is no fact. It is recorded also when an
+            // error stopped the undo half way, so the run does not offer what is back again.
             if done.undone > 0 {
+                let mut changes = vec![
+                    set_to("undone", serde_json::json!(done.undone)),
+                    set_to("kept", serde_json::json!(done.skipped)),
+                ];
+                changes.extend(done.skips.iter().map(|skip| {
+                    set_to(
+                        &super::outcome::kept_key(&skip.entity, &skip.field),
+                        serde_json::json!(skip.kind.code()),
+                    )
+                }));
                 let event = ctx.event(
                     by_person(actor.person.id),
                     entity(RecordKind::ChangeRun, input.run),
-                    vec![
-                        set_to("undone", serde_json::json!(done.undone)),
-                        set_to("kept", serde_json::json!(done.skipped)),
-                    ],
+                    changes,
                 )?;
                 ctx.store()
                     .record_change(&event, |_transaction| Box::pin(async { Ok(()) }))
                     .await
                     .map_err(|error| internal::<S>(&error))?;
             }
+            if let Some(error) = runs.take_interrupt() {
+                return Err(error);
+            }
+            let named = &done.skips[..done.skips.len().min(super::service::SKIPS_NAMED_MAX)];
             UndoView {
                 version: input.version,
                 goes_back: done.undone,
-                skips: ctx.skip_views(&actor, &held, &done.skips).await?,
+                skips: ctx.skip_views(&actor, &held, named).await?,
                 skipped: done.skipped,
                 changed_since_preview: false,
             }

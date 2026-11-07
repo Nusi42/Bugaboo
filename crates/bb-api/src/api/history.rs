@@ -8,7 +8,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat};
+use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat, RunMarkKind};
 use bb_core::history::{FileEvent, HistoryTab, TimeEvent};
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
@@ -51,8 +51,8 @@ const HISTORY_FIELDS: [FieldSpec; 23] = [
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("time_event"),
     FieldSpec::by_default("minutes"),
+    FieldSpec::by_default("run_mark"),
     FieldSpec::by_default("run"),
-    FieldSpec::by_default("undid_run"),
 ];
 
 /// What happened to a relation.
@@ -63,6 +63,25 @@ pub(crate) enum RelationEvent {
     Added,
     /// The relation was taken away.
     Removed,
+}
+
+/// How a change belongs to a run.
+#[derive(Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum RunMark {
+    /// The change belongs to a run.
+    InRun,
+    /// The change is the undo of a run.
+    Undid,
+}
+
+impl From<RunMarkKind> for RunMark {
+    fn from(kind: RunMarkKind) -> Self {
+        match kind {
+            RunMarkKind::Made => Self::InRun,
+            RunMarkKind::Undid => Self::Undid,
+        }
+    }
 }
 
 /// What an item of the history is.
@@ -94,12 +113,13 @@ pub(crate) struct HistoryEntryItem {
     /// The agent that did it, when an agent did; `by` is then the person responsible for it.
     #[serde(skip_serializing_if = "Option::is_none")]
     agent: Option<NamedRef>,
-    /// The run the change was made in, when it was made in one (a session of an AI app, an attempt).
+    /// Whether the change was made in a run (a session of an AI app, an attempt) or is the undo of
+    /// one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    run_mark: Option<RunMark>,
+    /// The run the change was made in or undid, left out for a reader who may not open it.
     #[serde(skip_serializing_if = "Option::is_none")]
     run: Option<String>,
-    /// The run the change is the undo of, when it is one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    undid_run: Option<String>,
     /// What it is.
     kind: HistoryEntryKind,
     /// A comment: its ID.
@@ -170,8 +190,8 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
             id: agent.id.to_string(),
             name: agent.name.clone(),
         }),
+        run_mark: item.run_mark.map(RunMark::from),
         run: item.run.map(|run| run.to_string()),
-        undid_run: item.undid_run.map(|run| run.to_string()),
         kind,
         comment: None,
         text: None,
@@ -353,8 +373,8 @@ mod tests {
             at: String::new(),
             by: Some(PersonRef::Someone),
             agent: None,
+            run_mark: Some(RunMark::InRun),
             run: Some(String::new()),
-            undid_run: Some(String::new()),
             kind: HistoryEntryKind::Change,
             comment: Some(String::new()),
             text: Some(String::new()),

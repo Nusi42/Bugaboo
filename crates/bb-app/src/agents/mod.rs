@@ -4,6 +4,7 @@
 
 mod actor;
 mod manage;
+mod names;
 mod store;
 mod types;
 
@@ -11,6 +12,7 @@ pub use manage::{
     accept_agent, agent, change_agent, create_agent, hand_agent, my_agents, organization_agents,
     rename_agent, stop_all_agents,
 };
+pub(crate) use names::AgentNames;
 pub use store::{AgentStore, AgentWork, AgentWorkStore};
 pub use types::{
     AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,

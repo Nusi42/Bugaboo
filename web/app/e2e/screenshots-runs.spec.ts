@@ -69,6 +69,25 @@ test("the question and the page of a run with one skipped change", async ({ page
   await inFourThemes(page, "run-undone-skipped", MILESTONE);
 });
 
+test("the lines of the history that belong to a run and to its undo", async ({ page, server }) => {
+  test.setTimeout(TAKING_MS);
+  const { admin, run } = await createSessionOfTwo(server);
+  await admin.dispose();
+  await signIn(page, ada);
+  await page.goto(runAddress(run));
+  await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("runs.confirm", { count: 2 }) })
+    .click();
+  await expect(page.getByText(t("runs.undone-message", { back: 2, skipped: 0 }))).toBeVisible();
+  await inFourChosenThemes(page, "history-run", MILESTONE, paths.appearance, async () => {
+    await page.goto("/issues/WEB-1");
+    await expect(page.getByRole("link", { name: t("history.run-link") })).toBeVisible();
+    await expect(page.getByRole("link", { name: t("history.undid-run-link") })).toBeVisible();
+  });
+});
+
 test("the mark beside a comment and the description", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
   const admin = await signedInAdmin(server);

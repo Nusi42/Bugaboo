@@ -6180,13 +6180,12 @@ export interface components {
       relation_event?: components["schemas"]["RelationEvent"] | null;
       /** @description A relation: what the relation reads (*blocks*). */
       relation_name?: string | null;
-      /** @description The run the change was made in, when it was made in one (a session of an AI app, an attempt). */
+      /** @description The run the change was made in or undid, left out for a reader who may not open it. */
       run?: string | null;
+      run_mark?: components["schemas"]["RunMark"] | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
       time_event?: components["schemas"]["TimeEvent"] | null;
-      /** @description The run the change is the undo of, when it is one. */
-      undid_run?: string | null;
       /**
        * Format: int64
        * @description A comment: the version, which a change of it is made on.
@@ -8885,6 +8884,11 @@ export interface components {
      * @enum {string}
      */
     RunKind: "many-changes" | "app-session" | "attempt";
+    /**
+     * @description How a change belongs to a run.
+     * @enum {string}
+     */
+    RunMark: "in-run" | "undid";
     /** @description A timer that runs. */
     RunningItem: {
       /** @description The internal ID of the issue it runs on; left out for an access key that does not see it. */
@@ -9910,6 +9914,8 @@ export interface components {
       issue?: components["schemas"]["IssueRef"] | null;
       /** @description Why it stays. */
       kind: components["schemas"]["UndoSkipKind"];
+      /** @description The name of an own field. */
+      name?: string | null;
     };
     /**
      * @description Why a change of a run does not go back.

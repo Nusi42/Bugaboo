@@ -5735,6 +5735,12 @@ textarea,
   font-size: var(--fs-base);
 }
 
+[data-part="history.run-mark"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  display: block;
+}
+
 [data-part="files.drop"] {
   display: flex;
   flex-wrap: wrap;

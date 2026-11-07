@@ -492,3 +492,90 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
     ));
     Ok(())
 }
+
+/// The mark of a text that an agent wrote names the agent only to a reader who is told who the
+/// person behind it is, and reads each agent once for a request (ADR-0035).
+#[tokio::test]
+async fn ai_04_the_mark_of_a_text_names_the_agent_only_to_a_reader_told_its_person() -> Outcome {
+    use crate::comments::{AddComment, add_comment};
+    use bb_core::mark::WrittenBy;
+
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "WEB").await?;
+    let guest = member(&world, "guest@example.test", StartingRole::Guest, project).await?;
+    let issue_id = create_issue(
+        &world.ctx(),
+        CreateIssue {
+            session_token: guest.session_token.clone(),
+            project: project.to_string(),
+            issue_type: a_type(&world).await?,
+            title: "Nothing happens".to_owned(),
+            description: None,
+            status: None,
+            priority: None,
+            assigned_to: None,
+            estimated_time: None,
+            fields: BTreeMap::new(),
+        },
+    )
+    .await?
+    .into_value()
+    .id;
+    let fixer = an_agent(&world, &admin, "Fixer").await?;
+    let key = key_of(&world, &admin, fixer).await?;
+    give_work(&world, fixer, project);
+    for text in ["First", "Second"] {
+        add_comment(
+            &world.ctx(),
+            AddComment {
+                session_token: key.clone(),
+                issue: issue_id.to_string(),
+                text: text.to_owned(),
+            },
+        )
+        .await?;
+    }
+    let marks = |session: &str| {
+        let session = session.to_owned();
+        let world = &world;
+        async move {
+            let page = history(
+                &world.ctx(),
+                HistoryQuery {
+                    session_token: session,
+                    issue: issue_id.to_string(),
+                    tab: HistoryTab::Comments,
+                    cursor: None,
+                    limit: 20,
+                },
+            )
+            .await?
+            .into_value();
+            Ok::<_, AppError>(
+                page.items
+                    .iter()
+                    .filter_map(|row| match &row.what {
+                        HistoryWhat::Comment { comment } => comment.written_by.clone(),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        }
+    };
+    let seen_by_guest = marks(&guest.session_token).await?;
+    assert_eq!(seen_by_guest.len(), 2);
+    assert!(
+        seen_by_guest
+            .iter()
+            .all(|mark| mark.kind == WrittenBy::Agent)
+    );
+    assert!(seen_by_guest.iter().all(|mark| mark.agent.is_none()));
+    let seen_by_admin = marks(&admin).await?;
+    assert!(
+        seen_by_admin
+            .iter()
+            .all(|mark| mark.agent.as_deref() == Some("Fixer"))
+    );
+    Ok(())
+}

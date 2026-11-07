@@ -166,6 +166,9 @@ pub(crate) struct UndoSkipBody {
     issue: Option<IssueRef>,
     /// The field.
     field: String,
+    /// The name of an own field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
     /// Why it stays.
     kind: UndoSkipKind,
     /// Somebody changed it afterwards, and it was the reader.
@@ -183,6 +186,7 @@ impl From<&UndoSkipView> for UndoSkipBody {
         Self {
             issue: skip.issue.as_ref().map(IssueRef::from),
             field: skip.field.clone(),
+            name: skip.name.clone(),
             kind: skip.kind,
             by_you: skip.by_you,
             by: skip.by.clone(),

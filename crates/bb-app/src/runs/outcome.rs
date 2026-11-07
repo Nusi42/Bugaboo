@@ -36,22 +36,27 @@ pub enum FieldOutcome {
     },
 }
 
-/// What the events after the run did to one field of one record of it.
-fn last_after(
-    later: &[(i64, DomainEvent)],
+/// The events after the run that touched one field of one record of it, oldest first.
+fn after_the_run<'a>(
+    later: &'a [(i64, DomainEvent)],
     place: i64,
-    entity: &EntityRef,
-    field: &str,
-) -> Option<DomainEvent> {
+    entity: &'a EntityRef,
+    field: &'a str,
+) -> impl Iterator<Item = &'a DomainEvent> {
     later
         .iter()
-        .filter(|(at, event)| {
+        .filter(move |(at, event)| {
             *at > place
                 && event.entity == *entity
                 && event.changes.iter().any(|change| change.field == field)
         })
-        .map(|(_, event)| event.clone())
-        .next_back()
+        .map(|(_, event)| event)
+}
+
+/// The name an undo gives to the fact that a field stayed, on the event it writes on the run: with
+/// the reason as its value, so the page can say why long after.
+pub(super) fn kept_key(entity: &EntityRef, field: &str) -> String {
+    format!("kept/{}/{field}", entity.id)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -76,21 +81,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))
     }
 
+    /// The events the undos of the run wrote on it, oldest first.
+    async fn undo_events(&self, run: RunId) -> Result<Vec<DomainEvent>, AppError> {
+        let kind = EntityKind::from(RecordKind::ChangeRun);
+        Ok(self
+            .events_after_run(run, &kind, &[EntityId::from(run)])
+            .await?
+            .into_iter()
+            .map(|(_, event)| event)
+            .filter(|event| event.changes.iter().any(|change| change.field == "undone"))
+            .collect())
+    }
+
     /// Who undid the run and when, when it was undone: the fact the undo wrote on the run.
     pub(super) async fn undone_of(
         &self,
         held: &Evaluation,
         run: RunId,
     ) -> Result<Option<UndoneView>, AppError> {
-        let kind = EntityKind::from(RecordKind::ChangeRun);
-        let events = self
-            .events_after_run(run, &kind, &[EntityId::from(run)])
-            .await?;
-        let Some(done) = events
-            .iter()
-            .map(|(_, event)| event)
-            .rfind(|event| event.changes.iter().any(|change| change.field == "undone"))
-        else {
+        let events = self.undo_events(run).await?;
+        let Some(done) = events.last() else {
             return Ok(None);
         };
         let Some(person) = done.actor.person() else {
@@ -102,7 +112,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(UndoneView { by, at: done.time }))
     }
 
-    /// What became of a field of an event of the run, given the events after the run.
+    /// Why each field that stayed, stayed, as the undos of the run wrote it down.
+    pub(super) async fn kept_reasons(&self, run: RunId) -> Result<KeptReasons, AppError> {
+        let mut reasons = KeptReasons::new();
+        for event in self.undo_events(run).await? {
+            for change in &event.changes {
+                if let Some(kind) = change
+                    .after
+                    .as_ref()
+                    .and_then(serde_json::Value::as_str)
+                    .and_then(UndoSkipKind::from_code)
+                    .filter(|_| change.field.starts_with("kept/"))
+                {
+                    reasons.insert(change.field.clone(), kind);
+                }
+            }
+        }
+        Ok(reasons)
+    }
+
+    /// What became of a field of an event of the run, given the events after the run: it went back
+    /// when an event of the undo put it back, however it was changed after that; otherwise it
+    /// stayed, for the reason the undo wrote down, and a change of somebody else names who.
     pub(super) async fn outcome_of(
         &self,
         held: &Evaluation,
@@ -110,19 +141,32 @@ impl<S: AuthStore> Ctx<'_, S> {
         place: i64,
         event: &DomainEvent,
         field: &str,
-        later: &[(i64, DomainEvent)],
+        (later, kept): (&[(i64, DomainEvent)], &KeptReasons),
     ) -> Result<FieldOutcome, AppError> {
         let reason = bb_core::run::undo_reason(run);
-        let Some(last) = last_after(later, place, &event.entity, field) else {
+        let touching: Vec<&DomainEvent> =
+            after_the_run(later, place, &event.entity, field).collect();
+        if touching
+            .iter()
+            .any(|each| each.reason.as_deref() == Some(reason.as_str()))
+        {
+            return Ok(FieldOutcome::WentBack);
+        }
+        let recorded = kept.get(&kept_key(&event.entity, field)).copied();
+        if let Some(kind) = recorded.filter(|kind| *kind != UndoSkipKind::ChangedSince) {
             return Ok(FieldOutcome::Kept {
-                kind: UndoSkipKind::NotUndoable,
+                kind,
+                by: None,
+                at: None,
+            });
+        }
+        let Some(last) = touching.last() else {
+            return Ok(FieldOutcome::Kept {
+                kind: recorded.unwrap_or(UndoSkipKind::NotUndoable),
                 by: None,
                 at: None,
             });
         };
-        if last.reason.as_deref() == Some(reason.as_str()) {
-            return Ok(FieldOutcome::WentBack);
-        }
         let by = match last.actor.person() {
             Some(person) => Some(
                 self.person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
@@ -137,3 +181,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 }
+
+/// Why the fields that an undo left stayed, by the name `kept_key` makes.
+pub(super) type KeptReasons = std::collections::HashMap<String, UndoSkipKind>;

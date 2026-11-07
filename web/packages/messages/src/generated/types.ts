@@ -458,6 +458,7 @@ export interface MessageArguments {
   "runs.question-plain": { person: string | number };
   "runs.skip-by": { person: string | number };
   "runs.skip-line": { field: string | number; issue: string | number; reason: string | number };
+  "runs.skip-line-comment": { issue: string | number; reason: string | number };
   "runs.skipped-more": { count: number };
   "runs.skipped-title": { count: string | number };
   "runs.span": { from: string | number; to: string | number };

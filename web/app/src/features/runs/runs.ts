@@ -91,11 +91,21 @@ export function runActorLine(run: Run): string {
     ended !== undefined &&
     calendarDayOf(Date.parse(run.started_at)) === calendarDayOf(Date.parse(ended));
   const to = ended === undefined ? undefined : sameDay ? formatTime(ended) : formatDateTime(ended);
-  const span = to === undefined ? from : t("runs.span", { from, to });
+  // One time when the run began and ended in the same minute.
+  const sameMinute =
+    sameDay && ended !== undefined && formatTime(ended) === formatTime(run.started_at);
+  const span = to === undefined || sameMinute ? from : t("runs.span", { from, to });
   const person = personName(run.person);
   return run.app === undefined || run.app === null || run.app === ""
     ? t("runs.actor-plain", { person, span })
     : t("runs.actor-via", { person, app: run.app, span });
+}
+
+/** When a change of the run was made: the time alone on the day the run began, the date and time on another day. */
+export function changeWhenText(run: Run, at: string): string {
+  return calendarDayOf(Date.parse(at)) === calendarDayOf(Date.parse(run.started_at))
+    ? formatTime(at)
+    : formatDateTime(at);
 }
 
 /** What became of a field once the run was undone, in words; none before. */
@@ -134,9 +144,14 @@ export function skipReasonText(skip: UndoSkip): string {
 
 /** One skipped field of the question: the issue, the field by its name, and why. */
 export function skipLineText(skip: UndoSkip): string {
-  return t("runs.skip-line", {
-    issue: skip.issue?.readable_id ?? t("runs.unknown-issue"),
-    field: fieldNameOf({ code: skip.field }),
-    reason: skipReasonText(skip),
-  });
+  const issue = skip.issue?.readable_id ?? t("runs.unknown-issue");
+  const reason = skipReasonText(skip);
+  // A comment is named under its issue; it cannot be put back yet.
+  return skip.field === "comment"
+    ? t("runs.skip-line-comment", { issue, reason })
+    : t("runs.skip-line", {
+        issue,
+        field: fieldNameOf({ code: skip.field, name: skip.name }),
+        reason,
+      });
 }

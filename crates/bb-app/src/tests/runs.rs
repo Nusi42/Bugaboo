@@ -562,11 +562,156 @@ async fn ai_38_the_history_marks_the_changes_of_a_run_and_the_undo() -> Outcome 
     )
     .await?
     .into_value();
-    assert!(
-        page.items
-            .iter()
-            .any(|row| row.run == Some(run) && row.undid_run.is_none())
+    assert!(page.items.iter().any(
+        |row| row.run_mark == Some(crate::history::RunMarkKind::Made) && row.run == Some(run)
+    ));
+    assert!(page.items.iter().any(
+        |row| row.run_mark == Some(crate::history::RunMarkKind::Undid) && row.run == Some(run)
+    ));
+    Ok(())
+}
+
+/// The preview counts and names only the fields the reader may read, and a comment of the run is
+/// one field that cannot be put back yet, named under its issue (M7-F60).
+#[tokio::test]
+async fn ai_38_the_preview_leaves_out_unreadable_fields_and_names_a_comment() -> Outcome {
+    use super::history_cursor::reader_of_titles;
+    use crate::comments::{AddComment, add_comment};
+
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    let reader = reader_of_titles(&world).await?;
+    let person = world.ctx().session_actor(&reader).await?.person.id;
+    let run = open(&world, &reader, person).await?;
+    change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
+    let ctx = world.ctx();
+    ctx.set_run(Some(run));
+    let mut title = priority_change(&admin, id, 2, Priority::Critical);
+    title.priority = None;
+    title.title = Some("A new title".to_owned());
+    change_issue(&ctx, title).await?;
+    add_comment(
+        &ctx,
+        AddComment {
+            session_token: admin.clone(),
+            issue: id.to_string(),
+            text: "Looked at it".to_owned(),
+        },
+    )
+    .await?;
+    let preview = preview_of(&world, &reader, run).await?;
+    // The priority is the reader's blind spot: only the title goes back, the comment stays.
+    assert_eq!(preview.goes_back, 1);
+    assert_eq!(preview.skipped, 1);
+    assert_eq!(preview.skips[0].field, "comment");
+    assert_eq!(preview.skips[0].kind, UndoSkipKind::NotUndoable);
+    assert!(preview.skips[0].issue.is_some());
+    Ok(())
+}
+
+async fn outcomes_of(
+    world: &World,
+    session: &str,
+    run: RunId,
+) -> Result<Vec<Option<crate::runs::FieldOutcome>>, AppError> {
+    let page = run_changes(
+        &world.ctx(),
+        RunChangesQuery {
+            session_token: session.to_owned(),
+            run,
+            after: None,
+            limit: None,
+        },
+    )
+    .await?
+    .into_value();
+    Ok(page
+        .items
+        .iter()
+        .map(|item| item.changes[0].outcome.clone())
+        .collect())
+}
+
+/// A field that went back stays "went back" when somebody changes it after the undo.
+#[tokio::test]
+async fn ai_38_a_field_that_went_back_stays_so_when_it_is_changed_after_the_undo() -> Outcome {
+    use crate::runs::FieldOutcome;
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    undo(&world, &admin, run, preview).await?;
+    change_issue(&world.ctx(), priority_change(&admin, id, 3, Priority::Low)).await?;
+    assert_eq!(
+        outcomes_of(&world, &admin, run).await?,
+        vec![Some(FieldOutcome::WentBack)]
     );
-    assert!(page.items.iter().any(|row| row.undid_run == Some(run)));
+    Ok(())
+}
+
+/// A change made between the plan and the write is not written over: it is a conflict, kept and
+/// named.
+#[tokio::test]
+async fn ai_38_a_change_between_the_plan_and_the_write_is_not_overwritten() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
+    let ctx = world.ctx();
+    let actor = ctx.session_actor(&admin).await?;
+    let runs = RunsOf::new(&ctx, &actor, &admin);
+    let plan = runs.plan_for_reader(run).await?;
+    // Somebody changes the issue after the plan looked at it.
+    change_issue(&world.ctx(), priority_change(&admin, id, 2, Priority::Low)).await?;
+    let done = runs.apply_plan(run, plan).await?;
+    assert_eq!(done.undone, 0);
+    assert_eq!(done.skips[0].kind, UndoSkipKind::ChangedSince);
+    assert_eq!(priority_of(&world, &admin, id).await?, Priority::Low);
+    Ok(())
+}
+
+/// A busy database in the middle of an undo is an error, never a skip; what went back before it is
+/// recorded, so the run does not offer to put it back again.
+#[tokio::test]
+async fn ai_38_a_busy_database_stops_the_undo_and_what_went_back_is_recorded() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let first = an_issue(&world, project).await?;
+    let second = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    for each in [first, second] {
+        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
+    }
+    let preview = preview_of(&world, &admin, run).await?;
+    world.store.keep_a_change_busy_after(1);
+    let stopped = undo(&world, &admin, run, preview).await;
+    assert!(stopped.is_err());
+    let seen = crate::runs::get_run(
+        &world.ctx(),
+        RunQuery {
+            session_token: admin.clone(),
+            run,
+        },
+    )
+    .await?
+    .into_value();
+    assert!(seen.undone.is_some());
+    let skips = outcomes_of(&world, &admin, run)
+        .await?
+        .into_iter()
+        .filter(|outcome| matches!(outcome, Some(crate::runs::FieldOutcome::WentBack)))
+        .count();
+    assert_eq!(skips, 1);
     Ok(())
 }

@@ -19872,7 +19872,18 @@
           },
           "run": {
             "type": ["string", "null"],
-            "description": "The run the change was made in, when it was made in one (a session of an AI app, an attempt)."
+            "description": "The run the change was made in or undid, left out for a reader who may not open it."
+          },
+          "run_mark": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunMark",
+                "description": "Whether the change was made in a run (a session of an AI app, an attempt) or is the undo of\none."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "text": {
             "type": ["string", "null"],
@@ -19888,10 +19899,6 @@
                 "type": "null"
               }
             ]
-          },
-          "undid_run": {
-            "type": ["string", "null"],
-            "description": "The run the change is the undo of, when it is one."
           },
           "version": {
             "type": ["integer", "null"],
@@ -25417,6 +25424,11 @@
         "description": "What a run is of.",
         "enum": ["many-changes", "app-session", "attempt"]
       },
+      "RunMark": {
+        "type": "string",
+        "description": "How a change belongs to a run.",
+        "enum": ["in-run", "undid"]
+      },
       "RunningItem": {
         "type": "object",
         "description": "A timer that runs.",
@@ -27420,6 +27432,10 @@
           "kind": {
             "$ref": "#/components/schemas/UndoSkipKind",
             "description": "Why it stays."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field."
           }
         }
       },

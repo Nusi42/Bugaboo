@@ -9,6 +9,8 @@ export const messages = {
   "history.tab-changes": "Changes",
   "history.run-link": "Run of this session",
   "history.undid-run": "Undid a run",
+  "history.in-run": "Part of a run",
+  "history.undid-run-link": "Run that was undone",
   "history.nothing": "Nothing here yet.",
   "history.more": "Show earlier",
   "history.by": "{who} · {when}",

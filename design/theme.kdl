@@ -6505,6 +6505,12 @@ part "written-by" {
     use "quiet-text"
 }
 
+// The line under a change that belongs to a run: what it is, and the link to the run.
+part "history.run-mark" {
+    use "quiet-text"
+    display block
+}
+
 // ───────────── Files (features/files, M4 WP-05) ─────────────
 //
 // The Files block of the issue page and the files under a comment (UX §4.4): the place that takes
@@ -14734,7 +14740,6 @@ part "sheet.change" {
     font-size "$fs-base"
 }
 
-// The grid scrolls sideways on a narrow window; the ring of a cell is not cut at its edge.
 // The changes of a run (UX §4.12): one row for each field that changed, the issue, what changed and when.
 part "run-table" {
     width "100%"
@@ -14757,6 +14762,7 @@ part "run-table.cell" {
     border-bottom "$border-width solid $divider"
 }
 
+// The grid scrolls sideways on a narrow window; the ring of a cell is not cut at its edge.
 part "sheet.scroll" {
     use "ring-room"
     use "ring-room-flush"

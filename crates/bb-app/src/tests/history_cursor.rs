@@ -25,7 +25,7 @@ use crate::roles::{
 };
 
 /// The reader sees the titles of issues and nothing else: the priority is hidden from them.
-async fn reader_of_titles(world: &World) -> Result<String, AppError> {
+pub(super) async fn reader_of_titles(world: &World) -> Result<String, AppError> {
     let role = create_role(
         &world.ctx(),
         CreateRole {

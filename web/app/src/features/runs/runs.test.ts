@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { outcomeText, runTitle, skipReasonText, type Run, type UndoSkip } from "./runs.ts";
+import {
+  changeWhenText,
+  outcomeText,
+  runActorLine,
+  runTitle,
+  skipReasonText,
+  type Run,
+  type UndoSkip,
+} from "./runs.ts";
 
 const base: Run = {
   id: "r1",
@@ -38,5 +46,21 @@ describe("ai_38 the words of a run", () => {
     expect(outcomeText(null)).toBeUndefined();
     expect(outcomeText({ kind: "went-back" })).toBe("Went back");
     expect(outcomeText({ kind: "kept", reason: "gone" })).toBe("Skipped: the issue is gone");
+  });
+
+  it("writes one time when the run began and ended in the same minute", () => {
+    const run: Run = {
+      ...base,
+      app: "Claude Code",
+      started_at: "2026-11-07T10:00:05Z",
+      ended_at: "2026-11-07T10:00:40Z",
+    };
+    expect(runActorLine(run)).not.toContain("–");
+  });
+
+  it("writes the time alone for a change on the day of the run and the date for another day", () => {
+    const run: Run = { ...base, started_at: "2026-11-07T10:00:00Z" };
+    expect(changeWhenText(run, "2026-11-07T10:30:00Z")).not.toContain("2026");
+    expect(changeWhenText(run, "2026-11-09T10:30:00Z")).toContain("2026");
   });
 });

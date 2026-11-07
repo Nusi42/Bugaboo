@@ -1884,6 +1884,9 @@ pub const HANDLE_TAKEN: MessageKey = MessageKey::new("handle.taken");
 /// The message `handle.title`.
 pub const HANDLE_TITLE: MessageKey = MessageKey::new("handle.title");
 
+/// The message `history.in-run`.
+pub const HISTORY_IN_RUN: MessageKey = MessageKey::new("history.in-run");
+
 /// The message `history.more`.
 pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
 
@@ -1916,6 +1919,9 @@ pub const HISTORY_TYPE_UNKNOWN: MessageKey = MessageKey::new("history.type-unkno
 
 /// The message `history.undid-run`.
 pub const HISTORY_UNDID_RUN: MessageKey = MessageKey::new("history.undid-run");
+
+/// The message `history.undid-run-link`.
+pub const HISTORY_UNDID_RUN_LINK: MessageKey = MessageKey::new("history.undid-run-link");
 
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
@@ -10640,6 +10646,21 @@ pub fn runs_skip_line(
     )
 }
 
+/// The message `runs.skip-line-comment`.
+#[must_use]
+pub fn runs_skip_line_comment(
+    issue: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.skip-line-comment"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// The message `runs.skipped-more`.
 #[must_use]
 pub fn runs_skipped_more(count: i64) -> Message {
@@ -15087,6 +15108,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} brought back the file {name}",
     ),
     ("history.file-restored-unnamed", "{who} brought back a file"),
+    ("history.in-run", "Part of a run"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),
@@ -15125,6 +15147,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.title", "History"),
     ("history.type-unknown", "another issue type"),
     ("history.undid-run", "Undid a run"),
+    ("history.undid-run-link", "Run that was undone"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
@@ -16912,6 +16935,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("runs.skip-gone", "The issue is gone."),
     ("runs.skip-line", "{issue} {field}: {reason}"),
+    ("runs.skip-line-comment", "{issue} comment: {reason}"),
     ("runs.skip-not-allowed", "You may not change it."),
     ("runs.skip-not-undoable", "It cannot be put back yet."),
     (
