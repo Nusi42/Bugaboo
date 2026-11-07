@@ -15,7 +15,7 @@ bugaboo/
 │   ├── bb-store/           database adapter: schema, migrations, repositories, search compiler
 │   ├── bb-files/           file adapter: content-addressed storage, type checks, previews (a virus scan is V1, ATT-05)
 │   ├── bb-auth/            passwords, passkeys, two-step codes, sessions, access keys, OIDC, OAuth 2.1
-│   ├── bb-ai/              AI provider adapters (Anthropic, OpenAI-compatible) and the test fake
+│   ├── bb-ai/              AI provider adapters (Anthropic, OpenAI-compatible); offers the fake of bb-app again for tests
 │   ├── bb-mcp/             MCP server: the tool registry of bb-app as MCP (rmcp)
 │   ├── bb-notify/          delivery adapters: e-mail over SMTP (lettre) today, webhooks later
 │   ├── bb-jobs/            the loop that runs the due background jobs (the work of each kind is in bb-app)
@@ -90,6 +90,7 @@ flowchart TB
   store --> search & policy & core
   files --> core
   notify --> core
+  ai --> core
   wasm --> md & core
   wasmsearch --> search
   store -. tests only .-> testing
@@ -207,7 +208,7 @@ The words that the developer tools, the tests and `xtask` share, written once: t
 Every AI tool is a `bb-app` use case run as the actor, the assistant is a `bb-app` use case too (§5), and `bb-app` imports no adapter (rule 2). So the parts of AI are placed like this ([ADR-0013](../adr/0013-ai.md), amendment M7):
 
 - **The tool registry and the context builder live in `bb-app`** (`crates/bb-app/src/ai/`), next to the use cases they call, and do no I/O of their own. The registry is one table (`ai/tools/`): each tool has its name, *reads* or *changes*, the use case it calls, the scope it needs, the schema of its input (generated from the Rust type) and, when it changes something, a preview from the use case's own evaluation. The assistant, MCP and agents list and call tools only through it. The context builder (`ai/context/`) reads as the actor, leaves out hidden fields and everything *Never sent to AI*, and fences people's text with its author mark (§7, *AI*).
-- **`bb-ai` holds the provider adapters** (Anthropic and OpenAI-compatible, which covers a local model) behind the port `AiProvider` of `bb-app`, and the test fake behind its feature `testing` (like `bb-files`). `bb-server` wires the adapter the settings choose.
+- **`bb-ai` holds the provider adapters** (Anthropic and OpenAI-compatible, which covers a local model) behind the port `AiProvider` of `bb-app`, and, behind its feature `testing`, offers again the test fake that is defined with the port in `bb-app` (like `FakeMailer`), so the tests of `bb-app` and of the server use the same one. One adapter serves both kinds of provider and is chosen for every call by the settings, so `bb-server` wires it once. The outgoing call is `ureq` run on a thread of its own (ARCH-HTTP-EDGE).
 - **`bb-mcp` turns the registry into MCP** with `rmcp` over streamable HTTP at `/mcp`, and depends on `bb-app` only; the sign-in of apps is in `bb-auth`, `bb-app/src/auth/` and `bb-api` ([ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). There is no edge `mcp --> ai` (M4-F133).
 
 Enforced by: ARCH-DEPS (the edges), ARCH-AI-TOOLS (it reads `crates/bb-app/src/ai/tools/**` and `crates/bb-mcp/**`).

@@ -94,6 +94,105 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/ai": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The setup of AI of the organization: the settings and whether a key is stored, never the key. */
+    get: operations["getAiSetup"];
+    /**
+     * Changes the settings of AI of the organization. AI is off until it is switched on here. An
+     *     outside provider needs the agreement first, and changing the provider or the address needs the
+     *     password again.
+     */
+    put: operations["changeAiSetup"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/ai/agreement": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirms that a data processing agreement with the provider is in place. It is kept with who
+     *     confirmed it and when; a change of the provider asks again.
+     */
+    post: operations["confirmAiAgreement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/ai/key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Enters, changes or removes the key of the provider. It is stored encrypted like other secrets and
+     *     never sent back. Needs the password again.
+     */
+    put: operations["setAiKey"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/ai/try": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Tries the provider with one short call that holds no data of the organization. It works while AI
+     *     is still off, but never before the agreement of an outside provider is confirmed.
+     */
+    post: operations["tryAiProvider"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/ai/what-goes-where": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** What goes where: the provider, its country, the model and which data may go. */
+    get: operations["getWhatGoesWhere"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assignment-choices": {
     parameters: {
       query?: never;
@@ -2911,6 +3010,28 @@ export interface paths {
     patch: operations["changeProject"];
     trace?: never;
   };
+  "/api/v1/projects/{project}/ai": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The switch of AI of a project. Needs the permission *Change project settings* in the project. */
+    get: operations["getProjectAi"];
+    /**
+     * Switches AI on or off for a project, or lets it follow the project above again. AI works in a
+     *     project only when the organization and the project both have it on. Needs the permission
+     *     *Change project settings* in the project.
+     */
+    put: operations["changeProjectAi"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{project}/assignable-people": {
     parameters: {
       query?: never;
@@ -4130,6 +4251,55 @@ export interface components {
       /** @description The password, typed again. */
       password: string;
     };
+    /** @description Who confirmed the agreement, when, and for which provider. */
+    AgreementBody: {
+      /**
+       * Format: date-time
+       * @description When it was confirmed.
+       */
+      confirmed_at: string;
+      /** @description The administrator, as the person who asks may see them. */
+      confirmed_by: components["schemas"]["PersonRef"];
+      /** @description Where the data goes, which the agreement was confirmed for. */
+      destination: components["schemas"]["Destination"];
+    };
+    /** @description The confirmation of the agreement. */
+    AgreementConfirmBody: {
+      /**
+       * @description Where the data goes, as the page showed it. A request for another destination than the
+       *     settings lead to now is refused, so a page that is out of date confirms nothing.
+       */
+      destination: components["schemas"]["Destination"];
+    };
+    /** @description The key of the provider. */
+    AiKeyBody: {
+      /**
+       * @description The key. Leave it out, or leave it empty, to remove it (a model that asks for none). It is
+       *     stored encrypted and never sent back.
+       */
+      key?: string | null;
+      /** @description The password of the person who asks. */
+      password: string;
+    };
+    /** @description The setup of AI of the organization. The key is never in it. */
+    AiSetupBody: {
+      /** @description The address of an OpenAI-compatible model. */
+      address: string;
+      agreement?: components["schemas"]["AgreementBody"] | null;
+      /** @description The provider needs an agreement that is not confirmed for it yet. */
+      agreement_needed: boolean;
+      destination?: components["schemas"]["Destination"] | null;
+      /** @description AI is on for the organization. */
+      enabled: boolean;
+      /** @description A key is stored. The key itself is never sent. */
+      key_set: boolean;
+      /** @description The model, as the provider names it. */
+      model: string;
+      /** @description The kind of provider. */
+      provider: components["schemas"]["ProviderKind"];
+      /** @description Whether names of people go to an outside provider (otherwise the role of each person). */
+      send_names: boolean;
+    };
     /**
      * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.
      * @enum {string}
@@ -4295,6 +4465,23 @@ export interface components {
       challenge_id: string;
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
+    };
+    /** @description A change of the settings of AI. A part that is left out stays as it is. */
+    ChangeAiBody: {
+      /** @description The address of an OpenAI-compatible model; empty takes it away. */
+      address?: string | null;
+      /**
+       * @description Switch AI on or off for the organization. Switching on an outside provider needs the
+       *     agreement first.
+       */
+      enabled?: boolean | null;
+      /** @description The model. */
+      model?: string | null;
+      /** @description The password of the person who asks. It is needed when the provider or the address changes. */
+      password?: string | null;
+      provider?: components["schemas"]["ProviderKind"] | null;
+      /** @description Whether names of people go to an outside provider. */
+      send_names?: boolean | null;
     };
     /** @description What to change about a choice: what is left out stays as it is. */
     ChangeChoiceBody: {
@@ -4911,6 +5098,11 @@ export interface components {
       deleted: number;
     };
     /**
+     * @description Where the data of a call goes: to anthropic, to a local model on the organization's own network, or to another provider on the internet.
+     * @enum {string}
+     */
+    Destination: "anthropic" | "local-model" | "other-provider";
+    /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
      */
@@ -5134,6 +5326,7 @@ export interface components {
       | "mail.insecure"
       | "ai.off"
       | "ai.unavailable"
+      | "ai.not-set-up"
       | "ai.agreement-needed"
       | "ai.address-invalid"
       | "ai.address-not-encrypted"
@@ -7620,6 +7813,23 @@ export interface components {
        */
       total: number;
     };
+    /** @description The switch of one project. */
+    ProjectAiBody: {
+      /** @description The organization has AI on. */
+      organization_on: boolean;
+      /** @description The project's own switch; missing while it follows the project above or the organization. */
+      own?: boolean | null;
+      /** @description AI works in this project: the organization and the project both have it on. */
+      works_here: boolean;
+    };
+    /** @description The switch of a project. */
+    ProjectAiChangeBody: {
+      /**
+       * @description The project's own switch. Leave it out (or send null) to let the project follow the one
+       *     above again.
+       */
+      enabled?: boolean | null;
+    };
     /** @description A project after it was made, changed or moved. */
     ProjectBody: {
       /** @description The ID of the project. */
@@ -7765,6 +7975,11 @@ export interface components {
        */
       changes: components["schemas"]["ProjectStatusChangeBody"][];
     };
+    /**
+     * @description The kind of AI provider: anthropic, or openai-compatible (any service with the chat shape of OpenAI, also a model on the organization's own network).
+     * @enum {string}
+     */
+    ProviderKind: "anthropic" | "openai-compatible";
     /** @description What publishing a workflow would drop. */
     PublishPreviewAnswer: {
       /** @description The statuses the stored workflow has and the new one lacks. */
@@ -8883,6 +9098,13 @@ export interface components {
        */
       version: number;
     };
+    /** @description A project that has switched AI off for itself. */
+    SwitchedOffBody: {
+      /** @description The ID of the project. */
+      id: string;
+      /** @description What people call it. */
+      name: string;
+    };
     /** @description A tag as the people who look after tags see it: the fields that can be asked for. */
     TagItem: {
       color?: components["schemas"]["ChoiceColor"] | null;
@@ -9197,6 +9419,25 @@ export interface components {
        */
       worked: number;
     };
+    /** @description What goes where. */
+    WhatGoesWhereBody: {
+      agreement?: components["schemas"]["AgreementBody"] | null;
+      /** @description The provider needs an agreement that is not confirmed for it yet. */
+      agreement_needed: boolean;
+      /**
+       * @description Where the data goes. The name of the provider, its country and the page where it says what
+       *     it does with data are in the message catalog by this word.
+       */
+      destination: components["schemas"]["Destination"];
+      /** @description AI is on for the organization. */
+      enabled: boolean;
+      /** @description The model. */
+      model: string;
+      /** @description Whether people go to the provider by name; otherwise as their role. */
+      names_sent: boolean;
+      /** @description The projects that switched AI off for themselves. AI works in every other project. */
+      switched_off: components["schemas"]["SwitchedOffBody"][];
+    };
     /** @description Where a project would go. */
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
@@ -9411,6 +9652,15 @@ export interface components {
     };
     /** @description That is too big to send. (request.too-large) */
     TooLarge: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/problem+json": components["schemas"]["Problem"];
+      };
+    };
+    /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
+    TooManyRequests2: {
       headers: {
         [name: string]: unknown;
       };
@@ -9654,6 +9904,201 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ServerStatusBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getAiSetup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setup of AI. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AiSetupBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeAiSetup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeAiBody"];
+      };
+    };
+    responses: {
+      /** @description The setup of AI after the change. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AiSetupBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      /** @description An outside provider has no confirmed agreement yet (ai.agreement-needed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  confirmAiAgreement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AgreementConfirmBody"];
+      };
+    };
+    responses: {
+      /** @description The setup of AI after the confirmation. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AiSetupBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setAiKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AiKeyBody"];
+      };
+    };
+    responses: {
+      /** @description The key is stored. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  tryAiProvider: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The provider answered. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      /** @description An outside provider has no confirmed agreement yet (ai.agreement-needed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      429: components["responses"]["TooManyRequests2"];
+      500: components["responses"]["InternalError"];
+      /** @description The AI provider did not answer (ai.unavailable). */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getWhatGoesWhere: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What goes where. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WhatGoesWhereBody"];
         };
       };
       304: components["responses"]["NotModified"];
@@ -13911,15 +14356,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
+      429: components["responses"]["TooManyRequests2"];
       500: components["responses"]["InternalError"];
       /** @description The mail server did not take the e-mail (mail.rejected). */
       502: {
@@ -14107,15 +14544,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
-      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
+      429: components["responses"]["TooManyRequests2"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
     };
@@ -15380,6 +15809,72 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getProjectAi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The switch of the project. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectAiBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeProjectAi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProjectAiChangeBody"];
+      };
+    };
+    responses: {
+      /** @description The switch of the project after the change. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectAiBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

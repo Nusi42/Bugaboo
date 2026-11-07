@@ -321,6 +321,296 @@
         "x-permission": "see-status"
       }
     },
+    "/api/v1/ai": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "The setup of AI of the organization: the settings and whether a key is stored, never the key.",
+        "operationId": "getAiSetup",
+        "responses": {
+          "200": {
+            "description": "The setup of AI.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSetupBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      },
+      "put": {
+        "tags": ["ai"],
+        "summary": "Changes the settings of AI of the organization. AI is off until it is switched on here. An\noutside provider needs the agreement first, and changing the provider or the address needs the\npassword again.",
+        "operationId": "changeAiSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAiBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The setup of AI after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSetupBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "An outside provider has no confirmed agreement yet (ai.agreement-needed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/ai/agreement": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "Confirms that a data processing agreement with the provider is in place. It is kept with who\nconfirmed it and when; a change of the provider asks again.",
+        "operationId": "confirmAiAgreement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementConfirmBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The setup of AI after the confirmation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSetupBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/ai/key": {
+      "put": {
+        "tags": ["ai"],
+        "summary": "Enters, changes or removes the key of the provider. It is stored encrypted like other secrets and\nnever sent back. Needs the password again.",
+        "operationId": "setAiKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiKeyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The key is stored."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/ai/try": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "Tries the provider with one short call that holds no data of the organization. It works while AI\nis still off, but never before the agreement of an outside provider is confirmed.",
+        "operationId": "tryAiProvider",
+        "responses": {
+          "204": {
+            "description": "The provider answered."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "An outside provider has no confirmed agreement yet (ai.agreement-needed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests2"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The AI provider did not answer (ai.unavailable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/ai/what-goes-where": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "What goes where: the provider, its country, the model and which data may go.",
+        "operationId": "getWhatGoesWhere",
+        "responses": {
+          "200": {
+            "description": "What goes where.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatGoesWhereBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/assignment-choices": {
       "get": {
         "tags": ["roles"],
@@ -7871,14 +8161,7 @@
             }
           },
           "429": {
-            "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/TooManyRequests2"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -8187,14 +8470,7 @@
             "$ref": "#/components/responses/TooLarge"
           },
           "429": {
-            "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/TooManyRequests2"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -10441,6 +10717,127 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-project-settings"
+      }
+    },
+    "/api/v1/projects/{project}/ai": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "The switch of AI of a project. Needs the permission *Change project settings* in the project.",
+        "operationId": "getProjectAi",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The switch of the project.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAiBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-project-settings"
+      },
+      "put": {
+        "tags": ["ai"],
+        "summary": "Switches AI on or off for a project, or lets it follow the project above again. AI works in a\nproject only when the organization and the project both have it on. Needs the permission\n*Change project settings* in the project.",
+        "operationId": "changeProjectAi",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectAiChangeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The switch of the project after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAiBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -15140,6 +15537,117 @@
           }
         }
       },
+      "AgreementBody": {
+        "type": "object",
+        "description": "Who confirmed the agreement, when, and for which provider.",
+        "required": ["destination", "confirmed_by", "confirmed_at"],
+        "properties": {
+          "confirmed_at": {
+            "type": "string",
+            "description": "When it was confirmed.",
+            "format": "date-time"
+          },
+          "confirmed_by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The administrator, as the person who asks may see them."
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Destination",
+            "description": "Where the data goes, which the agreement was confirmed for."
+          }
+        }
+      },
+      "AgreementConfirmBody": {
+        "type": "object",
+        "description": "The confirmation of the agreement.",
+        "required": ["destination"],
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/Destination",
+            "description": "Where the data goes, as the page showed it. A request for another destination than the\nsettings lead to now is refused, so a page that is out of date confirms nothing."
+          }
+        }
+      },
+      "AiKeyBody": {
+        "type": "object",
+        "description": "The key of the provider.",
+        "required": ["password"],
+        "properties": {
+          "key": {
+            "type": ["string", "null"],
+            "description": "The key. Leave it out, or leave it empty, to remove it (a model that asks for none). It is\nstored encrypted and never sent back."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person who asks."
+          }
+        }
+      },
+      "AiSetupBody": {
+        "type": "object",
+        "description": "The setup of AI of the organization. The key is never in it.",
+        "required": [
+          "enabled",
+          "provider",
+          "model",
+          "address",
+          "send_names",
+          "key_set",
+          "agreement_needed"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address of an OpenAI-compatible model."
+          },
+          "agreement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgreementBody",
+                "description": "The agreement that was confirmed, if there is one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agreement_needed": {
+            "type": "boolean",
+            "description": "The provider needs an agreement that is not confirmed for it yet."
+          },
+          "destination": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Destination",
+                "description": "Where the data goes; missing while the address is not a good one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "AI is on for the organization."
+          },
+          "key_set": {
+            "type": "boolean",
+            "description": "A key is stored. The key itself is never sent."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model, as the provider names it."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderKind",
+            "description": "The kind of provider."
+          },
+          "send_names": {
+            "type": "boolean",
+            "description": "Whether names of people go to an outside provider (otherwise the role of each person)."
+          }
+        }
+      },
       "AppliesTo": {
         "type": "string",
         "description": "Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.",
@@ -15458,6 +15966,43 @@
           "options": {
             "type": "object",
             "description": "What the device is asked, to give to `navigator.credentials`."
+          }
+        }
+      },
+      "ChangeAiBody": {
+        "type": "object",
+        "description": "A change of the settings of AI. A part that is left out stays as it is.",
+        "properties": {
+          "address": {
+            "type": ["string", "null"],
+            "description": "The address of an OpenAI-compatible model; empty takes it away."
+          },
+          "enabled": {
+            "type": ["boolean", "null"],
+            "description": "Switch AI on or off for the organization. Switching on an outside provider needs the\nagreement first."
+          },
+          "model": {
+            "type": ["string", "null"],
+            "description": "The model."
+          },
+          "password": {
+            "type": ["string", "null"],
+            "description": "The password of the person who asks. It is needed when the provider or the address changes."
+          },
+          "provider": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProviderKind",
+                "description": "The kind of provider."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "send_names": {
+            "type": ["boolean", "null"],
+            "description": "Whether names of people go to an outside provider."
           }
         }
       },
@@ -16705,6 +17250,11 @@
           }
         }
       },
+      "Destination": {
+        "type": "string",
+        "description": "Where the data of a call goes: to anthropic, to a local model on the organization's own network, or to another provider on the internet.",
+        "enum": ["anthropic", "local-model", "other-provider"]
+      },
       "Direction": {
         "type": "string",
         "description": "Which end of a relation a person starts from: the forward name or the backward one.",
@@ -17042,6 +17592,7 @@
           "mail.insecure",
           "ai.off",
           "ai.unavailable",
+          "ai.not-set-up",
           "ai.agreement-needed",
           "ai.address-invalid",
           "ai.address-not-encrypted",
@@ -22271,6 +22822,35 @@
           }
         }
       },
+      "ProjectAiBody": {
+        "type": "object",
+        "description": "The switch of one project.",
+        "required": ["organization_on", "works_here"],
+        "properties": {
+          "organization_on": {
+            "type": "boolean",
+            "description": "The organization has AI on."
+          },
+          "own": {
+            "type": ["boolean", "null"],
+            "description": "The project's own switch; missing while it follows the project above or the organization."
+          },
+          "works_here": {
+            "type": "boolean",
+            "description": "AI works in this project: the organization and the project both have it on."
+          }
+        }
+      },
+      "ProjectAiChangeBody": {
+        "type": "object",
+        "description": "The switch of a project.",
+        "properties": {
+          "enabled": {
+            "type": ["boolean", "null"],
+            "description": "The project's own switch. Leave it out (or send null) to let the project follow the one\nabove again."
+          }
+        }
+      },
       "ProjectBody": {
         "type": "object",
         "description": "A project after it was made, changed or moved.",
@@ -22556,6 +23136,11 @@
             "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
           }
         }
+      },
+      "ProviderKind": {
+        "type": "string",
+        "description": "The kind of AI provider: anthropic, or openai-compatible (any service with the chat shape of OpenAI, also a model on the organization's own network).",
+        "enum": ["anthropic", "openai-compatible"]
       },
       "PublishPreviewAnswer": {
         "type": "object",
@@ -24697,6 +25282,21 @@
           }
         }
       },
+      "SwitchedOffBody": {
+        "type": "object",
+        "description": "A project that has switched AI off for itself.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": "string",
+            "description": "What people call it."
+          }
+        }
+      },
       "TagItem": {
         "type": "object",
         "description": "A tag as the people who look after tags see it: the fields that can be asked for.",
@@ -25297,6 +25897,58 @@
           }
         }
       },
+      "WhatGoesWhereBody": {
+        "type": "object",
+        "description": "What goes where.",
+        "required": [
+          "destination",
+          "model",
+          "enabled",
+          "switched_off",
+          "names_sent",
+          "agreement_needed"
+        ],
+        "properties": {
+          "agreement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgreementBody",
+                "description": "The agreement that was confirmed, if there is one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agreement_needed": {
+            "type": "boolean",
+            "description": "The provider needs an agreement that is not confirmed for it yet."
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Destination",
+            "description": "Where the data goes. The name of the provider, its country and the page where it says what\nit does with data are in the message catalog by this word."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "AI is on for the organization."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model."
+          },
+          "names_sent": {
+            "type": "boolean",
+            "description": "Whether people go to the provider by name; otherwise as their role."
+          },
+          "switched_off": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SwitchedOffBody"
+            },
+            "description": "The projects that switched AI off for themselves. AI works in every other project."
+          }
+        }
+      },
       "WhereToBody": {
         "type": "object",
         "description": "Where a project would go.",
@@ -25782,6 +26434,16 @@
       },
       "TooLarge": {
         "description": "That is too big to send. (request.too-large)",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests2": {
+        "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
         "content": {
           "application/problem+json": {
             "schema": {

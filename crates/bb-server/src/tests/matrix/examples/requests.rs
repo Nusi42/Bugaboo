@@ -244,6 +244,25 @@ pub(super) async fn organization_request(
         "getMailServer" => ("GET", "/api/v1/mail".into(), None),
         // No mail server is entered in the matrix, so the test e-mail is turned away for that.
         "sendTestEmail" => ("POST", "/api/v1/mail/test".into(), None),
+        "getAiSetup" => ("GET", "/api/v1/ai".into(), None),
+        // The matrix changes only what keeps AI off, so no actor can leave it on.
+        "changeAiSetup" => (
+            "PUT",
+            "/api/v1/ai".into(),
+            Some(json!({"model": "matrix-model"})),
+        ),
+        "setAiKey" => (
+            "PUT",
+            "/api/v1/ai/key".into(),
+            Some(json!({"key": "a made-up ai key", "password": "not the password"})),
+        ),
+        "confirmAiAgreement" => (
+            "POST",
+            "/api/v1/ai/agreement".into(),
+            Some(json!({"destination": "anthropic"})),
+        ),
+        "getWhatGoesWhere" => ("GET", "/api/v1/ai/what-goes-where".into(), None),
+        "tryAiProvider" => ("POST", "/api/v1/ai/try".into(), None),
         "changeOrganizationSetting" => (
             "PUT",
             "/api/v1/settings/security.session-idle-minutes".into(),
@@ -291,6 +310,12 @@ pub(super) fn project_request(
             "POST",
             "/api/v1/projects".into(),
             Some(json!({"short_name": unique_short_name(fixture), "name": "Made by the matrix"})),
+        ),
+        "getProjectAi" => ("GET", format!("/api/v1/projects/{target}/ai"), None),
+        "changeProjectAi" => (
+            "PUT",
+            format!("/api/v1/projects/{target}/ai"),
+            Some(json!({"enabled": false})),
         ),
         "listProjectSettings" => ("GET", format!("/api/v1/projects/{target}/settings"), None),
         "changeProjectSetting" => (

@@ -43,6 +43,7 @@ use crate::web::decode_path;
 mod access_bodies;
 mod access_keys;
 mod admin;
+mod ai_setup;
 mod assignments;
 mod auth;
 mod auth_factors;
@@ -184,6 +185,7 @@ where
         .merge(saved_searches::routes())
         .merge(working_hours::routes())
         .merge(notifications::routes())
+        .merge(ai_setup::routes())
         .merge(handles::routes())
         .merge(people::routes())
         .merge(groups::routes())

@@ -16,6 +16,7 @@ mod access_keys_http;
 mod access_keys_never;
 mod access_screens;
 mod access_screens_review;
+mod ai_http;
 mod assignments_http;
 mod caching;
 mod check_access_types_http;

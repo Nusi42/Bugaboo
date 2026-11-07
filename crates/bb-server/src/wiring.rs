@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use bb_ai::HttpAiProvider;
 use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::auth::{AuthServices, RequestInfo};
@@ -153,6 +154,7 @@ pub(crate) async fn wire(
             .map_err(|error| anyhow!(error.to_string()))?,
     )))
     .with_mailer(Arc::new(SmtpMailer))
+    .with_ai_provider(Arc::new(HttpAiProvider))
     .with_public_url(settings.public_url.clone())
     .with_mail_batch(settings.mail_batch);
     // A server that runs as a service writes its log to a file, which a job rotates (M1-F61).

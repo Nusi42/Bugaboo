@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::time::Duration;
 
+use bb_ai::FakeAiProvider;
 use bb_api::FailureLimits;
 use bb_app::access::Permission;
 use bb_app::access::PolicyStore as _;
@@ -57,6 +58,7 @@ pub(super) struct Rig {
     pub(super) seal: LogSeal,
     /// What the server would have sent by e-mail.
     pub(super) mailer: FakeMailer,
+    pub(super) ai: FakeAiProvider,
     /// The setup code of the first start, as the console would show it.
     pub(super) setup_code: String,
     /// Keeps the key files and the anchor file of the log alive.
@@ -261,6 +263,7 @@ impl Rig {
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo")?;
         let mailer = FakeMailer::default();
+        let ai = FakeAiProvider::default();
         let services = AuthServices::new(
             storage.clone(),
             clock.clone(),
@@ -274,6 +277,7 @@ impl Rig {
             "Bugaboo".to_owned(),
         )
         .with_mailer(Arc::new(mailer.clone()))
+        .with_ai_provider(Arc::new(ai.clone()))
         .with_public_url(PUBLIC_URL);
         let services = services.with_files(Arc::new(DiskFiles::new(
             folder.path().join(bb_files::FILES_FOLDER),
@@ -299,6 +303,7 @@ impl Rig {
             clock,
             seal,
             mailer,
+            ai,
             setup_code: code
                 .map(|code| code.as_str().to_owned())
                 .unwrap_or_default(),

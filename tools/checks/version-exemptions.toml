@@ -222,3 +222,19 @@ reason = "A person's own setting gained its version after the freeze (M5-F97, AD
 [[exempt]]
 routes = ["POST /api/v1/me/work-days/start", "DELETE /api/v1/work-days/old"]
 reason = "Start work day records the moment of the tap on the person's day of now, a new day or a new period of the day that was ended: the person cannot have looked at a version of a day that is not there yet, and the store refuses a second day for the date. Deleting the days older than the keep period works on every such day at once, whatever their versions (ADR-0035, decisions 5 and 7)."
+
+[[exempt]]
+routes = ["PUT /api/v1/ai", "PUT /api/v1/projects/{project}/ai"]
+reason = "The settings of AI of the organization and of a project have no stored version, like every setting of the organization and of a project: administrators change them one at a time and the last change wins (ADR-0018)."
+
+[[exempt]]
+routes = ["PUT /api/v1/ai/key"]
+reason = "Sets or removes the one key of the AI provider, which no answer ever shows, so no person has read a version of it; the change is a security log entry."
+
+[[exempt]]
+routes = ["POST /api/v1/ai/agreement"]
+reason = "Confirms the agreement for the provider the page showed, which the request names: a page that is out of date is refused. Confirming it again only renews who and when."
+
+[[exempt]]
+routes = ["POST /api/v1/ai/try"]
+reason = "Sends one short call to the provider and changes nothing."

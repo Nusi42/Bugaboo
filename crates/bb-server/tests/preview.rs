@@ -9,6 +9,7 @@ use anyhow as _;
 use argon2 as _;
 use axum as _;
 use base64ct as _;
+use bb_ai as _;
 use bb_api as _;
 use bb_api_words as _;
 use bb_app as _;

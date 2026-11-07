@@ -492,21 +492,6 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "setMailPassword",
-        Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Ordinary,
-    ),
-    route(
-        "getMailServer",
-        Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::NeverStored,
-    ),
-    route(
-        "sendTestEmail",
-        Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Ordinary,
-    ),
-    route(
         "listIssueHistory",
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
@@ -824,8 +809,10 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
+mod ai;
 mod comments;
 mod lookup;
+mod mail;
 mod saved_searches;
 mod search_routes;
 #[cfg(test)]
