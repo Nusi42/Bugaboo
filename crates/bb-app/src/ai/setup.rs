@@ -194,9 +194,11 @@ pub async fn change_ai_setup<S: AuthStore>(
     if next.organization_on && (next.model.is_empty() || next_address_missing(&next)) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    // The provider moves when its kind or its address does: the password is asked again, the
-    // agreement and the key of the old one go.
-    let moves = next.kind != now_state.kind || next.address != now_state.address;
+    // The provider moves when its kind does, or its address while the kind uses one: the password
+    // is asked again, the agreement and the key of the old one go. A stale address under
+    // Anthropic is not a provider.
+    let moves = next.kind != now_state.kind
+        || (next.kind == ProviderKind::OpenAiCompatible && next.address != now_state.address);
     if moves {
         let password = input.password.ok_or(ErrorCode::WrongCredentials)?;
         ctx.confirm_password(&actor.person, password).await?;

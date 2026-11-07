@@ -523,3 +523,51 @@ async fn ai_01_an_address_on_the_internet_must_be_https() -> Outcome {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_01_clearing_a_stale_address_under_anthropic_changes_no_provider() -> Outcome {
+    let world = World::new().await?;
+    a_local_model(&world).await?;
+    // Anthropic, with the address of the local model left behind.
+    change_ai_setup(
+        &world.ctx(),
+        ChangeAiSetup {
+            provider: Some(ProviderKind::Anthropic),
+            model: Some("claude-test".to_owned()),
+            password: Some(PASSWORD.to_owned()),
+            ..setup(&world)
+        },
+    )
+    .await?;
+    set_ai_key(
+        &world.ctx(),
+        SetAiKey {
+            session_token: token(&world),
+            key: Some("a made-up key".to_owned()),
+            password: PASSWORD.to_owned(),
+        },
+    )
+    .await?;
+    confirm_ai_agreement(
+        &world.ctx(),
+        ConfirmAiAgreement {
+            session_token: token(&world),
+            destination: Destination::Anthropic,
+        },
+    )
+    .await?;
+    // Clearing it needs no password and keeps the key and the agreement.
+    let cleared = change_ai_setup(
+        &world.ctx(),
+        ChangeAiSetup {
+            address: Some(String::new()),
+            ..setup(&world)
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(cleared.address, "");
+    assert!(cleared.key_set);
+    assert_eq!(cleared.agreement_status, AgreementStatus::Confirmed);
+    Ok(())
+}
