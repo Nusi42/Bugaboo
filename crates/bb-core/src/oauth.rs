@@ -10,7 +10,7 @@
 use jiff::{SignedDuration, Timestamp};
 
 use crate::access_key::KeyChoice;
-use crate::id::{AgentId, GrantId, OAuthClientId, ProjectId, UserId};
+use crate::id::{GrantId, OAuthClientId, ProjectId, UserId};
 use crate::personal::Entity;
 use crate::security_log::Digest;
 
@@ -77,6 +77,17 @@ impl KeyChoice {
     /// permissions are not offered to apps (ADR-0042, decision 3).
     pub const APP_CHOICES: [Self; 2] = [Self::SeeOnly, Self::SeeAndChange];
 
+    /// Whether what this choice allows includes everything `other` allows: *See and change*
+    /// includes *See only*.
+    #[must_use]
+    pub const fn covers_choice(self, other: Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::SeeAndChange, Self::SeeOnly | Self::SeeAndChange)
+                | (Self::SeeOnly, Self::SeeOnly)
+        )
+    }
+
     /// Whether an app can be given this choice.
     #[must_use]
     pub const fn is_for_apps(self) -> bool {
@@ -105,8 +116,32 @@ words! {
         TokenReused => "token-reused",
         /// A code was used a second time.
         CodeReused => "code-reused",
-        /// An administrator took the address of the app away, or the person is gone.
-        Withdrawn => "withdrawn",
+    }
+}
+
+words! {
+    /// Why an app was turned away at registration or at the token endpoint: the error words of
+    /// OAuth (RFC 6749 §5.2, RFC 7591 §3.2.2, RFC 8707), which apps read. They are protocol words
+    /// and never shown to a person.
+    pub enum OAuthProblem {
+        /// The request is missing something or is malformed.
+        InvalidRequest => "invalid_request",
+        /// The app is not known.
+        InvalidClient => "invalid_client",
+        /// The code, the renewing token or the proof is wrong, has run out or was used.
+        InvalidGrant => "invalid_grant",
+        /// Only the code and the renewing token are swapped for tokens.
+        UnsupportedGrantType => "unsupported_grant_type",
+        /// The token is asked for a resource that is not this server's MCP server.
+        InvalidTarget => "invalid_target",
+        /// A return address that may not be registered.
+        InvalidRedirectUri => "invalid_redirect_uri",
+        /// The name or the other data of the app cannot be taken.
+        InvalidClientMetadata => "invalid_client_metadata",
+        /// The person said *Cancel*.
+        AccessDenied => "access_denied",
+        /// An administrator switched AI apps off.
+        TemporarilyUnavailable => "temporarily_unavailable",
     }
 }
 
@@ -140,9 +175,7 @@ pub struct OAuthGrant {
     /// The person who allowed it, and whom the app acts for.
     #[personal(category = "identity", basis = "contract")]
     pub person: UserId,
-    /// The agent the grant belongs to, when the person allowed the app for an agent.
-    #[not_personal]
-    pub agent: Option<AgentId>,
+
     /// What the app may do: *See only* or *See and change*.
     #[not_personal]
     pub scope: KeyChoice,
@@ -416,5 +449,102 @@ mod tests {
         assert!(KeyChoice::SeeAndChange.is_for_apps());
         assert!(!KeyChoice::Everything.is_for_apps());
         assert!(!KeyChoice::Permissions.is_for_apps());
+    }
+}
+
+/// Writes `text` for the query of an address or the body of a form: everything but letters,
+/// digits and `-._~` as `%` and two hexadecimal digits (RFC 3986 §2.3).
+#[must_use]
+pub fn percent_encode(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for byte in text.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+            out.push(char::from(byte));
+        } else {
+            out.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    out
+}
+
+/// Reads text written by [`percent_encode`], with `+` for a space as forms write it; `None` for a
+/// broken escape or text that is not UTF-8.
+#[must_use]
+pub fn percent_decode(text: &str) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut at = 0;
+    while let Some(&byte) = bytes.get(at) {
+        match byte {
+            b'+' => out.push(b' '),
+            b'%' => {
+                let pair = text.get(at + 1..at + 3)?;
+                out.push(u8::from_str_radix(pair, 16).ok()?);
+                at += 2;
+            }
+            other => out.push(other),
+        }
+        at += 1;
+    }
+    String::from_utf8(out).ok()
+}
+
+/// The pairs of a form body or a query (`a=b&c=d`), decoded; `None` when one is broken.
+#[must_use]
+pub fn form_pairs(body: &str) -> Option<Vec<(String, String)>> {
+    body.split('&')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let (name, value) = part.split_once('=').unwrap_or((part, ""));
+            Some((percent_decode(name)?, percent_decode(value)?))
+        })
+        .collect()
+}
+
+/// `address` with the `pairs` added to its query, the way an app wants its answer (RFC 6749
+/// §4.1.2).
+#[must_use]
+pub fn with_query(address: &str, pairs: &[(&str, &str)]) -> String {
+    let mut out = address.to_owned();
+    out.push(if address.contains('?') { '&' } else { '?' });
+    let written: Vec<String> = pairs
+        .iter()
+        .map(|(name, value)| format!("{}={}", percent_encode(name), percent_encode(value)))
+        .collect();
+    out.push_str(&written.join("&"));
+    out
+}
+
+#[cfg(test)]
+mod form_tests {
+    use super::*;
+
+    #[test]
+    fn ai_22_text_goes_into_a_query_and_back() {
+        let tricky = "a b&c=d/é?";
+        assert_eq!(
+            percent_decode(&percent_encode(tricky)).as_deref(),
+            Some(tricky)
+        );
+        assert_eq!(
+            with_query(
+                "http://127.0.0.1:1/cb",
+                &[("code", "x y"), ("state", "s&1")]
+            ),
+            "http://127.0.0.1:1/cb?code=x%20y&state=s%261"
+        );
+        assert_eq!(
+            with_query("https://a.example/cb?x=1", &[("code", "c")]),
+            "https://a.example/cb?x=1&code=c"
+        );
+        assert_eq!(
+            form_pairs("grant_type=refresh_token&refresh_token=a%2Bb+c").unwrap(),
+            vec![
+                ("grant_type".to_owned(), "refresh_token".to_owned()),
+                ("refresh_token".to_owned(), "a+b c".to_owned())
+            ]
+        );
+        assert_eq!(percent_decode("%zz"), None);
+        assert_eq!(percent_decode("%"), None);
     }
 }

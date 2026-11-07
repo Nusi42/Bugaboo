@@ -563,13 +563,30 @@ pub async fn sign_out_everywhere<S: AuthStore>(
                     now,
                 )
                 .await?;
-                S::delete_access_keys_of(transaction, person).await
+                // What the person allowed AI apps ends in the same change, like their keys.
+                let grants = S::end_grants_of(
+                    transaction,
+                    person,
+                    bb_core::oauth::GrantEnd::SignedOutEverywhere,
+                    now,
+                )
+                .await?;
+                Ok((S::delete_access_keys_of(transaction, person).await?, grants))
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    let (keys, grants) = keys;
     ctx.note(SecurityAction::SessionsEndedAll, Some(person), None)
         .await;
+    for grant in grants {
+        ctx.note(
+            SecurityAction::OAuthGrantEndedBySignOut,
+            Some(person),
+            Some(entity(RecordKind::OAuthGrant, grant)),
+        )
+        .await;
+    }
     for key in keys {
         ctx.note(
             SecurityAction::AccessKeyDeleted,

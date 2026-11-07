@@ -70,6 +70,7 @@ mod m0038_ai_tools;
 mod m0039_agents;
 mod m0040_runs;
 mod m0041_assistant_references;
+mod m0043_oauth;
 #[cfg(test)]
 mod old_rows;
 
@@ -372,6 +373,11 @@ const ALL: &[Definition] = &[
         version: 41,
         name: "assistant_references",
         steps: || Ok(m0041_assistant_references::steps()),
+    },
+    Definition {
+        version: 43,
+        name: "oauth",
+        steps: || Ok(m0043_oauth::steps()),
     },
 ];
 

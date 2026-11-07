@@ -2672,6 +2672,8 @@
   "setting.ai.model.help": "The name of the model, as the provider writes it.",
   "setting.ai.address.name": "Address of the model",
   "setting.ai.address.help": "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
+  "setting.ai-apps.enabled.name": "Let AI apps sign in",
+  "setting.ai-apps.enabled.help": "Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help": "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
   "error.ai.off": "AI is off here.",

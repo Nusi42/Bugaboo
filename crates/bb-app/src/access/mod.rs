@@ -18,10 +18,10 @@ mod visibility;
 
 use std::sync::Arc;
 
-use bb_auth::looks_like_access_key;
+use bb_auth::{looks_like_access_key, looks_like_oauth_access_token};
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::id::{AccessKeyId, AgentId, GroupId, ProjectId, UserId};
+use bb_core::id::{AccessKeyId, AgentId, GrantId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
@@ -59,12 +59,27 @@ pub(crate) struct Actor {
     pub(crate) key: Option<KeyInUse>,
 }
 
-/// An access key in use (AUTH-07): the owner does everything as themselves, narrowed by this at
-/// every request.
+/// What narrows the person at a request: an access key, or what the person allowed an AI app
+/// (ADR-0042). Both narrow the same way, through one [`Narrowing`], and neither widens anything.
+#[derive(Clone, Debug)]
+pub(crate) enum CredentialSource {
+    /// An access key (AUTH-07).
+    Key(AccessKeyId),
+    /// The grant of an AI app (AI-22), with the name the app gave itself.
+    App {
+        /// The grant.
+        grant: GrantId,
+        /// The app's name, as it registered; Bugaboo cannot check it.
+        name: String,
+    },
+}
+
+/// An access key or a grant in use (AUTH-07, AI-22): the owner does everything as themselves,
+/// narrowed by this at every request.
 #[derive(Clone, Debug)]
 pub(crate) struct KeyInUse {
-    /// The key.
-    pub(crate) id: AccessKeyId,
+    /// What the request came with: an access key, or the grant of an AI app.
+    pub(crate) source: CredentialSource,
     /// What it narrows the owner's permissions to: its choice and its projects.
     pub(crate) narrowing: Narrowing,
     /// The agent the key belongs to, if it is an agent key: the request then comes from the
@@ -232,6 +247,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         if looks_like_access_key(token_text) {
             return self.key_actor(token_text).await;
+        }
+        if looks_like_oauth_access_token(token_text) {
+            return self.grant_actor(token_text).await;
         }
         self.session_actor(token_text).await
     }

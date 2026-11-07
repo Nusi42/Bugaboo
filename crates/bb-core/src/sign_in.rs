@@ -155,6 +155,9 @@ words! {
         /// A tool was turned away: it does not exist, the key or the app may not use it, or it names
         /// something kept from AI.
         AiToolRefused => "ai_tool.refused",
+        /// An AI app, or an access key used through MCP, made more calls than a grant or a person
+        /// may in a minute, and the call was turned away.
+        AiCallLimited => "ai_call.limited",
         /// An AI app registered itself.
         OAuthClientRegistered => "oauth_client.registered",
         /// A person pressed *Allow*: a grant was made for an AI app.

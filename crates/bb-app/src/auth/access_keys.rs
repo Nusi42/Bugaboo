@@ -42,28 +42,39 @@ use super::types::{
     CreateAccessKey, CreatedAccessKey, DeleteAccessKey, Done, ProjectChoicePage,
     ProjectChoicesQuery, RequireSessionQuery, SeeServerStatusQuery,
 };
-use crate::access::{Actor, KeyInUse};
+use crate::access::{Actor, CredentialSource, KeyInUse};
 use crate::input::{clean_name, cursor_or_invalid};
 use crate::walk::{Walk, fill_past_hidden};
 
 /// The purpose under which guessing keys is counted per network (`Ctx::reserve_network`).
 const GUESSING: &str = "access-key";
 
-/// What a key narrows its owner to: its choice and its projects.
-pub(crate) fn narrowing_of(record: &AccessKeyRecord) -> Narrowing {
-    let narrowing = match record.key.choice {
+/// What a choice with its single permissions and its projects narrows a person to: the one place
+/// that turns *What it may do* into a [`Narrowing`], for access keys and for the grants of AI apps
+/// alike (ADR-0042: what no key holds, no grant holds).
+pub(crate) fn narrowing_for(
+    choice: KeyChoice,
+    permissions: &[Permission],
+    projects: &[ProjectId],
+) -> Narrowing {
+    let narrowing = match choice {
         KeyChoice::SeeOnly => Narrowing::see_only(),
         KeyChoice::SeeAndChange => Narrowing::see_and_change(),
         KeyChoice::Everything => Narrowing::everything(),
         KeyChoice::Permissions => Narrowing::new(Choice::Permissions(
-            record.permissions.iter().copied().collect::<BTreeSet<_>>(),
+            permissions.iter().copied().collect::<BTreeSet<_>>(),
         )),
     };
-    if record.projects.is_empty() {
+    if projects.is_empty() {
         narrowing
     } else {
-        narrowing.in_projects(record.projects.iter().copied().collect())
+        narrowing.in_projects(projects.iter().copied().collect())
     }
+}
+
+/// What a key narrows its owner to: its choice and its projects.
+pub(crate) fn narrowing_of(record: &AccessKeyRecord) -> Narrowing {
+    narrowing_for(record.key.choice, &record.permissions, &record.projects)
 }
 
 /// The moment cut to the minute: the last use of a key is kept to the minute (PRIV-02: no more
@@ -75,7 +86,7 @@ fn to_the_minute(moment: Timestamp) -> Timestamp {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// A project the person may not know about is not one they can name, whether it exists or not.
-    async fn ensure_projects_known(
+    pub(crate) async fn ensure_projects_known(
         &self,
         actor: &Actor,
         projects: &[ProjectId],
@@ -184,7 +195,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Actor {
             person: owner,
             key: Some(KeyInUse {
-                id: record.key.id,
+                source: CredentialSource::Key(record.key.id),
                 narrowing,
                 agent,
             }),
@@ -197,10 +208,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn key_on_sign_in_data(&self, key_text: &str) -> AppError {
         match self.key_actor(key_text).await {
             Ok(actor) => {
-                let subject = actor
-                    .key
-                    .as_ref()
-                    .map(|key| entity(RecordKind::AccessKey, key.id));
+                let subject = match actor.key.as_ref().map(|key| &key.source) {
+                    Some(CredentialSource::Key(id)) => Some(entity(RecordKind::AccessKey, *id)),
+                    _ => None,
+                };
                 self.note(
                     SecurityAction::AccessKeyRefused,
                     Some(actor.person.id),

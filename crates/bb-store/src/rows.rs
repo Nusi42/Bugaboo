@@ -3,10 +3,10 @@
 
 use bb_core::id::{
     AccessKeyId, AgentId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId,
-    EventId, FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId,
-    LabelId, LayoutId, LockToken, NotificationId, PasskeyId, ProjectId, RelationId, RelationKindId,
-    RoleId, RunId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId, UploadId, UserId,
-    WorkDayId, WorkflowId,
+    EventId, FieldId, GrantId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId,
+    LabelGroupId, LabelId, LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId,
+    ProjectId, RelationId, RelationKindId, RoleId, RunId, SavedSearchId, SessionId, TagId,
+    TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -117,6 +117,8 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AgentId => "an agent ID",
+    GrantId => "a grant ID",
+    OAuthClientId => "an app ID",
     AssignmentId => "an assignment ID",
     AttachmentId => "an attachment ID",
     UploadId => "an upload ID",

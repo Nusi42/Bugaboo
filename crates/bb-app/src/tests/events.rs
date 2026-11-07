@@ -34,7 +34,8 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 7] = [
+const SYSTEM_USE_CASES: [&str; 8] = [
+    "clean_old_grants",
     "issue_setup_code",
     "create_starting_roles",
     "create_starting_issue_types",
@@ -100,6 +101,13 @@ table! {
     "stop_all_agents" => super::agents::stop_all_agents_scenario,
     "hand_agent" => super::agents::hand_agent_scenario,
     "accept_agent" => super::agents::accept_agent_scenario,
+    "register_app" => super::oauth_scenarios::register_app_scenario,
+    "decide_authorization" => super::oauth_scenarios::decide_authorization_scenario,
+    "exchange_token" => super::oauth_scenarios::exchange_token_scenario,
+    "take_back" => super::oauth_scenarios::take_back_scenario,
+    "add_web_address" => super::oauth_scenarios::add_web_address_scenario,
+    "remove_web_address" => super::oauth_scenarios::remove_web_address_scenario,
+    "clean_old_grants" => super::oauth_scenarios::clean_old_grants_scenario,
     "create_access_key" => s::create_access_key_scenario,
     "delete_access_key" => s::delete_access_key_scenario,
     "change_project" => s::change_project_scenario,
@@ -219,6 +227,12 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
         let added = scenario(&world)
             .await
             .map_err(|error| format!("{name}: {error}"))?;
+        // The swap of a code for tokens appends none: a plain renewal of a token is not logged one
+        // by one, the last use of the grant says it (ADR-0042, decision 6).
+        if *name == "exchange_token" {
+            assert_eq!(added, 0, "{name} appended {added} events");
+            continue;
+        }
         assert!(added >= 1, "{name} appended no event");
         // A change is one event; only the start of the program may make several changes at once,
         // and a move, which also writes the event of the new readable ID (a code that is given

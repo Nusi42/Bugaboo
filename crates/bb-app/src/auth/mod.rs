@@ -15,15 +15,19 @@ mod error;
 mod events;
 mod invitations;
 mod limit;
+mod oauth;
+mod oauth_actor;
+mod oauth_admin;
+mod oauth_rate;
+mod oauth_store;
+mod oauth_token;
+mod oauth_types;
 mod request_session;
 mod second_factor;
 mod session;
 mod sign_up;
 mod store;
 mod types;
-
-use std::future::Future;
-use std::pin::Pin;
 
 use bb_policy::Authorized;
 
@@ -205,6 +209,14 @@ pub use invitations::{
 #[cfg(any(test, feature = "testing"))]
 pub use limit::NoFailureLimit;
 pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
+pub use oauth::{authorization, connected_apps, decide_authorization, register_app, take_back};
+pub(crate) use oauth_admin::clean_old_grants;
+pub use oauth_admin::{
+    add_web_address, mcp_identity, oauth_metadata, remove_web_address, web_addresses,
+};
+pub use oauth_store::{GrantRecord, OAuthCleaned, OAuthStore};
+pub use oauth_token::exchange_token;
+pub use oauth_types::*;
 pub use second_factor::{
     BACKUP_CODE_COUNT, MAX_PASSKEYS, add_passkey, confirm_code_app, passkey_registration_options,
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
@@ -719,6 +731,29 @@ use_cases! {
     hand_agent(HandAgent) -> Done;
     /// Accepts an agent that was handed over.
     accept_agent(AcceptAgent) -> Done;
+    /// Says where the sign-in of AI apps is.
+    oauth_metadata(OAuthMetadataQuery) -> OAuthMetadata;
+    /// Says who a call to the MCP server is from.
+    mcp_identity(McpIdentityQuery) -> McpIdentity;
+    /// Registers an AI app that comes back to this computer, or to a web address an administrator
+    /// allowed.
+    register_app(RegisterApp) -> RegisterOutcome;
+    /// Says what an AI app asks, for the page that asks the person.
+    authorization(AuthorizationQuery) -> Authorized<AuthorizationView>;
+    /// The person says *Allow* or *Cancel* to an AI app.
+    decide_authorization(DecideAuthorization) -> Authorized<AuthorizationAnswer>;
+    /// Swaps a code or a renewing token of an AI app for tokens.
+    exchange_token(TokenRequest) -> TokenOutcome;
+    /// Lists the AI apps the person allowed.
+    connected_apps(ConnectedAppsQuery) -> Authorized<ConnectedApps>;
+    /// Ends what the person allowed an AI app.
+    take_back(TakeBack) -> Done;
+    /// Lists the web addresses AI apps may come back to.
+    web_addresses(WebAddressesQuery) -> Authorized<WebAddresses>;
+    /// Allows a web address for AI apps.
+    add_web_address(AddWebAddress) -> Authorized<WebAddresses>;
+    /// Takes a web address away.
+    remove_web_address(RemoveWebAddress) -> Done;
     /// Shows the timer of the person.
     timer(TimerQuery) -> Authorized<TimerView>;
     /// Starts the timer of the person on an issue.

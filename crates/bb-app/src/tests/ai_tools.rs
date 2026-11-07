@@ -40,6 +40,7 @@ pub(super) fn call(who: &str, tool: &str, input: Value) -> ToolCallQuery {
         tool: tool.to_owned(),
         input,
         mode: ToolMode::Run,
+        run: None,
     }
 }
 

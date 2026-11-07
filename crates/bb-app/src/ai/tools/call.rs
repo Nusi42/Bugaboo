@@ -9,6 +9,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::ai::{ToolCaller, ToolEffect, ToolOutcome, ToolScope};
+use bb_core::id::RunId;
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Place};
@@ -55,6 +56,8 @@ pub struct ToolCallQuery {
     pub input: Value,
     /// Run it or preview it.
     pub mode: ToolMode,
+    /// The run the call belongs to: the session of an AI app. What the call changes carries it.
+    pub run: Option<RunId>,
 }
 
 /// What the AI reads back from a tool.
@@ -157,6 +160,15 @@ pub async fn call_tool<S: AuthStore>(
     request: ToolCallQuery,
 ) -> Result<Authorized<ToolAnswer>, AppError> {
     let actor = ctx.actor(&request.session_token).await?;
+    if request.caller == ToolCaller::AiApp {
+        // An AI app is counted per grant and per person; a call over the limit does nothing.
+        if let Err(error) = ctx.count_call(&actor) {
+            ctx.note(SecurityAction::AiCallLimited, Some(actor.person.id), None)
+                .await;
+            return Err(error);
+        }
+        ctx.enter_mcp(request.run);
+    }
     let bytes_in = request.input.to_string().len();
     let tools = registry::<S>();
     let found = tools.iter().find(|spec| spec.name() == request.tool);
@@ -212,7 +224,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         spec: &ToolSpec<S>,
         request: &ToolCallQuery,
     ) -> Result<(String, Vec<ProposedChange>), AppError> {
-        let refused = match request.mode {
+        // An AI app that was given the scope to change runs a tool that changes something at once, as
+        // its own act: that is *Apply* for it. The assistant only proposes, and *Apply* is the
+        // person's.
+        let mode = if request.caller == ToolCaller::AiApp
+            && request.mode == ToolMode::Run
+            && spec.effect() == ToolEffect::Changes
+        {
+            ToolMode::Apply
+        } else {
+            request.mode
+        };
+        let refused = match mode {
             // A tool that changes something is run by *Apply* and by apps with the scope to change.
             ToolMode::Run => spec.effect() == ToolEffect::Changes,
             ToolMode::Preview => false,
@@ -230,7 +253,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             withheld: &withheld,
             caller: request.caller,
         };
-        let parts = if request.mode == ToolMode::Apply {
+        let parts = if mode == ToolMode::Apply {
             let applied = spec
                 .apply(self, run)
                 .ok_or(AppError::Refused(ErrorCode::Forbidden))?;

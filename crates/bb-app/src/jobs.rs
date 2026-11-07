@@ -58,6 +58,9 @@ bb_core::words! {
         /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
         /// (`files::jobs`).
         CleanUpFiles => "files.clean-up",
+        /// Deleting the codes and tokens of AI apps that ran out, the grants that ended long ago and
+        /// the apps nobody allowed (ADR-0042): `oauth::clean_old_grants`.
+        CleanOldGrants => "oauth.clean-old-grants",
         /// Making the statistics the database chooses its indexes by again, from every row, for each
         /// table that is out of date (SQLite; PostgreSQL keeps its own): `statistics`.
         RefreshStatistics => "statistics.refresh",
@@ -76,6 +79,7 @@ impl JobKind {
         match self {
             Self::CatchUpHistory
             | Self::CleanUpFiles
+            | Self::CleanOldGrants
             | Self::RefreshStatistics
             | Self::PurgeDrafts
             | Self::PurgeNotifications
@@ -99,6 +103,7 @@ impl JobKind {
             Self::RefreshStatistics => Rhythm::QuietHour,
             Self::CatchUpHistory
             | Self::CleanUpFiles
+            | Self::CleanOldGrants
             | Self::PurgeDrafts
             | Self::PurgeNotifications
             | Self::PruneSecurityLog
@@ -364,6 +369,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::PurgeSessions
             | JobKind::RotateServerLog
             | JobKind::CleanUpFiles
+            | JobKind::CleanOldGrants
             | JobKind::RefreshStatistics => Err(misrouted(job, kind)),
         }
     }
@@ -461,6 +467,21 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
+            JobKind::CleanOldGrants => Box::pin(self.run_daily(JobKind::CleanOldGrants, async {
+                crate::auth::clean_old_grants(self).await.map(|cleaned| {
+                    tracing::info!(
+                        secrets = cleaned.secrets,
+                        grants = cleaned.grants,
+                        clients = cleaned.clients,
+                        "old grants of AI apps were cleared"
+                    );
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old grants of AI apps could not be cleared");
+                JobFailure::of(&error, FAILED, job)
+            }),
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
@@ -509,6 +530,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::PurgeSessions
                 | JobKind::RotateServerLog
                 | JobKind::CleanUpFiles
+                | JobKind::CleanOldGrants
                 | JobKind::RefreshStatistics),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");

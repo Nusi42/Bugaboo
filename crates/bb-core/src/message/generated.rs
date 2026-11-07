@@ -5025,6 +5025,14 @@ pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_HELP: MessageKey =
 pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_NAME: MessageKey =
     MessageKey::new("setting.agents.maximum-issues-at-once.name");
 
+/// The message `setting.ai-apps.enabled.help`.
+pub const SETTING_AI_APPS_ENABLED_HELP: MessageKey =
+    MessageKey::new("setting.ai-apps.enabled.help");
+
+/// The message `setting.ai-apps.enabled.name`.
+pub const SETTING_AI_APPS_ENABLED_NAME: MessageKey =
+    MessageKey::new("setting.ai-apps.enabled.name");
+
 /// The message `setting.ai.address.help`.
 pub const SETTING_AI_ADDRESS_HELP: MessageKey = MessageKey::new("setting.ai.address.help");
 
@@ -17961,6 +17969,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.agents.maximum-issues-at-once.name",
         "Most issues at once for an agent",
     ),
+    (
+        "setting.ai-apps.enabled.help",
+        "Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
+    ),
+    ("setting.ai-apps.enabled.name", "Let AI apps sign in"),
     (
         "setting.ai.address.help",
         "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",

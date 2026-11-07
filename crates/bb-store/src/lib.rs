@@ -36,6 +36,7 @@ mod locks;
 mod many_changes;
 mod migrations;
 mod notifications;
+mod oauth;
 mod offers;
 mod paging;
 mod policy;
