@@ -462,6 +462,7 @@ export interface MessageArguments {
   "runs.skipped-more": { count: number };
   "runs.skipped-title": { count: string | number };
   "runs.span": { from: string | number; to: string | number };
+  "runs.state-undo-stopped": { at: string | number; person: string | number };
   "runs.state-undone": { at: string | number; person: string | number };
   "runs.title-app-session-named": { app: string | number };
   "runs.undone-message": { back: number; skipped: number };

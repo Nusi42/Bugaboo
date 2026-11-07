@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { paths, runAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
+import { ana } from "./support/access.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -10,8 +11,11 @@ import { prepareWeb } from "./support/issues.ts";
 import {
   changeAfterTheRun,
   commentOn,
+  createSessionOfThird,
   createSessionOfTwo,
+  createSessionWithComment,
   issueIdOf,
+  letAnaIntoTheProject,
   markText,
 } from "./support/runs.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -71,23 +75,42 @@ test("the question and the page of a run with one skipped change", async ({ page
 
 test("the lines of the history that belong to a run and to its undo", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
-  const { admin, run } = await createSessionOfTwo(server);
+  const { admin, run } = await createSessionOfThird(server);
+  await letAnaIntoTheProject(server, admin);
   await admin.dispose();
   await signIn(page, ada);
   await page.goto(runAddress(run));
   await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: t("runs.confirm", { count: 2 }) })
+    .getByRole("button", { name: t("runs.confirm", { count: 1 }) })
     .click();
-  await expect(page.getByText(t("runs.undone-message", { back: 2, skipped: 0 }))).toBeVisible();
+  await expect(page.getByText(t("runs.undone-message", { back: 1, skipped: 0 }))).toBeVisible();
   await inFourChosenThemes(page, "history-run", MILESTONE, paths.appearance, async () => {
-    await page.goto("/issues/WEB-1");
-    await expect(page.getByRole("link", { name: t("history.run-link") }).first()).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: t("history.undid-run-link") }).first(),
-    ).toBeVisible();
+    await page.goto("/issues/WEB-3");
+    await expect(page.getByRole("link", { name: t("history.run-link") })).toBeVisible();
+    await expect(page.getByRole("link", { name: t("history.undid-run-link") })).toBeVisible();
   });
+  // Somebody who may not open the run sees the marks without a link.
+  await signIn(page, ana);
+  await inFourChosenThemes(page, "history-run-no-link", MILESTONE, paths.appearance, async () => {
+    await page.goto("/issues/WEB-3");
+    await expect(page.getByText(t("history.in-run"))).toBeVisible();
+    await expect(page.getByRole("link", { name: t("history.run-link") })).toHaveCount(0);
+  });
+});
+
+test("the question with a comment of the run named under its issue", async ({ page, server }) => {
+  test.setTimeout(TAKING_MS);
+  const { admin, run } = await createSessionWithComment(server);
+  await admin.dispose();
+  await signIn(page, ada);
+  await page.goto(runAddress(run));
+  await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
+  await expect(
+    page.getByRole("alertdialog").getByText(t("runs.skipped-title", { count: 1 })),
+  ).toBeVisible();
+  await inFourThemes(page, "run-question-comment", MILESTONE);
 });
 
 test("the mark beside a comment and the description", async ({ page, server }) => {

@@ -69,7 +69,7 @@ export function runTitle(run: Run): string {
 /** Where a run is, in the words of a run (not of an issue): *Finished*, *Undone by Ada, …*. */
 export function runStateText(run: Run): string {
   if (run.undone !== undefined && run.undone !== null) {
-    return t("runs.state-undone", {
+    return t(run.undone.interrupted ? "runs.state-undo-stopped" : "runs.state-undone", {
       person: personName(run.undone.by),
       at: formatDateTime(run.undone.at),
     });
@@ -116,6 +116,9 @@ export function outcomeText(outcome: FieldOutcome | null | undefined): string | 
   if (outcome.kind === "went-back") {
     return t("runs.outcome-went-back");
   }
+  if (outcome.kind === "not-yet") {
+    return t("runs.outcome-not-yet");
+  }
   if (outcome.reason === "changed-since") {
     return outcome.by === undefined || outcome.by === null
       ? t("runs.outcome-kept-changed")
@@ -132,6 +135,9 @@ export function outcomeText(outcome: FieldOutcome | null | undefined): string | 
 /** Why a field stays when the run is undone, as a sentence of the question. */
 export function skipReasonText(skip: UndoSkip): string {
   if (skip.kind === "changed-since") {
+    if (skip.by_you) {
+      return t("runs.skip-by-you");
+    }
     return skip.by === undefined || skip.by === null
       ? t("runs.skip-changed")
       : t("runs.skip-by", { person: personName(skip.by) });
@@ -147,7 +153,7 @@ export function skipLineText(skip: UndoSkip): string {
   const issue = skip.issue?.readable_id ?? t("runs.unknown-issue");
   const reason = skipReasonText(skip);
   // A comment is named under its issue; it cannot be put back yet.
-  return skip.field === "comment"
+  return skip.kind === "comment"
     ? t("runs.skip-line-comment", { issue, reason })
     : t("runs.skip-line", {
         issue,

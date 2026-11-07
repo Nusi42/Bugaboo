@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { dataOf } from "@bugaboo/api-client";
 
-import { signedInAdmin } from "./access.ts";
+import { ana, createPeopleWithRoles, roleName, signedInAdmin } from "./access.ts";
 import type { ApiSession } from "./api.ts";
 import { ownId } from "./accounts.ts";
 import { createProjectWithIssue, type MadeIssue } from "./issues.ts";
@@ -208,4 +208,47 @@ export async function changeAfterTheRun(admin: ApiSession): Promise<void> {
       body: { version: await versionOf(admin, "WEB-2"), priority: "low" },
     }),
   );
+}
+
+/** A session of an AI app that changed the priority of WEB-3 alone, so its history holds one pair. */
+export async function createSessionOfThird(
+  server: Instance,
+): Promise<{ readonly admin: ApiSession; readonly run: string }> {
+  const admin = await signedInAdmin(server);
+  const run = await createAppSession(server, admin, [
+    {
+      issue: { id: await issueIdOf(admin, "WEB-3"), key: "WEB-3" },
+      version: await versionOf(admin, "WEB-3"),
+    },
+  ]);
+  return { admin, run };
+}
+
+/** A session of an AI app that changed the priority of WEB-2 and wrote a comment on it. */
+export async function createSessionWithComment(
+  server: Instance,
+): Promise<{ readonly admin: ApiSession; readonly run: string }> {
+  const admin = await signedInAdmin(server);
+  const issue = { id: await issueIdOf(admin, "WEB-2"), key: "WEB-2" };
+  const run = await createAppSession(server, admin, [
+    { issue, version: await versionOf(admin, "WEB-2") },
+  ]);
+  const comment = await commentOn(admin, "WEB-2", "The token check runs first.");
+  const database = new DatabaseSync(join(server.dataDir, databaseFile));
+  try {
+    database.exec("PRAGMA busy_timeout = 5000");
+    database
+      .prepare(`UPDATE event SET run = ? WHERE entity_kind = 'comment' AND entity_id = ?`)
+      .run(stored(run), stored(comment));
+  } finally {
+    database.close();
+  }
+  return { admin, run };
+}
+
+/** Ana, a team member of WEB, who may not open the runs of Ada. */
+export async function letAnaIntoTheProject(server: Instance, admin: ApiSession): Promise<void> {
+  await createPeopleWithRoles(server, admin, [
+    { person: ana, role: roleName.teamMember, project: "WEB" },
+  ]);
 }

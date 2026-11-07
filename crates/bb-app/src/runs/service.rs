@@ -122,18 +122,19 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
         }
         let mut plan = Self::plan(self.evaluation(run, &net).await?, &net);
         plan.versions = versions;
-        let readable = |issue: &IssueId, field: &str| {
+        let readable = |issue: &IssueId, field: &str, kind: UndoSkipKind| {
             masks
                 .get(issue)
                 .and_then(Option::as_ref)
-                .is_some_and(|mask| field == COMMENT_FIELD || may_read(mask, field))
+                .is_some_and(|mask| kind == UndoSkipKind::Comment || may_read(mask, field))
         };
         for (issue, nets) in &mut plan.by_issue {
-            nets.retain(|net| readable(issue, &net.field));
+            nets.retain(|net| readable(issue, &net.field, UndoSkipKind::NotUndoable));
         }
         plan.by_issue.retain(|_, nets| !nets.is_empty());
         plan.skips.retain(|skip| {
-            super::issue_of(&skip.entity).is_some_and(|issue| readable(&issue, &skip.field))
+            super::issue_of(&skip.entity)
+                .is_some_and(|issue| readable(&issue, &skip.field, skip.kind))
         });
         Ok(plan)
     }
@@ -144,11 +145,11 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
         let mut skips = evaluation.skips;
         // A comment is named under its issue, which the event of its making says.
         let comment_issues = comment_issues_of(net.changed());
-        let mut named_comments = std::collections::BTreeSet::new();
+        let mut named_issues = std::collections::BTreeSet::new();
         for net in evaluation.back {
             if net.entity.kind.as_str() == RecordKind::Comment.code() {
                 if let Some(issue) = comment_issues.get(&net.entity.id)
-                    && named_comments.insert(net.entity.id)
+                    && named_issues.insert(*issue)
                 {
                     skips.push(UndoSkip {
                         entity: EntityRef {
@@ -156,7 +157,7 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
                             id: (*issue).into(),
                         },
                         field: COMMENT_FIELD.to_owned(),
-                        kind: UndoSkipKind::NotUndoable,
+                        kind: UndoSkipKind::Comment,
                         by: None,
                         at: None,
                     });

@@ -74,6 +74,9 @@ pub struct RunView {
     pub person: PersonRef,
     /// Who undid it and when, once it was undone.
     pub undone: Option<UndoneView>,
+    /// Why the fields an undo left stayed, read with the undo (not part of the answer).
+    #[serde(skip)]
+    pub(super) kept: super::outcome::KeptReasons,
 }
 
 impl Masked for RunView {}
@@ -166,10 +169,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 found.person,
             )
             .await?;
-        let undone = self.undone_of(held, run).await?;
+        let facts = self.undo_facts(held, run).await?;
         Ok(RunView {
             person,
-            undone,
+            undone: facts.undone,
+            kept: facts.kept,
             id: found.id,
             kind: found.kind,
             status: found.status,
@@ -260,11 +264,7 @@ pub async fn run_changes<S: AuthStore>(
             .or_default()
             .push(event.entity.id);
     }
-    let kept = if undone {
-        ctx.kept_reasons(input.run).await?
-    } else {
-        super::outcome::KeptReasons::new()
-    };
+    let interrupted = run.undone.as_ref().is_some_and(|done| done.interrupted);
     let mut later = Vec::new();
     if undone {
         for (kind, ids) in &by_kind {
@@ -305,7 +305,11 @@ pub async fn run_changes<S: AuthStore>(
                         place,
                         &event,
                         &change.field,
-                        (&later, &kept),
+                        &super::outcome::AfterTheRun {
+                            later: &later,
+                            kept: &run.kept,
+                            interrupted,
+                        },
                     )
                     .await?,
                 )
@@ -377,11 +381,15 @@ pub async fn undo_run<S: AuthStore>(
             // The undo is a fact of the run too, with the reason each field stayed. An undo that
             // put nothing back (another one was first) is no fact. It is recorded also when an
             // error stopped the undo half way, so the run does not offer what is back again.
+            let interrupt = runs.take_interrupt();
             if done.undone > 0 {
                 let mut changes = vec![
                     set_to("undone", serde_json::json!(done.undone)),
                     set_to("kept", serde_json::json!(done.skipped)),
                 ];
+                if interrupt.is_some() {
+                    changes.push(set_to(super::outcome::INTERRUPTED, serde_json::json!(true)));
+                }
                 changes.extend(done.skips.iter().map(|skip| {
                     set_to(
                         &super::outcome::kept_key(&skip.entity, &skip.field),
@@ -398,7 +406,7 @@ pub async fn undo_run<S: AuthStore>(
                     .await
                     .map_err(|error| internal::<S>(&error))?;
             }
-            if let Some(error) = runs.take_interrupt() {
+            if let Some(error) = interrupt {
                 return Err(error);
             }
             let named = &done.skips[..done.skips.len().min(super::service::SKIPS_NAMED_MAX)];

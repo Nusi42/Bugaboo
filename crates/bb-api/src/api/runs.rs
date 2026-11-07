@@ -60,6 +60,8 @@ pub(crate) struct UndoneBody {
     by: PersonRef,
     /// When.
     at: String,
+    /// The undo stopped half way: what it did not reach can still be put back.
+    interrupted: bool,
 }
 
 /// What became of a field of an undone run.
@@ -68,6 +70,8 @@ pub(crate) struct UndoneBody {
 pub(crate) enum FieldOutcomeBody {
     /// The old value is back.
     WentBack,
+    /// The undo stopped before it reached the field.
+    NotYet,
     /// The field stayed as it is.
     Kept {
         /// Why.
@@ -85,6 +89,7 @@ impl From<&FieldOutcome> for FieldOutcomeBody {
     fn from(outcome: &FieldOutcome) -> Self {
         match outcome {
             FieldOutcome::WentBack => Self::WentBack,
+            FieldOutcome::NotYet => Self::NotYet,
             FieldOutcome::Kept { kind, by, at } => Self::Kept {
                 reason: *kind,
                 by: by.clone(),
@@ -127,6 +132,7 @@ impl From<&RunView> for RunBody {
             undone: run.undone.as_ref().map(|done| UndoneBody {
                 by: done.by.clone(),
                 at: done.at.to_string(),
+                interrupted: done.interrupted,
             }),
         }
     }

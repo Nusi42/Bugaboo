@@ -5932,6 +5932,10 @@ export interface components {
           kind: "went-back";
         }
       | {
+          /** @enum {string} */
+          kind: "not-yet";
+        }
+      | {
           /**
            * Format: date-time
            * @description When.
@@ -9921,7 +9925,7 @@ export interface components {
      * @description Why a change of a run does not go back.
      * @enum {string}
      */
-    UndoSkipKind: "changed-since" | "gone" | "not-allowed" | "not-undoable";
+    UndoSkipKind: "changed-since" | "gone" | "not-allowed" | "not-undoable" | "comment";
     /** @description Who undid a run, and when. */
     UndoneBody: {
       /**
@@ -9931,6 +9935,8 @@ export interface components {
       at: string;
       /** @description The person. */
       by: components["schemas"]["PersonRef"];
+      /** @description The undo stopped half way: what it did not reach can still be put back. */
+      interrupted: boolean;
     };
     /** @description How many notifications the person has not read. */
     UnreadBody: {

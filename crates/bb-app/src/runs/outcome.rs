@@ -18,6 +18,9 @@ pub struct UndoneView {
     pub by: PersonRef,
     /// When.
     pub at: Timestamp,
+    /// The undo stopped half way (the database was busy, something broke): what it did not reach
+    /// can still be put back, so the run goes on offering the undo.
+    pub interrupted: bool,
 }
 
 /// What became of one field of an undone run.
@@ -25,6 +28,8 @@ pub struct UndoneView {
 pub enum FieldOutcome {
     /// The old value is back.
     WentBack,
+    /// The undo stopped before it reached the field: it can still be put back.
+    NotYet,
     /// The field stayed as it is.
     Kept {
         /// Why.
@@ -93,29 +98,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// Who undid the run and when, when it was undone: the fact the undo wrote on the run.
-    pub(super) async fn undone_of(
+    /// What the undos of the run wrote on it, read once: who undid it last and when, and why each
+    /// field that stayed, stayed.
+    pub(super) async fn undo_facts(
         &self,
         held: &Evaluation,
         run: RunId,
-    ) -> Result<Option<UndoneView>, AppError> {
+    ) -> Result<UndoFacts, AppError> {
         let events = self.undo_events(run).await?;
-        let Some(done) = events.last() else {
-            return Ok(None);
-        };
-        let Some(person) = done.actor.person() else {
-            return Ok(None);
-        };
-        let by = self
-            .person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
-            .await?;
-        Ok(Some(UndoneView { by, at: done.time }))
-    }
-
-    /// Why each field that stayed, stayed, as the undos of the run wrote it down.
-    pub(super) async fn kept_reasons(&self, run: RunId) -> Result<KeptReasons, AppError> {
-        let mut reasons = KeptReasons::new();
-        for event in self.undo_events(run).await? {
+        let mut kept = KeptReasons::new();
+        for event in &events {
             for change in &event.changes {
                 if let Some(kind) = change
                     .after
@@ -124,11 +116,27 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .and_then(UndoSkipKind::from_code)
                     .filter(|_| change.field.starts_with("kept/"))
                 {
-                    reasons.insert(change.field.clone(), kind);
+                    kept.insert(change.field.clone(), kind);
                 }
             }
         }
-        Ok(reasons)
+        let undone = match events.last() {
+            Some(done) => match done.actor.person() {
+                Some(person) => {
+                    let by = self
+                        .person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
+                        .await?;
+                    Some(UndoneView {
+                        by,
+                        at: done.time,
+                        interrupted: done.changes.iter().any(|each| each.field == INTERRUPTED),
+                    })
+                }
+                None => None,
+            },
+            None => None,
+        };
+        Ok(UndoFacts { undone, kept })
     }
 
     /// What became of a field of an event of the run, given the events after the run: it went back
@@ -141,18 +149,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         place: i64,
         event: &DomainEvent,
         field: &str,
-        (later, kept): (&[(i64, DomainEvent)], &KeptReasons),
+        after: &AfterTheRun<'_>,
     ) -> Result<FieldOutcome, AppError> {
         let reason = bb_core::run::undo_reason(run);
         let touching: Vec<&DomainEvent> =
-            after_the_run(later, place, &event.entity, field).collect();
+            after_the_run(after.later, place, &event.entity, field).collect();
         if touching
             .iter()
             .any(|each| each.reason.as_deref() == Some(reason.as_str()))
         {
             return Ok(FieldOutcome::WentBack);
         }
-        let recorded = kept.get(&kept_key(&event.entity, field)).copied();
+        let recorded = after.kept.get(&kept_key(&event.entity, field)).copied();
         if let Some(kind) = recorded.filter(|kind| *kind != UndoSkipKind::ChangedSince) {
             return Ok(FieldOutcome::Kept {
                 kind,
@@ -161,6 +169,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         let Some(last) = touching.last() else {
+            // The undo stopped before it reached the field: it is not undone yet.
+            if recorded.is_none() && after.interrupted {
+                return Ok(FieldOutcome::NotYet);
+            }
             return Ok(FieldOutcome::Kept {
                 kind: recorded.unwrap_or(UndoSkipKind::NotUndoable),
                 by: None,
@@ -180,6 +192,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             at: Some(last.time),
         })
     }
+}
+
+/// The field of the event of an undo that says it stopped half way.
+pub(super) const INTERRUPTED: &str = "interrupted";
+
+/// What the undos of a run wrote on it.
+pub(super) struct UndoFacts {
+    pub(super) undone: Option<UndoneView>,
+    pub(super) kept: KeptReasons,
+}
+
+/// What a field is judged against once the run was undone.
+pub(super) struct AfterTheRun<'a> {
+    /// The events about the records of the run after it, outside it.
+    pub(super) later: &'a [(i64, DomainEvent)],
+    /// Why the fields that stayed, stayed.
+    pub(super) kept: &'a KeptReasons,
+    /// Whether the last undo stopped half way.
+    pub(super) interrupted: bool,
 }
 
 /// Why the fields that an undo left stayed, by the name `kept_key` makes.

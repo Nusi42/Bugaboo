@@ -53,7 +53,9 @@ function questionTitle(found: Run): string {
 /** *Undo the run*: one button that opens the question; the answer is said in one line. */
 export function UndoRun({ run, found }: { readonly run: string; readonly found: Run }) {
   const over = found.status !== "running" && found.status !== "queued";
-  const open = over && (found.undone === undefined || found.undone === null);
+  // An undo that stopped half way leaves fields that can still go back.
+  const open =
+    over && (found.undone === undefined || found.undone === null || found.undone.interrupted);
   const preview = useUndoPreview(run, open);
   const undo = useUndoRun();
   const done = undo.data;

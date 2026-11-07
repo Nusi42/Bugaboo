@@ -4026,6 +4026,9 @@ pub const RUNS_OUTCOME_KEPT_NOT_ALLOWED: MessageKey =
 pub const RUNS_OUTCOME_KEPT_NOT_UNDOABLE: MessageKey =
     MessageKey::new("runs.outcome-kept-not-undoable");
 
+/// The message `runs.outcome-not-yet`.
+pub const RUNS_OUTCOME_NOT_YET: MessageKey = MessageKey::new("runs.outcome-not-yet");
+
 /// The message `runs.outcome-went-back`.
 pub const RUNS_OUTCOME_WENT_BACK: MessageKey = MessageKey::new("runs.outcome-went-back");
 
@@ -4034,6 +4037,9 @@ pub const RUNS_PLACE: MessageKey = MessageKey::new("runs.place");
 
 /// The message `runs.show-more`.
 pub const RUNS_SHOW_MORE: MessageKey = MessageKey::new("runs.show-more");
+
+/// The message `runs.skip-by-you`.
+pub const RUNS_SKIP_BY_YOU: MessageKey = MessageKey::new("runs.skip-by-you");
 
 /// The message `runs.skip-changed`.
 pub const RUNS_SKIP_CHANGED: MessageKey = MessageKey::new("runs.skip-changed");
@@ -10691,6 +10697,21 @@ pub fn runs_span(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Me
     )
 }
 
+/// The message `runs.state-undo-stopped`.
+#[must_use]
+pub fn runs_state_undo_stopped(
+    at: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.state-undo-stopped"),
+        vec![
+            ("at", Value::Text(at.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
 /// The message `runs.state-undone`.
 #[must_use]
 pub fn runs_state_undone(at: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
@@ -16920,6 +16941,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "runs.outcome-kept-not-undoable",
         "Skipped: cannot be put back yet",
     ),
+    ("runs.outcome-not-yet", "Not yet undone"),
     ("runs.outcome-went-back", "Went back"),
     ("runs.place", "Run"),
     ("runs.question", "Undo what {person} via {app} changed?"),
@@ -16928,6 +16950,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "runs.skip-by",
         "{person} changed it afterwards, so that change stays.",
+    ),
+    (
+        "runs.skip-by-you",
+        "You changed it afterwards, so that change stays.",
     ),
     (
         "runs.skip-changed",
@@ -16948,6 +16974,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("runs.state-finished", "Finished"),
     ("runs.state-running", "Running"),
     ("runs.state-stopped", "Stopped"),
+    (
+        "runs.state-undo-stopped",
+        "Undone in part by {person}, {at}; the rest can still be undone",
+    ),
     ("runs.state-undone", "Undone by {person}, {at}"),
     ("runs.title-app-session", "Session of an AI app"),
     ("runs.title-app-session-named", "Session of {app}"),

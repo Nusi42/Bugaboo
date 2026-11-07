@@ -10,7 +10,7 @@ use bb_policy::StartingRole;
 use super::agents::a_team_agent;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
-use super::workflows_rules::member;
+use super::workflows_rules::{assign, member, starting_role};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
@@ -597,7 +597,7 @@ async fn ai_38_the_preview_leaves_out_unreadable_fields_and_names_a_comment() ->
     assert_eq!(preview.goes_back, 1);
     assert_eq!(preview.skipped, 1);
     assert_eq!(preview.skips[0].field, "comment");
-    assert_eq!(preview.skips[0].kind, UndoSkipKind::NotUndoable);
+    assert_eq!(preview.skips[0].kind, UndoSkipKind::Comment);
     assert!(preview.skips[0].issue.is_some());
     Ok(())
 }
@@ -687,15 +687,16 @@ async fn ai_38_a_change_between_the_plan_and_the_write_is_not_overwritten() -> O
     Ok(())
 }
 
-/// A busy database in the middle of an undo is an error, never a skip; what went back before it is
-/// recorded, so the run does not offer to put it back again.
+/// A busy database in the middle of an undo is an error, never a skip. What went back before it is
+/// recorded and what it did not reach is "not yet undone": the run goes on offering the undo, and a
+/// second undo puts the rest back.
 #[tokio::test]
-async fn ai_38_a_busy_database_stops_the_undo_and_what_went_back_is_recorded() -> Outcome {
+async fn ai_38_a_busy_database_stops_the_undo_and_a_second_undo_puts_the_rest_back() -> Outcome {
+    use crate::runs::FieldOutcome;
     let (world, admin, run, _) = a_run_of_two().await?;
     let preview = preview_of(&world, &admin, run).await?;
     world.store.keep_a_change_busy_after(1);
-    let stopped = undo(&world, &admin, run, preview).await;
-    assert!(stopped.is_err());
+    assert!(undo(&world, &admin, run, preview).await.is_err());
     let seen = crate::runs::get_run(
         &world.ctx(),
         RunQuery {
@@ -705,12 +706,92 @@ async fn ai_38_a_busy_database_stops_the_undo_and_what_went_back_is_recorded() -
     )
     .await?
     .into_value();
-    assert!(seen.undone.is_some());
-    let skips = outcomes_of(&world, &admin, run)
-        .await?
-        .into_iter()
-        .filter(|outcome| matches!(outcome, Some(crate::runs::FieldOutcome::WentBack)))
-        .count();
-    assert_eq!(skips, 1);
+    assert!(seen.undone.as_ref().is_some_and(|done| done.interrupted));
+    let outcomes = outcomes_of(&world, &admin, run).await?;
+    assert_eq!(outcomes.len(), 2);
+    assert!(outcomes.contains(&Some(FieldOutcome::WentBack)));
+    assert!(outcomes.contains(&Some(FieldOutcome::NotYet)));
+    // What it did not reach can still go back, and the second undo puts it back.
+    let again = preview_of(&world, &admin, run).await?;
+    assert_eq!(again.goes_back, 1);
+    let done = undo(&world, &admin, run, again).await?;
+    assert_eq!(done.goes_back, 1);
+    assert_eq!(
+        outcomes_of(&world, &admin, run).await?,
+        vec![Some(FieldOutcome::WentBack), Some(FieldOutcome::WentBack)]
+    );
+    let seen = crate::runs::get_run(
+        &world.ctx(),
+        RunQuery {
+            session_token: admin.clone(),
+            run,
+        },
+    )
+    .await?
+    .into_value();
+    assert!(seen.undone.is_some_and(|done| !done.interrupted));
+    Ok(())
+}
+
+/// A mixed undo: the person may change one issue and only see the other, so one goes back and the
+/// other stays for the missing right, and the page says so.
+#[tokio::test]
+async fn ai_38_a_field_kept_for_a_missing_right_says_so_after_a_mixed_undo() -> Outcome {
+    use crate::runs::FieldOutcome;
+    let world = World::new().await?;
+    let admin = token(&world);
+    let editable = a_project(&world, "ALPHA").await?;
+    let visible = a_project(&world, "BETA").await?;
+    let first = an_issue(&world, editable).await?;
+    let second = an_issue(&world, visible).await?;
+    let bob = member(
+        &world,
+        "bob@example.test",
+        StartingRole::TeamMember,
+        editable,
+    )
+    .await?;
+    let viewer = starting_role(&world, StartingRole::Viewer).await?;
+    assign(&world, &bob, viewer, visible).await?;
+    let run = open(&world, &bob.session_token, bob.person.id).await?;
+    for each in [first, second] {
+        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
+    }
+    let preview = preview_of(&world, &bob.session_token, run).await?;
+    assert_eq!(preview.goes_back, 2);
+    let done = undo(&world, &bob.session_token, run, preview).await?;
+    assert_eq!(done.goes_back, 1);
+    let outcomes = outcomes_of(&world, &bob.session_token, run).await?;
+    assert_eq!(outcomes[0], Some(FieldOutcome::WentBack));
+    assert!(matches!(
+        outcomes[1],
+        Some(FieldOutcome::Kept {
+            kind: UndoSkipKind::NotAllowed,
+            ..
+        })
+    ));
+    Ok(())
+}
+
+/// An issue that is in the trash by the time of the write stays, and the page says it is gone.
+#[tokio::test]
+async fn ai_38_a_field_of_an_issue_deleted_after_the_plan_stays_as_gone() -> Outcome {
+    use crate::issues::{DeleteIssue, delete_issue};
+    let (world, admin, run, [_, second]) = a_run_of_two().await?;
+    let ctx = world.ctx();
+    let actor = ctx.session_actor(&admin).await?;
+    let runs = RunsOf::new(&ctx, &actor, &admin);
+    let plan = runs.plan_for_reader(run).await?;
+    delete_issue(
+        &world.ctx(),
+        DeleteIssue {
+            session_token: admin.clone(),
+            issue: second.to_string(),
+        },
+    )
+    .await?;
+    let done = runs.apply_plan(run, plan).await?;
+    assert_eq!(done.undone, 1);
+    assert_eq!(done.skips[0].kind, UndoSkipKind::Gone);
     Ok(())
 }

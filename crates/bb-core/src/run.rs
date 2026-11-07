@@ -129,8 +129,10 @@ words! {
         Gone => "gone",
         /// The person who undoes may not make this change (judged again as them).
         NotAllowed => "not-allowed",
-        /// This kind of change cannot be put back yet (a text, a comment, the making of a record).
+        /// This kind of change cannot be put back yet (a text, the making of a record).
         NotUndoable => "not-undoable",
+        /// A comment of the run cannot be put back yet; it is named under its issue.
+        Comment => "comment",
     }
 }
 

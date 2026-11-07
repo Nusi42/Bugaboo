@@ -37,6 +37,9 @@ describe("ai_38 the words of a run", () => {
 
   it("says why a field stays", () => {
     expect(skipReasonText(skip({}))).toBe("It was changed afterwards, so that change stays.");
+    expect(skipReasonText(skip({ by_you: true }))).toBe(
+      "You changed it afterwards, so that change stays.",
+    );
     expect(skipReasonText(skip({ kind: "gone" }))).toBe("The issue is gone.");
     expect(skipReasonText(skip({ kind: "not-allowed" }))).toBe("You may not change it.");
     expect(skipReasonText(skip({ kind: "not-undoable" }))).toBe("It cannot be put back yet.");
@@ -45,6 +48,7 @@ describe("ai_38 the words of a run", () => {
   it("says what became of a field after the undo", () => {
     expect(outcomeText(null)).toBeUndefined();
     expect(outcomeText({ kind: "went-back" })).toBe("Went back");
+    expect(outcomeText({ kind: "not-yet" })).toBe("Not yet undone");
     expect(outcomeText({ kind: "kept", reason: "gone" })).toBe("Skipped: the issue is gone");
   });
 

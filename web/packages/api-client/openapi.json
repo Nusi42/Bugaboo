@@ -19353,6 +19353,17 @@
           },
           {
             "type": "object",
+            "description": "The undo stopped before it reached the field.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["not-yet"]
+              }
+            }
+          },
+          {
+            "type": "object",
             "description": "The field stayed as it is.",
             "required": ["reason", "kind"],
             "properties": {
@@ -27442,12 +27453,12 @@
       "UndoSkipKind": {
         "type": "string",
         "description": "Why a change of a run does not go back.",
-        "enum": ["changed-since", "gone", "not-allowed", "not-undoable"]
+        "enum": ["changed-since", "gone", "not-allowed", "not-undoable", "comment"]
       },
       "UndoneBody": {
         "type": "object",
         "description": "Who undid a run, and when.",
-        "required": ["by", "at"],
+        "required": ["by", "at", "interrupted"],
         "properties": {
           "at": {
             "type": "string",
@@ -27457,6 +27468,10 @@
           "by": {
             "$ref": "#/components/schemas/PersonRef",
             "description": "The person."
+          },
+          "interrupted": {
+            "type": "boolean",
+            "description": "The undo stopped half way: what it did not reach can still be put back."
           }
         }
       },
