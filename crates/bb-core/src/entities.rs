@@ -6,6 +6,7 @@
 crate::entities! {
     crate::access::Assignment,
     crate::access::Group,
+    crate::ai::Agreement,
     crate::access::GroupMember,
     crate::access::LegacyAdministrator,
     crate::access::ProjectFieldLevel,

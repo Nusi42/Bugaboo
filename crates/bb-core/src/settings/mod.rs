@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::message::MessageKey;
 
+pub mod ai;
 mod catalog;
 mod format;
 mod layers;
@@ -20,6 +21,7 @@ mod region;
 mod themes;
 pub mod working_hours;
 
+pub use ai::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, is_ai_setting};
 pub use catalog::*;
 pub use format::{Choice, DEVICE, Format, is_host};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
@@ -555,6 +557,7 @@ pub fn changed_only_on_its_own_screen(key: &str) -> bool {
     ]
     .iter()
     .any(|definition| definition.key() == key)
+        || is_ai_setting(key)
 }
 
 /// The version of a record that is made of several settings (the sign-up policy). It lives in a
@@ -624,6 +627,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
     let extra: &[&SettingDefinition] = &[];
     ALL.iter()
         .chain(working_hours::ALL)
+        .chain(ai::ALL)
         .copied()
         .chain(extra.iter().copied())
 }

@@ -139,6 +139,15 @@ words! {
         EditLockLetGo => "edit_lock.let_go",
         /// An administrator entered or removed the password of the mail server.
         MailPasswordChanged => "mail.password_changed",
+        /// An administrator changed the settings of AI: the switch, the provider, the model, the
+        /// address or whether names of people go to the provider.
+        AiSettingsChanged => "ai.settings_changed",
+        /// An administrator entered, changed or removed the key of the AI provider.
+        AiKeyChanged => "ai.key_changed",
+        /// An administrator confirmed that a data processing agreement with the provider is in place.
+        AiAgreementConfirmed => "ai.agreement_confirmed",
+        /// A project switched AI on or off for itself, or went back to following the organization.
+        AiProjectSwitchChanged => "ai.project_switch_changed",
     }
 }
 

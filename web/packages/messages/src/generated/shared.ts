@@ -895,6 +895,28 @@ export const messages = {
     "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for 2 years at least. Choose No rules first, or keep them longer.",
+  "setting.ai.enabled.name": "Use AI",
+  "setting.ai.enabled.help":
+    "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",
+  "setting.ai.provider.name": "Provider",
+  "setting.ai.provider.help":
+    "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model of your own is reached at the address you enter.",
+  "setting.ai.model.name": "Model",
+  "setting.ai.model.help": "The name of the model, as the provider writes it.",
+  "setting.ai.address.name": "Address of the model",
+  "setting.ai.address.help":
+    "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
+  "setting.ai.send-names.name": "Send names of people",
+  "setting.ai.send-names.help":
+    "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+  "error.ai.off": "AI is off here.",
+  "error.ai.unavailable": "The AI provider did not answer.",
+  "error.ai.agreement-needed":
+    "Confirm first that a data processing agreement with this provider is in place.",
+  "error.ai.address-invalid":
+    "This is not a web address. Write it like https://models.example.com/v1.",
+  "error.ai.address-not-encrypted":
+    "An address on the internet must start with https://. Only a model on your own computers may use http://.",
 } as const;
 
 register(messages);

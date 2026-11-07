@@ -152,6 +152,28 @@ pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 /// The message `access.scrolls`.
 pub const ACCESS_SCROLLS: MessageKey = MessageKey::new("access.scrolls");
 
+/// The message `ai.country.anthropic`.
+pub const AI_COUNTRY_ANTHROPIC: MessageKey = MessageKey::new("ai.country.anthropic");
+
+/// The message `ai.country.local-model`.
+pub const AI_COUNTRY_LOCAL_MODEL: MessageKey = MessageKey::new("ai.country.local-model");
+
+/// The message `ai.country.other`.
+pub const AI_COUNTRY_OTHER: MessageKey = MessageKey::new("ai.country.other");
+
+/// The message `ai.provider.anthropic`.
+pub const AI_PROVIDER_ANTHROPIC: MessageKey = MessageKey::new("ai.provider.anthropic");
+
+/// The message `ai.provider.local-model`.
+pub const AI_PROVIDER_LOCAL_MODEL: MessageKey = MessageKey::new("ai.provider.local-model");
+
+/// The message `ai.provider.openai-compatible`.
+pub const AI_PROVIDER_OPENAI_COMPATIBLE: MessageKey =
+    MessageKey::new("ai.provider.openai-compatible");
+
+/// The message `ai.provider.other`.
+pub const AI_PROVIDER_OTHER: MessageKey = MessageKey::new("ai.provider.other");
+
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
@@ -785,6 +807,22 @@ pub const ERROR_ACCESS_TOO_MUCH: MessageKey = MessageKey::new("error.access.too-
 
 /// The message `error.access.would-lock-out`.
 pub const ERROR_ACCESS_WOULD_LOCK_OUT: MessageKey = MessageKey::new("error.access.would-lock-out");
+
+/// The message `error.ai.address-invalid`.
+pub const ERROR_AI_ADDRESS_INVALID: MessageKey = MessageKey::new("error.ai.address-invalid");
+
+/// The message `error.ai.address-not-encrypted`.
+pub const ERROR_AI_ADDRESS_NOT_ENCRYPTED: MessageKey =
+    MessageKey::new("error.ai.address-not-encrypted");
+
+/// The message `error.ai.agreement-needed`.
+pub const ERROR_AI_AGREEMENT_NEEDED: MessageKey = MessageKey::new("error.ai.agreement-needed");
+
+/// The message `error.ai.off`.
+pub const ERROR_AI_OFF: MessageKey = MessageKey::new("error.ai.off");
+
+/// The message `error.ai.unavailable`.
+pub const ERROR_AI_UNAVAILABLE: MessageKey = MessageKey::new("error.ai.unavailable");
 
 /// The message `error.assignment.conflict`.
 pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignment.conflict");
@@ -4795,6 +4833,36 @@ pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-
 
 /// The message `set-up-second-step.why`.
 pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
+
+/// The message `setting.ai.address.help`.
+pub const SETTING_AI_ADDRESS_HELP: MessageKey = MessageKey::new("setting.ai.address.help");
+
+/// The message `setting.ai.address.name`.
+pub const SETTING_AI_ADDRESS_NAME: MessageKey = MessageKey::new("setting.ai.address.name");
+
+/// The message `setting.ai.enabled.help`.
+pub const SETTING_AI_ENABLED_HELP: MessageKey = MessageKey::new("setting.ai.enabled.help");
+
+/// The message `setting.ai.enabled.name`.
+pub const SETTING_AI_ENABLED_NAME: MessageKey = MessageKey::new("setting.ai.enabled.name");
+
+/// The message `setting.ai.model.help`.
+pub const SETTING_AI_MODEL_HELP: MessageKey = MessageKey::new("setting.ai.model.help");
+
+/// The message `setting.ai.model.name`.
+pub const SETTING_AI_MODEL_NAME: MessageKey = MessageKey::new("setting.ai.model.name");
+
+/// The message `setting.ai.provider.help`.
+pub const SETTING_AI_PROVIDER_HELP: MessageKey = MessageKey::new("setting.ai.provider.help");
+
+/// The message `setting.ai.provider.name`.
+pub const SETTING_AI_PROVIDER_NAME: MessageKey = MessageKey::new("setting.ai.provider.name");
+
+/// The message `setting.ai.send-names.help`.
+pub const SETTING_AI_SEND_NAMES_HELP: MessageKey = MessageKey::new("setting.ai.send-names.help");
+
+/// The message `setting.ai.send-names.name`.
+pub const SETTING_AI_SEND_NAMES_NAME: MessageKey = MessageKey::new("setting.ai.send-names.name");
 
 /// The message `setting.appearance.dark-theme.help`.
 pub const SETTING_APPEARANCE_DARK_THEME_HELP: MessageKey =
@@ -13090,6 +13158,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "There are more roles than fit in this table. The first ones are shown.",
     ),
     ("access.scrolls", "Scroll sideways to see the other roles."),
+    ("ai.country.anthropic", "United States"),
+    (
+        "ai.country.local-model",
+        "Nowhere: the data stays on your own computers",
+    ),
+    (
+        "ai.country.other",
+        "Not known to Bugaboo: ask the provider where it works",
+    ),
+    ("ai.provider.anthropic", "Anthropic"),
+    ("ai.provider.local-model", "A model on your own computers"),
+    (
+        "ai.provider.openai-compatible",
+        "Another provider or a model of your own (OpenAI-compatible)",
+    ),
+    ("ai.provider.other", "A provider on the internet"),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
     (
@@ -13705,6 +13789,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.access.would-lock-out",
         "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
     ),
+    (
+        "error.ai.address-invalid",
+        "This is not a web address. Write it like https://models.example.com/v1.",
+    ),
+    (
+        "error.ai.address-not-encrypted",
+        "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+    ),
+    (
+        "error.ai.agreement-needed",
+        "Confirm first that a data processing agreement with this provider is in place.",
+    ),
+    ("error.ai.off", "AI is off here."),
+    ("error.ai.unavailable", "The AI provider did not answer."),
     (
         "error.assignment.conflict",
         "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
@@ -17269,6 +17367,31 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "set-up-second-step.why",
         "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
     ),
+    (
+        "setting.ai.address.help",
+        "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
+    ),
+    ("setting.ai.address.name", "Address of the model"),
+    (
+        "setting.ai.enabled.help",
+        "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",
+    ),
+    ("setting.ai.enabled.name", "Use AI"),
+    (
+        "setting.ai.model.help",
+        "The name of the model, as the provider writes it.",
+    ),
+    ("setting.ai.model.name", "Model"),
+    (
+        "setting.ai.provider.help",
+        "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model of your own is reached at the address you enter.",
+    ),
+    ("setting.ai.provider.name", "Provider"),
+    (
+        "setting.ai.send-names.help",
+        "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+    ),
+    ("setting.ai.send-names.name", "Send names of people"),
     (
         "setting.appearance.dark-theme.help",
         "The theme Bugaboo shows when your device is dark. It counts when you choose Match my device.",

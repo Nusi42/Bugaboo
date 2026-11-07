@@ -209,6 +209,19 @@ error_codes! {
     /// The mail server is set to send a user name or a password without encryption to another
     /// machine (NTF-02).
     MailInsecure => ("mail.insecure", 409),
+    /// AI is off: the organization has not switched it on, or the place does not have it on
+    /// (AI-02).
+    AiOff => ("ai.off", 409),
+    /// The AI provider did not answer, or its answer could not be used. Nothing of what the
+    /// provider sent is passed on (AI-01).
+    AiUnavailable => ("ai.unavailable", 502),
+    /// An outside provider cannot be used before an administrator confirms that a data processing
+    /// agreement is in place (PRIV-08).
+    AiAgreementNeeded => ("ai.agreement-needed", 409),
+    /// The address of the model is no web address (AI-01).
+    AiAddressInvalid => ("ai.address-invalid", 400),
+    /// The address of the model is on the internet and does not start with https:// (AI-01).
+    AiAddressNotEncrypted => ("ai.address-not-encrypted", 400),
     /// A person changed their handle a short time ago and cannot change it again yet (M3-F70).
     HandleChangedLately => ("handle.changed-lately", 429),
     /// A change request that does not come from one of Bugaboo's own pages.
