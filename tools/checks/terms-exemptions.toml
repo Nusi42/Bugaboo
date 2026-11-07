@@ -167,3 +167,8 @@ reason = "A result an agent attached can be a web link to a branch, a pull reque
 term = "state"
 at = ["messages/en.json#issue-field.agent-state"]
 reason = "The name of the field that finds agent work by its state (Waiting for you, Agent working and the others); it is the word of ADR-0029 and of the glossary's entry for the states of agent work, not the status of an issue."
+
+[[allow]]
+term = "state"
+at = ["userDocs/agents/README.md"]
+reason = "The states of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) are the words of ADR-0029 and of the glossary's own entry; they are not the status of an issue."
