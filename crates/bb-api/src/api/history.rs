@@ -33,6 +33,8 @@ const HISTORY_FIELDS: [FieldSpec; 23] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
+    FieldSpec::by_default("agent"),
+    FieldSpec::by_default("app"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("comment"),
     FieldSpec::by_default("text"),
@@ -120,6 +122,10 @@ pub(crate) struct HistoryEntryItem {
     /// The run the change was made in or undid, left out for a reader who may not open it.
     #[serde(skip_serializing_if = "Option::is_none")]
     run: Option<String>,
+    /// The name of the AI app the person worked through, when an app made the change: the item
+    /// reads "Ada Brandt via Claude Code". The name is the app's own; Bugaboo cannot check it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    app: Option<String>,
     /// What it is.
     kind: HistoryEntryKind,
     /// A comment: its ID.
@@ -192,6 +198,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         }),
         run_mark: item.run_mark.map(RunMark::from),
         run: item.run.map(|run| run.to_string()),
+        app: item.app.clone(),
         kind,
         comment: None,
         text: None,
@@ -372,9 +379,13 @@ mod tests {
             event: String::new(),
             at: String::new(),
             by: Some(PersonRef::Someone),
-            agent: None,
+            agent: Some(NamedRef {
+                id: String::new(),
+                name: String::new(),
+            }),
             run_mark: Some(RunMark::InRun),
             run: Some(String::new()),
+            app: Some(String::new()),
             kind: HistoryEntryKind::Change,
             comment: Some(String::new()),
             text: Some(String::new()),

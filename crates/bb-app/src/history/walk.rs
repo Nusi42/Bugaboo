@@ -43,6 +43,14 @@ impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
             .history_page(self.issue.id, self.kind, after.copied(), skip, limit)
             .await
             .map_err(|error| internal::<S>(&error))?;
+        let events: Vec<_> = rows.iter().map(|row| row.event).collect();
+        let apps = self
+            .ctx
+            .store()
+            .apps_of_events(&events)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        self.reading.apps.extend(apps);
         let batch = self.ctx.batch_of(&rows, self.kinds).await?;
         let mut shaped = Vec::with_capacity(rows.len());
         for row in &rows {
@@ -68,5 +76,20 @@ impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
 
     fn key_of(row: &Shaped) -> Result<i64, AppError> {
         Ok(row.position)
+    }
+}
+
+impl Reading<'_> {
+    /// The AI app behind an event, named only to a reader who is told who the person is, like the
+    /// agent: *"Ada Brandt via Claude Code"* (AI-23).
+    pub(super) fn app_of(
+        &self,
+        event: bb_core::id::EventId,
+        by: Option<&bb_policy::PersonRef>,
+    ) -> Option<String> {
+        match by {
+            Some(bb_policy::PersonRef::Name { .. }) => self.apps.get(&event).cloned(),
+            _ => None,
+        }
     }
 }

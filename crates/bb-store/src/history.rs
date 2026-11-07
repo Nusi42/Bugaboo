@@ -19,7 +19,7 @@ use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
 use crate::events::{consumer_name, outbox_move};
-use crate::schema::HistoryEntryRow;
+use crate::schema::{Event, HistoryEntryRow, ManyChangeRunRow};
 
 fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
     let changes: Vec<FieldChange> =
@@ -99,6 +99,45 @@ impl HistoryStore for AuthStorage {
         }
         outbox_move(&mut transaction, &consumer_name(CONSUMER)?, position, now).await?;
         transaction.commit().await
+    }
+
+    async fn apps_of_events(
+        &self,
+        events: &[EventId],
+    ) -> Result<Vec<(EventId, String)>, StoreError> {
+        if events.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = Query::select();
+        select
+            .column((Event::Table, Event::Id))
+            .column((ManyChangeRunRow::Table, ManyChangeRunRow::App))
+            .from(Event::Table)
+            .inner_join(
+                ManyChangeRunRow::Table,
+                Expr::col((Event::Table, Event::Run))
+                    .equals((ManyChangeRunRow::Table, ManyChangeRunRow::Id)),
+            )
+            .and_where(
+                Expr::col((Event::Table, Event::Id)).is_in(
+                    events
+                        .iter()
+                        .map(|event| event.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .and_where(Expr::col((ManyChangeRunRow::Table, ManyChangeRunRow::App)).is_not_null());
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok((
+                    row.id::<EventId>(Event::Id)?,
+                    row.get(ManyChangeRunRow::App)?,
+                ))
+            })
+            .collect()
     }
 
     async fn history_page(

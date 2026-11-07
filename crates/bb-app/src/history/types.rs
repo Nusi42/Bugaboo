@@ -166,6 +166,9 @@ pub struct HistoryItem {
     pub run_mark: Option<RunMarkKind>,
     /// The run the change was made in or undid, only for a reader who may open it.
     pub run: Option<RunId>,
+    /// The name of the AI app the person worked through, when an app made the change: the row
+    /// reads *"Ada Brandt via Claude Code"*. The name is the app's own; Bugaboo cannot check it.
+    pub app: Option<String>,
     /// What happened.
     pub what: HistoryWhat,
 }

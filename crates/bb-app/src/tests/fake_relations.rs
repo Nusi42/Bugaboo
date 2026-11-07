@@ -4,7 +4,7 @@ use bb_core::comment::{Comment, CommentVersion, Mention};
 use bb_core::event::DomainEvent;
 use bb_core::follow::Follower;
 use bb_core::history::{HistoryEntry, HistoryKind};
-use bb_core::id::{CommentId, IssueId, RelationId, RelationKindId, UserId};
+use bb_core::id::{CommentId, EventId, IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
@@ -363,6 +363,29 @@ impl HistoryStore for FakeStore {
         }
         shared.state.history_position = shared.state.history_position.max(position);
         Ok(())
+    }
+
+    async fn apps_of_events(
+        &self,
+        events: &[EventId],
+    ) -> Result<Vec<(EventId, String)>, FakeError> {
+        let shared = self.lock();
+        Ok(shared
+            .events
+            .iter()
+            .filter(|event| events.contains(&event.id))
+            .filter_map(|event| {
+                let run = event.run?;
+                let app = shared
+                    .state
+                    .many_changes_runs
+                    .iter()
+                    .find(|found| found.id == run)?
+                    .app
+                    .clone()?;
+                Some((event.id, app))
+            })
+            .collect())
     }
 
     async fn history_page(

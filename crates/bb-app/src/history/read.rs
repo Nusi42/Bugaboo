@@ -137,6 +137,7 @@ pub(super) struct Reading<'a> {
     agents: crate::agents::AgentNames,
     /// Which runs of the rows of the page the reader may open, read once for each run.
     pub(super) runs: HashMap<RunId, bool>,
+    pub(super) apps: HashMap<bb_core::id::EventId, String>,
 }
 
 /// What shows changes to a reader (see `Ctx::change_reader`).
@@ -447,6 +448,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             names: std::mem::take(&mut reader.names),
             agents: crate::agents::AgentNames::default(),
             runs: HashMap::new(),
+            apps: HashMap::new(),
         };
         let read = self
             .field_changes(&mut reading, issue.issue_type, &reader.batch, changes)
@@ -674,6 +676,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(HistoryItem {
             event: row.event,
             at: row.at,
+            app: reading.app_of(row.event, by.as_ref()),
             by,
             agent,
             run_mark,
@@ -714,6 +717,7 @@ pub async fn history<S: AuthStore>(
         names: KnownNames::default(),
         agents: crate::agents::AgentNames::default(),
         runs: HashMap::new(),
+        apps: HashMap::new(),
     };
     let kinds = ctx
         .store()

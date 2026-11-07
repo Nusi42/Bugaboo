@@ -4,7 +4,7 @@ use std::future::Future;
 
 use bb_core::event::DomainEvent;
 use bb_core::history::{HistoryEntry, HistoryKind};
-use bb_core::id::IssueId;
+use bb_core::id::{EventId, IssueId};
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -20,6 +20,10 @@ pub trait HistoryStore: IssueStore + 'static {
         /// is), and records that the consumer has finished everything up to `position`. A
         /// consumer that stops half way reads the same events again and makes the same rows.
         fn store_history(entries: &[HistoryEntry], position: i64, now: Timestamp) -> ();
+        /// The name of the AI app behind each of these events, for those that were made in a
+        /// session of an app: the event names its run, and the run the app. Events of nobody's app
+        /// are left out.
+        fn apps_of_events(events: &[EventId]) -> Vec<(EventId, String)>;
         /// The rows of one issue, newest first: the ones before `before` (a place in the outbox),
         /// of one kind when `kind` is given, leaving out the first `skip`, at most `limit`.
         fn history_page(
