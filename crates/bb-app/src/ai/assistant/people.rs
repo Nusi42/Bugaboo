@@ -36,6 +36,17 @@ fn people_in(value: &Value, found: &mut Vec<UserId>) {
     }
 }
 
+/// Whether `name` stands in `text` as whole words: not inside a longer word, so *Al* is not found
+/// in *all* and *Bob* is not found in *Bobby*. Both are in lower case.
+fn names(text: &str, name: &str) -> bool {
+    !name.is_empty()
+        && text.match_indices(name).any(|(at, _)| {
+            let before = text[..at].chars().next_back();
+            let after = text[at + name.len()..].chars().next();
+            !before.is_some_and(char::is_alphanumeric) && !after.is_some_and(char::is_alphanumeric)
+        })
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Whether the proposal may be shown: it changes nobody's *Assigned to*, or the question asked
     /// for it and wrote the name of every person it puts there, as the person sees that name at
@@ -79,10 +90,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             let PersonRef::Name { name, .. } = shown else {
                 return Ok(false);
             };
-            if name.is_empty() || !question.contains(&name.to_lowercase()) {
+            if !names(&question, &name.to_lowercase()) {
                 return Ok(false);
             }
         }
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::names;
+
+    #[test]
+    fn comp_10_a_name_counts_only_as_a_whole_word() {
+        assert!(names("assign it to al", "al"));
+        assert!(names("assign it to al, please", "al"));
+        assert!(names("assign it to bob builder.", "bob builder"));
+        assert!(names("assign it to bob's", "bob"));
+        assert!(!names("assign all of it to the team", "al"));
+        assert!(!names("assign it to bobby", "bob"));
+        assert!(!names("assign it to abob", "bob"));
+        assert!(!names("assign it", ""));
     }
 }

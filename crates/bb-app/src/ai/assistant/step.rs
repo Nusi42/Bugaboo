@@ -4,7 +4,9 @@
 
 use std::collections::HashMap;
 
-use bb_core::ai::{PROPOSALS_MAX, TOOL_CALLS_MAX, ToolCaller, ToolEffect, ToolScope};
+use bb_core::ai::{
+    PROPOSAL_INPUT_BYTES_MAX, PROPOSALS_MAX, TOOL_CALLS_MAX, ToolCaller, ToolEffect, ToolScope,
+};
 use bb_core::message::Message;
 use bb_policy::{Authorized, Place};
 use serde_json::Value;
@@ -95,6 +97,10 @@ impl<'a, S: AuthStore> Tools<'a, S> {
     }
 
     async fn proposed(&mut self, call: &AiToolCall, answer: &Authorized<ToolAnswer>) -> String {
+        // *Apply* takes no input over this size back, so a proposal of one could never be applied.
+        if call.arguments.to_string().len() > PROPOSAL_INPUT_BYTES_MAX {
+            return NOT_VALID.to_owned();
+        }
         let Some(shown) = split(answer) else {
             return COULD_NOT_RUN.to_owned();
         };

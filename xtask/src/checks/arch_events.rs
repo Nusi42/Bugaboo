@@ -100,6 +100,15 @@ fn is_query(ty: &str) -> bool {
     name.is_some_and(|name| name.ends_with(QUERY_SUFFIX))
 }
 
+/// Whether the body calls `call_tool(` with the mode that applies inside the arguments of that call;
+/// the mode named somewhere else in the body does not count.
+fn applies_a_tool(body: &str) -> bool {
+    body.match_indices(APPLY_CALL).any(|(at, _)| {
+        let from = at + APPLY_CALL.len() - 1;
+        balanced(&body[from..], '(').is_some_and(|arguments| arguments.contains(APPLY_MODE))
+    })
+}
+
 fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
     let mut findings = Vec::new();
     let in_app: Vec<&Source> = sources
@@ -153,7 +162,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{') else {
                 continue;
             };
-            let applies_a_tool = body.contains(APPLY_CALL) && body.contains(APPLY_MODE);
+            let applies_a_tool = applies_a_tool(body);
             if applies_a_tool
                 || [RECORD, RECORD_MANY, SAVE_TEXT]
                     .iter()
@@ -249,6 +258,18 @@ mod tests {
 }
 ";
         assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_command_that_only_mentions_the_mode_of_applying_elsewhere() {
+        let text =
+            "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
+    let wanted = ToolMode::Apply;
+    call_tool(ctx, ToolCallQuery { mode: ToolMode::Preview, ..query }).await?;
+    Ok(())
+}
+";
+        assert_eq!(found(text).len(), 1);
     }
 
     #[test]
