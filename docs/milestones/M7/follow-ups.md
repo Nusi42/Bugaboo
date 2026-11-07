@@ -23,3 +23,4 @@ These rows of earlier milestones name M7, or a package that M7 is, as their targ
 
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
+| M7-F01 | The UX page (`docs/02-ux-design.html`) uses utility classes (`u-margin-top-10px` and others) that only `docs/design/mockup.css` defines; the page does not load that file, so they do nothing, and no check finds a class that no loaded style sheet defines | Found while drawing the screens of M7; the old pictures look right without them, and a fix touches the whole page | The first M7 package with screens (WP-05): load the sheet or drop the classes, and a check that every class of the page is defined |

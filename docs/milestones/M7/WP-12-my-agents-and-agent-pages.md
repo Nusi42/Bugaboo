@@ -9,7 +9,7 @@ One person can drive several agents and see at a glance what waits for them: *My
 
 ## Owns
 
-`web/app/src/features/agents/**` (*My agents*, *Create an agent*, an agent's page with its keys and limits, the standing-rule window), *My agents* in the sidebar and the phone's bottom bar, `web/app/src/features/settings/agents*` (*Organization settings › Agents* and the project's switch), the theme rules of these parts.
+`web/app/src/features/agents/**` (*My agents*, *Create an agent*, an agent's page with its keys and limits, the standing-rule window), *My agents* in the sidebar and the phone's bottom bar, `web/app/src/features/settings/agents*` (*Organization settings › Connections › Agents* and the project's switch), the theme rules of these parts.
 
 ## What is decided (ADR-0029, UX §4.17)
 
@@ -17,7 +17,7 @@ One person can drive several agents and see at a glance what waits for them: *My
 - ***My agents*** (phone): *Waiting for you* first, the agents below; the same buttons at 44 px.
 - ***Create an agent***: a name and nothing else at first; its page then shows its keys (*Create an agent key*, the secret shown once, *Renew*, *Take back*), its limits within the organization's maximum, its work, and *Hand to another person*.
 - **The standing-rule window** (§6.3): the saved search (pick one or save the current one), the agent, *Propose* (default) or the fields it may change from the short list, or the project to create issues in, the end (30 days, at most 90).
-- ***Organization settings › Agents***: every agent with its person (by *Who sees people*; administrators see names), its state and last use; *Stop*; *Agents* on or off for the organization; the project settings get the switch *Agents in this project*.
+- ***Organization settings › Connections › Agents***: every agent with its person (by *Who sees people*; administrators see names), its state and last use; *Stop*; *Agents* on or off for the organization; the project settings get the switch *Agents in this project*.
 - **The sidebar** gets *My agents* only when the person has an agent or may create one; the sidebar still fits a window 600 px high (M5-F150).
 
 ## Tasks
@@ -25,7 +25,7 @@ One person can drive several agents and see at a glance what waits for them: *My
 1. ***My agents*** on computer and phone, with the agent mark of WP-11 from `main`.
 2. ***Create an agent***, its page, its keys and limits.
 3. **The standing-rule window**, from *My agents* and from a saved search's menu.
-4. ***Organization settings › Agents*** and the project switch, through the one settings form.
+4. ***Organization settings › Connections › Agents*** and the project switch, through the one settings form.
 5. **Pictures** of every changed screen in four themes on computer and phone, looked at against UX §1.1 and §7 before the push; the report names them.
 
 ## Acceptance tests (write first)

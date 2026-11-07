@@ -54,11 +54,11 @@ Before code names anything new, the words, the decisions and the maintainer's an
    - nobody can tell what an AI wrote (repudiation; COMP-09 marks, the actor and the app in every event).
 9. **Personal data in M7** (architecture §12 and `docs/privacy/personal-data.md` through DATA-MARKS): what goes to an outside provider and on which basis (the agreement step, PRIV-08); briefs, questions, answers, plans and notes of agent work as people's text; agents and their keys; OAuth grants; the log of tool calls (no content); the conversation of the assistant (not stored, M7-Q6).
 10. **UX design** (§4.12, §4.17, §4.13 and the settings chapter), drawn the way §4.9 draws the computer and the phone:
-    - *Organization settings › AI*: *Set up the assistant* (provider, model, address, key, the agreement step, *What goes where*), apps that may sign in, the project switch;
+    - *Organization settings › Connections › AI*: *Set up the assistant* (provider, model, address, key, the agreement step, *What goes where*), apps that may sign in, the project switch;
     - *Never sent to AI* on a field and on a project;
     - the consent step of an AI app and *Connected apps*;
     - the *Hand over to an agent* window (with what is missing in the brief), the agent-work block on the issue page (attempts, questions answered there, *Approve plan*), the review window (*Accept* with the status, *Send back* with a note, *Throw away* with what is undone and what is not);
-    - *My agents* on computer and phone (*Waiting for you* first), an agent's page (keys, limits, *Pause*, *Stop*), the standing-rule window, *Organization settings › Agents*;
+    - *My agents* on computer and phone (*Waiting for you* first), an agent's page (keys, limits, *Pause*, *Stop*), the standing-rule window, *Organization settings › Connections › Agents*;
     - the marks *Written with the assistant*, *Written by an AI app*, *Written by an agent* beside a text, and the run page.
 11. **Follow-up tables:** the rows of earlier milestones whose target is M7 point to their M7 package (README, "Follow-ups handled in M7"; [follow-ups.md](follow-ups.md)).
 

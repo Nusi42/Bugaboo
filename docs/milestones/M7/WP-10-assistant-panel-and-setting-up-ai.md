@@ -9,7 +9,7 @@ The assistant is one click away wherever a person is, and always says that it is
 
 ## Owns
 
-`web/app/src/features/assistant/**`, `web/app/src/features/settings/ai*` (*Organization settings › AI* and the project's switch), the *Assistant* button of the top bar in `features/shell`, *Never sent to AI* on the *Fields* page and in the project settings, the theme rules of these parts, the user docs' screens of the assistant (the text comes with WP-13).
+`web/app/src/features/assistant/**`, `web/app/src/features/settings/ai*` (*Organization settings › Connections › AI* and the project's switch), the *Assistant* button of the top bar in `features/shell`, *Never sent to AI* on the *Fields* page and in the project settings, the theme rules of these parts, the user docs' screens of the assistant (the text comes with WP-13).
 
 ## What is decided (UX §4.12, M7-Q2, Q5, Q6)
 
@@ -18,7 +18,7 @@ The assistant is one click away wherever a person is, and always says that it is
 - **The conversation** lives in the open panel only (M7-Q6): closing it asks first when it has turns.
 - **No buttons of AI-12 to AI-14** in M7 (M7-Q2): no sparkle buttons beside fields.
 - **When AI is off** at the place, the button, the panel and *Quick search* entries are gone; an administrator sees *Set up the assistant* in *Organization settings*.
-- ***Organization settings › AI*:** *Set up the assistant* (provider, model, address for a local model, the key, *Try the provider*), the agreement step for an outside provider (the confirmation sentence, who and when), the model's information before switching on (COMP-08), *What goes where*, *Send names of people* (if M7-Q5 is taken), the apps that may sign in (M7-Q4), the link to the AI literacy guide (COMP-11). The project settings have the switch *AI in this project* (follows the one above).
+- ***Organization settings › Connections › AI*:** *Set up the assistant* (provider, model, address for a local model, the key, *Try the provider*), the agreement step for an outside provider (the confirmation sentence, who and when), the model's information before switching on (COMP-08), *What goes where*, *Send names of people* (if M7-Q5 is taken), the apps that may sign in (M7-Q4), the link to the AI literacy guide (COMP-11). The project settings have the switch *AI in this project* (follows the one above).
 - ***Never sent to AI*** is a switch on a field's page (*Fields*) and in the project settings, with a sentence that says it holds even for people who can read the field.
 - **A lazy area** with its own message part (ADR-0028): the first page does not grow beyond the button.
 
@@ -26,7 +26,7 @@ The assistant is one click away wherever a person is, and always says that it is
 
 1. **The panel** on computer and phone, with the keyboard (open, ask, move between cards, *Apply*), screen readers told when an answer arrives.
 2. **The proposal card** made once, used for every kind of tool (WP-11 shows the proposals of standing rules with it).
-3. ***Organization settings › AI*** and the project switch, through the one settings form.
+3. ***Organization settings › Connections › AI*** and the project switch, through the one settings form.
 4. ***Never sent to AI*** on fields and projects.
 5. **Pictures** of every changed screen in four themes on computer and phone, looked at against UX §1.1 and §7 before the push; the report names them.
 
