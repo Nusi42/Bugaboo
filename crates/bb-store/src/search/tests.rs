@@ -393,6 +393,7 @@ pub(super) fn request_with(
         blocking_kinds: vec![data.blocks],
         own_reach,
         withheld_text: bb_app::search::WithheldText::default(),
+        only: None,
         after,
         limit,
     }

@@ -10,20 +10,26 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::issues::ChangeIssue;
 
-/// The member of an issue that a change of its status writes.
-pub(crate) const STATUS: &str = "status";
-/// The description of an issue.
-pub(crate) const DESCRIPTION: &str = "description";
-/// The project an issue is in.
-pub(crate) const PROJECT: &str = "project";
-/// The labels of an issue.
-pub(crate) const LABELS: &str = "labels";
-/// The tags of an issue.
-pub(crate) const TAGS: &str = "tags";
-/// Putting an issue under another as its sub-issue.
-pub(crate) const PARENT: &str = "parent";
-/// Deleting an issue: no hand-over gives it.
-pub(crate) const DELETE: &str = "delete";
+/// The members of an issue that a hand-over or a rule can allow an agent to change, by their keys
+/// (the others are the keys of the fields of the catalogue and of own fields).
+pub(crate) mod issue_member {
+    /// The member of an issue that a change of its status writes.
+    pub(crate) const STATUS: &str = "status";
+    /// The description of an issue.
+    pub(crate) const DESCRIPTION: &str = "description";
+    /// The project an issue is in.
+    pub(crate) const PROJECT: &str = "project";
+    /// The labels of an issue.
+    pub(crate) const LABELS: &str = "labels";
+    /// The tags of an issue.
+    pub(crate) const TAGS: &str = "tags";
+    /// Putting an issue under another as its sub-issue.
+    pub(crate) const PARENT: &str = "parent";
+    /// Deleting an issue: no hand-over gives it.
+    pub(crate) const DELETE: &str = "delete";
+}
+
+use issue_member::STATUS;
 
 /// The members of the issue a change names, by their keys: the ones of the catalogue and the own
 /// fields.
@@ -85,6 +91,56 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(), AppError> {
         self.ensure_agent_may(actor, issue, &[member.to_owned()])
             .await
+    }
+
+    /// The issues a search of the actor is cut to: for an agent, those of its work; `None` for a
+    /// person.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn issues_of_work(
+        &self,
+        actor: &Actor,
+    ) -> Result<Option<Vec<IssueId>>, AppError> {
+        let Some(agent) = actor.agent() else {
+            return Ok(None);
+        };
+        let work = self
+            .store()
+            .agent_work(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(Some(work.issues.into_iter().collect()))
+    }
+
+    /// Refuses a new issue by an agent unless a hand-over lets it create sub-issues or a standing
+    /// rule lets it create issues in that project.
+    ///
+    /// # Errors
+    /// `access.forbidden` for an agent that may not create issues there.
+    pub(crate) async fn ensure_agent_may_create(
+        &self,
+        actor: &Actor,
+        project: bb_core::id::ProjectId,
+    ) -> Result<(), AppError> {
+        let Some(agent) = actor.agent() else {
+            return Ok(());
+        };
+        let work = self
+            .store()
+            .agent_work(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if work.creates_in.contains(&project)
+            || work
+                .allowances
+                .values()
+                .any(|allowance| allowance.sub_issues)
+        {
+            Ok(())
+        } else {
+            Err(ErrorCode::Forbidden.into())
+        }
     }
 
     /// Refuses a change of an issue by an agent, for what the change names.

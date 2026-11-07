@@ -377,6 +377,7 @@ impl AuthStorage {
             .collect::<Result<_, _>>()?;
         for rule in &rules {
             work.projects.insert(rule.project);
+            work.creates_in.extend(rule.creates_in);
             let mut found = Query::select();
             found
                 .column(RuleMatchRow::Issue)

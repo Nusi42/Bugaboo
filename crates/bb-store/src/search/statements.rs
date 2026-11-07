@@ -71,7 +71,23 @@ impl Iden for Counted {
 pub(super) fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
     Ok(Cond::all()
         .add(sight_condition(&compiler.request.sight))
+        .add(only_condition(&compiler.request))
         .add(found_by(compiler)?))
+}
+
+/// The issues a search is cut to, for an agent: those of its work.
+fn only_condition(request: &SearchRequest) -> Cond {
+    match &request.only {
+        None => Cond::all(),
+        Some(issues) => Cond::all().add(
+            Expr::col((IssueRow::Table, IssueRow::Id)).is_in(
+                issues
+                    .iter()
+                    .map(|issue| issue.stored())
+                    .collect::<Vec<_>>(),
+            ),
+        ),
+    }
 }
 
 pub(super) fn finish(compiler: &Compiler<'_>, select: SelectStatement) -> Built {

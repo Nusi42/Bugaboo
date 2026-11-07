@@ -167,6 +167,9 @@ pub struct SearchRequest {
     /// The built-in texts a bare `contains` must not look in, because an administrator kept them
     /// from AI (AI-03). Nothing is withheld for a person's own search.
     pub withheld_text: WithheldText,
+    /// The issues the search is cut to: for an agent, the issues of its work, whatever its person
+    /// sees (ADR-0029, decision 3); `None` for a person.
+    pub only: Option<Vec<IssueId>>,
     /// The last issue of the page before. The store reads its place in the order itself, so a
     /// cursor holds nothing but this ID.
     pub after: Option<IssueId>,

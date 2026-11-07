@@ -294,13 +294,16 @@ impl Allowance {
 }
 
 impl RuleField {
-    /// The member of an issue that a change of this field writes, when it is a plain member.
-    /// Labels, tags, *Duplicate of* and *Found in release* are changed by their own use cases.
+    /// The member of an issue that a change of this field writes, when it has one. *Duplicate of*
+    /// and *Found in release* are changed through a relation and an own field, which an agent
+    /// reaches only as the links of related issues and the fields a hand-over names.
     #[must_use]
     pub const fn issue_member(self) -> Option<&'static str> {
         match self {
             Self::Type => Some("issue_type"),
-            Self::Labels | Self::Tags | Self::DuplicateOf | Self::FoundInRelease => None,
+            Self::Labels => Some("labels"),
+            Self::Tags => Some("tags"),
+            Self::DuplicateOf | Self::FoundInRelease => None,
         }
     }
 }

@@ -30,6 +30,7 @@ use super::types::{
     RemoveTag, TagRef,
 };
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::input::clean_tag_name;
 use crate::issues::{InTrash, IssueTypeRef, member};
@@ -297,6 +298,8 @@ pub async fn add_tag<S: AuthStore>(
 ) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
+    ctx.ensure_agent_may_member(&actor, issue.id, issue_member::TAGS)
+        .await?;
     let name = clean_tag_name(&input.name)?;
     let chain = ctx.chain_of(issue.project).await?;
     let state = ctx.tag_state(issue.id).await?;
@@ -384,6 +387,8 @@ pub async fn remove_tag<S: AuthStore>(
 ) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
+    ctx.ensure_agent_may_member(&actor, issue.id, issue_member::TAGS)
+        .await?;
     let state = ctx.tag_state(issue.id).await?;
     if !state.held.iter().any(|link| link.tag == input.tag) {
         return Err(AppError::Refused(ErrorCode::NotFound));
@@ -437,6 +442,8 @@ pub async fn add_label<S: AuthStore>(
 ) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let mut plan = ctx.plan_label(&actor, &input.issue, input.label).await?;
+    ctx.ensure_agent_may_member(&actor, plan.issue.id, issue_member::LABELS)
+        .await?;
     let (_, held) = ctx.visible_issue(&actor, &input.issue).await?;
     if !plan.is_done_already() {
         let names = labels_changed(&plan.before, &plan.after);
@@ -506,6 +513,8 @@ pub async fn remove_label<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx
         .issue_to_sort(&actor, &input.issue, Field::Labels)
+        .await?;
+    ctx.ensure_agent_may_member(&actor, issue.id, issue_member::LABELS)
         .await?;
     let state = ctx.label_state(issue.id).await?;
     if !state.held.iter().any(|link| link.label == input.label) {

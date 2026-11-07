@@ -27,6 +27,7 @@ use super::ids::{code_plan_in, new_code_in};
 use super::store::MovedStatus;
 use super::types::{IssueView, MoveIssue};
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, locked};
 use crate::issues::member;
 use crate::many_changes::ManyChangeNote;
@@ -210,6 +211,8 @@ pub async fn move_issue<S: AuthStore>(
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let plan = ctx.plan_move(&actor, &input.issue, &input.project).await?;
+    ctx.ensure_agent_may_member(&actor, plan.issue.id, issue_member::PROJECT)
+        .await?;
     let status_change = plan.status_change();
     let MovePlan {
         issue,

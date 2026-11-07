@@ -26,6 +26,8 @@ pub struct AgentWork {
     /// What the agent may change on each of them: the ticks of the hand-overs and the fields of
     /// the rules. Reading, commenting and reporting need nothing.
     pub allowances: BTreeMap<IssueId, Allowance>,
+    /// The projects in which the standing rules of the agent may create issues.
+    pub creates_in: BTreeSet<ProjectId>,
 }
 
 /// The work of agents, read as the policy needs it. The store of hand-overs and standing rules

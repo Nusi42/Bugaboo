@@ -343,6 +343,7 @@ fn whole_project(
         blocking_kinds: Vec::new(),
         own_reach: Vec::new(),
         withheld_text: bb_app::search::WithheldText::default(),
+        only: None,
         after,
         limit,
     })

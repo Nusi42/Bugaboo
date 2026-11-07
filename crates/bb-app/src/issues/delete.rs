@@ -12,6 +12,7 @@ use serde_json::json;
 use super::fields::member;
 use super::types::{DeleteIssue, IssueView, RestoreIssue};
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::projects::Why;
 use crate::workflows::restart_restored_in;
@@ -48,6 +49,8 @@ pub async fn delete_issue<S: AuthStore>(
 ) -> Result<Done, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let issue = ctx.issue_to_delete(&actor, &input.issue).await?;
+    ctx.ensure_agent_may_member(&actor, issue.id, issue_member::DELETE)
+        .await?;
     let now = ctx.now();
     let id = issue.id;
     let event = ctx.event(

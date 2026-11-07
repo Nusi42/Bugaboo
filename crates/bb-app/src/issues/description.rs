@@ -16,6 +16,7 @@ use serde_json::json;
 
 use super::fields::{ensure_may_change, member};
 use super::types::{IssueView, SaveDescription};
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::editing::{TextSave, Written};
 use crate::input::clean_long_text;
@@ -35,6 +36,8 @@ pub async fn save_description<S: AuthStore>(
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (current, held) = ctx.visible_issue(&actor, &input.issue).await?;
+    ctx.ensure_agent_may_member(&actor, current.id, issue_member::DESCRIPTION)
+        .await?;
     if !held.may_change_issue(current.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }

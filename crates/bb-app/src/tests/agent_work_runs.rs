@@ -250,3 +250,78 @@ async fn ai_33_a_ready_attempt_leaves_one_short_comment_written_by_an_agent() ->
     ));
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only_its_work()
+-> Outcome {
+    use crate::issues::{CreateIssue, DeleteIssue, create_issue, delete_issue};
+    use crate::search::{SearchQuery, SearchScope, search};
+
+    let world = World::new().await?;
+    let project = a_project(&world, "WEB").await?;
+    let issue_id = an_issue(&world, project).await?;
+    let other = an_issue(&world, project).await?;
+    let given = titled(&world, issue_id, project).await?;
+    // Deleting is never given; a new issue needs a sub-issue tick or a rule that creates.
+    let refused_delete = delete_issue(
+        &world.ctx(),
+        DeleteIssue {
+            session_token: given.key.clone(),
+            issue: issue_id.to_string(),
+        },
+    )
+    .await;
+    assert!(super::agents::refused(
+        &refused_delete.unwrap_err(),
+        bb_core::ErrorCode::Forbidden
+    ));
+    let made = create_issue(
+        &world.ctx(),
+        CreateIssue {
+            session_token: given.key.clone(),
+            project: project.to_string(),
+            issue_type: super::scenarios_issues::a_type(&world).await?,
+            title: "A sub-issue".to_owned(),
+            description: None,
+            status: None,
+            priority: None,
+            assigned_to: None,
+            estimated_time: None,
+            fields: std::collections::BTreeMap::new(),
+        },
+    )
+    .await;
+    assert!(super::agents::refused(
+        &made.unwrap_err(),
+        bb_core::ErrorCode::Forbidden
+    ));
+    // A list or a search of the agent is cut to its work; the person's is not.
+    for (session, expected) in [
+        (&given.key, Some(vec![issue_id])),
+        (&given.team.session_token, None),
+    ] {
+        let _ = search(
+            &world.ctx(),
+            SearchQuery {
+                session_token: session.clone(),
+                text: String::new(),
+                scope: SearchScope::Within(project),
+                cursor: None,
+                limit: 10,
+                labels: false,
+                time: false,
+            },
+        )
+        .await?;
+        let asked = world
+            .store
+            .lock()
+            .searches
+            .last()
+            .cloned()
+            .ok_or("no search")?;
+        assert_eq!(asked.only, expected);
+    }
+    let _ = other;
+    Ok(())
+}

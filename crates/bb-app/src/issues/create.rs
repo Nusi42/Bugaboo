@@ -250,6 +250,8 @@ pub async fn create_issue<S: AuthStore>(
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
+    ctx.ensure_agent_may_create(&actor, new.issue.project)
+        .await?;
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
     let changes = new.changes();

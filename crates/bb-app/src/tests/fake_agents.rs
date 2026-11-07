@@ -44,6 +44,7 @@ impl AgentWorkStore for FakeStore {
                 r.agent == agent && r.state == bb_core::agent_records::GivingState::Open
             }) {
                 work.projects.insert(rule.project);
+                work.creates_in.extend(rule.creates_in);
                 for found in records.matches.iter().filter(|m| m.rule == rule.id) {
                     work.issues.insert(found.issue);
                     work.allowances

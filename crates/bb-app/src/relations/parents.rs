@@ -17,6 +17,7 @@ use bb_policy::{Authorized, Place};
 
 use super::types::{IssueRelations, SetParent};
 use crate::access::Actor;
+use crate::agent_work::issue_member;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::issues::InTrash;
 use crate::projects::Why;
@@ -96,6 +97,8 @@ pub async fn set_parent<S: AuthStore>(
 ) -> Result<Authorized<IssueRelations>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (child, held) = ctx.visible_issue(&actor, &input.issue).await?;
+    ctx.ensure_agent_may_member(&actor, child.id, issue_member::PARENT)
+        .await?;
     if !held.may_change_issue(child.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
