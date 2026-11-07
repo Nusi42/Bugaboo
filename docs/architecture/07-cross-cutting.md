@@ -485,7 +485,7 @@ The decisions are [ADR-0013](../adr/0013-ai.md) and [ADR-0029](../adr/0029-ai-ag
 
 ## MCP (ADR-0042)
 
-- **The server:** `/mcp` on the server's own port, streamable HTTP through `rmcp`; it lists the tools the actor's scope allows and runs them through the registry and the policy engine; answers leave through the same safe types as the API.
+- **The server:** `/mcp` on the server's own port, streamable HTTP (the protocol is written in `bb-mcp`, ADR-0042 amendment); it lists the tools the actor's scope allows and runs them through the registry and the policy engine; answers leave through the same safe types as the API.
 - **Who calls:** a *person via app* (an OAuth grant or an access key used by an app: the person narrowed by the scope, with the app's name) or an *agent* (its person's evaluation intersected with its work and its limits, ADR-0029). The history says *"Ada Brandt via Claude Code"* or *"Fixer, agent of Ada Brandt"*.
 - **Sign-in:** see *Sign-in and sessions* above. Administrators can switch AI apps off for the organization; a grant then waits, unused, until they switch them on again (ADR-0042, decision 4).
 - **Runs:** a session of an app acting for a person is one run; an agent's calls belong to the run of its attempt (ADR-0042, decision 5; `RunStore`, §4).

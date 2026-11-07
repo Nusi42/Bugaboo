@@ -1061,7 +1061,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </ul>
 <h3 id="s7-13"><button class="sec" data-sec>§7.13</button>MCP (ADR-0042)</h3>
 <ul>
-<li><strong>The server:</strong> <code>/mcp</code> on the server's own port, streamable HTTP through <code>rmcp</code>; it lists the tools the actor's scope allows and runs them through the registry and the policy engine; answers leave through the same safe types as the API.</li>
+<li><strong>The server:</strong> <code>/mcp</code> on the server's own port, streamable HTTP (the protocol is written in <code>bb-mcp</code>, ADR-0042 amendment); it lists the tools the actor's scope allows and runs them through the registry and the policy engine; answers leave through the same safe types as the API.</li>
 <li><strong>Who calls:</strong> a <em>person via app</em> (an OAuth grant or an access key used by an app: the person narrowed by the scope, with the app's name) or an <em>agent</em> (its person's evaluation intersected with its work and its limits, ADR-0029). The history says <em>"Ada Brandt via Claude Code"</em> or <em>"Fixer, agent of Ada Brandt"</em>.</li>
 <li><strong>Sign-in:</strong> see <em>Sign-in and sessions</em> above. Administrators can switch AI apps off for the organization; a grant then waits, unused, until they switch them on again (ADR-0042, decision 4).</li>
 <li><strong>Runs:</strong> a session of an app acting for a person is one run; an agent's calls belong to the run of its attempt (ADR-0042, decision 5; <code>RunStore</code>, §4).</li>
@@ -1167,7 +1167,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td>Memory limit of the preview child</td><td>cap (every system), rlimit (Linux)</td><td>0.1.2 / 0.11.0</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>File storage (S3)</td><td>object_store</td><td>0.14.2</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>E-mail</td><td>lettre</td><td>0.11.23</td><td>MIT</td></tr>
-<tr><td>MCP</td><td>rmcp</td><td>3.5.0</td><td>MIT/Apache-2.0</td></tr>
+<tr><td>MCP</td><td>none (the few messages of the protocol are written in <code>bb-mcp</code>, ADR-0042 amendment)</td><td></td><td></td></tr>
 <tr><td>WebAssembly</td><td>wasm-bindgen</td><td>0.2.129</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Tests</td><td>proptest / insta</td><td>1.11.0 / 1.49.0</td><td>MIT/Apache-2.0</td></tr>
 </tbody></table>
@@ -4349,6 +4349,16 @@ A change is a new or changed start, end, period or break, or the end of a day le
 <li>New routes outside <code>/api/v1</code>: <code>/mcp</code>, the two metadata documents, registration, the authorization page (the consent step in the browser app) and the token endpoint; SEC-MATRIX gets the entry point <code>mcp</code>.</li>
 <li>The glossary gains <em>Allow</em>, <em>Take back</em>, <em>Grant</em> (internal) and the app sense of <em>See only</em> and <em>See and change</em>; <em>Connected apps</em> is in M7 in its plain form, and AI-24 keeps what is more.</li>
 <li>The threats are in architecture §12, <em>Assistant, AI apps and agents (M7)</em>.</li>
+</ul>
+<h4>Amendment (M7, WP-05): what was built</h4>
+<ul>
+<li><strong>No <code>rmcp</code>.</strong> Decision 1 named <code>rmcp</code>. The server speaks the few messages MCP needs itself (<code>bb-mcp/src/protocol.rs</code>: <code>initialize</code>, <code>ping</code>, <code>tools/list</code>, <code>tools/call</code>, <code>resources/list</code>, <code>resources/templates/list</code>, <code>resources/read</code>, <code>prompts/list</code>, <code>prompts/get</code>; it answers a request in its own JSON response and never opens a stream, so <code>GET</code> is <code>405</code>). The newest version of <code>rmcp</code> follows a protocol that has no session and brings its own rules for hosts and origins; the token, the scope, the run and the limits are Bugaboo's own, and each request carries its token, so the library would only have carried the JSON. The server answers with the version the app asks for when it knows it (2025-11-25 down to 2024-11-05) and otherwise with its newest. A different decision is open again when the protocol settles (M7-F40). Nothing else in this record changes.</li>
+<li><strong>Where the sign-in lives.</strong> The routes apps call stand outside <code>/api/v1</code> and answer in the words of OAuth: <code>GET /.well-known/oauth-protected-resource</code>, <code>GET /.well-known/oauth-authorization-server</code>, <code>POST /oauth/register</code> and <code>POST /oauth/token</code>. The consent step is the page <code>/connect</code> of the browser app, which asks <code>GET</code> and <code>POST /api/v1/oauth/authorization</code>; <em>Connected apps</em> is <code>GET /api/v1/oauth/apps</code> and <code>DELETE /api/v1/oauth/apps/{app}</code>; the web addresses an administrator allows are below <code>/api/v1/oauth/web-addresses</code>. A token of an app opens nothing outside <code>/mcp</code>, also not in a cookie.</li>
+<li><strong>Secrets.</strong> A code, an access token and a renewing token are 256 random bits written with the starts <code>bbc_</code>, <code>bba_</code> and <code>bbr_</code> (an access key starts <code>bb_</code>), each in a hash domain of its own. The swap of a code or a renewing token uses the secret up in the same change that writes the new tokens, so two requests with one secret cannot both succeed.</li>
+<li><strong>One narrowing.</strong> <code>narrowing_for</code> turns <em>See only</em> or <em>See and change</em> (the words of access keys) and the projects into the narrowing of the policy engine, for a key and for a grant alike. <code>Ctx::actor</code> is the one way from a token to an actor: a cookie, an access key (<code>bb_</code>) or the token of an app (<code>bba_</code>).</li>
+<li><strong>The switch of AI apps</strong> is the setting <code>ai-apps.enabled</code> (on at the start; AI has to be on for the organization as well). While it is off, registration, sign-in and every call are refused as for any token that does not work; no grant is deleted.</li>
+<li><strong>Runs and the app on the event.</strong> A session is one run per grant (or key): <code>initialize</code> starts a fresh run, a call after 30 minutes without one starts another, and a sweeper closes the idle ones. The app's name is kept with the run (<code>change_run.app</code>), and an event of the run names the run, so the history reads it from there: <code>HistoryItem::app</code>. An event carries no column of its own for the app.</li>
+<li><strong>Limits.</strong> 120 calls a minute for a grant (a key counts as its own grant) and 240 for a person, kept in memory; a call over the limit gets <code>429</code> with the time to wait and does nothing, and the security log has an entry for it (<code>ai_call.limited</code>).</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>

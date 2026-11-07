@@ -50,7 +50,7 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | Memory limit of the preview child | cap (every system), rlimit (Linux) | 0.1.2 / 0.11.0 | MIT/Apache-2.0 |
 | File storage (S3) | object_store | 0.14.2 | MIT/Apache-2.0 |
 | E-mail | lettre | 0.11.23 | MIT |
-| MCP | rmcp | 3.5.0 | MIT/Apache-2.0 |
+| MCP | none (the few messages of the protocol are written in `bb-mcp`, ADR-0042 amendment) | | |
 | WebAssembly | wasm-bindgen | 0.2.129 | MIT/Apache-2.0 |
 | Tests | proptest / insta | 1.11.0 / 1.49.0 | MIT/Apache-2.0 |
 
