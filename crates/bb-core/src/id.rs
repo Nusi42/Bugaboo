@@ -355,8 +355,9 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
-    /// The ID of one run of a change to many issues (ISS-09).
-    ManyChangeRunId
+    /// The ID of a run: a change to many issues, a session of an AI app or an attempt of an agent
+    /// (ISS-09, AI-38).
+    RunId
 }
 
 define_ordered_id! {
@@ -471,7 +472,7 @@ into_entity_id!(
     TagId,
     LabelId,
     LabelGroupId,
-    ManyChangeRunId,
+    RunId,
     EventId,
     JobId,
     NotificationId,

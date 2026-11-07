@@ -7,7 +7,7 @@
 //! the check that two workers never count the same issue twice.
 
 use bb_app::many_changes::ManyChangeStore;
-use bb_core::id::{ManyChangeRunId, UserId};
+use bb_core::id::{RunId, UserId};
 use bb_core::many_changes::{
     ManyChangeItem, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, RunsToEnd,
 };
@@ -47,7 +47,7 @@ fn read_run(row: &Row) -> Result<ManyChangeRun, StoreError> {
     let skipped: Vec<ManyChangeSkip> =
         serde_json::from_str(&row.get::<String>(ManyChangeRunRow::Skipped)?)?;
     Ok(ManyChangeRun {
-        id: row.id::<ManyChangeRunId>(ManyChangeRunRow::Id)?,
+        id: row.id::<RunId>(ManyChangeRunRow::Id)?,
         person: row.id::<UserId>(ManyChangeRunRow::Person)?,
         action: serde_json::from_str(&row.get::<String>(ManyChangeRunRow::Action)?)?,
         items,
@@ -68,7 +68,7 @@ impl ManyChangeStore for AuthStorage {
 
     async fn many_changes_run_in(
         transaction: &mut Transaction,
-        id: ManyChangeRunId,
+        id: RunId,
     ) -> Result<Option<ManyChangeRun>, StoreError> {
         let mut select = run_select();
         select.and_where(Expr::col(ManyChangeRunRow::Id).eq(id.stored()));
@@ -104,7 +104,7 @@ impl ManyChangeStore for AuthStorage {
         Ok(self.database().execute(&update).await? > 0)
     }
 
-    async fn many_changes_run_is_over(&self, id: ManyChangeRunId) -> Result<bool, StoreError> {
+    async fn many_changes_run_is_over(&self, id: RunId) -> Result<bool, StoreError> {
         let mut select = Query::select();
         select
             .column(ManyChangeRunRow::Id)

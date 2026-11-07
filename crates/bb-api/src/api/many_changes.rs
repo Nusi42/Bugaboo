@@ -19,7 +19,7 @@ use bb_app::many_changes::{
     ManyChangeTarget,
 };
 use bb_core::given::SetTo;
-use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
+use bb_core::id::{LabelId, RelationKindId, RunId, UserId};
 use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
@@ -629,7 +629,7 @@ async fn get_many_changes_run(
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: ManyChangeRunId = path_id(&run)?;
+    let run: RunId = path_id(&run)?;
     let found = auth
         .api()?
         .many_changes_run(info, ManyChangeRunQuery { session_token, run })
@@ -654,7 +654,7 @@ async fn stop_many_changes_run(
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: ManyChangeRunId = path_id(&run)?;
+    let run: RunId = path_id(&run)?;
     let found = auth
         .api()?
         .stop_many_changes_run(info, ManyChangeRunQuery { session_token, run })

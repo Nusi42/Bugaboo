@@ -462,7 +462,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
 #[tokio::test]
 async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_it_goes_on()
 -> Outcome {
-    use bb_core::id::ManyChangeRunId;
+    use bb_core::id::RunId;
     use bb_core::many_changes::{ManyChangeItem, ManyChangeRun};
 
     let world = World::new().await?;
@@ -472,7 +472,7 @@ async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_
         issues.push(an_issue(&world, project).await?);
     }
     let run = ManyChangeRun {
-        id: ManyChangeRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        id: RunId::generate(&mut bb_core::id::SequentialIds::default())?,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items: issues
@@ -616,7 +616,7 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
 pub(super) async fn run_with_a_step_waiting(
     world: &World,
 ) -> Result<bb_core::many_changes::ManyChangeRun, Box<dyn std::error::Error + Send + Sync>> {
-    use bb_core::id::{JobId, ManyChangeRunId};
+    use bb_core::id::{JobId, RunId};
     use bb_core::many_changes::{ManyChangeItem, ManyChangeRun};
 
     use crate::jobs::{JobKind, JobStore as _};
@@ -631,7 +631,7 @@ pub(super) async fn run_with_a_step_waiting(
     }
     let now = world.ctx().now();
     let run = ManyChangeRun {
-        id: ManyChangeRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        id: RunId::generate(&mut bb_core::id::SequentialIds::default())?,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items,

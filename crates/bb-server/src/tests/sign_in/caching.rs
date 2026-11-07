@@ -12,7 +12,7 @@ use bb_app::many_changes::ManyChangeStore;
 use bb_app::ports::ChangeStore;
 use bb_app::roles::CreateRole;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
-use bb_core::id::{EntityId, EventId, ManyChangeRunId};
+use bb_core::id::{EntityId, EventId, RunId};
 use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus};
 use bb_store::AuthStorage;
 use bb_testing::{Failure, TestResult, each_database};
@@ -44,7 +44,7 @@ fn get_routes() -> Vec<String> {
 async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     let mut ids = SystemIds;
     let run = ManyChangeRun {
-        id: ManyChangeRunId::generate(&mut ids)?,
+        id: RunId::generate(&mut ids)?,
         person: person.parse().map_err(|_| "no person")?,
         action: json!({"kind": "delete"}),
         items: Vec::new(),

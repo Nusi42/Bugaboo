@@ -1,6 +1,6 @@
 //! The jobs and the runs of changes to many issues of the in-memory store.
 
-use bb_core::id::{JobId, ManyChangeRunId};
+use bb_core::id::{JobId, RunId};
 use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus, RunsToEnd};
 use bb_core::technical::TechnicalName;
@@ -165,7 +165,7 @@ impl JobStore for FakeStore {
 impl ManyChangeStore for FakeStore {
     async fn many_changes_run_in(
         tx: &mut Tx,
-        id: ManyChangeRunId,
+        id: RunId,
     ) -> Result<Option<ManyChangeRun>, FakeError> {
         Ok(tx
             .state
@@ -216,7 +216,7 @@ impl ManyChangeStore for FakeStore {
         Ok(())
     }
 
-    async fn many_changes_run_is_over(&self, id: ManyChangeRunId) -> Result<bool, FakeError> {
+    async fn many_changes_run_is_over(&self, id: RunId) -> Result<bool, FakeError> {
         Ok(!self.lock().state.many_changes_runs.iter().any(|run| {
             run.id == id
                 && matches!(

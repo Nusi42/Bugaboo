@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::given::SetTo;
-use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
+use bb_core::id::{LabelId, RelationKindId, RunId, UserId};
 use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::relation::Direction;
@@ -136,7 +136,7 @@ pub struct ManyChangeRunQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The run.
-    pub run: ManyChangeRunId,
+    pub run: RunId,
 }
 
 /// Something a person should know about a change that will be made, beside what changes.
@@ -226,7 +226,7 @@ pub struct ManyChangeSkipped {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct ManyChangeRunStatus {
     /// The run.
-    pub id: ManyChangeRunId,
+    pub id: RunId,
     /// Where it is.
     pub status: ManyChangeStatus,
 }
@@ -237,7 +237,7 @@ impl Masked for ManyChangeRunStatus {}
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ManyChangeRunView {
     /// The run.
-    pub id: ManyChangeRunId,
+    pub id: RunId,
     /// Where it is.
     pub status: ManyChangeStatus,
     /// How many issues it has.

@@ -6,7 +6,7 @@
 use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use bb_app::many_changes::ManyChangeStore;
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_core::id::{IdSource, IssueId, JobId, ManyChangeRunId, UserId};
+use bb_core::id::{IdSource, IssueId, JobId, RunId, UserId};
 use bb_core::job::{FailureKind, FailureOutcome};
 use bb_core::many_changes::{
     ManyChangeItem, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, SkipReason,
@@ -29,7 +29,7 @@ async fn changed<T: Send>(
 
 fn a_run(source: &mut impl IdSource, issues: usize) -> ManyChangeRun {
     ManyChangeRun {
-        id: ManyChangeRunId::generate(source).unwrap(),
+        id: RunId::generate(source).unwrap(),
         person: UserId::generate(source),
         action: json!({"kind": "delete"}),
         items: (0..issues)

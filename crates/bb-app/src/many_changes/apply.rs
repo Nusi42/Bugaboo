@@ -10,7 +10,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::id::{JobId, ManyChangeRunId};
+use bb_core::id::{JobId, RunId};
 use bb_core::many_changes::{
     MANY_CHANGES_ISSUES_MAX, MANY_CHANGES_JOB_ABOVE, ManyChangeItem, ManyChangeRun,
     ManyChangeStatus, SkipReason,
@@ -166,8 +166,7 @@ pub async fn apply_many_changes<S: AuthStore>(
     }
     let mut ids = ctx.ids();
     let run = ManyChangeRun {
-        id: ManyChangeRunId::generate(&mut ids)
-            .map_err(|error| AppError::Internal(error.to_string()))?,
+        id: RunId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?,
         person: actor.person.id,
         action: serde_json::to_value(&input.action)
             .map_err(|error| AppError::Internal(error.to_string()))?,

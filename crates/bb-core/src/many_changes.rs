@@ -8,7 +8,7 @@
 
 use jiff::Timestamp;
 
-use crate::id::{IssueId, ManyChangeRunId, UserId};
+use crate::id::{IssueId, RunId, UserId};
 use crate::personal::Entity;
 
 /// The most issues one change names, so a preview stays a page and a run stays a run.
@@ -101,7 +101,7 @@ words_in_api!(
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RunsToEnd {
     /// This run.
-    One(ManyChangeRunId),
+    One(RunId),
     /// Every run of this person.
     OfPerson(UserId),
 }
@@ -133,7 +133,7 @@ impl crate::personal::NotPersonal for ManyChangeSkip {}
 pub struct ManyChangeRun {
     /// The ID of the run.
     #[not_personal]
-    pub id: ManyChangeRunId,
+    pub id: RunId,
     /// Who asked for it: the changes are made as this person.
     #[personal(category = "activity", basis = "contract")]
     pub person: UserId,

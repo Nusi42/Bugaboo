@@ -8,7 +8,7 @@
 
 use std::future::Future;
 
-use bb_core::id::ManyChangeRunId;
+use bb_core::id::RunId;
 use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus, RunsToEnd};
 use jiff::Timestamp;
 
@@ -19,7 +19,7 @@ use crate::store_macros::{queries, reads, writes};
 pub trait ManyChangeStore: JobStore + 'static {
     queries! {
         /// The run with this ID.
-        fn many_changes_run(id: ManyChangeRunId) -> Option<ManyChangeRun> = many_changes_run_in;
+        fn many_changes_run(id: RunId) -> Option<ManyChangeRun> = many_changes_run_in;
     }
 
     reads! {
@@ -30,7 +30,7 @@ pub trait ManyChangeStore: JobStore + 'static {
         fn save_many_changes_progress(run: &ManyChangeRun, expected_done: i64) -> bool;
         /// Whether the run is over (done, failed or stopped): a step looks before each issue, so a run
         /// that was stopped changes nothing more.
-        fn many_changes_run_is_over(id: ManyChangeRunId) -> bool;
+        fn many_changes_run_is_over(id: RunId) -> bool;
         /// Whether an event with this reason was written at or after `since`: how a run that went
         /// on after a worker stopped finds out that the worker changed an issue before it stopped.
         fn event_with_reason(reason: &str, since: Timestamp) -> bool;

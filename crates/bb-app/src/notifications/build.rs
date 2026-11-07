@@ -590,7 +590,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The end of a run of many changes: the person who asked for it hears of it (M3-F125).
     async fn run_event(&self, round: &mut Round, event: &DomainEvent) -> Result<(), AppError> {
-        let Ok(id) = bb_core::id::ManyChangeRunId::from_bytes(event.entity.id.to_bytes()) else {
+        let Ok(id) = bb_core::id::RunId::from_bytes(event.entity.id.to_bytes()) else {
             return Ok(());
         };
         let Some(run) = self

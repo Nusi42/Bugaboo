@@ -13,7 +13,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::{Actor as EventActor, RecordKind};
-use bb_core::id::ManyChangeRunId;
+use bb_core::id::RunId;
 use bb_core::many_changes::{
     MANY_CHANGES_STEP, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, RunsToEnd,
 };
@@ -34,12 +34,12 @@ use crate::member;
 const RUN_KEY: &str = "run";
 
 /// What a step of a run is queued with: the run it is a step of.
-pub(crate) fn step_payload(run: ManyChangeRunId) -> Value {
+pub(crate) fn step_payload(run: RunId) -> Value {
     serde_json::json!({ RUN_KEY: run.to_string() })
 }
 
 /// The run that the payload of a step names.
-fn run_named(payload: &Value) -> Result<ManyChangeRunId, AppError> {
+fn run_named(payload: &Value) -> Result<RunId, AppError> {
     payload
         .get(RUN_KEY)
         .and_then(Value::as_str)
@@ -191,11 +191,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// What follows a step: the next step is queued, or the run is announced as done.
-    async fn after_step(
-        &self,
-        id: ManyChangeRunId,
-        status: ManyChangeStatus,
-    ) -> Result<(), AppError> {
+    async fn after_step(&self, id: RunId, status: ManyChangeStatus) -> Result<(), AppError> {
         if status == ManyChangeStatus::Done {
             self.announce_run_done(id).await
         } else {
@@ -206,7 +202,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Writes the event that a run is done, so the person who asked for it is told (M3-F125): the
     /// status was counted up by the step that changed the last issue, which writes no event of the
     /// run itself.
-    async fn announce_run_done(&self, id: ManyChangeRunId) -> Result<(), AppError> {
+    async fn announce_run_done(&self, id: RunId) -> Result<(), AppError> {
         let event = self.event(
             EventActor::System,
             entity(RecordKind::ChangeRun, id),
@@ -222,7 +218,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether the run is over (done, failed or stopped) now, as the store has it.
-    async fn run_is_over(&self, id: ManyChangeRunId) -> Result<bool, AppError> {
+    async fn run_is_over(&self, id: RunId) -> Result<bool, AppError> {
         self.store()
             .many_changes_run_is_over(id)
             .await
@@ -256,7 +252,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// stops it all come here, `who` being the actor of the event.
     pub(crate) async fn end_many_changes_run(
         &self,
-        id: ManyChangeRunId,
+        id: RunId,
         status: ManyChangeStatus,
         who: EventActor,
     ) -> Result<(), AppError> {
@@ -282,7 +278,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Queues the next step of a run.
-    async fn queue_next_step(&self, run: ManyChangeRunId) -> Result<(), AppError> {
+    async fn queue_next_step(&self, run: RunId) -> Result<(), AppError> {
         let job = bb_core::id::JobId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let now: Timestamp = self.now();

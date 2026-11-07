@@ -4,9 +4,9 @@
 use bb_core::id::{
     AccessKeyId, AgentId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId,
     EventId, FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId,
-    LabelId, LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId,
-    RelationId, RelationKindId, RoleId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId,
-    UploadId, UserId, WorkDayId, WorkflowId,
+    LabelId, LayoutId, LockToken, NotificationId, PasskeyId, ProjectId, RelationId, RelationKindId,
+    RoleId, RunId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId, UploadId, UserId,
+    WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -122,7 +122,7 @@ stored_ids!(
     UploadId => "an upload ID",
     TimeEntryId => "a time entry ID",
     ToolCallId => "a tool call ID",
-    ManyChangeRunId => "a run ID",
+    RunId => "a run ID",
     CommentId => "a comment ID",
     EditorId => "an editor ID",
     EntityId => "a record ID",
