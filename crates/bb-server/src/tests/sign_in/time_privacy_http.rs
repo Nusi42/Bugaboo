@@ -13,7 +13,7 @@ use super::fields_http::reader_of;
 use super::http::rig_and_app;
 use super::issues_site::{ISSUES, Site, key_of, ok};
 use super::time_http::{MY_ENTRIES, book};
-use super::working_hours_http::{YESTERDAY, hana_and_bob, times};
+use super::working_hours_http::{YESTERDAY, hana_and_bob, long_sessions, times};
 
 /// The name the administrator of the tests goes by.
 const ADA: &str = "Ada Admin";
@@ -78,6 +78,102 @@ async fn priv_09_the_history_shows_others_the_date_of_an_entry_and_never_the_mom
         assert_eq!(other["day"], "2027-01-14", "{other}");
         assert_eq!(other["at"], "2027-01-14T00:00:00Z", "{other}");
         assert!(!other.to_string().contains("08:00"), "{other}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_09_every_time_row_of_a_change_or_a_deletion_is_dated_and_has_no_id_of_a_moment()
+-> TestResult {
+    each_database("priv_09_history_rows", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        long_sessions(&rig).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let booked = book(&mut ada, &issue, 45).await?;
+        let entry = ok(&booked)?.clone();
+        let path = format!(
+            "/api/v1/me/time-entries/{}",
+            entry["id"].as_str().unwrap_or_default()
+        );
+        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
+        // The entries listed on the issue carry no ID of a moment for somebody else.
+        let listed = tom
+            .send("GET", &format!("{ISSUES}/{issue}/time-entries"), None)
+            .await?;
+        for item in ok(&listed)?["items"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+        {
+            assert!(
+                item["id"].as_str().is_some_and(|id| !id.contains('-')),
+                "{item}"
+            );
+        }
+        rig.clock.advance(3600);
+        let changed = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": entry["version"], "minutes": 60})),
+            )
+            .await?;
+        let version = ok(&changed)?["version"].clone();
+        rig.clock.advance(3600);
+        let deleted = ada
+            .send("DELETE", &format!("{path}?version={version}"), None)
+            .await?;
+        assert!(deleted.status.is_success(), "{}", deleted.body);
+        let history = format!("{ISSUES}/{issue}/history");
+        let rows = |reply: &Value| -> Vec<Value> {
+            reply["items"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter(|item| item["kind"] == "time")
+                        .cloned()
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        // The booker sees the three moments and the real IDs.
+        let own = ada.send("GET", &history, None).await?;
+        let own = rows(ok(&own)?);
+        assert_eq!(own.len(), 3, "{own:?}");
+        assert!(
+            own.iter()
+                .all(|row| row["event"].as_str().is_some_and(|id| id.contains('-')))
+        );
+        // Somebody else sees the date on every row, the midnight of it, and an ID that is no UUID.
+        let other = tom.send("GET", &history, None).await?;
+        let other = rows(ok(&other)?);
+        assert_eq!(other.len(), 3, "{other:?}");
+        for row in &other {
+            assert_eq!(row["day"], "2027-01-14", "{row}");
+            assert_eq!(row["at"], "2027-01-14T00:00:00Z", "{row}");
+            assert!(
+                row["event"].as_str().is_some_and(|id| !id.contains('-')),
+                "{row}"
+            );
+        }
+        // A holder of *See working hours of others* sees the moment, like the booker.
+        let mut hana = reader_of(
+            &site,
+            &rig,
+            "hana@example.test",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::SeeWorkingHoursOfOthers,
+            ],
+            &[],
+        )
+        .await?;
+        let seen = hana.send("GET", &history, None).await?;
+        assert!(rows(ok(&seen)?).iter().all(|row| row.get("day").is_none()));
         Ok(())
     })
     .await

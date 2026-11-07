@@ -13,7 +13,7 @@ use bb_app::settings::{
 };
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
-use bb_core::settings::SettingValue;
+use bb_core::settings::{FOR_TESTS_PREFIX, SettingValue};
 use bb_core::sign_in::SecurityAction;
 use bb_testing::{TestResult, each_database};
 
@@ -177,7 +177,7 @@ async fn cfg_06_the_settings_that_only_tests_have_are_listed_only_when_asked_for
             everything
                 .settings
                 .iter()
-                .all(|setting| !setting.definition.key().starts_with("test.")),
+                .all(|setting| !setting.definition.key().starts_with(FOR_TESTS_PREFIX)),
             "a page that lists every setting shows none that only tests have"
         );
         let asked = one(&rig, &org.admin, SettingsScope::Organization, NOTE, None).await?;

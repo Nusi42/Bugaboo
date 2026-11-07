@@ -382,6 +382,7 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     let seconds_per_day = number_const(&time, TIME_SOURCE, "SECONDS_PER_DAY")?;
     let seconds_per_minute = number_const(&time, TIME_SOURCE, "SECONDS_PER_MINUTE")?;
     let minutes_per_hour = number_const(&time, TIME_SOURCE, "MINUTES_PER_HOUR")?;
+    let entry_least = bb_core::time::TIME_ENTRY_MINUTES_MIN.get();
     let Some((_, comments)) = sources.iter().find(|(path, _)| path == COMMENT_SOURCE) else {
         bail!("{COMMENT_SOURCE} is missing");
     };
@@ -435,6 +436,9 @@ export const secondsPerMinute = {seconds_per_minute};
 
 /** The minutes in an hour. */
 export const minutesPerHour = {minutes_per_hour};
+
+/** The shortest time entry, in minutes: a timer that ran less saves nothing. */
+export const timeEntryMinutesLeast = {entry_least};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,

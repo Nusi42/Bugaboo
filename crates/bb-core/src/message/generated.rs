@@ -6312,6 +6312,9 @@ pub const TIME_OTHERS_TITLE: MessageKey = MessageKey::new("time.others.title");
 pub const TIME_OTHERS_TOTALS_ONLY_NOTE: MessageKey =
     MessageKey::new("time.others.totals-only-note");
 
+/// The message `time.others.week-running`.
+pub const TIME_OTHERS_WEEK_RUNNING: MessageKey = MessageKey::new("time.others.week-running");
+
 /// The message `time.sheet.activity`.
 pub const TIME_SHEET_ACTIVITY: MessageKey = MessageKey::new("time.sheet.activity");
 
@@ -7780,15 +7783,6 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `error.support-code`.
-#[must_use]
-pub fn error_support_code(code: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("error.support-code"),
-        vec![("code", Value::Text(code.to_string()))],
-    )
-}
-
 /// The message `error.time.entry-too-long`.
 #[must_use]
 pub fn error_time_entry_too_long(hours: i64) -> Message {
@@ -7804,6 +7798,21 @@ pub fn error_time_entry_too_short(minutes: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("error.time.entry-too-short"),
         vec![("minutes", Value::Number(minutes))],
+    )
+}
+
+/// The message `error.with-support-code`.
+#[must_use]
+pub fn error_with_support_code(
+    code: impl std::fmt::Display,
+    message: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.with-support-code"),
+        vec![
+            ("code", Value::Text(code.to_string())),
+            ("message", Value::Text(message.to_string())),
+        ],
     )
 }
 
@@ -12875,15 +12884,6 @@ pub fn time_sheet_cell_label(day: impl std::fmt::Display, row: impl std::fmt::Di
     )
 }
 
-/// The message `time.sheet.choice-length`.
-#[must_use]
-pub fn time_sheet_choice_length(length: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("time.sheet.choice-length"),
-        vec![("length", Value::Text(length.to_string()))],
-    )
-}
-
 /// The message `time.sheet.day-heading`.
 #[must_use]
 pub fn time_sheet_day_heading(
@@ -12904,6 +12904,21 @@ pub fn time_sheet_day_heading(
 pub fn time_sheet_day_tab(day: impl std::fmt::Display, weekday: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-tab"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.day-tab-today`.
+#[must_use]
+pub fn time_sheet_day_tab_today(
+    day: impl std::fmt::Display,
+    weekday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.day-tab-today"),
         vec![
             ("day", Value::Text(day.to_string())),
             ("weekday", Value::Text(weekday.to_string())),
@@ -13165,10 +13180,13 @@ pub fn time_start_time_not_a_time(
 
 /// The message `time.stop.nothing`.
 #[must_use]
-pub fn time_stop_nothing(issue: impl std::fmt::Display) -> Message {
+pub fn time_stop_nothing(issue: impl std::fmt::Display, minutes: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("time.stop.nothing"),
-        vec![("issue", Value::Text(issue.to_string()))],
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("minutes", Value::Number(minutes)),
+        ],
     )
 }
 
@@ -13264,10 +13282,13 @@ pub fn time_timer_stop_on(issue: impl std::fmt::Display) -> Message {
 
 /// The message `time.timer.too-short`.
 #[must_use]
-pub fn time_timer_too_short(issue: impl std::fmt::Display) -> Message {
+pub fn time_timer_too_short(issue: impl std::fmt::Display, minutes: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("time.timer.too-short"),
-        vec![("issue", Value::Text(issue.to_string()))],
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("minutes", Value::Number(minutes)),
+        ],
     )
 }
 
@@ -14989,7 +15010,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.setting.unknown-time-zone",
         "Bugaboo does not know this time zone. Pick one from the list.",
     ),
-    ("error.support-code", "Code for support: {code}."),
     (
         "error.tag.not-here",
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
@@ -15030,6 +15050,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.timer.too-long",
         "The timer ran longer than one time entry can be. Change the start time first.",
+    ),
+    (
+        "error.with-support-code",
+        "{message} Code for support: {code}.",
     ),
     (
         "error.workflow.cannot-fill",
@@ -19405,6 +19429,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your organization shows only week totals of other people: no days, starts, ends or breaks, and no changes while it is on.",
     ),
     ("time.others.week-of-person", "{person} · week of {date}"),
+    (
+        "time.others.week-running",
+        "This week is not over yet. Its total shows once it ends.",
+    ),
     ("time.others.week-worked", "{worked} worked"),
     ("time.sheet.activity", "Activity"),
     ("time.sheet.add-issue", "Add an issue"),
@@ -19420,11 +19448,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("time.sheet.cell-label", "{row}, {day}"),
     ("time.sheet.changed", "Changed"),
-    ("time.sheet.choice-length", " · {length}"),
     ("time.sheet.cost-center", "Cost center"),
     ("time.sheet.day-empty", "No time booked on this day yet."),
     ("time.sheet.day-heading", "{weekday} {day}"),
     ("time.sheet.day-tab", "{weekday}\n{day}"),
+    ("time.sheet.day-tab-today", "{weekday}\n{day}\nToday"),
     ("time.sheet.days", "Days of the week"),
     ("time.sheet.details-of", "Details of {issue}"),
     (
@@ -19528,7 +19556,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "time.stop.nothing",
-        "You worked less than a minute on {issue}, so nothing will be saved.",
+        "You worked less than {minutes, plural, one {# minute} other {# minutes}} on {issue}, so nothing will be saved.",
     ),
     ("time.stop.save", "Save time"),
     ("time.stop.title", "Stop timer on {issue}"),
@@ -19569,7 +19597,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.throw-away", "Throw away"),
     (
         "time.timer.too-short",
-        "Less than a minute on {issue}, so no time was saved.",
+        "Less than {minutes, plural, one {# minute} other {# minutes}} on {issue}, so no time was saved.",
     ),
     ("time.work-day.break-end", "End break"),
     ("time.work-day.break-start", "Start break"),
@@ -19582,7 +19610,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.left-open-button", "Say when it ended"),
     (
         "time.work-day.on-break",
-        "On break since {start} · {worked} worked so far",
+        "On break since {start} · {worked}\u{a0}worked\u{a0}so\u{a0}far",
     ),
     ("time.work-day.open-reason", "Why was it not ended?"),
     ("time.work-day.open-save", "End that day"),
@@ -19598,7 +19626,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.region", "Work day"),
     (
         "time.work-day.since",
-        "Working since {start} · {worked} worked so far",
+        "Working since {start} · {worked}\u{a0}worked\u{a0}so\u{a0}far",
     ),
     ("time.work-day.start", "Start work day"),
     ("time.work-day.timer-no", "Keep it running"),

@@ -22,6 +22,7 @@ use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, 
 use super::comments::CommentItem;
 use super::many_changes::FieldChangeBody;
 use super::relations::IssueRef;
+use crate::api::time_entries::opaque_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -193,8 +194,15 @@ impl Masked for HistoryEntryItem {}
 
 /// The first part of every item of an event.
 fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
+    // The ID of an event holds the moment it happened: a reader who is told only the date of a time
+    // entry gets an ID that tells nothing.
+    let hidden_moment = matches!(item.what, HistoryWhat::Time { day: Some(_), .. });
     HistoryEntryItem {
-        event: item.event.to_string(),
+        event: if hidden_moment {
+            opaque_id(&item.event.to_string())
+        } else {
+            item.event.to_string()
+        },
         at: item.at.to_string(),
         by: item.by.clone(),
         agent: item.agent.as_ref().map(|agent| NamedRef {

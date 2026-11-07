@@ -447,7 +447,12 @@ pub async fn change_time_entry<S: AuthStore>(
             Making::Change,
         )
         .await?;
+    // Every event of an entry says the date of the entry, so the history can show readers who may not
+    // see the moment the date and never the moment (PRIV-09).
     let mut members = vec![set_to(member::ISSUE, json!(entry.issue.to_string()))];
+    if changed.date == entry.date {
+        members.push(set_to(member::DATE, json!(entry.date.to_string())));
+    }
     let mut differs = |name: &str, before: serde_json::Value, after: serde_json::Value| {
         if before != after {
             members.push(FieldChange {
@@ -529,6 +534,7 @@ pub async fn delete_time_entry<S: AuthStore>(
         entity(RecordKind::TimeEntry, entry.id),
         vec![
             set_to(member::ISSUE, json!(entry.issue.to_string())),
+            set_to(member::DATE, json!(entry.date.to_string())),
             FieldChange {
                 field: member::MINUTES.to_owned(),
                 before: Some(json!(entry.minutes)),

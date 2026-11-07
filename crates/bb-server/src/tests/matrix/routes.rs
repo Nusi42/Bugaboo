@@ -33,7 +33,7 @@ use bb_testing::{Failure, TestResult, each_database};
 
 use super::actors::{
     Actor, Project, SETS_ISSUE_FIELDS, Where, actors, everything_seen, held_exactly,
-    held_exactly_all, holds_in_some_project, short_name, standing, top_of_the_tree,
+    held_exactly_all, holds_in_some_project, initials, short_name, standing, top_of_the_tree,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -201,9 +201,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             {
                 Expect::NotFound
             } else if example.has(Quirk::HidesThePerson)
-                && !bb_policy::OF_WORKING_HOURS
-                    .iter()
-                    .any(|known| held.permissions.contains(known))
+                && !held
+                    .permissions
+                    .contains(&Permission::SeeWorkingHoursOfOthers)
             {
                 // Another person's working hours: nobody learns whose days exist (ADR-0035).
                 Expect::NotFound
@@ -405,7 +405,7 @@ async fn hold(
         Actor::ExactlyBoth(first, second) => {
             let only = org
                 .role(
-                    &format!("Exactly {} and {}", first.code(), second.code()),
+                    &format!("Both {} {}", initials(first), initials(second)),
                     &held_exactly_all(&[first, second]),
                 )
                 .await?;

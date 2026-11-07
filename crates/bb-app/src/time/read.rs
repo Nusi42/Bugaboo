@@ -13,7 +13,7 @@ use bb_core::fields::Field;
 use bb_core::id::{EntityId, TimeEntryId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, PeopleContext};
+use bb_policy::{Authorized, PeopleContext, Permission, Place};
 
 use super::types::{
     EntryDefaults, EntryDefaultsQuery, IssueTimeEntries, IssueTimeEntriesQuery, IssueTimeEntryView,
@@ -106,10 +106,15 @@ pub async fn issue_time_entries<S: AuthStore>(
     let values = ctx.load_values(RecordKind::TimeEntry, &ids).await?;
     let people: Vec<bb_core::id::UserId> = cut.items.iter().map(|entry| entry.person).collect();
     ctx.preload_people(&people).await?;
+    let sees_moments = ctx
+        .evaluation_of(&actor, Place::Organization)
+        .await?
+        .allows(Permission::SeeWorkingHoursOfOthers);
     let mut items = Vec::with_capacity(cut.items.len());
     for entry in &cut.items {
         items.push(IssueTimeEntryView {
             id: entry.id,
+            moment_visible: sees_moments || entry.person == actor.person.id,
             person: ctx
                 .person_ref(
                     &held,

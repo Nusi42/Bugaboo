@@ -257,6 +257,10 @@ impl Masked for TimeEntryPage {}
 pub struct IssueTimeEntryView {
     /// The ID of the entry.
     pub id: TimeEntryId,
+    /// Whether the reader may see the moment the entry was saved: the person who booked it and a
+    /// holder of *See working hours of others*. An ID carries that moment, so the screen shows
+    /// anybody else an opaque one.
+    pub moment_visible: bool,
     /// Whose time it is, as the reader may see people of the kind *Time entries*.
     pub person: PersonRef,
     /// The date.

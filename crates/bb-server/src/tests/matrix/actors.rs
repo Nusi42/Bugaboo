@@ -97,6 +97,17 @@ pub(super) fn actors() -> Vec<Actor> {
     all
 }
 
+/// The first letters of the words of a permission (`change-working-hours-of-others` is `cwhoo`): the
+/// e-mail address and the role of an actor made for two permissions must stay within the longest
+/// local part and the longest name they may have.
+pub(super) fn initials(permission: Permission) -> String {
+    permission
+        .code()
+        .split('-')
+        .filter_map(|word| word.chars().next())
+        .collect()
+}
+
 impl Actor {
     /// The actors that come with an access key (M2-F27): the key is made by its owner and sent as
     /// `Authorization: Bearer …`.
@@ -123,7 +134,7 @@ impl Actor {
         match self {
             Self::Exactly(Some(permission)) => format!("exactly-{}", permission.code()),
             Self::ExactlyBoth(first, second) => {
-                format!("exactly-{}-and-{}", first.code(), second.code())
+                format!("exactly-{}-and-{}", initials(first), initials(second))
             }
             Self::Exactly(None) => "exactly-nothing".to_owned(),
             other => other.name(),

@@ -6,8 +6,9 @@
 use bb_core::event::FieldChange;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{HistoryEntry, TimeEvent};
-use bb_core::id::{IssueTypeId, UserId};
+use bb_core::id::IssueTypeId;
 use bb_core::time::Minutes;
+use bb_policy::{Permission, Place};
 use jiff::Timestamp;
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
@@ -27,21 +28,28 @@ fn event_of(minutes: Option<&FieldChange>) -> TimeEvent {
     }
 }
 
-/// The date of the entry of a row, when the reader did not book it: the date is stored with the
-/// entry, before or after a deletion.
-fn day_for_others(row: &HistoryEntry, reader: UserId) -> Option<Date> {
-    if row.by == Some(reader) {
+/// The date of the entry of a row, when the reader may not see the moment it was written: only the
+/// person who booked it and a holder of *See working hours of others* see the moment, because the
+/// moment an entry is saved says when somebody stopped working (PRIV-09, ADR-0035, decision 8).
+/// Every event of an entry says
+/// its date (a booking and a change that keeps the date set it, a change that moves it says the
+/// new one, a deletion sets the old one); an older event that says none gets the date the row was
+/// written on, never its time.
+fn day_for_others(row: &HistoryEntry, sees_moment: bool) -> Option<Date> {
+    if sees_moment {
         return None;
     }
     row.changes
         .iter()
+        .rev()
         .find(|change| change.field == time_entry::DATE)
         .and_then(|change| change.after.as_ref().or(change.before.as_ref()))
         .and_then(|value| serde_json::from_value::<Date>(value.clone()).ok())
+        .or_else(|| Some(row.at.to_zoned(TimeZone::UTC).date()))
 }
 
-/// The moment a row is shown at: a time entry is dated, not timed, to everyone but the person who
-/// booked it, so its moment is the start of its date; any other row keeps its moment.
+/// The moment a row is shown at: a time entry is dated, not timed, to a reader who may not see the
+/// moment, so its moment is the start of its date; any other row keeps its moment.
 pub(super) fn shown_at(what: &HistoryWhat, at: Timestamp) -> Timestamp {
     match what {
         HistoryWhat::Time { day: Some(day), .. } => day
@@ -85,10 +93,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(HistoryWhat::Changes { fields }) => fields,
             _ => Vec::new(),
         };
+        let sees_moment = row.by == Some(reading.actor.person.id)
+            || self
+                .evaluation_of(reading.actor, Place::Organization)
+                .await?
+                .allows(Permission::SeeWorkingHoursOfOthers);
         Ok(Some(HistoryWhat::Time {
             event,
             minutes,
-            day: day_for_others(row, reading.actor.person.id),
+            day: day_for_others(row, sees_moment),
             fields,
         }))
     }

@@ -55,7 +55,10 @@ pub fn known_names() -> Vec<String> {
 /// The name of the zone a new work day starts in: the zone the person chose when it is one the
 /// server knows, else the zone of the device when the server knows it, else UTC. A person who chose
 /// UTC counts as having chosen none, because UTC is also where nothing is chosen. The browser
-/// works out the same (`zoneOfNewDay`); `tools/testdata/value-words.json` holds the two together.
+/// works out the same (`zoneOfNewDay`, in `clock.ts`); `tools/testdata/value-words.json` holds the two
+/// together. The two differ in how they name the zone of the device: the server is told its name by
+/// the browser, which may be one the zone data here does not have, so it falls back to UTC, while the
+/// browser always knows its own.
 #[must_use]
 pub fn zone_of_new_day(chosen: Option<&str>, device: Option<&str>) -> String {
     let known = |name: &&str| *name != UTC && named(name).is_some();
