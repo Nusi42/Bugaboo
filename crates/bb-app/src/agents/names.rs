@@ -26,14 +26,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         held: &Evaluation,
         agent: AgentId,
     ) -> Result<Option<String>, AppError> {
-        if !names.read.contains_key(&agent) {
+        if let std::collections::hash_map::Entry::Vacant(place) = names.read.entry(agent) {
             let found = self
                 .store()
                 .agent(agent)
                 .await
                 .map_err(|error| internal::<S>(&error))?
                 .map(|found| (found.name, found.person));
-            names.read.insert(agent, found);
+            place.insert(found);
         }
         let Some(Some((name, person))) = names.read.get(&agent) else {
             return Ok(None);

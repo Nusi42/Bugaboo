@@ -135,11 +135,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .agents,
         );
-        let named = self.agent_named_to(&mut names, held, agent).await;
+        let answer = self.agent_named_to(&mut names, held, agent).await;
         self.marks
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .agents = names;
-        named
+        answer
     }
 }
