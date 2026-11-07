@@ -6,7 +6,7 @@ import { days } from "./demo-m6-common.ts";
 import { sampleAdministrator, sampleCostCenter } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { changeWorkDay } from "./timesheet.ts";
-import { choiceNamed, starterField } from "./time.ts";
+import { choiceNamed, earlierToday, starterField } from "./time.ts";
 
 // What the exit demo of M6 (`m6-exit-demo.spec.ts`) sets up before a step, through the API.
 
@@ -18,7 +18,7 @@ const DAY_MINUTES_AGO = 60;
  * its 25 minutes, and the time it books must lie inside the work day.
  */
 export async function startedTheDayEarlier(session: ApiSession): Promise<void> {
-  const start = new Date(Date.now() - DAY_MINUTES_AGO * 60_000).toISOString();
+  const start = earlierToday(DAY_MINUTES_AGO * 60);
   await changeWorkDay(session, days().today, [{ start, end: null }]);
 }
 

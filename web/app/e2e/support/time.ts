@@ -81,11 +81,23 @@ export async function startTimerOn(session: ApiSession, issue: MadeIssue): Promi
   dataOf(await session.client.POST("/api/v1/me/timer", { body: { issue: issue.key } }));
 }
 
+/**
+ * The moment `seconds` ago, but never before one minute past the start of today on the computer of the
+ * test (the browser of a test has the same zone): a work day must start on its own date, so a test in
+ * the first hour after midnight starts it as early as that date allows.
+ */
+export function earlierToday(seconds: number): string {
+  const now = Date.now();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 1, 0, 0);
+  return new Date(Math.max(now - seconds * 1000, startOfToday.getTime())).toISOString();
+}
+
 /** Moves the start of the person's running timer `minutes` and a few seconds into the past. */
 export async function startedMinutesAgo(session: ApiSession, minutes: number): Promise<void> {
   const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
   const SECONDS = 5;
-  const started = new Date(Date.now() - (minutes * 60 + SECONDS) * 1000).toISOString();
+  const started = earlierToday(minutes * 60 + SECONDS);
   dataOf(
     await session.client.POST("/api/v1/me/timer/start-time", {
       body: { version: timer.version, started_at: started },
