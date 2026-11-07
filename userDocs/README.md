@@ -21,6 +21,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations
 - [Access keys](access-keys/README.md): keys for your scripts and apps, and [using a key in a script](access-keys/use-a-key.md)
+- [Connected apps](access-keys/connected-apps.md): AI apps you allowed to work with your account, and taking them back
 - [Time](time/README.md): the timer, adding time by hand, and the work day
 - [Cookies we use](cookies.md)
 
