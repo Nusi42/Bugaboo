@@ -44,7 +44,16 @@ pub(super) struct Handed {
     pub(super) hand_over: HandOverView,
 }
 
-pub(super) async fn handed(world: &World) -> Result<Handed, AppError> {
+/// A project, a team member of it, their agent with its key, and one issue that was not handed over.
+pub(super) struct Ground {
+    pub(super) project: ProjectId,
+    pub(super) team: Started,
+    pub(super) agent: AgentId,
+    pub(super) key: String,
+    pub(super) issue: IssueId,
+}
+
+pub(super) async fn ground(world: &World) -> Result<Ground, AppError> {
     let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
     let team = member(
         world,
@@ -56,12 +65,30 @@ pub(super) async fn handed(world: &World) -> Result<Handed, AppError> {
     let agent = an_agent(world, &team.session_token, "Fixer").await?;
     let key = key_of(world, &team.session_token, agent).await?;
     let issue = an_issue(world, project).await.map_err(AppError::Internal)?;
-    let hand_over = hand_over(
-        &world.ctx(),
-        plain_hand_over(&team.session_token, agent, &[issue]),
-    )
-    .await?
-    .into_value();
+    Ok(Ground {
+        project,
+        team,
+        agent,
+        key,
+        issue,
+    })
+}
+
+/// The agent handed the issue, with the changes `asked` makes to the plain request.
+pub(super) async fn handed_with(
+    world: &World,
+    change: impl FnOnce(&mut HandOver),
+) -> Result<Handed, AppError> {
+    let Ground {
+        project,
+        team,
+        agent,
+        key,
+        issue,
+    } = ground(world).await?;
+    let mut asked = plain_hand_over(&team.session_token, agent, &[issue]);
+    change(&mut asked);
+    let hand_over = hand_over(&world.ctx(), asked).await?.into_value();
     Ok(Handed {
         project,
         team,
@@ -70,6 +97,10 @@ pub(super) async fn handed(world: &World) -> Result<Handed, AppError> {
         issue,
         hand_over,
     })
+}
+
+pub(super) async fn handed(world: &World) -> Result<Handed, AppError> {
+    handed_with(world, |_| {}).await
 }
 
 pub(super) fn query(session: &str, issue: IssueId) -> IssueQuery {

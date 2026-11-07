@@ -4,13 +4,10 @@ use bb_core::ErrorCode;
 use bb_core::agent_records::GivingState;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::id::{IssueId, ProjectId};
-use bb_policy::StartingRole;
 
-use super::agent_work::{Handed, handed, plain_hand_over, query};
-use super::agents::{an_agent, key_of, refused};
-use super::scenarios::a_project;
+use super::agent_work::{Ground, Handed, ground, handed, handed_with, plain_hand_over, query};
+use super::agents::refused;
 use super::scenarios_issues::an_issue;
-use super::workflows_rules::member;
 use super::world::{Outcome, World};
 use crate::agent_work::{AgentWorkQuery, hand_over, issue_agent_work};
 use crate::auth::AppError;
@@ -137,17 +134,13 @@ async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -
 #[tokio::test]
 async fn ai_34_with_plan_needs_approval_an_attempt_waits_for_approve_plan() -> Outcome {
     let world = World::new().await?;
-    let project = a_project(&world, "WEB").await?;
-    let team = member(
-        &world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
-    let key = key_of(&world, &team.session_token, agent).await?;
-    let issue_id = an_issue(&world, project).await?;
+    let Ground {
+        team,
+        agent,
+        key,
+        issue: issue_id,
+        ..
+    } = ground(&world).await?;
     let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
     asked.plan_needs_approval = true;
     hand_over(&world.ctx(), asked).await?;
@@ -256,28 +249,7 @@ async fn allow_by_itself(world: &World, project: ProjectId) -> Outcome {
 }
 
 async fn handed_to_accept_by_itself(world: &World) -> Result<Handed, AppError> {
-    let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
-    let team = member(
-        world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let agent = an_agent(world, &team.session_token, "Fixer").await?;
-    let key = key_of(world, &team.session_token, agent).await?;
-    let issue = an_issue(world, project).await.map_err(AppError::Internal)?;
-    let mut asked = plain_hand_over(&team.session_token, agent, &[issue]);
-    asked.accept_by_itself = true;
-    let hand_over = hand_over(&world.ctx(), asked).await?.into_value();
-    Ok(Handed {
-        project,
-        team,
-        agent,
-        key,
-        issue,
-        hand_over,
-    })
+    handed_with(world, |asked| asked.accept_by_itself = true).await
 }
 
 #[tokio::test]
@@ -365,17 +337,13 @@ async fn ai_33_an_agent_never_makes_a_time_entry() -> Outcome {
 #[tokio::test]
 async fn ai_34_the_attempts_are_limited_by_the_budget() -> Outcome {
     let world = World::new().await?;
-    let project = a_project(&world, "WEB").await?;
-    let team = member(
-        &world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
-    let key = key_of(&world, &team.session_token, agent).await?;
-    let issue_id = an_issue(&world, project).await?;
+    let Ground {
+        team,
+        agent,
+        key,
+        issue: issue_id,
+        ..
+    } = ground(&world).await?;
     let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
     asked.budget_attempts = Some(1);
     hand_over(&world.ctx(), asked).await?;

@@ -83,7 +83,7 @@ pub(crate) async fn end_attempt_scenario(world: &World) -> Added {
     let given = started(world).await?;
     measured(
         &world.store,
-        end_attempt(&world.ctx(), ready(&given.key, given.issue)),
+        Box::pin(end_attempt(&world.ctx(), ready(&given.key, given.issue))),
     )
     .await
 }
@@ -164,10 +164,10 @@ pub(crate) async fn review_work_scenario(world: &World) -> Added {
     let work = show(world, &given).await.map_err(text)?;
     measured(
         &world.store,
-        review_work(
+        Box::pin(review_work(
             &world.ctx(),
             review(&given.team.session_token, &work, ReviewAnswer::Accept),
-        ),
+        )),
     )
     .await
 }

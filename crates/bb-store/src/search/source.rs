@@ -312,31 +312,28 @@ pub(super) fn subject_of(
             Subject::Column(super::spent::minutes_spent()),
             Domain::Minutes,
         ),
-        T::Agent => (
-            linked(
-                open_work_rows(),
-                scalar(
-                    Query::select()
-                        .column((AgentRow::Table, AgentRow::Name))
-                        .from(AgentRow::Table)
-                        .and_where(
-                            Expr::col((AgentRow::Table, AgentRow::Id))
-                                .equals((IssueWorkRow::Table, IssueWorkRow::Agent)),
-                        )
-                        .to_owned(),
-                ),
-            ),
-            Domain::Text,
-        ),
-        T::AgentState => (
-            linked(
-                open_work_rows(),
-                Expr::col((IssueWorkRow::Table, IssueWorkRow::State)),
-            ),
-            Domain::Text,
-        ),
+        T::Agent | T::AgentState => agent_subject(target),
         T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
     }
+}
+
+/// The agent with open work on an issue, or the state of that work.
+fn agent_subject(target: FieldTarget) -> (Subject, Domain) {
+    let subject = if target == FieldTarget::Agent {
+        scalar(
+            Query::select()
+                .column((AgentRow::Table, AgentRow::Name))
+                .from(AgentRow::Table)
+                .and_where(
+                    Expr::col((AgentRow::Table, AgentRow::Id))
+                        .equals((IssueWorkRow::Table, IssueWorkRow::Agent)),
+                )
+                .to_owned(),
+        )
+    } else {
+        Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
+    };
+    (Subject::Linked(open_work_rows(), subject), Domain::Text)
 }
 
 /// The agent work on an issue that has not been closed by a review.

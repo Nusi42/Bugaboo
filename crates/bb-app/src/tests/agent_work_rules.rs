@@ -4,16 +4,13 @@ use bb_core::ErrorCode;
 use bb_core::agent_records::{GivingState, ProposalState};
 use bb_core::agent_work::{HandOverPower, RuleField};
 use bb_core::id::{AgentId, IssueId, IssueTypeId, ProjectId};
-use bb_policy::StartingRole;
 use serde_json::json;
 
-use super::agent_work::{plain_hand_over, query};
-use super::agents::{an_agent, key_of, refused};
-use super::scenarios::a_project;
+use super::agent_work::{Ground, ground, plain_hand_over, query};
+use super::agents::refused;
 use super::scenarios::{Added, measured, text};
 use super::scenarios_issues::an_issue;
 use super::scenarios_searches::save;
-use super::workflows_rules::member;
 use super::world::{Outcome, World};
 use crate::agent_work::{
     ChangeStandingRule, CreateStandingRule, DecideProposal, ProposeChange, StandingRuleView,
@@ -49,17 +46,13 @@ async fn version_of(world: &World, key: &str, issue_id: IssueId) -> Result<i64, 
 #[tokio::test]
 async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
     let world = World::new().await?;
-    let project = a_project(&world, "WEB").await?;
-    let team = member(
-        &world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
-    let key = key_of(&world, &team.session_token, agent).await?;
-    let issue_id = an_issue(&world, project).await?;
+    let Ground {
+        team,
+        agent,
+        key,
+        issue: issue_id,
+        ..
+    } = ground(&world).await?;
     // Handed over with nothing ticked: the agent reads and reports, and changes nothing.
     hand_over(
         &world.ctx(),
@@ -79,17 +72,13 @@ async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
 #[tokio::test]
 async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked() -> Outcome {
     let world = World::new().await?;
-    let project = a_project(&world, "WEB").await?;
-    let team = member(
-        &world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
-    let key = key_of(&world, &team.session_token, agent).await?;
-    let issue_id = an_issue(&world, project).await?;
+    let Ground {
+        team,
+        agent,
+        key,
+        issue: issue_id,
+        ..
+    } = ground(&world).await?;
     let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
     asked.powers = vec![HandOverPower::ChangeFields];
     asked.fields = vec!["title".to_owned(), "assigned_to".to_owned()];
@@ -127,17 +116,13 @@ pub(super) struct RuleWorld {
 }
 
 pub(super) async fn rule_world(world: &World) -> Result<RuleWorld, AppError> {
-    let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
-    let team = member(
-        world,
-        "team@example.test",
-        StartingRole::TeamMember,
+    let Ground {
         project,
-    )
-    .await?;
-    let agent = an_agent(world, &team.session_token, "Fixer").await?;
-    let key = key_of(world, &team.session_token, agent).await?;
-    let issue = an_issue(world, project).await.map_err(AppError::Internal)?;
+        team,
+        agent,
+        key,
+        issue,
+    } = ground(world).await?;
     let search = save(world, &team.session_token, "Everything", "").await?.id;
     Ok(RuleWorld {
         project,

@@ -71,7 +71,7 @@ impl Iden for Counted {
 pub(super) fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
     Ok(Cond::all()
         .add(sight_condition(&compiler.request.sight))
-        .add(only_condition(&compiler.request))
+        .add(only_condition(compiler.request))
         .add(found_by(compiler)?))
 }
 
