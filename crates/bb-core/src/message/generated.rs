@@ -2093,6 +2093,12 @@ pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.take
 /// The message `invitations.title`.
 pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
 
+/// The message `issue-field.agent`.
+pub const ISSUE_FIELD_AGENT: MessageKey = MessageKey::new("issue-field.agent");
+
+/// The message `issue-field.agent-state`.
+pub const ISSUE_FIELD_AGENT_STATE: MessageKey = MessageKey::new("issue-field.agent-state");
+
 /// The message `issue-field.assigned-to`.
 pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
 
@@ -15792,6 +15798,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("invitations.taken-back", "The invitation is taken back."),
     ("invitations.title", "Invitations"),
+    ("issue-field.agent", "Agent"),
+    ("issue-field.agent-state", "Agent state"),
     ("issue-field.assigned-to", "Assigned to"),
     ("issue-field.changed", "Changed"),
     ("issue-field.closed", "Closed"),

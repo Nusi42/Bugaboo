@@ -17,11 +17,13 @@ use sea_query::{
     SelectStatement,
 };
 
+use super::scalar;
 use super::time::Clock;
 use crate::db::StoredId as _;
 use crate::fields::kind_text;
 use crate::schema::{
-    AssignedPersonRow, FieldValueRow, IssueLabelRow, IssueParentRow, IssueRow, IssueTagRow,
+    AgentRow, AssignedPersonRow, FieldValueRow, IssueLabelRow, IssueParentRow, IssueRow,
+    IssueTagRow, IssueWorkRow,
 };
 use crate::sight::sight_condition_as;
 
@@ -310,8 +312,37 @@ pub(super) fn subject_of(
             Subject::Column(super::spent::minutes_spent()),
             Domain::Minutes,
         ),
+        T::Agent => (
+            linked(
+                open_work_rows(),
+                scalar(
+                    Query::select()
+                        .column((AgentRow::Table, AgentRow::Name))
+                        .from(AgentRow::Table)
+                        .and_where(
+                            Expr::col((AgentRow::Table, AgentRow::Id))
+                                .equals((IssueWorkRow::Table, IssueWorkRow::Agent)),
+                        )
+                        .to_owned(),
+                ),
+            ),
+            Domain::Text,
+        ),
+        T::AgentState => (
+            linked(
+                open_work_rows(),
+                Expr::col((IssueWorkRow::Table, IssueWorkRow::State)),
+            ),
+            Domain::Text,
+        ),
         T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
     }
+}
+
+/// The agent work on an issue that has not been closed by a review.
+fn open_work_rows() -> Rows {
+    Rows::keyed(IssueWorkRow::Table, IssueWorkRow::Issue)
+        .and(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
 }
 
 /// What an own field of this kind reads: the column of its values that holds them.

@@ -26,6 +26,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
+use bb_core::agent_work::AgentWorkState;
 use bb_core::fields::{Field, FieldKey, ID_WORD, word_key};
 use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
@@ -519,6 +520,35 @@ fn own_words(own: &[Definition]) -> Vec<Option<String>> {
         .collect()
 }
 
+/// The fields of agent work (AI-33): the agent that works on an issue, by its name, and where its
+/// work is. Anybody who reads an issue reads who works on it, so every search has them.
+fn agent_fields() -> [Searchable; 2] {
+    [
+        Searchable {
+            field: SearchField::unordered(&word_of(bb_core::message::ISSUE_FIELD_AGENT)),
+            target: FieldTarget::Agent,
+        },
+        Searchable {
+            field: SearchField::new(
+                &word_of(bb_core::message::ISSUE_FIELD_AGENT_STATE),
+                FieldKind::Choice,
+            )
+            .with_choices(
+                &AgentWorkState::ALL
+                    .iter()
+                    .map(|state| state.code())
+                    .collect::<Vec<_>>(),
+            ),
+            target: FieldTarget::AgentState,
+        },
+    ]
+}
+
+/// The word of a field of the search language, written like the glossary writes the field.
+fn word_of(key: bb_core::message::MessageKey) -> String {
+    bb_core::message::Message::from(key).render().to_lowercase()
+}
+
 /// The words of the status groups in the search language.
 fn status_group_names() -> Vec<String> {
     StatusGroup::ALL
@@ -556,6 +586,7 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
             target,
         });
     }
+    found.extend(agent_fields());
     for (definition, word) in sources.own.iter().zip(own_words(&sources.own)) {
         let Some(word) = word else {
             continue;

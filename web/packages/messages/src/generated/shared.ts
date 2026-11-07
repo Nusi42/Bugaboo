@@ -378,6 +378,8 @@ export const messages = {
   "issue-field.created": "Created",
   "issue-field.changed": "Changed",
   "issue-field.closed": "Closed",
+  "issue-field.agent": "Agent",
+  "issue-field.agent-state": "Agent state",
   "field.unknown-name": "{field}",
   "people-kind.assigned-to": "Assigned to",
   "people-kind.reported-by": "Reported by",

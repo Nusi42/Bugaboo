@@ -162,3 +162,8 @@ reason = "The state of agent work (Waiting for the agent, Agent working, Waiting
 term = "link"
 at = ["api:property ResultBody.link", "api:enum ResultKind link"]
 reason = "A result an agent attached can be a web link to a branch, a pull request or a test report. It is not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "state"
+at = ["messages/en.json#issue-field.agent-state"]
+reason = "The name of the field that finds agent work by its state (Waiting for you, Agent working and the others); it is the word of ADR-0029 and of the glossary's entry for the states of agent work, not the status of an issue."

@@ -45,6 +45,10 @@ pub enum FieldTarget {
     TimeLeft,
     /// *Time spent*: the total of the time entries of the issue.
     TimeSpent,
+    /// The agent that works on the issue now (AI-33).
+    Agent,
+    /// Where the agent work on the issue is (AI-33): *Waiting for you* and the other states.
+    AgentState,
     /// An own field.
     Own {
         /// The field.
@@ -105,6 +109,8 @@ impl FieldTarget {
             | Self::Parent
             | Self::Created
             | Self::Changed
+            | Self::Agent
+            | Self::AgentState
             | Self::Own { .. } => {
                 return None;
             }
@@ -159,6 +165,8 @@ impl FieldTarget {
             Self::EstimatedTime => message::ISSUE_FIELD_ESTIMATED_TIME,
             Self::TimeLeft => message::ISSUE_FIELD_TIME_LEFT,
             Self::TimeSpent => message::ISSUE_FIELD_TIME_SPENT,
+            Self::Agent => message::ISSUE_FIELD_AGENT,
+            Self::AgentState => message::ISSUE_FIELD_AGENT_STATE,
             Self::Own { .. } => return None,
         })
     }
