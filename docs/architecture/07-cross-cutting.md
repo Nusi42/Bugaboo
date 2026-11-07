@@ -102,6 +102,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `change-organization-settings` | Settings | organization | Manage | Change organization settings |
 | `see-status` | Settings | organization | See | See how the server is doing |
 | `book-time` | Time | project | Change | Book their own time on the issues they see, and change and delete their own time entries |
+| `create-agents` | Agents | project | Change | Create agents that work for you, and hand them work in the project |
 | `see-working-hours-of-others` | Time | organization | See | See other people's working hours |
 | `change-working-hours-of-others` | Time | organization | Manage | Change other people's work days, always with a reason |
 
@@ -176,6 +177,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Change organization settings | ✓ | – | – | – | – | – | – |
 | See how the server is doing | ✓ | – | – | – | – | – | – |
 | Book their own time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – | – |
+| Create agents that work for you, and hand them work in the project | ✓ | ✓ | ✓ | – | – | – | – |
 | See other people's working hours | – | – | – | – | – | – | ✓ |
 | Change other people's work days, always with a reason | – | – | – | – | – | – | ✓ |
 | Two-step sign-in for everyone with this role | off | off | off | off | off | off | off |

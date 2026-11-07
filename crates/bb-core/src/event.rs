@@ -105,6 +105,8 @@ words! {
     pub enum RecordKind {
         /// An access key.
         AccessKey => "access_key",
+        /// An agent (AI-30).
+        Agent => "agent",
         /// A file added to an issue or a comment (ATT-01).
         Attachment => "attachment",
         /// One run of a change to many issues (ISS-09).

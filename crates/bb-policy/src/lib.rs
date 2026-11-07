@@ -27,7 +27,7 @@ mod tree;
 
 pub use bb_macros::Masked;
 pub use catalogue::{
-    Counts, Kind, NOT_FOR_KEYS, OF_WORKING_HOURS, Permission, PermissionBits, Topic,
+    Counts, Kind, NOT_FOR_AGENTS, NOT_FOR_KEYS, OF_WORKING_HOURS, Permission, PermissionBits, Topic,
 };
 pub use changers::{Changer, roles_that_change};
 pub use evaluate::{
@@ -46,7 +46,7 @@ pub use mask::{
 pub use moves::{
     Access, Change, Lift, MoveRefusal, MoveRequest, Preview, check_move, preview_move,
 };
-pub use narrowing::{Choice, Narrowing};
+pub use narrowing::{ActorKind, Choice, Narrowing};
 pub use people::{
     FormerUser, PeopleContext, PersonRef, Target, former_user_label, resolve, taken_in,
 };

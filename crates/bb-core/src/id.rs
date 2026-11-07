@@ -397,6 +397,11 @@ define_random_id! {
 }
 
 define_random_id! {
+    /// The ID of an agent: an account that is not a person (AI-30, ADR-0029). It opens nothing.
+    AgentId
+}
+
+define_random_id! {
     /// The ID of one open editor, made by the browser when a person starts to edit a long text
     /// (ADR-0019). Two tabs of one person are two editors. It opens nothing.
     EditorId
@@ -416,6 +421,7 @@ impl crate::personal::NotPersonal for LockToken {}
 impl crate::personal::NotPersonal for PasskeyId {}
 impl crate::personal::NotPersonal for InvitationId {}
 impl crate::personal::NotPersonal for AccessKeyId {}
+impl crate::personal::NotPersonal for AgentId {}
 
 /// The ID of a record whose kind is named next to it, for example in an event (ADR-0007). It can
 /// hold the ID of any kind of record, so it takes any UUID version.
@@ -472,7 +478,8 @@ into_entity_id!(
     SessionId,
     PasskeyId,
     InvitationId,
-    AccessKeyId
+    AccessKeyId,
+    AgentId
 );
 
 #[cfg(test)]

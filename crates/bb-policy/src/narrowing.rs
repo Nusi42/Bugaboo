@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use bb_core::access::FieldLevel;
-use bb_core::id::ProjectId;
+use bb_core::id::{AgentId, ProjectId};
 
 use crate::catalogue::{Kind, Permission};
 use crate::evaluate::{Evaluation, Place};
@@ -25,10 +25,42 @@ pub enum Choice {
     Permissions(BTreeSet<Permission>),
 }
 
+/// Who is acting, as the policy tells the kinds apart (ADR-0029, decision 1): one type, so a use
+/// case cannot judge an agent as its person by mistake. For an agent and for a person via an app
+/// the person is the one whose rights are narrowed; the actor never holds more than they do.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ActorKind {
+    /// A person, by a session or by an access key that narrows them.
+    Person,
+    /// A person via an AI app (an OAuth grant, or a key an AI app uses): the person, narrowed by
+    /// the scope, shown with the app's name.
+    PersonViaApp {
+        /// The name of the app, as the person saw it at the consent step.
+        app: String,
+    },
+    /// An agent: its responsible person's evaluation, intersected with its work and its limits.
+    Agent {
+        /// The agent.
+        agent: AgentId,
+    },
+}
+
+impl ActorKind {
+    /// Whether the actor is an agent, which judges by its work and never holds a permission in
+    /// [`crate::NOT_FOR_AGENTS`].
+    #[must_use]
+    pub const fn is_agent(&self) -> bool {
+        matches!(self, Self::Agent { .. })
+    }
+}
+
 /// What an access key narrows an evaluation to.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Narrowing {
     choice: Choice,
+    /// Set for an agent: it keeps no permission of `NOT_FOR_AGENTS`, and counts only where its
+    /// person holds *Create agents that work for you*.
+    agent: bool,
     /// The projects the key counts in (and their sub-projects), by ID so a move changes nothing;
     /// `None` for no list. A key with projects gives nothing for the whole organization.
     projects: Option<BTreeSet<ProjectId>>,
@@ -49,8 +81,27 @@ impl Narrowing {
     pub const fn new(choice: Choice) -> Self {
         Self {
             choice,
+            agent: false,
             projects: None,
         }
+    }
+
+    /// The narrowing of an agent whose work is in these projects (and their sub-projects): what
+    /// its person may do there, as *See and change*, without any permission of
+    /// [`crate::NOT_FOR_AGENTS`], and only where the person holds *Create agents that work for
+    /// you* (M7-Q1). An agent with no work counts nowhere (ADR-0029, decision 2).
+    #[must_use]
+    pub fn agent(work: BTreeSet<ProjectId>) -> Self {
+        Self {
+            agent: true,
+            ..Self::see_and_change().in_projects(work)
+        }
+    }
+
+    /// Whether this narrows an agent.
+    #[must_use]
+    pub const fn is_agent(&self) -> bool {
+        self.agent
     }
 
     /// *See only*.
@@ -82,6 +133,7 @@ impl Narrowing {
     /// whatever the choice, and otherwise what the choice says.
     fn keeps(&self, permission: Permission) -> bool {
         permission.keys_may_hold()
+            && (!self.agent || permission.agents_may_hold())
             && match &self.choice {
                 Choice::Kinds(kinds) => kinds.contains(&permission.kind()),
                 Choice::Permissions(permissions) => permissions.contains(&permission),
@@ -128,7 +180,9 @@ impl Evaluation {
     /// field above *Can see* for a key that may only see.
     #[must_use]
     pub fn narrowed(&self, key: &Narrowing) -> Self {
-        let outside_projects = !key.counts_at(self.place, &self.chain);
+        // An agent counts only where its person holds *Create agents that work for you*.
+        let outside_projects = !key.counts_at(self.place, &self.chain)
+            || (key.agent && !self.permissions.contains(&Permission::CreateAgents));
         let kept: BTreeSet<Permission> = if outside_projects {
             BTreeSet::new()
         } else {

@@ -299,6 +299,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey
+            | RecordKind::Agent
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower

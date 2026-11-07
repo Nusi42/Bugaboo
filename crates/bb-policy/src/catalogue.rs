@@ -39,6 +39,30 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ChangeWorkingHoursOfOthers,
 ];
 
+/// The permissions an agent never holds, whatever its person holds (AI-30, ADR-0029): every
+/// permission of kind *Manage* (which includes *Take over text someone else is editing*), the
+/// permissions of working hours (ADR-0035, decision 9), and *Create agents that work for you*,
+/// so an agent makes no agents. Defined once, here beside [`NOT_FOR_KEYS`]; narrowing an agent,
+/// the agent's own checks and the tests all read this list.
+pub const NOT_FOR_AGENTS: &[Permission] = &[
+    Permission::ChangeProjectSettings,
+    Permission::EditAnyway,
+    Permission::ManageIssueTypes,
+    Permission::ManageWorkflows,
+    Permission::ManageFields,
+    Permission::ManageLabels,
+    Permission::DecideRoles,
+    Permission::DecideWhatRolesSee,
+    Permission::ManagePeople,
+    Permission::ManageInvitations,
+    Permission::ManageGroups,
+    Permission::ManageRoles,
+    Permission::ChangeOrganizationSettings,
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
+    Permission::CreateAgents,
+];
+
 /// The permissions of working hours: what the starting role *HR* holds, what nobody holds at the
 /// start, and what a person who decides every role gives without holding them (ADR-0025,
 /// amendment M6; ADR-0035, decision 8). Defined once, here.
@@ -84,6 +108,13 @@ macro_rules! permissions {
             #[must_use]
             pub fn keys_may_hold(self) -> bool {
                 !NOT_FOR_KEYS.contains(&self)
+            }
+
+            /// Whether an agent may hold the permission at all ([`NOT_FOR_AGENTS`] says which it
+            /// may not).
+            #[must_use]
+            pub fn agents_may_hold(self) -> bool {
+                !NOT_FOR_AGENTS.contains(&self)
             }
         }
     };
@@ -147,6 +178,8 @@ permissions! {
     /// Book one's own time on the issues one sees, and change and delete one's own time entries
     /// (ADR-0035, decision 2).
     BookTime => ("book-time", Time, Project, Change),
+    /// Create agents of their own, and hand them work in the project (M7-Q1, ADR-0029).
+    CreateAgents => ("create-agents", Agents, Project, Change),
     /// See other people's working hours on *Working hours of others* (ADR-0035, decision 8).
     SeeWorkingHoursOfOthers => ("see-working-hours-of-others", Time, Organization, See),
     /// Change other people's work days, always with a reason (ADR-0035, decision 7).
@@ -216,6 +249,18 @@ mod tests {
         for topic in Topic::ALL {
             assert!(!Message::from(topic.name()).render().is_empty());
         }
+    }
+
+    #[test]
+    fn ai_30_an_agent_holds_no_manage_permission_and_none_of_working_hours() {
+        for permission in Permission::ALL {
+            if permission.kind() == Kind::Manage || OF_WORKING_HOURS.contains(permission) {
+                assert!(!permission.agents_may_hold(), "{permission:?}");
+            }
+        }
+        assert!(!Permission::EditAnyway.agents_may_hold());
+        assert!(!Permission::CreateAgents.agents_may_hold());
+        assert!(Permission::Comment.agents_may_hold());
     }
 
     #[test]

@@ -311,6 +311,7 @@ export const messages = {
   "permission-topic.people": "People",
   "permission-topic.settings": "Settings",
   "permission-topic.time": "Time",
+  "permission-topic.agents": "Agents",
   "nav.access-keys": "Access keys",
   "access-keys.more": "More options",
   "permission.see-projects": "See the project and what is in it",
@@ -823,6 +824,7 @@ export const messages = {
     "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
   "notifications.count-capped": "{max}+",
   "permission.see-working-hours-of-others": "See other people's working hours",
+  "permission.create-agents": "Create agents that work for you, and hand them work in the project",
   "permission.change-working-hours-of-others":
     "Change other people's work days, always with a reason",
   "starting-role.hr": "HR",

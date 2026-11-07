@@ -19,6 +19,8 @@ words! {
         Settings => "settings",
         /// Time on issues and working hours (ADR-0035).
         Time => "time",
+        /// Agents that work for a person (ADR-0029).
+        Agents => "agents",
     }
     messages name = "permission-topic.";
 }

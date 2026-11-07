@@ -61,7 +61,8 @@ const CONTRIBUTOR: [Permission; 7] = [
 ];
 
 /// What a Team member has beyond a Contributor.
-const TEAM_MEMBER: [Permission; 3] = [
+const TEAM_MEMBER: [Permission; 4] = [
+    Permission::CreateAgents,
     Permission::ChangeIssues,
     Permission::DeleteIssues,
     Permission::MoveIssues,

@@ -7,6 +7,8 @@ use bb_macros as _;
 use utoipa as _;
 
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
+mod agents;
+#[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod common;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod compile_fail;

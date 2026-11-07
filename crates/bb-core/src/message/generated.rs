@@ -3346,6 +3346,9 @@ pub const PEOPLE_NOTHING: MessageKey = MessageKey::new("people.nothing");
 /// The message `people.search`.
 pub const PEOPLE_SEARCH: MessageKey = MessageKey::new("people.search");
 
+/// The message `permission-topic.agents`.
+pub const PERMISSION_TOPIC_AGENTS: MessageKey = MessageKey::new("permission-topic.agents");
+
 /// The message `permission-topic.issues`.
 pub const PERMISSION_TOPIC_ISSUES: MessageKey = MessageKey::new("permission-topic.issues");
 
@@ -3392,6 +3395,9 @@ pub const PERMISSION_CHECK_ACCESS: MessageKey = MessageKey::new("permission.chec
 
 /// The message `permission.comment`.
 pub const PERMISSION_COMMENT: MessageKey = MessageKey::new("permission.comment");
+
+/// The message `permission.create-agents`.
+pub const PERMISSION_CREATE_AGENTS: MessageKey = MessageKey::new("permission.create-agents");
 
 /// The message `permission.create-issues`.
 pub const PERMISSION_CREATE_ISSUES: MessageKey = MessageKey::new("permission.create-issues");
@@ -15997,6 +16003,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people.no-groups", "In no group"),
     ("people.nothing", "Nobody found. Try another word."),
     ("people.search", "Search people by name or e-mail address"),
+    ("permission-topic.agents", "Agents"),
     ("permission-topic.issues", "Issues"),
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
@@ -16034,6 +16041,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "permission.comment",
         "Write comments on the issues they see",
+    ),
+    (
+        "permission.create-agents",
+        "Create agents that work for you, and hand them work in the project",
     ),
     ("permission.create-issues", "Create issues"),
     (
