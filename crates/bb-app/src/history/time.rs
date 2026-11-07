@@ -35,7 +35,7 @@ fn event_of(minutes: Option<&FieldChange>) -> TimeEvent {
 /// its date (a booking and a change that keeps the date set it, a change that moves it says the
 /// new one, a deletion sets the old one); an older event that says none gets the date the row was
 /// written on, never its time.
-fn day_for_others(row: &HistoryEntry, sees_moment: bool) -> Option<Date> {
+pub(super) fn hidden_day(row: &HistoryEntry, sees_moment: bool) -> Option<Date> {
     if sees_moment {
         return None;
     }
@@ -101,7 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(HistoryWhat::Time {
             event,
             minutes,
-            day: day_for_others(row, sees_moment),
+            day: hidden_day(row, sees_moment),
             fields,
         }))
     }

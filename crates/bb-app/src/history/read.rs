@@ -13,24 +13,19 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
 use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, RunId, UserId};
 use bb_core::own_fields::FieldType;
-use bb_core::paging::{SkipCursor, page_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::relation::{Direction, RelationKind};
 use bb_core::time::Minutes;
-use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
+use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
 use super::names::{KnownNames, leaves_nothing};
-use super::types::{
-    AgentLabel, ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
-};
-use super::walk::IssueHistory;
+use super::types::{AgentLabel, ChangeValue, FieldChangeView, HistoryItem, HistoryWhat};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::comments::CommentView;
@@ -40,7 +35,6 @@ use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
-use crate::walk::fill_past_hidden;
 use bb_core::comment::Comment;
 use bb_core::files::Attachment;
 use bb_core::issue::Issue;
@@ -138,6 +132,22 @@ pub(super) struct Reading<'a> {
     /// Which runs of the rows of the page the reader may open, read once for each run.
     pub(super) runs: HashMap<RunId, bool>,
     pub(super) apps: HashMap<bb_core::id::EventId, String>,
+}
+
+impl<'a> Reading<'a> {
+    /// What a page of the history for `actor` starts with: nobody resolved yet.
+    pub(super) fn new(actor: &'a Actor, held: &'a Evaluation, maker: LineMaker) -> Self {
+        Self {
+            actor,
+            held,
+            people: HashMap::new(),
+            maker,
+            names: KnownNames::default(),
+            agents: crate::agents::AgentNames::default(),
+            runs: HashMap::new(),
+            apps: HashMap::new(),
+        }
+    }
 }
 
 /// What shows changes to a reader (see `Ctx::change_reader`).
@@ -685,58 +695,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             what,
         }))
     }
-}
-
-/// The history of an issue, newest first, a page at a time, in three tabs: *Everything*,
-/// *Comments*, *Changes*. The history is caught up with the events first, so it is never behind
-/// what the reader just did. Rows the reader may not see are skipped by [`fill_past_hidden`], so
-/// a cursor never names one and says no more than "there is more" (M3-F68).
-///
-/// # Errors
-/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
-/// not see, `request.invalid` for a cursor that is not one.
-pub async fn history<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: HistoryQuery,
-) -> Result<Authorized<HistoryPage>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
-    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    ctx.catch_up_history().await?;
-    let start = SkipCursor::read(input.cursor.as_deref())
-        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-    let kind = match input.tab {
-        HistoryTab::Everything => None,
-        HistoryTab::Comments => Some(HistoryKind::Comment),
-        HistoryTab::Changes => Some(HistoryKind::Change),
-    };
-    // The people of the values of the page are resolved once for every row of it.
-    let mut reading = Reading {
-        actor: &actor,
-        held: &held,
-        people: HashMap::new(),
-        maker: ctx.line_maker().await?,
-        names: KnownNames::default(),
-        agents: crate::agents::AgentNames::default(),
-        runs: HashMap::new(),
-        apps: HashMap::new(),
-    };
-    let kinds = ctx
-        .store()
-        .relation_kinds()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let mut walk = IssueHistory {
-        ctx,
-        issue: &issue,
-        kind,
-        kinds: &kinds,
-        reading: &mut reading,
-    };
-    let filled = fill_past_hidden(&mut walk, &start, page_len(Some(input.limit))).await?;
-    Ok(held.authorize(HistoryPage {
-        items: filled.rows.into_iter().filter_map(|row| row.item).collect(),
-        next_cursor: filled.next.as_ref().map(SkipCursor::write),
-    }))
 }
 
 #[cfg(test)]

@@ -102,6 +102,7 @@ mod settings_keys;
 mod setup_and_password;
 mod status;
 mod tags_http;
+mod time_history_order_http;
 mod time_http;
 mod time_perf_http;
 mod time_privacy_http;

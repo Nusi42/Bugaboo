@@ -12911,6 +12911,36 @@ pub fn time_sheet_day_tab(day: impl std::fmt::Display, weekday: impl std::fmt::D
     )
 }
 
+/// The message `time.sheet.day-tab-name`.
+#[must_use]
+pub fn time_sheet_day_tab_name(
+    day: impl std::fmt::Display,
+    weekday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.day-tab-name"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.day-tab-name-today`.
+#[must_use]
+pub fn time_sheet_day_tab_name_today(
+    day: impl std::fmt::Display,
+    weekday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.day-tab-name-today"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
 /// The message `time.sheet.day-tab-today`.
 #[must_use]
 pub fn time_sheet_day_tab_today(
@@ -19452,6 +19482,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.day-empty", "No time booked on this day yet."),
     ("time.sheet.day-heading", "{weekday} {day}"),
     ("time.sheet.day-tab", "{weekday}\n{day}"),
+    ("time.sheet.day-tab-name", "{weekday} {day}"),
+    ("time.sheet.day-tab-name-today", "{weekday} {day}, today"),
     ("time.sheet.day-tab-today", "{weekday}\n{day}\n•"),
     ("time.sheet.days", "Days of the week"),
     ("time.sheet.details-of", "Details of {issue}"),

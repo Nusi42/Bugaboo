@@ -156,8 +156,9 @@ async fn walked(
     }
 }
 
-/// Where in the outbox the row of an event is: what the key of a cursor is.
-async fn position_of(world: &World, issue_id: IssueId, event: EventId) -> Result<i64, String> {
+/// What the key of a cursor is for a row: the moment it is shown at (the moment it happened, for a
+/// row that is no time entry) and its place in the outbox.
+async fn position_of(world: &World, issue_id: IssueId, event: EventId) -> Result<String, String> {
     let rows = world
         .store
         .history_page(issue_id, None, None, 0, 1000)
@@ -165,7 +166,7 @@ async fn position_of(world: &World, issue_id: IssueId, event: EventId) -> Result
         .map_err(|error| format!("{error:?}"))?;
     rows.iter()
         .find(|row| row.event == event)
-        .map(|row| row.position)
+        .map(|row| format!("{}:{}", row.at.as_millisecond(), row.position))
         .ok_or_else(|| "no such row".to_owned())
 }
 
@@ -205,7 +206,7 @@ async fn sec_06_a_cursor_names_the_last_row_shown_and_never_a_row_the_reader_may
         };
         assert_eq!(
             cursor,
-            &position_of(&world, issue_id, *last).await?.to_string(),
+            &position_of(&world, issue_id, *last).await?,
             "the cursor is the place of the last row shown"
         );
     }
@@ -253,7 +254,7 @@ async fn sec_06_a_long_run_of_hidden_rows_ends_a_page_with_a_cursor_that_names_n
         assert_eq!(skip.parse::<usize>()? % LOOKED_AT_MAX, 0, "{cursor}");
         if !key.is_empty() {
             let last = events.last().ok_or("a key after a page without rows")?;
-            assert_eq!(key, position_of(&world, issue_id, *last).await?.to_string());
+            assert_eq!(key, position_of(&world, issue_id, *last).await?);
         }
     }
     Ok(())
