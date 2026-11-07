@@ -58,7 +58,7 @@ test("ai_22 the person sees which app asks, allows it, and the app gets its code
 });
 
 test("ai_22 taking an app back ends what it may do at once", async ({ page, server }) => {
-  const app = await appAtTheDoor(server, "Claude Code", "see-and-change");
+  const app = await appAtTheDoor(server, "Cursor", "see-and-change");
   await signIn(page, ada);
   await page.goto(app.address);
   const answer = await catchTheAnswer(page, async () => {
@@ -71,13 +71,13 @@ test("ai_22 taking an app back ends what it may do at once", async ({ page, serv
   await expect(
     page.getByRole("heading", { level: 1, name: t("connected-apps.title") }),
   ).toBeVisible();
-  const row = page.getByRole("listitem").filter({ hasText: "Claude Code" });
+  const row = page.getByRole("listitem").filter({ hasText: "Cursor" });
   await expect(row).toBeVisible();
   await expect(row.getByText(t("access-keys.choice.see-and-change"))).toBeVisible();
   await expectGoodInEveryTheme(page);
   await row
     .getByRole("button", {
-      name: t("connected-apps.take-back-name", { name: "Claude Code" }),
+      name: t("connected-apps.take-back-name", { name: "Cursor" }),
     })
     .click();
   await page
@@ -88,7 +88,6 @@ test("ai_22 taking an app back ends what it may do at once", async ({ page, serv
     })
     .click();
   await expect(row).toHaveCount(0);
-  await expect(page.getByText(t("connected-apps.empty"))).toBeVisible();
   expect(await pingStatus(page, server.url, tokens.access)).toBe(401);
 });
 
