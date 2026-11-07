@@ -2680,6 +2680,7 @@
   "error.ai.agreement-needed": "Confirm first that a data processing agreement with this provider is in place.",
   "error.ai.address-invalid": "This is not a web address. Write it like https://models.example.com/v1.",
   "error.ai.address-not-encrypted": "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+  "error.ai.proposal-invalid": "This proposed change can no longer be applied. Ask the assistant again.",
   "ai-tool.search-issues": "Search the issues you may read with the search language.",
   "ai-tool.get-issue": "Read one issue you may see, with its fields and comments.",
   "ai-tool.list-projects": "List the projects you may see.",

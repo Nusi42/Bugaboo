@@ -872,6 +872,9 @@ pub const ERROR_AI_NOT_SET_UP: MessageKey = MessageKey::new("error.ai.not-set-up
 /// The message `error.ai.off`.
 pub const ERROR_AI_OFF: MessageKey = MessageKey::new("error.ai.off");
 
+/// The message `error.ai.proposal-invalid`.
+pub const ERROR_AI_PROPOSAL_INVALID: MessageKey = MessageKey::new("error.ai.proposal-invalid");
+
 /// The message `error.ai.unavailable`.
 pub const ERROR_AI_UNAVAILABLE: MessageKey = MessageKey::new("error.ai.unavailable");
 
@@ -14259,6 +14262,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "AI is not set up. Enter the model, and the key if the provider asks for one.",
     ),
     ("error.ai.off", "AI is off here."),
+    (
+        "error.ai.proposal-invalid",
+        "This proposed change can no longer be applied. Ask the assistant again.",
+    ),
     ("error.ai.unavailable", "The AI provider did not answer."),
     (
         "error.assignment.conflict",

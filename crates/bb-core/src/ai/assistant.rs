@@ -1,0 +1,34 @@
+//! The limits of a question to the assistant and of the proposals it makes (AI-10, AI-05, M7-Q6).
+//! Written once: the use case, the route and the screen all read these.
+
+/// The longest question a person types, in characters.
+pub const QUESTION_CHARS_MAX: usize = 4_000;
+
+/// The most turns of the conversation so far that the browser sends back. The server stores none of
+/// them (M7-Q6).
+pub const TURNS_MAX: usize = 20;
+
+/// The longest turn of the conversation so far, in characters.
+pub const TURN_CHARS_MAX: usize = 8_000;
+
+/// The most things the panel looks at that one question names (an issue, a search, a project).
+pub const LOOKING_AT_MAX: usize = 5;
+
+/// The longest name of what the panel looks at (an issue ID, a short name, a search), in characters.
+pub const LOOKING_AT_CHARS_MAX: usize = 500;
+
+/// The most tools one question may run. A tool that asks for the same again counts, a call over
+/// the limit gets a sentence for an answer and runs nothing.
+pub const TOOL_CALLS_MAX: usize = 8;
+
+/// The most times one question calls the provider: every round but the last runs at least one tool.
+pub const ROUNDS_MAX: usize = TOOL_CALLS_MAX + 1;
+
+/// The most proposals one answer carries.
+pub const PROPOSALS_MAX: usize = 10;
+
+/// How long a proposal can be applied, in seconds. A person who is away longer asks again.
+pub const PROPOSAL_LIFETIME_SECONDS: i64 = 30 * 60;
+
+/// The most bytes of the input of a proposal that *Apply* takes back.
+pub const PROPOSAL_INPUT_BYTES_MAX: usize = 64 * 1024;

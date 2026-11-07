@@ -224,6 +224,9 @@ error_codes! {
     AiAddressInvalid => ("ai.address-invalid", 400),
     /// The address of the model is on the internet and does not start with https:// (AI-01).
     AiAddressNotEncrypted => ("ai.address-not-encrypted", 400),
+    /// A proposed change of the assistant cannot be applied: the reference is not one this server
+    /// made for this person, or it ran out, or it does not belong to the change sent with it (AI-05).
+    AiProposalInvalid => ("ai.proposal-invalid", 409),
     /// A person changed their handle a short time ago and cannot change it again yet (M3-F70).
     HandleChangedLately => ("handle.changed-lately", 429),
     /// A change request that does not come from one of Bugaboo's own pages.
