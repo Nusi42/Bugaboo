@@ -655,3 +655,63 @@ pub(crate) async fn apply_proposal_scenario(world: &World) -> super::scenarios::
     )
     .await
 }
+
+#[tokio::test]
+async fn ai_02_a_project_with_ai_switched_off_is_kept_from_every_tool() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    a_project(&world, "OPS").await?;
+    ai_on(&world).await.map_err(|error| error.to_string())?;
+    let web = issue_with(&world, "WEB", "Login", "plain", BTreeMap::new()).await?;
+    let ops = issue_with(&world, "OPS", "Pager duty", "plain", BTreeMap::new()).await?;
+    change_project_ai(
+        &world.ctx(),
+        ChangeProjectAi {
+            session_token: token(&world),
+            project: "OPS".to_owned(),
+            enabled: Some(false),
+        },
+    )
+    .await?;
+    // The read tools, the search and the list of projects leave the project out; a preview of a
+    // change in it is not found; the other project is as before.
+    let admin = token(&world);
+    assert!(
+        read(&world, &admin, "get_issue", json!({"issue": ops}))
+            .await
+            .is_err()
+    );
+    // The search is narrowed to the projects the AI may look at.
+    let ops_id = world
+        .store
+        .lock()
+        .state
+        .projects
+        .iter()
+        .find(|project| project.short_name.as_str() == "OPS")
+        .map(|project| project.id)
+        .ok_or("no OPS")?;
+    read(&world, &admin, "search_issues", json!({"query": ""})).await?;
+    let request = world.store.lock().searches.pop().ok_or("no search ran")?;
+    assert!(request.projects.iter().all(|link| link.id != ops_id));
+    let listed = read(&world, &admin, "list_projects", json!({})).await?;
+    assert!(!listed.contains("OPS"), "{listed}");
+    let preview = {
+        let mut query = super::ai_tools::call(
+            &admin,
+            "update_issue",
+            json!({"issue": ops, "version": 1, "priority": "high"}),
+        );
+        query.mode = crate::ai::tools::ToolMode::Preview;
+        crate::ai::tools::call_tool(&world.ctx(), query)
+            .await
+            .map(|_| ())
+    };
+    assert_eq!(preview, Err(AppError::Refused(ErrorCode::NotFound)));
+    assert!(
+        read(&world, &admin, "get_issue", json!({"issue": web}))
+            .await
+            .is_ok()
+    );
+    Ok(())
+}

@@ -132,7 +132,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 LookingAtKind::Search => continue,
             };
-            if withheld.hides_project(project) {
+            // A project where AI is off is kept from AI too, but the person is told AI is off.
+            let ai_off_here = !self.ai_state_at(Some(project)).await?.counts();
+            if withheld.hides_project(project) && !ai_off_here {
                 return Err(not_found());
             }
             if !projects.contains(&project) {

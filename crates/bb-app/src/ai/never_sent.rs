@@ -177,8 +177,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(None)
     }
 
-    /// What is kept from AI in this organization. It does not depend on who asks: the mark applies
-    /// even when the person can read the field.
+    /// What is kept from AI in this organization: the marks, and the projects where AI does not
+    /// count. It does not depend on who asks: the mark applies even when the person can read the
+    /// field.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -194,7 +195,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .filter(|definition| definition.field.never_to_assistant)
             .map(|definition| FieldKey::Own(definition.field.id));
         let tree = self.store().project_tree().await.map_err(failed)?;
-        Ok(Withheld::of(&marks, own, &tree))
+        let mut withheld = Withheld::of(&marks, own, &tree);
+        // A project whose own switch keeps AI out, while the organization has it on, is kept from
+        // AI in the same way as a project with the mark, so every tool, the context builder, MCP
+        // and agents honour the switch from this one read (M7-F50). While the organization has AI
+        // off, the ways in refuse before they read anything.
+        if self.ai_state_at(None).await?.organization_on {
+            for project in &tree {
+                if !self.ai_state_at(Some(project.id)).await?.counts() {
+                    withheld.projects.insert(project.id);
+                }
+            }
+        }
+        Ok(withheld)
     }
 }
 
