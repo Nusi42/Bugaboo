@@ -18,6 +18,11 @@ export interface IssueRow {
   /** The choices of *Activity* and of *Cost center* that the entries of the row hold, each once. */
   readonly activity: readonly Choice[];
   readonly costCenter: readonly Choice[];
+  /**
+   * The minutes of the row booked with each choice (by its ID) in *Activity* and *Cost center*,
+   * so a row that holds more than one choice says which length belongs to which (M6-F201).
+   */
+  readonly choiceMinutes: Readonly<Record<string, number>>;
   /** The entries of each day, by its date. */
   readonly entries: Readonly<Record<string, readonly TimeEntry[]>>;
 }
@@ -58,6 +63,22 @@ function distinct(
     field,
     entries.flatMap((entry) => idsOf(entry.own_fields[field])),
   );
+}
+
+/** The minutes of the entries booked with each choice of the fields, by the ID of the choice. */
+function minutesByChoice(
+  entries: readonly TimeEntry[],
+  fields: readonly (string | undefined)[],
+): Readonly<Record<string, number>> {
+  const sums: Record<string, number> = {};
+  for (const entry of entries) {
+    for (const field of fields) {
+      for (const id of field === undefined ? [] : idsOf(entry.own_fields[field])) {
+        sums[id] = (sums[id] ?? 0) + entry.minutes;
+      }
+    }
+  }
+  return sums;
 }
 
 /** The texts of choices (`shown_as`) as one text, for a title that shows the whole when a cell cuts it short. */
@@ -101,6 +122,7 @@ export function issueRows(
     title: own[0]?.issue_title ?? "",
     activity: distinct(own, starters.activity, held),
     costCenter: distinct(own, starters.costCenter, held),
+    choiceMinutes: minutesByChoice(own, [starters.activity, starters.costCenter]),
     entries: groupedBy(own, (entry) => entry.date),
   }));
   return rows.toSorted((a, b) => nameOf(a).localeCompare(nameOf(b), undefined, { numeric: true }));

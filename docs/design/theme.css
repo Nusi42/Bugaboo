@@ -49,6 +49,8 @@
   --size-edge: 4px;
   --size-name: 112px;
   --size-details-name: 112px;
+  --size-entry-details-body: 400px;
+  --size-layout-field-name: 160px;
   --size-col-icon: 24px;
   --size-col-rules: 64px;
   --size-col-remove: 80px;
@@ -68,11 +70,11 @@
   --size-col-changed: 80px;
   --size-sheet-text-top: calc(var(--space-1) + (var(--size-control) - 1lh) / 2);
   --size-choice-number-box: calc(14ch + 2 * var(--space-3));
-  --size-sheet-day: 76px;
+  --size-sheet-day: 72px;
   --size-sheet-day-phone: 96px;
-  --size-sheet-col-issue: 112px;
-  --size-sheet-col-field: 96px;
-  --size-sheet-col-cost-center: 136px;
+  --size-sheet-col-issue: 128px;
+  --size-sheet-col-field: 100px;
+  --size-sheet-col-cost-center: 96px;
   --size-sheet-col-total: 64px;
   --size-window: 760px;
   --size-window-width-min: 560px;
@@ -764,7 +766,7 @@
     --size-phone-hang: calc(-1 * var(--pad-control));
     --pad-nothing: 0px;
     --size-name: 120px;
-    --size-details-name: 80px;
+    --size-details-name: 104px;
     --legend-start: 0px;
   }
 }

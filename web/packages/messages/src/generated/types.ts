@@ -646,6 +646,7 @@ export interface MessageArguments {
   "time.others.week-worked": { worked: string | number };
   "time.sheet.breaks-as-times": { example: string | number };
   "time.sheet.cell-label": { day: string | number; row: string | number };
+  "time.sheet.choice-length": { length: string | number };
   "time.sheet.day-heading": { day: string | number; weekday: string | number };
   "time.sheet.day-tab": { day: string | number; weekday: string | number };
   "time.sheet.details-of": { issue: string | number };

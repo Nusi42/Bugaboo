@@ -65,11 +65,8 @@ test("ux_4 the hint of a box of the settings of a project is with its field, and
   await expect(page.getByText(help)).toHaveCount(1);
   const save = form.getByRole("button", { name: t("common.save"), exact: true });
   expect((await boxOf(page.getByText(help))).y).toBeLessThan((await boxOf(save)).y);
-  // Where the value comes from stands with its box, under the hint and above Save, never under Save.
-  const source = form.locator("[data-part='settings.source']");
-  await expect(source).toHaveText(t("setting.ui.source-default"));
-  expect((await boxOf(source)).y).toBeGreaterThan((await boxOf(page.getByText(help))).y);
-  expect((await boxOf(source)).y).toBeLessThan((await boxOf(save)).y);
+  // The standard value says nothing of where it comes from: no line of two words under the box (M6-F177).
+  await expect(form.locator("[data-part='settings.source']")).toHaveCount(0);
 });
 
 test("ux_4 the two choices of Issue IDs stand on one line when they fit", async ({ page }) => {

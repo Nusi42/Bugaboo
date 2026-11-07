@@ -1,5 +1,5 @@
-import { ApiError, messageKeyOf, type ErrorCode } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
+import { ApiError, messageKeyOf, type ErrorCode, type Problem } from "@bugaboo/api-client";
+import { tFrom } from "@bugaboo/messages";
 import { CancelledError } from "@tanstack/react-query";
 
 /** The code of an error answer of the server, if the error is one. */
@@ -27,7 +27,23 @@ export function fieldOf(error: unknown): string | undefined {
  * of the app does not know, or no answer at all, becomes "not available right now".
  */
 export function messageOf(error: unknown): string {
-  return t(error instanceof ApiError ? error.messageKey : messageKeyOf());
+  if (!(error instanceof ApiError)) {
+    return tFrom(messageKeyOf(), {});
+  }
+  return tFrom(error.messageKey, paramsOf(error.problem));
+}
+
+/** The values the server sent for the placeholders of a message: the limits it names, numbers and words only. */
+function paramsOf(
+  problem: Readonly<Problem> | undefined,
+): Readonly<Record<string, string | number>> {
+  const known: Record<string, string | number> = {};
+  for (const [name, value] of Object.entries(problem?.params ?? {})) {
+    if (typeof value === "string" || typeof value === "number") {
+      known[name] = value;
+    }
+  }
+  return known;
 }
 
 /** How long the code for support is: the start of the ID of the request is enough to find it. */

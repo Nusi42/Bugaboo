@@ -111,6 +111,7 @@ export const messages = {
     "Every value of {name} becomes {into}, in every issue and project that has it, and {name} is retired. Each of those issues gets a record in its history. This cannot be taken back.",
   "fields.used-more": "{count, plural, one {And # more project.} other {And # more projects.}}",
   "fields.long-edit": "Edit {name}",
+  "fields.length-add": "Add a length",
   "fields.long-empty": "Nothing is written here yet.",
   "fields.choose": "Choose",
   "fields.choose-title": "Choose for {name}",

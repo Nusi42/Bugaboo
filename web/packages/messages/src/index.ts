@@ -93,6 +93,15 @@ export function t<K extends MessageKey>(key: K, ...values: ValuesOf<K>): string 
   return formatter === undefined ? missing(key) : joined(formatter.format<string>(values[0]));
 }
 
+/**
+ * The text for `key` with the values the server sent for its placeholders (the `params` of an error
+ * answer), which the catalog types cannot know at compile time.
+ */
+export function tFrom(key: MessageKey, values: Readonly<Record<string, string | number>>): string {
+  const formatter = formatterFor(key);
+  return formatter === undefined ? missing(key) : joined(formatter.format<string>({ ...values }));
+}
+
 /** The formatter of `key`, or nothing when its part is not loaded. */
 function formatterFor(key: MessageKey): IntlMessageFormat | undefined {
   let formatter = formatters.get(key);

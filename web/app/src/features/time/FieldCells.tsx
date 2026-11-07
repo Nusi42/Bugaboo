@@ -1,13 +1,27 @@
 import type { Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { ChoiceText, partOf, part } from "@bugaboo/ui";
 
+import { minutesText } from "../../shared/own-value-text.ts";
 import { choicesTitle, type IssueRow } from "./rows.ts";
 
 /** The choices of a cell of the timesheet, one on each line, each as every choice is written (`4100 Product development`). */
-function ChoiceList({ choices }: { readonly choices: readonly Schema<"FieldChoiceBody">[] }) {
+function ChoiceList({
+  choices,
+  minutes,
+}: {
+  readonly choices: readonly Schema<"FieldChoiceBody">[];
+  /** The minutes of each choice, said after it when the cell holds more than one: which length is whose. */
+  readonly minutes: Readonly<Record<string, number>>;
+}) {
   return choices.map((choice) => (
     <span key={choice.id} {...partOf(part.choiceLine)}>
       <ChoiceText number={choice.number} name={choice.name} />
+      {choices.length > 1 ? (
+        <span {...partOf(part.muted)}>
+          {t("time.sheet.choice-length", { length: minutesText(minutes[choice.id] ?? 0) })}
+        </span>
+      ) : null}
     </span>
   ));
 }
@@ -22,7 +36,7 @@ export function FieldCells({ row }: { readonly row: IssueRow }) {
           title={choicesTitle(choices)}
           {...partOf(part.sheetName, { variants: ["value"] })}
         >
-          <ChoiceList choices={choices} />
+          <ChoiceList choices={choices} minutes={row.choiceMinutes} />
         </td>
       ))}
     </>

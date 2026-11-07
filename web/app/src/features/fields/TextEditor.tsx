@@ -12,6 +12,8 @@ import { readBox, textOf, type Kept } from "./value-text.ts";
 type TextEditorProps = Omit<ValueEditorProps, "field"> & {
   readonly field: BoxField;
   readonly readLength?: LengthReader;
+  /** What the empty box says quietly inside itself (the box of a row of the Details). */
+  readonly placeholder?: string;
   /** The hint under the box when it is words with lengths in them, which a text cannot hold. */
   readonly hint?: ReactNode | undefined;
   /** Told when the text typed is no value, so a form can hold back what it sends. */
@@ -63,6 +65,7 @@ export function TextEditor({
   readLength,
   onMistake,
   hint,
+  placeholder,
 }: TextEditorProps) {
   const [text, setText] = useSynced(textOf(field, value));
   const { commit, local } = useCommit({ field, value, inRow, readLength, onCommit, onMistake });
@@ -79,6 +82,7 @@ export function TextEditor({
       <TextField
         {...boxWords(field, local ?? problem, inRow)}
         {...(hint === undefined ? {} : { description: hint })}
+        {...(placeholder === undefined ? {} : { placeholder })}
         kind={field.kind === "long-text" ? fieldKind.multiline : fieldKind.text}
         value={text}
         onChange={(typed) => {

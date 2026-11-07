@@ -43,10 +43,11 @@ test("the folded group of the sidebar, opened, in a window 600 px high", async (
     async () => {
       await page.goto("/");
       await waitForParts(page, issue.key);
-      await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
+      // The group stays closed, so its menu does not cover the line of the work day (M6-F134).
       await expect(
-        page.getByRole("link", { name: t("nav.my-settings"), exact: true }),
+        page.getByRole("button", { name: t("shell.group-fold"), exact: true }),
       ).toBeVisible();
+      await expect(page.getByText(/^Working since/u)).toBeVisible();
     },
   );
   await admin.dispose();
@@ -113,7 +114,7 @@ test("the sidebar of a tall window of a person without a saved search", async ({
   await dispose();
 });
 
-test("the line of the work day three lines high, in a window 600 px high with the group open", async ({
+test("the line of the work day three lines high, in a window 600 px high with the group closed", async ({
   page,
   server,
 }) => {
@@ -129,10 +130,11 @@ test("the line of the work day three lines high, in a window 600 px high with th
       await page.goto("/");
       await waitForParts(page, issue.key);
       await growWorkDayLine(page, 2);
-      await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
+      // The group stays closed, so its menu does not cover the line of the work day (M6-F134).
       await expect(
-        page.getByRole("link", { name: t("nav.my-settings"), exact: true }),
+        page.getByRole("button", { name: t("shell.group-fold"), exact: true }),
       ).toBeVisible();
+      await expect(page.getByText(/^Working since/u)).toBeVisible();
     },
   );
   await admin.dispose();

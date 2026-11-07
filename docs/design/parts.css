@@ -332,6 +332,15 @@ textarea,
   margin: 0;
 }
 
+[data-part="settings.help"],
+[data-part="box"] [data-part="field.description"] {
+  text-wrap: pretty;
+}
+
+[data-part="field.input"]::placeholder {
+  color: var(--fg-muted);
+}
+
 [data-part="field.input"] {
   box-sizing: border-box;
   min-height: var(--size-control);
@@ -4234,6 +4243,10 @@ textarea,
   max-width: none;
 }
 
+[data-part="card"]:has([data-part="sheet"]) {
+  padding-inline: var(--space-3);
+}
+
 [data-part="app-layout.main"]:has([data-part="item-screen"]) [data-part="app-layout.inner"] {
   display: none;
 }
@@ -4390,6 +4403,14 @@ textarea,
 
 [data-part="timer-notice"][data-variant~="away"] {
   visibility: hidden;
+}
+
+[data-part="timer-notice"] [data-part="alert"] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--fs-base);
 }
 
 [data-part="timer-chip"] {
@@ -6347,7 +6368,7 @@ textarea,
 }
 
 [data-part="layout-field.name"] {
-  flex: 1;
+  flex: 1 1 var(--size-layout-field-name);
   min-width: 0;
   font-weight: var(--weight-regular);
   overflow-wrap: anywhere;
@@ -7621,6 +7642,7 @@ textarea,
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  min-height: calc(2 * var(--size-control));
 }
 
 [data-part="sheet.day-action"] {
@@ -7718,18 +7740,25 @@ textarea,
   white-space: nowrap;
 }
 
-[data-part="sheet.head"][data-state~="today"] {
-  color: var(--accent-fg);
-}
-
 [data-part="sheet.day-heading"] {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 
+[data-part="entry-details-body"] {
+  min-height: var(--size-entry-details-body);
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="entry-details-body"],
+[data-part="overlay"][data-variant~="full"] [data-part="entry-details-body"] {
+  min-height: 0;
+}
+
 [data-part="sheet.today"] {
   display: block;
+  min-height: calc(var(--fs-base) * var(--lh-text));
+  color: var(--accent-fg);
 }
 
 [data-part="sheet.cell"] {

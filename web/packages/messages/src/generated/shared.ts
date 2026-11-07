@@ -890,7 +890,7 @@ export const messages = {
     "Less rest between the end of one work day and the start of the next gets a warning.",
   "setting.working-hours.keep-years.name": "Keep work days for",
   "setting.working-hours.keep-years.help":
-    "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany a lower number is refused.",
+    "Work days are kept at least this long from their date, then until an administrator deletes them. With the rules of Germany a lower number is refused.",
   "setting.working-hours.totals-only.name": "Totals only",
   "setting.working-hours.totals-only.help":
     "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",

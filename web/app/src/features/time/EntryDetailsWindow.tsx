@@ -83,20 +83,23 @@ export function EntryDetailsWindow({
         />
       }
     >
-      {picked === undefined ? (
-        <EntryList entries={entries} wording={wording} onPick={setPicked} />
-      ) : (
-        <EntryChangeForm
-          id={formId}
-          entry={picked}
-          issue={issue}
-          defaults={defaults}
-          problem={problem}
-          onSubmit={(minutes, values) => {
-            void change({ entry: picked, minutes, values, defaults });
-          }}
-        />
-      )}
+      {/* As tall as the form of one entry, so the window keeps its top edge when the form opens. */}
+      <div {...partOf(part.entryDetailsBody)}>
+        {picked === undefined ? (
+          <EntryList entries={entries} wording={wording} onPick={setPicked} />
+        ) : (
+          <EntryChangeForm
+            id={formId}
+            entry={picked}
+            issue={issue}
+            defaults={defaults}
+            problem={problem}
+            onSubmit={(minutes, values) => {
+              void change({ entry: picked, minutes, values, defaults });
+            }}
+          />
+        )}
+      </div>
     </EntryWindow>
   );
 }

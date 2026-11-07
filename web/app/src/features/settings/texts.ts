@@ -49,6 +49,14 @@ export function sourceInWords(setting: Setting): string {
     : t("setting.ui.source-project", { project: project.short_name });
 }
 
+/**
+ * The line under a setting that says where its value comes from: nothing for the standard, which is
+ * where every value starts, so no setting carries a line of two words that tells nothing (M6-F177).
+ */
+export function sourceNote(setting: Setting): string | undefined {
+  return setting.source.kind === "default" ? undefined : sourceInWords(setting);
+}
+
 /** The kinds of control a setting is drawn with. */
 export type ControlKind = "switch" | "choices" | "list" | "time-zone" | "none" | "typed" | "length";
 

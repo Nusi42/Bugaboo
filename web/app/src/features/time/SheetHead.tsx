@@ -27,8 +27,19 @@ export function DayHeading({
           day: dayOfMonth(date),
         })}
       </span>
-      {date === today ? <span {...partOf(part.sheetToday)}>{t("time.sheet.today")}</span> : null}
+      <span {...partOf(part.sheetToday)}>{date === today ? t("time.sheet.today") : null}</span>
       <span {...partOf(part.sheetDayActions)}>
+        {onBreaks === undefined ? null : (
+          <span {...partOf(part.sheetDayAction)}>
+            <Button
+              look={buttonLook.quiet}
+              aria-label={t("time.breaks.open-of", { day: weekdayName(date, "long") })}
+              onPress={onBreaks}
+            >
+              {t("time.breaks.open")}
+            </Button>
+          </span>
+        )}
         {changed.includes(date) ? (
           <span {...partOf(part.sheetDayAction)}>
             <Button
@@ -42,17 +53,6 @@ export function DayHeading({
             </Button>
           </span>
         ) : null}
-        {onBreaks === undefined ? null : (
-          <span {...partOf(part.sheetDayAction)}>
-            <Button
-              look={buttonLook.quiet}
-              aria-label={t("time.breaks.open-of", { day: weekdayName(date, "long") })}
-              onPress={onBreaks}
-            >
-              {t("time.breaks.open")}
-            </Button>
-          </span>
-        )}
       </span>
     </span>
   );
@@ -76,7 +76,8 @@ export function SheetHead(
           <th
             key={date}
             scope={scope.column}
-            {...partOf(part.sheetHead, { states: [date === today && "today"] })}
+            aria-current={date === today ? "date" : undefined}
+            {...partOf(part.sheetHead)}
           >
             <DayHeading date={date} days={props} />
           </th>

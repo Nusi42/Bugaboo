@@ -5,7 +5,7 @@ import { type ReactNode } from "react";
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { isBox, sourceInWords, wordsOf } from "./texts.ts";
+import { isBox, sourceNote, wordsOf } from "./texts.ts";
 
 /** A control a page draws for one setting instead of the generic one (a theme with its sample). */
 export type ControlRenderer = (
@@ -60,7 +60,9 @@ function WithHint({
         {children}
         <p {...partOf(part.settingsHelp)}>{wordsOf(setting.help_key)}</p>
       </div>
-      <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>
+      {sourceNote(setting) === undefined ? null : (
+        <p {...partOf(part.settingsSource)}>{sourceNote(setting)}</p>
+      )}
     </div>
   );
 }
@@ -125,7 +127,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
           setting={setting}
           onChange={change}
           help={wordsOf(setting.help_key)}
-          source={sourceInWords(setting)}
+          source={sourceNote(setting)}
         />
       ) : (
         <WithHint setting={setting}>

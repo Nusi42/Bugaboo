@@ -46,6 +46,7 @@ function useAddedIssues() {
       title: found.issue.title ?? "",
       activity: [],
       costCenter: [],
+      choiceMinutes: {},
       entries: {},
     };
     setAdded((was) => [...was.filter((each) => each.issue !== row.issue), row]);

@@ -56,6 +56,8 @@ export interface TextFieldProps {
   readonly kind?: FieldKind;
   /** A day: the browser offers its own calendar. `min` and `max` are days as `2027-03-01`. */
   readonly date?: { readonly min: string; readonly max: string };
+  /** What an empty box says quietly inside itself, in words (*Add a length*): for a box in a row of the Details. */
+  readonly placeholder?: string;
   readonly name?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
@@ -98,6 +100,17 @@ function problemOf(
   return null;
 }
 
+/** What the box takes besides its text: the first and last day of a day box, and what an empty box says. */
+function inputAttributes(
+  date: TextFieldProps["date"],
+  placeholder: string | undefined,
+): Readonly<{ min?: string; max?: string; placeholder?: string }> {
+  return {
+    ...(date === undefined ? {} : { min: date.min, max: date.max }),
+    ...(placeholder === undefined ? {} : { placeholder }),
+  };
+}
+
 /** The box with the words of what it counts beside it; the box alone when it counts nothing. */
 function InputWithUnit({
   unit,
@@ -132,6 +145,7 @@ export function TextField({
   hideLabel = false,
   kind = fieldKind.text,
   date,
+  placeholder,
   name = "",
   value,
   onChange,
@@ -159,10 +173,7 @@ export function TextField({
         <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
         <InputWithUnit unit={unit} unitId={unitId}>
-          <Input
-            {...partOf(part.fieldInput)}
-            {...(date === undefined ? {} : { min: date.min, max: date.max })}
-          />
+          <Input {...partOf(part.fieldInput)} {...inputAttributes(date, placeholder)} />
         </InputWithUnit>
       )}
       {/* The help stands under the box, so the boxes of a row start on one line however long the help is. */}

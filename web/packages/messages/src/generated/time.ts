@@ -136,6 +136,7 @@ export const messages = {
   "time.sheet.reason-required": "Say in a few words why this day changes.",
   "time.sheet.reason-save": "Save change",
   "time.sheet.day-tab": "{weekday}\n{day}",
+  "time.sheet.choice-length": " · {length}",
   "time.sheet.list-separator": ", ",
   "time.sheet.facts-separator": " · ",
   "time.sheet.negative-length": "−{length}",

@@ -1,4 +1,5 @@
 import { secondsPerMinute } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 import type { Wording } from "@bugaboo/wasm";
 
@@ -66,6 +67,7 @@ export function LengthBox({
             live={!inRow}
             problem={problem}
             hint={inRow ? undefined : <LengthHint />}
+            {...(inRow ? { placeholder: t("fields.length-add") } : {})}
             readLength={readLength}
             {...(onMistake === undefined ? {} : { onMistake })}
             onCommit={(sent) => {

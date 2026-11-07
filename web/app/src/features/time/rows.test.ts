@@ -36,8 +36,29 @@ describe("time_04 the rows of time on issues", () => {
       activity: [{ shown_as: "Development" }, { shown_as: "Testing" }],
     });
   });
+});
 
-  it("adds up a cell and a row", () => {
+describe("time_04 the minutes of a row for each choice", () => {
+  it("are added up for each choice, so a row with two says which is which", () => {
+    const rows = issueRows(
+      [
+        entry("i1", "WEB-1", "2026-10-05", 30),
+        entry("i1", "WEB-1", "2026-10-06", 45, "Testing"),
+        entry("i1", "WEB-1", "2026-10-07", 15, "Testing"),
+      ],
+      starters,
+      find,
+    );
+    expect(rows[0]?.choiceMinutes).toMatchObject({
+      "id-of-Development": 30,
+      "id-of-Testing": 60,
+      "id-of-cost-center": 90,
+    });
+  });
+});
+
+describe("time_04 the totals of a cell and a row", () => {
+  it("add up a cell and a row", () => {
     const rows = issueRows(
       [
         entry("i1", "WEB-1", "2026-10-05", 30),

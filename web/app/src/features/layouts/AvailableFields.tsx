@@ -36,7 +36,8 @@ function AvailableRow({
       <SelectField
         label={t("layouts.field-add-to", { name })}
         choices={[
-          { value: noSection, label: t("layouts.field-add-to", { name }) },
+          // The name stands in the row above, so the picker says only what it does and is not cut short on a phone.
+          { value: noSection, label: t("layouts.field-add-here") },
           ...context.moves,
         ]}
         value={noSection}

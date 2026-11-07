@@ -131,6 +131,7 @@ Rules:
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Timer**                | Start/stop clock on an issue. One per person, kept on the server, so every device shows the same one and closing the browser does not stop it | stopwatch                          |
 | **Time entry**           | A recorded amount of time on an issue                              | worklog                            |
+| **Length**               | How long a time entry, an estimate or a timer is, in whole minutes; typed as `1:30`, `1.5` or `90m` and written in the form each screen uses (UX §4.9) | —                                  |
 | **Estimated time**       | How long it was expected to take                                   | original estimate                  |
 | **Time left**            | How long it still needs                                            | remaining estimate                 |
 | **Time spent**           | Total of all time entries                                          | logged work                        |

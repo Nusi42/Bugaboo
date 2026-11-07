@@ -17,12 +17,18 @@ test("time_13 the timesheet writes the cost centers of a row in full, with the n
   const week = await weekWithCostCenters(server);
   await signIn(page, ada);
   await openWeek(page, week);
-  const cell = page.getByRole("cell", { name: "0420 Quality assurance 4100 Product development" });
+  const cell = page.getByRole("cell", {
+    name: /^0420 Quality assurance.*4100 Product development/u,
+  });
   await expect(cell).toBeVisible();
   await expect(cell.locator("[data-part='choice-number']")).toHaveText(["0420", "4100"]);
   // One choice on each line, in the order of the numbers, and every cell of the row starts at the top.
   const lines = cell.locator("[data-part='choice-line']");
-  await expect(lines).toHaveText(["0420 Quality assurance", "4100 Product development"]);
+  // A row with two cost centers says the length of each one after it (M6-F201).
+  await expect(lines).toHaveText([
+    /^0420 Quality assurance · \S+/u,
+    /^4100 Product development · \S+/u,
+  ]);
   expect(await topOf(lines.nth(1))).toBeGreaterThan(await topOf(lines.nth(0)));
   const issue = page.getByRole("row", { name: /Printer jams/u });
   const tops = await topsOf(issue.getByRole("cell"));

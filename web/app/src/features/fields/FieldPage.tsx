@@ -4,7 +4,7 @@ import { Alert, alertTone, Card, Link, Switch, partOf, part } from "@bugaboo/ui"
 import { messageOf } from "../../shared/errors.ts";
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { QueryGate } from "../shell/index.ts";
+import { QueryGate, useItemTrail } from "../shell/index.ts";
 import { FieldSections } from "./FieldSections.tsx";
 import { detailsOf, useField, type OwnField } from "./fields.ts";
 import { useChangeField } from "./use-change-field.ts";
@@ -33,6 +33,8 @@ function RetireField({ field }: { readonly field: OwnField }) {
 /** The page of a field: the sections of UX §5.3, one under the other. */
 function Page({ field }: { readonly field: OwnField }) {
   usePageTitle(field.name);
+  // On a phone the name is the title in the bar, with Back to all fields.
+  useItemTrail(paths.fields, field.name);
   return (
     <div {...partOf(part.stack)}>
       <Card heading={field.name} level={1} back={{ href: paths.fields, label: t("fields.back") }}>

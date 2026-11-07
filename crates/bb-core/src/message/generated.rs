@@ -1537,6 +1537,9 @@ pub const FIELDS_INTRO: MessageKey = MessageKey::new("fields.intro");
 /// The message `fields.kind-question`.
 pub const FIELDS_KIND_QUESTION: MessageKey = MessageKey::new("fields.kind-question");
 
+/// The message `fields.length-add`.
+pub const FIELDS_LENGTH_ADD: MessageKey = MessageKey::new("fields.length-add");
+
 /// The message `fields.list`.
 pub const FIELDS_LIST: MessageKey = MessageKey::new("fields.list");
 
@@ -2739,6 +2742,9 @@ pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
 
 /// The message `layouts.draft-restore`.
 pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
+
+/// The message `layouts.field-add-here`.
+pub const LAYOUTS_FIELD_ADD_HERE: MessageKey = MessageKey::new("layouts.field-add-here");
 
 /// The message `layouts.field-required`.
 pub const LAYOUTS_FIELD_REQUIRED: MessageKey = MessageKey::new("layouts.field-required");
@@ -12869,6 +12875,15 @@ pub fn time_sheet_cell_label(day: impl std::fmt::Display, row: impl std::fmt::Di
     )
 }
 
+/// The message `time.sheet.choice-length`.
+#[must_use]
+pub fn time_sheet_choice_length(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.choice-length"),
+        vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
 /// The message `time.sheet.day-heading`.
 #[must_use]
 pub fn time_sheet_day_heading(
@@ -15245,6 +15260,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.kind-question", "What kind of information?"),
     ("fields.label-required", "{field} (required)"),
+    ("fields.length-add", "Add a length"),
     ("fields.list", "Fields"),
     ("fields.long-edit", "Edit {name}"),
     ("fields.long-empty", "Nothing is written here yet."),
@@ -16193,6 +16209,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
     ),
     ("layouts.draft-restore", "Put my changes back"),
+    ("layouts.field-add-here", "Add to a section"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
     ("layouts.field-drag", "Drag {name}"),
@@ -19003,7 +19020,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.working-hours.keep-years.help",
-        "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany a lower number is refused.",
+        "Work days are kept at least this long from their date, then until an administrator deletes them. With the rules of Germany a lower number is refused.",
     ),
     (
         "setting.working-hours.keep-years.name",
@@ -19403,6 +19420,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("time.sheet.cell-label", "{row}, {day}"),
     ("time.sheet.changed", "Changed"),
+    ("time.sheet.choice-length", " · {length}"),
     ("time.sheet.cost-center", "Cost center"),
     ("time.sheet.day-empty", "No time booked on this day yet."),
     ("time.sheet.day-heading", "{weekday} {day}"),

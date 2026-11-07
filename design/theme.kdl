@@ -122,7 +122,11 @@ tokens {
     size "size-name" "112px" phone="120px"
     // The one name column of every list in the Details card (R1): on a phone narrower than
     // `size-name`, so the value column keeps room for the *Followers* row on one line.
-    size "size-details-name" "112px" phone="80px"
+    size "size-details-name" "112px" phone="104px"
+    // The body of the window of the details of a row, as tall as the form of one entry: the window does not jump when the form opens.
+    size "size-entry-details-body" "400px"
+    // The room the name of a field in the layout editor wants before the buttons beside it go to the next line.
+    size "size-layout-field-name" "160px"
     // The columns of a list row (UX §4.2): the icon columns, the ID, the priority, the person.
     size "size-col-icon" "24px"
     // The two columns of buttons at the end of a status change in the workflow editor: the same width in every row.
@@ -156,15 +160,15 @@ tokens {
     // The box of the number of a choice (up to nine digits in the code font, with the box around them).
     size "size-choice-number-box" "calc(14ch + 2 * $space-3)"
     // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font, and the box around it.
-    size "size-sheet-day" "76px"
+    size "size-sheet-day" "72px"
     // One day of the timesheet on a phone, where the names stand beside the box and there is room for it.
     size "size-sheet-day-phone" "96px"
     // The columns of the grid of the timesheet, the same for every week: an issue (ID over title), its Activity and Cost center, and the total.
     // With the seven days they fit the card of a computer (1280 wide). Activity and Cost center wrap to a second line
     // instead of being cut short (a cost center is a number and a name: `4100 Product development`).
-    size "size-sheet-col-issue" "112px"
-    size "size-sheet-col-field" "96px"
-    size "size-sheet-col-cost-center" "136px"
+    size "size-sheet-col-issue" "128px"
+    size "size-sheet-col-field" "100px"
+    size "size-sheet-col-cost-center" "96px"
     size "size-sheet-col-total" "64px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
@@ -1413,10 +1417,21 @@ part "settings.help" {
     margin 0
 }
 
+// The hint of a setting is a sentence or three: it takes the width of its box and ends its lines where the words end, where
+// the balanced wrap of a short hint made a long one narrower than its box (M6-F150).
+part "settings.help" "box field.description" {
+    text-wrap pretty
+}
+
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
 // review of M4: "Alder Street Baker|y" in the Details).
 // One height for a box of one line and a choice (a select ignores the line height and would be 2 px
 // taller): labels and boxes side by side line up (the review of M4).
+// What an empty box says is quieter than what is typed (M6-F167).
+part "field.input::placeholder" {
+    color "$fg-muted"
+}
+
 part "field.input" {
     use "input-box"
     height "$size-control"
@@ -5126,6 +5141,11 @@ part "app-layout.inner:has(sheet)" {
     use "page-column-wide"
 }
 
+// The card of the timesheet has less room at its sides, so the week and its total fit a window of 1280 (M6-F203).
+part "card:has(sheet)" {
+    padding-inline "$space-3"
+}
+
 part "app-layout.main:has(item-screen) app-layout.inner" {
     display none
 }
@@ -5289,6 +5309,17 @@ part "timer-notice[variant=narrow]" {
 // the field; it comes back when the focus leaves the field (UX §4.9).
 part "timer-notice[variant=away]" {
     visibility hidden
+}
+
+// A note of the timer (the warning of a long timer, what the timer tells after it saved) is read next to the sidebar,
+// so its words have the size of the sidebar (UX §7.3), and its close button stands at the end of the first line
+// instead of forcing a second one.
+part "timer-notice alert" {
+    display flex
+    align-items flex-start
+    justify-content space-between
+    gap "$space-2"
+    font-size "$fs-base"
 }
 
 // The timer is one button: the issue it runs on and how long, which opens the list *Stop · Switch issue ·
@@ -13542,8 +13573,10 @@ part "draggable" {
     min-height "$size-control"
 }
 
+// The name of a field in the layout editor is as wide as a word of it needs, or it takes the line above the buttons
+// (a phone has no room for the handle, the name and three buttons in one line: the name was cut inside its words, M6-F164).
 part "layout-field.name" {
-    flex 1
+    flex "1 1 $size-layout-field-name"
     min-width 0
     font-weight "$weight-regular"
     overflow-wrap anywhere
@@ -14814,6 +14847,8 @@ part "sheet.day-actions" {
     display flex
     flex-direction column
     align-items flex-end
+    // Room for both buttons on every day, so a day with one and a day with two have heads of one height.
+    min-height "calc(2 * $size-control)"
 }
 
 part "sheet.day-action" {
@@ -14912,18 +14947,27 @@ part "sheet.head" {
     white-space nowrap
 }
 
-part "sheet.head[state=today]" {
-    color "$accent-fg"
-}
-
 part "sheet.day-heading" {
     display flex
     flex-direction column
     align-items flex-end
 }
 
+// The body of the details of a row has the height of the form of one entry, so the window keeps its top edge when the form
+// opens in place of the list (M6-F147); on a phone the screen is as tall as it is.
+part "entry-details-body" {
+    min-height "$size-entry-details-body"
+}
+
+part "app-layout[variant=phone] entry-details-body" "overlay[variant=full] entry-details-body" {
+    min-height 0
+}
+
+// The mark of today is one word under the day; every day keeps the room for it, so the heads stand level.
 part "sheet.today" {
     display block
+    min-height "calc($fs-base * $lh-text)"
+    color "$accent-fg"
 }
 
 part "sheet.cell" {

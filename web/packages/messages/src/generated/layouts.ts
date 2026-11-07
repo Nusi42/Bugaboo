@@ -31,6 +31,7 @@ export const messages = {
   "layouts.available": "Fields that are not on this form",
   "layouts.available-none": "Every field is on this form.",
   "layouts.field-add-to": "Add {name} to a section",
+  "layouts.field-add-here": "Add to a section",
   "layouts.field-up": "Move {name} up",
   "layouts.field-down": "Move {name} down",
   "layouts.field-move-to": "Move {name} to another section",
