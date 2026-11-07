@@ -63,6 +63,7 @@ export const paths = {
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
   issue: appPaths.issue,
+  run: "/runs/$run",
   search: "/search",
   savedSearch: "/s/$search",
 } as const;
@@ -78,6 +79,7 @@ export const routeParam = {
   role: "role",
   field: "field",
   issue: "issue",
+  run: "run",
   search: "search",
 } as const;
 
@@ -243,6 +245,11 @@ export function roleAddress(id: string): string {
 /** The address of an issue, `/issues/WEB-142`: the focus view, and the link that is shared. */
 export function issueAddress(key: string): string {
   return filled(paths.issue, routeParam.issue, key);
+}
+
+/** The address of a run, `/runs/<id>`: its changes and *Undo the run*. */
+export function runAddress(run: string): string {
+  return filled(paths.run, routeParam.run, run);
 }
 
 /** What an issue page is opened at: a comment, or the change that happened at a moment. */

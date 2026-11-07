@@ -1,4 +1,3 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -13,9 +12,7 @@ import {
 import type { Wording } from "@bugaboo/wasm";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
-import { wordedSideOf } from "../../shared/change-sentence.ts";
-import { fieldNameOf } from "../../shared/field-names.ts";
-import { renderSaid } from "../../shared/said.ts";
+import { changeLineText } from "../../shared/change-line.ts";
 import { WithWording } from "../../shared/with-wording.tsx";
 import { skipText, type ManyChangePreview, type ManyChangeRow } from "./many-changes.ts";
 
@@ -23,13 +20,6 @@ export interface ManyChangePreviewViewProps {
   readonly preview: ManyChangePreview;
   /** What happens to each issue that changes when the row has nothing more to say: "Is deleted". */
   readonly plain: string;
-}
-
-/** What a field will be after the change, in words; *nothing* for no value. */
-function afterText(wording: Wording, change: Schema<"FieldChangeBody">): string {
-  const side = wordedSideOf(change.after);
-  const said = side === null ? null : wording.sideWords(change.field, side);
-  return said === null ? t("common.nothing") : renderSaid(said);
 }
 
 /** The lines under an issue that will change: what changes in it, or the one thing that happens. */
@@ -43,10 +33,7 @@ function changeLines(
     return [
       ...detail.fields.map((change) => ({
         key: change.field,
-        content: t("many-changes.line-changes", {
-          field: fieldNameOf({ code: change.field, name: change.name }),
-          after: afterText(wording, change),
-        }),
+        content: changeLineText(wording, change),
       })),
       // What the person should know besides what changes: the issue keeps a type the project does
       // not use (M3-F124).

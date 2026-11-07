@@ -11,6 +11,7 @@ import {
   roleAddress,
   addressInProject,
   issueAddress,
+  runAddress,
   savedSearchAddress,
 } from "../src/shared/paths.ts";
 import {
@@ -28,7 +29,7 @@ import {
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
-import { createProjectWithIssue } from "./support/issues.ts";
+import { createProjectWithSession } from "./support/runs.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -46,6 +47,7 @@ let someRole = "";
 let someGroup = "";
 let someField = "";
 let someIssue = "";
+let someRun = "";
 let someSearch = "";
 
 test.use({
@@ -72,7 +74,9 @@ test.use({
       ).id;
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
-      someIssue = (await createProjectWithIssue(admin, "WEB", "Website")).id;
+      const made = await createProjectWithSession(server, admin, "WEB", "Website");
+      someIssue = made.issue.id;
+      someRun = made.run;
       someSearch = dataOf(
         await admin.client.POST("/api/v1/saved-searches", {
           body: { name: "Open issues", search_text: "status is Open" },
@@ -248,6 +252,7 @@ const visits: readonly Visit[] = [
     guest: false,
   },
   { address: paths.issue, open: signedInAt(() => issueAddress(someIssue)), guest: false },
+  { address: paths.run, open: signedInAt(() => runAddress(someRun)), guest: false },
   { address: paths.search, open: signedIn(paths.search), guest: false },
   {
     address: paths.savedSearch,

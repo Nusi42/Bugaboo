@@ -21,6 +21,7 @@ import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
 import type { messages as relations } from "./relations.ts";
 import type { messages as roles } from "./roles.ts";
+import type { messages as runs } from "./runs.ts";
 import type { messages as search } from "./search.ts";
 import type { messages as settings } from "./settings.ts";
 import type { messages as setup } from "./setup.ts";
@@ -53,6 +54,7 @@ export type MessageKey =
   | keyof typeof relationKinds
   | keyof typeof relations
   | keyof typeof roles
+  | keyof typeof runs
   | keyof typeof search
   | keyof typeof settings
   | keyof typeof setup
@@ -340,7 +342,6 @@ export interface MessageArguments {
   "many-changes.apply": { count: number };
   "many-changes.apply-delete": { count: number };
   "many-changes.change-and-status": { button: string | number; status: string | number };
-  "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.note-type-not-used": { project: string | number; type: string | number };
   "many-changes.progress": { done: number; total: number };
@@ -389,6 +390,7 @@ export interface MessageArguments {
   "person.role": { role: string | number };
   "person.role-inside": { role: string | number };
   "person.roles-none": { name: string | number };
+  "preview.line-changes": { after: string | number; field: string | number };
   "preview.summary": { changed: number; skipped: number };
   "projects.created": { name: string | number };
   "projects.inside": { name: string | number };
@@ -446,6 +448,11 @@ export interface MessageArguments {
   "roles.used": { groups: number; people: number; places: string | number };
   "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
+  "runs.preview": { back: number; skipped: number };
+  "runs.skip-line": { field: string | number; issue: string | number; reason: string | number };
+  "runs.status": { status: string | number };
+  "runs.title-app-session-named": { app: string | number };
+  "runs.undone": { back: number; skipped: number };
   "save.saved-at": { time: string | number };
   "search.bar.add-filter-text": { field: string | number };
   "search.bar.change-filter": { filter: string | number };
@@ -697,4 +704,6 @@ export interface MessageArguments {
     worked: string | number;
   };
   "working-time.warning.short-rest": { needed: string | number; rest: string | number };
+  "written-by.agent": { agent: string | number };
+  "written-by.app": { app: string | number };
 }

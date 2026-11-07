@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { MarkdownView } from "@bugaboo/ui";
 
 import { versionOf } from "../../shared/version.ts";
+import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { CommentEditor } from "./CommentEditor.tsx";
 
 /** The text of a comment: as it reads, or in the editor while its writer changes it. */
@@ -31,5 +32,10 @@ export function CommentText({
       />
     );
   }
-  return reading;
+  return (
+    <>
+      {reading}
+      <WrittenBy mark={entry.written_by} />
+    </>
+  );
 }

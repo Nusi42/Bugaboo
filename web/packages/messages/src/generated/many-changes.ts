@@ -25,7 +25,6 @@ export const messages = {
   "many-changes.apply-delete": "{count, plural, one {Delete # issue} other {Delete # issues}}",
   "many-changes.dialog-text":
     "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
-  "many-changes.line-changes": "{field}: {after}",
   "many-changes.line-relation": "This issue · {name} · {issue}",
   "many-changes.line-delete": "Is deleted",
   "many-changes.note-type-not-used": "{project} does not offer {type}. The issue keeps it.",

@@ -698,6 +698,7 @@ export const messages = {
   "preview.summary":
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
   "preview.label": "Issues in this change",
+  "preview.line-changes": "{field}: {after}",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
   "workflows.nav": "Workflows",
@@ -933,6 +934,11 @@ export const messages = {
     "This is not a web address. Write it like https://models.example.com/v1.",
   "error.ai.address-not-encrypted":
     "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+  "written-by.assistant": "Written with the assistant",
+  "written-by.app": "Written by an AI app: {app}",
+  "written-by.app-unnamed": "Written by an AI app",
+  "written-by.agent": "Written by an agent: {agent}",
+  "written-by.agent-unnamed": "Written by an agent",
 } as const;
 
 register(messages);

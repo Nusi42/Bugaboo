@@ -6500,6 +6500,11 @@ part "history.when" {
     use "quiet-text"
 }
 
+// How a text that AI wrote was written, beside the text (COMP-08, UX §7): as quiet as the time of a comment.
+part "written-by" {
+    use "quiet-text"
+}
+
 // ───────────── Files (features/files, M4 WP-05) ─────────────
 //
 // The Files block of the issue page and the files under a comment (UX §4.4): the place that takes

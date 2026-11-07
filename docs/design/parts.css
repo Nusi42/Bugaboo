@@ -5730,6 +5730,11 @@ textarea,
   font-size: var(--fs-base);
 }
 
+[data-part="written-by"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}
+
 [data-part="files.drop"] {
   display: flex;
   flex-wrap: wrap;

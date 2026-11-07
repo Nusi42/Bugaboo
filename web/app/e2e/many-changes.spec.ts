@@ -35,7 +35,7 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   await expect(dialog.getByText(t("preview.summary", { changed: 2, skipped: 0 }))).toBeVisible();
   await expect(
     dialog.getByText(
-      t("many-changes.line-changes", { field: t("issue-field.labels"), after: "release" }),
+      t("preview.line-changes", { field: t("issue-field.labels"), after: "release" }),
     ),
   ).toHaveCount(2);
   await dialog

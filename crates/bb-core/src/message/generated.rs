@@ -3979,6 +3979,55 @@ pub const ROLES_USED_NOTHING: MessageKey = MessageKey::new("roles.used-nothing")
 /// The message `roles.used-whole`.
 pub const ROLES_USED_WHOLE: MessageKey = MessageKey::new("roles.used-whole");
 
+/// The message `runs.changed-since-preview`.
+pub const RUNS_CHANGED_SINCE_PREVIEW: MessageKey = MessageKey::new("runs.changed-since-preview");
+
+/// The message `runs.changes-heading`.
+pub const RUNS_CHANGES_HEADING: MessageKey = MessageKey::new("runs.changes-heading");
+
+/// The message `runs.look-first`.
+pub const RUNS_LOOK_FIRST: MessageKey = MessageKey::new("runs.look-first");
+
+/// The message `runs.nothing-to-show`.
+pub const RUNS_NOTHING_TO_SHOW: MessageKey = MessageKey::new("runs.nothing-to-show");
+
+/// The message `runs.show-more`.
+pub const RUNS_SHOW_MORE: MessageKey = MessageKey::new("runs.show-more");
+
+/// The message `runs.skip-changed-since`.
+pub const RUNS_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("runs.skip-changed-since");
+
+/// The message `runs.skip-changed-since-by-you`.
+pub const RUNS_SKIP_CHANGED_SINCE_BY_YOU: MessageKey =
+    MessageKey::new("runs.skip-changed-since-by-you");
+
+/// The message `runs.skip-gone`.
+pub const RUNS_SKIP_GONE: MessageKey = MessageKey::new("runs.skip-gone");
+
+/// The message `runs.skip-not-allowed`.
+pub const RUNS_SKIP_NOT_ALLOWED: MessageKey = MessageKey::new("runs.skip-not-allowed");
+
+/// The message `runs.skip-not-undoable`.
+pub const RUNS_SKIP_NOT_UNDOABLE: MessageKey = MessageKey::new("runs.skip-not-undoable");
+
+/// The message `runs.skipped-list`.
+pub const RUNS_SKIPPED_LIST: MessageKey = MessageKey::new("runs.skipped-list");
+
+/// The message `runs.title-app-session`.
+pub const RUNS_TITLE_APP_SESSION: MessageKey = MessageKey::new("runs.title-app-session");
+
+/// The message `runs.title-attempt`.
+pub const RUNS_TITLE_ATTEMPT: MessageKey = MessageKey::new("runs.title-attempt");
+
+/// The message `runs.title-many-changes`.
+pub const RUNS_TITLE_MANY_CHANGES: MessageKey = MessageKey::new("runs.title-many-changes");
+
+/// The message `runs.undo`.
+pub const RUNS_UNDO: MessageKey = MessageKey::new("runs.undo");
+
+/// The message `runs.unknown-issue`.
+pub const RUNS_UNKNOWN_ISSUE: MessageKey = MessageKey::new("runs.unknown-issue");
+
 /// The message `sample.error.key-missing`.
 pub const SAMPLE_ERROR_KEY_MISSING: MessageKey = MessageKey::new("sample.error.key-missing");
 
@@ -6546,6 +6595,15 @@ pub const WORKING_TIME_PRESET_GERMANY: MessageKey = MessageKey::new("working-tim
 /// The message `working-time.preset.no-rules`.
 pub const WORKING_TIME_PRESET_NO_RULES: MessageKey =
     MessageKey::new("working-time.preset.no-rules");
+
+/// The message `written-by.agent-unnamed`.
+pub const WRITTEN_BY_AGENT_UNNAMED: MessageKey = MessageKey::new("written-by.agent-unnamed");
+
+/// The message `written-by.app-unnamed`.
+pub const WRITTEN_BY_APP_UNNAMED: MessageKey = MessageKey::new("written-by.app-unnamed");
+
+/// The message `written-by.assistant`.
+pub const WRITTEN_BY_ASSISTANT: MessageKey = MessageKey::new("written-by.assistant");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -9459,21 +9517,6 @@ pub fn many_changes_change_and_status(
     )
 }
 
-/// The message `many-changes.line-changes`.
-#[must_use]
-pub fn many_changes_line_changes(
-    after: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("many-changes.line-changes"),
-        vec![
-            ("after", Value::Text(after.to_string())),
-            ("field", Value::Text(field.to_string())),
-        ],
-    )
-}
-
 /// The message `many-changes.line-relation`.
 #[must_use]
 pub fn many_changes_line_relation(
@@ -9973,6 +10016,21 @@ pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `preview.line-changes`.
+#[must_use]
+pub fn preview_line_changes(
+    after: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("preview.line-changes"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
 /// The message `preview.summary`.
 #[must_use]
 pub fn preview_summary(changed: i64, skipped: i64) -> Message {
@@ -10419,6 +10477,65 @@ pub fn roles_used_projects(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("roles.used-projects"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `runs.preview`.
+#[must_use]
+pub fn runs_preview(back: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.preview"),
+        vec![
+            ("back", Value::Number(back)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
+/// The message `runs.skip-line`.
+#[must_use]
+pub fn runs_skip_line(
+    field: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.skip-line"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `runs.status`.
+#[must_use]
+pub fn runs_status(status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.status"),
+        vec![("status", Value::Text(status.to_string()))],
+    )
+}
+
+/// The message `runs.title-app-session-named`.
+#[must_use]
+pub fn runs_title_app_session_named(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.title-app-session-named"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
+/// The message `runs.undone`.
+#[must_use]
+pub fn runs_undone(back: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.undone"),
+        vec![
+            ("back", Value::Number(back)),
+            ("skipped", Value::Number(skipped)),
+        ],
     )
 }
 
@@ -13134,6 +13251,24 @@ pub fn working_time_warning_short_rest(
     )
 }
 
+/// The message `written-by.agent`.
+#[must_use]
+pub fn written_by_agent(agent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("written-by.agent"),
+        vec![("agent", Value::Text(agent.to_string()))],
+    )
+}
+
+/// The message `written-by.app`.
+#[must_use]
+pub fn written_by_app(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("written-by.app"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.choice.everything", "Everything I can do"),
@@ -15660,7 +15795,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("many-changes.field-label", "Label"),
     ("many-changes.issue-unknown", "an issue you cannot see"),
     ("many-changes.keep", "Leave as it is"),
-    ("many-changes.line-changes", "{field}: {after}"),
     ("many-changes.line-delete", "Is deleted"),
     (
         "many-changes.line-relation",
@@ -16174,6 +16308,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.someone", "Someone"),
     ("person.someone-inside", "someone"),
     ("preview.label", "Issues in this change"),
+    ("preview.line-changes", "{field}: {after}"),
     (
         "preview.summary",
         "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
@@ -16552,6 +16687,42 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {in # project you can see} other {in # projects you can see}}",
     ),
     ("roles.used-whole", "for the whole organization"),
+    (
+        "runs.changed-since-preview",
+        "Something changed since you looked. Look at what would go back again.",
+    ),
+    ("runs.changes-heading", "Changes"),
+    ("runs.look-first", "Look at what would go back first"),
+    (
+        "runs.nothing-to-show",
+        "This run changed nothing that you can see.",
+    ),
+    (
+        "runs.preview",
+        "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}{skipped, plural, =0 {} one {, # is skipped} other {, # are skipped}}.",
+    ),
+    ("runs.show-more", "Show more"),
+    ("runs.skip-changed-since", "was changed after the run"),
+    (
+        "runs.skip-changed-since-by-you",
+        "was changed by you after the run",
+    ),
+    ("runs.skip-gone", "is gone"),
+    ("runs.skip-line", "{issue}: {field} {reason}"),
+    ("runs.skip-not-allowed", "you may not change it"),
+    ("runs.skip-not-undoable", "cannot be put back yet"),
+    ("runs.skipped-list", "Changes that are skipped"),
+    ("runs.status", "Status: {status}"),
+    ("runs.title-app-session", "Session of an AI app"),
+    ("runs.title-app-session-named", "Session of {app}"),
+    ("runs.title-attempt", "Attempt of an agent"),
+    ("runs.title-many-changes", "Change to many issues"),
+    ("runs.undo", "Undo the run"),
+    (
+        "runs.undone",
+        "{back, plural, =0 {No change went back} one {# change went back} other {# changes went back}}{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
+    ),
+    ("runs.unknown-issue", "An issue"),
     (
         "sample.done",
         "Created the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
@@ -18910,4 +19081,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "working-time.warning.short-rest",
         "Only {rest} of rest since the work day before. The rules ask for at least {needed}.",
     ),
+    ("written-by.agent", "Written by an agent: {agent}"),
+    ("written-by.agent-unnamed", "Written by an agent"),
+    ("written-by.app", "Written by an AI app: {app}"),
+    ("written-by.app-unnamed", "Written by an AI app"),
+    ("written-by.assistant", "Written with the assistant"),
 ];

@@ -70,7 +70,7 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 30] = [
+const PARTS: [Part; 31] = [
     part!("access"),
     part!("account"),
     part!("admin"),
@@ -92,6 +92,7 @@ const PARTS: [Part; 30] = [
     part!("relation-kinds"),
     part!("relations"),
     part!("roles"),
+    part!("runs"),
     part!("search"),
     part!("settings"),
     part!("setup"),
@@ -106,7 +107,7 @@ const PARTS: [Part; 30] = [
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 97] = [
+const BROWSER_AREAS: [&str; 99] = [
     "access",
     "access-keys",
     "app",
@@ -177,6 +178,7 @@ const BROWSER_AREAS: [&str; 97] = [
     "related-issues",
     "relation-kinds",
     "roles",
+    "runs",
     "save",
     "search",
     "second-step",
@@ -204,6 +206,7 @@ const BROWSER_AREAS: [&str; 97] = [
     "workflows",
     "working-hours",
     "working-time",
+    "written-by",
 ];
 
 /// Whether a message is shown by the server only, and so is left out of the browser's catalog.

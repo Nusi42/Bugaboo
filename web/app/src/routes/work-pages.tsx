@@ -217,6 +217,19 @@ export const projectIssuesRoute = createRoute({
   },
 });
 
+const RunScreen = lazyRouteComponent(() => import("../features/runs/index.ts"), "RunPage");
+
+/** A run of an AI app, an agent or a change to many issues, `/runs/<id>`: its changes and *Undo the run*. */
+export const runRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.run,
+  loader: loadsScreen(RunScreen),
+  component: function Run() {
+    const run = useAddressPart(routeParam.run);
+    return run === undefined ? null : <RunScreen run={run} />;
+  },
+});
+
 /** An issue in the focus view, `/issues/WEB-142`: the address that is shared. */
 export const issueRoute = createRoute({
   getParentRoute: () => appRoute,

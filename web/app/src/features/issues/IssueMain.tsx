@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
+import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { FormNotice } from "../layouts/index.ts";
 import { DescriptionBlock } from "./DescriptionBlock.tsx";
 import { historyId } from "./history-id.ts";
@@ -52,6 +53,7 @@ export function IssueMain({ detail, address, blocks }: IssueMainProps) {
             html={detail.description_html}
             canChange={blocks.mask.changes("description")}
           />
+          <WrittenBy mark={detail.description_written_by} />
         </div>
       ) : null}
       <SectionBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
