@@ -164,8 +164,8 @@ async fn ai_38_a_run_lists_its_changes_previews_and_undoes_them_over_http() -> T
         assert_eq!(undone.body["changed_since_preview"], false);
         assert_eq!(priority_of(&mut ada, &key).await?, was);
 
-        // The undo is itself a change that came after the run: the same version now finds the
-        // field changed since, writes nothing and shows the newer preview.
+        // The undo is itself a change that came after the run: the same version is out of date, so
+        // nothing is written and the newer preview comes back.
         let again = ada
             .send(
                 "POST",
@@ -175,9 +175,8 @@ async fn ai_38_a_run_lists_its_changes_previews_and_undoes_them_over_http() -> T
             .await?;
         assert_eq!(ok(&again)?["changed_since_preview"], true);
         assert_eq!(again.body["goes_back"], 0);
-        assert_eq!(again.body["skipped_count"], 1);
-        assert_eq!(again.body["skipped"][0]["kind"], "changed-since");
-        assert_eq!(again.body["skipped"][0]["by_you"], true);
+        // What the undo itself put back is no change behind its back: nothing stays, nothing goes.
+        assert_eq!(again.body["skipped_count"], 0);
         assert_eq!(priority_of(&mut ada, &key).await?, was);
         Ok(())
     })

@@ -89,7 +89,7 @@ export function UndoRun({ run, found }: { readonly run: string; readonly found: 
             onConfirm={() => {
               undo.mutate(
                 { params: { path: { run } }, body: { preview_version: shown.preview_version } },
-                { onSuccess: refreshRun },
+                { onSettled: refreshRun },
               );
             }}
           />

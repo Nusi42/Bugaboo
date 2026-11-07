@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::event::{DomainEvent, EntityRef};
-use bb_core::id::EventId;
+use bb_core::id::{EventId, RunId};
 use bb_core::run::{UndoSkip, UndoSkipKind, UndoVersion};
 use serde_json::Value;
 
@@ -104,7 +104,8 @@ pub(crate) struct Evaluation {
 
 /// Decides each field of the run against the events outside the run that came after (`later`, with
 /// their places in the order of commits).
-pub(crate) fn weigh(net: &NetOfRun, later: &[(i64, DomainEvent)]) -> Evaluation {
+pub(crate) fn weigh(net: &NetOfRun, later: &[(i64, DomainEvent)], run: RunId) -> Evaluation {
+    let undo = bb_core::run::undo_reason(run);
     let mut back = Vec::new();
     let mut skips = Vec::new();
     for each in net.changed() {
@@ -121,6 +122,9 @@ pub(crate) fn weigh(net: &NetOfRun, later: &[(i64, DomainEvent)]) -> Evaluation 
             .map(|(_, event)| event)
             .next_back();
         match changed_since {
+            // What the undo of this run put back is no change behind its back, and nothing to put
+            // back again.
+            Some(event) if event.reason.as_deref() == Some(undo.as_str()) => {}
             Some(event) => skips.push(UndoSkip {
                 entity: each.entity.clone(),
                 field: each.field.clone(),
@@ -178,7 +182,7 @@ mod tests {
                 after: Some(after),
             }],
             reason: None,
-            run: run.then(|| bb_core::id::RunId::generate(ids).unwrap()),
+            run: run.then(|| RunId::generate(ids).unwrap()),
         }
     }
 
@@ -213,6 +217,7 @@ mod tests {
     #[test]
     fn a_field_changed_twice_goes_back_to_how_the_run_found_it() {
         let mut ids = SequentialIds::default();
+        let run = RunId::generate(&mut ids).unwrap();
         let record = issue(&mut ids);
         let net = net_of(
             &mut ids,
@@ -222,7 +227,7 @@ mod tests {
                 (2, "status", json!("b"), json!("c")),
             ],
         );
-        let result = weigh(&net, &[]);
+        let result = weigh(&net, &[], run);
         assert_eq!(result.back.len(), 1);
         assert_eq!(result.back[0].before, Some(json!("a")));
         assert_eq!(result.back[0].after, Some(json!("c")));
@@ -231,6 +236,7 @@ mod tests {
     #[test]
     fn a_field_changed_back_by_the_run_itself_has_nothing_to_undo() {
         let mut ids = SequentialIds::default();
+        let run = RunId::generate(&mut ids).unwrap();
         let record = issue(&mut ids);
         let net = net_of(
             &mut ids,
@@ -240,12 +246,13 @@ mod tests {
                 (2, "status", json!("b"), json!("a")),
             ],
         );
-        assert!(weigh(&net, &[]).back.is_empty());
+        assert!(weigh(&net, &[], run).back.is_empty());
     }
 
     #[test]
     fn ai_38_a_field_somebody_changed_afterwards_stays_and_is_named() {
         let mut ids = SequentialIds::default();
+        let run = RunId::generate(&mut ids).unwrap();
         let record = issue(&mut ids);
         let net = net_of(
             &mut ids,
@@ -280,13 +287,13 @@ mod tests {
                 ),
             ),
         ];
-        let result = weigh(&net, &later);
+        let result = weigh(&net, &later, run);
         assert_eq!(result.back.len(), 1);
         assert_eq!(result.back[0].field, "priority");
         assert_eq!(result.skips.len(), 1);
         assert_eq!(result.skips[0].field, "status");
         assert_eq!(result.skips[0].kind, UndoSkipKind::ChangedSince);
         // The version changes when anything came after.
-        assert_ne!(result.version, weigh(&net, &[]).version);
+        assert_ne!(result.version, weigh(&net, &[], run).version);
     }
 }

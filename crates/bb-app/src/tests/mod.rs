@@ -67,6 +67,7 @@ mod recurring_jobs;
 mod rights_once;
 mod runs;
 mod runs_end;
+mod runs_undone;
 mod saved_searches;
 mod saved_searches_names;
 mod saved_searches_receivers;

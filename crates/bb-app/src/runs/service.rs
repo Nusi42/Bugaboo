@@ -94,7 +94,7 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
             }
             later.sort_by_key(|(place, _)| *place);
         }
-        Ok(weigh(net, &later))
+        Ok(weigh(net, &later, run))
     }
 
     /// What the undo does, counting and naming only what the reader may see (PRIV-13): the changes

@@ -2,8 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { paths, runAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { ana } from "./support/access.ts";
-import { signedInAdmin } from "./support/access.ts";
+import { ana, signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inFourChosenThemes, inFourThemes } from "./support/four-themes.ts";

@@ -379,10 +379,17 @@ pub async fn undo_run<S: AuthStore>(
     let view = match outcome {
         UndoOutcome::Undone(done) => {
             // The undo is a fact of the run too, with the reason each field stayed. An undo that
-            // put nothing back (another one was first) is no fact. It is recorded also when an
-            // error stopped the undo half way, so the run does not offer what is back again.
+            // put nothing back (another one was first) is no fact, except after an undo that
+            // stopped half way: then it says why what the first one did not reach cannot go back
+            // any more, and that the run no longer waits for it. It is recorded also when an
+            // error stopped this undo half way, so the run does not offer what is back again.
             let interrupt = runs.take_interrupt();
-            if done.undone > 0 {
+            let waiting = ctx
+                .undo_facts(&held, input.run)
+                .await?
+                .undone
+                .is_some_and(|before| before.interrupted);
+            if done.undone > 0 || waiting {
                 let mut changes = vec![
                     set_to("undone", serde_json::json!(done.undone)),
                     set_to("kept", serde_json::json!(done.skipped)),
