@@ -46,6 +46,43 @@ words_in_api!(
     "Where the data of a call goes: to anthropic, to a local model on the organization's own network, or to another provider on the internet."
 );
 
+words! {
+    /// Where the agreement for the provider stands.
+    pub enum AgreementStatus {
+        /// The provider needs none: a model on the organization's own network.
+        NotNeeded => "not-needed",
+        /// The provider needs one, and none is confirmed for it.
+        Needed => "needed",
+        /// An administrator confirmed it for this provider.
+        Confirmed => "confirmed",
+    }
+}
+
+words_in_api!(
+    AgreementStatus,
+    "Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed."
+);
+
+impl AgreementStatus {
+    /// Where the agreement stands for a destination, given the one that was confirmed.
+    #[must_use]
+    pub fn of(destination: Destination, agreement: Option<&Agreement>) -> Self {
+        if !destination.row().needs_agreement {
+            Self::NotNeeded
+        } else if agreement.is_some_and(|agreement| agreement.destination == destination) {
+            Self::Confirmed
+        } else {
+            Self::Needed
+        }
+    }
+
+    /// Whether the provider may be called: it needs no agreement or has one.
+    #[must_use]
+    pub const fn holds(self) -> bool {
+        !matches!(self, Self::Needed)
+    }
+}
+
 /// What the table knows about one destination.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ProviderRow {

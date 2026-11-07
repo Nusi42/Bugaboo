@@ -82,7 +82,7 @@ async fn priv_08_the_agreement_is_kept_with_who_and_when_and_a_new_provider_asks
         let start = ada.send("GET", AI, None).await?;
         assert_eq!(start.body["enabled"], json!(false));
         assert_eq!(start.body["provider"], json!("anthropic"));
-        assert_eq!(start.body["agreement_needed"], json!(true));
+        assert_eq!(start.body["agreement_status"], json!("needed"));
 
         let model = ada
             .send(
@@ -105,7 +105,7 @@ async fn priv_08_the_agreement_is_kept_with_who_and_when_and_a_new_provider_asks
         assert_eq!(agreement["destination"], json!("anthropic"));
         assert!(agreement["confirmed_at"].is_string());
         assert!(agreement["confirmed_by"].is_object(), "{agreement}");
-        assert_eq!(confirmed.body["agreement_needed"], json!(false));
+        assert_eq!(confirmed.body["agreement_status"], json!("confirmed"));
 
         let on = ada
             .send(
@@ -131,7 +131,7 @@ async fn priv_08_the_agreement_is_kept_with_who_and_when_and_a_new_provider_asks
         assert_eq!(moved.status, StatusCode::OK, "{}", moved.body);
         assert_eq!(moved.body["destination"], json!("other-provider"));
         assert!(moved.body.get("agreement").is_none());
-        assert_eq!(moved.body["agreement_needed"], json!(true));
+        assert_eq!(moved.body["agreement_status"], json!("needed"));
         let plain = ada
             .send(
                 "PUT",
@@ -167,7 +167,7 @@ async fn ai_02_a_local_model_answers_only_where_ai_is_on_and_a_failure_tells_not
             .await?;
         assert_eq!(set.status, StatusCode::OK, "{}", set.body);
         assert_eq!(set.body["destination"], json!("local-model"));
-        assert_eq!(set.body["agreement_needed"], json!(false));
+        assert_eq!(set.body["agreement_status"], json!("not-needed"));
 
         let tried = ada.send("POST", "/api/v1/ai/try", None).await?;
         assert_eq!(tried.status, StatusCode::NO_CONTENT, "{}", tried.body);

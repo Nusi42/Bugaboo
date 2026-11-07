@@ -14,7 +14,7 @@ use bb_app::ai::{
     AgreementView, AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement,
     ProjectAi, ProjectAiQuery, SetAiKey, TryAiProvider, WhatGoesWhere, WhatGoesWhereQuery,
 };
-use bb_core::ai::{Destination, ProviderKind};
+use bb_core::ai::{AgreementStatus, Destination, ProviderKind};
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -69,8 +69,8 @@ pub(crate) struct AiSetupBody {
     /// The agreement that was confirmed, if there is one.
     #[serde(skip_serializing_if = "Option::is_none")]
     agreement: Option<AgreementBody>,
-    /// The provider needs an agreement that is not confirmed for it yet.
-    agreement_needed: bool,
+    /// Where the agreement for the provider stands.
+    agreement_status: AgreementStatus,
 }
 
 impl Masked for AiSetupBody {}
@@ -86,7 +86,7 @@ impl From<&AiSetup> for AiSetupBody {
             key_set: setup.key_set,
             destination: setup.destination,
             agreement: setup.agreement.as_ref().map(AgreementBody::from),
-            agreement_needed: setup.agreement_needed,
+            agreement_status: setup.agreement_status,
         }
     }
 }
@@ -160,8 +160,8 @@ pub(crate) struct WhatGoesWhereBody {
     /// The agreement that was confirmed, if there is one.
     #[serde(skip_serializing_if = "Option::is_none")]
     agreement: Option<AgreementBody>,
-    /// The provider needs an agreement that is not confirmed for it yet.
-    agreement_needed: bool,
+    /// Where the agreement for the provider stands.
+    agreement_status: AgreementStatus,
 }
 
 impl Masked for WhatGoesWhereBody {}
@@ -182,7 +182,7 @@ impl From<&WhatGoesWhere> for WhatGoesWhereBody {
                 .collect(),
             names_sent: view.names_sent,
             agreement: view.agreement.as_ref().map(AgreementBody::from),
-            agreement_needed: view.agreement_needed,
+            agreement_status: view.agreement_status,
         }
     }
 }

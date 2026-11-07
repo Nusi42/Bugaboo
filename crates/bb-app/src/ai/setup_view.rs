@@ -1,14 +1,14 @@
 //! Reading the setup of AI (AI-01, AI-02, PRIV-08, COMP-08): the settings as they are, what goes
 //! where, and the switch of one project. Reads only; the changes are in `setup`.
 
-use bb_core::ai::{Destination, ProviderKind};
+use bb_core::ai::{AgreementStatus, Destination, ProviderKind};
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::{AI_ENABLED, SettingValue};
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
 use jiff::Timestamp;
 
-use super::call::{AiState, agreement_holds};
+use super::call::AiState;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// Ask for the setup of AI of the organization.
@@ -47,8 +47,8 @@ pub struct AiSetup {
     pub destination: Option<Destination>,
     /// The agreement that was confirmed, if there is one.
     pub agreement: Option<AgreementView>,
-    /// The provider needs an agreement that is not confirmed for it yet.
-    pub agreement_needed: bool,
+    /// Where the agreement for the provider stands.
+    pub agreement_status: AgreementStatus,
 }
 
 impl Masked for AiSetup {}
@@ -85,8 +85,8 @@ pub struct WhatGoesWhere {
     pub names_sent: bool,
     /// The agreement that was confirmed, if there is one.
     pub agreement: Option<AgreementView>,
-    /// The provider needs an agreement that is not confirmed for it yet.
-    pub agreement_needed: bool,
+    /// Where the agreement for the provider stands.
+    pub agreement_status: AgreementStatus,
 }
 
 impl Masked for WhatGoesWhere {}
@@ -147,8 +147,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .is_some();
         let destination = state.destination().ok();
         let agreement = self.ai_agreement().await?;
-        let agreement_needed = destination
-            .is_some_and(|destination| !agreement_holds(destination, agreement.as_ref()));
+        let agreement_status = AgreementStatus::of(
+            destination.unwrap_or(Destination::OtherProvider),
+            agreement.as_ref(),
+        );
         Ok(AiSetup {
             enabled: state.organization_on,
             provider: state.kind,
@@ -158,7 +160,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             key_set,
             destination,
             agreement: self.agreement_view(viewer, agreement).await?,
-            agreement_needed,
+            agreement_status,
         })
     }
 }
@@ -229,7 +231,7 @@ pub async fn what_goes_where<S: AuthStore>(
         // A model on the organization's own network gets the names each person may see
         // (M7-Q5); an outside provider gets roles unless an administrator chose otherwise.
         names_sent: !destination.is_outside() || state.send_names,
-        agreement_needed: !agreement_holds(destination, agreement.as_ref()),
+        agreement_status: AgreementStatus::of(destination, agreement.as_ref()),
         agreement: ctx.agreement_view(&access, agreement).await?,
     }))
 }

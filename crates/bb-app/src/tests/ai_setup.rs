@@ -3,7 +3,7 @@
 //! step, what goes where, the password asked again, and a failure that tells nothing.
 
 use bb_core::ErrorCode;
-use bb_core::ai::{Destination, ProviderKind};
+use bb_core::ai::{AgreementStatus, Destination, ProviderKind};
 
 use super::scenarios::{a_project, text, token};
 use super::scenarios_ai::{LOCAL_MODEL, OUTSIDE_MODEL, a_local_model, a_question, setup};
@@ -219,7 +219,7 @@ async fn priv_08_an_outside_provider_needs_the_agreement_before_it_is_switched_o
     .into_value();
     let agreement = confirmed.agreement.ok_or("no agreement kept")?;
     assert_eq!(agreement.destination, Destination::Anthropic);
-    assert!(!confirmed.agreement_needed);
+    assert_eq!(confirmed.agreement_status, AgreementStatus::Confirmed);
     change_ai_setup(&world.ctx(), switch_on()).await?;
     assert!(ai_enabled(&world).await?);
     world.ctx().ask_ai(None, &a_question()).await?;
@@ -283,7 +283,7 @@ async fn priv_08_a_local_model_needs_no_agreement() -> Outcome {
     .into_value();
     assert!(setup_now.enabled);
     assert_eq!(setup_now.destination, Some(Destination::LocalModel));
-    assert!(!setup_now.agreement_needed);
+    assert_eq!(setup_now.agreement_status, AgreementStatus::NotNeeded);
     world.ctx().ask_ai(None, &a_question()).await?;
     let calls = world.ai.calls();
     assert_eq!(calls[0].address.as_deref(), Some(LOCAL_MODEL));
@@ -315,7 +315,7 @@ async fn priv_08_what_goes_where_names_the_provider_its_country_and_the_data() -
         local.names_sent,
         "a local model gets the names a person sees"
     );
-    assert!(!local.agreement_needed);
+    assert_eq!(local.agreement_status, AgreementStatus::NotNeeded);
     assert_eq!(local.switched_off.len(), 1);
     assert_eq!(
         local.switched_off[0].id,
@@ -340,7 +340,7 @@ async fn priv_08_what_goes_where_names_the_provider_its_country_and_the_data() -
     let outside = what_goes_where(&world.ctx(), asked()).await?.into_value();
     assert_eq!(outside.destination, Destination::Anthropic);
     assert!(!outside.names_sent, "people go as their role at the start");
-    assert!(outside.agreement_needed);
+    assert_eq!(outside.agreement_status, AgreementStatus::Needed);
     assert_eq!(
         Destination::Anthropic.row().country,
         bb_core::message::AI_COUNTRY_ANTHROPIC

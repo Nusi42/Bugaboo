@@ -10,7 +10,8 @@
 
 use bb_core::ErrorCode;
 use bb_core::ai::{
-    Agreement, Destination, KEY_MAX, MODEL_MAX, ProviderKind, TRY_TEXT, destination_of,
+    Agreement, AgreementStatus, Destination, KEY_MAX, MODEL_MAX, ProviderKind, TRY_TEXT,
+    destination_of,
 };
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::settings::{
@@ -20,7 +21,7 @@ use bb_core::settings::{
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Permission, Place};
 
-use super::call::{AiState, agreement_holds};
+use super::call::AiState;
 use super::setup_view::{AiSetup, ProjectAi};
 use super::{AiPart, AiRequest, AiRole, AiTurn};
 use crate::auth::{
@@ -201,7 +202,7 @@ pub async fn change_ai_setup<S: AuthStore>(
         ctx.confirm_password(&actor.person, password).await?;
     }
     let stored = ctx.ai_agreement().await?;
-    let agreement_kept = !moves && agreement_holds(destination, stored.as_ref());
+    let agreement_kept = !moves && AgreementStatus::of(destination, stored.as_ref()).holds();
     if next.organization_on && destination.row().needs_agreement && !agreement_kept {
         return Err(ErrorCode::AiAgreementNeeded.into());
     }

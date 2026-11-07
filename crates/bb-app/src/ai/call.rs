@@ -5,8 +5,8 @@
 
 use bb_core::ErrorCode;
 use bb_core::ai::{
-    ANSWER_TOKENS_MAX, Agreement, Destination, ModelAddress, ProviderKind, counts_here,
-    destination_of,
+    ANSWER_TOKENS_MAX, Agreement, AgreementStatus, Destination, ModelAddress, ProviderKind,
+    counts_here, destination_of,
 };
 use bb_core::id::ProjectId;
 use bb_core::settings::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, Layers};
@@ -78,12 +78,6 @@ impl AiState {
     }
 }
 
-/// Whether the agreement that is stored covers the destination, or none is needed.
-pub(crate) fn agreement_holds(destination: Destination, agreement: Option<&Agreement>) -> bool {
-    !destination.row().needs_agreement
-        || agreement.is_some_and(|agreement| agreement.destination == destination)
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The settings of AI at a place: a project, or the organization.
     pub(crate) async fn ai_state_at(&self, place: Option<ProjectId>) -> Result<AiState, AppError> {
@@ -112,7 +106,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn ai_target(&self, state: &AiState) -> Result<AiTarget, AppError> {
         let address = state.model_address()?;
         let destination = destination_of(state.kind, address.as_ref());
-        if !agreement_holds(destination, self.ai_agreement().await?.as_ref()) {
+        if !AgreementStatus::of(destination, self.ai_agreement().await?.as_ref()).holds() {
             return Err(ErrorCode::AiAgreementNeeded.into());
         }
         let key = self

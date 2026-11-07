@@ -4271,6 +4271,11 @@ export interface components {
        */
       destination: components["schemas"]["Destination"];
     };
+    /**
+     * @description Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed.
+     * @enum {string}
+     */
+    AgreementStatus: "not-needed" | "needed" | "confirmed";
     /** @description The key of the provider. */
     AiKeyBody: {
       /**
@@ -4286,8 +4291,8 @@ export interface components {
       /** @description The address of an OpenAI-compatible model. */
       address: string;
       agreement?: components["schemas"]["AgreementBody"] | null;
-      /** @description The provider needs an agreement that is not confirmed for it yet. */
-      agreement_needed: boolean;
+      /** @description Where the agreement for the provider stands. */
+      agreement_status: components["schemas"]["AgreementStatus"];
       destination?: components["schemas"]["Destination"] | null;
       /** @description AI is on for the organization. */
       enabled: boolean;
@@ -9422,8 +9427,8 @@ export interface components {
     /** @description What goes where. */
     WhatGoesWhereBody: {
       agreement?: components["schemas"]["AgreementBody"] | null;
-      /** @description The provider needs an agreement that is not confirmed for it yet. */
-      agreement_needed: boolean;
+      /** @description Where the agreement for the provider stands. */
+      agreement_status: components["schemas"]["AgreementStatus"];
       /**
        * @description Where the data goes. The name of the provider, its country and the page where it says what
        *     it does with data are in the message catalog by this word.

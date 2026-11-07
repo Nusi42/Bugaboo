@@ -15568,6 +15568,11 @@
           }
         }
       },
+      "AgreementStatus": {
+        "type": "string",
+        "description": "Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed.",
+        "enum": ["not-needed", "needed", "confirmed"]
+      },
       "AiKeyBody": {
         "type": "object",
         "description": "The key of the provider.",
@@ -15593,7 +15598,7 @@
           "address",
           "send_names",
           "key_set",
-          "agreement_needed"
+          "agreement_status"
         ],
         "properties": {
           "address": {
@@ -15611,9 +15616,9 @@
               }
             ]
           },
-          "agreement_needed": {
-            "type": "boolean",
-            "description": "The provider needs an agreement that is not confirmed for it yet."
+          "agreement_status": {
+            "$ref": "#/components/schemas/AgreementStatus",
+            "description": "Where the agreement for the provider stands."
           },
           "destination": {
             "oneOf": [
@@ -25906,7 +25911,7 @@
           "enabled",
           "switched_off",
           "names_sent",
-          "agreement_needed"
+          "agreement_status"
         ],
         "properties": {
           "agreement": {
@@ -25920,9 +25925,9 @@
               }
             ]
           },
-          "agreement_needed": {
-            "type": "boolean",
-            "description": "The provider needs an agreement that is not confirmed for it yet."
+          "agreement_status": {
+            "$ref": "#/components/schemas/AgreementStatus",
+            "description": "Where the agreement for the provider stands."
           },
           "destination": {
             "$ref": "#/components/schemas/Destination",
