@@ -415,6 +415,32 @@ define_random_id! {
 }
 
 define_random_id! {
+    /// The ID of a hand-over of issues to an agent (AI-31). It opens nothing.
+    HandOverId
+}
+
+define_random_id! {
+    /// The ID of a standing rule of an agent (AI-32). It opens nothing.
+    StandingRuleId
+}
+
+define_random_id! {
+    /// The ID of the agent work on one issue (AI-33). It opens nothing.
+    AgentWorkId
+}
+
+define_random_id! {
+    /// The ID of one attempt of an agent (AI-33). It opens nothing.
+    AttemptId
+}
+
+define_random_id! {
+    /// The ID of a question of an agent, or of a proposal of a standing rule (AI-34, AI-32). It
+    /// opens nothing.
+    AgentNoteId
+}
+
+define_random_id! {
     /// The ID of one open editor, made by the browser when a person starts to edit a long text
     /// (ADR-0019). Two tabs of one person are two editors. It opens nothing.
     EditorId
@@ -437,6 +463,11 @@ impl crate::personal::NotPersonal for AccessKeyId {}
 impl crate::personal::NotPersonal for AgentId {}
 impl crate::personal::NotPersonal for OAuthClientId {}
 impl crate::personal::NotPersonal for GrantId {}
+impl crate::personal::NotPersonal for HandOverId {}
+impl crate::personal::NotPersonal for StandingRuleId {}
+impl crate::personal::NotPersonal for AgentWorkId {}
+impl crate::personal::NotPersonal for AttemptId {}
+impl crate::personal::NotPersonal for AgentNoteId {}
 
 /// The ID of a record whose kind is named next to it, for example in an event (ADR-0007). It can
 /// hold the ID of any kind of record, so it takes any UUID version.
@@ -496,7 +527,12 @@ into_entity_id!(
     AccessKeyId,
     AgentId,
     OAuthClientId,
-    GrantId
+    GrantId,
+    HandOverId,
+    StandingRuleId,
+    AgentWorkId,
+    AttemptId,
+    AgentNoteId
 );
 
 #[cfg(test)]
