@@ -6431,6 +6431,11 @@ export interface components {
       change?: components["schemas"]["FieldChangeBody"] | null;
       /** @description A comment: its ID. */
       comment?: string | null;
+      /**
+       * @description Time: the date of the entry, given to every reader but the person who booked it; `at` is
+       *     then that date at midnight and never the moment the entry was saved.
+       */
+      day?: string | null;
       direction?: components["schemas"]["Direction"] | null;
       /**
        * Format: date-time
@@ -8537,7 +8542,10 @@ export interface components {
       field?: string | null;
       /** @description The key of the message to show, in the message catalog. */
       message_key: string;
-      /** @description Values for the placeholders of the message. Empty today: error messages have none. */
+      /**
+       * @description Values for the placeholders of the message: the limits it names (`ErrorCode::arguments`);
+       *     most messages have none.
+       */
       params: {
         [key: string]: unknown;
       };

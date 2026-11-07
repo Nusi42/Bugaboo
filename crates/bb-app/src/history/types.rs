@@ -12,6 +12,7 @@ use bb_core::relation::Direction;
 use bb_core::time::Minutes;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
+use jiff::civil::Date;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -126,6 +127,10 @@ pub enum HistoryWhat {
         /// Its length (before it was deleted); none for a reader who may not read *Time spent*,
         /// and for a change that left the length as it was.
         minutes: Option<Minutes>,
+        /// The date of the entry, for every reader but the person who booked it: they are told the
+        /// date, never the moment the entry was saved, and the row's `at` is that date at midnight
+        /// (PRIV-09, ADR-0035, decision 8).
+        day: Option<Date>,
         /// The own fields of the entry (*Activity*, *Cost center*) as they were set or changed,
         /// only those the reader may see.
         fields: Vec<FieldChangeView>,

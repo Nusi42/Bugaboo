@@ -29,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 25] = [
+const HISTORY_FIELDS: [FieldSpec; 26] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -52,6 +52,7 @@ const HISTORY_FIELDS: [FieldSpec; 25] = [
     FieldSpec::by_default("file_event"),
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("time_event"),
+    FieldSpec::by_default("day"),
     FieldSpec::by_default("minutes"),
     FieldSpec::by_default("run_mark"),
     FieldSpec::by_default("run"),
@@ -182,6 +183,10 @@ pub(crate) struct HistoryEntryItem {
     /// of the kind `change` of the same event.
     #[serde(skip_serializing_if = "Option::is_none")]
     minutes: Option<u32>,
+    /// Time: the date of the entry, given to every reader but the person who booked it; `at` is
+    /// then that date at midnight and never the moment the entry was saved.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    day: Option<String>,
 }
 
 impl Masked for HistoryEntryItem {}
@@ -217,6 +222,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         file_name: None,
         time_event: None,
         minutes: None,
+        day: None,
     }
 }
 
@@ -271,11 +277,13 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
         HistoryWhat::Time {
             event,
             minutes,
+            day,
             fields,
         } => {
             let mut item = start(row, HistoryEntryKind::Time);
             item.time_event = Some(*event);
             item.minutes = minutes.map(bb_core::time::Minutes::get);
+            item.day = day.map(|day| day.to_string());
             let changes = fields.iter().map(|change| {
                 let mut each = start(row, HistoryEntryKind::Change);
                 each.change = Some(FieldChangeBody::from(change));
@@ -404,6 +412,7 @@ mod tests {
             file_name: Some(String::new()),
             time_event: Some(TimeEvent::Booked),
             minutes: Some(0),
+            day: Some(String::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);
     }

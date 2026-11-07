@@ -20663,6 +20663,10 @@
             "type": ["string", "null"],
             "description": "A comment: its ID."
           },
+          "day": {
+            "type": ["string", "null"],
+            "description": "Time: the date of the entry, given to every reader but the person who booked it; `at` is\nthen that date at midnight and never the moment the entry was saved."
+          },
           "direction": {
             "oneOf": [
               {
@@ -25136,7 +25140,7 @@
           },
           "params": {
             "type": "object",
-            "description": "Values for the placeholders of the message. Empty today: error messages have none.",
+            "description": "Values for the placeholders of the message: the limits it names (`ErrorCode::arguments`);\nmost messages have none.",
             "additionalProperties": {},
             "propertyNames": {
               "type": "string"

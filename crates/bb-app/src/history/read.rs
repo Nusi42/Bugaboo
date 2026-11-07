@@ -673,9 +673,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             None => None,
         };
         let (run_mark, run) = self.run_mark_of(reading, row).await?;
+        let at = super::time::shown_at(&what, row.at);
         Ok(Some(HistoryItem {
             event: row.event,
-            at: row.at,
+            at,
             app: reading.app_of(row.event, by.as_ref()),
             by,
             agent,

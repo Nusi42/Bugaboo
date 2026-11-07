@@ -48,6 +48,46 @@ async fn priv_09_a_reader_without_names_for_time_entries_sees_someone_and_never_
 }
 
 #[tokio::test]
+async fn priv_09_the_history_shows_others_the_date_of_an_entry_and_never_the_moment() -> TestResult
+{
+    each_database("priv_09_history_moment", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let booked = ada
+            .send(
+                "POST",
+                MY_ENTRIES,
+                Some(json!({"issue": issue, "date": "2027-01-14", "minutes": 45})),
+            )
+            .await?;
+        ok(&booked)?;
+        let path = format!("{ISSUES}/{issue}/history");
+        let time_item = |reply: &Value| -> Option<Value> {
+            reply["items"]
+                .as_array()?
+                .iter()
+                .find(|item| item["kind"] == "time")
+                .cloned()
+        };
+        // The booker sees the hour of their own booking.
+        let own = ada.send("GET", &path, None).await?;
+        let own = time_item(ok(&own)?).ok_or("Ada sees no time row")?;
+        assert_eq!(own["at"], "2027-01-15T08:00:00Z", "{own}");
+        assert!(own.get("day").is_none(), "{own}");
+        // Somebody else sees the date of the entry, and the moment appears nowhere in the row.
+        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
+        let other = tom.send("GET", &path, None).await?;
+        let other = time_item(ok(&other)?).ok_or("Tom sees no time row")?;
+        assert_eq!(other["day"], "2027-01-14", "{other}");
+        assert_eq!(other["at"], "2027-01-14T00:00:00Z", "{other}");
+        assert!(!other.to_string().contains("08:00"), "{other}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn priv_09_a_reader_who_may_not_read_time_spent_gets_no_lengths() -> TestResult {
     each_database("priv_09_no_lengths", async |db| {
         let (rig, app) = rig_and_app(db).await?;
