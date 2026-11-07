@@ -6,17 +6,18 @@
 use std::collections::BTreeSet;
 
 use axum::http::StatusCode;
-use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 mod agents;
+mod issues;
+mod labels;
+mod time;
 
 use super::fields_http::FIELDS;
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
+use super::issues_site::{PROJECTS, Site, ok, text_in};
 use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
-use super::time_http::{MY_ENTRIES, TIMER};
 
 /// How far past the current version a stale save is.
 const AHEAD: i64 = 50;
@@ -125,7 +126,7 @@ async fn read(browser: &mut Browser, path: &str) -> Result<Value, Failure> {
 async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
     match id {
         "changeMyWorkDay" | "changeWorkDayOfPerson" | "startBreak" | "endBreak" | "endWorkDay" => {
-            prepare_work_day(id, site, ada).await
+            time::work_day(id, site, ada).await
         }
         "changeField" | "addChoice" | "reorderChoices" | "changeChoice" | "combineChoices" => {
             prepare_fields(id, ada).await
@@ -135,13 +136,13 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         | "saveIssueDescription"
         | "saveIssueFieldText"
         | "moveIssue"
-        | "setIssueParent" => prepare_issues(id, site, ada).await,
+        | "setIssueParent" => issues::prepare(id, site, ada).await,
         "changeLabelGroup"
         | "changeLabelGroupOffers"
         | "changeLabel"
         | "combineLabels"
         | "changeTag"
-        | "combineTags" => prepare_labels(id, site, ada).await,
+        | "combineTags" => labels::prepare(id, site, ada).await,
         "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
         "publishWorkflow" | "deleteWorkflow" => prepare_workflow(id, ada).await,
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
@@ -150,7 +151,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeAgent" | "handAgent" => agents::prepare(id, ada).await,
         "setFieldNeverSentToAi" | "setProjectNeverSentToAi" => prepare_marks(id, ada).await,
         "stopTimer" | "switchTimer" | "changeTimerStart" | "throwAwayTimer" | "changeTimeEntry"
-        | "deleteTimeEntry" => prepare_time(id, site, ada).await,
+        | "deleteTimeEntry" => time::entries(id, site, ada).await,
         _ => prepare_settings(id, ada).await,
     }
 }
@@ -348,178 +349,6 @@ async fn prepare_fields(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
     }
 }
 
-async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
-    match id {
-        "saveComment" => {
-            let issue = ok(&site.create(ada, "Commented").await?)?.clone();
-            let comment = made(
-                ada,
-                &format!("{ISSUES}/{}/comments", text_in(&issue, "readable_id")?),
-                json!({"text": "First"}),
-            )
-            .await?;
-            let record = json!({"kind": "comment", "id": text_in(&comment, "id")?});
-            Ok(Save::new(
-                "PUT",
-                format!("/api/v1/comments/{}", text_in(&comment, "id")?),
-                json!({"text": "Second"}),
-                &comment["version"],
-            )?
-            .under_lock(&record, "text"))
-        }
-        "changeIssue"
-        | "saveIssueDescription"
-        | "moveIssue"
-        | "setIssueParent"
-        | "saveIssueFieldText" => {
-            let issue = ok(&site.create(ada, "An issue").await?)?.clone();
-            let key = text_in(&issue, "readable_id")?;
-            let record = json!({"kind": "issue", "id": text_in(&issue, "id")?});
-            let version = &issue["version"];
-            match id {
-                "changeIssue" => Save::new(
-                    "PATCH",
-                    format!("{ISSUES}/{key}"),
-                    json!({"title": "Renamed"}),
-                    version,
-                ),
-                "saveIssueDescription" => Ok(Save::new(
-                    "PUT",
-                    format!("{ISSUES}/{key}/description"),
-                    json!({"text": "Words"}),
-                    version,
-                )?
-                .under_lock(&record, "description")),
-                "moveIssue" => {
-                    let other =
-                        made(ada, PROJECTS, json!({"short_name": "BETA", "name": "Beta"})).await?;
-                    Save::new(
-                        "POST",
-                        format!("{ISSUES}/{key}/move"),
-                        json!({"project": text_in(&other, "id")?}),
-                        version,
-                    )
-                }
-                "setIssueParent" => {
-                    let parent = ok(&site.create(ada, "Parent").await?)?.clone();
-                    Save::new(
-                        "PUT",
-                        format!("{ISSUES}/{key}/parent"),
-                        json!({"parent": text_in(&parent, "readable_id")?}),
-                        version,
-                    )
-                }
-                _ => {
-                    let notes = made(
-                        ada,
-                        FIELDS,
-                        json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
-                    )
-                    .await?;
-                    let field = text_in(&notes, "id")?;
-                    Ok(Save::new(
-                        "PUT",
-                        format!("{ISSUES}/{key}/fields/{field}/text"),
-                        json!({"text": "Steps"}),
-                        version,
-                    )?
-                    .under_lock(&record, &format!("field-{field}")))
-                }
-            }
-        }
-        other => Err(format!("no row for {other}").into()),
-    }
-}
-
-async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
-    match id {
-        "changeLabelGroup" => {
-            let group = made(
-                ada,
-                "/api/v1/label-groups",
-                json!({"name": "Area", "pick_one": false}),
-            )
-            .await?;
-            Save::new(
-                "PATCH",
-                format!("/api/v1/label-groups/{}", text_in(&group, "id")?),
-                json!({"name": "Part"}),
-                &group["version"],
-            )
-        }
-        "changeLabelGroupOffers" => {
-            let group = made(
-                ada,
-                "/api/v1/label-groups",
-                json!({"name": "Platform", "pick_one": false}),
-            )
-            .await?;
-            Save::new(
-                "PUT",
-                format!("/api/v1/label-groups/{}/offers", text_in(&group, "id")?),
-                json!({"changes": [{"offered": true}]}),
-                &group["version"],
-            )
-        }
-        "changeLabel" | "combineLabels" => {
-            let label = made(
-                ada,
-                "/api/v1/labels",
-                json!({"name": format!("ui for {id}"), "label_group": null}),
-            )
-            .await?;
-            let path = format!("/api/v1/labels/{}", text_in(&label, "id")?);
-            if id == "changeLabel" {
-                return Save::new("PATCH", path, json!({"name": "screen"}), &label["version"]);
-            }
-            let other = made(
-                ada,
-                "/api/v1/labels",
-                json!({"name": format!("web for {id}"), "label_group": null}),
-            )
-            .await?;
-            Save::new(
-                "POST",
-                format!("{path}/combine"),
-                json!({"into": text_in(&other, "id")?, "into_version": other["version"]}),
-                &label["version"],
-            )
-        }
-        "changeTag" | "combineTags" => {
-            let issue = ok(&site.create(ada, "Tagged").await?)?.clone();
-            for name in ["slow", "fast"] {
-                made(
-                    ada,
-                    &format!("{ISSUES}/{}/tags", text_in(&issue, "readable_id")?),
-                    json!({"name": name}),
-                )
-                .await?;
-            }
-            let list = read(ada, "/api/v1/tags").await?;
-            let find = |name: &str| {
-                list["items"]
-                    .as_array()
-                    .and_then(|items| items.iter().find(|tag| tag["name"] == name))
-                    .cloned()
-                    .ok_or_else(|| Failure::from(format!("no tag {name} in {list}")))
-            };
-            let (slow, fast) = (find("slow")?, find("fast")?);
-            let path = format!("/api/v1/tags/{}", text_in(&slow, "id")?);
-            if id == "changeTag" {
-                Save::new("PATCH", path, json!({"name": "sluggish"}), &slow["version"])
-            } else {
-                Save::new(
-                    "POST",
-                    format!("{path}/combine"),
-                    json!({"into": text_in(&fast, "id")?, "into_version": fast["version"]}),
-                    &slow["version"],
-                )
-            }
-        }
-        other => Err(format!("no row for {other}").into()),
-    }
-}
-
 async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
     match id {
         "deleteLayout" => {
@@ -589,40 +418,6 @@ async fn prepare_workflow(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
         .under_lock(&json!({"kind": "workflow", "id": workflow}), "workflow")),
         other => Err(format!("no row for {other}").into()),
     }
-}
-
-/// The person's running timer (started on a new issue when it stands still), or one of their
-/// entries, and a change of it.
-async fn prepare_time(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
-    let issue = text_in(ok(&site.create(ada, "Timed").await?)?, "readable_id")?;
-    if let "changeTimeEntry" | "deleteTimeEntry" = id {
-        let entry = made(
-            ada,
-            MY_ENTRIES,
-            json!({"issue": issue, "date": "2027-01-14", "minutes": 30}),
-        )
-        .await?;
-        let path = format!("{MY_ENTRIES}/{}", text_in(&entry, "id")?);
-        return if id == "changeTimeEntry" {
-            Save::new("PATCH", path, json!({"minutes": 45}), &entry["version"])
-        } else {
-            Ok(Save::new("DELETE", path, json!({}), &entry["version"])?.in_the_query())
-        };
-    }
-    let mut timer = read(ada, TIMER).await?;
-    if timer.get("running").is_none() {
-        timer = made(ada, TIMER, json!({"issue": issue})).await?;
-    }
-    let (path, body) = match id {
-        "stopTimer" => ("stop", json!({})),
-        "switchTimer" => ("switch", json!({"issue": issue})),
-        "changeTimerStart" => (
-            "start-time",
-            json!({"started_at": timer["running"]["started_at"]}),
-        ),
-        _ => ("throw-away", json!({})),
-    };
-    Save::new("POST", format!("{TIMER}/{path}"), body, &timer["version"])
 }
 
 #[tokio::test]
@@ -743,63 +538,4 @@ fn iss_17_the_table_has_a_row_for_every_route_that_takes_a_version() -> TestResu
         "the routes with a version and the rows of the table"
     );
     Ok(())
-}
-
-/// The stale changes of a work day of Ada's: a day typed afterwards, or the day that runs.
-async fn prepare_work_day(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
-    // At most one change of a person's days a second.
-    site.org.rig.clock.advance(1);
-    let base = "/api/v1/me/work-days".to_owned();
-    let times = |date: &str| {
-        json!({
-            "periods": [{"start": format!("{date}T08:00:00Z"), "end": format!("{date}T16:00:00Z")}],
-            "breaks": [],
-            "reason": "Typed in afterwards",
-        })
-    };
-    let first = |date: &str| {
-        let mut body = times(date);
-        body["version"] = json!(0);
-        body
-    };
-    if id == "changeMyWorkDay" {
-        let date = "2027-01-10";
-        let path = format!("{base}/{date}");
-        let day = ok(&ada.send("PATCH", &path, Some(first(date))).await?)?.clone();
-        return Save::new("PATCH", path, times(date), &day["version"]);
-    }
-    if id == "changeWorkDayOfPerson" {
-        // Bob's day, which Ada changes once she holds *HR*.
-        let date = "2027-01-09";
-        let (mut bob, bob_id) = site
-            .person_called(StartingRole::TeamMember, "bob-days", "Bob Baker")
-            .await?;
-        let day = ok(&bob
-            .send("PATCH", &format!("{base}/{date}"), Some(first(date)))
-            .await?)?
-        .clone();
-        let hr = site.org.starting_roles().await?[StartingRole::Hr.code()];
-        site.org.give_everywhere(&site.org.admin, hr).await?;
-        return Save::new(
-            "PATCH",
-            format!("/api/v1/people/{bob_id}/work-days/{date}"),
-            times(date),
-            &day["version"],
-        );
-    }
-    // The day that runs: started once, and read as it is now.
-    ada.send("POST", "/api/v1/me/work-days/start", Some(json!({})))
-        .await?;
-    let today = read(ada, "/api/v1/me/work-days?from=2027-01-15&to=2027-01-15").await?;
-    let tap = match id {
-        "startBreak" => "break/start",
-        "endBreak" => "break/end",
-        _ => "end",
-    };
-    Save::new(
-        "POST",
-        format!("{base}/{tap}"),
-        json!({}),
-        &today["days"][0]["version"],
-    )
 }
