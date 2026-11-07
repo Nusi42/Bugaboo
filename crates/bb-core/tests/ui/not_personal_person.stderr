@@ -16,6 +16,7 @@ help: the trait `NotPersonal` is not implemented for `Person`
              AppliesTo
              AssignmentId
              AttachmentId
+             AuthorKind
              Basis
              Box<T>
              Category

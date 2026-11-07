@@ -5,6 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::ai::{AuthorKind, Tool};
 use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, StatusGroup};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
@@ -55,6 +56,12 @@ pub(crate) fn made_keys() -> Vec<Made> {
             kind.code(),
             kind.name(),
         ));
+    }
+    for tool in Tool::ALL {
+        keys.push(made("the AI tool", tool.code(), tool.description()));
+    }
+    for author in AuthorKind::ALL {
+        keys.push(made("the kind of author", author.code(), author.label()));
     }
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));

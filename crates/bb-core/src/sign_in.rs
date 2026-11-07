@@ -148,6 +148,11 @@ words! {
         AiAgreementConfirmed => "ai.agreement_confirmed",
         /// A project switched AI on or off for itself, or went back to following the organization.
         AiProjectSwitchChanged => "ai.project_switch_changed",
+        /// An administrator marked a field or a project *Never sent to AI*, or took the mark away.
+        NeverSentToAiChanged => "never_sent_to_ai.changed",
+        /// A tool was turned away: it does not exist, the key or the app may not use it, or it names
+        /// something kept from AI.
+        AiToolRefused => "ai_tool.refused",
     }
 }
 

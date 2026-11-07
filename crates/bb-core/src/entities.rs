@@ -20,6 +20,8 @@ crate::entities! {
     crate::access::StartingRoleDue,
     crate::access::StartingRolesMade,
     crate::access_key::AccessKey,
+    crate::ai::NeverSentMark,
+    crate::ai::ToolCall,
     crate::access_key::AccessKeyPermission,
     crate::access_key::AccessKeyProject,
     crate::many_changes::ManyChangeRun,

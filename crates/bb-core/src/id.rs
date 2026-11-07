@@ -320,6 +320,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of one call of an AI tool (AI-21).
+    ToolCallId
+}
+
+define_ordered_id! {
     /// The ID of a work day of a person (TIME-08, ADR-0035, decision 5).
     WorkDayId
 }
@@ -454,6 +459,7 @@ into_entity_id!(
     CommentId,
     TimeEntryId,
     WorkDayId,
+    ToolCallId,
     AttachmentId,
     UploadId,
     TagId,

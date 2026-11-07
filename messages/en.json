@@ -2665,5 +2665,21 @@
   "error.ai.not-set-up": "AI is not set up. Enter the model, and the key if the provider asks for one.",
   "error.ai.agreement-needed": "Confirm first that a data processing agreement with this provider is in place.",
   "error.ai.address-invalid": "This is not a web address. Write it like https://models.example.com/v1.",
-  "error.ai.address-not-encrypted": "An address on the internet must start with https://. Only a model on your own computers may use http://."
+  "error.ai.address-not-encrypted": "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+  "ai-tool.search-issues": "Search the issues you may read with the search language.",
+  "ai-tool.get-issue": "Read one issue you may see, with its fields and comments.",
+  "ai-tool.list-projects": "List the projects you may see.",
+  "ai-tool.get-my-work": "List the issues that are assigned to you.",
+  "ai-tool.create-issue": "Create a new issue in a project.",
+  "ai-tool.update-issue": "Change fields of an issue.",
+  "ai-tool.change-status": "Move an issue to another status.",
+  "ai-tool.add-comment": "Write a comment on an issue.",
+  "ai-tool.log-time": "Book your own time on an issue.",
+  "ai-tool.start-timer": "Start your timer on an issue.",
+  "ai-tool.stop-timer": "Stop your timer.",
+  "ai-author.member": "someone in the project",
+  "ai-author.guest": "a Guest",
+  "ai-author.outsider": "someone outside",
+  "ai-author.agent": "an agent",
+  "ai-author.assistant": "the assistant"
 }

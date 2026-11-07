@@ -12,6 +12,7 @@ error[E0277]: `String` may hold personal data, so a field of this type cannot be
             AppliesTo
             AssignmentId
             AttachmentId
+            AuthorKind
             Basis
             Box<T>
             Category
