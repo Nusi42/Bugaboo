@@ -4872,14 +4872,18 @@ part "apps.row:last-child apps.cell" {
 
 part "apps.cell[variant=head]" {
     color "$fg-muted"
+    white-space nowrap
 }
 
-part "apps.cell[variant=name] > span" {
-    display block
+part "apps.body" {
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display block
+    }
 }
 
 part "apps.cell[variant=action]" {
     text-align end
+    white-space nowrap
     media "(max-width: calc($bp-tablet - 1px))" {
         text-align start
     }

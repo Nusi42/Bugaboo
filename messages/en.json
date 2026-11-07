@@ -944,6 +944,7 @@
   "connect.where-web": "The app comes back to {address}, a web address your administrator allowed.",
   "connect.name-unchecked": "The name is the app’s own; Bugaboo can’t check it.",
   "connect.take-back-note": "You can take this back at any time in My settings, under Connected apps.",
+  "connect.choice-help": "{choice}: {what}",
   "connect.may-only": "It asked to see only, so it may only look: it can see what you can see and change nothing.",
   "connect.help.see-only": "The app can look at what you can look at, and it can change nothing.",
   "connect.help.see-and-change": "The app can also change what you may change, but it cannot manage people, roles or settings.",

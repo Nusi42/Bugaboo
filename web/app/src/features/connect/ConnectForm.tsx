@@ -58,21 +58,22 @@ interface MayProps {
 /** *What it may do*: both choices, each with what it means, or one plain statement when only one is offered. */
 function May({ choices, scope, onScope }: MayProps) {
   if (choices.length === 1) {
-    return <p>{t("connect.may-only")}</p>;
+    return <p {...partOf(part.text)}>{t("connect.may-only")}</p>;
   }
   return (
-    <ChoiceGroup
-      legend={t("access-keys.may")}
-      choices={choices.map((value) => ({ value, label: t(choiceName(value)) }))}
-      value={scope}
-      onChange={onScope}
-      renderLabel={(choice) => (
-        <span {...partOf(part.choiceGroupLabel)}>
-          {choice.label}
-          <span {...partOf(part.muted)}>{t(helps[choice.value])}</span>
-        </span>
-      )}
-    />
+    <>
+      <ChoiceGroup
+        legend={t("access-keys.may")}
+        choices={choices.map((value) => ({ value, label: t(choiceName(value)) }))}
+        value={scope}
+        onChange={onScope}
+      />
+      {choices.map((value) => (
+        <p key={value} {...partOf(part.muted)}>
+          {t("connect.choice-help", { choice: t(choiceName(value)), what: t(helps[value]) })}
+        </p>
+      ))}
+    </>
   );
 }
 
@@ -88,7 +89,7 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
         deciding.send({ allow: true, scope, projects: [...picked] });
       }}
     >
-      <p>{t("connect.acts-as", { app })}</p>
+      <p {...partOf(part.text)}>{t("connect.acts-as", { app })}</p>
       <May choices={choices} scope={scope} onScope={setScope} />
       <ProjectLimitPicker
         picked={picked}

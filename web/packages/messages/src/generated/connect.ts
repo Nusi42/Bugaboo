@@ -10,6 +10,7 @@ export const messages = {
   "connect.name-unchecked": "The name is the app’s own; Bugaboo can’t check it.",
   "connect.take-back-note":
     "You can take this back at any time in My settings, under Connected apps.",
+  "connect.choice-help": "{choice}: {what}",
   "connect.may-only":
     "It asked to see only, so it may only look: it can see what you can see and change nothing.",
   "connect.help.see-only": "The app can look at what you can look at, and it can change nothing.",

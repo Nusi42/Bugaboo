@@ -3968,14 +3968,18 @@ textarea,
 
 [data-part="apps.cell"][data-variant~="head"] {
   color: var(--fg-muted);
+  white-space: nowrap;
 }
 
-[data-part="apps.cell"][data-variant~="name"] > [data-part="span"] {
-  display: block;
+@media (max-width: calc(768px - 1px)) {
+  [data-part="apps.body"] {
+    display: block;
+  }
 }
 
 [data-part="apps.cell"][data-variant~="action"] {
   text-align: end;
+  white-space: nowrap;
 }
 
 @media (max-width: calc(768px - 1px)) {

@@ -158,7 +158,7 @@ pub async fn remove_web_address<S: AuthStore>(
 /// The daily clean-up (`oauth.clean-old-grants`): codes and tokens that ran out, grants that ended
 /// or ran out long ago, and apps that registered and were never allowed. While AI apps are off
 /// nothing is deleted and the days without use do not count, as ADR-0042 says.
-pub(crate) async fn clean_old_grants<S: AuthStore>(
+pub async fn clean_old_grants<S: AuthStore>(
     ctx: &Ctx<'_, S>,
 ) -> Result<super::oauth_store::OAuthCleaned, AppError> {
     let now = ctx.now();

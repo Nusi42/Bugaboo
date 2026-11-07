@@ -211,7 +211,7 @@ pub use invitations::{
 pub use limit::NoFailureLimit;
 pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
 pub use oauth::{authorization, connected_apps, decide_authorization, register_app, take_back};
-pub(crate) use oauth_admin::clean_old_grants;
+pub use oauth_admin::clean_old_grants;
 pub use oauth_admin::{
     add_web_address, mcp_identity, oauth_metadata, remove_web_address, web_addresses,
 };

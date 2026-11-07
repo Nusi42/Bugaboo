@@ -7563,6 +7563,21 @@ pub fn connect_acts_as(app: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `connect.choice-help`.
+#[must_use]
+pub fn connect_choice_help(
+    choice: impl std::fmt::Display,
+    what: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connect.choice-help"),
+        vec![
+            ("choice", Value::Text(choice.to_string())),
+            ("what", Value::Text(what.to_string())),
+        ],
+    )
+}
+
 /// The message `connect.title`.
 #[must_use]
 pub fn connect_title(app: impl std::fmt::Display) -> Message {
@@ -14420,6 +14435,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("connect.allow", "Allow"),
     ("connect.cancel", "Cancel"),
+    ("connect.choice-help", "{choice}: {what}"),
     ("connect.going-back", "Going back to the app…"),
     (
         "connect.going-back-help",

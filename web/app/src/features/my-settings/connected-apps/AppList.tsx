@@ -54,7 +54,7 @@ export function AppList() {
         {items.length === 0 ? null : (
           <table {...partOf(part.appsTable)} aria-label={t("connected-apps.list")}>
             <Head />
-            <tbody>
+            <tbody {...partOf(part.appsBody)}>
               {items.map((item) => (
                 <AppRow
                   key={item.id}

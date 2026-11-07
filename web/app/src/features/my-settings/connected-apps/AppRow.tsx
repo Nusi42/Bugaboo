@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
-import { formatDateTime } from "../../../shared/format.ts";
+import { formatDate, formatDateTime } from "../../../shared/format.ts";
 import { mayText, whereText } from "../access-keys/key-words.ts";
 import type { ConnectedApp } from "./connected-apps.ts";
 
@@ -38,11 +38,13 @@ export function AppRow({ item, onTakeBack }: AppRowProps) {
   return (
     <tr {...partOf(part.appsRow)}>
       <th scope={rowHeader} {...partOf(part.appsCell, { variants: ["name"] })}>
-        <span {...partOf(part.itemTitle)}>{name}</span>
-        <span {...partOf(part.muted)}>
-          {item.on_this_computer === true
-            ? t("connected-apps.row.where-computer")
-            : t("connected-apps.row.where-web")}
+        <span {...partOf(part.startColumn)}>
+          <span {...partOf(part.itemTitle)}>{name}</span>
+          <span {...partOf(part.muted)}>
+            {item.on_this_computer === true
+              ? t("connected-apps.row.where-computer")
+              : t("connected-apps.row.where-web")}
+          </span>
         </span>
       </th>
       <Cell label={t("connected-apps.col.may")}>
@@ -53,7 +55,7 @@ export function AppRow({ item, onTakeBack }: AppRowProps) {
       </Cell>
       <Cell label={t("connected-apps.col.projects")}>{whereText(item.projects)}</Cell>
       <Cell label={t("connected-apps.col.allowed")}>
-        {allowed === undefined || allowed === null ? "" : formatDateTime(allowed)}
+        {allowed === undefined || allowed === null ? "" : formatDate(allowed)}
       </Cell>
       <Cell label={t("connected-apps.col.last-used")}>
         {used === undefined || used === null

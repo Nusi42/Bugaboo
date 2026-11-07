@@ -141,6 +141,7 @@ export interface MessageArguments {
   };
   "conflict.sentence-plain": { ago: string | number; timed: string; who: string | number };
   "connect.acts-as": { app: string | number };
+  "connect.choice-help": { choice: string | number; what: string | number };
   "connect.title": { app: string | number };
   "connect.where-web": { address: string | number };
   "connected-apps.take-back-name": { name: string | number };
