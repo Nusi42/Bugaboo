@@ -1323,18 +1323,18 @@ One call of one tool. Never the content, only its size.
 
 Defined in `crates/bb-core/src/ai/tools.rs`.
 
-| Field       | Personal data | Category   | Legal basis            | What it holds                                           |
-| ----------- | ------------- | ---------- | ---------------------- | ------------------------------------------------------- |
-| `id`        | No            | –          | –                      | The ID of the call.                                     |
-| `person`    | Yes           | `identity` | `legitimate_interests` | The person the call acted for.                          |
-| `caller`    | No            | –          | –                      | How the tool was called.                                |
-| `app`       | Yes           | `activity` | `legitimate_interests` | The name an AI app gave itself; none for the assistant. |
-| `tool`      | No            | –          | –                      | The name of the tool.                                   |
-| `effect`    | No            | –          | –                      | Whether the tool reads or changes.                      |
-| `bytes_in`  | No            | –          | –                      | The bytes of the input.                                 |
-| `bytes_out` | No            | –          | –                      | The bytes of the answer.                                |
-| `at`        | Yes           | `activity` | `legitimate_interests` | When the call was made.                                 |
-| `outcome`   | No            | –          | –                      | How it ended.                                           |
+| Field       | Personal data | Category   | Legal basis            | What it holds                                                                          |
+| ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------- |
+| `id`        | No            | –          | –                      | The ID of the call.                                                                    |
+| `person`    | Yes           | `identity` | `legitimate_interests` | The person the call acted for.                                                         |
+| `caller`    | No            | –          | –                      | How the tool was called.                                                               |
+| `app`       | Yes           | `activity` | `legitimate_interests` | The name an AI app gave itself; none for the assistant.                                |
+| `tool`      | No            | –          | –                      | The tool; none when the name that was called is no tool (the name itself is not kept). |
+| `effect`    | No            | –          | –                      | Whether the tool reads or changes; none for a call of no tool.                         |
+| `bytes_in`  | No            | –          | –                      | The bytes of the input.                                                                |
+| `bytes_out` | No            | –          | –                      | The bytes of the answer.                                                               |
+| `at`        | Yes           | `activity` | `legitimate_interests` | When the call was made.                                                                |
+| `outcome`   | No            | –          | –                      | How it ended.                                                                          |
 
 ### TwoStep
 

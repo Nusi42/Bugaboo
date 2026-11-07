@@ -23,7 +23,7 @@ use std::collections::BTreeSet;
 
 use super::required_tests::crate_sources;
 use super::{Check, Context, Finding};
-use crate::rust_source::{strip_comments, without_tests};
+use crate::rust_source::{strip, strip_comments, without_tests};
 use crate::source::Source;
 
 const REGISTRY: &str = "crates/bb-app/src/ai/tools/registry.rs";
@@ -72,6 +72,8 @@ struct Entry {
     changes: bool,
     variant: String,
     use_case: String,
+    /// The function the registry runs the tool with (the last name of its path).
+    runner: String,
 }
 
 fn is_ident(character: char) -> bool {
@@ -124,16 +126,25 @@ fn entries_of(text: &str) -> Vec<Entry> {
             let Some(after) = after.strip_prefix(',') else {
                 continue;
             };
-            let use_case = after
+            let (use_case, rest) = after
                 .trim_start()
                 .strip_prefix('"')
                 .and_then(|quoted| quoted.split_once('"'))
-                .map(|(name, _)| name.to_owned())
-                .unwrap_or_default();
+                .map_or((String::new(), ""), |(name, rest)| (name.to_owned(), rest));
+            // After the use case come the schema and the runner: `, schema_of::<T>, path::runner::<S>`.
+            let mut arguments = rest.trim_start().trim_start_matches(',').split(',');
+            let runner = arguments
+                .nth(1)
+                .map(|text| text.trim().trim_end_matches(')').trim())
+                .map(|path| path.split("::<").next().unwrap_or(path))
+                .and_then(|path| path.rsplit("::").next())
+                .unwrap_or_default()
+                .to_owned();
             found.push(Entry {
                 changes,
                 variant,
                 use_case,
+                runner,
             });
         }
     }
@@ -167,7 +178,9 @@ fn public_functions(text: &str) -> Vec<String> {
             let line = line.trim_start();
             let rest = line
                 .strip_prefix("pub async fn ")
-                .or_else(|| line.strip_prefix("pub fn "))?;
+                .or_else(|| line.strip_prefix("pub fn "))
+                .or_else(|| line.strip_prefix("pub(crate) async fn "))
+                .or_else(|| line.strip_prefix("pub(crate) fn "))?;
             let name: String = rest.chars().take_while(|c| is_ident(*c)).collect();
             (!name.is_empty()).then_some(name)
         })
@@ -214,6 +227,7 @@ fn findings(sources: &[Source]) -> Vec<Finding> {
     found.extend(table_findings(sources, &tools, &entries));
     found.extend(preview_findings(sources, &tools, &entries));
     found.extend(second_registry_findings(sources, &tools));
+    found.extend(dispatch_findings(sources, &entries));
     found.extend(designed_out_findings(sources, registry, &entries));
     found
 }
@@ -292,6 +306,109 @@ fn preview_findings(sources: &[Source], tools: &[Tool], entries: &[Entry]) -> Ve
         .collect()
 }
 
+/// The bodies of the functions of a file: `(name, body)`, with strings and comments blanked.
+fn function_bodies(text: &str) -> Vec<(String, String)> {
+    let code = strip(&without_tests(text));
+    let mut found = Vec::new();
+    let mut from = 0;
+    while let Some(at) = code[from..].find("fn ") {
+        let start = from + at;
+        from = start + 3;
+        if code[..start].chars().next_back().is_some_and(is_ident) {
+            continue;
+        }
+        let name: String = code[from..].chars().take_while(|c| is_ident(*c)).collect();
+        let Some(open) = code[from..].find(['{', ';']).map(|at| from + at) else {
+            continue;
+        };
+        if name.is_empty() || !code[open..].starts_with('{') {
+            continue;
+        }
+        let mut depth = 0_usize;
+        let mut end = code.len();
+        for (offset, character) in code[open..].char_indices() {
+            match character {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = open + offset + 1;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        found.push((name, code[open..end].to_owned()));
+    }
+    found
+}
+
+/// What a tool really does: the function the registry names runs it, and the use case it names is
+/// called by that function or by one it calls in the tools folder. A tool dispatched anywhere else
+/// than through the registry would not be found here.
+fn dispatch_findings(sources: &[Source], entries: &[Entry]) -> Vec<Finding> {
+    let bodies: Vec<(String, String)> = sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(TOOLS_FOLDER) && !is_test_file(path))
+        .flat_map(|(_, text)| function_bodies(text))
+        .collect();
+    let mut found = Vec::new();
+    for entry in entries {
+        let mut reached: BTreeSet<&str> = BTreeSet::new();
+        let mut waiting = vec![entry.runner.as_str()];
+        while let Some(name) = waiting.pop() {
+            if !reached.insert(name) {
+                continue;
+            }
+            for (_, body) in bodies.iter().filter(|(each, _)| each == name) {
+                waiting.extend(
+                    bodies
+                        .iter()
+                        .map(|(each, _)| each.as_str())
+                        .filter(|each| calls(body, each)),
+                );
+            }
+        }
+        let preview = format!("preview_{}", entry.use_case);
+        let runs_it = bodies
+            .iter()
+            .filter(|(name, _)| reached.contains(name.as_str()))
+            .any(|(_, body)| calls(body, &entry.use_case) || calls(body, &preview));
+        if !runs_it {
+            found.push(Finding::at(
+                REGISTRY,
+                format!(
+                    "The tool `Tool::{}` is run by `{}`, which does not call its use case `{}` (nor `{preview}`), in the tools folder. The registry is the dispatch: name the function that does the work.",
+                    entry.variant, entry.runner, entry.use_case
+                ),
+            ));
+        }
+    }
+    // Nothing but the registry chooses a function by the tool.
+    for (path, text) in sources {
+        if !path.starts_with(TOOLS_FOLDER) || path == REGISTRY || is_test_file(path) {
+            continue;
+        }
+        let code = strip_comments(&without_tests(text));
+        let mut from = 0;
+        while let Some(at) = code[from..].find("Tool::") {
+            let start = from + at;
+            from = start + 6;
+            // A variant (`Tool::GetIssue`) chooses; a method (`Tool::code`) does not.
+            let variant = code[from..].chars().next().is_some_and(char::is_uppercase);
+            if variant && !code[..start].chars().next_back().is_some_and(is_ident) {
+                found.push(Finding::at(
+                    path,
+                    "A function is chosen by the tool here (`Tool::…`). Only the registry chooses what a tool runs: give the tool its function in the table.",
+                ));
+                break;
+            }
+        }
+    }
+    found
+}
+
 /// No file but the registry and the words builds a tool.
 fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> {
     let mut found = Vec::new();
@@ -300,7 +417,7 @@ fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> 
             continue;
         }
         let code = strip_comments(&without_tests(text));
-        if code.contains("ToolSpec {") || code.contains("ToolSpec::") {
+        if code.contains("ToolSpec {") {
             found.push(Finding::at(
                 path,
                 "A tool is built here. Tools are made only in the registry (`registry.rs`); add an entry there.",
@@ -380,7 +497,10 @@ mod tests {
     use super::*;
 
     const WORDS: &str = "pub enum Tool {\n    /// Search.\n    SearchIssues => \"search_issues\",\n    /// Make.\n    CreateIssue => \"create_issue\",\n    }\n";
-    const REGISTRY_TEXT: &str = "pub const DESIGNED_OUT: &[&str] = &[\"check_access\"];\npub const REGISTRY: [ToolSpec; 2] = [\n    reads(Tool::SearchIssues, \"search\", a),\n    changes(\n        Tool::CreateIssue,\n        \"create_issue\",\n        b,\n    ),\n];\n";
+    const REGISTRY_TEXT: &str = "pub const DESIGNED_OUT: &[&str] = &[\"check_access\"];\npub fn registry<S>() -> [ToolSpec<S>; 2] {\n    [\n        reads(Tool::SearchIssues, \"search_page\", schema_of::<A>, read::search::<S>),\n        changes(\n            Tool::CreateIssue,\n            \"create_issue\",\n            schema_of::<B>,\n            preview::create::<S>,\n        ),\n    ]\n}\n";
+    const READ: &str = "pub(super) fn search<'a, S>(ctx: &'a Ctx<S>) { Box::pin(async move { ctx.look().await }) }\nasync fn look() { search_page(x).await }";
+    const PREVIEW: &str =
+        "pub(super) fn create<'a, S>(ctx: &'a Ctx<S>) { ctx.preview_create_issue(a).await }";
 
     fn source(path: &str, text: &str) -> Source {
         (path.to_owned(), text.to_owned())
@@ -390,9 +510,11 @@ mod tests {
         vec![
             source(REGISTRY, REGISTRY_TEXT),
             source(TOOL_WORDS, WORDS),
+            source("crates/bb-app/src/ai/tools/read.rs", READ),
+            source("crates/bb-app/src/ai/tools/preview.rs", PREVIEW),
             source(
                 "crates/bb-app/src/search/run.rs",
-                "pub async fn search() {}\npub async fn create_issue() {}",
+                "pub(crate) async fn search_page() {}\npub async fn create_issue() {}",
             ),
             source(
                 "crates/bb-app/src/tests/ai_tools.rs",
@@ -412,8 +534,12 @@ mod tests {
             .collect()
     }
 
+    fn has(found: &[String], part: &str) -> bool {
+        found.iter().any(|text| text.contains(part))
+    }
+
     #[test]
-    fn good_example_a_table_with_every_tool_once_and_a_test_of_each_preview() {
+    fn good_example_a_table_with_every_tool_once_a_runner_that_calls_its_use_case() {
         assert_eq!(messages(&good()), Vec::<String>::new());
     }
 
@@ -423,7 +549,8 @@ mod tests {
         assert_eq!(entries.len(), 2);
         assert!(entries.iter().any(|entry| entry.changes
             && entry.variant == "CreateIssue"
-            && entry.use_case == "create_issue"));
+            && entry.use_case == "create_issue"
+            && entry.runner == "create"));
     }
 
     #[test]
@@ -431,26 +558,16 @@ mod tests {
         let mut sources = good();
         sources[0] = source(
             REGISTRY,
-            "pub const DESIGNED_OUT: &[&str] = &[];\nreads(Tool::SearchIssues, \"search\", a),",
+            "pub const DESIGNED_OUT: &[&str] = &[];\nreads(Tool::SearchIssues, \"search_page\", s, read::search::<S>),",
         );
-        let found = messages(&sources);
-        assert!(
-            found
-                .iter()
-                .any(|text| text.contains("`create_issue` has 0"))
-        );
+        assert!(has(&messages(&sources), "`create_issue` has 0"));
     }
 
     #[test]
     fn bad_example_a_tool_that_changes_without_a_test_of_its_preview() {
         let mut sources = good();
-        sources[3] = source("crates/bb-app/src/tests/ai_tools.rs", "fn other() {}");
-        let found = messages(&sources);
-        assert!(
-            found
-                .iter()
-                .any(|text| text.contains("no test of its preview"))
-        );
+        sources[5] = source("crates/bb-app/src/tests/ai_tools.rs", "fn other() {}");
+        assert!(has(&messages(&sources), "no test of its preview"));
     }
 
     #[test]
@@ -461,16 +578,28 @@ mod tests {
             "fn mine() { let own = ToolSpec { tool: 1 }; call(\"search_issues\"); }",
         ));
         let found = messages(&sources);
-        assert!(
-            found
-                .iter()
-                .any(|text| text.contains("A tool is built here"))
+        assert!(has(&found, "A tool is built here"));
+        assert!(has(&found, "`search_issues` is written"));
+    }
+
+    #[test]
+    fn bad_example_a_runner_that_does_not_call_the_use_case_the_table_names() {
+        let mut sources = good();
+        sources[2] = source(
+            "crates/bb-app/src/ai/tools/read.rs",
+            "pub(super) fn search<'a, S>(ctx: &'a Ctx<S>) { ctx.other().await }",
         );
-        assert!(
-            found
-                .iter()
-                .any(|text| text.contains("`search_issues` is written"))
-        );
+        assert!(has(&messages(&sources), "does not call its use case"));
+    }
+
+    #[test]
+    fn bad_example_a_function_chosen_by_the_tool_outside_the_registry() {
+        let mut sources = good();
+        sources.push(source(
+            "crates/bb-app/src/ai/tools/call.rs",
+            "fn run(tool: Tool) { match tool { Tool::SearchIssues => one(), _ => two() } }",
+        ));
+        assert!(has(&messages(&sources), "chosen by the tool"));
     }
 
     #[test]
@@ -478,17 +607,16 @@ mod tests {
         let mut sources = good();
         sources[0] = source(
             REGISTRY,
-            "pub const DESIGNED_OUT: &[&str] = &[];\nreads(Tool::SearchIssues, \"work_days\", a),\nchanges(Tool::CreateIssue, \"create_issue\", b),",
+            "pub const DESIGNED_OUT: &[&str] = &[];\nreads(Tool::SearchIssues, \"work_days\", s, read::search::<S>),\nchanges(Tool::CreateIssue, \"create_issue\", s, preview::create::<S>),",
         );
-        let found = messages(&sources);
-        assert!(found.iter().any(|text| text.contains("designed out")));
+        assert!(has(&messages(&sources), "designed out"));
     }
 
     #[test]
     fn bad_example_a_tool_file_that_calls_a_designed_out_use_case() {
         let mut sources = good();
         sources.push(source(
-            "crates/bb-app/src/ai/tools/read.rs",
+            "crates/bb-app/src/ai/tools/extra.rs",
             "async fn x() { check_access(ctx, q).await; self.work_days(q); }",
         ));
         sources.push(source(
@@ -496,17 +624,17 @@ mod tests {
             "use bb_app::roles::roles;",
         ));
         let found = messages(&sources);
-        assert!(found.iter().any(|text| text.contains("`check_access`")));
-        assert!(found.iter().any(|text| text.contains("`work_days`")));
-        assert!(found.iter().any(|text| text.contains("`bb_app::roles`")));
+        assert!(has(&found, "`check_access`"));
+        assert!(has(&found, "`work_days`"));
+        assert!(has(&found, "`bb_app::roles`"));
     }
 
     #[test]
     fn good_example_a_comment_and_a_test_module_do_not_count() {
         let mut sources = good();
         sources.push(source(
-            "crates/bb-app/src/ai/tools/read.rs",
-            "// check_access(ctx)\nfn x() {}\n#[cfg(test)]\nmod tests { fn y() { work_days(1); } }",
+            "crates/bb-app/src/ai/tools/extra.rs",
+            "// check_access(ctx)\nfn x() {}\n#[cfg(test)]\nmod tests { fn y() { work_days(1); Tool::A; } }",
         ));
         assert_eq!(messages(&sources), Vec::<String>::new());
     }

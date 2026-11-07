@@ -6,6 +6,7 @@ use bb_core::id::{ProjectId, UserId};
 use serde_json::Value;
 
 use super::inputs::{GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput};
+use super::registry::{Boxed, Run};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::{AuthorKind, Part, drop_withheld, people_in};
@@ -241,4 +242,51 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(parts)
     }
+}
+
+/// `search_issues`.
+pub(super) fn search_issues<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: SearchIssuesInput = run.input()?;
+        ctx.tool_search_issues(run.actor, run.token, &input, run.withheld)
+            .await
+    })
+}
+
+/// `get_my_work`.
+pub(super) fn get_my_work<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: GetMyWorkInput = run.input()?;
+        ctx.tool_get_my_work(run.actor, run.token, &input, run.withheld)
+            .await
+    })
+}
+
+/// `get_issue`.
+pub(super) fn get_issue<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: GetIssueInput = run.input()?;
+        ctx.tool_get_issue(run.token, &input, run.withheld).await
+    })
+}
+
+/// `list_projects`.
+pub(super) fn list_projects<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: ListProjectsInput = run.input()?;
+        ctx.tool_list_projects(run.token, &input, run.withheld)
+            .await
+    })
 }

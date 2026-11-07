@@ -232,11 +232,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(failed)?
                 .map(|group| group.version),
             RecordKind::Setting => {
-                // The one setting record with a version: the sign-up policy.
+                // The setting records with a version: the sign-up policy and the marks Never sent to AI.
                 if *record == fixed_entity(RecordKind::Setting, SIGN_UP_POLICY)? {
                     Some(store.sign_up_policy_version().await.map_err(failed)?)
                 } else {
-                    None
+                    // The marks Never sent to AI are settings with a version of their own.
+                    self.never_sent_version(record).await?
                 }
             }
             RecordKind::IssueType => found(IssueTypeId::from_bytes(bytes).ok(), |id| {

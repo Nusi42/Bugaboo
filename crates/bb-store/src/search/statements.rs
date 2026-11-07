@@ -537,11 +537,14 @@ impl Iden for Probed {
     }
 }
 
-/// The streams of a page by title hits, with the scope their texts are in.
-const STREAMS: [(usize, TextScope); 2] = [
-    (TITLE_STREAM, TextScope::Source(TextSource::Title)),
-    (REST_STREAM, TextScope::Everywhere),
-];
+/// The streams of a page by title hits, with the scope their texts are in: the rest does not
+/// include a text that is kept from AI.
+fn text_streams(compiler: &Compiler<'_>) -> [(usize, TextScope); 2] {
+    [
+        (TITLE_STREAM, TextScope::Source(TextSource::Title)),
+        (REST_STREAM, compiler.everywhere()),
+    ]
+}
 
 /// The place of each stream in `STREAMS`, the probe and `Forms`: the one definition of the order.
 const TITLE_STREAM: usize = 0;
@@ -561,7 +564,7 @@ pub(crate) fn probe_statement(
         .take(MAX_CONTAINS_WORDS)
         .collect();
     let mut probe: Option<SelectStatement> = None;
-    for (stream, scope) in STREAMS {
+    for (stream, scope) in text_streams(&compiler) {
         for (at, word) in words.iter().enumerate() {
             let counted = text_rows_up_to(dialect, word, scope, at_most.unsigned_abs());
             let mut one = Query::select();

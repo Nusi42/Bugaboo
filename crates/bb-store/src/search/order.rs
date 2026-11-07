@@ -379,7 +379,9 @@ impl Compiler<'_> {
     /// hits.
     pub(super) fn title_words(&self) -> Option<&str> {
         let search = self.request.search.search();
-        if !search.sort.is_empty() {
+        // A title kept from AI must not order the answer either: the order would tell which
+        // issues have the words in their title.
+        if !search.sort.is_empty() || self.request.withheld_text.title {
             return None;
         }
         let text = search.filter.as_ref().and_then(first_words)?;

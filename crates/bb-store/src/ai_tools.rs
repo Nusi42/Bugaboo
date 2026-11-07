@@ -121,10 +121,14 @@ fn read_call(row: &Row) -> Result<ToolCall, StoreError> {
         caller: ToolCaller::from_code(&row.get::<String>(ToolCallRow::Caller)?)
             .ok_or(StoreError::Corrupt("a tool caller"))?,
         app: row.get(ToolCallRow::App)?,
-        tool: bb_core::ai::Tool::from_code(&row.get::<String>(ToolCallRow::Tool)?)
-            .ok_or(StoreError::Corrupt("a tool"))?,
-        effect: ToolEffect::from_code(&row.get::<String>(ToolCallRow::Effect)?)
-            .ok_or_else(|| StoreError::Corrupt("a tool effect"))?,
+        tool: row
+            .get::<Option<String>>(ToolCallRow::Tool)?
+            .map(|code| bb_core::ai::Tool::from_code(&code).ok_or(StoreError::Corrupt("a tool")))
+            .transpose()?,
+        effect: row
+            .get::<Option<String>>(ToolCallRow::Effect)?
+            .map(|code| ToolEffect::from_code(&code).ok_or(StoreError::Corrupt("a tool effect")))
+            .transpose()?,
         bytes_in: row.get(ToolCallRow::BytesIn)?,
         bytes_out: row.get(ToolCallRow::BytesOut)?,
         at: row.time(ToolCallRow::At)?,
@@ -144,8 +148,8 @@ impl ToolCallStore for AuthStorage {
                 Expr::val(call.person.stored()),
                 Expr::val(call.caller.code()),
                 Expr::val(call.app.clone()),
-                Expr::val(call.tool.code()),
-                Expr::val(call.effect.code()),
+                Expr::val(call.tool.map(bb_core::ai::Tool::code)),
+                Expr::val(call.effect.map(ToolEffect::code)),
                 Expr::val(call.bytes_in),
                 Expr::val(call.bytes_out),
                 Expr::val(to_micros(call.at)),

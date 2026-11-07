@@ -136,6 +136,8 @@ words! {
         Refused => "refused",
         /// The tool was allowed and failed.
         Failed => "failed",
+        /// No tool has the name that was called.
+        Unknown => "unknown",
     }
 }
 
@@ -180,12 +182,12 @@ pub struct ToolCall {
     /// The name an AI app gave itself; none for the assistant.
     #[personal(category = "activity", basis = "legitimate_interests")]
     pub app: Option<String>,
-    /// The name of the tool.
+    /// The tool; none when the name that was called is no tool (the name itself is not kept).
     #[not_personal]
-    pub tool: Tool,
-    /// Whether the tool reads or changes.
+    pub tool: Option<Tool>,
+    /// Whether the tool reads or changes; none for a call of no tool.
     #[not_personal]
-    pub effect: ToolEffect,
+    pub effect: Option<ToolEffect>,
     /// The bytes of the input.
     #[not_personal]
     pub bytes_in: i64,

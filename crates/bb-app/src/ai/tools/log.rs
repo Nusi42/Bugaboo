@@ -29,8 +29,9 @@ pub(crate) struct Called<'a> {
     pub(crate) person: UserId,
     pub(crate) caller: ToolCaller,
     pub(crate) app: Option<&'a str>,
-    pub(crate) tool: Tool,
-    pub(crate) effect: ToolEffect,
+    /// None for a call of a name that is no tool.
+    pub(crate) tool: Option<Tool>,
+    pub(crate) effect: Option<ToolEffect>,
     pub(crate) bytes_in: usize,
     pub(crate) bytes_out: usize,
     pub(crate) outcome: ToolOutcome,
@@ -64,7 +65,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         if let Err(error) = self.store().append_tool_call(&call).await {
             tracing::error!(
-                tool = call.tool.code(),
+                tool = call.tool.map(Tool::code),
                 cause = %S::describe(&error),
                 "the log of tool calls could not be written"
             );

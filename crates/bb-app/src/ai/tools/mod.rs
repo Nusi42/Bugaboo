@@ -18,4 +18,4 @@ pub use call::{
 };
 pub use inputs::*;
 pub use log::ToolCallStore;
-pub use registry::{DESIGNED_OUT, REGISTRY, ToolSpec, spec_of, tool_named};
+pub use registry::{DESIGNED_OUT, ToolSpec, registry};

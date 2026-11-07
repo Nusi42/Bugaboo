@@ -27,6 +27,8 @@ use bb_core::text_words::SearchWord;
 use bb_searchlang::MAX_CONTAINS_WORDS;
 use sea_query::{Alias, BinOper, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr};
 
+use bb_app::search::WithheldText;
+
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{TextIndexExtra, TextIndexRow};
 
@@ -35,6 +37,10 @@ use crate::schema::{TextIndexExtra, TextIndexRow};
 pub enum TextScope {
     /// A bare `contains`: titles, descriptions, comments and file names; never own fields.
     Everywhere,
+    /// A bare `contains` for the AI: the same, without the title or the description that an
+    /// administrator kept from AI (AI-03). A bare `contains` finds an issue by what it says in
+    /// these, so leaving the field out of the answer is not enough.
+    EverywhereBut(WithheldText),
     /// `<field> contains`: the rows of that own long-text field only. The index holds the value
     /// of every issue whatever the rules of the field, so the compiler must add, in the same
     /// statement, that the field is readable in the project and shown for the type of the issue.
@@ -178,17 +184,27 @@ fn lookups(words: &[SearchWord]) -> Vec<Lookup<'_>> {
 /// The condition that a row is from the scope.
 fn in_scope(scope: TextScope) -> SimpleExpr {
     match scope {
-        TextScope::Everywhere => Expr::col(TextIndexRow::Source).is_in([
-            TextSource::Title.code(),
-            TextSource::Description.code(),
-            TextSource::Comment.code(),
-            TextSource::File.code(),
-        ]),
+        TextScope::Everywhere => everywhere_but(WithheldText::default()),
+        TextScope::EverywhereBut(withheld) => everywhere_but(withheld),
         TextScope::Source(source) => in_source(source),
         TextScope::Field(field) => {
             in_source(TextSource::Field).and(Expr::col(TextIndexRow::SourceRef).eq(field.stored()))
         }
     }
+}
+
+/// The texts of a bare `contains`, without the ones that are withheld.
+fn everywhere_but(withheld: WithheldText) -> SimpleExpr {
+    let mut sources = Vec::new();
+    if !withheld.title {
+        sources.push(TextSource::Title.code());
+    }
+    if !withheld.description {
+        sources.push(TextSource::Description.code());
+    }
+    sources.push(TextSource::Comment.code());
+    sources.push(TextSource::File.code());
+    Expr::col(TextIndexRow::Source).is_in(sources)
 }
 
 /// The condition that a row is of one source.
@@ -350,6 +366,29 @@ mod tests {
             assert!(with_others.contains("1 = 0"), "{with_others}");
             assert!(!with_others.contains(&long), "{with_others}");
         }
+    }
+
+    #[test]
+    fn ai_03_a_bare_contains_for_the_ai_leaves_out_the_texts_kept_from_ai() {
+        let looks_in = |withheld: WithheldText| {
+            let text = text_of(
+                Dialect::Postgres,
+                "crash",
+                TextScope::EverywhereBut(withheld),
+            );
+            (text.contains("'title'"), text.contains("'description'"))
+        };
+        assert_eq!(looks_in(WithheldText::default()), (true, true));
+        let title = WithheldText {
+            title: true,
+            description: false,
+        };
+        assert_eq!(looks_in(title), (false, true));
+        let description = WithheldText {
+            title: false,
+            description: true,
+        };
+        assert_eq!(looks_in(description), (true, false));
     }
 
     #[test]

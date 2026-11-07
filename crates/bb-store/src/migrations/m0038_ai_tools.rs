@@ -60,8 +60,8 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(id_column(ToolCallRow::Person))
                 .col(ColumnDef::new(ToolCallRow::Caller).text().not_null())
                 .col(ColumnDef::new(ToolCallRow::App).text())
-                .col(ColumnDef::new(ToolCallRow::Tool).text().not_null())
-                .col(ColumnDef::new(ToolCallRow::Effect).text().not_null())
+                .col(ColumnDef::new(ToolCallRow::Tool).text())
+                .col(ColumnDef::new(ToolCallRow::Effect).text())
                 .col(
                     ColumnDef::new(ToolCallRow::BytesIn)
                         .big_integer()

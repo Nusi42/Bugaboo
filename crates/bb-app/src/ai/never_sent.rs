@@ -13,7 +13,7 @@ use std::future::Future;
 
 use bb_core::ErrorCode;
 use bb_core::ai::{NeverSentMark, NeverSentSubject};
-use bb_core::event::RecordKind;
+use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::ProjectId;
 use bb_core::project::Project;
@@ -78,6 +78,14 @@ impl Withheld {
         }
     }
 
+    /// The built-in texts a bare `contains` has to leave out.
+    pub(crate) fn text(&self) -> crate::search::WithheldText {
+        crate::search::WithheldText {
+            title: self.hides_field(FieldKey::BuiltIn(Field::Title)),
+            description: self.hides_field(FieldKey::BuiltIn(Field::Description)),
+        }
+    }
+
     /// The projects kept from AI, with the projects inside them.
     #[must_use]
     pub fn projects(&self) -> &BTreeSet<ProjectId> {
@@ -122,7 +130,53 @@ impl Withheld {
     }
 }
 
+/// The record a mark is in the events: one fixed record for each field and each project.
+fn mark_record(subject: NeverSentSubject) -> Result<EntityRef, AppError> {
+    let name = match subject {
+        NeverSentSubject::Field(field) => format!("never-sent-to-ai.field.{}", field.code()),
+        NeverSentSubject::Project(project) => format!("never-sent-to-ai.project.{project}"),
+    };
+    fixed_entity(RecordKind::Setting, &name)
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The version a mark has now, when `record` is the record of one: a field or a project without
+    /// a row is at version 0. For the answer to a change on a version that is not the current one.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn never_sent_version(
+        &self,
+        record: &EntityRef,
+    ) -> Result<Option<i64>, AppError> {
+        let marks = self
+            .store()
+            .never_sent_marks()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        for mark in &marks {
+            if mark_record(mark.subject)? == *record {
+                return Ok(Some(mark.version));
+            }
+        }
+        for field in Field::ALL {
+            if mark_record(NeverSentSubject::Field(*field))? == *record {
+                return Ok(Some(0));
+            }
+        }
+        let tree = self
+            .store()
+            .project_tree()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        for project in &tree {
+            if mark_record(NeverSentSubject::Project(project.id))? == *record {
+                return Ok(Some(0));
+            }
+        }
+        Ok(None)
+    }
+
     /// What is kept from AI in this organization. It does not depend on who asks: the mark applies
     /// even when the person can read the field.
     ///
@@ -269,7 +323,7 @@ pub async fn set_never_sent<S: AuthStore>(
     input: SetNeverSent,
 ) -> Result<Authorized<NeverSentList>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (subject, record) = match &input.target {
+    let (subject, place) = match &input.target {
         NeverSentTarget::Field(field) => {
             ctx.require(
                 &actor,
@@ -277,10 +331,7 @@ pub async fn set_never_sent<S: AuthStore>(
                 Place::Organization,
             )
             .await?;
-            (
-                NeverSentSubject::Field(*field),
-                format!("never-sent-to-ai.field.{}", field.code()),
-            )
+            (NeverSentSubject::Field(*field), Place::Organization)
         }
         NeverSentTarget::Project(address) => {
             let found = ctx
@@ -295,10 +346,7 @@ pub async fn set_never_sent<S: AuthStore>(
             }
             ctx.require(&actor, Permission::ChangeProjectSettings, place)
                 .await?;
-            (
-                NeverSentSubject::Project(found.project.id),
-                format!("never-sent-to-ai.project.{}", found.project.id),
-            )
+            (NeverSentSubject::Project(found.project.id), place)
         }
     };
     let mark = NeverSentMark {
@@ -306,9 +354,10 @@ pub async fn set_never_sent<S: AuthStore>(
         marked: input.marked,
         version: input.version + 1,
     };
+    let record = mark_record(subject)?;
     let event = ctx.event(
         by(actor.person.id),
-        fixed_entity(RecordKind::Setting, &record)?,
+        record.clone(),
         vec![set_to("never-sent-to-ai", input.marked.into())],
     )?;
     ctx.store()
@@ -327,6 +376,7 @@ pub async fn set_never_sent<S: AuthStore>(
                 &error,
                 Stops::new(ErrorCode::VersionChanged, ErrorCode::VersionChanged),
             )
+            .about(&record, place, actor.person.id)
         })?;
     ctx.note(
         SecurityAction::NeverSentToAiChanged,

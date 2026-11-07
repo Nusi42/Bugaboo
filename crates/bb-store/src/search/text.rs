@@ -24,6 +24,16 @@ fn asking(words: &[SearchWord], scope: TextScope) -> TextSearch<'_> {
 }
 
 impl Compiler<'_> {
+    /// Where a bare `contains` looks: every text, but the ones kept from AI.
+    pub(super) fn everywhere(&self) -> TextScope {
+        let withheld = self.request.withheld_text;
+        if withheld.any() {
+            TextScope::EverywhereBut(withheld)
+        } else {
+            TextScope::Everywhere
+        }
+    }
+
     /// The issues whose text, in the part the field stands for, has every word of `text`.
     pub(super) fn contains(&self, target: FieldTarget, text: &Text) -> Result<Cond, CompileError> {
         // The language offers `contains` only where `text_place` says the text is indexed.
@@ -54,7 +64,7 @@ impl Compiler<'_> {
     pub(super) fn words_in(&self, scope: TextScope, text: &str) -> Cond {
         self.text_used.set(true);
         if self.has_the_words.get()
-            && matches!(scope, TextScope::Everywhere)
+            && matches!(scope, TextScope::Everywhere | TextScope::EverywhereBut(_))
             && self.title_words() == Some(text)
         {
             return Cond::all().add(Expr::val(1).eq(1));

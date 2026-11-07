@@ -28,12 +28,18 @@ fn marker_for(text: &str) -> String {
     "=".repeat(MARKER_MIN.max(longest + 1))
 }
 
-/// `text` inside a fence that names who wrote it: an opening line, the text as it is, a closing line.
+/// `text` inside a fence that names who wrote it: an opening line, the text as it is, a closing
+/// line. Both lines carry `nonce`, a word that is new for every answer, so the text cannot write the
+/// closing line before it knows the answer; the marker is longer than any run in the text besides.
 #[must_use]
-pub fn fence(text: &str, author: AuthorKind) -> String {
+pub fn fence(text: &str, author: AuthorKind, nonce: &str) -> String {
     let marker = marker_for(text);
     let phrase = author.phrase();
-    format!("{marker} text written by {phrase}\n{text}\n{marker} end of text written by {phrase}")
+    format!(
+        "{marker} {nonce} text written by {phrase}
+{text}
+{marker} {nonce} end of text written by {phrase}"
+    )
 }
 
 #[cfg(test)]
@@ -41,20 +47,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_fence_names_the_kind_of_its_author() {
-        let fenced = fence("Fix the login", AuthorKind::Guest);
-        assert!(fenced.starts_with("======== text written by a Guest\n"));
-        assert!(fenced.ends_with("\n======== end of text written by a Guest"));
+    fn a_fence_names_the_kind_of_its_author_and_carries_the_nonce() {
+        let fenced = fence("Fix the login", AuthorKind::Guest, "a1b2c3d4");
+        assert!(fenced.starts_with(
+            "======== a1b2c3d4 text written by a Guest
+"
+        ));
+        assert!(fenced.ends_with(
+            "
+======== a1b2c3d4 end of text written by a Guest"
+        ));
     }
 
     #[test]
     fn the_marker_is_longer_than_any_run_in_the_text() {
         for run in [0_usize, 1, 7, 8, 9, 30] {
             let text = format!("a {} b", "=".repeat(run));
-            let fenced = fence(&text, AuthorKind::Member);
+            let fenced = fence(&text, AuthorKind::Member, "00000000");
             let marker = fenced.split(' ').next().unwrap_or_default();
             assert!(marker.len() > run, "{marker} must beat a run of {run}");
-            let closing = format!("{marker} end of text");
+            let closing = format!("{marker} 00000000 end of text");
             assert_eq!(
                 fenced.matches(&closing).count(),
                 1,

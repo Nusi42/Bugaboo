@@ -21,9 +21,10 @@ use serde::Serialize;
 
 use super::names::status_groups;
 use super::readable::{Looked, SearchScope, readable_of};
-use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore};
+use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore, WithheldText};
 use super::target::{FieldTarget, target_of};
 use crate::access::Actor;
+use crate::ai::Withheld;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
 use crate::issues::{IssueView, PagePlace, ReadOnRequest};
@@ -174,7 +175,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         text: &str,
         scope: SearchScope,
-        withheld: Option<&crate::ai::Withheld>,
+        withheld: Option<&Withheld>,
     ) -> Result<Prepared, AppError> {
         let looked = self.looked_at(actor, scope).await?;
         let looked = match withheld {
@@ -221,6 +222,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             status_groups: status_groups(&looked),
             blocking_kinds: blocking,
             own_reach: looked.own_reach.clone(),
+            withheld_text: withheld.map_or_else(WithheldText::default, Withheld::text),
             after: None,
             limit: 0,
         };
@@ -274,7 +276,7 @@ pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
     actor: &Actor,
     query: &SearchQuery,
     with_people: bool,
-    withheld: Option<&crate::ai::Withheld>,
+    withheld: Option<&Withheld>,
 ) -> Result<Authorized<SearchPage>, AppError> {
     let mut prepared = ctx
         .prepare_search_within(actor, &query.text, query.scope, withheld)

@@ -20,7 +20,7 @@ use super::time_http::{MY_ENTRIES, TIMER};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 42] = [
+const VERSIONED: [&str; 44] = [
     "changeMyWorkDay",
     "changeWorkDayOfPerson",
     "startBreak",
@@ -51,6 +51,8 @@ const VERSIONED: [&str; 42] = [
     "deleteLayout",
     "publishWorkflow",
     "deleteWorkflow",
+    "setFieldNeverSentToAi",
+    "setProjectNeverSentToAi",
     "changeProject",
     "changeRelationKind",
     "changeRole",
@@ -141,6 +143,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
+        "setFieldNeverSentToAi" | "setProjectNeverSentToAi" => prepare_marks(id, ada).await,
         "stopTimer" | "switchTimer" | "changeTimerStart" | "throwAwayTimer" | "changeTimeEntry"
         | "deleteTimeEntry" => prepare_time(id, site, ada).await,
         _ => prepare_settings(id, ada).await,
@@ -212,6 +215,32 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
         }
         other => Err(format!("no row for {other}").into()),
     }
+}
+
+async fn prepare_marks(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
+    if id == "setFieldNeverSentToAi" {
+        return Save::new(
+            "PUT",
+            "/api/v1/never-sent-to-ai/fields/priority".to_owned(),
+            json!({"marked": true}),
+            &json!(0), // never had a mark: version 0
+        );
+    }
+    let project = made(
+        ada,
+        PROJECTS,
+        json!({"short_name": "KEPT", "name": "Kept from AI"}),
+    )
+    .await?;
+    Save::new(
+        "PUT",
+        format!(
+            "/api/v1/never-sent-to-ai/projects/{}",
+            text_in(&project, "id")?
+        ),
+        json!({"marked": true}),
+        &json!(0),
+    )
 }
 
 async fn prepare_records(id: &str, ada: &mut Browser) -> Result<Save, Failure> {

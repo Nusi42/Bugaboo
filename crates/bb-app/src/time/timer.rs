@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{FieldId, UserId};
+use bb_core::id::{FieldId, IssueId, UserId};
 use bb_core::time::day::date_of;
 use bb_core::time::entry::{Running, Timer};
 use bb_core::time::{Minutes, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
@@ -297,7 +297,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(self.plan_timer_start(actor, &input.issue).await?.changes)
     }
 
-    /// What stopping the timer would record, answered without saving (AI-21).
+    /// What stopping the timer would record, answered without saving (AI-21), and the issue the
+    /// timer runs on.
     ///
     /// # Errors
     /// As [`stop_timer`].
@@ -305,13 +306,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         input: &StopTimer,
-    ) -> Result<Vec<FieldChange>, AppError> {
+    ) -> Result<(Vec<FieldChange>, IssueId), AppError> {
         let (timer, running) = self.running_timer(actor, input.version).await?;
         let saving = self
             .saving(actor, &running, self.now(), &input.details)
             .await?;
         let changes = vec![issue_cleared(&running), counted_up(timer.version)];
-        stop_changes(&saving, changes)
+        Ok((stop_changes(&saving, changes)?, running.issue))
     }
 }
 

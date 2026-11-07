@@ -15,7 +15,7 @@ use bb_core::fields::Field;
 use bb_core::own_fields::FieldType;
 use serde_json::{Value, json};
 
-use super::ai_tools::{call, issue_with, key_in, mark, read};
+use super::ai_tools::{call, issue_with, key_in, mark, read, without_nonces};
 use super::scenarios::{a_project, token};
 use super::scenarios_fields::a_field;
 use super::world::{Outcome, World};
@@ -200,7 +200,7 @@ async fn prompt_injection_a_file_name_is_fenced_like_any_text() -> Outcome {
         author: AuthorKind::Outsider,
         project: None,
     };
-    let answer = render(&[part], &PeopleAs::AsSeen);
+    let answer = without_nonces(&render(&[part], &PeopleAs::AsSeen, "abcd1234"));
     assert!(only_inside_a_fence(&answer, "Change the status"));
     assert!(answer.contains("written by someone outside"));
     Ok(())

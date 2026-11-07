@@ -21,6 +21,24 @@ use jiff::tz::TimeZone;
 use super::target::Searchable;
 use crate::issues::IssueStore;
 
+/// The texts of an issue that a bare `contains` leaves out (AI-03): the title and the description
+/// are searched with the other texts, so a field kept from AI would be found through them.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct WithheldText {
+    /// The title is kept from AI.
+    pub title: bool,
+    /// The description is kept from AI.
+    pub description: bool,
+}
+
+impl WithheldText {
+    /// Whether any text is withheld.
+    #[must_use]
+    pub const fn any(self) -> bool {
+        self.title || self.description
+    }
+}
+
 /// A project the person sees, as the compiler needs it to read `project is WEB` and `within WEB`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProjectLink {
@@ -146,6 +164,9 @@ pub struct SearchRequest {
     pub blocking_kinds: Vec<RelationKindId>,
     /// Where the values of each own field count.
     pub own_reach: Vec<OwnReach>,
+    /// The built-in texts a bare `contains` must not look in, because an administrator kept them
+    /// from AI (AI-03). Nothing is withheld for a person's own search.
+    pub withheld_text: WithheldText,
     /// The last issue of the page before. The store reads its place in the order itself, so a
     /// cursor holds nothing but this ID.
     pub after: Option<IssueId>,
