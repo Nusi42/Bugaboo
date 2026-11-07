@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use super::fields_http::reader_of;
 use super::http::rig_and_app;
 use super::issues_site::{ISSUES, Site, key_of, ok};
-use super::time_http::MY_ENTRIES;
+use super::time_http::{MY_ENTRIES, book};
 use super::working_hours_http::{YESTERDAY, hana_and_bob, times};
 
 /// The name the administrator of the tests goes by.
@@ -56,13 +56,7 @@ async fn priv_09_the_history_shows_others_the_date_of_an_entry_and_never_the_mom
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        let booked = ada
-            .send(
-                "POST",
-                MY_ENTRIES,
-                Some(json!({"issue": issue, "date": "2027-01-14", "minutes": 45})),
-            )
-            .await?;
+        let booked = book(&mut ada, &issue, 45).await?;
         ok(&booked)?;
         let path = format!("{ISSUES}/{issue}/history");
         let time_item = |reply: &Value| -> Option<Value> {
