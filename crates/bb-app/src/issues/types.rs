@@ -275,6 +275,10 @@ pub struct IssueDetail {
     /// description.
     #[masked(field = "description")]
     pub description_html: String,
+    /// How the description was written, when AI wrote it (COMP-08, COMP-09). Hidden with the
+    /// description.
+    #[masked(field = "description")]
+    pub description_written_by: Option<crate::runs::WrittenByView>,
     /// The long-text own fields as safe HTML, one for each the viewer may see.
     #[masked(nested)]
     pub own_fields_html: Vec<OwnHtml>,

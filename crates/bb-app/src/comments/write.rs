@@ -53,6 +53,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await?;
         let mine = comment.author == actor.person.id;
+        let written_by = self
+            .written_by(RecordKind::Comment, comment.id, "text")
+            .await?;
         Ok(CommentView {
             id: comment.id,
             issue: comment.issue,
@@ -65,6 +68,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             may_edit: mine && held.allows(Permission::Comment),
             may_delete: mine && held.allows(Permission::Comment)
                 || held.allows(Permission::ChangeIssues),
+            written_by,
         })
     }
 

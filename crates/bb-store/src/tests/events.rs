@@ -3,7 +3,7 @@
 use bb_core::id::IdSource as _;
 use bb_testing::{TestResult, each_database};
 
-use bb_core::id::AgentId;
+use bb_core::id::{AgentId, RunId};
 
 use super::*;
 use crate::test_support::{at, event, ids, open};
@@ -270,7 +270,7 @@ async fn ai_38_an_event_written_in_a_run_carries_the_run() -> TestResult {
         let database = open(db).await?;
         let mut ids = ids();
         let (mut inside, outside) = (event(&mut ids, 5), event(&mut ids, 6));
-        inside.run = Some(bb_core::id::RunId::generate(&mut ids)?);
+        inside.run = Some(RunId::generate(&mut ids)?);
         database.record_change(&inside, async |_| Ok(())).await?;
         database.record_change(&outside, async |_| Ok(())).await?;
         assert_eq!(

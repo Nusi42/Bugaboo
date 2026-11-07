@@ -11,6 +11,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use super::runs as sru;
 use super::scenarios::{self as s, Added};
 use super::scenarios_ai as sai;
 use super::scenarios_fields as sf;
@@ -109,6 +110,7 @@ table! {
     "create_issue" => si::create_issue_scenario,
     "move_issue" => si::move_issue_scenario,
     "apply_many_changes" => si::apply_many_changes_scenario,
+    "undo_run" => sru::undo_run_scenario,
     "change_issue" => si::change_issue_scenario,
     "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,

@@ -125,6 +125,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(other) => return Err(other),
         };
         let mut maker = acting.line_maker().await?;
+        // Every change of the step carries the run, so the run lists them and can be undone.
+        acting.set_run(Some(id));
         let end = run
             .items
             .len()

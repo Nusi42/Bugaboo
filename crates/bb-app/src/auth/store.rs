@@ -342,6 +342,7 @@ pub trait AuthStore:
     + RelationStore
     + TagStore
     + ManyChangeStore
+    + crate::runs::RunRecordStore
     + CommentStore
     + AttachmentStore
     + FollowStore

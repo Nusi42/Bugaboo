@@ -249,3 +249,94 @@ impl ManyChangeStore for FakeStore {
         Ok(ended)
     }
 }
+
+impl crate::runs::RunRecordStore for FakeStore {
+    async fn run_events(
+        &self,
+        run: RunId,
+        after: Option<bb_core::id::EventId>,
+        limit: u64,
+    ) -> Result<Vec<(i64, bb_core::event::DomainEvent)>, FakeError> {
+        let shared = self.lock();
+        let inside = shared
+            .events
+            .iter()
+            .enumerate()
+            .filter(|(_, event)| event.run == Some(run));
+        let skip = after.map_or(0, |after| {
+            shared
+                .events
+                .iter()
+                .filter(|event| event.run == Some(run))
+                .position(|event| event.id == after)
+                .map_or(usize::MAX, |at| at + 1)
+        });
+        Ok(inside
+            .skip(skip)
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .map(|(at, event)| (i64::try_from(at).unwrap_or(i64::MAX), event.clone()))
+            .collect())
+    }
+
+    async fn events_outside_run_after(
+        &self,
+        run: RunId,
+        since: bb_core::id::EventId,
+        kind: &bb_core::event::EntityKind,
+        ids: &[bb_core::id::EntityId],
+    ) -> Result<Vec<(i64, bb_core::event::DomainEvent)>, FakeError> {
+        let shared = self.lock();
+        let place = shared
+            .events
+            .iter()
+            .position(|event| event.id == since)
+            .unwrap_or(usize::MAX);
+        Ok(shared
+            .events
+            .iter()
+            .enumerate()
+            .filter(|(at, event)| {
+                *at > place
+                    && event.run != Some(run)
+                    && event.entity.kind == *kind
+                    && ids.contains(&event.entity.id)
+            })
+            .map(|(at, event)| (i64::try_from(at).unwrap_or(i64::MAX), event.clone()))
+            .collect())
+    }
+
+    async fn text_marks(
+        &self,
+        kind: &bb_core::event::EntityKind,
+        ids: &[bb_core::id::EntityId],
+    ) -> Result<Vec<bb_core::mark::TextMark>, FakeError> {
+        use bb_core::mark::{TextMark, TextPart, text_part, written_by};
+        let shared = self.lock();
+        let mut marks: Vec<TextMark> = Vec::new();
+        for event in &shared.events {
+            if event.entity.kind != *kind || !ids.contains(&event.entity.id) {
+                continue;
+            }
+            let Some(how) = written_by(event.actor, event.channel) else {
+                continue;
+            };
+            for change in &event.changes {
+                let Some(part) = text_part(kind, change) else {
+                    continue;
+                };
+                marks.retain(|mark| {
+                    !(mark.entity_id == event.entity.id && mark.part.as_str() == part.as_str())
+                });
+                marks.push(TextMark {
+                    entity_kind: kind.clone(),
+                    entity_id: event.entity.id,
+                    part: TextPart::from_stored(part.as_str().to_owned()),
+                    written_by: how,
+                    app: None,
+                    agent: event.actor.agent(),
+                });
+            }
+        }
+        Ok(marks)
+    }
+}

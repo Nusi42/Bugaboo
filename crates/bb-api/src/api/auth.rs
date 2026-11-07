@@ -155,6 +155,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Info {
             network,
             device,
             background,
+            run: None,
         }))
     }
 }

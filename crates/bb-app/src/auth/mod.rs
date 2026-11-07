@@ -122,6 +122,10 @@ use crate::roles::{
     change_role, check_access, copy_role, create_role, delete_role, permissions, remove_assignment,
     reset_role, role, role_levels, roles, set_level,
 };
+use crate::runs::{
+    RunChangesPage, RunChangesQuery, RunQuery, RunView, UndoRun, UndoView, get_run,
+    preview_undo_run, run_changes, undo_run,
+};
 use crate::saved_searches::{
     ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, RestoredSearch,
     SaveCopy, SaveSearch, SavedSearchPage, SavedSearchQuery, SavedSearchView, SearchesQuery,
@@ -673,6 +677,14 @@ use_cases! {
     many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunView>;
     /// Stops a change to many issues that goes on in the background.
     stop_many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunStatus>;
+    /// Shows a run of an AI app, an agent or a change to many issues.
+    get_run(RunQuery) -> Authorized<RunView>;
+    /// Lists the changes of a run the reader may see, a page at a time.
+    run_changes(RunChangesQuery) -> Authorized<RunChangesPage>;
+    /// Says what undoing a run would do.
+    preview_undo_run(RunQuery) -> Authorized<UndoView>;
+    /// Undoes a run in one step.
+    undo_run(UndoRun) -> Authorized<UndoView>;
     /// Shows the tags and labels of an issue.
     issue_labels_and_tags(IssueLabelsAndTagsQuery) -> Authorized<IssueLabelsAndTags>;
     /// Puts a tag on an issue by its name.

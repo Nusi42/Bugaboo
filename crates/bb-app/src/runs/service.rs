@@ -1,0 +1,317 @@
+//! The real `RunStore` (AI-38, ADR-0029 decision 7): runs kept on `change_run`, their changes read
+//! from the events that carry them, and *Undo the run* done through the use case of a single
+//! change, as the person who undoes it, so each change is judged again.
+//!
+//! The preview and the undo share the one evaluation of `weigh.rs`. A large run is undone the
+//! same way as a change to many issues: issue by issue, each its own change with its own event.
+
+use std::collections::BTreeMap;
+
+use bb_core::ErrorCode;
+use bb_core::event::{Actor as EventActor, RecordKind};
+use bb_core::id::{EventId, IssueId, RunId};
+use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus};
+use bb_core::run::{
+    RunActor, RunChange, RunEnd, RunKind, RunSummary, UndoOutcome, UndoPreview, UndoResult,
+    UndoSkip, UndoSkipKind, UndoVersion,
+};
+use jiff::Timestamp;
+use serde_json::json;
+
+use super::RunStore;
+use super::restore::{issue_change, restorable};
+use super::weigh::{Evaluation, Net, NetOfRun, weigh};
+use crate::access::Actor;
+use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
+use crate::issues::change_issue;
+
+/// How many events of a run are read at once.
+const PAGE: u64 = 500;
+/// How many skipped fields a preview or an answer names; the number says how many there are.
+const SKIPS_NAMED_MAX: usize = 50;
+
+/// The runs of one person, kept and undone through the context of a request.
+pub struct RunsOf<'a, 'c, S: AuthStore> {
+    ctx: &'a Ctx<'c, S>,
+    actor: &'a Actor,
+    token: &'a str,
+}
+
+impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
+    /// The runs, for the person who is `actor`; `token` is the secret of the session they undo with.
+    pub(crate) const fn new(ctx: &'a Ctx<'c, S>, actor: &'a Actor, token: &'a str) -> Self {
+        Self { ctx, actor, token }
+    }
+
+    /// The run, when it is this person's.
+    async fn own_run(&self, run: RunId) -> Result<ManyChangeRun, AppError> {
+        self.ctx
+            .store()
+            .many_changes_run(run)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|found| found.person == self.actor.person.id)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))
+    }
+
+    /// Everything the run did, field by field, and the events outside it that came after.
+    async fn evaluation(&self, run: RunId) -> Result<Evaluation, AppError> {
+        let mut net = NetOfRun::default();
+        let mut after: Option<EventId> = None;
+        loop {
+            let page = self
+                .ctx
+                .store()
+                .run_events(run, after, PAGE)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            for (place, event) in &page {
+                net.add(*place, event);
+            }
+            match page.last() {
+                Some((_, last)) if page.len() as u64 == PAGE => after = Some(last.id),
+                _ => break,
+            }
+        }
+        let mut later = Vec::new();
+        if let Some(first) = net.first_event() {
+            for (kind, ids) in net.records() {
+                let kind = bb_core::event::EntityKind::new(&kind)
+                    .map_err(|error| AppError::Internal(error.to_string()))?;
+                later.extend(
+                    self.ctx
+                        .store()
+                        .events_outside_run_after(run, first, &kind, &ids)
+                        .await
+                        .map_err(|error| internal::<S>(&error))?,
+                );
+            }
+            later.sort_by_key(|(place, _)| *place);
+        }
+        Ok(weigh(&net, &later))
+    }
+
+    /// The fields that go back, grouped by issue, and the fields that stay.
+    fn plan(evaluation: Evaluation) -> Plan {
+        let mut by_issue: BTreeMap<IssueId, Vec<Net>> = BTreeMap::new();
+        let mut skips = evaluation.skips;
+        for net in evaluation.back {
+            let issue = (net.entity.kind.as_str() == RecordKind::Issue.code())
+                .then(|| IssueId::from_bytes(net.entity.id.to_bytes()).ok())
+                .flatten()
+                .filter(|_| restorable(&net));
+            match issue {
+                Some(issue) => by_issue.entry(issue).or_default().push(net),
+                None => skips.push(UndoSkip {
+                    entity: net.entity,
+                    field: net.field,
+                    kind: UndoSkipKind::NotUndoable,
+                    by: None,
+                    at: None,
+                }),
+            }
+        }
+        Plan {
+            by_issue,
+            skips,
+            version: evaluation.version,
+        }
+    }
+}
+
+/// What an undo would do, by issue.
+struct Plan {
+    by_issue: BTreeMap<IssueId, Vec<Net>>,
+    skips: Vec<UndoSkip>,
+    version: UndoVersion,
+}
+
+impl Plan {
+    fn goes_back(&self) -> u64 {
+        self.by_issue.values().map(|nets| nets.len() as u64).sum()
+    }
+
+    fn preview(self) -> UndoPreview {
+        let goes_back = self.goes_back();
+        let skipped = self.skips.len() as u64;
+        let mut skips = self.skips;
+        skips.truncate(SKIPS_NAMED_MAX);
+        UndoPreview {
+            version: self.version,
+            goes_back,
+            skips,
+            skipped,
+        }
+    }
+}
+
+impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
+    type Error = AppError;
+
+    async fn open_run(
+        &self,
+        run: RunId,
+        kind: RunKind,
+        actor: &RunActor,
+        at: Timestamp,
+    ) -> Result<(), AppError> {
+        let stored = ManyChangeRun {
+            id: run,
+            kind,
+            person: actor.person,
+            app: actor.app.clone(),
+            agent: actor.agent,
+            action: json!({}),
+            items: Vec::new(),
+            status: ManyChangeStatus::Running,
+            done: 0,
+            changed: 0,
+            skipped: Vec::new(),
+            created_at: at,
+            finished_at: None,
+        };
+        let event = self.ctx.event(
+            actor.event_actor(),
+            entity(RecordKind::ChangeRun, run),
+            vec![
+                set_to("kind", json!(kind.code())),
+                set_to("status", json!(ManyChangeStatus::Running.code())),
+            ],
+        )?;
+        self.ctx
+            .store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move { S::insert_many_changes_run(transaction, &stored).await })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
+    async fn close_run(&self, run: RunId, ended: RunEnd, _at: Timestamp) -> Result<bool, AppError> {
+        let found = self
+            .ctx
+            .store()
+            .many_changes_run(run)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let Some(found) = found.filter(|found| !found.status.is_over()) else {
+            return Ok(false);
+        };
+        let who = EventActor::Person(found.person);
+        self.ctx
+            .end_many_changes_run(run, ended.status(), who)
+            .await?;
+        Ok(true)
+    }
+
+    async fn run(&self, run: RunId) -> Result<Option<RunSummary>, AppError> {
+        Ok(self
+            .ctx
+            .store()
+            .many_changes_run(run)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|found| RunSummary {
+                id: found.id,
+                kind: found.kind,
+                actor: RunActor {
+                    person: found.person,
+                    app: found.app,
+                    agent: found.agent,
+                },
+                status: found.status,
+                started_at: found.created_at,
+                ended_at: found.finished_at,
+            }))
+    }
+
+    async fn run_changes(
+        &self,
+        run: RunId,
+        after: Option<EventId>,
+        limit: u64,
+    ) -> Result<Vec<RunChange>, AppError> {
+        Ok(self
+            .ctx
+            .store()
+            .run_events(run, after, limit)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|(_, event)| RunChange {
+                event: event.id,
+                at: event.time,
+                entity: event.entity,
+                changes: event.changes,
+            })
+            .collect())
+    }
+
+    async fn preview_undo(&self, run: RunId) -> Result<UndoPreview, AppError> {
+        self.own_run(run).await?;
+        Ok(Self::plan(self.evaluation(run).await?).preview())
+    }
+
+    async fn undo_run(
+        &self,
+        run: RunId,
+        version: &UndoVersion,
+        by: &RunActor,
+        _at: Timestamp,
+    ) -> Result<UndoOutcome, AppError> {
+        if by.person != self.actor.person.id {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        self.own_run(run).await?;
+        let plan = Self::plan(self.evaluation(run).await?);
+        if plan.version != *version {
+            return Ok(UndoOutcome::Changed(plan.preview()));
+        }
+        let mut skips = plan.skips;
+        let mut undone = 0;
+        self.ctx.set_reason(Some(format!("undo-run:{run}")));
+        for (issue, nets) in &plan.by_issue {
+            let outcome = self.restore(*issue, nets).await;
+            match outcome {
+                Ok(()) => undone += nets.len() as u64,
+                Err(kind) => skips.extend(nets.iter().map(|net| UndoSkip {
+                    entity: net.entity.clone(),
+                    field: net.field.clone(),
+                    kind,
+                    by: None,
+                    at: None,
+                })),
+            }
+        }
+        self.ctx.set_reason(None);
+        let skipped = skips.len() as u64;
+        skips.truncate(SKIPS_NAMED_MAX);
+        Ok(UndoOutcome::Undone(UndoResult {
+            undone,
+            skips,
+            skipped,
+        }))
+    }
+}
+
+impl<S: AuthStore> RunsOf<'_, '_, S> {
+    /// Puts the fields of one issue back by the use case of a single change, as the person who
+    /// undoes; the reason it did not is the kind of skip.
+    async fn restore(&self, issue: IssueId, nets: &[Net]) -> Result<(), UndoSkipKind> {
+        let seen = self
+            .ctx
+            .seen_issue_by_id(self.actor, issue)
+            .await
+            .map_err(|_| UndoSkipKind::Gone)?;
+        let Some((current, _)) = seen else {
+            return Err(UndoSkipKind::Gone);
+        };
+        let input = issue_change(self.token, &current, nets).ok_or(UndoSkipKind::NotUndoable)?;
+        match change_issue(self.ctx, input).await {
+            Ok(_) => Ok(()),
+            Err(AppError::Refused(ErrorCode::NotFound)) => Err(UndoSkipKind::Gone),
+            Err(AppError::Refused(ErrorCode::VersionChanged)) => Err(UndoSkipKind::ChangedSince),
+            Err(_) => Err(UndoSkipKind::NotAllowed),
+        }
+    }
+}

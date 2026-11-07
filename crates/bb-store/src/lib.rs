@@ -42,6 +42,7 @@ mod policy;
 mod projects;
 mod relations;
 mod rows;
+mod runs;
 mod saved_searches;
 mod schema;
 mod search;

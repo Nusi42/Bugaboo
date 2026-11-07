@@ -65,6 +65,7 @@ mod offers_secrecy;
 mod prompt_injection;
 mod recurring_jobs;
 mod rights_once;
+mod runs;
 mod runs_end;
 mod saved_searches;
 mod saved_searches_names;

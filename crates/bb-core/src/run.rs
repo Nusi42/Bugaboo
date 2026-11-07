@@ -35,6 +35,9 @@ words! {
     }
 }
 
+words_in_api!(RunKind, "What a run is of.");
+words_in_api!(UndoSkipKind, "Why a change of a run does not go back.");
+
 impl RunEnd {
     /// The state a run that ended this way is in.
     #[must_use]
@@ -112,6 +115,8 @@ words! {
         Gone => "gone",
         /// The person who undoes may not make this change (judged again as them).
         NotAllowed => "not-allowed",
+        /// This kind of change cannot be put back yet (a text, a comment, the making of a record).
+        NotUndoable => "not-undoable",
     }
 }
 

@@ -11,6 +11,7 @@ use bb_core::job::{FailureKind, FailureOutcome};
 use bb_core::many_changes::{
     ManyChangeItem, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, SkipReason,
 };
+use bb_core::run::RunKind;
 use bb_core::technical::TechnicalName;
 use bb_testing::{TestResult, each_database};
 use jiff::SignedDuration;
@@ -30,7 +31,7 @@ async fn changed<T: Send>(
 fn a_run(source: &mut impl IdSource, issues: usize) -> ManyChangeRun {
     ManyChangeRun {
         id: RunId::generate(source).unwrap(),
-        kind: bb_core::run::RunKind::ManyChanges,
+        kind: RunKind::ManyChanges,
         app: None,
         agent: None,
         person: UserId::generate(source),

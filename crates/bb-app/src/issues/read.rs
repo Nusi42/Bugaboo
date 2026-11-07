@@ -141,9 +141,13 @@ pub async fn issue<S: AuthStore>(
         .html_of(&actor, &held, &issue, &issue.description)
         .await?;
     let own_fields_html = ctx.long_texts_html(&actor, &held, &issue, &view).await?;
+    let description_written_by = ctx
+        .written_by(RecordKind::Issue, issue.id, "description")
+        .await?;
     Ok(held.authorize(IssueDetail {
         issue: view,
         description_html,
+        description_written_by,
         own_fields_html,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),

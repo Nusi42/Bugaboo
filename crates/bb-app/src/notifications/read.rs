@@ -141,6 +141,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         if !comments.is_empty() {
+            // The marks of all their texts at once, so a page costs one read (PERF-N1).
+            self.load_comment_marks(&comments).await?;
             for comment in self
                 .store()
                 .comments_by_ids(&comments)

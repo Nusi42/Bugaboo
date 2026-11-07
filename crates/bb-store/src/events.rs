@@ -11,7 +11,7 @@
 //! consumer that has seen position 7 can never miss a position 6 that commits later.
 
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
-use bb_core::id::{AgentId, EventId};
+use bb_core::id::{AgentId, EntityId, EventId, RunId};
 use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
@@ -117,6 +117,82 @@ impl Database {
             .iter()
             .map(read_event)
             .collect()
+    }
+
+    /// The events made inside a run, in the order they were committed, after the event `after`
+    /// (a place in that order; none for the start), at most `limit`.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn run_events(
+        &self,
+        run: RunId,
+        after: Option<EventId>,
+        limit: u64,
+    ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
+        let mut select = committed_events(Order::Asc);
+        select
+            .column((Outbox::Table, Outbox::Position))
+            .and_where(Expr::col((Event::Table, Event::Run)).eq(run.stored()))
+            .limit(limit);
+        if let Some(after) = after {
+            let place = self.outbox_place(after).await?;
+            select.and_where(Expr::col((Outbox::Table, Outbox::Position)).gt(place));
+        }
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| Ok((row.get(Outbox::Position)?, read_event(row)?)))
+            .collect()
+    }
+
+    /// The events about these records of one kind that were committed after the event `since` and
+    /// were not made inside `run`: what changed the records behind the back of the run.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn events_outside_run_after(
+        &self,
+        run: RunId,
+        since: EventId,
+        kind: &EntityKind,
+        ids: &[EntityId],
+    ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
+        let place = self.outbox_place(since).await?;
+        let mut found: Vec<(i64, DomainEvent)> = Vec::new();
+        for chunk in ids.chunks(500) {
+            let mut select = committed_events(Order::Asc);
+            select
+                .column((Outbox::Table, Outbox::Position))
+                .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(kind.as_str()))
+                .and_where(
+                    Expr::col((Event::Table, Event::EntityId))
+                        .is_in(chunk.iter().map(|id| id.stored())),
+                )
+                .and_where(Expr::col((Outbox::Table, Outbox::Position)).gt(place))
+                .and_where(
+                    Expr::col((Event::Table, Event::Run))
+                        .is_null()
+                        .or(Expr::col((Event::Table, Event::Run)).ne(run.stored())),
+                );
+            for row in self.fetch_all(&select).await? {
+                found.push((row.get(Outbox::Position)?, read_event(&row)?));
+            }
+        }
+        Ok(found)
+    }
+
+    /// Where an event stands in the order they were committed.
+    async fn outbox_place(&self, event: EventId) -> Result<i64, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(Outbox::Position)
+            .from(Outbox::Table)
+            .and_where(Expr::col(Outbox::EventId).eq(event.stored()));
+        self.fetch_optional(&select)
+            .await?
+            .ok_or(StoreError::Corrupt("the place of an event"))?
+            .get(Outbox::Position)
     }
 
     /// The events about records of one kind, oldest first: what the check after a run reads to

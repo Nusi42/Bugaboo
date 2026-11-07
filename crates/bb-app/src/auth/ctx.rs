@@ -40,6 +40,9 @@ pub struct RequestInfo {
     /// A read nobody asked for, such as a count that refreshes itself: it does not keep a
     /// session alive (SEC-12).
     pub background: bool,
+    /// The run the request works inside (a session of an AI app, an attempt of an agent): every
+    /// event of the request carries it. Set by the way in that opened the run, never by a client.
+    pub run: Option<RunId>,
 }
 
 /// Everything the sign-in use cases share. Built once at start-up (`bb-server`).
@@ -182,6 +185,7 @@ impl<S> AuthServices<S> {
     /// context does: a request, never longer (ADR-0025, decision 3).
     #[must_use]
     pub fn ctx(&self, request: RequestInfo) -> Ctx<'_, S> {
+        let run = request.run;
         Ctx {
             services: self,
             request,
@@ -189,7 +193,8 @@ impl<S> AuthServices<S> {
             policies: Mutex::default(),
             via_key: AtomicBool::new(false),
             acting_agent: Mutex::default(),
-            run: Mutex::default(),
+            run: Mutex::new(run),
+            marks: Mutex::default(),
             image_hosts: Mutex::default(),
             known: Known::default(),
             acting: None,
@@ -318,6 +323,8 @@ pub struct Ctx<'a, S> {
     /// to many issues): every event of the request carries it, made in the one place that makes
     /// events ([`Self::event_maker`]).
     pub(crate) run: Mutex<Option<RunId>>,
+    /// The marks of AI-written texts the request has read, for the texts of a page at once.
+    pub(crate) marks: Mutex<crate::runs::Marks>,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,

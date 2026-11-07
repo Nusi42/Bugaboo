@@ -87,6 +87,8 @@ pub struct CommentView {
     pub may_edit: bool,
     /// Whether the viewer may put it into the trash.
     pub may_delete: bool,
+    /// How the text was written, when AI wrote it (COMP-08, COMP-09).
+    pub written_by: Option<crate::runs::WrittenByView>,
 }
 
 impl Masked for CommentView {}

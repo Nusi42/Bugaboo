@@ -575,6 +575,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .filter(|row| row.kind == HistoryKind::Comment)
             .filter_map(|row| CommentId::from_bytes(row.record.to_bytes()).ok())
             .collect();
+        self.load_comment_marks(&comment_ids).await?;
         let comments = self
             .store()
             .comments_by_ids(&comment_ids)

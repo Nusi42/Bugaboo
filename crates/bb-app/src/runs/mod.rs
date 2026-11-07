@@ -10,8 +10,24 @@ use bb_core::run::{
 };
 use jiff::Timestamp;
 
+mod marks;
+mod records;
+mod restore;
+mod service;
+mod use_cases;
+mod weigh;
+
 #[cfg(any(test, feature = "testing"))]
 mod fake;
+
+pub(crate) use marks::Marks;
+pub use marks::WrittenByView;
+pub use records::RunRecordStore;
+pub use service::RunsOf;
+pub use use_cases::{
+    RunChangeView, RunChangesPage, RunChangesQuery, RunQuery, RunView, UndoRun, UndoSkipView,
+    UndoView, get_run, preview_undo_run, run_changes, undo_run,
+};
 
 #[cfg(any(test, feature = "testing"))]
 pub use fake::FakeRunStore;
@@ -22,7 +38,7 @@ pub use fake::FakeRunStore;
 /// Who may undo is not decided here: the use case judges it, and each change is judged again as the
 /// person who undoes it. This port holds the one evaluation of what goes back and what is skipped,
 /// which the preview and the undo share.
-pub trait RunStore: Send + Sync + 'static {
+pub trait RunStore: Send + Sync {
     /// What a failed read or write reports.
     type Error: Send;
 
