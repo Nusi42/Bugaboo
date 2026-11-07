@@ -43,6 +43,42 @@ const CHOICE_FIELDS: [FieldSpec; 3] = [
     FieldSpec::by_default("handle"),
     FieldSpec::by_default("name"),
 ];
+/// How a text that AI wrote was written (COMP-08, COMP-09). A text a person wrote by hand has no
+/// such member.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct WrittenByBody {
+    /// *Written with the assistant*, *Written by an AI app* or *Written by an agent*.
+    pub(crate) kind: bb_core::mark::WrittenBy,
+    /// The name of the AI app, for an app.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) app: Option<String>,
+    /// The name of the agent, for an agent.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) agent: Option<String>,
+}
+
+#[cfg(test)]
+impl WrittenByBody {
+    /// A mark with every member filled, for the tests that hold a table of fields to the members.
+    pub(crate) fn blank() -> Self {
+        Self {
+            kind: bb_core::mark::WrittenBy::Agent,
+            app: Some(String::new()),
+            agent: Some(String::new()),
+        }
+    }
+}
+
+impl From<&bb_app::runs::WrittenByView> for WrittenByBody {
+    fn from(view: &bb_app::runs::WrittenByView) -> Self {
+        Self {
+            kind: view.kind,
+            app: view.app.clone(),
+            agent: view.agent.clone(),
+        }
+    }
+}
+
 /// A comment as the reader sees it.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CommentItem {
@@ -67,6 +103,9 @@ pub(crate) struct CommentItem {
     pub(crate) may_edit: bool,
     /// Whether the reader may put it into the trash.
     pub(crate) may_delete: bool,
+    /// How the text was written, when AI wrote it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) written_by: Option<WrittenByBody>,
 }
 
 impl Masked for CommentItem {}
@@ -84,6 +123,7 @@ impl From<&CommentView> for CommentItem {
             version: comment.version,
             may_edit: comment.may_edit,
             may_delete: comment.may_delete,
+            written_by: comment.written_by.as_ref().map(WrittenByBody::from),
         }
     }
 }

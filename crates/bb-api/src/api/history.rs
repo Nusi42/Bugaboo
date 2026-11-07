@@ -29,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 20] = [
+const HISTORY_FIELDS: [FieldSpec; 21] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -41,6 +41,7 @@ const HISTORY_FIELDS: [FieldSpec; 20] = [
     FieldSpec::by_default("version"),
     FieldSpec::by_default("may_edit"),
     FieldSpec::by_default("may_delete"),
+    FieldSpec::by_default("written_by"),
     FieldSpec::by_default("change"),
     FieldSpec::by_default("relation_event"),
     FieldSpec::by_default("relation_name"),
@@ -114,6 +115,9 @@ pub(crate) struct HistoryEntryItem {
     /// A comment: whether the reader may put it into the trash.
     #[serde(skip_serializing_if = "Option::is_none")]
     may_delete: Option<bool>,
+    /// A comment: how its text was written, when AI wrote it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    written_by: Option<super::comments::WrittenByBody>,
     /// A change: the field that changed, with what it was and what it is now.
     #[serde(skip_serializing_if = "Option::is_none")]
     change: Option<FieldChangeBody>,
@@ -166,6 +170,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         version: None,
         may_edit: None,
         may_delete: None,
+        written_by: None,
         change: None,
         relation_event: None,
         relation_name: None,
@@ -192,6 +197,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             item.version = Some(shown.version);
             item.may_edit = Some(shown.may_edit);
             item.may_delete = Some(shown.may_delete);
+            item.written_by = shown.written_by;
             vec![item]
         }
         HistoryWhat::Changes { fields } => fields
@@ -345,6 +351,7 @@ mod tests {
             version: Some(1),
             may_edit: Some(true),
             may_delete: Some(true),
+            written_by: Some(crate::api::comments::WrittenByBody::blank()),
             change: Some(FieldChangeBody::blank()),
             relation_event: Some(RelationEvent::Added),
             relation_name: Some(String::new()),

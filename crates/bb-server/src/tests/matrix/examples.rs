@@ -587,6 +587,22 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
     ),
     Example::with(
+        "getRun",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
+        "listRunChanges",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
+        "previewUndoRun",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
+        "undoRun",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
         "saveIssueFieldText",
         &[
             Quirk::AnIssueOfTheTarget,

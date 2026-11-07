@@ -13680,6 +13680,260 @@
         "x-permission": "manage-roles"
       }
     },
+    "/api/v1/runs/{run}": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Shows a run: a session of an AI app, an attempt of an agent or a change to many issues. Only the\nperson it belongs to reads it.",
+        "operationId": "getRun",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The run.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/runs/{run}/changes": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "The changes of a run, oldest first, a page at a time: the issues the reader may see, and on them\nthe fields they may see.",
+        "operationId": "listRunChanges",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The event the page starts after (`next` of the page before); the start when left out.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many changes at most; 50 when left out, 100 at most.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The changes.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunChangesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/runs/{run}/undo": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "What undoing the run would do now: how many field changes go back and which stay, with the\nversion to apply with.",
+        "operationId": "previewUndoRun",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What undoing would do.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
+      },
+      "post": {
+        "tags": ["runs"],
+        "summary": "Undoes the run in one step, as the person who undoes it: every change is judged again, and a\nfield somebody changed afterwards stays and is named. History is never deleted; new events put\nthe old values back. With a version that is no longer the current one nothing is written and\nthe newer preview comes back.",
+        "operationId": "undoRun",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoRunBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What was undone, or the newer preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
     "/api/v1/saved-searches": {
       "get": {
         "tags": ["saved-searches"],
@@ -17929,6 +18183,17 @@
             "type": "integer",
             "format": "int64",
             "description": "Counts up with every change. A change is made on the version that was looked at."
+          },
+          "written_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WrittenByBody",
+                "description": "How the text was written, when AI wrote it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -19580,6 +19845,17 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "A comment: the version, which a change of it is made on."
+          },
+          "written_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WrittenByBody",
+                "description": "A comment: how its text was written, when AI wrote it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -19722,6 +19998,17 @@
             "type": ["string", "null"],
             "description": "The description as safe HTML, made by the server with the same renderer as the editor's\npreview (the mark `x-safe-html`). Hidden with the description.",
             "x-safe-html": true
+          },
+          "description_written_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WrittenByBody",
+                "description": "How the description was written, when AI wrote it. Hidden with the description."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "issue": {
             "$ref": "#/components/schemas/IssueItem",
@@ -24955,6 +25242,93 @@
           }
         }
       },
+      "RunBody": {
+        "type": "object",
+        "description": "A run, as the person it belongs to sees it.",
+        "required": ["id", "kind", "status", "started_at"],
+        "properties": {
+          "app": {
+            "type": ["string", "null"],
+            "description": "The name of the AI app, for a session of an app."
+          },
+          "ended_at": {
+            "type": ["string", "null"],
+            "description": "When it ended.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the run."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RunKind",
+            "description": "What it is of."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "When it began.",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ManyChangeStatus",
+            "description": "Where it is."
+          }
+        }
+      },
+      "RunChangeBody": {
+        "type": "object",
+        "description": "One change of a run: an issue and what changed on it.",
+        "required": ["event", "at", "issue", "fields"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When it was made.",
+            "format": "date-time"
+          },
+          "event": {
+            "type": "string",
+            "description": "The ID of the event, which a page continues after."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChangeBody"
+            },
+            "description": "What changed, leaving out the fields the reader may not see."
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueRef",
+            "description": "The issue."
+          }
+        }
+      },
+      "RunChangesBody": {
+        "type": "object",
+        "description": "A page of the changes of a run.",
+        "required": ["run", "items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunChangeBody"
+            },
+            "description": "The changes the reader may see, oldest first."
+          },
+          "next": {
+            "type": ["string", "null"],
+            "description": "The event the next page starts after; left out on the last page."
+          },
+          "run": {
+            "$ref": "#/components/schemas/RunBody",
+            "description": "The run."
+          }
+        }
+      },
+      "RunKind": {
+        "type": "string",
+        "description": "What a run is of.",
+        "enum": ["many-changes", "app-session", "attempt"]
+      },
       "RunningItem": {
         "type": "object",
         "description": "A timer that runs.",
@@ -26864,6 +27238,97 @@
           }
         }
       },
+      "UndoBody": {
+        "type": "object",
+        "description": "What *Undo the run* would do, or did.",
+        "required": [
+          "preview_version",
+          "goes_back",
+          "skipped",
+          "skipped_count",
+          "changed_since_preview"
+        ],
+        "properties": {
+          "changed_since_preview": {
+            "type": "boolean",
+            "description": "For an apply: the preview was out of date, nothing was written and this is the newer one."
+          },
+          "goes_back": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many field changes go back (or went back).",
+            "minimum": 0
+          },
+          "preview_version": {
+            "type": "string",
+            "description": "The version to apply with. An apply with an older version writes nothing and answers with\nthe newer preview."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UndoSkipBody"
+            },
+            "description": "The first fields that stay, with why."
+          },
+          "skipped_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many fields stay.",
+            "minimum": 0
+          }
+        }
+      },
+      "UndoRunBody": {
+        "type": "object",
+        "description": "What *Undo the run* is applied with.",
+        "required": ["preview_version"],
+        "properties": {
+          "preview_version": {
+            "type": "string",
+            "description": "The version of the preview the person looked at."
+          }
+        }
+      },
+      "UndoSkipBody": {
+        "type": "object",
+        "description": "A field that *Undo the run* leaves as it is.",
+        "required": ["field", "kind", "by_you"],
+        "properties": {
+          "at": {
+            "type": ["string", "null"],
+            "description": "When it was changed afterwards.",
+            "format": "date-time"
+          },
+          "by_you": {
+            "type": "boolean",
+            "description": "Somebody changed it afterwards, and it was the reader."
+          },
+          "field": {
+            "type": "string",
+            "description": "The field."
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue, when the reader may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/UndoSkipKind",
+            "description": "Why it stays."
+          }
+        }
+      },
+      "UndoSkipKind": {
+        "type": "string",
+        "description": "Why a change of a run does not go back.",
+        "enum": ["changed-since", "gone", "not-allowed", "not-undoable"]
+      },
       "UnreadBody": {
         "type": "object",
         "description": "How many notifications the person has not read.",
@@ -27382,6 +27847,30 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "WrittenBy": {
+        "type": "string",
+        "description": "How a text that AI wrote was written.",
+        "enum": ["assistant", "app", "agent"]
+      },
+      "WrittenByBody": {
+        "type": "object",
+        "description": "How a text that AI wrote was written. A text a person wrote by hand has no\nsuch member.",
+        "required": ["kind"],
+        "properties": {
+          "agent": {
+            "type": ["string", "null"],
+            "description": "The name of the agent, for an agent."
+          },
+          "app": {
+            "type": ["string", "null"],
+            "description": "The name of the AI app, for an app."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WrittenBy",
+            "description": "*Written with the assistant*, *Written by an AI app* or *Written by an agent*."
           }
         }
       }

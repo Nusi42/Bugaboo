@@ -91,6 +91,27 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
         Ok(weigh(&net, &later))
     }
 
+    /// What the undo does, counting and naming only what the reader may see (PRIV-13): the changes
+    /// to issues they cannot see are left alone and are in no number.
+    async fn plan_for_reader(&self, run: RunId) -> Result<Plan, AppError> {
+        let mut plan = Self::plan(self.evaluation(run).await?);
+        let mut seen: BTreeMap<IssueId, bool> = BTreeMap::new();
+        let mut candidates: Vec<IssueId> = plan.by_issue.keys().copied().collect();
+        candidates.extend(plan.skips.iter().filter_map(|skip| issue_of(&skip.entity)));
+        for issue in candidates {
+            if let std::collections::btree_map::Entry::Vacant(slot) = seen.entry(issue) {
+                let found = self.ctx.seen_issue_by_id(self.actor, issue).await?;
+                slot.insert(found.is_some());
+            }
+        }
+        plan.by_issue
+            .retain(|issue, _| seen.get(issue).copied().unwrap_or(false));
+        plan.skips.retain(|skip| {
+            issue_of(&skip.entity).is_some_and(|issue| seen.get(&issue).copied().unwrap_or(false))
+        });
+        Ok(plan)
+    }
+
     /// The fields that go back, grouped by issue, and the fields that stay.
     fn plan(evaluation: Evaluation) -> Plan {
         let mut by_issue: BTreeMap<IssueId, Vec<Net>> = BTreeMap::new();
@@ -117,6 +138,13 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
             version: evaluation.version,
         }
     }
+}
+
+/// The issue a record is, when it is one.
+fn issue_of(entity: &bb_core::event::EntityRef) -> Option<IssueId> {
+    (entity.kind.as_str() == RecordKind::Issue.code())
+        .then(|| IssueId::from_bytes(entity.id.to_bytes()).ok())
+        .flatten()
 }
 
 /// What an undo would do, by issue.
@@ -249,7 +277,7 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
 
     async fn preview_undo(&self, run: RunId) -> Result<UndoPreview, AppError> {
         self.own_run(run).await?;
-        Ok(Self::plan(self.evaluation(run).await?).preview())
+        Ok(self.plan_for_reader(run).await?.preview())
     }
 
     async fn undo_run(
@@ -263,7 +291,7 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
         self.own_run(run).await?;
-        let plan = Self::plan(self.evaluation(run).await?);
+        let plan = self.plan_for_reader(run).await?;
         if plan.version != *version {
             return Ok(UndoOutcome::Changed(plan.preview()));
         }

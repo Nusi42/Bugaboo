@@ -332,3 +332,23 @@ reason = "Minutes, not a count of things: the sum over the issues of the project
 route = "GET /api/v1/projects/{project}/time"
 property = "time_spent"
 reason = "Minutes, not a count of things: the sum over the issues of the project and its sub-projects that the viewer sees, by the compiled search of its list with the viewer's sight, only of a field the viewer may read in all of them (ADR-0004, ADR-0035 decision 4, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/runs/{run}/undo"
+property = "goes_back"
+reason = "Counts only changes to issues the reader may see: the undo leaves out, and counts nowhere, the changes to issues they cannot see (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/runs/{run}/undo"
+property = "skipped_count"
+reason = "Counts only changes to issues the reader may see: the undo leaves out, and counts nowhere, the changes to issues they cannot see (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/runs/{run}/undo"
+property = "goes_back"
+reason = "Counts only changes to issues the reader may see: the undo leaves out, and counts nowhere, the changes to issues they cannot see (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/runs/{run}/undo"
+property = "skipped_count"
+reason = "Counts only changes to issues the reader may see: the undo leaves out, and counts nowhere, the changes to issues they cannot see (PRIV-13)."

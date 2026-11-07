@@ -3735,6 +3735,72 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/runs/{run}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Shows a run: a session of an AI app, an attempt of an agent or a change to many issues. Only the
+     *     person it belongs to reads it.
+     */
+    get: operations["getRun"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/runs/{run}/changes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The changes of a run, oldest first, a page at a time: the issues the reader may see, and on them
+     *     the fields they may see.
+     */
+    get: operations["listRunChanges"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/runs/{run}/undo": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What undoing the run would do now: how many field changes go back and which stay, with the
+     *     version to apply with.
+     */
+    get: operations["previewUndoRun"];
+    put?: never;
+    /**
+     * Undoes the run in one step, as the person who undoes it: every change is judged again, and a
+     *     field somebody changed afterwards stays and is named. History is never deleted; new events put
+     *     the old values back. With a version that is no longer the current one nothing is written and
+     *     the newer preview comes back.
+     */
+    post: operations["undoRun"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/saved-searches": {
     parameters: {
       query?: never;
@@ -5244,6 +5310,7 @@ export interface components {
        * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version: number;
+      written_by?: components["schemas"]["WrittenByBody"] | null;
     };
     /** @description One text a comment had. */
     CommentTextItem: {
@@ -6103,6 +6170,7 @@ export interface components {
        * @description A comment: the version, which a change of it is made on.
        */
       version?: number | null;
+      written_by?: components["schemas"]["WrittenByBody"] | null;
     };
     /**
      * @description What an item of the history is.
@@ -6179,6 +6247,7 @@ export interface components {
        *     preview (the mark `x-safe-html`). Hidden with the description.
        */
       description_html?: SafeHtml;
+      description_written_by?: components["schemas"]["WrittenByBody"] | null;
       /** @description The issue, with every field the person may see. */
       issue: components["schemas"]["IssueItem"];
       /** @description Whether the person may change the issue at all, in the fields they may change. */
@@ -8740,6 +8809,55 @@ export interface components {
       /** @description The value has to be there. */
       required?: boolean;
     };
+    /** @description A run, as the person it belongs to sees it. */
+    RunBody: {
+      /** @description The name of the AI app, for a session of an app. */
+      app?: string | null;
+      /**
+       * Format: date-time
+       * @description When it ended.
+       */
+      ended_at?: string | null;
+      /** @description The ID of the run. */
+      id: string;
+      /** @description What it is of. */
+      kind: components["schemas"]["RunKind"];
+      /**
+       * Format: date-time
+       * @description When it began.
+       */
+      started_at: string;
+      /** @description Where it is. */
+      status: components["schemas"]["ManyChangeStatus"];
+    };
+    /** @description One change of a run: an issue and what changed on it. */
+    RunChangeBody: {
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
+      at: string;
+      /** @description The ID of the event, which a page continues after. */
+      event: string;
+      /** @description What changed, leaving out the fields the reader may not see. */
+      fields: components["schemas"]["FieldChangeBody"][];
+      /** @description The issue. */
+      issue: components["schemas"]["IssueRef"];
+    };
+    /** @description A page of the changes of a run. */
+    RunChangesBody: {
+      /** @description The changes the reader may see, oldest first. */
+      items: components["schemas"]["RunChangeBody"][];
+      /** @description The event the next page starts after; left out on the last page. */
+      next?: string | null;
+      /** @description The run. */
+      run: components["schemas"]["RunBody"];
+    };
+    /**
+     * @description What a run is of.
+     * @enum {string}
+     */
+    RunKind: "many-changes" | "app-session" | "attempt";
     /** @description A timer that runs. */
     RunningItem: {
       /** @description The internal ID of the issue it runs on; left out for an access key that does not see it. */
@@ -9723,6 +9841,53 @@ export interface components {
       /** @description There are more passkeys than the list holds. */
       truncated: boolean;
     };
+    /** @description What *Undo the run* would do, or did. */
+    UndoBody: {
+      /** @description For an apply: the preview was out of date, nothing was written and this is the newer one. */
+      changed_since_preview: boolean;
+      /**
+       * Format: int64
+       * @description How many field changes go back (or went back).
+       */
+      goes_back: number;
+      /**
+       * @description The version to apply with. An apply with an older version writes nothing and answers with
+       *     the newer preview.
+       */
+      preview_version: string;
+      /** @description The first fields that stay, with why. */
+      skipped: components["schemas"]["UndoSkipBody"][];
+      /**
+       * Format: int64
+       * @description How many fields stay.
+       */
+      skipped_count: number;
+    };
+    /** @description What *Undo the run* is applied with. */
+    UndoRunBody: {
+      /** @description The version of the preview the person looked at. */
+      preview_version: string;
+    };
+    /** @description A field that *Undo the run* leaves as it is. */
+    UndoSkipBody: {
+      /**
+       * Format: date-time
+       * @description When it was changed afterwards.
+       */
+      at?: string | null;
+      /** @description Somebody changed it afterwards, and it was the reader. */
+      by_you: boolean;
+      /** @description The field. */
+      field: string;
+      issue?: components["schemas"]["IssueRef"] | null;
+      /** @description Why it stays. */
+      kind: components["schemas"]["UndoSkipKind"];
+    };
+    /**
+     * @description Why a change of a run does not go back.
+     * @enum {string}
+     */
+    UndoSkipKind: "changed-since" | "gone" | "not-allowed" | "not-undoable";
     /** @description How many notifications the person has not read. */
     UnreadBody: {
       /** @description The number, at most 100: only what the person may still see is counted. */
@@ -9938,6 +10103,23 @@ export interface components {
       /** @description Its statuses, in order. */
       statuses: components["schemas"]["StatusRef"][];
       workflow?: components["schemas"]["SlotBody"] | null;
+    };
+    /**
+     * @description How a text that AI wrote was written.
+     * @enum {string}
+     */
+    WrittenBy: "assistant" | "app" | "agent";
+    /**
+     * @description How a text that AI wrote was written. A text a person wrote by hand has no
+     *     such member.
+     */
+    WrittenByBody: {
+      /** @description The name of the agent, for an agent. */
+      agent?: string | null;
+      /** @description The name of the AI app, for an app. */
+      app?: string | null;
+      /** @description *Written with the assistant*, *Written by an AI app* or *Written by an agent*. */
+      kind: components["schemas"]["WrittenBy"];
     };
   };
   responses: {
@@ -17784,6 +17966,138 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The run. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RunBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listRunChanges: {
+    parameters: {
+      query?: {
+        /** @description The event the page starts after (`next` of the page before); the start when left out. */
+        after?: string;
+        /** @description How many changes at most; 50 when left out, 100 at most. */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The changes. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RunChangesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  previewUndoRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What undoing would do. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UndoBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  undoRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UndoRunBody"];
+      };
+    };
+    responses: {
+      /** @description What was undone, or the newer preview. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UndoBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

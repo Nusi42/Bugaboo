@@ -252,6 +252,9 @@ async fn ai_38_the_changes_of_a_run_show_only_what_the_reader_may_see() -> Outco
     .into_value();
     let lines: Vec<_> = page.items.iter().map(|item| item.issue.id).collect();
     assert_eq!(lines, vec![seen]);
+    // What the undo counts is what the reader sees: the issue of the other project is in no number.
+    let preview = preview_of(&world, &bob.session_token, run).await?;
+    assert_eq!((preview.goes_back, preview.skipped), (1, 0));
     // Somebody else's run is not there at all.
     let other = run_changes(
         &world.ctx(),

@@ -330,6 +330,14 @@ async fn many_changes_request(
             format!("/api/v1/many-changes/runs/{NOBODYS_ID}/stop"),
             None,
         ),
+        "getRun" => ("GET", format!("/api/v1/runs/{NOBODYS_ID}"), None),
+        "listRunChanges" => ("GET", format!("/api/v1/runs/{NOBODYS_ID}/changes"), None),
+        "previewUndoRun" => ("GET", format!("/api/v1/runs/{NOBODYS_ID}/undo"), None),
+        "undoRun" => (
+            "POST",
+            format!("/api/v1/runs/{NOBODYS_ID}/undo"),
+            Some(json!({"version": "0"})),
+        ),
         _ => return Ok(None),
     }))
 }
