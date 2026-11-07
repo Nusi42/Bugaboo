@@ -6,3 +6,7 @@
 [[engine-only]]
 permission = "change-own-issues"
 reason = "Judged by Evaluation::may_change_issue inside the route that declares change-issues (PATCH /api/v1/issues/{issue}): a person with only this permission changes the issues they reported. It has no route of its own and stays here for good (M3-F01)."
+
+[[engine-only]]
+permission = "create-agents"
+reason = "Judged by the use case create_agent, which asks whether the person holds it in at least one project (M7-Q1), and by the narrowing of an agent, which counts only where its person holds it. The route that makes an agent names no project, so it declares own-account. It stays here for good (M7-F30)."

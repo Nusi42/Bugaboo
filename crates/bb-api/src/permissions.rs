@@ -154,19 +154,6 @@ pub const ROUTES: &[Route] = &[
     route("getDraft", Declared::ByRecord, Answer::NeverStored),
     route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
     route_reading("checkVersions", Declared::ByRecord, Answer::Ordinary),
-    route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
-    route("createAccessKey", Declared::OwnAccount, Answer::Secret),
-    route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
-    route(
-        "getAccessKeyRules",
-        Declared::OwnAccount,
-        Answer::NeverStored,
-    ),
-    route(
-        "listProjectChoices",
-        Declared::OwnAccount,
-        Answer::NeverStored,
-    ),
     route(
         "getSecondStepGap",
         Declared::Permission(Permission::ManageRoles),
@@ -808,6 +795,8 @@ pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
 mod ai;
+mod access_keys;
+mod agents;
 mod comments;
 mod lookup;
 mod mail;

@@ -66,6 +66,7 @@ async fn key_for(world: &World, project: ProjectId) -> Result<String, AppError> 
             permissions: Vec::new(),
             projects: vec![project],
             expires_at: None,
+            agent: None,
         },
     )
     .await?

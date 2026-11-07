@@ -167,6 +167,7 @@ async fn auth_07_single_permissions_of_a_key_never_include_those_a_key_never_hol
                             permissions: vec![*never],
                             projects: Vec::new(),
                             expires_at: None,
+                            agent: None,
                         },
                     )
                     .await;

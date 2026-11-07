@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_app::auth::{AccessKeyRecord, ProjectChoice};
 use bb_core::access_key::{AccessKey, KeyChoice};
-use bb_core::id::{AccessKeyId, ProjectId, RoleId, UserId};
+use bb_core::id::{AccessKeyId, AgentId, ProjectId, RoleId, UserId};
 use bb_core::security_log::Digest;
 use bb_core::settings::SECURITY_TWO_STEP_REQUIRED;
 use bb_policy::Permission;
@@ -26,7 +26,7 @@ use crate::schema::{
 };
 use crate::settings::Scopes;
 
-fn key_columns() -> [AccessKeyRow; 9] {
+fn key_columns() -> [AccessKeyRow; 10] {
     [
         AccessKeyRow::Id,
         AccessKeyRow::Owner,
@@ -37,6 +37,7 @@ fn key_columns() -> [AccessKeyRow; 9] {
         AccessKeyRow::CreatedAt,
         AccessKeyRow::ExpiresAt,
         AccessKeyRow::LastUsedAt,
+        AccessKeyRow::Agent,
     ]
 }
 
@@ -53,6 +54,7 @@ fn read_key(row: &Row) -> Result<AccessKey, StoreError> {
         created_at: row.time(AccessKeyRow::CreatedAt)?,
         expires_at: row.time(AccessKeyRow::ExpiresAt)?,
         last_used_at: row.optional_time(AccessKeyRow::LastUsedAt)?,
+        agent: row.optional_id::<AgentId>(AccessKeyRow::Agent)?,
     })
 }
 
@@ -136,6 +138,8 @@ impl Database {
             .columns(key_columns())
             .from(AccessKeyRow::Table)
             .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()))
+            // The keys of agents are listed with the agent (`keys_of_agent`).
+            .and_where(Expr::col(AccessKeyRow::Agent).is_null())
             .order_by(AccessKeyRow::CreatedAt, Order::Desc)
             .order_by(AccessKeyRow::Id, Order::Asc)
             .limit(limit);
@@ -157,6 +161,27 @@ impl Database {
         with_scope(self, keys).await
     }
 
+    /// The keys of one agent, newest first.
+    pub(crate) async fn keys_of_agent(
+        &self,
+        agent: AgentId,
+    ) -> Result<Vec<AccessKeyRecord>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(key_columns())
+            .from(AccessKeyRow::Table)
+            .and_where(Expr::col(AccessKeyRow::Agent).eq(agent.stored()))
+            .order_by(AccessKeyRow::CreatedAt, Order::Desc)
+            .order_by(AccessKeyRow::Id, Order::Asc);
+        let keys = self
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_key)
+            .collect::<Result<Vec<_>, _>>()?;
+        with_scope(self, keys).await
+    }
+
     /// How many access keys a person has.
     pub(crate) async fn access_key_count(&self, owner: UserId) -> Result<i64, StoreError> {
         let mut select = Query::select();
@@ -166,7 +191,8 @@ impl Database {
                 crate::schema::Computed::Total,
             )
             .from(AccessKeyRow::Table)
-            .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()));
+            .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()))
+            .and_where(Expr::col(AccessKeyRow::Agent).is_null());
         match self.fetch_optional(&select).await? {
             Some(row) => row.get(crate::schema::Computed::Total),
             None => Ok(0),
@@ -366,6 +392,7 @@ pub(crate) async fn insert_access_key(
             Expr::val(to_micros(key.created_at)),
             Expr::val(to_micros(key.expires_at)),
             Expr::val(key.last_used_at.map(to_micros)),
+            Expr::val(key.agent.map(StoredId::stored)),
         ])
         .map_err(|_| StoreError::Corrupt("an access key"))?;
     transaction.execute(&insert).await?;

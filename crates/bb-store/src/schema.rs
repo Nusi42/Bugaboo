@@ -13,6 +13,7 @@ use sea_query::{Iden, IdenStatic};
 
 mod access;
 mod ai;
+mod agents;
 mod comments;
 mod files;
 mod notify;
@@ -26,6 +27,7 @@ mod working_hours;
 
 pub(crate) use access::*;
 pub(crate) use ai::*;
+pub(crate) use agents::*;
 pub(crate) use comments::*;
 pub(crate) use files::*;
 pub(crate) use notify::*;
@@ -699,6 +701,20 @@ stored_tables! {
         CreatedAt => created_at,
         ExpiresAt => expires_at,
         LastUsedAt => last_used_at,
+        Agent => agent,
+    },
+    AgentRow => bb_core::agent::Agent {
+        Id => id,
+        Person => person,
+        Name => name,
+        State => state,
+        ChangesAMinute => changes_a_minute,
+        IssuesAtOnce => issues_at_once,
+        AttemptsOnOneIssue => attempts_on_one_issue,
+        OfferedTo => offered_to,
+        MadeBy => made_by,
+        MadeAt => made_at,
+        Version => version,
     },
     AccessKeyPermissionRow => bb_core::access_key::AccessKeyPermission {
         Key => key,

@@ -98,6 +98,7 @@ async fn create_with(
                 permissions: permissions.to_vec(),
                 projects: projects.to_vec(),
                 expires_at,
+                agent: None,
             },
         )
         .await?

@@ -18,6 +18,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
                 DeleteAccessKey {
                     session_token: org.admin.session.clone(),
                     id: key.key.id,
+                    agent: None,
                 },
             )
             .await;
@@ -28,6 +29,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
         let delete = || DeleteAccessKey {
             session_token: bob.session.clone(),
             id: key.key.id,
+            agent: None,
         };
         rig.api().delete_access_key(Rig::info(), delete()).await?;
         assert_eq!(
@@ -56,6 +58,7 @@ async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> TestResult 
                 DeleteAccessKey {
                     session_token: bob.session.clone(),
                     id: key.key.id,
+                    agent: None,
                 },
             )
             .await?;

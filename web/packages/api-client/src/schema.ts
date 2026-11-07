@@ -94,29 +94,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/ai": {
+  "/api/v1/agents": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** The setup of AI of the organization: the settings and whether a key is stored, never the key. */
-    get: operations["getAiSetup"];
-    /**
-     * Changes the settings of AI of the organization. AI is off until it is switched on here. An
-     *     outside provider needs the agreement first, and changing the provider or the address needs the
-     *     password again.
-     */
-    put: operations["changeAiSetup"];
-    post?: never;
+    /** The agents of the person, a page at a time. */
+    get: operations["listMyAgents"];
+    put?: never;
+    /** Makes an agent. The person must hold *Create agents that work for you* in at least one project. */
+    post: operations["createAgent"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/ai/agreement": {
+  "/api/v1/agents/{agent}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One agent: its state, its limits and its keys. An agent reads only its own record. */
+    get: operations["getAgent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Gives an agent another name, or pauses, resumes or stops it. An administrator may stop any
+     *     agent.
+     */
+    patch: operations["changeAgent"];
+    trace?: never;
+  };
+  "/api/v1/agents/{agent}/accept": {
     parameters: {
       query?: never;
       header?: never;
@@ -125,38 +142,15 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /**
-     * Confirms that a data processing agreement with the provider is in place. It is kept with who
-     *     confirmed it and when; a change of the provider asks again.
-     */
-    post: operations["confirmAiAgreement"];
+    /** Accepts an agent that was handed to the person. Its keys are taken back. */
+    post: operations["acceptAgent"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/ai/key": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Enters, changes or removes the key of the provider. It is stored encrypted like other secrets and
-     *     never sent back. Needs the password again.
-     */
-    put: operations["setAiKey"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/ai/try": {
+  "/api/v1/agents/{agent}/hand-over": {
     parameters: {
       query?: never;
       header?: never;
@@ -165,29 +159,43 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /**
-     * Tries the provider with one short call that holds no data of the organization. It works while AI
-     *     is still off, but never before the agreement of an outside provider is confirmed.
-     */
-    post: operations["tryAiProvider"];
+    /** Offers an agent to another person, who has to accept it. */
+    post: operations["handAgent"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/ai/what-goes-where": {
+  "/api/v1/agents/{agent}/keys": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** What goes where: the provider, its country, the model and which data may go. */
-    get: operations["getWhatGoesWhere"];
+    get?: never;
+    put?: never;
+    /** Makes a key for an agent. The key is shown once, runs out, and is always the agent's. */
+    post: operations["createAgentKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agents/{agent}/keys/{access_key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
     put?: never;
     post?: never;
-    delete?: never;
+    /** Takes a key of an agent back at once. */
+    delete: operations["deleteAgentKey"];
     options?: never;
     head?: never;
     patch?: never;
@@ -2364,6 +2372,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/agents/stop-all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *Stop all my agents*: every agent of the person that is not stopped yet. */
+    post: operations["stopAllMyAgents"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/handle": {
     parameters: {
       query?: never;
@@ -2708,63 +2733,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/never-sent-to-ai": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Which built-in fields and projects are kept from AI. Open to everybody who is signed in. */
-    get: operations["listNeverSentToAi"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/never-sent-to-ai/fields/{field}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Marks a built-in field *Never sent to AI*, or takes the mark away. Needs *Change organization
-     *     settings*.
-     */
-    put: operations["setFieldNeverSentToAi"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/never-sent-to-ai/projects/{project}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Marks a project *Never sent to AI*, with every project inside it, or takes the mark away. Needs
-     *     *Change project settings* in the project.
-     */
-    put: operations["setProjectNeverSentToAi"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/notifications": {
     parameters: {
       query?: never;
@@ -2828,6 +2796,23 @@ export interface paths {
     };
     /** The description of this API (OpenAPI 3.1), for tools and for the generated browser client. */
     get: operations["getOpenApi"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/organization/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every agent of the organization, for administrators. */
+    get: operations["listOrganizationAgents"];
     put?: never;
     post?: never;
     delete?: never;
@@ -3065,28 +3050,6 @@ export interface paths {
      *     where the project sits.
      */
     patch: operations["changeProject"];
-    trace?: never;
-  };
-  "/api/v1/projects/{project}/ai": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The switch of AI of a project. Needs the permission *Change project settings* in the project. */
-    get: operations["getProjectAi"];
-    /**
-     * Switches AI on or off for a project, or lets it follow the project above again. AI works in a
-     *     project only when the organization and the project both have it on. Needs the permission
-     *     *Change project settings* in the project.
-     */
-    put: operations["changeProjectAi"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/api/v1/projects/{project}/assignable-people": {
@@ -4308,60 +4271,60 @@ export interface components {
       /** @description The password, typed again. */
       password: string;
     };
-    /** @description Who confirmed the agreement, when, and for which provider. */
-    AgreementBody: {
-      /**
-       * Format: date-time
-       * @description When it was confirmed.
-       */
-      confirmed_at: string;
-      /** @description The administrator, as the person who asks may see them. */
-      confirmed_by: components["schemas"]["PersonRef"];
-      /** @description Where the data goes, which the agreement was confirmed for. */
-      destination: components["schemas"]["Destination"];
-    };
-    /** @description The confirmation of the agreement. */
-    AgreementConfirmBody: {
-      /**
-       * @description Where the data goes, as the page showed it. A request for another destination than the
-       *     settings lead to now is refused, so a page that is out of date confirms nothing.
-       */
-      destination: components["schemas"]["Destination"];
-    };
     /**
-     * @description Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed.
+     * @description What to do to the state of an agent.
      * @enum {string}
      */
-    AgreementStatus: "not-needed" | "needed" | "confirmed";
-    /** @description The key of the provider. */
-    AiKeyBody: {
+    AgentActionBody: "pause" | "resume" | "stop";
+    /** @description One agent with its keys (at most `MOST_AGENT_KEYS`, newest first). */
+    AgentBody: components["schemas"]["AgentItem"] & {
+      /** @description The keys of the agent. Never the secret. */
+      keys: components["schemas"]["AccessKeyBody"][];
+    };
+    /**
+     * @description An agent in a list: the fields that can be asked for. An answer holds only those that were
+     *     asked for.
+     */
+    AgentItem: {
       /**
-       * @description The key. Leave it out, or leave it empty, to remove it (a model that asks for none). It is
-       *     stored encrypted and never sent back.
+       * Format: int64
+       * @description Attempts it may make on one issue, at most.
        */
-      key?: string | null;
-      /** @description The password of the person who asks. */
-      password: string;
+      attempts_on_one_issue?: number | null;
+      /**
+       * Format: int64
+       * @description Changes it may make in one minute, at most.
+       */
+      changes_a_minute?: number | null;
+      /**
+       * Format: date-time
+       * @description When it was created.
+       */
+      created_at?: string | null;
+      /** @description The ID of the agent. */
+      id?: string | null;
+      /**
+       * Format: int64
+       * @description Issues it may work on at once, at most.
+       */
+      issues_at_once?: number | null;
+      /** @description Its name. */
+      name?: string | null;
+      /** @description Whether it is offered to another person who has not accepted yet. */
+      offered?: boolean | null;
+      person?: components["schemas"]["PersonRef"] | null;
+      state?: components["schemas"]["AgentState"] | null;
+      /**
+       * Format: int64
+       * @description The version of the agent; send it back with a change.
+       */
+      version?: number | null;
     };
-    /** @description The setup of AI of the organization. The key is never in it. */
-    AiSetupBody: {
-      /** @description The address of an OpenAI-compatible model. */
-      address: string;
-      agreement?: components["schemas"]["AgreementBody"] | null;
-      /** @description Where the agreement for the provider stands. */
-      agreement_status: components["schemas"]["AgreementStatus"];
-      destination?: components["schemas"]["Destination"] | null;
-      /** @description AI is on for the organization. */
-      enabled: boolean;
-      /** @description A key is stored. The key itself is never sent. */
-      key_set: boolean;
-      /** @description The model, as the provider names it. */
-      model: string;
-      /** @description The kind of provider. */
-      provider: components["schemas"]["ProviderKind"];
-      /** @description Whether names of people go to an outside provider (otherwise the role of each person). */
-      send_names: boolean;
-    };
+    /**
+     * @description Whether an agent may act.
+     * @enum {string}
+     */
+    AgentState: "active" | "paused" | "stopped";
     /**
      * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.
      * @enum {string}
@@ -4528,22 +4491,19 @@ export interface components {
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
     };
-    /** @description A change of the settings of AI. A part that is left out stays as it is. */
-    ChangeAiBody: {
-      /** @description The address of an OpenAI-compatible model; empty takes it away. */
-      address?: string | null;
+    /**
+     * @description What to do to an agent: give it another name, or pause, resume or stop it. Exactly one of
+     *     `name` and `action`.
+     */
+    ChangeAgentBody: {
+      action?: components["schemas"]["AgentActionBody"] | null;
+      /** @description The new name. */
+      name?: string | null;
       /**
-       * @description Switch AI on or off for the organization. Switching on an outside provider needs the
-       *     agreement first.
+       * Format: int64
+       * @description The version the person saw.
        */
-      enabled?: boolean | null;
-      /** @description The model. */
-      model?: string | null;
-      /** @description The password of the person who asks. It is needed when the provider or the address changes. */
-      password?: string | null;
-      provider?: components["schemas"]["ProviderKind"] | null;
-      /** @description Whether names of people go to an outside provider. */
-      send_names?: boolean | null;
+      version: number;
     };
     /** @description What to change about a choice: what is left out stays as it is. */
     ChangeChoiceBody: {
@@ -5081,6 +5041,19 @@ export interface components {
       /** @description What the copy is called; the name of the original when left out. */
       name?: string | null;
     };
+    /** @description An agent key to make. */
+    CreateAgentKeyBody: {
+      /**
+       * Format: date-time
+       * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
+       *     default number of days from now. It cannot be later than the longest time.
+       */
+      expires_at?: string | null;
+      /** @description What the key is called. */
+      name: string;
+      /** @description The password of the person, asked again. */
+      password: string;
+    };
     /** @description An access key to make. */
     CreateKeyBody: {
       /** @description What it may do. */
@@ -5159,11 +5132,6 @@ export interface components {
        */
       deleted: number;
     };
-    /**
-     * @description Where the data of a call goes: to anthropic, to a local model on the organization's own network, or to another provider on the internet.
-     * @enum {string}
-     */
-    Destination: "anthropic" | "local-model" | "other-provider";
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -5386,12 +5354,6 @@ export interface components {
       | "mail.unavailable"
       | "mail.off"
       | "mail.insecure"
-      | "ai.off"
-      | "ai.unavailable"
-      | "ai.not-set-up"
-      | "ai.agreement-needed"
-      | "ai.address-invalid"
-      | "ai.address-not-encrypted"
       | "handle.changed-lately"
       | "request.wrong-origin"
       | "request.wrong-token"
@@ -5777,6 +5739,16 @@ export interface components {
       projects: number;
       /** @description Whether the group has a role for the whole organization. */
       whole_organization: boolean;
+    };
+    /** @description An agent to hand to another person, who has to accept it. */
+    HandAgentBody: {
+      /** @description The ID of the person. */
+      to: string;
+      /**
+       * Format: int64
+       * @description The version the person saw.
+       */
+      version: number;
     };
     /**
      * @description A handle: the one a person has, or the new one they ask for. Without the `@`: lower case or
@@ -6808,39 +6780,6 @@ export interface components {
       /** @description What kind of input it needs. */
       kind: components["schemas"]["NeedKind"];
     };
-    /** @description The marks the person may know about. */
-    NeverSentBody: {
-      /** @description Every built-in field, in the order of the catalogue. */
-      fields: components["schemas"]["NeverSentFieldBody"][];
-      /** @description The projects that have a mark and that the person sees, at most 200. */
-      projects: components["schemas"]["NeverSentProjectBody"][];
-      /** @description Whether more projects than that were left out. */
-      truncated: boolean;
-    };
-    /** @description One built-in field and whether it is kept from AI. */
-    NeverSentFieldBody: {
-      /** @description The key of the field, like `description`. */
-      field: string;
-      /** @description Whether it is kept from AI. */
-      marked: boolean;
-      /**
-       * Format: int64
-       * @description The version to change it on; 0 for a field that never had a mark.
-       */
-      version: number;
-    };
-    /** @description One project that has a mark. */
-    NeverSentProjectBody: {
-      /** @description Whether it is kept from AI, with every project inside it. */
-      marked: boolean;
-      /** @description The project. */
-      project: components["schemas"]["ProjectRef"];
-      /**
-       * Format: int64
-       * @description The version to change it on.
-       */
-      version: number;
-    };
     /** @description A comment to write. */
     NewCommentBody: {
       /** @description The text, in Markdown. */
@@ -7304,6 +7243,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_AgentItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["AgentItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_AssignmentItem: {
       /** @description The items of this page. */
       items: components["schemas"]["AssignmentItem"][];
@@ -7674,6 +7620,7 @@ export interface components {
       | "change-organization-settings"
       | "see-status"
       | "book-time"
+      | "create-agents"
       | "see-working-hours-of-others"
       | "change-working-hours-of-others";
     /** @description One permission with *yes* or *no* and the reasons. */
@@ -7908,23 +7855,6 @@ export interface components {
        */
       total: number;
     };
-    /** @description The switch of one project. */
-    ProjectAiBody: {
-      /** @description The organization has AI on. */
-      organization_on: boolean;
-      /** @description The project's own switch; missing while it follows the project above or the organization. */
-      own?: boolean | null;
-      /** @description AI works in this project: the organization and the project both have it on. */
-      works_here: boolean;
-    };
-    /** @description The switch of a project. */
-    ProjectAiChangeBody: {
-      /**
-       * @description The project's own switch. Leave it out (or send null) to let the project follow the one
-       *     above again.
-       */
-      enabled?: boolean | null;
-    };
     /** @description A project after it was made, changed or moved. */
     ProjectBody: {
       /** @description The ID of the project. */
@@ -8070,11 +8000,6 @@ export interface components {
        */
       changes: components["schemas"]["ProjectStatusChangeBody"][];
     };
-    /**
-     * @description The kind of AI provider: anthropic, or openai-compatible (any service with the chat shape of OpenAI, also a model on the organization's own network).
-     * @enum {string}
-     */
-    ProviderKind: "anthropic" | "openai-compatible";
     /** @description What publishing a workflow would drop. */
     PublishPreviewAnswer: {
       /** @description The statuses the stored workflow has and the new one lacks. */
@@ -8210,6 +8135,7 @@ export interface components {
      */
     RecordKind:
       | "access-key"
+      | "agent"
       | "attachment"
       | "change-run"
       | "field"
@@ -8866,16 +8792,6 @@ export interface components {
       /** @description There are more sessions than the list holds. */
       truncated: boolean;
     };
-    /** @description Marks a subject or takes the mark away, on the version that was looked at. */
-    SetNeverSentBody: {
-      /** @description `true` keeps the subject from AI, `false` takes the mark away. */
-      marked: boolean;
-      /**
-       * Format: int64
-       * @description The version the person looked at; 0 for a subject that never had a mark.
-       */
-      version: number;
-    };
     /** @description One setting: what the registry knows about it, and the value that counts. */
     SettingBody: {
       bounds?: components["schemas"]["BoundsBody"] | null;
@@ -9386,7 +9302,7 @@ export interface components {
      * @description What a group of permissions is about.
      * @enum {string}
      */
-    Topic: "projects" | "issues" | "work-settings" | "people" | "settings" | "time";
+    Topic: "projects" | "issues" | "work-settings" | "people" | "settings" | "time" | "agents";
     /** @description What a day or a week adds up to, in whole minutes. */
     TotalsBody: {
       /**
@@ -9516,27 +9432,6 @@ export interface components {
        * @description The time worked, in whole minutes.
        */
       worked: number;
-    };
-    /** @description What goes where. */
-    WhatGoesWhereBody: {
-      agreement?: components["schemas"]["AgreementBody"] | null;
-      /** @description Where the agreement for the provider stands. */
-      agreement_status: components["schemas"]["AgreementStatus"];
-      /**
-       * @description Where the data goes. The name of the provider, its country and the page where it says what
-       *     it does with data are in the message catalog by this word.
-       */
-      destination: components["schemas"]["Destination"];
-      /** @description AI is on for the organization. */
-      enabled: boolean;
-      /** @description The model. */
-      model: string;
-      /** @description Whether people go to the provider by name; otherwise as their role. */
-      names_sent: boolean;
-      /** @description The projects that switched AI off for themselves. AI works in every other project. */
-      switched_off: components["schemas"]["NamedRef"][];
-      /** @description More projects switched AI off than the list names (at most 100 are named). */
-      truncated: boolean;
     };
     /** @description Where a project would go. */
     WhereToBody: {
@@ -9752,15 +9647,6 @@ export interface components {
     };
     /** @description That is too big to send. (request.too-large) */
     TooLarge: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        "application/problem+json": components["schemas"]["Problem"];
-      };
-    };
-    /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
-    TooManyRequests2: {
       headers: {
         [name: string]: unknown;
       };
@@ -10014,26 +9900,34 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  getAiSetup: {
+  listMyAgents: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The setup of AI. */
+      /** @description The agents of the person, by ID. */
       200: {
         headers: {
           etag: components["headers"]["ETag"];
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AiSetupBody"];
+          "application/json": components["schemas"]["Page_AgentItem"];
         };
       };
       304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
@@ -10041,7 +9935,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  changeAiSetup: {
+  createAgent: {
     parameters: {
       query?: never;
       header?: never;
@@ -10050,23 +9944,89 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ChangeAiBody"];
+        "application/json": components["schemas"]["NameBody"];
       };
     };
     responses: {
-      /** @description The setup of AI after the change. */
+      /** @description The agent. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AiSetupBody"];
+          "application/json": components["schemas"]["AgentBody"];
         };
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
-      /** @description An outside provider has no confirmed agreement yet (ai.agreement-needed). */
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The agent. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgentBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeAgentBody"];
+      };
+    };
+    responses: {
+      /** @description The agent. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgentBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -10081,76 +10041,19 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  confirmAiAgreement: {
+  acceptAgent: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AgreementConfirmBody"];
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
       };
-    };
-    responses: {
-      /** @description The setup of AI after the confirmation. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AiSetupBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  setAiKey: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AiKeyBody"];
-      };
-    };
-    responses: {
-      /** @description The key is stored. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  tryAiProvider: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The provider answered. */
+      /** @description Accepted. */
       204: {
         headers: {
           [name: string]: unknown;
@@ -10159,7 +10062,40 @@ export interface operations {
       };
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
-      /** @description An outside provider has no confirmed agreement yet (ai.agreement-needed). */
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  handAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HandAgentBody"];
+      };
+    };
+    responses: {
+      /** @description Offered. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -10168,42 +10104,71 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      429: components["responses"]["TooManyRequests2"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
-      /** @description The AI provider did not answer (ai.unavailable). */
-      502: {
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createAgentKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateAgentKeyBody"];
+      };
+    };
+    responses: {
+      /** @description The key, with its secret. */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/json": components["schemas"]["CreatedAccessKeyBody"];
         };
       };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
     };
   };
-  getWhatGoesWhere: {
+  deleteAgentKey: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+        /** @description The ID of the key. */
+        access_key: string;
+      };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description What goes where. */
-      200: {
+      /** @description Taken back. */
+      204: {
         headers: {
-          etag: components["headers"]["ETag"];
           [name: string]: unknown;
         };
-        content: {
-          "application/json": components["schemas"]["WhatGoesWhereBody"];
-        };
+        content?: never;
       };
-      304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -14456,7 +14421,15 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      429: components["responses"]["TooManyRequests2"];
+      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
       500: components["responses"]["InternalError"];
       /** @description The mail server did not take the e-mail (mail.rejected). */
       502: {
@@ -14592,6 +14565,29 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  stopAllMyAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stopped. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getMyHandle: {
     parameters: {
       query?: never;
@@ -14644,7 +14640,15 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests2"];
+      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
     };
@@ -15338,104 +15342,6 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  listNeverSentToAi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The marks. */
-      200: {
-        headers: {
-          etag: components["headers"]["ETag"];
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NeverSentBody"];
-        };
-      };
-      304: components["responses"]["NotModified"];
-      401: components["responses"]["NotSignedIn"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  setFieldNeverSentToAi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The key of the built-in field, like `description`. */
-        field: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SetNeverSentBody"];
-      };
-    };
-    responses: {
-      /** @description Every mark, after the change. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NeverSentBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  setProjectNeverSentToAi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID or short name of the project. */
-        project: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SetNeverSentBody"];
-      };
-    };
-    responses: {
-      /** @description Every mark, after the change. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NeverSentBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
   listNotifications: {
     parameters: {
       query?: {
@@ -15546,6 +15452,41 @@ export interface operations {
         };
       };
       304: components["responses"]["NotModified"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listOrganizationAgents: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Every agent, by ID. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_AgentItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -16007,72 +15948,6 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  getProjectAi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID or the short name of the project. */
-        project: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The switch of the project. */
-      200: {
-        headers: {
-          etag: components["headers"]["ETag"];
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProjectAiBody"];
-        };
-      };
-      304: components["responses"]["NotModified"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  changeProjectAi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID or the short name of the project. */
-        project: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ProjectAiChangeBody"];
-      };
-    };
-    responses: {
-      /** @description The switch of the project after the change. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProjectAiBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

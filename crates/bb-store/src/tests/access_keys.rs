@@ -63,6 +63,7 @@ fn a_key(
             created_at: at(created),
             expires_at: at(created + 1000),
             last_used_at: None,
+            agent: None,
         },
         permissions: Vec::new(),
         projects: Vec::new(),

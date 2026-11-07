@@ -85,6 +85,9 @@ pub(super) enum Quirk {
     /// The route declares one permission and its use case also needs this one on the record it
     /// names (*Edit anyway* takes over editing a record only for a person who may change it).
     AlsoNeeds(Permission),
+    /// The route lets in whoever holds this permission in at least one project, wherever that is
+    /// (making an agent, M7-Q1); everybody else is refused.
+    HeldInSomeProject(Permission),
     /// The route names a tag that the example puts on an issue of the target project: a person who
     /// holds the permission but does not read the issues there is told `resource.not-found`, as
     /// for a tag that is not there (SEC-06).
@@ -139,6 +142,14 @@ impl Example {
     pub(super) fn record_permission(&self) -> Option<Permission> {
         self.quirks.iter().find_map(|quirk| match quirk {
             Quirk::OnTheTargetProject(permission) => Some(*permission),
+            _ => None,
+        })
+    }
+
+    /// The permission the person must hold in some project, if the row says so.
+    pub(super) fn held_in_some_project(&self) -> Option<Permission> {
+        self.quirks.iter().find_map(|quirk| match quirk {
+            Quirk::HeldInSomeProject(permission) => Some(*permission),
             _ => None,
         })
     }
@@ -281,6 +292,28 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::with("deleteAccessKey", &[Quirk::NamesAMissingThing]),
     Example::route("getAccessKeyRules"),
+    Example::route("listMyAgents"),
+    Example::with(
+        "createAgent",
+        &[
+            Quirk::AlsoAnswers("name.taken"),
+            Quirk::HeldInSomeProject(Permission::CreateAgents),
+        ],
+    ),
+    Example::with("getAgent", &[Quirk::NamesAMissingThing]),
+    Example::with("changeAgent", &[Quirk::NamesAMissingThing]),
+    Example::with("handAgent", &[Quirk::NamesAMissingThing]),
+    Example::with("acceptAgent", &[Quirk::NamesAMissingThing]),
+    Example::with(
+        "createAgentKey",
+        &[
+            Quirk::NamesAMissingThing,
+            Quirk::AlsoAnswers("auth.wrong-credentials"),
+        ],
+    ),
+    Example::with("deleteAgentKey", &[Quirk::NamesAMissingThing]),
+    Example::route("stopAllMyAgents"),
+    Example::route("listOrganizationAgents"),
     Example::route("listProjectChoices"),
     Example::route("getSecondStepGap"),
     Example::route("listOrganizationSettings"),
@@ -610,6 +643,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = own_request(operation, actor, browser).await? {
+        return Ok(found);
+    }
+    if let Some(found) = agent_request(operation) {
         return Ok(found);
     }
     if let Some(found) = organization_request(fixture, operation).await? {

@@ -44,6 +44,7 @@ mod access_bodies;
 mod access_keys;
 mod admin;
 mod ai_setup;
+mod agents;
 mod assignments;
 mod auth;
 mod auth_factors;
@@ -165,6 +166,7 @@ where
         .routes(routes!(get_openapi))
         .merge(auth::routes(limits))
         .merge(access_keys::routes())
+        .merge(agents::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
         .merge(settings::routes())

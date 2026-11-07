@@ -153,6 +153,7 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
                 permissions: Vec::new(),
                 projects: Vec::new(),
                 expires_at: None,
+                agent: None,
             },
         )
         .await;
@@ -164,6 +165,7 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
             DeleteAccessKey {
                 session_token: session.clone(),
                 id: "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10".parse::<AccessKeyId>()?,
+                agent: None,
             },
         )
         .await;

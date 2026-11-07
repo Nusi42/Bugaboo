@@ -284,6 +284,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
         permissions: Vec::new(),
         projects: Vec::new(),
         expires_at: None,
+        agent: None,
     };
     // One clash: the key is made with a new secret, and nobody sees that it happened.
     super::fake::clash_the_next_key_prefix();

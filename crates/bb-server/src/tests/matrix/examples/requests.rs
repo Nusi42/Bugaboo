@@ -392,3 +392,46 @@ pub(super) fn project_request(
         _ => return Ok(None),
     }))
 }
+
+/// A person's agents (AI-30): the agents named here are nobody's, so a person who is let in is told
+/// `resource.not-found`.
+pub(super) fn agent_request(operation: &str) -> Option<Request> {
+    let wrong = "not the password";
+    Some(match operation {
+        "listMyAgents" => ("GET", "/api/v1/agents".into(), None),
+        "createAgent" => (
+            "POST",
+            "/api/v1/agents".into(),
+            Some(json!({"name": "Made by the matrix"})),
+        ),
+        "getAgent" => ("GET", format!("/api/v1/agents/{NOBODYS_RANDOM_ID}"), None),
+        "changeAgent" => (
+            "PATCH",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}"),
+            Some(json!({"action": "stop", "version": 1})),
+        ),
+        "handAgent" => (
+            "POST",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/hand-over"),
+            Some(json!({"to": NOBODYS_RANDOM_ID, "version": 1})),
+        ),
+        "acceptAgent" => (
+            "POST",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/accept"),
+            None,
+        ),
+        "createAgentKey" => (
+            "POST",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/keys"),
+            Some(json!({"password": wrong, "name": "Made by the matrix"})),
+        ),
+        "deleteAgentKey" => (
+            "DELETE",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/keys/{NOBODYS_RANDOM_ID}"),
+            None,
+        ),
+        "stopAllMyAgents" => ("POST", "/api/v1/me/agents/stop-all".into(), None),
+        "listOrganizationAgents" => ("GET", "/api/v1/organization/agents".into(), None),
+        _ => return None,
+    })
+}

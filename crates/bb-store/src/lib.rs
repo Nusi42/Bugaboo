@@ -10,6 +10,7 @@
 mod access_keys;
 mod ai;
 mod ai_tools;
+mod agents;
 mod anchor;
 mod auth;
 mod chain;

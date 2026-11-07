@@ -23,6 +23,7 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
                     permissions: vec![],
                     projects: vec![],
                     expires_at: None,
+                    agent: None,
                 },
             )
             .await;
@@ -41,6 +42,7 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
                         permissions: vec![],
                         projects: vec![],
                         expires_at: None,
+                        agent: None,
                     },
                 )
                 .await;

@@ -124,3 +124,8 @@ reason = "The button of the Markdown editor that writes a web link into the text
 term = "link"
 at = ["userDocs/writing/markdown.md"]
 reason = "The Link button of the Markdown editor and the web addresses it writes into a text. Not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "state"
+at = ["api:property AgentItem.state", "api:schema AgentState"]
+reason = "The state of an agent (active, paused, stopped) is the word of ADR-0029 and of the glossary's own entry for the states of agent work; it is not the status of an issue, which the glossary means."

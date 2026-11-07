@@ -127,6 +127,8 @@ words! {
         AccessKeyCreated => "access_key.created",
         /// A person deleted an access key.
         AccessKeyDeleted => "access_key.deleted",
+        /// An administrator stopped an agent of somebody else.
+        AgentStopped => "agent.stopped",
         /// An access key was turned away: it does not work, or it was used where no key may go.
         AccessKeyRefused => "access_key.refused",
         /// A project got another name.

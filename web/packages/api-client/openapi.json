@@ -321,14 +321,33 @@
         "x-permission": "see-status"
       }
     },
-    "/api/v1/ai": {
+    "/api/v1/agents": {
       "get": {
-        "tags": ["ai"],
-        "summary": "The setup of AI of the organization: the settings and whether a key is stored, never the key.",
-        "operationId": "getAiSetup",
+        "tags": ["agents"],
+        "summary": "The agents of the person, a page at a time.",
+        "operationId": "listMyAgents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The setup of AI.",
+            "description": "The agents of the person, by ID.",
             "headers": {
               "etag": {
                 "$ref": "#/components/headers/ETag"
@@ -337,13 +356,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AiSetupBody"
+                  "$ref": "#/components/schemas/Page_AgentItem"
                 }
               }
             }
           },
           "304": {
             "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -362,17 +384,17 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "change-organization-settings"
+        "x-permission": "own-account"
       },
-      "put": {
-        "tags": ["ai"],
-        "summary": "Changes the settings of AI of the organization. AI is off until it is switched on here. An\noutside provider needs the agreement first, and changing the provider or the address needs the\npassword again.",
-        "operationId": "changeAiSetup",
+      "post": {
+        "tags": ["agents"],
+        "summary": "Makes an agent. The person must hold *Create agents that work for you* in at least one project.",
+        "operationId": "createAgent",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangeAiBody"
+                "$ref": "#/components/schemas/NameBody"
               }
             }
           },
@@ -380,72 +402,11 @@
         },
         "responses": {
           "200": {
-            "description": "The setup of AI after the change.",
+            "description": "The agent.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AiSetupBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "An outside provider has no confirmed agreement yet (ai.agreement-needed).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConflictProblem"
-                }
-              }
-            }
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-organization-settings"
-      }
-    },
-    "/api/v1/ai/agreement": {
-      "post": {
-        "tags": ["ai"],
-        "summary": "Confirms that a data processing agreement with the provider is in place. It is kept with who\nconfirmed it and when; a change of the provider asks again.",
-        "operationId": "confirmAiAgreement",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgreementConfirmBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The setup of AI after the confirmation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AiSetupBody"
+                  "$ref": "#/components/schemas/AgentBody"
                 }
               }
             }
@@ -472,109 +433,28 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
-        "x-permission": "change-organization-settings"
+        "x-permission": "own-account"
       }
     },
-    "/api/v1/ai/key": {
-      "put": {
-        "tags": ["ai"],
-        "summary": "Enters, changes or removes the key of the provider. It is stored encrypted like other secrets and\nnever sent back. Needs the password again.",
-        "operationId": "setAiKey",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AiKeyBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "The key is stored."
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-organization-settings"
-      }
-    },
-    "/api/v1/ai/try": {
-      "post": {
-        "tags": ["ai"],
-        "summary": "Tries the provider with one short call that holds no data of the organization. It works while AI\nis still off, but never before the agreement of an outside provider is confirmed.",
-        "operationId": "tryAiProvider",
-        "responses": {
-          "204": {
-            "description": "The provider answered."
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "An outside provider has no confirmed agreement yet (ai.agreement-needed).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConflictProblem"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests2"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "502": {
-            "description": "The AI provider did not answer (ai.unavailable).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-organization-settings"
-      }
-    },
-    "/api/v1/ai/what-goes-where": {
+    "/api/v1/agents/{agent}": {
       "get": {
-        "tags": ["ai"],
-        "summary": "What goes where: the provider, its country, the model and which data may go.",
-        "operationId": "getWhatGoesWhere",
+        "tags": ["agents"],
+        "summary": "One agent: its state, its limits and its keys. An agent reads only its own record.",
+        "operationId": "getAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "What goes where.",
+            "description": "The agent.",
             "headers": {
               "etag": {
                 "$ref": "#/components/headers/ETag"
@@ -583,7 +463,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WhatGoesWhereBody"
+                  "$ref": "#/components/schemas/AgentBody"
                 }
               }
             }
@@ -597,6 +477,9 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
@@ -608,7 +491,307 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "change-organization-settings"
+        "x-permission": "signed-in"
+      },
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Gives an agent another name, or pauses, resumes or stops it. An administrator may stop any\nagent.",
+        "operationId": "changeAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAgentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The agent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agents/{agent}/accept": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Accepts an agent that was handed to the person. Its keys are taken back.",
+        "operationId": "acceptAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Accepted."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agents/{agent}/hand-over": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Offers an agent to another person, who has to accept it.",
+        "operationId": "handAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandAgentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Offered."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agents/{agent}/keys": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Makes a key for an agent. The key is shown once, runs out, and is always the agent's.",
+        "operationId": "createAgentKey",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentKeyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The key, with its secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAccessKeyBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account",
+        "x-secret": true
+      }
+    },
+    "/api/v1/agents/{agent}/keys/{access_key}": {
+      "delete": {
+        "tags": ["agents"],
+        "summary": "Takes a key of an agent back at once.",
+        "operationId": "deleteAgentKey",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "access_key",
+            "in": "path",
+            "description": "The ID of the key.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken back."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/assignment-choices": {
@@ -8161,7 +8344,14 @@
             }
           },
           "429": {
-            "$ref": "#/components/responses/TooManyRequests2"
+            "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -8392,6 +8582,34 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/me/agents/stop-all": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "*Stop all my agents*: every agent of the person that is not stopped yet.",
+        "operationId": "stopAllMyAgents",
+        "responses": {
+          "204": {
+            "description": "Stopped."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/me/handle": {
       "get": {
         "tags": ["people"],
@@ -8470,7 +8688,14 @@
             "$ref": "#/components/responses/TooLarge"
           },
           "429": {
-            "$ref": "#/components/responses/TooManyRequests2"
+            "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -9686,182 +9911,6 @@
         "x-permission": "signed-in"
       }
     },
-    "/api/v1/never-sent-to-ai": {
-      "get": {
-        "tags": ["ai"],
-        "summary": "Which built-in fields and projects are kept from AI. Open to everybody who is signed in.",
-        "operationId": "listNeverSentToAi",
-        "responses": {
-          "200": {
-            "description": "The marks.",
-            "headers": {
-              "etag": {
-                "$ref": "#/components/headers/ETag"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NeverSentBody"
-                }
-              }
-            }
-          },
-          "304": {
-            "$ref": "#/components/responses/NotModified"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "signed-in"
-      }
-    },
-    "/api/v1/never-sent-to-ai/fields/{field}": {
-      "put": {
-        "tags": ["ai"],
-        "summary": "Marks a built-in field *Never sent to AI*, or takes the mark away. Needs *Change organization\nsettings*.",
-        "operationId": "setFieldNeverSentToAi",
-        "parameters": [
-          {
-            "name": "field",
-            "in": "path",
-            "description": "The key of the built-in field, like `description`.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetNeverSentBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Every mark, after the change.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NeverSentBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-organization-settings"
-      }
-    },
-    "/api/v1/never-sent-to-ai/projects/{project}": {
-      "put": {
-        "tags": ["ai"],
-        "summary": "Marks a project *Never sent to AI*, with every project inside it, or takes the mark away. Needs\n*Change project settings* in the project.",
-        "operationId": "setProjectNeverSentToAi",
-        "parameters": [
-          {
-            "name": "project",
-            "in": "path",
-            "description": "The ID or short name of the project.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetNeverSentBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Every mark, after the change.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NeverSentBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-project-settings"
-      }
-    },
     "/api/v1/notifications": {
       "get": {
         "tags": ["notifications"],
@@ -10051,6 +10100,72 @@
           }
         },
         "x-permission": "public"
+      }
+    },
+    "/api/v1/organization/agents": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Every agent of the organization, for administrators.",
+        "operationId": "listOrganizationAgents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every agent, by ID.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AgentItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
       }
     },
     "/api/v1/own-access/check-change": {
@@ -10893,127 +11008,6 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "change-project-settings"
-      }
-    },
-    "/api/v1/projects/{project}/ai": {
-      "get": {
-        "tags": ["ai"],
-        "summary": "The switch of AI of a project. Needs the permission *Change project settings* in the project.",
-        "operationId": "getProjectAi",
-        "parameters": [
-          {
-            "name": "project",
-            "in": "path",
-            "description": "The ID or the short name of the project.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The switch of the project.",
-            "headers": {
-              "etag": {
-                "$ref": "#/components/headers/ETag"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectAiBody"
-                }
-              }
-            }
-          },
-          "304": {
-            "$ref": "#/components/responses/NotModified"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-never-stored": true,
-        "x-permission": "change-project-settings"
-      },
-      "put": {
-        "tags": ["ai"],
-        "summary": "Switches AI on or off for a project, or lets it follow the project above again. AI works in a\nproject only when the organization and the project both have it on. Needs the permission\n*Change project settings* in the project.",
-        "operationId": "changeProjectAi",
-        "parameters": [
-          {
-            "name": "project",
-            "in": "path",
-            "description": "The ID or the short name of the project.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProjectAiChangeBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The switch of the project after the change.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectAiBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -15713,121 +15707,101 @@
           }
         }
       },
-      "AgreementBody": {
+      "AgentActionBody": {
+        "type": "string",
+        "description": "What to do to the state of an agent.",
+        "enum": ["pause", "resume", "stop"]
+      },
+      "AgentBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AgentItem"
+          },
+          {
+            "type": "object",
+            "required": ["keys"],
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AccessKeyBody"
+                },
+                "description": "The keys of the agent. Never the secret."
+              }
+            }
+          }
+        ],
+        "description": "One agent with its keys (at most `MOST_AGENT_KEYS`, newest first)."
+      },
+      "AgentItem": {
         "type": "object",
-        "description": "Who confirmed the agreement, when, and for which provider.",
-        "required": ["destination", "confirmed_by", "confirmed_at"],
+        "description": "An agent in a list: the fields that can be asked for. An answer holds only those that were\nasked for.",
         "properties": {
-          "confirmed_at": {
-            "type": "string",
-            "description": "When it was confirmed.",
+          "attempts_on_one_issue": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Attempts it may make on one issue, at most."
+          },
+          "changes_a_minute": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Changes it may make in one minute, at most."
+          },
+          "created_at": {
+            "type": ["string", "null"],
+            "description": "When it was created.",
             "format": "date-time"
           },
-          "confirmed_by": {
-            "$ref": "#/components/schemas/PersonRef",
-            "description": "The administrator, as the person who asks may see them."
-          },
-          "destination": {
-            "$ref": "#/components/schemas/Destination",
-            "description": "Where the data goes, which the agreement was confirmed for."
-          }
-        }
-      },
-      "AgreementConfirmBody": {
-        "type": "object",
-        "description": "The confirmation of the agreement.",
-        "required": ["destination"],
-        "properties": {
-          "destination": {
-            "$ref": "#/components/schemas/Destination",
-            "description": "Where the data goes, as the page showed it. A request for another destination than the\nsettings lead to now is refused, so a page that is out of date confirms nothing."
-          }
-        }
-      },
-      "AgreementStatus": {
-        "type": "string",
-        "description": "Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed.",
-        "enum": ["not-needed", "needed", "confirmed"]
-      },
-      "AiKeyBody": {
-        "type": "object",
-        "description": "The key of the provider.",
-        "required": ["password"],
-        "properties": {
-          "key": {
+          "id": {
             "type": ["string", "null"],
-            "description": "The key. Leave it out, or leave it empty, to remove it (a model that asks for none). It is\nstored encrypted and never sent back."
+            "description": "The ID of the agent."
           },
-          "password": {
-            "type": "string",
-            "description": "The password of the person who asks."
+          "issues_at_once": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Issues it may work on at once, at most."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name."
+          },
+          "offered": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is offered to another person who has not accepted yet."
+          },
+          "person": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "The person responsible for it, as *Who sees people* says for the person asking."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentState",
+                "description": "Whether it may act: `active`, `paused` or `stopped`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version of the agent; send it back with a change."
           }
         }
       },
-      "AiSetupBody": {
-        "type": "object",
-        "description": "The setup of AI of the organization. The key is never in it.",
-        "required": [
-          "enabled",
-          "provider",
-          "model",
-          "address",
-          "send_names",
-          "key_set",
-          "agreement_status"
-        ],
-        "properties": {
-          "address": {
-            "type": "string",
-            "description": "The address of an OpenAI-compatible model."
-          },
-          "agreement": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AgreementBody",
-                "description": "The agreement that was confirmed, if there is one."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "agreement_status": {
-            "$ref": "#/components/schemas/AgreementStatus",
-            "description": "Where the agreement for the provider stands."
-          },
-          "destination": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Destination",
-                "description": "Where the data goes; missing while the address is not a good one."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "AI is on for the organization."
-          },
-          "key_set": {
-            "type": "boolean",
-            "description": "A key is stored. The key itself is never sent."
-          },
-          "model": {
-            "type": "string",
-            "description": "The model, as the provider names it."
-          },
-          "provider": {
-            "$ref": "#/components/schemas/ProviderKind",
-            "description": "The kind of provider."
-          },
-          "send_names": {
-            "type": "boolean",
-            "description": "Whether names of people go to an outside provider (otherwise the role of each person)."
-          }
-        }
+      "AgentState": {
+        "type": "string",
+        "description": "Whether an agent may act.",
+        "enum": ["active", "paused", "stopped"]
       },
       "AppliesTo": {
         "type": "string",
@@ -16150,40 +16124,30 @@
           }
         }
       },
-      "ChangeAiBody": {
+      "ChangeAgentBody": {
         "type": "object",
-        "description": "A change of the settings of AI. A part that is left out stays as it is.",
+        "description": "What to do to an agent: give it another name, or pause, resume or stop it. Exactly one of\n`name` and `action`.",
+        "required": ["version"],
         "properties": {
-          "address": {
-            "type": ["string", "null"],
-            "description": "The address of an OpenAI-compatible model; empty takes it away."
-          },
-          "enabled": {
-            "type": ["boolean", "null"],
-            "description": "Switch AI on or off for the organization. Switching on an outside provider needs the\nagreement first."
-          },
-          "model": {
-            "type": ["string", "null"],
-            "description": "The model."
-          },
-          "password": {
-            "type": ["string", "null"],
-            "description": "The password of the person who asks. It is needed when the provider or the address changes."
-          },
-          "provider": {
+          "action": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ProviderKind",
-                "description": "The kind of provider."
+                "$ref": "#/components/schemas/AgentActionBody",
+                "description": "`pause`, `resume` or `stop`."
               },
               {
                 "type": "null"
               }
             ]
           },
-          "send_names": {
-            "type": ["boolean", "null"],
-            "description": "Whether names of people go to an outside provider."
+          "name": {
+            "type": ["string", "null"],
+            "description": "The new name."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person saw."
           }
         }
       },
@@ -17303,6 +17267,26 @@
           }
         }
       },
+      "CreateAgentKeyBody": {
+        "type": "object",
+        "description": "An agent key to make.",
+        "required": ["password", "name"],
+        "properties": {
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time.",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "What the key is called."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again."
+          }
+        }
+      },
       "CreateKeyBody": {
         "type": "object",
         "description": "An access key to make.",
@@ -17430,11 +17414,6 @@
             "minimum": 0
           }
         }
-      },
-      "Destination": {
-        "type": "string",
-        "description": "Where the data of a call goes: to anthropic, to a local model on the organization's own network, or to another provider on the internet.",
-        "enum": ["anthropic", "local-model", "other-provider"]
       },
       "Direction": {
         "type": "string",
@@ -17771,12 +17750,6 @@
           "mail.unavailable",
           "mail.off",
           "mail.insecure",
-          "ai.off",
-          "ai.unavailable",
-          "ai.not-set-up",
-          "ai.agreement-needed",
-          "ai.address-invalid",
-          "ai.address-not-encrypted",
           "handle.changed-lately",
           "request.wrong-origin",
           "request.wrong-token",
@@ -18591,6 +18564,22 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether the group has a role for the whole organization."
+          }
+        }
+      },
+      "HandAgentBody": {
+        "type": "object",
+        "description": "An agent to hand to another person, who has to accept it.",
+        "required": ["to", "version"],
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "The ID of the person."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person saw."
           }
         }
       },
@@ -20739,71 +20728,6 @@
           }
         }
       },
-      "NeverSentBody": {
-        "type": "object",
-        "description": "The marks the person may know about.",
-        "required": ["fields", "projects", "truncated"],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NeverSentFieldBody"
-            },
-            "description": "Every built-in field, in the order of the catalogue."
-          },
-          "projects": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NeverSentProjectBody"
-            },
-            "description": "The projects that have a mark and that the person sees, at most 200."
-          },
-          "truncated": {
-            "type": "boolean",
-            "description": "Whether more projects than that were left out."
-          }
-        }
-      },
-      "NeverSentFieldBody": {
-        "type": "object",
-        "description": "One built-in field and whether it is kept from AI.",
-        "required": ["field", "marked", "version"],
-        "properties": {
-          "field": {
-            "type": "string",
-            "description": "The key of the field, like `description`."
-          },
-          "marked": {
-            "type": "boolean",
-            "description": "Whether it is kept from AI."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version to change it on; 0 for a field that never had a mark."
-          }
-        }
-      },
-      "NeverSentProjectBody": {
-        "type": "object",
-        "description": "One project that has a mark.",
-        "required": ["project", "marked", "version"],
-        "properties": {
-          "marked": {
-            "type": "boolean",
-            "description": "Whether it is kept from AI, with every project inside it."
-          },
-          "project": {
-            "$ref": "#/components/schemas/ProjectRef",
-            "description": "The project."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version to change it on."
-          }
-        }
-      },
       "NewCommentBody": {
         "type": "object",
         "description": "A comment to write.",
@@ -21815,6 +21739,24 @@
           }
         }
       },
+      "Page_AgentItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_AssignmentItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -22635,6 +22577,7 @@
           "change-organization-settings",
           "see-status",
           "book-time",
+          "create-agents",
           "see-working-hours-of-others",
           "change-working-hours-of-others"
         ]
@@ -23068,35 +23011,6 @@
           }
         }
       },
-      "ProjectAiBody": {
-        "type": "object",
-        "description": "The switch of one project.",
-        "required": ["organization_on", "works_here"],
-        "properties": {
-          "organization_on": {
-            "type": "boolean",
-            "description": "The organization has AI on."
-          },
-          "own": {
-            "type": ["boolean", "null"],
-            "description": "The project's own switch; missing while it follows the project above or the organization."
-          },
-          "works_here": {
-            "type": "boolean",
-            "description": "AI works in this project: the organization and the project both have it on."
-          }
-        }
-      },
-      "ProjectAiChangeBody": {
-        "type": "object",
-        "description": "The switch of a project.",
-        "properties": {
-          "enabled": {
-            "type": ["boolean", "null"],
-            "description": "The project's own switch. Leave it out (or send null) to let the project follow the one\nabove again."
-          }
-        }
-      },
       "ProjectBody": {
         "type": "object",
         "description": "A project after it was made, changed or moved.",
@@ -23382,11 +23296,6 @@
             "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
           }
         }
-      },
-      "ProviderKind": {
-        "type": "string",
-        "description": "The kind of AI provider: anthropic, or openai-compatible (any service with the chat shape of OpenAI, also a model on the organization's own network).",
-        "enum": ["anthropic", "openai-compatible"]
       },
       "PublishPreviewAnswer": {
         "type": "object",
@@ -23693,6 +23602,7 @@
         "description": "The kind of a record, like `issue`.",
         "enum": [
           "access-key",
+          "agent",
           "attachment",
           "change-run",
           "field",
@@ -24882,22 +24792,6 @@
           }
         }
       },
-      "SetNeverSentBody": {
-        "type": "object",
-        "description": "Marks a subject or takes the mark away, on the version that was looked at.",
-        "required": ["marked", "version"],
-        "properties": {
-          "marked": {
-            "type": "boolean",
-            "description": "`true` keeps the subject from AI, `false` takes the mark away."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version the person looked at; 0 for a subject that never had a mark."
-          }
-        }
-      },
       "SettingBody": {
         "type": "object",
         "description": "One setting: what the registry knows about it, and the value that counts.",
@@ -25874,7 +25768,7 @@
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
-        "enum": ["projects", "issues", "work-settings", "people", "settings", "time"]
+        "enum": ["projects", "issues", "work-settings", "people", "settings", "time", "agents"]
       },
       "TotalsBody": {
         "type": "object",
@@ -26141,63 +26035,6 @@
             "format": "int32",
             "description": "The time worked, in whole minutes.",
             "minimum": 0
-          }
-        }
-      },
-      "WhatGoesWhereBody": {
-        "type": "object",
-        "description": "What goes where.",
-        "required": [
-          "destination",
-          "model",
-          "enabled",
-          "switched_off",
-          "truncated",
-          "names_sent",
-          "agreement_status"
-        ],
-        "properties": {
-          "agreement": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AgreementBody",
-                "description": "The agreement that was confirmed, if there is one."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "agreement_status": {
-            "$ref": "#/components/schemas/AgreementStatus",
-            "description": "Where the agreement for the provider stands."
-          },
-          "destination": {
-            "$ref": "#/components/schemas/Destination",
-            "description": "Where the data goes. The name of the provider, its country and the page where it says what\nit does with data are in the message catalog by this word."
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "AI is on for the organization."
-          },
-          "model": {
-            "type": "string",
-            "description": "The model."
-          },
-          "names_sent": {
-            "type": "boolean",
-            "description": "Whether people go to the provider by name; otherwise as their role."
-          },
-          "switched_off": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NamedRef"
-            },
-            "description": "The projects that switched AI off for themselves. AI works in every other project."
-          },
-          "truncated": {
-            "type": "boolean",
-            "description": "More projects switched AI off than the list names (at most 100 are named)."
           }
         }
       },
@@ -26686,16 +26523,6 @@
       },
       "TooLarge": {
         "description": "That is too big to send. (request.too-large)",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
-        }
-      },
-      "TooManyRequests2": {
-        "description": "Too soon after the last time (rate-limit.exceeded, handle.changed-lately).",
         "content": {
           "application/problem+json": {
             "schema": {

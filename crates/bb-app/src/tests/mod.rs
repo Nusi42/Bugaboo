@@ -4,6 +4,7 @@
 
 mod ai_setup;
 mod ai_tools;
+mod agents;
 mod check_access_types;
 mod choice_numbers;
 mod editing;
@@ -13,6 +14,7 @@ mod failures;
 mod fake;
 mod fake_ai;
 mod fake_ai_tools;
+mod fake_agents;
 mod fake_auth;
 mod fake_auth_store;
 mod fake_editing;

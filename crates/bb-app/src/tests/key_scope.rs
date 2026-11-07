@@ -71,6 +71,7 @@ async fn key_for(world: &World, project: ProjectId, choice: KeyChoice) -> Result
             permissions: Vec::new(),
             projects: vec![project],
             expires_at: None,
+            agent: None,
         },
     )
     .await?

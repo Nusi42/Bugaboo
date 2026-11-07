@@ -273,6 +273,7 @@ pub(super) async fn key_in(
             permissions: Vec::new(),
             projects,
             expires_at: None,
+            agent: None,
         },
     )
     .await?

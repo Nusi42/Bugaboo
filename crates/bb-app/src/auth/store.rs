@@ -334,6 +334,7 @@ pub trait AuthStore:
     + SecondStepStore
     + InvitationStore
     + AccessKeyStore
+    + crate::agents::AgentStore
     + EditStore
     + PolicyStore
     + ProjectStore

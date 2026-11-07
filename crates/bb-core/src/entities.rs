@@ -5,6 +5,7 @@
 
 crate::entities! {
     crate::access::Assignment,
+    crate::agent::Agent,
     crate::access::Group,
     crate::ai::Agreement,
     crate::access::GroupMember,

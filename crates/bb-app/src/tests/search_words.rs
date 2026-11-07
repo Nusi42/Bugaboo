@@ -371,6 +371,7 @@ async fn qry_05_a_key_for_one_project_reads_the_fields_of_that_project_only() ->
             permissions: Vec::new(),
             projects: vec![g.acme],
             expires_at: None,
+            agent: None,
         },
     )
     .await?

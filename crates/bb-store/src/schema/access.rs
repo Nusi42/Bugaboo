@@ -107,6 +107,7 @@ pub(crate) enum AccessKeyRow {
     CreatedAt,
     ExpiresAt,
     LastUsedAt,
+    Agent,
 }
 
 /// The single permissions of a key whose choice is *More options*.

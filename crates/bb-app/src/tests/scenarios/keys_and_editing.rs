@@ -12,6 +12,7 @@ fn see_only_key(world: &World) -> CreateAccessKey {
         permissions: Vec::new(),
         projects: Vec::new(),
         expires_at: None,
+        agent: None,
     }
 }
 
@@ -35,6 +36,7 @@ pub(crate) async fn delete_access_key_scenario(world: &World) -> Added {
             DeleteAccessKey {
                 session_token: token(world),
                 id: made.key.id,
+                agent: None,
             },
         ),
     )

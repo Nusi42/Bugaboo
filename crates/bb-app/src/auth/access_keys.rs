@@ -147,11 +147,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }
+        let (narrowing, agent) = match record.key.agent {
+            Some(agent) => (self.agent_narrowing(&agent, &owner).await?, Some(agent)),
+            None => (narrowing_of(&record), None),
+        };
         Ok(Actor {
             person: owner,
             key: Some(KeyInUse {
                 id: record.key.id,
-                narrowing: narrowing_of(&record),
+                narrowing,
+                agent,
             }),
         })
     }
@@ -179,7 +184,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The key as its owner sees it in the list.
-    async fn key_view(
+    pub(crate) async fn key_view(
         &self,
         actor: &Actor,
         record: &AccessKeyRecord,
@@ -263,6 +268,10 @@ fn a_try_at_the_key<S: AuthStore>(
             set_to("name", json!(stored.key.name)),
             set_to("choice", json!(stored.key.choice.code())),
             set_to("expires_at", json!(stored.key.expires_at.to_string())),
+            set_to(
+                "agent",
+                json!(stored.key.agent.map(|agent| agent.to_string())),
+            ),
         ],
     )?;
     Ok((secret, stored, event))
@@ -283,6 +292,9 @@ pub async fn create_access_key<S: AuthStore>(
     ctx.confirm_password(&record.person, input.password).await?;
     let owner = record.person.id;
     let name = clean_name(&input.name)?;
+    if let Some(agent) = input.agent {
+        ctx.ensure_agent_may_have_a_key(owner, agent).await?;
+    }
     let permissions = clean_choice(input.choice, &input.permissions)?;
     let projects: Vec<ProjectId> = input
         .projects
@@ -338,6 +350,7 @@ pub async fn create_access_key<S: AuthStore>(
             created_at: now,
             expires_at,
             last_used_at: None,
+            agent: input.agent,
         },
         permissions,
         projects,
@@ -382,6 +395,19 @@ pub async fn delete_access_key<S: AuthStore>(
 ) -> Result<Done, AppError> {
     let record = ctx.active(&input.session_token).await?;
     let (owner, id) = (record.person.id, input.id);
+    if let Some(agent) = input.agent {
+        let keys = ctx
+            .store()
+            .keys_of_agent(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if !keys
+            .iter()
+            .any(|key| key.key.id == id && key.key.owner == owner)
+        {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+    }
     let event = ctx.event(
         by(owner),
         entity(RecordKind::AccessKey, id),

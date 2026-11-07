@@ -142,6 +142,8 @@ pub(crate) struct State {
     pub(crate) workflow_uses: Vec<bb_core::workflow::WorkflowUse>,
     pub(crate) offers: Vec<bb_core::offer::Offer>,
     pub(crate) never_sent: Vec<bb_core::ai::NeverSentMark>,
+    pub(crate) agents: Vec<bb_core::agent::Agent>,
+    pub(crate) agent_work: Vec<(bb_core::id::AgentId, crate::agents::AgentWork)>,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,

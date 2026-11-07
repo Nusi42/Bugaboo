@@ -231,6 +231,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
                 DeleteAccessKey {
                     session_token: org.admin.session.clone(),
                     id: deleted.key.id,
+                    agent: None,
                 },
             )
             .await?;
@@ -557,6 +558,7 @@ async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() 
                             permissions: vec![permission],
                             projects: Vec::new(),
                             expires_at: None,
+                            agent: None,
                         },
                     )
                     .await

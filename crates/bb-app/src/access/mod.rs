@@ -21,11 +21,13 @@ use std::sync::Arc;
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
+use bb_core::id::{AccessKeyId, AgentId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve};
+use bb_policy::{
+    ActorKind, Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve,
+};
 
 pub use bb_policy::{
     Authorized, LevelKind, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree,
@@ -65,9 +67,28 @@ pub(crate) struct KeyInUse {
     pub(crate) id: AccessKeyId,
     /// What it narrows the owner's permissions to: its choice and its projects.
     pub(crate) narrowing: Narrowing,
+    /// The agent the key belongs to, if it is an agent key: the request then comes from the
+    /// agent, and `person` of the actor is the person responsible for it (AI-30).
+    pub(crate) agent: Option<AgentId>,
 }
 
 impl Actor {
+    /// Which kind of actor this is, as the policy tells them apart: an agent when the request
+    /// came with an agent key, else a person. The person apart from the actor is `person` (the
+    /// one whose rights the actor is narrowed from), so a use case that must answer for the
+    /// person (ARCH-AUTHZ-ONLY) can tell the two.
+    pub(crate) fn kind(&self) -> ActorKind {
+        match self.agent() {
+            Some(agent) => ActorKind::Agent { agent },
+            None => ActorKind::Person,
+        }
+    }
+
+    /// The agent, if an agent key is behind the request.
+    pub(crate) fn agent(&self) -> Option<AgentId> {
+        self.key.as_ref().and_then(|key| key.agent)
+    }
+
     /// What the access key behind the request narrows its owner to, if there is one. The one
     /// place that tells it: every decision about what the actor sees (the list, the search, the
     /// trail, the references, the preview of a move, the re-check of a move) is made with it.

@@ -34,7 +34,7 @@ use bb_testing::{Failure, TestResult, each_database};
 
 use super::actors::{
     Actor, Project, SETS_ISSUE_FIELDS, Where, actors, everything_seen, held_exactly,
-    held_exactly_all, short_name, standing, top_of_the_tree,
+    held_exactly_all, holds_in_some_project, short_name, standing, top_of_the_tree,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -59,6 +59,15 @@ pub(super) enum Expect {
 }
 
 /// What the server must answer `actor` for `route`, from the table of `actors.rs`.
+/// A route that lets in whoever holds the permission in at least one project, wherever it is.
+fn expectation_when_held_in_some_project(actor: Actor, permission: Permission) -> Expect {
+    if holds_in_some_project(actor, permission) {
+        Expect::Allowed
+    } else {
+        Expect::Forbidden
+    }
+}
+
 pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
     if route.needs == Declared::Public {
         return Expect::Allowed;
@@ -89,6 +98,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     // A lock or a draft belongs to an open editor of a signed-in person, never to a key.
     if actor.has_a_key() && example.has(Quirk::SessionOnly) {
         return Expect::NotForKeys;
+    }
+    if let Some(permission) = example.held_in_some_project() {
+        return expectation_when_held_in_some_project(actor, permission);
     }
     let permission = match route.needs {
         Declared::Public | Declared::SignedIn | Declared::OwnAccount => return Expect::Allowed,
@@ -439,6 +451,7 @@ async fn hold(
                         permissions: Vec::new(),
                         projects,
                         expires_at: None,
+                        agent: None,
                     },
                 )
                 .await

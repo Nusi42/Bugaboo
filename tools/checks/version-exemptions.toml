@@ -238,3 +238,13 @@ reason = "Confirms the agreement for the provider the page showed, which the req
 [[exempt]]
 routes = ["POST /api/v1/ai/try"]
 reason = "Sends one short call to the provider and changes nothing."
+
+[[exempt]]
+routes = [
+  "POST /api/v1/agents",
+  "POST /api/v1/agents/{agent}/accept",
+  "POST /api/v1/me/agents/stop-all",
+  "POST /api/v1/agents/{agent}/keys",
+  "DELETE /api/v1/agents/{agent}/keys/{access_key}",
+]
+reason = "Making an agent or a key makes a new record, and taking a key back or accepting an agent that was offered is judged on the record itself (the key is the agent's, the offer is for this person): the person who accepts has not seen a version of the agent, and stopping all of a person's agents is one act on all of them, not on a record that was read."

@@ -564,7 +564,7 @@ impl AccessKeyStore for FakeStore {
             let mut found: Vec<AccessKeyRecord> = state
                 .access_keys
                 .iter()
-                .filter(|record| record.key.owner == owner)
+                .filter(|record| record.key.owner == owner && record.key.agent.is_none())
                 .cloned()
                 .collect();
             found.sort_by(|a, b| {
@@ -591,7 +591,7 @@ impl AccessKeyStore for FakeStore {
             let held = state
                 .access_keys
                 .iter()
-                .filter(|record| record.key.owner == owner)
+                .filter(|record| record.key.owner == owner && record.key.agent.is_none())
                 .count();
             i64::try_from(held).unwrap_or(i64::MAX)
         }))

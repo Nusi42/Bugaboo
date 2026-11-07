@@ -5,7 +5,7 @@
 
 use jiff::Timestamp;
 
-use crate::id::{AccessKeyId, ProjectId, UserId};
+use crate::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use crate::personal::Entity;
 use crate::security_log::Digest;
 use crate::technical::TechnicalName;
@@ -85,6 +85,10 @@ pub struct AccessKey {
     /// The last time the key was used, to the minute.
     #[personal(category = "activity", basis = "contract")]
     pub last_used_at: Option<Timestamp>,
+    /// The agent the key belongs to, if it is an agent key: the request then comes from the
+    /// agent, not from its owner (AI-30). `owner` is the person responsible for the agent.
+    #[not_personal]
+    pub agent: Option<AgentId>,
 }
 
 /// One permission of a key whose *What it may do* is single permissions.

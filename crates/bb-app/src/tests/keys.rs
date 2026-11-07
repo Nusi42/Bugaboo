@@ -171,6 +171,7 @@ fn key_record(
             created_at: Timestamp::UNIX_EPOCH,
             expires_at: Timestamp::UNIX_EPOCH,
             last_used_at: None,
+            agent: None,
         },
         permissions: if choice == KeyChoice::Permissions {
             permissions.iter().copied().collect()

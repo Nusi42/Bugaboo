@@ -87,6 +87,7 @@ async fn the_sign_in_data_turns_the_key_away(rig: &Rig, key: &str) -> Run<()> {
                 permissions: vec![],
                 projects: vec![],
                 expires_at: None,
+                agent: None,
             },
         )
         .await;

@@ -10,7 +10,7 @@ reason = "The list of the stored tables (`stored_tables!`) is one list that DATA
 
 [[exempt]]
 path = "crates/bb-api/src/permissions.rs"
-lines = 836
+lines = 825
 reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
 
 [[exempt]]

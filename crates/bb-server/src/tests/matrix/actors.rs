@@ -239,8 +239,8 @@ pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
         BookTime, ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
-        CheckAccess, Comment, CreateIssues, CreateProjects, CreateSubProjects, DecideRoles,
-        DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
+        CheckAccess, Comment, CreateAgents, CreateIssues, CreateProjects, CreateSubProjects,
+        DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
         ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles,
         ManageWorkflows, MoveIssues, MoveProjects, SeeIssues, SeeProjects, SeeStatus,
         ShareSearches,
@@ -258,6 +258,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeOwnIssues,
             Comment,
             BookTime,
+            CreateAgents,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -287,6 +288,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeOwnIssues,
             Comment,
             BookTime,
+            CreateAgents,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -306,6 +308,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeOwnIssues,
             Comment,
             BookTime,
+            CreateAgents,
             DeleteIssues,
             MoveIssues,
             ShareSearches,
@@ -366,6 +369,16 @@ fn given_everywhere(role: StartingRole, at: Where) -> BTreeSet<Permission> {
 }
 
 /// What the actor holds at the place.
+/// Whether the actor holds the permission in at least one project, wherever it is: at the target,
+/// for the whole organization, or only on the sibling project (a *Project lead* there).
+pub(super) fn holds_in_some_project(actor: Actor, permission: Permission) -> bool {
+    [Where::Target, Where::Organization]
+        .into_iter()
+        .any(|at| standing(actor, at).permissions.contains(&permission))
+        || (actor == Actor::LeadOnSiblingOnly
+            && role_permissions(StartingRole::ProjectLead).contains(&permission))
+}
+
 pub(super) fn standing(actor: Actor, at: Where) -> Standing {
     match actor {
         // Nobody, a person without a role, a role on a sibling project only, and a key for the

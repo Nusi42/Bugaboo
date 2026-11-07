@@ -199,6 +199,15 @@ pub(crate) struct CreatedAccessKeyBody {
 
 impl Masked for CreatedAccessKeyBody {}
 
+impl From<bb_app::auth::CreatedAccessKey> for CreatedAccessKeyBody {
+    fn from(created: bb_app::auth::CreatedAccessKey) -> Self {
+        Self {
+            key: AccessKeyBody::from(&created.key),
+            secret: created.secret,
+        }
+    }
+}
+
 /// One permission a key can be limited to, with the topic it is listed under. The sentence is the
 /// message `permission.<key>` and the name of the topic `permission-topic.<topic>`.
 #[derive(Serialize, ToSchema)]
@@ -327,13 +336,11 @@ async fn create_access_key(
                 permissions: body.permissions,
                 projects,
                 expires_at: body.expires_at,
+                agent: None,
             },
         )
         .await?;
-    answer_authorized(&created.map(|created| CreatedAccessKeyBody {
-        key: AccessKeyBody::from(&created.key),
-        secret: created.secret,
-    }))
+    answer_authorized(&created.map(CreatedAccessKeyBody::from))
 }
 
 /// Deletes an access key at once. A deleted key cannot come back.
@@ -355,7 +362,14 @@ async fn delete_access_key(
         .after_who_asks(&info, &session_token, path_id(&access_key_id))
         .await?;
     auth.api()?
-        .delete_access_key(info, DeleteAccessKey { session_token, id })
+        .delete_access_key(
+            info,
+            DeleteAccessKey {
+                session_token,
+                id,
+                agent: None,
+            },
+        )
         .await?;
     Ok(done())
 }

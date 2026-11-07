@@ -37,6 +37,11 @@ use crate::ai::{
     try_ai_provider, what_goes_where,
 };
 use crate::ai::{NeverSentList, NeverSentQuery, SetNeverSent, never_sent_list, set_never_sent};
+use crate::agents::{
+    AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
+    HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
+    hand_agent, my_agents, organization_agents, rename_agent, stop_all_agents,
+};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
@@ -734,6 +739,24 @@ use_cases! {
     try_workflow(TryWorkflowQuery) -> Authorized<Tried>;
     /// Tells which roles may change a field in the issues of a project.
     who_may_change(WhoMayChangeQuery) -> Authorized<WhoMayChange>;
+    /// Makes an agent for the person.
+    create_agent(CreateAgent) -> Authorized<AgentView>;
+    /// Lists the person's own agents.
+    my_agents(AgentsQuery) -> Authorized<AgentPage>;
+    /// Lists every agent of the organization, for an administrator.
+    organization_agents(AgentsQuery) -> Authorized<AgentPage>;
+    /// Shows one agent.
+    agent(AgentQuery) -> Authorized<AgentView>;
+    /// Gives an agent another name.
+    rename_agent(RenameAgent) -> Authorized<AgentView>;
+    /// Pauses, resumes or stops an agent.
+    change_agent(ChangeAgent) -> Authorized<AgentView>;
+    /// Stops every agent of the person.
+    stop_all_agents(StopAllAgents) -> Done;
+    /// Offers an agent to another person.
+    hand_agent(HandAgent) -> Done;
+    /// Accepts an agent that was handed over.
+    accept_agent(AcceptAgent) -> Done;
     /// Shows the timer of the person.
     timer(TimerQuery) -> Authorized<TimerView>;
     /// Starts the timer of the person on an issue.

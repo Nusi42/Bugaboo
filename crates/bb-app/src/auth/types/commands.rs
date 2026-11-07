@@ -1,7 +1,7 @@
 //! What the sign-in use cases take when they change something, named after what they do.
 
 use bb_core::access_key::KeyChoice;
-use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, SessionId};
+use bb_core::id::{AccessKeyId, AgentId, InvitationId, PasskeyId, ProjectId, SessionId};
 use bb_policy::Permission;
 use serde_json::Value;
 
@@ -156,6 +156,8 @@ pub struct CreateAccessKey {
     /// When it stops working, as a date and time such as `2027-03-01T00:00:00Z`; left out for the
     /// organization's default number of days from now.
     pub expires_at: Option<String>,
+    /// The agent the key is for; none for a key of the person themselves.
+    pub agent: Option<AgentId>,
 }
 
 /// Delete an access key of the person.
@@ -164,6 +166,9 @@ pub struct DeleteAccessKey {
     pub session_token: String,
     /// The key.
     pub id: AccessKeyId,
+    /// The agent the key is said to belong to, when it is taken back as the key of an agent: a
+    /// key of another owner or of no agent is then not found.
+    pub agent: Option<AgentId>,
 }
 
 /// Make an invitation.

@@ -247,6 +247,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
                 DeleteAccessKey {
                     session_token: bob.session.clone(),
                     id: deleted.key.id,
+                    agent: None,
                 },
             )
             .await?;
