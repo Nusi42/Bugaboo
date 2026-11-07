@@ -42,7 +42,7 @@ flowchart LR
   ai -- "5 · HTTPS" --> provider
 ```
 
-Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk. M2 adds no new listener: the new routes are below `/api/v1`, and scripts reach them with an access key (`Authorization: Bearer bb_…`) instead of a cookie. The sample-organization program (`bb-sample`) is a developer tool and is not shipped before OPS-12. M7 adds no listener either: `/mcp`, the metadata documents and the OAuth routes are on the same port, and the server becomes a client of the **AI provider** (boundary 5, *Server ↔ AI provider*), which it calls only when an administrator switched AI on.
+Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk. M2 adds no new listener: the new routes are below `/api/v1`, and scripts reach them with an access key (`Authorization: Bearer bb_…`) instead of a cookie. The sample-organization program (`bb-sample`) is a developer tool and is not shipped before OPS-12. M7 adds no listener either: `/mcp`, the metadata documents and the OAuth routes are on the same port, and the server becomes a client of the **AI provider** (boundary 5, *Server ↔ AI provider*), which it calls only when an administrator switched AI on, with one exception: *Try the provider* may call while AI is still off. It sends only the fixed try text and no data of the organization, needs the agreement of an outside provider first, and is limited to one try in 10 seconds per person.
 
 ## Threats and mitigations
 
