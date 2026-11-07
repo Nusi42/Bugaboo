@@ -95,6 +95,17 @@ impl GrantStore for super::fake::FakeStore {
         ))
     }
 
+    async fn every_open_rule_in(tx: &mut Tx) -> Result<Vec<StandingRule>, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .rules
+            .iter()
+            .filter(|r| r.state == GivingState::Open)
+            .cloned()
+            .collect())
+    }
+
     async fn open_rules_in_in(
         tx: &mut Tx,
         project: ProjectId,

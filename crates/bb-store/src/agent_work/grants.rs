@@ -48,6 +48,16 @@ impl GrantStore for AuthStorage {
         .await
     }
 
+    async fn every_open_rule_in(
+        transaction: &mut Transaction,
+    ) -> Result<Vec<StandingRule>, StoreError> {
+        let mut select = rule_select();
+        select
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
+            .order_by(StandingRuleRow::Id, Order::Asc);
+        all(transaction, &select, read_rule).await
+    }
+
     async fn open_rules_in_in(
         transaction: &mut Transaction,
         project: ProjectId,

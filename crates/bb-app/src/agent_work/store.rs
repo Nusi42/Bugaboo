@@ -31,6 +31,8 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn proposal(id: AgentNoteId) -> Option<Proposal> = proposal_in;
         /// The standing rules of one agent, by ID, after `after`, at most `limit`.
         fn rules_of_agent(agent: AgentId, after: Option<StandingRuleId>, limit: u64) -> Vec<StandingRule> = rules_of_agent_in;
+        /// Every standing rule that has not ended.
+        fn open_rules() -> Vec<StandingRule> = every_open_rule_in;
         /// The standing rules that work in a project and have not ended.
         fn open_rules_in(project: ProjectId) -> Vec<StandingRule> = open_rules_in_in;
         /// The proposals on an issue, newest first.

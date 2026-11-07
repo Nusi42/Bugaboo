@@ -67,6 +67,8 @@ struct Round {
     drops: Vec<(IssueId, UserId)>,
     /// The projects with a standing rule where an issue changed: one job of matches for each.
     rule_projects: std::collections::BTreeSet<bb_core::id::ProjectId>,
+    /// The projects where a standing rule works, read once for the round.
+    rule_scope: Option<std::collections::BTreeSet<bb_core::id::ProjectId>>,
 }
 
 /// Who might hear of an event, and in what order of importance (the first kind the person wants
@@ -231,6 +233,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             rows: Vec::new(),
             drops: Vec::new(),
             rule_projects: std::collections::BTreeSet::new(),
+            rule_scope: None,
         };
         for (_, event) in &events {
             self.notifications_of_event(&mut round, event).await?;

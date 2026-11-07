@@ -48,7 +48,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         };
         let waiting = text_set(&event.changes, event_member::WAITING_FOR);
-        let Some(kind) = kind_of(&state, waiting.as_deref()) else {
+        let Some(kind) = kind_of(state, waiting) else {
             return Ok(());
         };
         let Ok(work) = AgentWorkId::from_bytes(event.entity.id.to_bytes()) else {
@@ -89,9 +89,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
-        let stopped = text_set(&event.changes, "state").as_deref()
+        let stopped = text_set(&event.changes, "state")
             == Some(bb_core::agent::AgentState::Stopped.code())
-            || text_set(&event.changes, event_member::WORK_STATE).as_deref()
+            || text_set(&event.changes, event_member::WORK_STATE)
                 == Some(AgentWorkState::Stopped.code());
         if !stopped {
             return Ok(());
@@ -128,9 +128,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
-        if text_set(&event.changes, event_member::STATE).as_deref()
-            != Some(event_member::ABOUT_TO_RUN_OUT)
-        {
+        if text_set(&event.changes, event_member::STATE) != Some(event_member::ABOUT_TO_RUN_OUT) {
             return Ok(());
         }
         let Ok(rule) = StandingRuleId::from_bytes(event.entity.id.to_bytes()) else {
@@ -166,16 +164,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         issue: &bb_core::issue::Issue,
     ) -> Result<(), AppError> {
-        for project in self.chain_of(issue.project).await? {
-            if round.rule_projects.contains(&project) {
-                continue;
-            }
+        if round.rule_scope.is_none() {
             let rules = self
                 .store()
-                .open_rules_in(project)
+                .open_rules()
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            if !rules.is_empty() {
+            round.rule_scope = Some(rules.into_iter().map(|rule| rule.project).collect());
+        }
+        let scope = round.rule_scope.clone().unwrap_or_default();
+        if scope.is_empty() {
+            return Ok(());
+        }
+        for project in self.chain_of(issue.project).await? {
+            if scope.contains(&project) {
                 round.rule_projects.insert(project);
             }
         }
