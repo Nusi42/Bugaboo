@@ -72,7 +72,7 @@ pub(crate) struct IssueDetailBody {
     /// How the description was written, when AI wrote it. Hidden with the description.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "description")]
-    description_written_by: Option<super::comments::WrittenByBody>,
+    description_written_by: Option<super::comments::WrittenByRef>,
     /// The long-text own fields as safe HTML, one for each the person may see.
     #[masked(nested)]
     own_fields_html: Vec<OwnHtmlBody>,
@@ -96,7 +96,7 @@ impl From<IssueDetail> for IssueDetailBody {
             description_written_by: detail
                 .description_written_by
                 .as_ref()
-                .map(super::comments::WrittenByBody::from),
+                .map(super::comments::WrittenByRef::from),
             own_fields_html: detail
                 .own_fields_html
                 .into_iter()

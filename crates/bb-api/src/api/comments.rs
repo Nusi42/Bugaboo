@@ -46,7 +46,7 @@ const CHOICE_FIELDS: [FieldSpec; 3] = [
 /// How a text that AI wrote was written (COMP-08, COMP-09). A text a person wrote by hand has no
 /// such member.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct WrittenByBody {
+pub(crate) struct WrittenByRef {
     /// *Written with the assistant*, *Written by an AI app* or *Written by an agent*.
     pub(crate) kind: bb_core::mark::WrittenBy,
     /// The name of the AI app, for an app.
@@ -58,7 +58,7 @@ pub(crate) struct WrittenByBody {
 }
 
 #[cfg(test)]
-impl WrittenByBody {
+impl WrittenByRef {
     /// A mark with every member filled, for the tests that hold a table of fields to the members.
     pub(crate) fn blank() -> Self {
         Self {
@@ -69,7 +69,7 @@ impl WrittenByBody {
     }
 }
 
-impl From<&bb_app::runs::WrittenByView> for WrittenByBody {
+impl From<&bb_app::runs::WrittenByView> for WrittenByRef {
     fn from(view: &bb_app::runs::WrittenByView) -> Self {
         Self {
             kind: view.kind,
@@ -105,7 +105,7 @@ pub(crate) struct CommentItem {
     pub(crate) may_delete: bool,
     /// How the text was written, when AI wrote it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) written_by: Option<WrittenByBody>,
+    pub(crate) written_by: Option<WrittenByRef>,
 }
 
 impl Masked for CommentItem {}
@@ -123,7 +123,7 @@ impl From<&CommentView> for CommentItem {
             version: comment.version,
             may_edit: comment.may_edit,
             may_delete: comment.may_delete,
-            written_by: comment.written_by.as_ref().map(WrittenByBody::from),
+            written_by: comment.written_by.as_ref().map(WrittenByRef::from),
         }
     }
 }

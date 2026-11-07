@@ -55,7 +55,7 @@ pub(crate) async fn mark_texts(
                     Expr::val(part.as_str().to_owned()),
                     Expr::val(how.code()),
                     Expr::val(app.clone()),
-                    Expr::val(agent.map(|agent| agent.stored())),
+                    Expr::val(agent.map(StoredId::stored)),
                 ])
                 .map_err(|_| StoreError::Corrupt("a text mark"))?
                 .on_conflict(

@@ -13751,23 +13751,20 @@
             }
           },
           {
-            "name": "after",
-            "in": "query",
-            "description": "The event the page starts after (`next` of the page before); the start when left out.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "How many changes at most; 50 when left out, 100 at most.",
+            "description": "How many items a page holds at most (default 50, at most 100).",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "minimum": 0
+              "maximum": 100,
+              "minimum": 1
             }
           }
         ],
@@ -13782,7 +13779,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunChangesBody"
+                  "$ref": "#/components/schemas/Page_RunChangeBody"
                 }
               }
             }
@@ -18187,7 +18184,7 @@
           "written_by": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/WrittenByBody",
+                "$ref": "#/components/schemas/WrittenByRef",
                 "description": "How the text was written, when AI wrote it."
               },
               {
@@ -19849,7 +19846,7 @@
           "written_by": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/WrittenByBody",
+                "$ref": "#/components/schemas/WrittenByRef",
                 "description": "A comment: how its text was written, when AI wrote it."
               },
               {
@@ -20002,7 +19999,7 @@
           "description_written_by": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/WrittenByBody",
+                "$ref": "#/components/schemas/WrittenByRef",
                 "description": "How the description was written, when AI wrote it. Hidden with the description."
               },
               {
@@ -23382,6 +23379,24 @@
           }
         }
       },
+      "Page_RunChangeBody": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunChangeBody"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_SavedSearchItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -25278,49 +25293,27 @@
       "RunChangeBody": {
         "type": "object",
         "description": "One change of a run: an issue and what changed on it.",
-        "required": ["event", "at", "issue", "fields"],
+        "required": ["event", "at", "issue", "changes"],
         "properties": {
           "at": {
             "type": "string",
             "description": "When it was made.",
             "format": "date-time"
           },
-          "event": {
-            "type": "string",
-            "description": "The ID of the event, which a page continues after."
-          },
-          "fields": {
+          "changes": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FieldChangeBody"
             },
             "description": "What changed, leaving out the fields the reader may not see."
           },
+          "event": {
+            "type": "string",
+            "description": "The ID of the event, which a page continues after."
+          },
           "issue": {
             "$ref": "#/components/schemas/IssueRef",
             "description": "The issue."
-          }
-        }
-      },
-      "RunChangesBody": {
-        "type": "object",
-        "description": "A page of the changes of a run.",
-        "required": ["run", "items"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RunChangeBody"
-            },
-            "description": "The changes the reader may see, oldest first."
-          },
-          "next": {
-            "type": ["string", "null"],
-            "description": "The event the next page starts after; left out on the last page."
-          },
-          "run": {
-            "$ref": "#/components/schemas/RunBody",
-            "description": "The run."
           }
         }
       },
@@ -27855,7 +27848,7 @@
         "description": "How a text that AI wrote was written.",
         "enum": ["assistant", "app", "agent"]
       },
-      "WrittenByBody": {
+      "WrittenByRef": {
         "type": "object",
         "description": "How a text that AI wrote was written. A text a person wrote by hand has no\nsuch member.",
         "required": ["kind"],

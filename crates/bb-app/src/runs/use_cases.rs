@@ -228,9 +228,8 @@ pub async fn run_changes<S: AuthStore>(
         let Ok(id) = IssueId::from_bytes(event.entity.id.to_bytes()) else {
             continue;
         };
-        if !seen.contains_key(&id) {
-            let found = ctx.seen_issue_by_id(&actor, id).await?;
-            seen.insert(id, found);
+        if let std::collections::hash_map::Entry::Vacant(place) = seen.entry(id) {
+            place.insert(ctx.seen_issue_by_id(&actor, id).await?);
         }
         let Some(Some((issue, in_project))) = seen.get(&id) else {
             continue;

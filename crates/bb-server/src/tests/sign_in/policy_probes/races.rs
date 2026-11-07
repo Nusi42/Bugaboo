@@ -66,8 +66,8 @@ async fn sec_08_two_servers_starting_together_create_the_starting_roles_once() -
         let rig = Rig::start_unstarted(db).await?;
         let (first, second) = (rig.services.ctx(Rig::info()), rig.services.ctx(Rig::info()));
         let (first, second) = tokio::join!(
-            create_starting_roles(&first, CreateStartingRoles),
-            create_starting_roles(&second, CreateStartingRoles)
+            Box::pin(create_starting_roles(&first, CreateStartingRoles)),
+            Box::pin(create_starting_roles(&second, CreateStartingRoles))
         );
         first?;
         second?;

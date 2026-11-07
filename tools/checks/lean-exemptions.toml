@@ -196,6 +196,12 @@ whole_value = true
 reason = "The first 50 of the issues a run left alone: capped by the code, and the answer says how many there are in all (`skipped_count`) (M3 WP-08, M3-F120)."
 
 [[exempt]]
+route = "GET /api/v1/runs/{run}/undo"
+property = "skipped"
+whole_value = true
+reason = "The first 50 of the fields that *Undo the run* leaves as they are: capped by the code, and the answer says how many there are in all (`skipped_count`) (M7-F67)."
+
+[[exempt]]
 route = "GET /api/v1/layouts/editor"
 property = "sections"
 whole_value = true
@@ -375,3 +381,9 @@ reason = "The built-in fields are the catalogue, fourteen of them; the list is t
 route = "GET /api/v1/never-sent-to-ai"
 property = "projects"
 reason = "The projects with a mark are few; the list has a hard cap (NEVER_SENT_PROJECTS_MAX) and says when it was cut (M7-F28)."
+
+[[exempt]]
+route = "GET /api/v1/runs/{run}/changes"
+property = "changes"
+embedded = true
+reason = "The changes of a row of a run are the row's own value: the fields that changed on the issue, with what they were and are, the same shape as in the history (M7-F68)."

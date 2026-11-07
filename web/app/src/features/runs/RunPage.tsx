@@ -39,7 +39,7 @@ function ChangeList({ items }: { readonly items: readonly RunChange[] }) {
                 <IssueId id={item.issue.readable_id} />
               </strong>
               <ul {...partOf(part.list)}>
-                {item.fields.map((field) => (
+                {item.changes.map((field) => (
                   <li key={field.field}>{changeLineText(wording, field)}</li>
                 ))}
               </ul>
@@ -53,8 +53,8 @@ function ChangeList({ items }: { readonly items: readonly RunChange[] }) {
 
 /** The changes of a run, a page at a time. */
 function Changes({ run }: { readonly run: string }) {
-  const [after, setAfter] = useState<string>();
-  const read = useRunChanges(run, after);
+  const [cursor, setCursor] = useState<string>();
+  const read = useRunChanges(run, cursor);
   if (read.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(read.error)}</Alert>;
   }
@@ -62,8 +62,8 @@ function Changes({ run }: { readonly run: string }) {
   if (page === undefined) {
     return null;
   }
-  const next = page.next ?? undefined;
-  const empty = page.items.length === 0 && next === undefined && after === undefined;
+  const next = page.next_cursor ?? undefined;
+  const empty = page.items.length === 0 && next === undefined && cursor === undefined;
   return (
     <section {...partOf(part.stack)} aria-label={t("runs.changes-heading")}>
       <h2>{t("runs.changes-heading")}</h2>
@@ -76,7 +76,7 @@ function Changes({ run }: { readonly run: string }) {
         <div>
           <Button
             onPress={() => {
-              setAfter(next);
+              setCursor(next);
             }}
           >
             {t("runs.show-more")}

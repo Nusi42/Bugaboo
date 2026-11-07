@@ -8,13 +8,10 @@ use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::context::SystemIds;
-use bb_app::many_changes::ManyChangeStore;
-use bb_app::ports::ChangeStore;
 use bb_app::roles::CreateRole;
-use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
-use bb_core::id::{EntityId, EventId, RunId};
+use bb_core::event::Channel;
+use bb_core::id::RunId;
 use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus};
-use bb_store::AuthStorage;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
@@ -23,6 +20,7 @@ use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
 use super::issues_site::id_of;
 use super::policy_rig::Org;
 use super::rig::{PASSWORD, Rig};
+use super::runs_http::store_run;
 use super::status::app_with_probe;
 
 /// The download of a file by its signed link: its answer is the bytes of the file, kept apart from
@@ -58,25 +56,7 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
         created_at: rig.clock_now(),
         finished_at: Some(rig.clock_now()),
     };
-    let event = DomainEvent {
-        id: EventId::generate(&mut ids)?,
-        time: rig.clock_now(),
-        actor: Actor::Person(run.person),
-        channel: Channel::Ui,
-        entity: EntityRef {
-            kind: EntityKind::from(RecordKind::ChangeRun),
-            id: EntityId::from(run.id),
-        },
-        changes: Vec::new(),
-        reason: None,
-        run: None,
-    };
-    let stored = run.clone();
-    ChangeStore::record_change(&rig.storage, &event, move |transaction| {
-        Box::pin(async move { AuthStorage::insert_many_changes_run(transaction, &stored).await })
-    })
-    .await
-    .map_err(|error| error.to_string())?;
+    store_run(rig, &run, Channel::Ui).await?;
     Ok(run.id.to_string())
 }
 

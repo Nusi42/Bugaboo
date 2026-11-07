@@ -20,6 +20,36 @@ use super::http::{ADA_EMAIL, Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok, version_of};
 use super::rig::{PASSWORD, Rig};
 
+/// Writes the row of a run as the first request that opens one writes it: with the event of its
+/// making, through `channel`.
+pub(super) async fn store_run(
+    rig: &Rig,
+    run: &ManyChangeRun,
+    channel: Channel,
+) -> Result<(), Failure> {
+    let mut ids = SystemIds;
+    let event = DomainEvent {
+        id: EventId::generate(&mut ids)?,
+        time: rig.clock_now(),
+        actor: Actor::Person(run.person),
+        channel,
+        entity: EntityRef {
+            kind: EntityKind::from(RecordKind::ChangeRun),
+            id: EntityId::from(run.id),
+        },
+        changes: Vec::new(),
+        reason: None,
+        run: None,
+    };
+    let stored = run.clone();
+    ChangeStore::record_change(&rig.storage, &event, move |transaction| {
+        Box::pin(async move { AuthStorage::insert_many_changes_run(transaction, &stored).await })
+    })
+    .await
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 /// Opens a session of an AI app for Ada: the row of the run, as the way in that opens one writes it.
 async fn open_session(rig: &Rig, person: &str) -> Result<RunId, Failure> {
     let mut ids = SystemIds;
@@ -38,25 +68,7 @@ async fn open_session(rig: &Rig, person: &str) -> Result<RunId, Failure> {
         created_at: rig.clock_now(),
         finished_at: None,
     };
-    let event = DomainEvent {
-        id: EventId::generate(&mut ids)?,
-        time: rig.clock_now(),
-        actor: Actor::Person(run.person),
-        channel: Channel::Mcp,
-        entity: EntityRef {
-            kind: EntityKind::from(RecordKind::ChangeRun),
-            id: EntityId::from(run.id),
-        },
-        changes: Vec::new(),
-        reason: None,
-        run: None,
-    };
-    let stored = run.clone();
-    ChangeStore::record_change(&rig.storage, &event, move |transaction| {
-        Box::pin(async move { AuthStorage::insert_many_changes_run(transaction, &stored).await })
-    })
-    .await
-    .map_err(|error| error.to_string())?;
+    store_run(rig, &run, Channel::Mcp).await?;
     Ok(run.id)
 }
 

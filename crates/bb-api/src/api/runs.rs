@@ -5,8 +5,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::runs::{
-    RunChangeView, RunChangesPage, RunChangesQuery, RunQuery, RunView, UndoRun, UndoSkipView,
-    UndoView,
+    RunChangeView, RunChangesQuery, RunQuery, RunView, UndoRun, UndoSkipView, UndoView,
 };
 use bb_core::id::{EventId, RunId};
 use bb_core::many_changes::ManyChangeStatus;
@@ -19,12 +18,13 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
-    NotSignedInAnswer, Session, answer_authorized,
+    NotSignedInAnswer, Session, answer, answer_authorized,
 };
 use super::many_changes::FieldChangeBody;
 use super::relations::IssueRef;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
+use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// A run, as the person it belongs to sees it.
 #[derive(Serialize, ToSchema)]
@@ -70,8 +70,10 @@ pub(crate) struct RunChangeBody {
     /// The issue.
     issue: IssueRef,
     /// What changed, leaving out the fields the reader may not see.
-    fields: Vec<FieldChangeBody>,
+    changes: Vec<FieldChangeBody>,
 }
+
+impl Masked for RunChangeBody {}
 
 impl From<&RunChangeView> for RunChangeBody {
     fn from(change: &RunChangeView) -> Self {
@@ -79,31 +81,7 @@ impl From<&RunChangeView> for RunChangeBody {
             event: change.event.to_string(),
             at: change.at.to_string(),
             issue: IssueRef::from(&change.issue),
-            fields: change.changes.iter().map(FieldChangeBody::from).collect(),
-        }
-    }
-}
-
-/// A page of the changes of a run.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RunChangesBody {
-    /// The run.
-    run: RunBody,
-    /// The changes the reader may see, oldest first.
-    items: Vec<RunChangeBody>,
-    /// The event the next page starts after; left out on the last page.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    next: Option<String>,
-}
-
-impl Masked for RunChangesBody {}
-
-impl From<&RunChangesPage> for RunChangesBody {
-    fn from(page: &RunChangesPage) -> Self {
-        Self {
-            run: RunBody::from(&page.run),
-            items: page.items.iter().map(RunChangeBody::from).collect(),
-            next: page.next.map(|event| event.to_string()),
+            changes: change.changes.iter().map(FieldChangeBody::from).collect(),
         }
     }
 }
@@ -167,15 +145,15 @@ impl From<&UndoView> for UndoBody {
     }
 }
 
-/// Which page of the changes of a run.
-#[derive(Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct RunChangesParams {
-    /// The event the page starts after (`next` of the page before); the start when left out.
-    after: Option<String>,
-    /// How many changes at most; 50 when left out, 100 at most.
-    limit: Option<u64>,
-}
+const RUN_CHANGES_LIST: &str = "run-changes";
+
+/// The fields of a change of a run that can be asked for.
+const RUN_CHANGE_FIELDS: [FieldSpec; 4] = [
+    FieldSpec::by_default("event"),
+    FieldSpec::by_default("at"),
+    FieldSpec::by_default("issue"),
+    FieldSpec::by_default("changes"),
+];
 
 /// What *Undo the run* is applied with.
 #[derive(Deserialize, ToSchema)]
@@ -220,21 +198,20 @@ async fn get_run(
     path = "/api/v1/runs/{run}/changes",
     operation_id = "listRunChanges",
     tag = "runs",
-    params(("run" = String, Path, description = "The ID of the run."), RunChangesParams),
-    responses((status = 200, description = "The changes.", body = RunChangesBody), InvalidAnswer, NotSignedInAnswer, NotFoundAnswer)
+    params(("run" = String, Path, description = "The ID of the run."), ListParams),
+    responses((status = 200, description = "The changes.", body = Page<RunChangeBody>), InvalidAnswer, NotSignedInAnswer, NotFoundAnswer)
 )]
 async fn list_run_changes(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
-    ApiQuery(params): ApiQuery<RunChangesParams>,
+    ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let after = params
-        .after
+    let (position, bad_cursor) = params.start(RUN_CHANGES_LIST);
+    let after = position
         .as_deref()
-        .map(body_id::<EventId>)
-        .transpose()?;
+        .and_then(|event| body_id::<EventId>(event).ok());
     let page = auth
         .api()?
         .run_changes(
@@ -243,11 +220,21 @@ async fn list_run_changes(
                 session_token,
                 run: path_id::<RunId>(&run)?,
                 after,
-                limit: params.limit,
+                limit: Some(u64::from(params.limit())),
             },
         )
         .await?;
-    answer_authorized(&page.map(|page| RunChangesBody::from(&page)))
+    bad_cursor?;
+    let list = page.map(|page| Listed {
+        items: page.items.iter().map(RunChangeBody::from).collect(),
+        next: page.next.map(|event| event.to_string()),
+    });
+    let fields = params.fields_readable(&RUN_CHANGE_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(
+        RUN_CHANGES_LIST,
+        &list,
+        &fields,
+    )?))
 }
 
 /// What undoing the run would do now: how many field changes go back and which stay, with the

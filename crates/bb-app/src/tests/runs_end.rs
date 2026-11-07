@@ -146,12 +146,9 @@ async fn ntf_01_a_renewal_that_died_does_not_name_a_project_the_person_cannot_se
     Ok(())
 }
 
-/// A step that finds the database busy (ADR-0017) fails and is tried again: the run does not end
-/// as failed (the write that would end it works, as when the upkeep let go just after), and the
-/// next start ends it as done with each issue changed once.
-#[tokio::test]
-async fn adr_0017_a_step_that_finds_the_database_busy_is_tried_again_and_changes_each_issue_once()
--> Outcome {
+/// A run with a step waiting, the database made busy as `make_busy` says: the first start does not
+/// end the run, the next one ends it as done with each issue changed once.
+async fn a_busy_step_is_tried_again(make_busy: impl FnOnce(&World)) -> Outcome {
     use bb_core::id::EntityId;
     use bb_core::many_changes::ManyChangeStatus;
 
@@ -168,8 +165,7 @@ async fn adr_0017_a_step_that_finds_the_database_busy_is_tried_again_and_changes
     };
     let issues: Vec<EntityId> = run.items.iter().map(|item| item.issue.into()).collect();
     let before: Vec<usize> = issues.iter().map(|issue| events_of(*issue)).collect();
-    // Only the change of the first issue finds it busy.
-    world.store.keep_next_changes_busy(1);
+    make_busy(&world);
     assert_eq!(world.ctx().run_due_jobs().await?, 1);
     assert!(
         !world.store.lock().state.many_changes_runs[0]
@@ -189,45 +185,22 @@ async fn adr_0017_a_step_that_finds_the_database_busy_is_tried_again_and_changes
     Ok(())
 }
 
+/// A step that finds the database busy (ADR-0017) fails and is tried again: the run does not end
+/// as failed (the write that would end it works, as when the upkeep let go just after), and the
+/// next start ends it as done with each issue changed once.
+#[tokio::test]
+async fn adr_0017_a_step_that_finds_the_database_busy_is_tried_again_and_changes_each_issue_once()
+-> Outcome {
+    // Only the change of the first issue finds it busy.
+    a_busy_step_is_tried_again(|world| world.store.keep_next_changes_busy(1)).await
+}
+
 /// The same when the issue in the middle of a step is the one that finds the database busy (M6-F35):
 /// the issues before it are counted, the step is tried again from the busy one, and each issue is
 /// changed once.
 #[tokio::test]
 async fn m6_f35_a_step_that_finds_the_database_busy_in_the_middle_is_tried_again_from_that_issue()
 -> Outcome {
-    use bb_core::id::EntityId;
-    use bb_core::many_changes::ManyChangeStatus;
-
-    let world = World::new().await?;
-    let run = run_with_a_step_waiting(&world).await?;
-    let events_of = |issue: EntityId| {
-        world
-            .store
-            .lock()
-            .events
-            .iter()
-            .filter(|event| event.entity.id == issue)
-            .count()
-    };
-    let issues: Vec<EntityId> = run.items.iter().map(|item| item.issue.into()).collect();
-    let before: Vec<usize> = issues.iter().map(|issue| events_of(*issue)).collect();
     // Only the change of the second issue finds it busy; the first one is made and counted.
-    world.store.keep_a_change_busy_after(1);
-    assert_eq!(world.ctx().run_due_jobs().await?, 1);
-    assert!(
-        !world.store.lock().state.many_changes_runs[0]
-            .status
-            .is_over(),
-        "not ended"
-    );
-    // The failed start waits before the next one, as the store makes it.
-    world.clock.advance(60);
-    while world.ctx().run_due_jobs().await? > 0 {}
-    let ended = world.store.lock().state.many_changes_runs[0].clone();
-    assert_eq!(ended.status, ManyChangeStatus::Done);
-    assert_eq!(ended.changed, 3);
-    for (issue, was) in issues.iter().zip(before) {
-        assert_eq!(events_of(*issue), was + 1, "one event for each issue");
-    }
-    Ok(())
+    a_busy_step_is_tried_again(|world| world.store.keep_a_change_busy_after(1)).await
 }

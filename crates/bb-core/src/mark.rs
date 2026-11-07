@@ -49,15 +49,10 @@ pub fn text_part(kind: &EntityKind, change: &FieldChange) -> Option<TextPart> {
         .is_some_and(serde_json::Value::is_string);
     let issue = EntityKind::from(RecordKind::Issue);
     let comment = EntityKind::from(RecordKind::Comment);
-    if *kind == issue && change.field == "description" && is_text {
-        Some(TextPart(change.field.clone()))
-    } else if *kind == comment && change.field == "text" && is_text {
-        Some(TextPart(change.field.clone()))
-    } else if *kind == issue && is_text && change.field.parse::<FieldId>().is_ok() {
-        Some(TextPart(change.field.clone()))
-    } else {
-        None
-    }
+    let text_of_record = (*kind == issue && change.field == "description")
+        || (*kind == comment && change.field == "text")
+        || (*kind == issue && change.field.parse::<FieldId>().is_ok());
+    (text_of_record && is_text).then(|| TextPart(change.field.clone()))
 }
 
 /// The part of a record that holds a text: `description`, `text`, or the ID of an own field. Never

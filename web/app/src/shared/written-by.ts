@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 /** How a text that AI wrote was written (COMP-08, COMP-09); a text written by hand has none. */
-export type Mark = Schema<"WrittenByBody">;
+export type Mark = Schema<"WrittenByRef">;
 
 /**
  * The words shown beside a text that AI wrote: *Written with the assistant*, *Written by an AI app*

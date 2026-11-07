@@ -249,3 +249,7 @@ routes = [
   "DELETE /api/v1/agents/{agent}/keys/{access_key}",
 ]
 reason = "Making an agent or a key makes a new record, renewing a key is the making of a new one that takes the old one back in the same change (it stops if that key is gone), and taking a key back or accepting an agent that was offered is judged on the record itself (the key is the agent's, the offer is for this person): the person who accepts has not seen a version of the agent, and stopping all of a person's agents is one act on all of them, not on a record that was read."
+
+[[exempt]]
+routes = ["POST /api/v1/runs/{run}/undo"]
+reason = "Undoing a run is judged on the run and on what the person looked at, not on a version of one record: the body carries `preview_version`, the version of the preview, and an undo with a preview that is no longer the current one writes nothing and answers with the newer preview (M7 WP-07, AI-38)."

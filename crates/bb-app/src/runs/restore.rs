@@ -51,7 +51,7 @@ pub(super) fn issue_change(token: &str, issue: &Issue, nets: &[Net]) -> Option<C
             member::TITLE => input.title = Some(before?.as_str()?.to_owned()),
             member::STATUS => input.status = Some(before?.as_str()?.parse::<StatusKey>().ok()?),
             member::PRIORITY => {
-                input.priority = Some(serde_json::from_value::<Priority>(before?).ok()?)
+                input.priority = Some(serde_json::from_value::<Priority>(before?).ok()?);
             }
             member::ESTIMATED_TIME => input.estimated_time = Some(length(before)?),
             member::TIME_LEFT => input.time_left = Some(length(before)?),

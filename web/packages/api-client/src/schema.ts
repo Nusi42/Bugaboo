@@ -5310,7 +5310,7 @@ export interface components {
        * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version: number;
-      written_by?: components["schemas"]["WrittenByBody"] | null;
+      written_by?: components["schemas"]["WrittenByRef"] | null;
     };
     /** @description One text a comment had. */
     CommentTextItem: {
@@ -6170,7 +6170,7 @@ export interface components {
        * @description A comment: the version, which a change of it is made on.
        */
       version?: number | null;
-      written_by?: components["schemas"]["WrittenByBody"] | null;
+      written_by?: components["schemas"]["WrittenByRef"] | null;
     };
     /**
      * @description What an item of the history is.
@@ -6247,7 +6247,7 @@ export interface components {
        *     preview (the mark `x-safe-html`). Hidden with the description.
        */
       description_html?: SafeHtml;
-      description_written_by?: components["schemas"]["WrittenByBody"] | null;
+      description_written_by?: components["schemas"]["WrittenByRef"] | null;
       /** @description The issue, with every field the person may see. */
       issue: components["schemas"]["IssueItem"];
       /** @description Whether the person may change the issue at all, in the fields they may change. */
@@ -7808,6 +7808,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_RunChangeBody: {
+      /** @description The items of this page. */
+      items: components["schemas"]["RunChangeBody"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_SavedSearchItem: {
       /** @description The items of this page. */
       items: components["schemas"]["SavedSearchItem"][];
@@ -8837,21 +8844,12 @@ export interface components {
        * @description When it was made.
        */
       at: string;
+      /** @description What changed, leaving out the fields the reader may not see. */
+      changes: components["schemas"]["FieldChangeBody"][];
       /** @description The ID of the event, which a page continues after. */
       event: string;
-      /** @description What changed, leaving out the fields the reader may not see. */
-      fields: components["schemas"]["FieldChangeBody"][];
       /** @description The issue. */
       issue: components["schemas"]["IssueRef"];
-    };
-    /** @description A page of the changes of a run. */
-    RunChangesBody: {
-      /** @description The changes the reader may see, oldest first. */
-      items: components["schemas"]["RunChangeBody"][];
-      /** @description The event the next page starts after; left out on the last page. */
-      next?: string | null;
-      /** @description The run. */
-      run: components["schemas"]["RunBody"];
     };
     /**
      * @description What a run is of.
@@ -10113,7 +10111,7 @@ export interface components {
      * @description How a text that AI wrote was written. A text a person wrote by hand has no
      *     such member.
      */
-    WrittenByBody: {
+    WrittenByRef: {
       /** @description The name of the agent, for an agent. */
       agent?: string | null;
       /** @description The name of the AI app, for an app. */
@@ -18004,9 +18002,11 @@ export interface operations {
   listRunChanges: {
     parameters: {
       query?: {
-        /** @description The event the page starts after (`next` of the page before); the start when left out. */
-        after?: string;
-        /** @description How many changes at most; 50 when left out, 100 at most. */
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
       };
       header?: never;
@@ -18025,7 +18025,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["RunChangesBody"];
+          "application/json": components["schemas"]["Page_RunChangeBody"];
         };
       };
       304: components["responses"]["NotModified"];

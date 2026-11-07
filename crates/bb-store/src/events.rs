@@ -586,7 +586,7 @@ pub(crate) async fn append_events(
                 Expr::val(event.reason.clone()),
             ];
             if with_run {
-                values.push(Expr::val(event.run.map(|run| run.stored())));
+                values.push(Expr::val(event.run.map(StoredId::stored)));
             }
             insert
                 .values(values)

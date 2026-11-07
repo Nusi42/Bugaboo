@@ -4,7 +4,6 @@ import { isMessageKey, t } from "@bugaboo/messages";
 import { api } from "../../shared/api.ts";
 
 export type Run = Schema<"RunBody">;
-export type RunChanges = Schema<"RunChangesBody">;
 export type RunChange = Schema<"RunChangeBody">;
 export type UndoPreview = Schema<"UndoBody">;
 export type UndoSkip = Schema<"UndoSkipBody">;
@@ -14,10 +13,10 @@ export function useRun(run: string) {
   return api.query.useQuery("get", "/api/v1/runs/{run}", { params: { path: { run } } });
 }
 
-/** One page of the changes of a run, after the event the page before ended with. */
-export function useRunChanges(run: string, after: string | undefined) {
+/** One page of the changes of a run, from the cursor the page before gave. */
+export function useRunChanges(run: string, cursor: string | undefined) {
   return api.query.useQuery("get", "/api/v1/runs/{run}/changes", {
-    params: { path: { run }, query: after === undefined ? {} : { after } },
+    params: { path: { run }, query: cursor === undefined ? {} : { cursor } },
   });
 }
 

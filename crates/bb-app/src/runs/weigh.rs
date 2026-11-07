@@ -189,25 +189,38 @@ mod tests {
         }
     }
 
+    /// The net of a run that made these changes, each as `(position, field, before, after)`.
+    fn net_of(
+        ids: &mut SequentialIds,
+        record: &EntityRef,
+        changes: &[(i64, &str, Value, Value)],
+    ) -> NetOfRun {
+        let mut net = NetOfRun::default();
+        for (position, field, before, after) in changes {
+            let made = event(
+                ids,
+                record.clone(),
+                field,
+                before.clone(),
+                after.clone(),
+                true,
+            );
+            net.add(*position, &made);
+        }
+        net
+    }
+
     #[test]
     fn a_field_changed_twice_goes_back_to_how_the_run_found_it() {
         let mut ids = SequentialIds::default();
         let record = issue(&mut ids);
-        let mut net = NetOfRun::default();
-        net.add(
-            1,
-            &event(
-                &mut ids,
-                record.clone(),
-                "status",
-                json!("a"),
-                json!("b"),
-                true,
-            ),
-        );
-        net.add(
-            2,
-            &event(&mut ids, record, "status", json!("b"), json!("c"), true),
+        let net = net_of(
+            &mut ids,
+            &record,
+            &[
+                (1, "status", json!("a"), json!("b")),
+                (2, "status", json!("b"), json!("c")),
+            ],
         );
         let result = weigh(&net, &[]);
         assert_eq!(result.back.len(), 1);
@@ -219,21 +232,13 @@ mod tests {
     fn a_field_changed_back_by_the_run_itself_has_nothing_to_undo() {
         let mut ids = SequentialIds::default();
         let record = issue(&mut ids);
-        let mut net = NetOfRun::default();
-        net.add(
-            1,
-            &event(
-                &mut ids,
-                record.clone(),
-                "status",
-                json!("a"),
-                json!("b"),
-                true,
-            ),
-        );
-        net.add(
-            2,
-            &event(&mut ids, record, "status", json!("b"), json!("a"), true),
+        let net = net_of(
+            &mut ids,
+            &record,
+            &[
+                (1, "status", json!("a"), json!("b")),
+                (2, "status", json!("b"), json!("a")),
+            ],
         );
         assert!(weigh(&net, &[]).back.is_empty());
     }
@@ -242,28 +247,13 @@ mod tests {
     fn ai_38_a_field_somebody_changed_afterwards_stays_and_is_named() {
         let mut ids = SequentialIds::default();
         let record = issue(&mut ids);
-        let mut net = NetOfRun::default();
-        net.add(
-            1,
-            &event(
-                &mut ids,
-                record.clone(),
-                "status",
-                json!("a"),
-                json!("b"),
-                true,
-            ),
-        );
-        net.add(
-            1,
-            &event(
-                &mut ids,
-                record.clone(),
-                "priority",
-                json!("low"),
-                json!("high"),
-                true,
-            ),
+        let net = net_of(
+            &mut ids,
+            &record,
+            &[
+                (1, "status", json!("a"), json!("b")),
+                (1, "priority", json!("low"), json!("high")),
+            ],
         );
         let later = [
             (

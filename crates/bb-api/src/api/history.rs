@@ -117,7 +117,7 @@ pub(crate) struct HistoryEntryItem {
     may_delete: Option<bool>,
     /// A comment: how its text was written, when AI wrote it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    written_by: Option<super::comments::WrittenByBody>,
+    written_by: Option<super::comments::WrittenByRef>,
     /// A change: the field that changed, with what it was and what it is now.
     #[serde(skip_serializing_if = "Option::is_none")]
     change: Option<FieldChangeBody>,
@@ -351,7 +351,7 @@ mod tests {
             version: Some(1),
             may_edit: Some(true),
             may_delete: Some(true),
-            written_by: Some(crate::api::comments::WrittenByBody::blank()),
+            written_by: Some(crate::api::comments::WrittenByRef::blank()),
             change: Some(FieldChangeBody::blank()),
             relation_event: Some(RelationEvent::Added),
             relation_name: Some(String::new()),

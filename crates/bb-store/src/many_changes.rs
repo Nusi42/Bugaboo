@@ -175,7 +175,7 @@ impl ManyChangeStore for AuthStorage {
                 Expr::val(run.kind.code()),
                 Expr::val(run.person.stored()),
                 Expr::val(run.app.clone()),
-                Expr::val(run.agent.map(|agent| agent.stored())),
+                Expr::val(run.agent.map(StoredId::stored)),
                 Expr::val(serde_json::to_string(&run.action)?),
                 Expr::val(serde_json::to_string(&run.items)?),
                 Expr::val(run.status.code()),
