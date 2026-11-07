@@ -726,3 +726,57 @@ async fn ai_32_a_proposal_that_cannot_be_carried_out_is_open_again() -> Outcome 
     assert_eq!(discarded.state, ProposalState::Discarded);
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_32_a_proposal_that_asks_for_something_not_applied_yet_is_open_again() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    // *Duplicate of* is not carried out yet: the decision to apply it fails after the claim.
+    let proposal = proposed(
+        &world,
+        &given,
+        Vec::new(),
+        RuleField::DuplicateOf,
+        json!("x"),
+    )
+    .await??;
+    let decide = |apply| DecideProposal {
+        session_token: given.team.session_token.clone(),
+        proposal: proposal.id,
+        apply,
+    };
+    let applied = decide_proposal(&world.ctx(), decide(true)).await;
+    assert!(refused(&applied.unwrap_err(), ErrorCode::InvalidRequest));
+    assert_eq!(
+        world.store.lock().state.work.proposals[0].state,
+        ProposalState::Open
+    );
+    let events_before = world.store.lock().events.len();
+    let discarded = decide_proposal(&world.ctx(), decide(false)).await?;
+    assert_eq!(discarded.into_value().state, ProposalState::Discarded);
+    assert!(world.store.lock().events.len() > events_before);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_31_ending_a_hand_over_that_keeps_changing_fails_for_the_job_to_run_again() -> Outcome {
+    let world = World::new().await?;
+    let given = super::agent_work::handed(&world).await?;
+    world.clock.advance(15 * 24 * 3600);
+    world.store.lock().state.hand_overs_cannot_end = true;
+    let id = json!({ "hand_over": given.hand_over.id.to_string() });
+    let failed = world.ctx().run_hand_over_runs_out(&id).await;
+    assert!(matches!(failed, Err(AppError::Internal(_))), "{failed:?}");
+    assert_eq!(
+        world.store.lock().state.work.hand_overs[0].state,
+        GivingState::Open
+    );
+    // The job runs again when the hand-over holds still, and ends it.
+    world.store.lock().state.hand_overs_cannot_end = false;
+    world.ctx().run_hand_over_runs_out(&id).await?;
+    assert_eq!(
+        world.store.lock().state.work.hand_overs[0].state,
+        GivingState::Ended
+    );
+    Ok(())
+}

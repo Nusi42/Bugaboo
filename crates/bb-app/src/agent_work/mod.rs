@@ -25,5 +25,6 @@ pub use review::{answer_question, approve_plan, look_at_work, review_work};
 pub use rules::{
     change_standing_rule, create_standing_rule, decide_proposal, propose_change, standing_rules,
 };
+pub use stop::{Closing, close_work_of};
 pub use store::{AgentWorkRecords, GrantStore, WorkDetails};
 pub use types::*;

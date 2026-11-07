@@ -342,7 +342,7 @@ pub async fn review_work<S: AuthStore>(
                         accepted_by_itself: false,
                         status_pending: false,
                     };
-                    close_work_of::<S>(transaction, &hand_over, closing).await?;
+                    close_work_of::<S>(transaction, hand_over.id, closing).await?;
                 }
                 Ok(())
             })

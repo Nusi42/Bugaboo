@@ -12,15 +12,15 @@ use super::members::{member, payload};
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
 
 /// Which work a review or an accept by itself closes, and how.
-pub(crate) struct Closing {
+pub struct Closing {
     /// The work.
-    pub(crate) work: bb_core::id::AgentWorkId,
+    pub work: bb_core::id::AgentWorkId,
     /// The version it has when it is closed.
-    pub(crate) version: i64,
+    pub version: i64,
     /// Whether it was accepted by itself and still waits for a person to look at it.
-    pub(crate) accepted_by_itself: bool,
+    pub accepted_by_itself: bool,
     /// Whether the status stays and a person chooses the next one.
-    pub(crate) status_pending: bool,
+    pub status_pending: bool,
 }
 
 /// Ends the hand-over and stops the work of it that is open, inside a change. A hand-over that
@@ -54,12 +54,18 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
 }
 
 /// Closes the work, which is at `version`, with a review. The hand-over ends with its last piece of
-/// open work, which is read inside the change, after the work is closed, so two reviews of the two
-/// last pieces at the same moment cannot both leave the hand-over open. Work that changed since it
-/// was read stops the change.
-pub(crate) async fn close_work_of<S: AuthStore>(
+/// open work. First the version of the hand-over is counted up on what is read inside the change,
+/// so two closes of two pieces of one hand-over at the same moment cannot both pass, on either
+/// database; the one that finds the version changed stops, and the person is told the work
+/// changed. Then the work of the hand-over is read, after this piece is closed. Work that changed
+/// since it was read stops the change.
+///
+/// # Errors
+/// The aborted change when the hand-over or the work changed since they were read, and the errors
+/// of the store.
+pub async fn close_work_of<S: AuthStore>(
     transaction: &mut S::Transaction,
-    hand_over: &HandOver,
+    hand_over: HandOverId,
     closing: Closing,
 ) -> Result<(), S::Error> {
     let Closing {
@@ -68,6 +74,12 @@ pub(crate) async fn close_work_of<S: AuthStore>(
         accepted_by_itself,
         status_pending,
     } = closing;
+    let Some(current) = S::hand_over_in(transaction, hand_over).await? else {
+        return Err(S::aborted());
+    };
+    if !S::touch_hand_over(transaction, hand_over, current.version).await? {
+        return Err(S::aborted());
+    }
     if !S::close_work(
         transaction,
         work,
@@ -79,11 +91,11 @@ pub(crate) async fn close_work_of<S: AuthStore>(
     {
         return Err(S::aborted());
     }
-    let others_open = S::works_of_hand_over_in(transaction, hand_over.id)
+    let others_open = S::works_of_hand_over_in(transaction, hand_over)
         .await?
         .iter()
         .any(|other| other.id != work && !other.closed && other.state.is_open());
-    if !others_open && !S::end_hand_over(transaction, hand_over.id, hand_over.version).await? {
+    if !others_open && !S::end_hand_over(transaction, hand_over, current.version + 1).await? {
         return Err(S::aborted());
     }
     Ok(())

@@ -210,6 +210,25 @@ impl GrantStore for AuthStorage {
         .await
     }
 
+    async fn touch_hand_over(
+        transaction: &mut Transaction,
+        id: HandOverId,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        update_at(
+            transaction,
+            HandOverRow::Table,
+            HandOverRow::Id,
+            id.stored(),
+            HandOverRow::Version,
+            version,
+            |update| {
+                update.and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
+            },
+        )
+        .await
+    }
+
     async fn insert_standing_rule(
         transaction: &mut Transaction,
         rule: &StandingRule,

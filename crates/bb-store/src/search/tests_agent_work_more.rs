@@ -1,10 +1,10 @@
 //! More of agent work in the store, on both databases: the states a search finds, the work and the
 //! proposals of an issue.
 
-use bb_app::agent_work::{AgentWorkRecords as _, GrantStore as _};
-use bb_core::agent_records::{Proposal, ProposalState};
+use bb_app::agent_work::{AgentWorkRecords as _, Closing, GrantStore as _, close_work_of};
+use bb_core::agent_records::{GivingState, Proposal, ProposalState};
 use bb_core::agent_work::{AgentWorkState, RuleField};
-use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, IssueId};
+use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, HandOverId, IssueId};
 use bb_testing::{TestResult, each_database};
 
 use super::tests::request_with;
@@ -190,6 +190,77 @@ async fn ai_32_the_proposals_on_an_issue_are_cut_in_the_statement_by_state_agent
         let own = storage.proposals_on(issue, open, Some(helper), 10).await?;
         assert_eq!(own.len(), 1);
         assert_eq!(own[0].agent, helper);
+        Ok(())
+    })
+    .await
+}
+
+/// Closes a piece of work as a review does, in a change of its own; whether it went through.
+async fn close_piece(
+    storage: &AuthStorage,
+    at: bb_core::event::DomainEvent,
+    hand_over: HandOverId,
+    work: AgentWorkId,
+) -> bool {
+    storage
+        .record_change(&at, move |transaction| {
+            Box::pin(async move {
+                let version = AuthStorage::issue_work_in(transaction, work)
+                    .await?
+                    .map_or(1, |found| found.version);
+                let closing = Closing {
+                    work,
+                    version,
+                    accepted_by_itself: false,
+                    status_pending: false,
+                };
+                close_work_of::<AuthStorage>(transaction, hand_over, closing).await
+            })
+        })
+        .await
+        .is_ok()
+}
+
+#[tokio::test]
+async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open() -> TestResult {
+    each_database("ai_35_parallel_close", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let issues = [data.issues[0].id, data.issues[1].id];
+        let (record, works) = hand_over(
+            storage,
+            &mut made,
+            (owner, fixer),
+            &issues,
+            (Vec::new(), Vec::new()),
+        )
+        .await?;
+        // Both closes start from what was read before either ran; the one that finds the
+        // hand-over changed is told so and tries again, as the person does.
+        let (first, second) = (works[0].id, works[1].id);
+        let events = [1, 2, 3, 4].map(|step| {
+            made.step += 1;
+            event(&mut made.source, made.step + step)
+        });
+        let [a, b, c, d] = events;
+        let (one, two) = tokio::join!(
+            close_piece(storage, a, record.id, first),
+            close_piece(storage, b, record.id, second)
+        );
+        if !one {
+            assert!(close_piece(storage, c, record.id, first).await);
+        }
+        if !two {
+            assert!(close_piece(storage, d, record.id, second).await);
+        }
+        let ended = storage.hand_over(record.id).await?.ok_or("no hand-over")?;
+        assert_eq!(ended.state, GivingState::Ended, "the last close ended it");
         Ok(())
     })
     .await

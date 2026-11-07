@@ -464,6 +464,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         proposal: &Proposal,
         person: bb_core::id::UserId,
     ) -> Result<(), AppError> {
+        // Only a proposal that is still claimed by this person is opened, and only then it is told:
+        // no event for a write that changes nothing.
+        let claimed = self
+            .store()
+            .proposal(proposal.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .is_some_and(|found| {
+                found.state != ProposalState::Open && found.decided_by == Some(person)
+            });
+        if !claimed {
+            return Ok(());
+        }
         let event = self.event(
             crate::auth::by(person),
             entity(RecordKind::StandingRule, rule.id),

@@ -395,14 +395,11 @@ impl AgentWorkState {
         !Self::ENDED.contains(&self)
     }
 
-    /// The state after a question: *Waiting for you*.
+    /// The state after a question: *Waiting for you*. None for work that cannot ask: work that
+    /// ended, and a result that waits for its review (the one place that says so).
     #[must_use]
-    pub fn after_question(self) -> Self {
-        if self.is_open() {
-            Self::WaitingForYou
-        } else {
-            self
-        }
+    pub fn after_question(self) -> Option<Self> {
+        (self.is_open() && self != Self::ReadyForReview).then_some(Self::WaitingForYou)
     }
 }
 
@@ -517,12 +514,10 @@ mod tests {
     fn ai_34_a_question_sets_waiting_for_you() {
         assert_eq!(
             AgentWorkState::AgentWorking.after_question(),
-            AgentWorkState::WaitingForYou
+            Some(AgentWorkState::WaitingForYou)
         );
-        assert_eq!(
-            AgentWorkState::Stopped.after_question(),
-            AgentWorkState::Stopped
-        );
+        assert_eq!(AgentWorkState::Stopped.after_question(), None);
+        assert_eq!(AgentWorkState::ReadyForReview.after_question(), None);
     }
 
     #[test]

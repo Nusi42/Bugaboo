@@ -49,6 +49,10 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn insert_hand_over(hand_over: &HandOver) -> ();
         /// Ends a hand-over that is at `version`; whether it was.
         fn end_hand_over(id: HandOverId, version: i64) -> bool;
+        /// Counts the version of an open hand-over up if it is at `version`, so that two changes to
+        /// the work of one hand-over at the same moment cannot both pass (the second finds the
+        /// version changed, also where a read does not wait for a write); whether it was.
+        fn touch_hand_over(id: HandOverId, version: i64) -> bool;
         /// Adds a standing rule.
         fn insert_standing_rule(rule: &StandingRule) -> ();
         /// Ends a rule, or renews it to `ends_at`, counting its version up; whether it was at

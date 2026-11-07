@@ -22,6 +22,26 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::issues::InTrash;
 use crate::projects::Why;
 
+/// Judges, inside the change, whether `child` may sit under `parent`: the parent holds only so many
+/// sub-issues, the chain above it is not a circle and not too deep. The one judgment of the change
+/// of a parent and of an issue created under one, counted on what is stored now.
+pub(crate) async fn ensure_fits_under<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    child: IssueId,
+    parent: IssueId,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    S::lock_issue_parents(transaction).await?;
+    if S::sub_issues_of_in(transaction, parent).await?.len() >= SUB_ISSUES_MAX {
+        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
+    }
+    let chain = chain_above::<S>(transaction, parent).await?;
+    if check_parent(child, parent, |issue| chain.get(&issue).copied()).is_err() {
+        return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
+    }
+    Ok(())
+}
+
 /// The chain above `parent` as it is now, read inside the lock, so two changes at the same moment
 /// cannot make a circle between them.
 async fn chain_above<S: AuthStore>(
@@ -45,7 +65,7 @@ async fn chain_above<S: AuthStore>(
 impl<S: AuthStore> Ctx<'_, S> {
     /// The issue a request wants to put another under, if it names one: the person must see it and
     /// be allowed to change it.
-    async fn named_parent(
+    pub(crate) async fn named_parent(
         &self,
         actor: &Actor,
         address: Option<&str>,
@@ -126,16 +146,8 @@ pub async fn set_parent<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::lock_issue_parents(transaction).await?;
                 if let Some(parent) = wanted {
-                    // An issue holds only so many sub-issues, counted on what is stored now.
-                    if S::sub_issues_of_in(transaction, parent).await?.len() >= SUB_ISSUES_MAX {
-                        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
-                    }
-                    let chain = chain_above::<S>(transaction, parent).await?;
-                    if check_parent(child_id, parent, |issue| chain.get(&issue).copied()).is_err() {
-                        return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
-                    }
+                    ensure_fits_under::<S>(transaction, child_id, parent, &stopped).await?;
                 }
                 if S::count_issue_up(transaction, child_id, Some(version), InTrash::NotFound, now)
                     .await?

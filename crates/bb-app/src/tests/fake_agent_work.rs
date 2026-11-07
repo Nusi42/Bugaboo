@@ -184,6 +184,9 @@ impl GrantStore for super::fake::FakeStore {
     }
 
     async fn end_hand_over(tx: &mut Tx, id: HandOverId, version: i64) -> Result<bool, FakeError> {
+        if tx.state.hand_overs_cannot_end {
+            return Ok(false);
+        }
         Ok(tx
             .state
             .work
@@ -194,6 +197,17 @@ impl GrantStore for super::fake::FakeStore {
                 h.state = GivingState::Ended;
                 h.version += 1;
             })
+            .is_some())
+    }
+
+    async fn touch_hand_over(tx: &mut Tx, id: HandOverId, version: i64) -> Result<bool, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .hand_overs
+            .iter_mut()
+            .find(|h| h.id == id && h.version == version && h.state == GivingState::Open)
+            .map(|h| h.version += 1)
             .is_some())
     }
 

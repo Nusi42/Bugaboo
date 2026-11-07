@@ -284,15 +284,17 @@ pub async fn report_attempt<S: AuthStore>(
 ///
 /// # Errors
 /// `resource.not-found` for an issue the agent was not given, `agent-work.not-ready` for work that
-/// is not open, `request.invalid` for a question that cannot be.
+/// is not open or waits for its review, `request.invalid` for a question that cannot be.
 pub async fn ask_question<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AskQuestion,
 ) -> Result<Authorized<WorkView>, AppError> {
     let mine = ctx.my_work(&input.session_token, &input.issue).await?;
-    if !mine.work.state.is_open() {
-        return Err(ErrorCode::AgentWorkNotReady.into());
-    }
+    let next = mine
+        .work
+        .state
+        .after_question()
+        .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
     let text = clean_text(&input.text, TEXT_MAX)?;
     let question = Question {
         id: AgentNoteId::generate(&mut ctx.ids()),
@@ -305,7 +307,7 @@ pub async fn ask_question<S: AuthStore>(
     let event = ctx.work_event_waiting(
         mine.actor.person.id,
         &mine.work,
-        mine.work.state.after_question(),
+        next,
         Some(waiting_for::QUESTION),
     )?;
     let (work, stored) = (mine.work.clone(), question);
@@ -313,7 +315,6 @@ pub async fn ask_question<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::insert_question(transaction, &stored).await?;
-                let next = work.state.after_question();
                 if S::set_work_state(transaction, work.id, next, None, false, work.version).await? {
                     Ok(())
                 } else {
@@ -523,7 +524,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         self.store()
             .record_change(&event, move |transaction| {
-                Box::pin(async move { close_work_of::<S>(transaction, &hand_over, closing).await })
+                Box::pin(
+                    async move { close_work_of::<S>(transaction, hand_over.id, closing).await },
+                )
             })
             .await
             .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))

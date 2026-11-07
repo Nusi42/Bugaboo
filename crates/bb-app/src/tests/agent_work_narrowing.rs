@@ -619,3 +619,66 @@ async fn ai_35_a_throw_away_and_an_accept_with_a_status_at_the_same_moment_give_
     assert_eq!(world.store.lock().state.work.reviews.len(), 1);
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_35_an_agent_cannot_ask_while_its_result_waits_for_the_review() -> Outcome {
+    use crate::agent_work::{AskQuestion, ask_question};
+    let world = World::new().await?;
+    let given = ready_for_review(&world).await?;
+    let asked = ask_question(
+        &world.ctx(),
+        AskQuestion {
+            session_token: given.key.clone(),
+            issue: given.issue.to_string(),
+            text: "One more thing?".to_owned(),
+        },
+    )
+    .await;
+    assert!(refused(&asked.unwrap_err(), ErrorCode::AgentWorkNotReady));
+    assert_eq!(
+        show(&world, &given).await?.state,
+        AgentWorkState::ReadyForReview
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_31_a_new_issue_under_a_parent_is_judged_like_the_change_of_a_parent() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "DEEP").await?;
+    let issue_type = a_type(&world).await.map_err(AppError::Internal)?;
+    let make = |parent: Option<IssueId>| CreateIssue {
+        session_token: token(&world),
+        project: project.to_string(),
+        issue_type,
+        title: "A step down".to_owned(),
+        description: None,
+        status: None,
+        priority: None,
+        assigned_to: None,
+        estimated_time: None,
+        fields: std::collections::BTreeMap::new(),
+        parent: parent.map(|issue| issue.to_string()),
+    };
+    let mut deepest = create_issue(&world.ctx(), make(None))
+        .await?
+        .into_value()
+        .id;
+    let mut levels = 0;
+    let refusal = loop {
+        match create_issue(&world.ctx(), make(Some(deepest))).await {
+            Ok(next) => {
+                deepest = next.into_value().id;
+                levels += 1;
+                assert!(
+                    levels <= bb_core::relation::SUB_ISSUE_DEPTH_MAX + 1,
+                    "no end"
+                );
+            }
+            Err(error) => break error,
+        }
+    };
+    assert!(refused(&refusal, ErrorCode::ParentCircle), "{refusal:?}");
+    assert!(levels >= 1);
+    Ok(())
+}

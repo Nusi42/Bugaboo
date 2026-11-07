@@ -68,6 +68,8 @@ impl fmt::Display for FakeError {
 /// Everything the store holds. Cloned for a change and put back when the change succeeded.
 #[derive(Clone, Default)]
 pub(crate) struct State {
+    /// A switch of the tests: a hand-over cannot be ended, as if it changed at every try.
+    pub(crate) hand_overs_cannot_end: bool,
     /// A switch of the tests: every look for what came after a run finds one more change that no
     /// look found before, as if somebody went on changing the issues (an undo that is always told
     /// the run changed meanwhile).

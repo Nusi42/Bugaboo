@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::agent_work::{Allowance, issue_member as key};
+use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId};
 
 use crate::access::Actor;
@@ -26,25 +26,42 @@ pub(crate) mod issue_member {
 
 use issue_member::STATUS;
 
-/// The members of the issue a change names, by their keys: the ones of the catalogue and the own
+/// The members of an issue a request can set, by their keys, in the order [`members_named`] reads
+/// its flags in: the one list, for a change of an issue and for the input of a new one.
+const SETTABLE: [&str; 7] = [
+    bb_core::agent_work::issue_member::ISSUE_TYPE,
+    bb_core::agent_work::issue_member::TITLE,
+    STATUS,
+    bb_core::agent_work::issue_member::PRIORITY,
+    bb_core::agent_work::issue_member::ESTIMATED_TIME,
+    bb_core::agent_work::issue_member::TIME_LEFT,
+    bb_core::agent_work::issue_member::ASSIGNED_TO,
+];
+
+/// The members a request names, by their keys: those of [`SETTABLE`] whose flag is set, and the own
 /// fields.
-fn members_of(input: &ChangeIssue) -> Vec<String> {
-    use bb_core::agent_work::issue_member as key;
-    let named = [
-        (input.issue_type.is_some(), key::ISSUE_TYPE),
-        (input.title.is_some(), key::TITLE),
-        (input.status.is_some(), STATUS),
-        (input.priority.is_some(), key::PRIORITY),
-        (input.estimated_time.is_some(), key::ESTIMATED_TIME),
-        (input.time_left.is_some(), key::TIME_LEFT),
-        (input.assigned_to.is_some(), key::ASSIGNED_TO),
-    ];
-    named
+fn members_named<'a>(set: [bool; 7], fields: impl Iterator<Item = &'a String>) -> Vec<String> {
+    SETTABLE
         .into_iter()
-        .filter(|(set, _)| *set)
-        .map(|(_, key)| key.to_owned())
-        .chain(input.fields.keys().cloned())
+        .zip(set)
+        .filter(|(_, set)| *set)
+        .map(|(key, _)| key.to_owned())
+        .chain(fields.cloned())
         .collect()
+}
+
+/// The members of the issue a change names.
+fn members_of(input: &ChangeIssue) -> Vec<String> {
+    let set = [
+        input.issue_type.is_some(),
+        input.title.is_some(),
+        input.status.is_some(),
+        input.priority.is_some(),
+        input.estimated_time.is_some(),
+        input.time_left.is_some(),
+        input.assigned_to.is_some(),
+    ];
+    members_named(set, input.fields.keys())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -172,22 +189,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &crate::issues::CreateIssue,
         project: bb_core::id::ProjectId,
     ) -> Result<Option<IssueId>, AppError> {
-        let parent = match input.parent.as_deref() {
-            Some(address) => {
-                let (parent, held) = self.visible_issue(actor, address).await?;
-                if parent.project != project {
-                    return Err(ErrorCode::InvalidRequest.into());
-                }
-                if !held.may_change_issue(parent.reported_by) {
-                    return Err(ErrorCode::Forbidden.into());
-                }
-                Some(parent.id)
-            }
-            None => None,
-        };
+        let parent = self.named_parent(actor, input.parent.as_deref()).await?;
+        if parent
+            .as_ref()
+            .is_some_and(|found| found.project != project)
+        {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let parent = parent.map(|found| found.id);
         let Some(agent) = actor.agent() else {
             return Ok(parent);
         };
+        // The work is read before the change that makes the issue: a hand-over that ends between
+        // the two still lets this one through, as it does for every change an agent makes.
         let work = self.work_of_agent_now(agent).await?;
         let allowance = match parent {
             Some(parent) => work
@@ -199,18 +213,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             None if work.creates_in.contains(&project) => Allowance::default(),
             None => return Err(ErrorCode::Forbidden.into()),
         };
-        let mut members: Vec<String> = Vec::new();
-        for (set, member) in [
-            (input.status.is_some(), STATUS),
-            (input.priority.is_some(), key::PRIORITY),
-            (input.estimated_time.is_some(), key::ESTIMATED_TIME),
-            (input.assigned_to.is_some(), key::ASSIGNED_TO),
-        ] {
-            if set {
-                members.push(member.to_owned());
-            }
-        }
-        members.extend(input.fields.keys().cloned());
+        // The type and the title of a new issue are always its own; the rest is a member.
+        let set = [
+            false,
+            false,
+            input.status.is_some(),
+            input.priority.is_some(),
+            input.estimated_time.is_some(),
+            false,
+            input.assigned_to.is_some(),
+        ];
+        let members = members_named(set, input.fields.keys());
         self.ensure_allowance_covers(&allowance, &members).await?;
         Ok(parent)
     }

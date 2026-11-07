@@ -11,7 +11,7 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, Priority, StatusGroup};
 use bb_core::project::Project;
 use bb_core::readable_id::IssueCode;
-use bb_core::relation::{IssueParent, SUB_ISSUES_MAX};
+use bb_core::relation::IssueParent;
 use bb_core::version::FIRST_VERSION;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -27,6 +27,7 @@ use crate::input::clean_long_text;
 use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
+use crate::relations::ensure_fits_under;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 use bb_core::event::FieldChange;
 
@@ -345,18 +346,15 @@ pub async fn create_issue<S: AuthStore>(
     Ok(access.authorize(view))
 }
 
-/// Puts the new issue under its parent, inside the change that creates it. An issue holds only so
-/// many sub-issues, counted on what is stored now.
+/// Puts the new issue under its parent, inside the change that creates it, judged as the change of a
+/// parent is (the count of sub-issues, a circle, the depth).
 async fn put_under<S: AuthStore>(
     transaction: &mut S::Transaction,
     issue: &Issue,
     parent: IssueId,
     stopped: &Why,
 ) -> Result<(), S::Error> {
-    S::lock_issue_parents(transaction).await?;
-    if S::sub_issues_of_in(transaction, parent).await?.len() >= SUB_ISSUES_MAX {
-        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
-    }
+    ensure_fits_under::<S>(transaction, issue.id, parent, stopped).await?;
     S::set_issue_parent(
         transaction,
         &IssueParent {
