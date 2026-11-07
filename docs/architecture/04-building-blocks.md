@@ -11,12 +11,12 @@ bugaboo/
 │   ├── bb-policy/          authorization engine, permission catalogue, Authorized<T>
 │   ├── bb-searchlang/      search language: parse, print, check, suggest — no I/O, also WebAssembly
 │   ├── bb-markdown/        Markdown → safe HTML, issue-number chips — no I/O, also WebAssembly
-│   ├── bb-app/             use cases per feature (ports = traits for storage, files, mail, AI)
+│   ├── bb-app/             use cases per feature (ports = traits for storage, files, mail, AI), the AI tool registry and context builder
 │   ├── bb-store/           database adapter: schema, migrations, repositories, search compiler
 │   ├── bb-files/           file adapter: content-addressed storage, type checks, previews (a virus scan is V1, ATT-05)
 │   ├── bb-auth/            passwords, passkeys, two-step codes, sessions, access keys, OIDC, OAuth 2.1
-│   ├── bb-ai/              AI provider adapters, context builder, tool registry
-│   ├── bb-mcp/             MCP server (uses the tool registry)
+│   ├── bb-ai/              AI provider adapters (Anthropic, OpenAI-compatible) and the test fake
+│   ├── bb-mcp/             MCP server: the tool registry of bb-app as MCP (rmcp)
 │   ├── bb-notify/          delivery adapters: e-mail over SMTP (lettre) today, webhooks later
 │   ├── bb-jobs/            the loop that runs the due background jobs (the work of each kind is in bb-app)
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
@@ -75,7 +75,7 @@ flowchart TB
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
   api --> app & auth & mcp & core & policy & words
-  mcp --> app & ai
+  mcp --> app
   jobs --> app
   app --> policy & core & search & md & auth
   auth --> core
@@ -141,7 +141,7 @@ Two modules, one way: each has its own crate (the bindings only pass calls throu
 
 ### bb-app — use cases by feature
 
-Built so far (M0 to M4): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `notifications` (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `workflows` (the judge's inputs, the editor, *Publish* with its preview and the check that no issue is stranded; M4), `offers` (where issue types and groups of labels are offered, and what a person may know of them; M4), `files` (uploads in parts, attachments with the trash and *Undo*, signed downloads, previews and the daily clean-up; M4), `preview`, `status`, `working_hours` (work days with their periods and breaks, the working-time rules checked at every change, reasons and the history of a day, *Working hours of others*, the days older than the keep period; M6, ADR-0035; the rules themselves are `bb_core::working_time`). Planned: `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries), `documents`, `assistant`, `privacy`, `themes`, `admin`.
+Built so far (M0 to M4): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `notifications` (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `workflows` (the judge's inputs, the editor, *Publish* with its preview and the check that no issue is stranded; M4), `offers` (where issue types and groups of labels are offered, and what a person may know of them; M4), `files` (uploads in parts, attachments with the trash and *Undo*, signed downloads, previews and the daily clean-up; M4), `preview`, `status`, `working_hours` (work days with their periods and breaks, the working-time rules checked at every change, reasons and the history of a day, *Working hours of others*, the days older than the keep period; M6, ADR-0035; the rules themselves are `bb_core::working_time`). M7 adds `ai` (the tool registry in `ai/tools/`, the context builder in `ai/context/`, *Never sent to AI*, the assistant in `ai/assistant/`, and the port `AiProvider`), `agents` (agents, agent keys, limits), `agent_work` (hand-overs, standing rules, attempts, questions, review) and `runs` (*Undo the run*, the port `RunStore`). Planned: `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries), `documents`, `assistant`, `privacy`, `themes`, `admin`.
 
 `search` (M5 WP-04) holds what a person may ask a search about: `readable_fields` builds the fields the checker of `bb-searchlang` gets, once per request, from the field definitions, the levels of the person's roles and *Who sees people*. A field counts only when it is readable in every project the search looks at (`SearchScope`; a project the person does not see is `resource.not-found`), so a hidden field is as unknown as one that does not exist; a field that holds people (`Field::person_kind`, `FieldType::people_kind`) also needs the level *Names*. A word belongs to one field for everyone (ADR-0005 amendment M5, decision 9): the words of the catalogue (`Field::search_word`) and of the fields every issue has (`IssueField`) are reserved, and between own fields the first in their order keeps a word, decided before the rights of the person. Choices are names as shown, each once by the one rule of the same name (`names::same_name`, also in the checker): the issue types the person may know that reach a place the search looks at and the statuses of the workflows in force there (`Ctx::workflows_reaching`, which `project_statuses` uses too); the built-in lists (priority, status group) are English words of the language (`search_word`), not catalogue text. The totals of time (`time/totals.rs`, TIME-03) are the same search: an issue's sub-issues are `under` it in every project the reader sees, with the lengths readable in the projects the sub-issues are in (a field hidden there is no total, never the issue's own number), a project's issues are its list, and the sums of *Estimated time* and *Time left* are one statement of that search (`SearchStore::search_lengths`, only of the fields among the readable ones), *Time spent* through `TimeSpentStore::spent_on_search` (PRIV-13). `search`, `search_count` and `search_groups` run a text: the fields first, then the text read and checked (every mistake is answered before anything else), then the names turned into what they stand for for this person (`names.rs`: statuses, types, choices, people and groups, each by the one rule of the same name), then the sight of the person limited to the same places the fields were judged for, and last the store port `SearchStore`, which `bb-store` implements with the compiler (`bb-store/src/search`): one statement with the sight first, the filter, the order with the ID last and the keyset after the last issue of the page before. A cursor holds nothing but the ID of that issue: the store reads its place in the order itself, so no title, name or value is ever written into a cursor (the API seals it for the person and the search). A row that points to an issue (a parent, an issue in an own field) counts only when the person reads that issue; the values of an own field count only in the projects it reaches. A group is named by identity (an ID or a word), and the use case shows a person as the viewer may see them. Each group also carries `filter`, the text of the one filter that selects its issues, and `name`, the name it is shown by (`search/group_filter.rs`): the filter is written by the printer of the language, read and checked, and its name resolved by the same `search_names_in` as the names of a search; it is given only when the name stands for exactly the thing of the group (two people, two types or two labels of one name, or a status renamed to another one's name, give none), and a name the resolution refused is not given. The groups come in the order of a *list* (`StatusGroup::LIST_ORDER`: in progress, not started, done; `Priority::LIST_ORDER`: the most important first), which is not the order that sorting and comparing use (`ALL`: `status group >= "In progress"` and `sort by priority` still go from the least to the most). The one visibility predicate is `bb-store/src/sight.rs`. Counts and groups are made from the same condition. A search is stopped after 2 seconds (`statement_timeout` on PostgreSQL, a progress handler on SQLite) and answers `search.too-slow`; each person may run 60 a minute (`Limits::check_search`).
 
@@ -202,9 +202,49 @@ The words of the API description that more than one program needs, written once:
 
 The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), the passwords and the address of the sign-in tests (`accounts`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `bb-core` (for the message catalogue), `serde` and `serde_json` only, so `bb-testing`, `bb-sample`, `xtask` and the tests of `bb-app` and `bb-server` can import it without pulling in the store or the use cases.
 
-### bb-ai and bb-mcp
+### bb-ai and bb-mcp (the placement of M7)
 
-One **tool registry** (search issues, get issue, create, change status, comment, book time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
+Every AI tool is a `bb-app` use case run as the actor, the assistant is a `bb-app` use case too (§5), and `bb-app` imports no adapter (rule 2). So the parts of AI are placed like this ([ADR-0013](../adr/0013-ai.md), amendment M7):
+
+- **The tool registry and the context builder live in `bb-app`** (`crates/bb-app/src/ai/`), next to the use cases they call, and do no I/O of their own. The registry is one table (`ai/tools/`): each tool has its name, *reads* or *changes*, the use case it calls, the scope it needs, the schema of its input (generated from the Rust type) and, when it changes something, a preview from the use case's own evaluation. The assistant, MCP and agents list and call tools only through it. The context builder (`ai/context/`) reads as the actor, leaves out hidden fields and everything *Never sent to AI*, and fences people's text with its author mark (§7, *AI*).
+- **`bb-ai` holds the provider adapters** (Anthropic and OpenAI-compatible, which covers a local model) behind the port `AiProvider` of `bb-app`, and the test fake behind its feature `testing` (like `bb-files`). `bb-server` wires the adapter the settings choose.
+- **`bb-mcp` turns the registry into MCP** with `rmcp` over streamable HTTP at `/mcp`, and depends on `bb-app` only; the sign-in of apps is in `bb-auth`, `bb-app/src/auth/` and `bb-api` ([ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). There is no edge `mcp --> ai` (M4-F133).
+
+Enforced by: ARCH-DEPS (the edges), ARCH-AI-TOOLS (it reads `crates/bb-app/src/ai/tools/**` and `crates/bb-mcp/**`).
+
+### The port of runs (`RunStore`, M7)
+
+Every session of an AI app and every attempt of an agent is one run, built on `change_run` ([ADR-0029](../adr/0029-ai-agents.md), decision 7). The port is how the use cases of MCP (WP-05) and of agent work (WP-08) open and close runs and undo them, while `bb-store` implements it (WP-07); until then they test against a fake of it. Its shape, which WP-07 writes into `crates/bb-app/src/ports.rs`:
+
+```rust
+pub trait RunStore: Send + Sync {
+    /// Opens a run of `kind` (`AppSession` or `Attempt`; `ManyChanges` keeps its own start) for
+    /// `actor` (the person, with the app or the agent) at `at`. Every event written while the run
+    /// is open carries its ID.
+    fn open_run(&self, kind: RunKind, actor: &RunActor, at: Timestamp) -> Result<RunId, StoreError>;
+    /// Closes the run as `ended` (`Done`, `Stopped`, `Failed`); a run that is closed already
+    /// stays as it is (idempotent).
+    fn close_run(&self, run: RunId, ended: RunEnd, at: Timestamp) -> Result<(), StoreError>;
+    /// The changes of the run, oldest first, one page after `after` (a cursor that holds only the
+    /// ID of the last event of the page before). Each change names the issue, the field, before
+    /// and after, and the event.
+    fn run_changes(&self, run: RunId, after: Option<EventId>, limit: PageSize)
+        -> Result<Page<RunChange>, StoreError>;
+    /// What *Undo the run* would do now: each change goes back, or is skipped with its reason
+    /// (`ChangedSince { by, at }`: somebody changed the same field afterwards; `Gone`: the issue
+    /// is in the trash or deleted), and the version of this preview.
+    fn preview_undo(&self, run: RunId) -> Result<UndoPreview, StoreError>;
+    /// Undoes the run as the preview with `version` said; refused with the newer preview when
+    /// anything changed since (the version differs). It writes new events that put the old
+    /// values back, marked as an undo of the run, and never deletes history.
+    fn undo_run(&self, run: RunId, version: UndoVersion, by: &RunActor, at: Timestamp)
+        -> Result<UndoResult, StoreError>;
+}
+```
+
+- **The rule of an undo:** it never touches a change that somebody made later. A field that any event outside the run changed after the run's change is skipped and named, never written over; the preview and the undo use the same one evaluation (the long preview of *Change many issues*).
+- **Who may undo, and as whom:** the use case judges, not the port: the run's person, and for an attempt the reviewer through *Throw away*; each change is judged again as the person who undoes it, and a large run goes on in the step-wise job of *Change many issues* (ADR-0017).
+- The names (`RunKind`, `RunActor`, `RunEnd`, `RunChange`, `UndoPreview`, `UndoVersion`, `UndoResult`) and the async form follow the other ports; the code is the one definition once WP-07 writes it, and this section then points to it.
 
 ### bb-sample
 

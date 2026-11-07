@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M5 built, M6 planned)
+## Scope (status: M6 built, M7 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5) | Time on issues and working hours (M6; threats below, planned), MCP and the assistant (M7), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5); time on issues and working hours (M6) | The assistant, AI apps through MCP and agents (M7; threats below, planned), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -22,7 +22,11 @@ flowchart LR
     api["/api/v1<br/>problem+json"]
     auth["Sign-in<br/>sessions, CSRF"]
     store["bb-store"]
+    mcp["/mcp<br/>OAuth 2.1, M7"]
+    ai["bb-ai<br/>provider adapter, M7"]
   end
+  app(["AI app or agent<br/>(untrusted, M7)"])
+  provider(["AI provider<br/>(outside, or a local model)"])
   subgraph data["Data folder (owner-only)"]
     db[("database")]
     keys["keys/master.key"]
@@ -34,9 +38,11 @@ flowchart LR
   store --> keys
   tls --> cert
   server --> logs
+  app -- "1 · HTTPS, bearer" --> tls --> mcp --> store
+  ai -- "5 · HTTPS" --> provider
 ```
 
-Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk. M2 adds no new listener: the new routes are below `/api/v1`, and scripts reach them with an access key (`Authorization: Bearer bb_…`) instead of a cookie. The sample-organization program (`bb-sample`) is a developer tool and is not shipped before OPS-12.
+Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk. M2 adds no new listener: the new routes are below `/api/v1`, and scripts reach them with an access key (`Authorization: Bearer bb_…`) instead of a cookie. The sample-organization program (`bb-sample`) is a developer tool and is not shipped before OPS-12. M7 adds no listener either: `/mcp`, the metadata documents and the OAuth routes are on the same port, and the server becomes a client of the **AI provider** (boundary 5, *Server ↔ AI provider*), which it calls only when an administrator switched AI on.
 
 ## Threats and mitigations
 
@@ -216,6 +222,23 @@ M6 stores what people spent their time on and when they worked ([ADR-0035](../ad
 | Tampering | The note of a time entry or the reason of a change carries script that runs for another reader | Notes and reasons are plain text, shown as text and never as HTML; an e-mail writes them like any other text (ADR-0033) | SEC-RICHTEXT; the tests of WP-05 and WP-06 |
 | Tampering | A person deletes working hours that the law asks to keep, or deletes old ones without a trace | Only a holder of *Change organization settings* deletes, only days older than the keep period, after a confirmation, and every deletion is in the security log (ADR-0035, decision 7) | ARCH-PERMS, SEC-MATRIX (the route that deletes old work days, for every starting role); the tests of WP-06 |
 | Denial of service | Many timers, starts or entries slow the server for everyone | The limits of ADR-0035, decisions 1, 3 and 5 (named constants of WP-05 and WP-06), and pages with cursors on every list | PERF-N1, PERF-BENCH (the timesheet week and the totals of a project on 1 M issues); the tests of WP-05 and WP-06 |
+
+### Assistant, AI apps and agents (M7)
+
+M7 lets AI read and change Bugaboo in three ways: the assistant (it only proposes), outside AI apps that act for a person through MCP, and agents that work on their own on what a person handed over ([ADR-0013](../adr/0013-ai.md), [ADR-0029](../adr/0029-ai-agents.md), [ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). The new boundary is **5, Server ↔ AI provider**: text leaves the server for a provider the organization chose, and what comes back is untrusted. The main threats are that AI reads or changes more than its person, and that text in an issue steers it. The packages add the test names ([M7 plan](../milestones/M7/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|------------|-----------|
+| Elevation of privilege | An AI app or an agent reads or changes more than its person may, or than its scope, its work or its limits allow | Every call is a tool of the one registry, run as the actor through `bb-policy`: a grant or key is the person narrowed by *See only* or *See and change*; an agent is its person's evaluation intersected with its work and limits, and never holds a permission of kind *Manage* or *Take over text someone else is editing*; what no key holds no grant holds | SEC-MATRIX (the actor kinds *person via app* and *agent*, the entry points `mcp` and `assistant`), ARCH-AI-TOOLS, ARCH-PERMS; the tests of WP-04 and WP-05 |
+| Tampering, information disclosure | Text in an issue, a comment, a field, a file name or a tool answer tells the AI to change, send or show something (AI-05) | People's text is fenced as data with its author mark, and a fence cannot be closed from inside; the assistant only proposes and nothing changes without *Apply*; an app changes only with *See and change*; a standing rule proposes by default and never changes people fields or the status | The prompt-injection test set of WP-03, WP-06 and WP-09 (TEST-PROMPT-INJECTION) |
+| Information disclosure | An answer of the provider carries a picture or a link that sends data out when it is shown | Answers are written by the one Markdown writer with no outside pictures and every link in full (ADR-0011) | SEC-RICHTEXT; the tests of WP-06 |
+| Information disclosure | A field kept from AI, a hidden field or a hidden issue reaches the provider or an app | The context builder reads as the actor and leaves out hidden fields and everything *Never sent to AI*; answers leave through `Authorized<T>` with its field mask; with an outside provider people go as role labels unless *Send names of people* is on | ARCH-API-OUT, ARCH-AUTHZ-ONLY; the context tests of WP-03 |
+| Spoofing | A stolen refresh token, a code without its PKCE proof, or an app that registers someone else's return address | PKCE with `S256` only; codes work once and for 60 seconds; refresh tokens turn over and an old one used again ends the whole grant; a web return address only after an administrator added it; everything stored as a hash | SEC-MATRIX (the OAuth routes); the tests of WP-05 |
+| Spoofing | An app names itself like a trusted app (*"Bugaboo"*, *"Claude"*) to get *Allow* | The consent step says that the name is the app's own and shows the return address (*on this computer*); *Connected apps* lists every grant with *Take back* | The tests of WP-05; review of the words of the consent step (a person judges whether they warn enough) |
+| Information disclosure | An administrator, or a stolen administrator session, points the provider address at the internal network and reads it through the errors | The password is asked again before the provider, the address or the key changes; an address on the local network only for the OpenAI-compatible choice; an error of the provider is one sentence that never repeats its answer; every change in the security log | SEC-MATRIX (the routes of the settings of AI); the tests of WP-02 |
+| Denial of service, tampering | An agent runs away with changes, or an app floods the server | Limits per agent and key (60 changes a minute, 5 issues at once, 5 attempts on one issue at the start, within the organization's maximum) pause the agent with a sentence; rate limits per grant and per person; *Stop*, *Stop all my agents* and agents off; *Undo the run* in one step | TEST-CONCURRENT ("Two agents take the same issue at the same moment"); the tests of WP-07 and WP-09 |
+| Repudiation | Nobody can tell what an AI wrote, or which app or agent changed something | Every event names the person, the channel and the app or the agent; texts carry *Written with the assistant*, *Written by an AI app* or *Written by an agent* in the history, the API and every export (COMP-09); grants, agents and keys are in the security log | ARCH-EVENTS; the tests of WP-07 |
+| Information disclosure | The log of tool calls or a server log keeps what the AI read or wrote | The log of tool calls holds who, which tool, sizes, time and outcome, never content; tokens and keys never in a log; the conversation of the assistant is not stored | DATA-LOGS |
 
 ### Boundary 4 (operator ↔ data) and the host
 
@@ -437,3 +460,35 @@ flowchart LR
 Nothing about time leaves the server, except the e-mail of a notification to the person themselves when they keep e-mail on (ADR-0033). No outside service and no AI reads working hours (COMP-10).
 
 Storage limitation (GDPR Art. 5(1)(e)) is the organization's judgement: Bugaboo deletes no working hours by itself, shows how many are past the keep period, and makes deleting them one step (ADR-0035, decision 7).
+
+## Personal data in M7
+
+M7 sends text to an AI provider and stores the work of agents and the sign-in of AI apps ([ADR-0013](../adr/0013-ai.md), [ADR-0029](../adr/0029-ai-agents.md), [ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). The marks below are decided here; the packages write them on their entities, and `cargo xtask gen privacy` lists them on the generated page `docs/privacy/personal-data.md`. Enforced by: DATA-MARKS.
+
+| Entity (package) | Field | Personal data | Category | Legal basis |
+|------------------|-------|---------------|----------|-------------|
+| Settings of AI (WP-02) | provider, model, address, *Send names of people*, the API key (a stored secret) | no | – | – |
+| Settings of AI (WP-02) | the confirmation of the agreement: who, when | yes | `identity` | `legal_obligation` |
+| *Never sent to AI* marks (WP-03) | field, project | no | – | – |
+| Log of tool calls (WP-03) | person, actor kind, app or agent, tool, sizes, time, outcome | yes | `activity` | `legitimate_interests` |
+| Agent (WP-04) | responsible person, made by | yes | `identity` | `contract` |
+| Agent (WP-04) | name, state, limits | no | – | – |
+| Agent key (WP-04) | the hash, when it runs out, last used | yes | `credentials` | `contract` |
+| Registered app (WP-05) | name, return addresses | no | – | – |
+| Grant of an app (WP-05) | person, app, scope, projects, when allowed, last used | yes | `identity` | `contract` |
+| Code and refresh token (WP-05) | the hashes, when they run out | yes | `credentials` | `contract` |
+| Run (WP-07) | its actor (person, app or agent) | yes | `identity` | `contract` |
+| Mark of a text (WP-07) | *assistant*, *app* with its name, *agent* | no | – | – |
+| Hand-over and standing rule (WP-08) | the person who handed over or made it | yes | `identity` | `contract` |
+| Agent work (WP-08) | brief, note, questions, answers, plans, steps, review notes | yes | `content` | `contract` |
+| Agent work (WP-08) | time and cost the agent reports | no | – | – |
+
+| Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
+|------|---------|---------------------------|------|---------------|
+| What the assistant sends: the question, the text and fields the person reads (without *Never sent to AI*), people as role labels unless *Send names of people* is on | Answering the person | (b) contract with the organization; the provider processes it under the *Data processing agreement* (Art. 28) that an administrator confirms before an outside provider is switched on (PRIV-08) | Not stored by Bugaboo: the conversation lives in the open panel (M7-Q6); what the provider keeps is in the agreement | The provider and the country that *What goes where* names; nothing leaves with a local model |
+| What an AI app or an agent reads and writes through MCP | The work the person told it to do | (b) contract | As the issues it changed | The app or agent the person allowed; Bugaboo does not know where the app sends it, and the consent step says the app acts as the person |
+| Briefs, questions, answers, plans and notes of agent work | People's text about the work, like comments | (b) contract | With the issue | As the issue: people who see the issue |
+| Agents, agent keys, grants of apps | Who acts for whom, and signing in | (b) contract | Until deleted, taken back or run out; the daily job deletes what ran out | The person; administrators see every agent |
+| The log of tool calls | Security and finding abuse (AI-05) | (f) legitimate interests | 90 days | Administrators, through the security log of refused calls; never content |
+
+The marks of AI-written text are no personal data of their own, and the time and cost an agent reports are not a person's working time (M7-Q7).

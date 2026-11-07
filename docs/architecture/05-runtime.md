@@ -79,7 +79,7 @@ sequenceDiagram
   participant U as bb-app assistant
   participant C as Context builder
   participant L as AI provider
-  B->>U: "Summarize WEB-142"
+  B->>U: "Summarize the comments on WEB-142" (a typed question)
   U->>C: collect context as the actor
   C->>C: drop hidden fields and fields excluded from AI · fence untrusted text
   U->>L: prompt + tool list (read tools run, write tools return proposals)
@@ -89,7 +89,37 @@ sequenceDiagram
   U->>U: normal change_status / update path as the actor, marked "via assistant"
 ```
 
-Outside AI apps (MCP) use the same tools through `bb-mcp`. Their token is the actor's identity narrowed by its scopes; write tools act directly only if the person granted write scope.
+The conversation lives in the open panel only and is not stored on the server (M7-Q6); each tool call is logged without its content (§7, *AI*).
+
+Outside AI apps (MCP) use the same tools through `bb-mcp`. A call runs as the person narrowed by the app's grant or key (*See only* or *See and change*, ADR-0042); a tool that changes something runs directly only with *See and change*, and every change of the session belongs to one run.
+
+## An agent works on a handed-over issue
+
+```mermaid
+sequenceDiagram
+  participant P as Person (browser)
+  participant W as bb-app agent work
+  participant A as Agent (outside, MCP)
+  participant R as Tool registry
+  participant S as RunStore
+  P->>W: Hand over WEB-142 to Fixer (brief, what it may do, budget)
+  W-->>A: changes since: WEB-142 handed over
+  A->>R: take WEB-142 (with its version)
+  R->>W: start an attempt as the agent (person ∩ work ∩ limits)
+  W->>S: open run (Attempt, Fixer of Ada)
+  A->>R: ask "Which browsers?"
+  R->>W: Waiting for you · notify Ada
+  P->>W: answer (joins the brief)
+  A->>R: change_status / add_comment (preview first, then for real)
+  R->>R: judged as the agent, marked "Written by an agent"
+  A->>R: attach Check "tests" passed · report "ready"
+  W->>S: close run
+  W-->>P: Ready for review
+  P->>W: Throw away
+  W->>S: preview undo, then undo (skips what somebody changed since)
+```
+
+*Accept* ends the hand-over and moves the status to the one the reviewer picks (the workflow's proposal first); *Send back* starts a new attempt with the note in the brief. A standing rule runs the same way from its matches (`agents.rule-matches`), with proposals by default.
 
 ## Editing long text (edit locks, ADR-0019)
 
