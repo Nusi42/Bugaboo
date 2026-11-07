@@ -21,9 +21,11 @@ const hoursPerHalfDay = 12;
 const daysPerWeek = 7;
 const msPerMinute = 60_000;
 
-/** `8`, `17`, `8:05`, `805`, `0805`, `5:15 pm`: hours, then optional minutes, then optional am or pm. */
-const CLOCK = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/iu;
-const DIGITS = /^(\d{1,2})(\d{2})\s*(am|pm)?$/iu;
+/**
+ * `8`, `17`, `8:05`, `8.05`, `16h30`, `805`, `0805`, `5:15 pm`, `5.15 p.m.`: hours, then optional minutes
+ * (with a colon, a point, an `h` or nothing between), then optional am or pm.
+ */
+const CLOCK = /^(\d{1,2})(?:[:.h]?(\d{2}))?\s*(?:([ap])\.?m\.?)?$/iu;
 
 /**
  * A time of day a person typed, as minutes after midnight, or `undefined` when it reads as none.
@@ -32,13 +34,13 @@ const DIGITS = /^(\d{1,2})(\d{2})\s*(am|pm)?$/iu;
  */
 export function readClock(text: string): number | undefined {
   const typed = text.trim();
-  const found = CLOCK.exec(typed) ?? DIGITS.exec(typed);
+  const found = CLOCK.exec(typed);
   if (found === null) {
     return undefined;
   }
   const hour = Number(found[1]);
   const minute = found[2] === undefined ? 0 : Number(found[2]);
-  const half = found[3]?.toLowerCase();
+  const half = found[3] === undefined ? undefined : `${found[3].toLowerCase()}m`;
   if (minute >= minutesPerHour) {
     return undefined;
   }
@@ -156,10 +158,13 @@ export function weekdayName(day: string, style: "short" | "long"): string {
   );
 }
 
-/** A day as a line says it: its weekday and its date (`Thursday, Oct 8, 2026`), the one way it is written. */
-export function weekdayAndDate(day: string, style: "short" | "long", region: Region): string {
+/**
+ * A day as a title or a line says it: its weekday and its date (`Thursday, 10/08/2026`). The one way
+ * it is written, on a computer and on a phone, in a title and in the text of a window.
+ */
+export function weekdayAndDate(day: string, region: Region): string {
   return t("common.weekday-date", {
-    weekday: weekdayName(day, style),
+    weekday: weekdayName(day, "long"),
     date: formatCalendarDay(day, region),
   });
 }

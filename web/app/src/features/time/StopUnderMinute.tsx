@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { AskDialog } from "@bugaboo/ui";
 
@@ -29,7 +30,12 @@ export function StopUnderMinute({ issue, version }: StopUnderMinuteProps) {
         }
       }}
       title={<IdsIn sentence={t("time.stop.title", { issue })} ids={[issue]} />}
-      text={<IdsIn sentence={t("time.stop.nothing", { issue })} ids={[issue]} />}
+      text={
+        <IdsIn
+          sentence={t("time.stop.nothing", { issue, minutes: timeEntryMinutesLeast })}
+          ids={[issue]}
+        />
+      }
       confirmLabel={t("time.timer.stop-timer")}
       cancelLabel={t("common.cancel")}
       onConfirm={() => {

@@ -12,6 +12,7 @@ import {
   weekdayName,
   weekDaysOf,
   weekFirstOf,
+  weekdayAndDate,
   zoneOfNewDay,
 } from "./clock.ts";
 
@@ -141,4 +142,15 @@ describe("time_08 a new work day starts in the zone the server decides", () => {
       expect(zoneOfNewDay(zones.chosen, zones.device)).toBe(zones.expected);
     },
   );
+});
+
+describe("txt_dates a day as a title is written one way", () => {
+  it("names the weekday in full and writes the date in the person's order", () => {
+    expect(weekdayAndDate("2026-11-06", { ...deviceRegion, dateFormat: "month-day-year" })).toBe(
+      "Friday, 11/06/2026",
+    );
+    expect(weekdayAndDate("2026-11-06", { ...deviceRegion, dateFormat: "day-month-year" })).toBe(
+      "Friday, 06.11.2026",
+    );
+  });
 });

@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { IssueId, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
-import { formatDateTime } from "../../shared/format.ts";
+import { whenOf } from "./when.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
 import { relationSentence, useScrollTo } from "./history.ts";
 import { RunMark } from "./RunMark.tsx";
@@ -49,7 +49,7 @@ export function ChangeEntry({
   const timeFields = ofTime ? timeFieldValues(items.slice(1)) : [];
   return (
     <article ref={shown} {...partOf(part.historyEntry, { states: [highlighted && "highlighted"] })}>
-      <span {...partOf(part.historyWhen)}>{formatDateTime(first.at)}</span>
+      <span {...partOf(part.historyWhen)}>{whenOf(first)}</span>
       <ul {...partOf(part.list)}>
         {sentences
           .filter((item) => worded.has(item.kind))

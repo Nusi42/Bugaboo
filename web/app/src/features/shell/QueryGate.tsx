@@ -44,7 +44,7 @@ export function QueryGate<Data>({
         text={
           code === undefined
             ? messageOf(error)
-            : `${messageOf(error)} ${t("error.support-code", { code })}`
+            : t("error.with-support-code", { message: messageOf(error), code })
         }
         main={{
           label: t("common.try-again"),

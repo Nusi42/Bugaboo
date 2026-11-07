@@ -19452,7 +19452,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.day-empty", "No time booked on this day yet."),
     ("time.sheet.day-heading", "{weekday} {day}"),
     ("time.sheet.day-tab", "{weekday}\n{day}"),
-    ("time.sheet.day-tab-today", "{weekday}\n{day}\nToday"),
+    ("time.sheet.day-tab-today", "{weekday}\n{day}\n•"),
     ("time.sheet.days", "Days of the week"),
     ("time.sheet.details-of", "Details of {issue}"),
     (

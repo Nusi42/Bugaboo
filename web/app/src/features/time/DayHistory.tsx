@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, useLayout, Window, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, Window, partOf, part } from "@bugaboo/ui";
 
 import { weekdayAndDate } from "../../shared/clock.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -114,8 +114,7 @@ export interface DayHistoryProps {
 
 /** The history of a work day: who changed it, when, the old and the new times and why (TIME-10). */
 export function DayHistory({ date, history, zone, region, onClose }: DayHistoryProps) {
-  const phone = useLayout() === "phone";
-  const day = weekdayAndDate(date, phone ? "short" : "long", region);
+  const day = weekdayAndDate(date, region);
   return (
     <Window
       isOpen

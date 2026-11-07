@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
@@ -54,7 +55,10 @@ test("ux_01 the sidebar fits a window 600 px high in every state of the timer an
   await chipOf(page, issue.key).click();
   await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
   await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
-  const notice = page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true });
+  const notice = page.getByText(
+    t("time.timer.too-short", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+    { exact: true },
+  );
   await expect(notice).toBeVisible();
   await expectSidebarFits(page);
   const left = await notice.evaluate((element) => element.getBoundingClientRect().left);
@@ -123,7 +127,10 @@ test("ux_01 the narrow rail names the timer and tells what it did beside the rai
   // What the timer tells is not lost for the narrow rail: it shows beside it, not over the Details.
   await page.getByRole("button", { name: t("time.timer.bar-stop"), exact: true }).click();
   await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
-  const notice = page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true });
+  const notice = page.getByText(
+    t("time.timer.too-short", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+    { exact: true },
+  );
   await expect(notice).toBeVisible();
   const details = page.getByRole("term").filter({ hasText: t("issue-field.time-spent") });
   const right = await notice.evaluate((element) => element.getBoundingClientRect().right);

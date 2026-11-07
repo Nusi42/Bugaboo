@@ -447,12 +447,10 @@ pub async fn change_time_entry<S: AuthStore>(
             Making::Change,
         )
         .await?;
-    // Every event of an entry says the date of the entry, so the history can show readers who may not
-    // see the moment the date and never the moment (PRIV-09).
-    let mut members = vec![set_to(member::ISSUE, json!(entry.issue.to_string()))];
-    if changed.date == entry.date {
-        members.push(set_to(member::DATE, json!(entry.date.to_string())));
-    }
+    let mut members = vec![
+        set_to(member::ISSUE, json!(entry.issue.to_string())),
+        date_member(entry.date, changed.date),
+    ];
     let mut differs = |name: &str, before: serde_json::Value, after: serde_json::Value| {
         if before != after {
             members.push(FieldChange {
@@ -462,11 +460,6 @@ pub async fn change_time_entry<S: AuthStore>(
             });
         }
     };
-    differs(
-        member::DATE,
-        json!(entry.date.to_string()),
-        json!(changed.date.to_string()),
-    );
     differs(
         member::MINUTES,
         json!(entry.minutes),
@@ -513,6 +506,21 @@ pub async fn change_time_entry<S: AuthStore>(
             })
         })?;
     ctx.entry_view(&actor, &changed).await
+}
+
+/// The date of an entry as an event says it: the new date where a change moves the entry, else the
+/// date it keeps. Every event of an entry says its date, so the history can show readers who may not
+/// see the moment the date and never the moment (PRIV-09).
+fn date_member(before: Date, after: Date) -> FieldChange {
+    if before == after {
+        set_to(member::DATE, json!(before.to_string()))
+    } else {
+        FieldChange {
+            field: member::DATE.to_owned(),
+            before: Some(json!(before.to_string())),
+            after: Some(json!(after.to_string())),
+        }
+    }
 }
 
 /// Deletes one of the person's own entries, with the values of its own fields.

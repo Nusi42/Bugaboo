@@ -25,7 +25,7 @@ async function tap(page: Page, key: Parameters<typeof t>[0]): Promise<void> {
 }
 
 /** The running timer on an issue: its chip on a computer, the button of the bar of the issue on a phone. */
-function timerOn(page: Page, key: string) {
+export function timerOn(page: Page, key: string) {
   return chipOf(page, key).or(
     page.getByRole("button", {
       name: new RegExp(`^${t("time.timer.stop-on", { issue: key })}`, "u"),

@@ -7,7 +7,6 @@ import {
   Form,
   SubmitButton,
   TextField,
-  useLayout,
   Window,
   partOf,
   part,
@@ -83,12 +82,11 @@ function WhatChanges({ what }: { readonly what: Change | undefined }) {
 export function ReasonWindow({ editing, region, other }: ReasonWindowProps) {
   const formId = useId();
   const form = useReason(editing);
-  const phone = useLayout() === "phone";
   if (editing.pending === undefined) {
     return null;
   }
   const date = editing.pending.date;
-  const day = weekdayAndDate(date, phone ? "short" : "long", region);
+  const day = weekdayAndDate(date, region);
   return (
     <Window
       isOpen

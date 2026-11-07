@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
@@ -65,7 +66,10 @@ test("a notice in a window 600 px high", async ({ page, server }) => {
     await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
     await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
     await expect(
-      page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true }),
+      page.getByText(
+        t("time.timer.too-short", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+        { exact: true },
+      ),
     ).toBeVisible();
   });
   await dispose();
@@ -87,7 +91,10 @@ test("a notice on an issue page in a window 600 px high", async ({ page, server 
       await page.getByRole("button", { name: t("time.timer.bar-stop"), exact: true }).click();
       await page.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
       await expect(
-        page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true }),
+        page.getByText(
+          t("time.timer.too-short", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+          { exact: true },
+        ),
       ).toBeVisible();
     },
   );

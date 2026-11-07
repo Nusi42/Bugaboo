@@ -25,7 +25,7 @@ export function EntryList({ entries, wording, onPick }: EntryListProps) {
   return (
     <ul {...partOf(part.sheetHistory)}>
       {entries.map((entry) => {
-        const day = weekdayAndDate(entry.date, "long", region);
+        const day = weekdayAndDate(entry.date, region);
         return (
           <li key={entry.id} id={entryItemId(entry.id)} {...partOf(part.sheetHistoryEntry)}>
             <span>

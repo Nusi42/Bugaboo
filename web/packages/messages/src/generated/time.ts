@@ -27,7 +27,8 @@ export const messages = {
     "Your timer has run longer than a work day. Stop it, or change its start time if you forgot it.",
   "time.timer.runs-long-on":
     "Your timer on {issue} has run longer than a work day. Stop it, or change its start time if you forgot it.",
-  "time.timer.too-short": "Less than a minute on {issue}, so no time was saved.",
+  "time.timer.too-short":
+    "Less than {minutes, plural, one {# minute} other {# minutes}} on {issue}, so no time was saved.",
   "time.timer.saved": "Saved {length} on {issue}.",
   "time.timer.bar": "Timer",
   "time.timer.bar-stop": "Stop",
@@ -41,7 +42,8 @@ export const messages = {
   "time.stop.cannot-title": "Your timer cannot be saved",
   "time.stop.hidden-issue":
     "Your timer runs on an issue you cannot see any more, so its time cannot be saved. You can throw it away.",
-  "time.stop.nothing": "You worked less than a minute on {issue}, so nothing will be saved.",
+  "time.stop.nothing":
+    "You worked less than {minutes, plural, one {# minute} other {# minutes}} on {issue}, so nothing will be saved.",
   "time.stop.save": "Save time",
   "time.switch.title": "Switch issue",
   "time.switch.help":
@@ -58,8 +60,8 @@ export const messages = {
   "time.work-day.end": "End work day",
   "time.work-day.break-start": "Start break",
   "time.work-day.break-end": "End break",
-  "time.work-day.since": "Working since {start} · {worked} worked so far",
-  "time.work-day.on-break": "On break since {start} · {worked} worked so far",
+  "time.work-day.since": "Working since {start} · {worked} worked so far",
+  "time.work-day.on-break": "On break since {start} · {worked} worked so far",
   "time.work-day.done": "Worked {start} to {end} · {worked}",
   "time.work-day.left-open": "Your work day on {day} was not ended.",
   "time.work-day.left-open-button": "Say when it ended",
@@ -136,7 +138,7 @@ export const messages = {
   "time.sheet.reason-required": "Say in a few words why this day changes.",
   "time.sheet.reason-save": "Save change",
   "time.sheet.day-tab": "{weekday}\n{day}",
-  "time.sheet.choice-length": " · {length}",
+  "time.sheet.day-tab-today": "{weekday}\n{day}\n•",
   "time.sheet.list-separator": ", ",
   "time.sheet.facts-separator": " · ",
   "time.sheet.negative-length": "−{length}",
@@ -173,6 +175,7 @@ export const messages = {
   "time.others.changing": "Every change needs a reason. {person} is told about it.",
   "time.others.week-of-person": "{person} · week of {date}",
   "time.others.week-worked": "{worked} worked",
+  "time.others.week-running": "This week is not over yet. Its total shows once it ends.",
   "time.others.totals-only-note":
     "Your organization shows only week totals of other people: no days, starts, ends or breaks, and no changes while it is on.",
   "time.others.pick-legend": "People",

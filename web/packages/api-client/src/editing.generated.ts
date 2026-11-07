@@ -51,3 +51,6 @@ export const secondsPerMinute = 60;
 
 /** The minutes in an hour. */
 export const minutesPerHour = 60;
+
+/** The shortest time entry, in minutes: a timer that ran less saves nothing. */
+export const timeEntryMinutesLeast = 1;

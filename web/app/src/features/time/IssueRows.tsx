@@ -40,7 +40,9 @@ export function IssueName({
           </Button>
         )}
       </span>
-      <span {...partOf(part.sheetIssueTitle)}>{title}</span>
+      <span title={title} {...partOf(part.sheetIssueTitle)}>
+        {title}
+      </span>
     </span>
   );
 }
@@ -57,7 +59,7 @@ function IssueLine(
       <th scope={scope.row} {...partOf(part.sheetName, { variants: ["issue"] })}>
         <IssueName shown={shown} title={title} stacked onDetails={detailsOpener(row, onDetails)} />
       </th>
-      <FieldCells row={row} />
+      <FieldCells row={row} wording={wording} />
       {days.map((date, at) => {
         const entries = row.entries[date] ?? [];
         const text = gridLength(wording, entries.length === 0 ? undefined : minutesOf(entries));

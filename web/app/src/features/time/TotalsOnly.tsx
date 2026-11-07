@@ -25,6 +25,8 @@ export interface TotalsOnlyProps {
 export function TotalsOnly({ page, first, name, onWeek }: TotalsOnlyProps) {
   const region = useRegion();
   const thisWeek = useThisWeek();
+  // The week that runs has no total in the answer: nobody is told how much somebody has worked so far.
+  const week = page.weeks[0];
   return (
     <WithWording>
       {(wording) => (
@@ -36,9 +38,11 @@ export function TotalsOnly({ page, first, name, onWeek }: TotalsOnlyProps) {
               date: formatCalendarDay(first, region),
             })}
             <br />
-            {t("time.others.week-worked", {
-              worked: renderSaid(wording.lengthSentence(page.weeks[0]?.worked ?? 0)),
-            })}
+            {week === undefined
+              ? t("time.others.week-running")
+              : t("time.others.week-worked", {
+                  worked: renderSaid(wording.lengthSentence(week.worked)),
+                })}
             <br />
             <span {...partOf(part.muted)}>{t("time.others.totals-only-note")}</span>
           </Alert>

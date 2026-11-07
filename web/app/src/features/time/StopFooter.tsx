@@ -13,7 +13,7 @@ export function StopFooter({ onSave, isPending }: StopFooterProps) {
   return (
     <div {...partOf(part.windowFooterActions)}>
       <Button
-        look={buttonLook.quiet}
+        look={buttonLook.quietDanger}
         onPress={() => {
           askTime({ kind: "throw-away" });
         }}

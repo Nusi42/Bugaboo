@@ -1219,6 +1219,10 @@ textarea,
   color: var(--danger);
 }
 
+[data-part="button"][data-variant~="quiet"][data-variant~="danger"] {
+  border-color: transparent;
+}
+
 [data-part="button"][data-hovered] {
   background: var(--bg-hover);
 }
@@ -8623,7 +8627,6 @@ textarea,
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  min-height: calc(2 * var(--size-control));
 }
 
 [data-part="sheet.day-action"] {
@@ -8739,7 +8742,12 @@ textarea,
 [data-part="sheet.today"] {
   display: block;
   min-height: calc(var(--fs-base) * var(--lh-text));
+  line-height: var(--lh-text);
   color: var(--accent-fg);
+}
+
+[data-part="sheet.day-action"]:empty {
+  min-height: var(--size-control);
 }
 
 [data-part="sheet.cell"] {
@@ -8749,7 +8757,7 @@ textarea,
 }
 
 [data-part="sheet.cell"][data-variant~="figure"] {
-  padding-top: var(--size-sheet-text-top);
+  padding-top: calc(var(--size-sheet-text-top) - var(--space-1) - var(--border-width));
 }
 
 [data-part="sheet.figure"] {
@@ -8896,17 +8904,16 @@ textarea,
 [data-part="sheet.issue-title"] {
   color: var(--fg-muted);
   font-size: var(--fs-base);
-  display: inline-block;
-  max-width: var(--size-col-title-least);
-  vertical-align: bottom;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 [data-part="sheet.issue"][data-variant~="stacked"] [data-part="sheet.issue-title"] {
-  display: block;
   max-width: 100%;
 }
 

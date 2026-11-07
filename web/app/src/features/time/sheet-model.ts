@@ -75,7 +75,7 @@ export function idleLength(
 }
 
 /** A typed time of day: its minutes after midnight, or the sentence of what to type instead. */
-export function readTimeOfDay(typed: string): CellRead<number> {
+export function readTimeCell(typed: string): CellRead<number> {
   if (typed.trim() === "") {
     return { empty: true };
   }
@@ -146,7 +146,7 @@ function breakOf(part: string): readonly [number, number] | undefined {
 
 /** The reader of what is typed in a cell of a work-day row: times of a day, or times of breaks. */
 export function readerOf(field: WorkDayField): (typed: string) => CellRead<number | BreakTimes> {
-  return field === "breaks" ? readBreaks : readTimeOfDay;
+  return field === "breaks" ? readBreaks : readTimeCell;
 }
 
 /** A typed length of time on an issue: at least a minute, at most a day, as the server takes it. */
@@ -190,7 +190,7 @@ export function breaksRule(day: WorkDay | undefined, rule: string): boolean {
 export function cellLabel(region: Region, row: string, date: string): string {
   return t("time.sheet.cell-label", {
     row,
-    day: weekdayAndDate(date, "long", region),
+    day: weekdayAndDate(date, region),
   });
 }
 

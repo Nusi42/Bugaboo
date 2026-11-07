@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
@@ -81,7 +82,9 @@ test("time_01 a stop under one minute is one question with nothing to fill in", 
   const question = page.getByRole("alertdialog", {
     name: t("time.stop.title", { issue: issue.key }),
   });
-  await expect(question).toContainText(t("time.stop.nothing", { issue: issue.key }));
+  await expect(question).toContainText(
+    t("time.stop.nothing", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+  );
   // Nothing is saved, so there are no fields, no note, no *Save time* and no *Throw away*.
   await expect(question.getByLabel(t("time.entry.note"))).toHaveCount(0);
   await expect(question.getByRole("button", { name: t("time.stop.save") })).toHaveCount(0);
@@ -89,7 +92,10 @@ test("time_01 a stop under one minute is one question with nothing to fill in", 
   await expectGoodInEveryLook(page);
   await question.getByRole("button", { name: t("time.timer.stop-timer"), exact: true }).click();
   await expect(
-    page.getByText(t("time.timer.too-short", { issue: issue.key }), { exact: true }),
+    page.getByText(
+      t("time.timer.too-short", { issue: issue.key, minutes: timeEntryMinutesLeast }),
+      { exact: true },
+    ),
   ).toBeVisible();
   await dispose();
 });

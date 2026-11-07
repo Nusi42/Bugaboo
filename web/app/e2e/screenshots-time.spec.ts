@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { issueAddress, paths } from "../src/shared/paths.ts";
@@ -110,7 +111,7 @@ test("stop timer under one minute", async ({ page, server }) => {
     await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
     await expect(
       page.getByRole("alertdialog", { name: t("time.stop.title", { issue: issue.key }) }),
-    ).toContainText(t("time.stop.nothing", { issue: issue.key }));
+    ).toContainText(t("time.stop.nothing", { issue: issue.key, minutes: timeEntryMinutesLeast }));
   });
   await dispose();
 });

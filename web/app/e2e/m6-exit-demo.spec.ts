@@ -4,6 +4,12 @@ import {
   anaChangesYesterdayWithAReason,
   aLongDayShowsItsWarning,
 } from "./support/demo-m6-hours.ts";
+import {
+  aTimeEntryInTheHistoryOfAnotherReader,
+  aTimeEntryInTheHistoryOfItsBooker,
+  theWindowsOfTime,
+  thePermissionNames,
+} from "./support/demo-m6-more.ts";
 import { benCannotSeeThem, hanaSeesThem } from "./support/demo-m6-people.ts";
 import { test } from "./support/fixtures.ts";
 
@@ -50,4 +56,27 @@ test("6. Hana sees them, and with Totals only only the total of the week", async
 }) => {
   test.setTimeout(STEP_TIMEOUT_MS);
   await hanaSeesThem(page, server);
+});
+
+test("7. Add time and Change start time write dates in the person's Region", async ({
+  page,
+  server,
+}) => {
+  test.setTimeout(STEP_TIMEOUT_MS);
+  await theWindowsOfTime(page, server);
+});
+
+test("8. A time entry in the history, for the person who booked it", async ({ page, server }) => {
+  test.setTimeout(STEP_TIMEOUT_MS);
+  await aTimeEntryInTheHistoryOfItsBooker(page, server);
+});
+
+test("9. The same time entry in the history, for another reader", async ({ page, server }) => {
+  test.setTimeout(STEP_TIMEOUT_MS);
+  await aTimeEntryInTheHistoryOfAnotherReader(page, server);
+});
+
+test("10. The permissions of working hours have their glossary names", async ({ page }) => {
+  test.setTimeout(STEP_TIMEOUT_MS);
+  await thePermissionNames(page);
 });

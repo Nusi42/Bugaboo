@@ -1348,6 +1348,11 @@ part "button[variant=danger]" {
     color "$danger"
 }
 
+// A quiet button in the colour of danger: no box, its words say what cannot be taken back.
+part "button[variant=quiet][variant=danger]" {
+    border-color transparent
+}
+
 part "button[hovered]" {
     background "$bg-hover"
 }
@@ -14847,8 +14852,6 @@ part "sheet.day-actions" {
     display flex
     flex-direction column
     align-items flex-end
-    // Room for both buttons on every day, so a day with one and a day with two have heads of one height.
-    min-height "calc(2 * $size-control)"
 }
 
 part "sheet.day-action" {
@@ -14967,7 +14970,14 @@ part "app-layout[variant=phone] entry-details-body" "overlay[variant=full] entry
 part "sheet.today" {
     display block
     min-height "calc($fs-base * $lh-text)"
+    line-height "$lh-text"
     color "$accent-fg"
+}
+
+// A slot that a day leaves empty keeps its height, so the days of a week whose other days use it stand level. A week
+// where no day uses a slot has no such slot at all.
+part "sheet.day-action:empty" {
+    min-height "$size-control"
 }
 
 part "sheet.cell" {
@@ -14977,8 +14987,10 @@ part "sheet.cell" {
 }
 
 // A figure the server works out stands level with the first line of the boxes beside it.
+// The figure has a box of its own (its padding and edge), so the cell gives it that much less room above, and its words stand level
+// with the words of the names and the boxes beside it (they stood 4 px lower).
 part "sheet.cell[variant=figure]" {
-    padding-top "$size-sheet-text-top"
+    padding-top "calc($size-sheet-text-top - $space-1 - $border-width)"
 }
 
 part "sheet.figure" {
@@ -15109,19 +15121,20 @@ part "sheet.issue[variant=stacked] sheet.issue-id" {
     width "100%"
 }
 
+// A title of an issue in a row takes up to two lines and ends in an ellipsis after that; the whole title is the title of
+// the element, shown when it is pointed at (M6-F185).
 part "sheet.issue-title" {
     use "quiet-text"
-    display inline-block
-    max-width "$size-col-title-least"
-    vertical-align bottom
+    display -webkit-box
+    -webkit-box-orient vertical
+    -webkit-line-clamp 2
+    max-width "100%"
     min-width 0
     overflow hidden
-    text-overflow ellipsis
-    white-space nowrap
+    overflow-wrap anywhere
 }
 
 part "sheet.issue[variant=stacked] sheet.issue-title" {
-    display block
     max-width "100%"
 }
 

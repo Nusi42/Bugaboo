@@ -1,16 +1,10 @@
 import { minutesPerHour } from "@bugaboo/api-client";
 
-import { clockPartsOf, dayNumbersOf, isCalendarDay, timeOfDayText } from "./format.ts";
+import { momentOfClock, readClock } from "./clock.ts";
+import { clockPartsOf, isCalendarDay, timeOfDayText } from "./format.ts";
 import { currentRegion, type Region } from "./region.ts";
 
-const NOON = 12;
-const HOURS_A_DAY = 24;
-
-/** The clock of the region at a moment (milliseconds since 1970), read as if it were the clock of UTC. */
-function wallClockAsUtc(moment: number, region: Region): number {
-  const clock = clockPartsOf(moment, region);
-  return Date.UTC(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute, clock.second);
-}
+const MS_PER_SECOND = 1000;
 
 /**
  * The moment (milliseconds since 1970) at which the clock of the region shows this time on a day the
@@ -25,10 +19,10 @@ export function momentOnDay(
   if (!isCalendarDay(day)) {
     return null;
   }
-  const [year, month, date] = dayNumbersOf(day);
-  const asIfUtc = Date.UTC(year, month - 1, date, time.hour, time.minute, time.second ?? 0);
-  const guess = asIfUtc - (wallClockAsUtc(asIfUtc, region) - asIfUtc);
-  return asIfUtc - (wallClockAsUtc(guess, region) - guess);
+  const start = Date.parse(
+    momentOfClock(day, time.hour * minutesPerHour + time.minute, region.timeZone),
+  );
+  return start + (time.second ?? 0) * MS_PER_SECOND;
 }
 
 /** The time of day of a moment in the region, as a box writes it for the person to change: `8:02`. */
@@ -43,26 +37,13 @@ export interface TimeOfDay {
   readonly minute: number;
 }
 
-const TYPED = /^(\d{1,2})(?:[:.h]?(\d{2}))?(?:\s*([ap])\.?m\.?)?$/iu;
-
 /**
- * Reads a time of day as people type it: `8:02`, `08:02`, `8.02`, `802`, `16h30`, `8 pm`, `8:02 AM`.
- * Nothing for text that is no time of day (an hour past 23, minutes past 59, 12 hours with a wrong
- * hour). The words around it are the screen's.
+ * Reads a time of day as people type it (`readClock`, the one reader): `8:02`, `08:02`, `8.02`, `802`,
+ * `16h30`, `8 pm`, `8:02 AM`. Nothing for text that is no time of day.
  */
 export function readTimeOfDay(text: string): TimeOfDay | undefined {
-  const found = TYPED.exec(text.trim());
-  if (found === null) {
-    return undefined;
-  }
-  const [, hours = "", minutes = "0", meridiem] = found;
-  const minute = Number(minutes);
-  let hour = Number(hours);
-  if (meridiem !== undefined) {
-    if (hour < 1 || hour > NOON) {
-      return undefined;
-    }
-    hour = (hour % NOON) + (meridiem.toLowerCase() === "p" ? NOON : 0);
-  }
-  return hour < HOURS_A_DAY && minute < minutesPerHour ? { hour, minute } : undefined;
+  const minutes = readClock(text);
+  return minutes === undefined
+    ? undefined
+    : { hour: Math.floor(minutes / minutesPerHour), minute: minutes % minutesPerHour };
 }

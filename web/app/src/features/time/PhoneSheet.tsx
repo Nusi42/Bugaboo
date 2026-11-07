@@ -88,7 +88,7 @@ export function PhoneSheet({ days, issues }: Omit<PhoneDay, "date">) {
         label={t("time.sheet.days")}
         tabs={days.days.map((date) => ({
           id: date,
-          label: t("time.sheet.day-tab", {
+          label: t(date === days.today ? "time.sheet.day-tab-today" : "time.sheet.day-tab", {
             weekday: weekdayName(date, "short"),
             day: dayOfMonth(date),
           }),

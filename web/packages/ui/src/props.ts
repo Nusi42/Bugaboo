@@ -23,6 +23,8 @@ export const buttonLook = {
   /** An entry of a list of actions: plain words from the start edge, no box. */
   item: "item",
   danger: "danger",
+  /** A quiet text button whose words are in the colour of danger (*Throw away* of a timer, UX §4.9). */
+  quietDanger: "quiet-danger",
 } as const;
 export type ButtonLook = (typeof buttonLook)[keyof typeof buttonLook];
 

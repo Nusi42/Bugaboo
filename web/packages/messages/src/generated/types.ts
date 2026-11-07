@@ -161,9 +161,9 @@ export interface MessageArguments {
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
-  "error.support-code": { code: string | number };
   "error.time.entry-too-long": { hours: number };
   "error.time.entry-too-short": { minutes: number };
+  "error.with-support-code": { code: string | number; message: string | number };
   "error.working-hours.keep-years-too-short": { years: number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.preview-can-change": { fields: string | number };
@@ -646,9 +646,9 @@ export interface MessageArguments {
   "time.others.week-worked": { worked: string | number };
   "time.sheet.breaks-as-times": { example: string | number };
   "time.sheet.cell-label": { day: string | number; row: string | number };
-  "time.sheet.choice-length": { length: string | number };
   "time.sheet.day-heading": { day: string | number; weekday: string | number };
   "time.sheet.day-tab": { day: string | number; weekday: string | number };
+  "time.sheet.day-tab-today": { day: string | number; weekday: string | number };
   "time.sheet.details-of": { issue: string | number };
   "time.sheet.history-after": { times: string | number };
   "time.sheet.history-before": { times: string | number };
@@ -673,7 +673,7 @@ export interface MessageArguments {
   "time.sheet.warning-of-day": { day: string | number; sentence: string | number };
   "time.sheet.week-of": { date: string | number };
   "time.start-time.not-a-time": { afternoon: string | number; morning: string | number };
-  "time.stop.nothing": { issue: string | number };
+  "time.stop.nothing": { issue: string | number; minutes: number };
   "time.stop.title": { issue: string | number };
   "time.stop.worked": { length: string | number; title: string | number };
   "time.switch.help": { issue: string | number };
@@ -683,7 +683,7 @@ export interface MessageArguments {
   "time.timer.runs-long-on": { issue: string | number };
   "time.timer.saved": { issue: string | number; length: string | number };
   "time.timer.stop-on": { issue: string | number };
-  "time.timer.too-short": { issue: string | number };
+  "time.timer.too-short": { issue: string | number; minutes: number };
   "time.work-day.done": { end: string | number; start: string | number; worked: string | number };
   "time.work-day.left-open": { day: string | number };
   "time.work-day.on-break": { start: string | number; worked: string | number };

@@ -1,3 +1,4 @@
+import { timeEntryMinutesLeast } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { minutesText } from "../../shared/own-value-text.ts";
@@ -11,7 +12,9 @@ import type { TimerSaved } from "./timer-requests.ts";
 export function tellSaved(saved: TimerSaved, issue: string): void {
   const entry = saved.entry;
   if (entry === undefined || entry === null) {
-    tellTime(t("time.timer.too-short", { issue }), "info", { ids: [issue] });
+    tellTime(t("time.timer.too-short", { issue, minutes: timeEntryMinutesLeast }), "info", {
+      ids: [issue],
+    });
     return;
   }
   const length = minutesText(entry.minutes);

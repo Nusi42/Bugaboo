@@ -3,7 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "error.support-code": "Code for support: {code}.",
+  "error.with-support-code": "{message} Code for support: {code}.",
   "shell.skip": "Skip to the content",
   "shell.menu": "Main menu",
   "shell.signed-in-as": "Signed in as {name}",

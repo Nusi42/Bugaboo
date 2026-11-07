@@ -62,7 +62,11 @@ export function Button({
       aria-busy={isPending}
       {...(current ? { "aria-current": ariaCurrent.chosen } : {})}
       {...partOf(part.button, {
-        variants: [look !== buttonLook.plain && look, wide && buttonShape.wide],
+        variants: [
+          look === buttonLook.quietDanger ? buttonLook.quiet : look !== buttonLook.plain && look,
+          look === buttonLook.quietDanger && buttonLook.danger,
+          wide && buttonShape.wide,
+        ],
         states: [isPending && busyState.busy, current && "current"],
       })}
     >
