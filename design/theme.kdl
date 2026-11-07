@@ -14757,10 +14757,6 @@ part "run-table.cell" {
     border-bottom "$border-width solid $divider"
 }
 
-part "run-table.cell[variant=when]" {
-    white-space nowrap
-}
-
 part "sheet.scroll" {
     use "ring-room"
     use "ring-room-flush"

@@ -44,9 +44,7 @@ function ChangeRows({ items }: { readonly items: readonly Readonly<RunChange>[] 
                     <div>{changeArrowText(wording, field)}</div>
                     {outcome === undefined ? null : <div {...partOf(part.muted)}>{outcome}</div>}
                   </td>
-                  <td {...partOf(part.runTableCell, { variants: ["when"] })}>
-                    {formatDateTime(item.at)}
-                  </td>
+                  <td {...partOf(part.runTableCell)}>{formatDateTime(item.at)}</td>
                 </tr>
               );
             }),

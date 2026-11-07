@@ -1522,7 +1522,7 @@ export const partWords = {
   "sheet.change": { variant: [], state: [] },
   "run-table": { variant: [], state: [] },
   "run-table.head": { variant: [], state: [] },
-  "run-table.cell": { variant: ["when"], state: [] },
+  "run-table.cell": { variant: [], state: [] },
   "sheet.scroll": { variant: [], state: [] },
   "sheet.col": { variant: ["issue", "field", "cost-center", "day", "total"], state: [] },
   "sheet.table": { variant: [], state: [] },

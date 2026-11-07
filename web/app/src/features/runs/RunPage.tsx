@@ -1,7 +1,9 @@
 import { Alert, alertTone, Card, cardLook, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
+import { useItemTrail } from "../shell/index.ts";
 import { RunChanges } from "./RunChanges.tsx";
 import { runActorLine, runStateText, runTitle, useRun, type Run } from "./runs.ts";
 import { UndoRun } from "./UndoRun.tsx";
@@ -20,6 +22,8 @@ export function RunPage({ run }: { readonly run: string }) {
 
 function RunContent({ run, found }: { readonly run: string; readonly found: Run }) {
   usePageTitle(runTitle(found));
+  // Home, then the run: the trail on a computer, the title and Back on a phone.
+  useItemTrail(paths.home, runTitle(found));
   return (
     <div {...partOf(part.stack)}>
       <Card
