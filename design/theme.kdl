@@ -3364,9 +3364,15 @@ part "overlay.modal[variant=full] window.title-bar" {
 }
 
 // The same bar as every page of a phone: Back in the color of a quiet button, the title at its side, one line (M5 exit, O13).
+// A long title (the history of a day with its weekday and date) takes up to two lines, so the date is not cut off.
 part "overlay.modal[variant=full] window.title" {
     padding 0
     line-height "$lh-tight"
+    display -webkit-box
+    -webkit-box-orient vertical
+    -webkit-line-clamp 2
+    align-self center
+    white-space normal
 }
 
 // Back of the bar of a screen is Back of the top bar of a page: the words of a button (M5 exit, share on a phone: 14
@@ -5359,9 +5365,13 @@ part "timer-chip[variant=long]" {
     color "$warning"
 }
 
+// In the rail of icons the warning mark and the clock of a long timer do not fit one line side by side: the clock
+// has the size of the sidebar and the mark takes the line above it, so no digit is cut off.
 part "timer-chip[variant=narrow]" {
     justify-content center
+    flex-wrap wrap
     padding 0
+    font-size "$fs-base"
 }
 
 part "timer-chip.live" {
@@ -15125,6 +15135,7 @@ part "sheet.issue[variant=stacked] sheet.issue-id" {
 // the element, shown when it is pointed at (M6-F185).
 part "sheet.issue-title" {
     use "quiet-text"
+    white-space normal
     display -webkit-box
     -webkit-box-orient vertical
     -webkit-line-clamp 2

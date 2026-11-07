@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signInThroughApi } from "./accounts.ts";
-import { ana, good } from "./demo-m6-common.ts";
+import { ana, days, good } from "./demo-m6-common.ts";
 import { timerOn } from "./demo-m6.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
 import { sampleAdministrator, sampleNamed } from "./sample.ts";
@@ -71,7 +71,7 @@ async function bookedByAna(server: Instance): Promise<string> {
     await session.client.POST("/api/v1/me/time-entries", {
       body: {
         issue: key,
-        date: new Date().toISOString().slice(0, "2027-01-14".length),
+        date: days().today,
         minutes: 45,
       },
     }),
@@ -106,6 +106,12 @@ export async function thePermissionNames(page: Page): Promise<void> {
   await signIn(page, sampleAdministrator());
   await page.goto("/settings/roles");
   await page.getByRole("link", { name: "HR", exact: true }).first().click();
-  await expect(page.getByText(t("permission.see-working-hours-of-others")).first()).toBeVisible();
+  const see = page.getByText(t("permission.see-working-hours-of-others")).first();
+  const change = page.getByText(t("permission.change-working-hours-of-others")).first();
+  await expect(see).toBeVisible();
+  // Both names stand in the picture: the page of the role is long.
+  await change.scrollIntoViewIfNeeded();
+  await expect(see).toBeInViewport();
+  await expect(change).toBeInViewport();
   await good(page, "09-permission-names");
 }

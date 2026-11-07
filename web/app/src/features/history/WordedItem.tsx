@@ -24,6 +24,9 @@ function changeLengths(item: Schema<"HistoryEntryItem">): readonly string[] {
   return [...lengthOf(item.change?.before), ...lengthOf(item.change?.after)];
 }
 
+/** A word joiner and a space that does not break before a separator hold it to what stands before it (a length is drawn as a box of its own), so a line never starts with one. */
+const NO_BREAK_SPACE = "⁠ ";
+
 /** No own fields beside a sentence. */
 const noFields: readonly string[] = [];
 
@@ -51,7 +54,7 @@ export function WordedItem({
             <SentenceWithValues sentence={sentence} values={lengths}>
               {(length) => <Length text={length} />}
             </SentenceWithValues>
-            {fields.map((field) => ` ${factSeparator} ${field}`)}
+            {fields.map((field) => `${NO_BREAK_SPACE}${factSeparator} ${field}`)}
           </>
         );
       }}

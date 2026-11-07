@@ -3338,6 +3338,11 @@ textarea,
 [data-part="overlay.modal"][data-variant~="full"] [data-part="window.title"] {
   padding: 0;
   line-height: var(--lh-tight);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  align-self: center;
+  white-space: normal;
 }
 
 [data-part="overlay.modal"][data-variant~="full"]
@@ -5445,7 +5450,9 @@ textarea,
 
 [data-part="timer-chip"][data-variant~="narrow"] {
   justify-content: center;
+  flex-wrap: wrap;
   padding: 0;
+  font-size: var(--fs-base);
 }
 
 [data-part="timer-chip.live"] {
@@ -8904,6 +8911,7 @@ textarea,
 [data-part="sheet.issue-title"] {
   color: var(--fg-muted);
   font-size: var(--fs-base);
+  white-space: normal;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
