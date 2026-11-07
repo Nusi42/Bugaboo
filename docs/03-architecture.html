@@ -862,21 +862,21 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <h4>The field catalogue</h4>
 <p>Declared once in <code>bb-core</code> (<code>fields</code>): key, name (message <code>issue-field.&lt;key&gt;</code>), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, <code>FieldKey</code>: either a built-in field of this catalogue or an own field (<code>FieldKey::Own(FieldId)</code>), so levels, masks, the field-permission page, history and <code>fields=</code> name both the same way and no list of own fields is written twice. A new own field starts <em>Can see</em> for every role that sees the project and <em>Can change</em> for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of <a href="#adr-0027">ADR-0027</a>.</p>
 <!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
-<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Key</th><th>Name</th><th>Belongs to</th><th>Holds a person</th></tr></thead><tbody>
-<tr><td><code>title</code></td><td>Title</td><td>issue</td><td>–</td></tr>
-<tr><td><code>description</code></td><td>Description</td><td>issue</td><td>–</td></tr>
-<tr><td><code>status</code></td><td>Status</td><td>issue</td><td>–</td></tr>
-<tr><td><code>priority</code></td><td>Priority</td><td>issue</td><td>–</td></tr>
-<tr><td><code>assigned-to</code></td><td>Assigned to</td><td>issue</td><td>yes, kind <em>Assigned to</em></td></tr>
-<tr><td><code>reported-by</code></td><td>Reported by</td><td>issue</td><td>yes, kind <em>Reported by</em></td></tr>
-<tr><td><code>due-date</code></td><td>Due date</td><td>issue</td><td>–</td></tr>
-<tr><td><code>labels</code></td><td>Labels</td><td>issue</td><td>–</td></tr>
-<tr><td><code>tags</code></td><td>Tags</td><td>issue</td><td>–</td></tr>
-<tr><td><code>planned-for-release</code></td><td>Planned for release</td><td>issue</td><td>–</td></tr>
-<tr><td><code>found-in-release</code></td><td>Found in release</td><td>issue</td><td>–</td></tr>
-<tr><td><code>estimated-time</code></td><td>Estimated time</td><td>issue</td><td>–</td></tr>
-<tr><td><code>time-left</code></td><td>Time left</td><td>issue</td><td>–</td></tr>
-<tr><td><code>time-spent</code></td><td>Time spent</td><td>issue (total of its time entries)</td><td>–</td></tr>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Key</th><th>Name</th><th>Belongs to</th><th>Holds a person</th><th>Kept from AI</th></tr></thead><tbody>
+<tr><td><code>title</code></td><td>Title</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>description</code></td><td>Description</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>status</code></td><td>Status</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>priority</code></td><td>Priority</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>assigned-to</code></td><td>Assigned to</td><td>issue</td><td>yes, kind <em>Assigned to</em></td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>reported-by</code></td><td>Reported by</td><td>issue</td><td>yes, kind <em>Reported by</em></td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>due-date</code></td><td>Due date</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>labels</code></td><td>Labels</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>tags</code></td><td>Tags</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>planned-for-release</code></td><td>Planned for release</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>found-in-release</code></td><td>Found in release</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>estimated-time</code></td><td>Estimated time</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>time-left</code></td><td>Time left</td><td>issue</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
+<tr><td><code>time-spent</code></td><td>Time spent</td><td>issue (total of its time entries)</td><td>–</td><td>if an administrator marks it <em>Never sent to AI</em></td></tr>
 </tbody></table>
 </div>
 <!-- END GENERATED field-catalogue -->
@@ -1340,7 +1340,8 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>ARCH-PERMS</code></td><td>Every endpoint and MCP tool declares its permission; every permission is used and explained</td><td>SEC-01, ADR-0004</td><td>xtask (reads x-permission in the generated API description, the permission catalogue in bb-policy, the message catalog and tools/checks/permission-exemptions.toml)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask (reads the code table with syn and the catalog; finds error answers built from a text written in the code, also across lines and with more elements, and bare error statuses; reads the generated OpenAPI document: the ErrorCode schema equals the table and every route documents the standard problem+json answers)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals in Rust and in the browser app, except generated files, migrations and the argument of a message lookup; the tables of setting values are named in the settings repository only)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the one registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (reads the table of crates/bb-app/src/ai/tools/registry.rs against the words of Tool in crates/bb-core/src/ai.rs: every tool once, as reads or changes, with a use case that exists in bb-app; every tool that changes has a test named ai_21_preview_&lt;tool&gt;; no ToolSpec and no tool name as a string outside the registry; no tool, no bb-mcp and no bb-ai code calls a use case of the list DESIGNED_OUT of the registry or of working_hours/ and roles/, or imports their modules; comments and test code do not count)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>TEST-PROMPT-INJECTION</code></td><td>The prompt-injection test set exists by name and runs: orders hidden in text people wrote stay data, nothing changes without Apply or a scope that allows it, and no field kept from AI reaches the model</td><td>ADR-0013, AI-05</td><td>xtask (the tests of crates/bb-app/src/tests/prompt_injection.rs exist by name and are not switched off: an issue description, a comment, an own field, a file name and a tool answer that carry orders; no change without Apply or a scope; no field kept from AI sent; no picture or link written from a text; no reading of what the person cannot read)</td><td>ci</td></tr>
 <tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>xtask (scans web/ outside the client package for fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, HTTP libraries and imports into the client package); oxlint no-restricted-globals in .oxlintrc.json is a second guard</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index; shared code and packages never import features or the app</td><td>architecture §4 (browser app)</td><td>xtask (imports of web/app/src and web/packages)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-KEYS</code></td><td>Query keys are written in shared/query-keys.ts only, and the browser tests take the sizes of files from the generated client</td><td>architecture §4 (browser app, one home for what several screens share)</td><td>xtask (reads web/app/src and web/app/e2e: no literal queryKey array outside query-keys.ts, no 1024 * 1024 in the end-to-end tests)</td><td>edit · commit · ci</td></tr>
@@ -1398,7 +1399,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>98 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>99 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>

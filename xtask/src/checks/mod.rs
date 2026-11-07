@@ -5,6 +5,7 @@
 //! or `tools/checks/fixtures/<ID>/`).
 
 mod api_spec;
+mod arch_ai_tools;
 pub(crate) mod arch_api_freeze;
 mod arch_api_lint;
 mod arch_api_out;
@@ -91,6 +92,7 @@ mod test_concurrent;
 mod test_connections;
 mod test_edit_locks;
 mod test_issue_ids;
+mod test_prompt_injection;
 pub(crate) mod test_sample_data;
 mod test_search_roundtrip;
 mod test_uploads;
@@ -213,6 +215,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_perms::ArchPerms),
         Box::new(arch_api_out::ArchApiOut),
         Box::new(arch_no_counters::ArchNoCounters),
+        Box::new(arch_ai_tools::ArchAiTools),
+        Box::new(test_prompt_injection::TestPromptInjection),
         Box::new(arch_person_ref::ArchPersonRef),
         Box::new(arch_pure::ArchPure),
         Box::new(arch_wasm::ArchWasm),

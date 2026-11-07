@@ -238,22 +238,22 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 
 <!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
-| Key | Name | Belongs to | Holds a person |
-|-----|------|-----------|----------------|
-| `title` | Title | issue | – |
-| `description` | Description | issue | – |
-| `status` | Status | issue | – |
-| `priority` | Priority | issue | – |
-| `assigned-to` | Assigned to | issue | yes, kind *Assigned to* |
-| `reported-by` | Reported by | issue | yes, kind *Reported by* |
-| `due-date` | Due date | issue | – |
-| `labels` | Labels | issue | – |
-| `tags` | Tags | issue | – |
-| `planned-for-release` | Planned for release | issue | – |
-| `found-in-release` | Found in release | issue | – |
-| `estimated-time` | Estimated time | issue | – |
-| `time-left` | Time left | issue | – |
-| `time-spent` | Time spent | issue (total of its time entries) | – |
+| Key | Name | Belongs to | Holds a person | Kept from AI |
+|-----|------|-----------|----------------|--------------|
+| `title` | Title | issue | – | if an administrator marks it *Never sent to AI* |
+| `description` | Description | issue | – | if an administrator marks it *Never sent to AI* |
+| `status` | Status | issue | – | if an administrator marks it *Never sent to AI* |
+| `priority` | Priority | issue | – | if an administrator marks it *Never sent to AI* |
+| `assigned-to` | Assigned to | issue | yes, kind *Assigned to* | if an administrator marks it *Never sent to AI* |
+| `reported-by` | Reported by | issue | yes, kind *Reported by* | if an administrator marks it *Never sent to AI* |
+| `due-date` | Due date | issue | – | if an administrator marks it *Never sent to AI* |
+| `labels` | Labels | issue | – | if an administrator marks it *Never sent to AI* |
+| `tags` | Tags | issue | – | if an administrator marks it *Never sent to AI* |
+| `planned-for-release` | Planned for release | issue | – | if an administrator marks it *Never sent to AI* |
+| `found-in-release` | Found in release | issue | – | if an administrator marks it *Never sent to AI* |
+| `estimated-time` | Estimated time | issue | – | if an administrator marks it *Never sent to AI* |
+| `time-left` | Time left | issue | – | if an administrator marks it *Never sent to AI* |
+| `time-spent` | Time spent | issue (total of its time entries) | – | if an administrator marks it *Never sent to AI* |
 
 <!-- END GENERATED field-catalogue -->
 

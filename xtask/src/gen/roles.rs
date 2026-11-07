@@ -67,12 +67,13 @@ fn belongs_to(thing: BelongsTo) -> &'static str {
     }
 }
 
-/// The fields of the catalogue: the key, the name, what it belongs to and the kind of people
-/// information when it holds a person.
+/// The fields of the catalogue: the key, the name, what it belongs to, the kind of people
+/// information when it holds a person, and that an administrator may keep it from AI (*Never sent
+/// to AI*, AI-03): every built-in field may be.
 fn field_catalogue() -> String {
     let mut out = String::from(
-        "| Key | Name | Belongs to | Holds a person |
-|-----|------|-----------|----------------|
+        "| Key | Name | Belongs to | Holds a person | Kept from AI |
+|-----|------|-----------|----------------|--------------|
 ",
     );
     for field in Field::ALL {
@@ -84,6 +85,7 @@ fn field_catalogue() -> String {
                 || "–".to_owned(),
                 |kind| format!("yes, kind *{}*", text(kind.name())),
             ),
+            "if an administrator marks it *Never sent to AI*".to_owned(),
         ]));
     }
     out

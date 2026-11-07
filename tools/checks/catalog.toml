@@ -440,12 +440,21 @@ status = "active"
 
 [[check]]
 id = "ARCH-AI-TOOLS"
-title = "AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases"
+title = "AI tools exist only in the one registry and never reach people-ranking, assignment or working-hours use cases"
 rule = "ADR-0013, COMP-10"
-tool = "xtask (registry allow list) + ast-grep"
+tool = "xtask (reads the table of crates/bb-app/src/ai/tools/registry.rs against the words of Tool in crates/bb-core/src/ai.rs: every tool once, as reads or changes, with a use case that exists in bb-app; every tool that changes has a test named ai_21_preview_<tool>; no ToolSpec and no tool name as a string outside the registry; no tool, no bb-mcp and no bb-ai code calls a use case of the list DESIGNED_OUT of the registry or of working_hours/ and roles/, or imports their modules; comments and test code do not count)"
 when = ["edit", "commit", "ci"]
-files = ["crates/bb-ai/**", "crates/bb-mcp/**"]
-status = "planned"
+files = ["crates/bb-app/**", "crates/bb-core/src/ai.rs", "crates/bb-mcp/**", "crates/bb-ai/**"]
+status = "active"
+
+[[check]]
+id = "TEST-PROMPT-INJECTION"
+title = "The prompt-injection test set exists by name and runs: orders hidden in text people wrote stay data, nothing changes without Apply or a scope that allows it, and no field kept from AI reaches the model"
+rule = "ADR-0013, AI-05"
+tool = "xtask (the tests of crates/bb-app/src/tests/prompt_injection.rs exist by name and are not switched off: an issue description, a comment, an own field, a file name and a tool answer that carry orders; no change without Apply or a scope; no field kept from AI sent; no picture or link written from a text; no reading of what the person cannot read)"
+when = ["ci"]
+files = ["crates/bb-app/src/ai/**", "crates/bb-app/src/tests/**"]
+status = "active"
 
 [[check]]
 id = "ARCH-WEB-API"
