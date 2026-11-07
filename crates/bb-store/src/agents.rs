@@ -115,6 +115,21 @@ impl AgentStore for AuthStorage {
         }
     }
 
+    async fn agent_key_count_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+    ) -> Result<i64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::col(AccessKeyRow::Id).count(), Computed::Total)
+            .from(AccessKeyRow::Table)
+            .and_where(Expr::col(AccessKeyRow::Agent).eq(agent.stored()));
+        match transaction.fetch_optional(&select).await? {
+            Some(row) => row.get(Computed::Total),
+            None => Ok(0),
+        }
+    }
+
     async fn agents_of(
         &self,
         person: UserId,

@@ -61,6 +61,9 @@ pub struct Narrowing {
     /// Set for an agent: it keeps no permission of `NOT_FOR_AGENTS`, and counts only where its
     /// person holds *Create agents that work for you*.
     agent: bool,
+    /// For an agent: the projects where agents are switched off (the nearest setting in the chain
+    /// of the project says so), whatever its work names.
+    off: BTreeSet<ProjectId>,
     /// The projects the key counts in (and their sub-projects), by ID so a move changes nothing;
     /// `None` for no list. A key with projects gives nothing for the whole organization.
     projects: Option<BTreeSet<ProjectId>>,
@@ -82,6 +85,7 @@ impl Narrowing {
         Self {
             choice,
             agent: false,
+            off: BTreeSet::new(),
             projects: None,
         }
     }
@@ -89,11 +93,13 @@ impl Narrowing {
     /// The narrowing of an agent whose work is in these projects (and their sub-projects): what
     /// its person may do there, as *See and change*, without any permission of
     /// [`crate::NOT_FOR_AGENTS`], and only where the person holds *Create agents that work for
-    /// you* (M7-Q1). An agent with no work counts nowhere (ADR-0029, decision 2).
+    /// you* (M7-Q1), and not in a project (or below it) where agents are switched off (`off`). An
+    /// agent with no work counts nowhere (ADR-0029, decision 2).
     #[must_use]
-    pub fn agent(work: BTreeSet<ProjectId>) -> Self {
+    pub fn agent(work: BTreeSet<ProjectId>, off: BTreeSet<ProjectId>) -> Self {
         Self {
             agent: true,
+            off,
             ..Self::see_and_change().in_projects(work)
         }
     }
@@ -154,6 +160,9 @@ impl Narrowing {
 
     /// Whether the key counts at the place of an evaluation.
     fn counts_at(&self, place: Place, chain: &[ProjectId]) -> bool {
+        if self.agent && matches!(place, Place::Project(project) if self.off.contains(&project)) {
+            return false;
+        }
         match (&self.projects, place) {
             (None, _) => true,
             (Some(_), Place::Organization) => false,

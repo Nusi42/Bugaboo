@@ -52,6 +52,16 @@ impl AgentStore for FakeStore {
         Ok(i64::try_from(held).unwrap_or(i64::MAX))
     }
 
+    async fn agent_key_count_in(tx: &mut Tx, agent: AgentId) -> Result<i64, FakeError> {
+        let held = tx
+            .state
+            .access_keys
+            .iter()
+            .filter(|record| record.key.agent == Some(agent))
+            .count();
+        Ok(i64::try_from(held).unwrap_or(i64::MAX))
+    }
+
     async fn agents_of(
         &self,
         person: UserId,

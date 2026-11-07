@@ -794,9 +794,9 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
-mod ai;
 mod access_keys;
 mod agents;
+mod ai;
 mod comments;
 mod lookup;
 mod mail;

@@ -233,6 +233,8 @@ pub async fn timer<S: AuthStore>(
     input: TimerQuery,
 ) -> Result<Authorized<TimerView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let timer = ctx.timer_of(actor.person.id).await?;
     let view = ctx.timer_view(&actor, timer.as_ref()).await?;
     ctx.own_answer(&actor, view).await
@@ -327,6 +329,8 @@ pub async fn start_timer<S: AuthStore>(
     input: StartTimer,
 ) -> Result<Authorized<TimerView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let StartPlan {
         started,
         before,
@@ -468,6 +472,8 @@ pub async fn stop_timer<S: AuthStore>(
     input: StopTimer,
 ) -> Result<Authorized<TimerSaved>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let (timer, running) = ctx.running_timer(&actor, input.version).await?;
     let now = ctx.now();
     let saving = ctx.saving(&actor, &running, now, &input.details).await?;
@@ -509,6 +515,8 @@ pub async fn switch_timer<S: AuthStore>(
     input: SwitchTimer,
 ) -> Result<Authorized<TimerSaved>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let (timer, running) = ctx.running_timer(&actor, input.version).await?;
     let now = ctx.now();
     may_change_timer(timer.changed_at, now)?;
@@ -564,6 +572,8 @@ pub async fn change_start_time<S: AuthStore>(
     input: ChangeStartTime,
 ) -> Result<Authorized<TimerView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let (timer, running) = ctx.running_timer(&actor, input.version).await?;
     let now = ctx.now();
     if input.started_at > now {
@@ -622,6 +632,8 @@ pub async fn throw_away_timer<S: AuthStore>(
     input: ThrowAwayTimer,
 ) -> Result<Authorized<TimerView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never books or reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let (timer, running) = ctx.running_timer(&actor, input.version).await?;
     let stopped = Timer {
         running: None,

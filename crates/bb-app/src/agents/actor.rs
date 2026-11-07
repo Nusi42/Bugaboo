@@ -9,7 +9,7 @@ use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::person::Person;
 use bb_core::settings::{
     AGENTS_ENABLED, AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE, AGENTS_MAXIMUM_CHANGES_A_MINUTE,
-    AGENTS_MAXIMUM_ISSUES_AT_ONCE,
+    AGENTS_MAXIMUM_ISSUES_AT_ONCE, SettingValue,
 };
 use bb_policy::{Narrowing, Permission};
 
@@ -50,9 +50,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
-        // Agents off for the organization refuse every agent; off for a project, they work
-        // nowhere in it.
-        if !self.agents_on_in(None).await? {
+        // Agents off for the organization refuse every agent; off for a project, they work nowhere
+        // in it or below it.
+        if !self.agents_on_in_the_organization().await? {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
         let work = self
@@ -60,14 +60,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .agent_work(found.id)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let mut projects = BTreeSet::new();
-        for project in work.projects {
-            if self.agents_on_in(Some(project)).await? {
-                projects.insert(project);
-            }
-        }
+        let off = self.projects_with_agents_off(found.person).await?;
         *crate::auth::locked(&self.acting_agent) = Some((found.id, found.person));
-        Ok(Narrowing::agent(projects))
+        Ok(Narrowing::agent(work.projects, off))
     }
 
     /// The projects where `person` holds `permission`, for the whole organization read once.
@@ -118,18 +113,53 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(found.key.name)
     }
 
-    /// Whether agents may work in the project, or in the organization for `None`: the switch of the
-    /// project follows the organization's unless the project set its own.
+    /// Whether agents may work in the organization at all.
     ///
     /// # Errors
     /// An internal error when the store fails.
-    pub(crate) async fn agents_on_in(&self, project: Option<ProjectId>) -> Result<bool, AppError> {
-        let layers = self
-            .store()
-            .setting_layers(project, None)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+    pub(crate) async fn agents_on_in_the_organization(&self) -> Result<bool, AppError> {
+        let layers = self.setting_layers_of(None).await?;
         Ok(layers.get(&AGENTS_ENABLED).unwrap_or(true))
+    }
+
+    /// The projects, of those the person sees, where agents are switched off: the nearest value in
+    /// the chain of a project decides (its own, else its parent's, up to the organization's), so a
+    /// sub-project that is off stays off when the work names its parent, and one that is switched
+    /// on again is on below a parent that is off. One read of the values of the projects.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn projects_with_agents_off(
+        &self,
+        person: UserId,
+    ) -> Result<BTreeSet<ProjectId>, AppError> {
+        let own: std::collections::BTreeMap<ProjectId, bool> = self
+            .store()
+            .project_values(AGENTS_ENABLED.definition())
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .filter_map(|(project, value)| match value {
+                SettingValue::Bool(on) => Some((project, on)),
+                _ => None,
+            })
+            .collect();
+        let organization_on = self.agents_on_in_the_organization().await?;
+        let shown = self.shown_with_levels(person, None).await?;
+        let tree = shown.tree();
+        Ok(tree
+            .projects()
+            .filter(|project| {
+                let chain = tree.chain(*project).unwrap_or_else(|| vec![*project]);
+                // `chain` runs from the top down: the nearest value is the last one set.
+                let on = chain
+                    .iter()
+                    .rev()
+                    .find_map(|each| own.get(each).copied())
+                    .unwrap_or(organization_on);
+                !on
+            })
+            .collect())
     }
 
     /// The limits a new agent starts with: the defaults of ADR-0029, cut to the maximums that the

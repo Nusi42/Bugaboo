@@ -6,8 +6,7 @@ use bb_core::id::{
     EventId, FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId,
     LabelId, LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId,
     RelationId, RelationKindId, RoleId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId,
-    UploadId,
-    UserId, WorkDayId, WorkflowId,
+    UploadId, UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;

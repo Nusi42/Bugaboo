@@ -96,13 +96,26 @@ impl Actor {
         self.key.as_ref().map(|key| &key.narrowing)
     }
 
-    /// Whether the actor may change what is the person's own (their settings, their timer): a
-    /// person may; a key only when it may change things at all, so a key that may only look reads
-    /// and writes nothing.
+    /// Refuses an agent, which never reaches what is its person's own.
     ///
     /// # Errors
-    /// `access.forbidden` for a key that may only look.
+    /// `access.forbidden` for an agent.
+    pub(crate) fn ensure_not_an_agent(&self) -> Result<(), AppError> {
+        if self.agent().is_some() {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        Ok(())
+    }
+
+    /// Whether the actor may read or change what is the person's own (their settings, their
+    /// timer): a person may; a key only when it may change things at all, so a key that may only
+    /// look reads and writes nothing; an agent never, because it is not the person and its work
+    /// does not reach the person's own data (AI-30).
+    ///
+    /// # Errors
+    /// `access.forbidden` for an agent and for a key that may only look.
     pub(crate) fn may_change_own(&self) -> Result<(), AppError> {
+        self.ensure_not_an_agent()?;
         if self
             .key_scope()
             .is_some_and(|narrowing| !narrowing.may_change())

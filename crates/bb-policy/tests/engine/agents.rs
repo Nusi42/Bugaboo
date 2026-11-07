@@ -6,9 +6,7 @@ use std::collections::BTreeSet;
 
 use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AssignmentId, ProjectId, RoleId, SequentialIds, UserId};
-use bb_policy::{
-    NOT_FOR_AGENTS, Narrowing, Permission, PermissionBits, Place, Policy, RoleData, Tree,
-};
+use bb_policy::{Kind, Narrowing, Permission, PermissionBits, Place, Policy, RoleData, Tree};
 use jiff::Timestamp;
 use proptest::prelude::*;
 
@@ -87,7 +85,7 @@ fn team_member() -> BTreeSet<Permission> {
 #[test]
 fn ai_30_an_agent_never_holds_a_manage_permission() {
     let world = world(team_member());
-    let agent = Narrowing::agent(BTreeSet::from([world.web]));
+    let agent = Narrowing::agent(BTreeSet::from([world.web]), BTreeSet::new());
     let held = held_by_agent(&world, &agent, world.web);
     assert_eq!(
         held,
@@ -99,7 +97,7 @@ fn ai_30_an_agent_never_holds_a_manage_permission() {
 #[test]
 fn ai_30_without_work_an_agent_counts_nowhere() {
     let world = world(team_member());
-    let agent = Narrowing::agent(BTreeSet::new());
+    let agent = Narrowing::agent(BTreeSet::new(), BTreeSet::new());
     for project in [world.web, world.api, world.other] {
         assert!(held_by_agent(&world, &agent, project).is_empty());
     }
@@ -108,9 +106,18 @@ fn ai_30_without_work_an_agent_counts_nowhere() {
 #[test]
 fn ai_30_the_work_of_an_agent_counts_in_its_projects_and_below_only() {
     let world = world(team_member());
-    let agent = Narrowing::agent(BTreeSet::from([world.web]));
+    let agent = Narrowing::agent(BTreeSet::from([world.web]), BTreeSet::new());
     assert!(!held_by_agent(&world, &agent, world.api).is_empty());
     assert!(held_by_agent(&world, &agent, world.other).is_empty());
+}
+
+#[test]
+fn ai_30_work_on_the_parent_does_not_reach_a_child_where_agents_are_off() {
+    let world = world(team_member());
+    // The work names WEB; API, inside it, has agents switched off.
+    let agent = Narrowing::agent(BTreeSet::from([world.web]), BTreeSet::from([world.api]));
+    assert!(!held_by_agent(&world, &agent, world.web).is_empty());
+    assert!(held_by_agent(&world, &agent, world.api).is_empty());
 }
 
 #[test]
@@ -118,7 +125,7 @@ fn ai_30_an_agent_counts_only_where_its_person_may_create_agents() {
     let mut without = team_member();
     without.remove(&Permission::CreateAgents);
     let world = world(without);
-    let agent = Narrowing::agent(BTreeSet::from([world.web]));
+    let agent = Narrowing::agent(BTreeSet::from([world.web]), BTreeSet::new());
     assert!(held_by_agent(&world, &agent, world.web).is_empty());
 }
 
@@ -133,7 +140,7 @@ proptest! {
         permissions.insert(Permission::SeeProjects);
         let world = world(permissions);
         let projects = [world.web, world.api, world.other];
-        let agent = Narrowing::agent(work.iter().map(|at| projects[*at]).collect());
+        let agent = Narrowing::agent(work.iter().map(|at| projects[*at]).collect(), BTreeSet::new());
         let project = projects[at];
         let theirs = world
             .policy
@@ -142,6 +149,9 @@ proptest! {
             .unwrap_or_default();
         let held = held_by_agent(&world, &agent, project);
         prop_assert!(held.is_subset(&theirs));
-        prop_assert!(held.iter().all(|permission| !NOT_FOR_AGENTS.contains(permission)));
+        let only_what_agents_hold = held
+            .iter()
+            .all(|permission| permission.agents_may_hold() && permission.kind() != Kind::Manage);
+        prop_assert!(only_what_agents_hold);
     }
 }

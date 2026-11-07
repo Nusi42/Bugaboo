@@ -29,6 +29,11 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, WhoMayChange, WhoMayChangeQuery,
     field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
+use crate::agents::{
+    AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
+    HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
+    hand_agent, my_agents, organization_agents, rename_agent, stop_all_agents,
+};
 use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{
     AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, ProjectAi,
@@ -37,11 +42,6 @@ use crate::ai::{
     try_ai_provider, what_goes_where,
 };
 use crate::ai::{NeverSentList, NeverSentQuery, SetNeverSent, never_sent_list, set_never_sent};
-use crate::agents::{
-    AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
-    HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
-    hand_agent, my_agents, organization_agents, rename_agent, stop_all_agents,
-};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,

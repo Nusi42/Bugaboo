@@ -40,6 +40,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn agent(id: AgentId) -> Option<Agent> = agent_in;
         /// How many agents a person is responsible for.
         fn agent_count_of(person: UserId) -> i64 = agent_count_of_in;
+        /// How many keys an agent has.
+        fn agent_key_count(agent: AgentId) -> i64 = agent_key_count_in;
     }
 
     reads! {

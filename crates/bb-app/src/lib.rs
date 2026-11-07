@@ -3,8 +3,8 @@
 #![forbid(unsafe_code)]
 
 pub mod access;
-pub mod ai;
 pub mod agents;
+pub mod ai;
 pub mod auth;
 pub mod comments;
 pub mod context;

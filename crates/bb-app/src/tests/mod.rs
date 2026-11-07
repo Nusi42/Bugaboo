@@ -2,9 +2,10 @@
 //! store (`fake`, `fake_policy`) has the same ports as the database adapter; `world` makes a small
 //! server on it; the files below are the tests.
 
+mod agents;
+mod agents_more;
 mod ai_setup;
 mod ai_tools;
-mod agents;
 mod check_access_types;
 mod choice_numbers;
 mod editing;
@@ -12,9 +13,9 @@ mod event_members;
 mod events;
 mod failures;
 mod fake;
+mod fake_agents;
 mod fake_ai;
 mod fake_ai_tools;
-mod fake_agents;
 mod fake_auth;
 mod fake_auth_store;
 mod fake_editing;

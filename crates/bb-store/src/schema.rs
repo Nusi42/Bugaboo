@@ -12,8 +12,8 @@
 use sea_query::{Iden, IdenStatic};
 
 mod access;
-mod ai;
 mod agents;
+mod ai;
 mod comments;
 mod files;
 mod notify;
@@ -26,8 +26,8 @@ mod work;
 mod working_hours;
 
 pub(crate) use access::*;
-pub(crate) use ai::*;
 pub(crate) use agents::*;
+pub(crate) use ai::*;
 pub(crate) use comments::*;
 pub(crate) use files::*;
 pub(crate) use notify::*;

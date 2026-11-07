@@ -10,6 +10,8 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
+mod agents;
+
 use super::fields_http::FIELDS;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
@@ -20,7 +22,7 @@ use super::time_http::{MY_ENTRIES, TIMER};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 44] = [
+const VERSIONED: [&str; 46] = [
     "changeMyWorkDay",
     "changeWorkDayOfPerson",
     "startBreak",
@@ -145,6 +147,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
+        "changeAgent" | "handAgent" => agents::prepare(id, ada).await,
         "setFieldNeverSentToAi" | "setProjectNeverSentToAi" => prepare_marks(id, ada).await,
         "stopTimer" | "switchTimer" | "changeTimerStart" | "throwAwayTimer" | "changeTimeEntry"
         | "deleteTimeEntry" => prepare_time(id, site, ada).await,
@@ -179,25 +182,6 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 format!("/api/v1/groups/{}", text_in(&group, "id")?),
                 json!({"name": "Frontend"}),
                 &group["version"],
-            )
-        }
-        "changeAgent" => {
-            let agent = made(ada, "/api/v1/agents", json!({"name": "Fixer"})).await?;
-            Save::new(
-                "PATCH",
-                format!("/api/v1/agents/{}", text_in(&agent, "id")?),
-                json!({"name": "Finder"}),
-                &agent["version"],
-            )
-        }
-        "handAgent" => {
-            // The version is looked at first, so the person it is offered to need not be there.
-            let agent = made(ada, "/api/v1/agents", json!({"name": "Helper"})).await?;
-            Save::new(
-                "POST",
-                format!("/api/v1/agents/{}/hand-over", text_in(&agent, "id")?),
-                json!({"to": text_in(&agent, "id")?}),
-                &agent["version"],
             )
         }
         "changeSavedSearch" => {

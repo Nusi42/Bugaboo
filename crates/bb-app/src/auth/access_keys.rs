@@ -22,11 +22,13 @@ use std::collections::BTreeSet;
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
+use bb_core::agent::MOST_AGENT_KEYS;
 use bb_core::event::{DomainEvent, RecordKind};
-use bb_core::id::{AccessKeyId, ProjectId, UserId};
+use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::paging::{Cut, SkipCursor, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_core::time::days;
+use bb_policy::guards::Refusal;
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -305,6 +307,31 @@ fn a_try_at_the_key<S: AuthStore>(
     Ok((secret, stored, event))
 }
 
+/// Stores a new key in the change that makes it. The keys of one agent are counted one change at a
+/// time. A renewed key is taken back in the same change, and the change stops unless exactly that
+/// key went.
+async fn insert_key<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    stored: &AccessKeyRecord,
+    agent: Option<AgentId>,
+    renews: Option<AccessKeyId>,
+) -> Result<(), S::Error> {
+    if let (Some(agent), None) = (agent, renews) {
+        S::lock_agents_of(transaction, stored.key.owner).await?;
+        let held = S::agent_key_count_in(transaction, agent).await?;
+        if usize::try_from(held).map_or(true, |held| held >= MOST_AGENT_KEYS) {
+            return Err(S::refused(Refusal::TooMuch));
+        }
+    }
+    S::insert_access_key(transaction, stored).await?;
+    if let Some(old) = renews
+        && !S::delete_access_key(transaction, stored.key.owner, old).await?
+    {
+        return Err(S::aborted());
+    }
+    Ok(())
+}
+
 /// Creates an access key for the person. The key is returned once; only a hash of its secret is
 /// kept. The password is asked again, so a stolen session cannot make a key that outlives it.
 ///
@@ -358,7 +385,10 @@ pub async fn create_access_key<S: AuthStore>(
         settings.access_key_default_days,
         settings.access_key_longest_days,
     )?;
-    ctx.ensure_room_for_a_key(owner).await?;
+    // The keys of agents are not counted among the person's own keys.
+    if input.agent.is_none() {
+        ctx.ensure_room_for_a_key(owner).await?;
+    }
     let draft = AccessKeyRecord {
         key: AccessKey {
             id: AccessKeyId::generate(&mut ctx.ids()),
@@ -379,24 +409,24 @@ pub async fn create_access_key<S: AuthStore>(
     let (secret, stored) = loop {
         let (secret, stored, event) = a_try_at_the_key(ctx, &draft)?;
         let to_store = stored.clone();
-        let renews = input.renews;
+        let (renews, agent) = (input.renews, input.agent);
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
-                Box::pin(async move {
-                    S::insert_access_key(transaction, &to_store).await?;
-                    // A renewed key is taken back in the change that makes its replacement.
-                    if let Some(old) = renews {
-                        S::delete_access_key(transaction, to_store.key.owner, old).await?;
-                    }
-                    Ok(())
-                })
+                Box::pin(
+                    async move { insert_key::<S>(transaction, &to_store, agent, renews).await },
+                )
             })
             .await;
         match result {
             Ok(()) => break (secret, stored),
             Err(error) if S::is_duplicate(&error) && !clashed => clashed = true,
-            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
+            Err(error) => {
+                return Err(change_failed::<S>(
+                    &error,
+                    Stops::new(ErrorCode::NotFound, ErrorCode::InvalidRequest),
+                ));
+            }
         }
     };
     ctx.note(

@@ -5,7 +5,7 @@
 
 [[exempt]]
 path = "crates/bb-store/src/schema.rs"
-lines = 802
+lines = 819
 reason = "The list of the stored tables (`stored_tables!`) is one list that DATA-MARKS reads; the tables of AI brought it over the ceiling. Split by area in M7-F29."
 
 [[exempt]]
@@ -26,3 +26,8 @@ reason = "The tests of uploads, downloads and previews over HTTP, one flow after
 [[generated]]
 path = "crates/bb-core/src/message/generated.rs"
 reason = "Written by cargo xtask gen from the message catalog; never edited by hand."
+
+[[exempt]]
+path = "crates/bb-server/src/tests/sign_in/conflict_http.rs"
+lines = 805
+reason = "The table of the routes that take a version has a row for each of them, and the rows of agents joined it; the saves of agents are in their own file. Split the table by area in M7-F39."

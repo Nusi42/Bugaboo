@@ -17,7 +17,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
-use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
+use bb_core::id::{AgentId, AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::paging::{SkipCursor, page_len};
 use bb_core::people_kinds::PeopleKind;
@@ -133,6 +133,8 @@ pub(super) struct Reading<'a> {
     maker: LineMaker,
     /// The names of types and labels the reader may know, read when first needed.
     pub(super) names: KnownNames,
+    /// The names of the agents of the rows of the page, read once for each agent.
+    agents: HashMap<AgentId, Option<String>>,
 }
 
 /// What shows changes to a reader (see `Ctx::change_reader`).
@@ -194,6 +196,25 @@ fn plain_text(value: &Value) -> String {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The name of an agent, read once for the page.
+    async fn agent_name(
+        &self,
+        reading: &mut Reading<'_>,
+        id: AgentId,
+    ) -> Result<Option<String>, AppError> {
+        if let Some(known) = reading.agents.get(&id) {
+            return Ok(known.clone());
+        }
+        let name = self
+            .store()
+            .agent(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|found| found.name);
+        reading.agents.insert(id, name.clone());
+        Ok(name)
+    }
+
     /// The people a value names, as the kind says for the reader.
     async fn people_in(
         &self,
@@ -430,6 +451,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             people: std::mem::take(&mut reader.people),
             maker: std::mem::take(&mut reader.maker),
             names: std::mem::take(&mut reader.names),
+            agents: HashMap::new(),
         };
         let read = self
             .field_changes(&mut reading, issue.issue_type, &reader.batch, changes)
@@ -642,17 +664,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             ),
             None => None,
         };
-        let agent = match row.agent {
-            Some(id) => self
-                .store()
-                .agent(id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .map(|found| AgentLabel {
-                    id,
-                    name: found.name,
-                }),
-            None => None,
+        // The agent is named only to a reader who is told who the person responsible for it is
+        // (*Who sees people*): otherwise the row would say which of someone's agents did it.
+        let agent = match (row.agent, &by) {
+            (Some(id), Some(PersonRef::Name { .. })) => self
+                .agent_name(reading, id)
+                .await?
+                .map(|name| AgentLabel { id, name }),
+            _ => None,
         };
         Ok(Some(HistoryItem {
             event: row.event,
@@ -693,6 +712,7 @@ pub async fn history<S: AuthStore>(
         people: HashMap::new(),
         maker: ctx.line_maker().await?,
         names: KnownNames::default(),
+        agents: HashMap::new(),
     };
     let kinds = ctx
         .store()

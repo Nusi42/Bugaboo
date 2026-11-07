@@ -11,18 +11,19 @@ use bb_core::id::{IssueId, ProjectId};
 use bb_core::own_fields::FieldType;
 use serde_json::{Value, json};
 
+use super::agents::person_key_request;
 use super::fake::FakeStore;
 use super::scenarios::{a_project, token};
 use super::scenarios_fields::{a_field, new_field};
 use super::scenarios_issues::a_type;
 use super::search_fields::{bob_with_a_role, every_field};
-use super::world::{Outcome, PASSWORD, World};
+use super::world::{Outcome, World};
 use crate::ai::context::PeopleMode;
 use crate::ai::tools::{
     DESIGNED_OUT, ToolCallQuery, ToolListQuery, ToolMode, call_tool, list_tools, registry,
 };
 use crate::ai::{NeverSentTarget, SetNeverSent, set_never_sent};
-use crate::auth::{AppError, CreateAccessKey, create_access_key};
+use crate::auth::{AppError, create_access_key};
 use crate::fields::create_field;
 use crate::issues::{ChangeIssue, CreateIssue, change_issue, create_issue};
 use crate::projects::{CreateProject, create_project};
@@ -265,17 +266,7 @@ pub(super) async fn key_in(
 ) -> Result<String, AppError> {
     Ok(create_access_key(
         &world.ctx(),
-        CreateAccessKey {
-            session_token: token(world),
-            password: PASSWORD.to_owned(),
-            name: "For an AI app".to_owned(),
-            choice,
-            permissions: Vec::new(),
-            projects,
-            expires_at: None,
-            agent: None,
-            renews: None,
-        },
+        person_key_request(token(world), "For an AI app", choice, projects),
     )
     .await?
     .into_value()

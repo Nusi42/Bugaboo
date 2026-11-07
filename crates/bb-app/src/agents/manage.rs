@@ -2,9 +2,9 @@
 //! resumes and stops them, hands them to somebody who accepts them; an administrator sees every
 //! agent and stops any of them.
 //!
-//! All of these start at a session: an agent, a key and an app can never make or change agents.
-//! The one thing an agent may read is its own record (`agent`), and only while it has no more
-//! work than that.
+//! Making, changing, handing and stopping start at a session: an agent, a key and an app can never
+//! make or change agents. Reading one agent (`agent`) also takes the agent's own key, and then the
+//! agent reads only its own record, whatever work it has; a key of a person is turned away.
 
 use bb_core::ErrorCode;
 use bb_core::agent::{Agent, AgentState, MOST_AGENTS};
@@ -13,6 +13,7 @@ use bb_core::id::{AgentId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::counted_up;
+use bb_policy::guards::Refusal;
 use bb_policy::{ActorKind, Authorized, Permission, Place};
 use serde_json::json;
 
@@ -542,8 +543,16 @@ pub async fn accept_agent<S: AuthStore>(
         .agent(input.id)
         .await
         .map_err(|error| internal::<S>(&error))?
-        .filter(|agent| agent.offered_to == Some(person))
+        .filter(|agent| agent.offered_to == Some(person) && agent.state != AgentState::Stopped)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    // The receiver must still be a person who may have agents, like when it was offered.
+    if ctx
+        .projects_where(person, Permission::CreateAgents)
+        .await?
+        .is_empty()
+    {
+        return Err(AppError::Refused(ErrorCode::Forbidden));
+    }
     let event = counted(
         ctx,
         person,
@@ -559,6 +568,12 @@ pub async fn accept_agent<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                // The receiver's agents are counted one change at a time, like when one is made.
+                S::lock_agents_of(transaction, person).await?;
+                let held = S::agent_count_of_in(transaction, person).await?;
+                if usize::try_from(held).map_or(true, |held| held >= MOST_AGENTS) {
+                    return Err(S::refused(Refusal::TooMuch));
+                }
                 S::delete_keys_of_agent(transaction, id).await?;
                 if S::hand_agent_to(transaction, id, person, version).await? {
                     Ok(())

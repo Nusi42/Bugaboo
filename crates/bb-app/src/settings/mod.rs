@@ -450,6 +450,8 @@ pub async fn settings<S: AuthStore>(
             .await?
         }
         Scope::Person(_) => {
+            // The settings of a person are theirs, not their agent's.
+            actor.ensure_not_an_agent()?;
             if let Some(project) = working_in {
                 // The project must be one the person may see; any other answers like a missing one.
                 ctx.require(&actor, Permission::SeeProjects, Place::Project(project))

@@ -13,11 +13,11 @@ help: the trait `bb_core::plain::sealed::Sealed` is not implemented for `View`
             AccessKeyId
             AgentId
             AgentState
+            AgreementStatus
             AppliesTo
             AssignmentId
             AttachmentId
-            Basis
-            Box<T>
+            AuthorKind
           and $N others
 note: required by a bound in `bb_core::plain::Plain`
  --> $WORKSPACE/crates/bb-core/src/plain.rs

@@ -235,6 +235,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         id: TimeEntryId,
     ) -> Result<(TimeEntry, Issue, Arc<Evaluation>), AppError> {
+        // Time is a person's own: an agent never books or changes it (M7-Q7, ADR-0035, decision 9).
+        actor.ensure_not_an_agent()?;
         let entry = self
             .store()
             .time_entry(id)
@@ -366,6 +368,7 @@ pub async fn add_time<S: AuthStore>(
     input: AddTime,
 ) -> Result<Authorized<TimeEntryView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    actor.ensure_not_an_agent()?;
     let (issue, held) = ctx.bookable_issue(&actor, &input.issue).await?;
     let made = ctx
         .new_entry(

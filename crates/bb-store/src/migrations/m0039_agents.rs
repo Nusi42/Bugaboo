@@ -48,6 +48,16 @@ pub(super) fn steps() -> Vec<Step> {
                         .from(AgentRow::Table, AgentRow::Person)
                         .to(PersonRow::Table, PersonRow::Id),
                 )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(AgentRow::Table, AgentRow::OfferedTo)
+                        .to(PersonRow::Table, PersonRow::Id),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(AgentRow::Table, AgentRow::MadeBy)
+                        .to(PersonRow::Table, PersonRow::Id),
+                )
                 .to_owned(),
         ),
         Step::Index(

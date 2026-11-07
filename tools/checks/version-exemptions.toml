@@ -248,4 +248,4 @@ routes = [
   "POST /api/v1/agents/{agent}/keys/{access_key}/renew",
   "DELETE /api/v1/agents/{agent}/keys/{access_key}",
 ]
-reason = "Making an agent or a key makes a new record, and taking a key back or accepting an agent that was offered is judged on the record itself (the key is the agent's, the offer is for this person): the person who accepts has not seen a version of the agent, and stopping all of a person's agents is one act on all of them, not on a record that was read."
+reason = "Making an agent or a key makes a new record, renewing a key is the making of a new one that takes the old one back in the same change (it stops if that key is gone), and taking a key back or accepting an agent that was offered is judged on the record itself (the key is the agent's, the offer is for this person): the person who accepts has not seen a version of the agent, and stopping all of a person's agents is one act on all of them, not on a record that was read."

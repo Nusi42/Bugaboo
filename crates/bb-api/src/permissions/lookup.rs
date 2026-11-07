@@ -6,8 +6,8 @@ use std::sync::OnceLock;
 use axum::http::Method;
 
 use super::{
-    Declared, ROUTES, Route, access_keys, agents, ai, comments, mail, saved_searches, search_routes,
-    time, working_hours,
+    Declared, ROUTES, Route, access_keys, agents, ai, comments, mail, saved_searches,
+    search_routes, time, working_hours,
 };
 
 /// Every row of the table: the rows above and those of the areas that have a file of their own

@@ -39,25 +39,13 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ChangeWorkingHoursOfOthers,
 ];
 
-/// The permissions an agent never holds, whatever its person holds (AI-30, ADR-0029): every
-/// permission of kind *Manage* (which includes *Take over text someone else is editing*), the
-/// permissions of working hours (ADR-0035, decision 9), and *Create agents that work for you*,
-/// so an agent makes no agents. Defined once, here beside [`NOT_FOR_KEYS`]; narrowing an agent,
-/// the agent's own checks and the tests all read this list.
+/// The permissions an agent never holds besides every permission of kind *Manage* (AI-30,
+/// ADR-0029): the permissions of working hours (ADR-0035, decision 9) and *Create agents that work
+/// for you*, so an agent makes no agents. The rule that every permission of kind *Manage*, which
+/// includes *Take over text someone else is editing*, is out too is in
+/// [`Permission::agents_may_hold`], so a new permission of that kind needs no entry here. Defined
+/// once, here beside [`NOT_FOR_KEYS`].
 pub const NOT_FOR_AGENTS: &[Permission] = &[
-    Permission::ChangeProjectSettings,
-    Permission::EditAnyway,
-    Permission::ManageIssueTypes,
-    Permission::ManageWorkflows,
-    Permission::ManageFields,
-    Permission::ManageLabels,
-    Permission::DecideRoles,
-    Permission::DecideWhatRolesSee,
-    Permission::ManagePeople,
-    Permission::ManageInvitations,
-    Permission::ManageGroups,
-    Permission::ManageRoles,
-    Permission::ChangeOrganizationSettings,
     Permission::SeeWorkingHoursOfOthers,
     Permission::ChangeWorkingHoursOfOthers,
     Permission::CreateAgents,
@@ -110,11 +98,11 @@ macro_rules! permissions {
                 !NOT_FOR_KEYS.contains(&self)
             }
 
-            /// Whether an agent may hold the permission at all ([`NOT_FOR_AGENTS`] says which it
-            /// may not).
+            /// Whether an agent may hold the permission at all: never one of kind *Manage*, and
+            /// never one of [`NOT_FOR_AGENTS`].
             #[must_use]
             pub fn agents_may_hold(self) -> bool {
-                !NOT_FOR_AGENTS.contains(&self)
+                self.kind() != Kind::Manage && !NOT_FOR_AGENTS.contains(&self)
             }
         }
     };

@@ -78,6 +78,16 @@ fn keys_and_the_persons_own_data(actor: Actor, route: &Operation, example: &Exam
     Expect::NotForKeys
 }
 
+/// An agent never reaches what is its person's own (`/me/`): their settings, their timer, their
+/// time (the routes of its sign-in data stay session only, like for every key). The routes that
+/// read what is the same for everybody it reads like a key.
+fn is_refused_as_the_persons_own(actor: Actor, route: &Operation, example: &Example) -> bool {
+    actor == Actor::AgentWithoutWork
+        && route.path.starts_with("/api/v1/me/")
+        && (example.has(Quirk::KeysActAsThePerson)
+            || matches!(route.needs, Declared::Permission(_)))
+}
+
 /// An agent reads its own record, and the example names an agent that is nobody's.
 fn reads_its_own_record(actor: Actor, route: &Operation) -> bool {
     actor == Actor::AgentWithoutWork && route.id == "getAgent"
@@ -99,6 +109,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     // the session of a browser: who is signed in, signing out.
     if reads_its_own_record(actor, route) {
         return Expect::NotFound;
+    }
+    if is_refused_as_the_persons_own(actor, route, example) {
+        return Expect::Forbidden;
     }
     if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {
         return keys_and_the_persons_own_data(actor, route, example);

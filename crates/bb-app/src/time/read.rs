@@ -54,6 +54,8 @@ pub async fn my_time_entries<S: AuthStore>(
     input: MyTimeEntriesQuery,
 ) -> Result<Authorized<TimeEntryPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // Time is a person's own: an agent never reads it (M7-Q7, ADR-0035, decision 9).
+    actor.ensure_not_an_agent()?;
     let (from, to) = match (input.from, input.to) {
         (Some(from), Some(to)) => (from, to),
         (None, None) => ctx.this_week(&actor).await?,
