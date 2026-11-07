@@ -28,8 +28,8 @@ use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
 use bb_core::settings::{
-    ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
-    changed_only_on_its_own_screen, find, list_items, registry,
+    ChangedBy, FOR_TESTS_PREFIX, Layers, Level, OrganizationValue, Scope, SettingDefinition,
+    SettingValue, Source, changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{Version, counted_up};
@@ -464,6 +464,8 @@ pub async fn settings<S: AuthStore>(
     let mut settings = Vec::new();
     for definition in registry().filter(|definition| {
         !changed_only_on_its_own_screen(definition.key())
+            // The settings that only exist for tests are listed only when asked for by name.
+            && (input.topic.is_some() || !definition.key().starts_with(FOR_TESTS_PREFIX))
             && definition.levels().contains(&scope.level())
             && input.topic.as_deref().is_none_or(|topic| {
                 list_items(topic).any(|start| definition.key().starts_with(start))

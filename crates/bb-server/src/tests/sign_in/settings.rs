@@ -155,6 +155,39 @@ pub(super) async fn people(org: &Org<'_>) -> Run<People> {
 }
 
 #[tokio::test]
+async fn cfg_06_the_settings_that_only_tests_have_are_listed_only_when_asked_for() -> TestResult {
+    each_database("cfg_06_test_settings_unlisted", async |db| {
+        let rig = Rig::start(db).await?;
+        let org = Org::start(&rig).await?;
+        let everything = rig
+            .api()
+            .settings(
+                Rig::info(),
+                SettingsQuery {
+                    session_token: org.admin.session.clone(),
+                    scope: SettingsScope::Organization,
+                    topic: None,
+                    project: None,
+                },
+            )
+            .await?
+            .into_value();
+        assert!(!everything.settings.is_empty());
+        assert!(
+            everything
+                .settings
+                .iter()
+                .all(|setting| !setting.definition.key().starts_with("test.")),
+            "a page that lists every setting shows none that only tests have"
+        );
+        let asked = one(&rig, &org.admin, SettingsScope::Organization, NOTE, None).await?;
+        assert_eq!(asked.definition.key(), NOTE);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cfg_06_a_project_value_is_inherited_by_sub_projects_and_a_person_value_wins_for_the_person()
 -> TestResult {
     each_database("cfg_06_inherited_use_cases", async |db| {

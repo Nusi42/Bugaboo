@@ -674,6 +674,10 @@ settings! {
     }
 }
 
+/// What the keys of the settings that only exist for tests start with: a list of settings leaves
+/// them out unless it is asked for them by name (M6-F174).
+pub const FOR_TESTS_PREFIX: &str = "test.";
+
 /// Settings that exist only for tests, so the project level and the other rules of the layers can
 /// be tested while no real setting is set on a project yet. They are not in [`ALL`]; they are in
 /// [`registry`](super::registry) only in tests and with the feature `test-settings`, which only

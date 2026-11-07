@@ -191,7 +191,12 @@ fn cfg_04_the_test_settings_are_in_the_registry_only_for_tests_and_are_not_in_al
     assert!(find("test.project-note").is_some());
     assert!(
         ALL.iter()
-            .all(|definition| !definition.key().starts_with("test."))
+            .all(|definition| !definition.key().starts_with(FOR_TESTS_PREFIX))
+    );
+    assert!(
+        for_tests::ALL
+            .iter()
+            .all(|definition| definition.key().starts_with(FOR_TESTS_PREFIX))
     );
 }
 
