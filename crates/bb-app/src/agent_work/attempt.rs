@@ -509,11 +509,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         }
         let status_pending = !self.move_after_accept(token, mine).await?;
-        let works = self
-            .store()
-            .works_of_hand_over(mine.hand_over.id)
-            .await
-            .map_err(failed)?;
         let work = IssueWork {
             version: mine.work.version + 1,
             ..mine.work.clone()
@@ -528,9 +523,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         self.store()
             .record_change(&event, move |transaction| {
-                Box::pin(async move {
-                    close_work_of::<S>(transaction, &hand_over, &works, closing).await
-                })
+                Box::pin(async move { close_work_of::<S>(transaction, &hand_over, closing).await })
             })
             .await
             .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))

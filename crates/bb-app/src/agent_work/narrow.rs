@@ -6,6 +6,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
+use bb_core::agent_work::{Allowance, issue_member as key};
 use bb_core::id::{AgentId, IssueId};
 
 use crate::access::Actor;
@@ -101,21 +102,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         let work = self.work_of_agent_now(agent).await?;
         let allowance = work.allowances.get(&issue).cloned().unwrap_or_default();
         let by_the_system = *locked(&self.accepting) == Some(issue);
-        let allowed = members.iter().all(|member| {
-            allowance.may_change(member, STATUS) || (by_the_system && member == STATUS)
-        });
-        if !allowed {
+        let accepted_status = by_the_system && members.iter().any(|member| member == STATUS);
+        let others: Vec<String> = members
+            .iter()
+            .filter(|member| !(accepted_status && *member == STATUS))
+            .cloned()
+            .collect();
+        self.ensure_allowance_covers(&allowance, &others).await?;
+        if let Some(run) = self.run_of_attempt_on(agent, issue).await? {
+            self.set_run(Some(run));
+        }
+        Ok(())
+    }
+
+    /// Refuses members the allowance does not cover: the one place that judges them, for a change
+    /// of an issue and for the input of a new one. A member that holds people is never covered,
+    /// whatever was given, and neither is an own field that holds people by its kind.
+    async fn ensure_allowance_covers(
+        &self,
+        allowance: &Allowance,
+        members: &[String],
+    ) -> Result<(), AppError> {
+        if !members
+            .iter()
+            .all(|member| allowance.may_change(member, STATUS))
+        {
             return Err(ErrorCode::Forbidden.into());
         }
-        // Whatever it was given: never an own field that holds people.
         for member in members {
             let named = self.own_field_named(member).await?;
             if named.is_some_and(|definition| definition.field.kind.holds_people()) {
                 return Err(ErrorCode::Forbidden.into());
             }
-        }
-        if let Some(run) = self.run_of_attempt_on(agent, issue).await? {
-            self.set_run(Some(run));
         }
         Ok(())
     }
@@ -139,30 +157,62 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// Refuses a new issue by an agent unless a hand-over lets it create sub-issues or a standing
-    /// rule lets it create issues in that project.
+    /// The issue a new issue goes under, when the input names one, and what an agent may do there.
+    /// A person needs the right to change the parent. An agent creates only under an issue it was
+    /// handed with *create sub-issues* ticked, in the project of that issue, or, with none named,
+    /// in a project a standing rule of it creates in; and the members it sets must be covered the
+    /// way a change covers them (people never, the status only when ticked, fields only when named).
     ///
     /// # Errors
-    /// `access.forbidden` for an agent that may not create issues there.
-    pub(crate) async fn ensure_agent_may_create(
+    /// `resource.not-found` for a parent that does not exist or is not seen, `request.invalid` for
+    /// a parent in another project, `access.forbidden` for what the actor may not do.
+    pub(crate) async fn parent_for_create(
         &self,
         actor: &Actor,
+        input: &crate::issues::CreateIssue,
         project: bb_core::id::ProjectId,
-    ) -> Result<(), AppError> {
+    ) -> Result<Option<IssueId>, AppError> {
+        let parent = match input.parent.as_deref() {
+            Some(address) => {
+                let (parent, held) = self.visible_issue(actor, address).await?;
+                if parent.project != project {
+                    return Err(ErrorCode::InvalidRequest.into());
+                }
+                if !held.may_change_issue(parent.reported_by) {
+                    return Err(ErrorCode::Forbidden.into());
+                }
+                Some(parent.id)
+            }
+            None => None,
+        };
         let Some(agent) = actor.agent() else {
-            return Ok(());
+            return Ok(parent);
         };
         let work = self.work_of_agent_now(agent).await?;
-        if work.creates_in.contains(&project)
-            || work
+        let allowance = match parent {
+            Some(parent) => work
                 .allowances
-                .values()
-                .any(|allowance| allowance.sub_issues)
-        {
-            Ok(())
-        } else {
-            Err(ErrorCode::Forbidden.into())
+                .get(&parent)
+                .filter(|allowance| allowance.sub_issues)
+                .cloned()
+                .ok_or(AppError::Refused(ErrorCode::Forbidden))?,
+            None if work.creates_in.contains(&project) => Allowance::default(),
+            None => return Err(ErrorCode::Forbidden.into()),
+        };
+        let mut members: Vec<String> = Vec::new();
+        for (set, member) in [
+            (input.status.is_some(), STATUS),
+            (input.priority.is_some(), key::PRIORITY),
+            (input.estimated_time.is_some(), key::ESTIMATED_TIME),
+            (input.assigned_to.is_some(), key::ASSIGNED_TO),
+        ] {
+            if set {
+                members.push(member.to_owned());
+            }
         }
+        members.extend(input.fields.keys().cloned());
+        self.ensure_allowance_covers(&allowance, &members).await?;
+        Ok(parent)
     }
 
     /// Refuses a change of an issue by an agent, for what the change names.

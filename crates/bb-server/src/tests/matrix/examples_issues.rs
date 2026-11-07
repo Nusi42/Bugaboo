@@ -77,6 +77,7 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 assigned_to: None,
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
+                parent: None,
             },
         )
         .await

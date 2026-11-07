@@ -229,12 +229,8 @@ pub async fn hand_over<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: HandOver,
 ) -> Result<Authorized<HandOverView>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
-    let actor = Actor {
-        person: record.person,
-        key: None,
-    };
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let person = actor.person.id;
     if input.issues.is_empty() || input.issues.len() > MOST_ISSUES_OF_A_HAND_OVER {
         return Err(ErrorCode::InvalidRequest.into());
     }

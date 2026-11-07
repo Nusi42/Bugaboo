@@ -119,6 +119,7 @@ pub(super) async fn issue_with(
             assigned_to: None,
             estimated_time: None,
             fields,
+            parent: None,
         },
     )
     .await

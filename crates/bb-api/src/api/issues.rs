@@ -331,6 +331,7 @@ async fn create_issue(
                 assigned_to,
                 estimated_time: body.estimated_time,
                 fields: body.fields,
+                parent: None,
             },
         )
         .await?;

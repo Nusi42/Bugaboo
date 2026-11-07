@@ -35,8 +35,9 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn open_rules() -> Vec<StandingRule> = every_open_rule_in;
         /// The standing rules that work in a project and have not ended.
         fn open_rules_in(project: ProjectId) -> Vec<StandingRule> = open_rules_in_in;
-        /// The proposals on an issue, newest first.
-        fn proposals_on(issue: IssueId, state: Option<ProposalState>) -> Vec<Proposal> = proposals_on_in;
+        /// The proposals on an issue, newest first, at most `limit`; only those of `agent` when it
+        /// is given.
+        fn proposals_on(issue: IssueId, state: Option<ProposalState>, agent: Option<AgentId>, limit: u64) -> Vec<Proposal> = proposals_on_in;
         /// Which of these issues came under the rule already.
         fn known_matches(rule: StandingRuleId, issues: Vec<IssueId>) -> Vec<IssueId> = known_matches_in;
         /// The issues that came under a rule, by issue, after `after`, at most `limit`.
@@ -57,6 +58,9 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn insert_proposal(proposal: &Proposal) -> ();
         /// Writes what became of a proposal that was open; whether it was open.
         fn set_proposal_state(id: AgentNoteId, state: ProposalState, by: UserId) -> bool;
+        /// Opens a proposal again that `by` applied or discarded and that could not be carried
+        /// out; whether it was.
+        fn reopen_proposal(id: AgentNoteId, by: UserId) -> bool;
         /// Writes down that an issue came under a rule; whether it was new.
         fn insert_match(rule_match: &RuleMatch) -> bool;
         /// Ends every open hand-over and standing rule of an agent.

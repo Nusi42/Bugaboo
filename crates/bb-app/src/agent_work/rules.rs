@@ -59,21 +59,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(jobs)
     }
 
-    /// Refuses to renew a rule that could not be made now: the person needs *Create agents that
-    /// work for you* in its project (and in the project it creates in), agents are on there, the
-    /// agent is still the person's and works, and the person can still open the saved search.
-    async fn ensure_rule_may_work(
-        &self,
-        person: &bb_core::person::Person,
-        rule: &RuleRecord,
-    ) -> Result<(), AppError> {
+    /// Refuses a rule that could not be made now, for the making and for a renewal: the agent is
+    /// the person's and works, the person has *Create agents that work for you* in the project of
+    /// the rule (and in the project it creates in) where agents are on, and can open the saved
+    /// search.
+    async fn ensure_rule_may_work(&self, actor: &Actor, rule: &RuleRecord) -> Result<(), AppError> {
         let agent = self
             .store()
             .agent(rule.agent)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|found| found.person == person.id && found.may_act())
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+            .filter(|found| found.person == actor.person.id)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        if !agent.may_act() {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
         let allowed = self
             .projects_where(agent.person, Permission::CreateAgents)
             .await?;
@@ -83,11 +83,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !in_reach(rule.project) || !rule.creates_in.is_none_or(in_reach) {
             return Err(ErrorCode::Forbidden.into());
         }
-        let actor = Actor {
-            person: person.clone(),
-            key: None,
-        };
-        self.open_search(&actor, rule.search).await?;
+        // The person must be able to open the search; anybody else's is one answer for all.
+        self.open_search(actor, rule.search).await?;
         Ok(())
     }
 
@@ -118,35 +115,8 @@ pub async fn create_standing_rule<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateStandingRule,
 ) -> Result<Authorized<StandingRuleView>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
-    let actor = Actor {
-        person: record.person,
-        key: None,
-    };
-    let agent = ctx
-        .store()
-        .agent(input.agent)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .filter(|found| found.person == person)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if !agent.may_act() {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let allowed = ctx.projects_where(person, Permission::CreateAgents).await?;
-    let off = ctx.projects_with_agents_off(person).await?;
-    if !allowed.contains(&input.project) || off.contains(&input.project) {
-        return Err(ErrorCode::Forbidden.into());
-    }
-    if input
-        .creates_in
-        .is_some_and(|project| !allowed.contains(&project) || off.contains(&project))
-    {
-        return Err(ErrorCode::Forbidden.into());
-    }
-    // The person must be able to open the search; anybody else's is one answer for all.
-    ctx.open_search(&actor, input.search).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let person = actor.person.id;
     let now = ctx.now();
     let days = match input.days {
         Some(days) => days,
@@ -159,7 +129,7 @@ pub async fn create_standing_rule<S: AuthStore>(
     fields.dedup();
     let rule = RuleRecord {
         id: StandingRuleId::generate(&mut ctx.ids()),
-        agent: agent.id,
+        agent: input.agent,
         person,
         search: input.search,
         project: input.project,
@@ -170,6 +140,7 @@ pub async fn create_standing_rule<S: AuthStore>(
         made_at: now,
         version: 1,
     };
+    ctx.ensure_rule_may_work(&actor, &rule).await?;
     let mut jobs = ctx.rule_jobs(&rule)?;
     jobs.push(ctx.queued(
         JobKind::RuleMatches,
@@ -219,8 +190,8 @@ pub async fn change_standing_rule<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeStandingRule,
 ) -> Result<Authorized<StandingRuleView>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let person = actor.person.id;
     let found = ctx.rule_of(person, input.rule).await?;
     if found.version != input.version {
         return Err(AppError::stale(
@@ -234,7 +205,7 @@ pub async fn change_standing_rule<S: AuthStore>(
     }
     let now = ctx.now();
     if input.renew {
-        ctx.ensure_rule_may_work(&record.person, &found).await?;
+        ctx.ensure_rule_may_work(&actor, &found).await?;
     }
     let (ends_at, ended) = if input.renew {
         let days = match input.days {
@@ -302,8 +273,7 @@ pub async fn standing_rules<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: StandingRulesQuery,
 ) -> Result<Authorized<StandingRulePage>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
+    let person = ctx.session_actor(&input.session_token).await?.person.id;
     ctx.store()
         .agent(input.agent)
         .await
@@ -357,6 +327,11 @@ pub async fn propose_change<S: AuthStore>(
     }
     if !ctx.chain_of(found.project).await?.contains(&rule.project) {
         return Err(AppError::Refused(ErrorCode::NotFound));
+    }
+    // A rule that names fields proposes about those; one that names none proposes about any field
+    // of the short list.
+    if !rule.fields.is_empty() && !rule.fields.contains(&input.field) {
+        return Err(ErrorCode::Forbidden.into());
     }
     // Only an issue the rule found: the agent reads others only through a hand-over.
     if ctx
@@ -425,8 +400,8 @@ pub async fn decide_proposal<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DecideProposal,
 ) -> Result<Authorized<ProposalView>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let person = actor.person.id;
     let proposal = ctx
         .store()
         .proposal(input.proposal)
@@ -438,7 +413,6 @@ pub async fn decide_proposal<S: AuthStore>(
         return Err(ErrorCode::AgentWorkNotReady.into());
     }
     let state = if input.apply {
-        ctx.apply_proposal(&input.session_token, &proposal).await?;
         ProposalState::Applied
     } else {
         ProposalState::Discarded
@@ -465,13 +439,17 @@ pub async fn decide_proposal<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::AgentWorkNotReady)))?;
+    // The proposal is claimed: of two decisions at the same moment one is told it was decided.
+    // What it asks for is done after, and a proposal that cannot be carried out is open again.
+    if input.apply
+        && let Err(error) = ctx.apply_proposal(&input.session_token, &proposal).await
+    {
+        ctx.reopen_proposal(&rule, &proposal, person).await?;
+        return Err(error);
+    }
     let mut decided = proposal;
     decided.state = state;
     decided.decided_by = Some(person);
-    let actor = Actor {
-        person: record.person,
-        key: None,
-    };
     let (_, held) = ctx
         .visible_issue(&actor, &decided.issue.to_string())
         .await?;
@@ -479,6 +457,34 @@ pub async fn decide_proposal<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Opens a proposal again that was claimed by `person` and could not be carried out.
+    async fn reopen_proposal(
+        &self,
+        rule: &RuleRecord,
+        proposal: &Proposal,
+        person: bb_core::id::UserId,
+    ) -> Result<(), AppError> {
+        let event = self.event(
+            crate::auth::by(person),
+            entity(RecordKind::StandingRule, rule.id),
+            vec![
+                set_to(member::ISSUE, json!(proposal.issue.to_string())),
+                set_to(member::PROPOSAL, json!(proposal.id.to_string())),
+                set_to(member::STATE, json!(ProposalState::Open.code())),
+            ],
+        )?;
+        let id = proposal.id;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    S::reopen_proposal(transaction, id, person).await?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// Applies a proposal as the person, through the use case that changes that part of an issue
     /// (the one the assistant's *Apply* ends in, too).
     async fn apply_proposal(&self, token: &str, proposal: &Proposal) -> Result<(), AppError> {

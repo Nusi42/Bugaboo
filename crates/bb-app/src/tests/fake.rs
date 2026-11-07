@@ -68,6 +68,10 @@ impl fmt::Display for FakeError {
 /// Everything the store holds. Cloned for a change and put back when the change succeeded.
 #[derive(Clone, Default)]
 pub(crate) struct State {
+    /// A switch of the tests: every look for what came after a run finds one more change that no
+    /// look found before, as if somebody went on changing the issues (an undo that is always told
+    /// the run changed meanwhile).
+    pub(crate) later_changes_keep_coming: bool,
     pub(crate) people: Vec<(Person, Option<String>)>,
     pub(crate) sessions: Vec<SignInSession>,
     pub(crate) two_steps: Vec<TwoStep>,

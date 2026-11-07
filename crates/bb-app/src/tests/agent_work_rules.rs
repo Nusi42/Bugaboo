@@ -592,3 +592,35 @@ async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome 
     assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_32_a_rule_that_creates_in_a_project_gives_top_level_issues_with_no_members() -> Outcome
+{
+    use crate::issues::{CreateIssue, create_issue};
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let mut request = rule_request(&given, Vec::new());
+    request.creates_in = Some(given.project);
+    create_standing_rule(&world.ctx(), request).await?;
+    let issue_type = super::scenarios_issues::a_type(&world)
+        .await
+        .map_err(AppError::Internal)?;
+    let input = |priority| CreateIssue {
+        session_token: given.key.clone(),
+        project: given.project.to_string(),
+        issue_type,
+        title: "Found by the rule".to_owned(),
+        description: None,
+        status: None,
+        priority,
+        assigned_to: None,
+        estimated_time: None,
+        fields: std::collections::BTreeMap::new(),
+        parent: None,
+    };
+    create_issue(&world.ctx(), input(None)).await?;
+    // A member would need a hand-over that names it; a rule gives none.
+    let refusal = create_issue(&world.ctx(), input(Some(bb_core::issue::Priority::High))).await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+    Ok(())
+}

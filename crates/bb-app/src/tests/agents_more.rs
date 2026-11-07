@@ -419,6 +419,7 @@ async fn an_issue_of(
             assigned_to: None,
             estimated_time: None,
             fields: BTreeMap::new(),
+            parent: None,
         },
     )
     .await?

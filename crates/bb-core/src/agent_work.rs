@@ -372,27 +372,32 @@ impl RuleField {
 /// The state of agent work after the agent is stopped or its person loses access: open work is
 /// *Stopped*, work that ended stays as it ended.
 #[must_use]
-pub const fn after_stop(state: AgentWorkState) -> AgentWorkState {
+pub fn after_stop(state: AgentWorkState) -> AgentWorkState {
     AgentWorkState::Stopped.or_keep_ended(state)
 }
 
 impl AgentWorkState {
-    const fn or_keep_ended(self, was: Self) -> Self {
-        match was {
-            Self::AgentGaveUp | Self::Stopped => was,
-            _ => self,
+    fn or_keep_ended(self, was: Self) -> Self {
+        if Self::ENDED.contains(&was) {
+            was
+        } else {
+            self
         }
     }
 
+    /// The states that end work: the agent gave up, or it was stopped. Everything that asks whether
+    /// work is open (use cases, statements, searches) asks through this.
+    pub const ENDED: [Self; 2] = [Self::AgentGaveUp, Self::Stopped];
+
     /// Whether the work is still open (an attempt may start or go on).
     #[must_use]
-    pub const fn is_open(self) -> bool {
-        !matches!(self, Self::AgentGaveUp | Self::Stopped)
+    pub fn is_open(self) -> bool {
+        !Self::ENDED.contains(&self)
     }
 
     /// The state after a question: *Waiting for you*.
     #[must_use]
-    pub const fn after_question(self) -> Self {
+    pub fn after_question(self) -> Self {
         if self.is_open() {
             Self::WaitingForYou
         } else {

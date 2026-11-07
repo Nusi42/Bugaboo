@@ -339,10 +339,8 @@ fn agent_subject(target: FieldTarget) -> (Subject, Domain) {
     let mut rows = work_rows_not_closed();
     if target == FieldTarget::Agent {
         rows = rows.and(
-            Expr::col((IssueWorkRow::Table, IssueWorkRow::State)).is_not_in([
-                AgentWorkState::Stopped.code(),
-                AgentWorkState::AgentGaveUp.code(),
-            ]),
+            Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
+                .is_not_in(AgentWorkState::ENDED.map(AgentWorkState::code)),
         );
     }
     (Subject::Linked(rows, subject), Domain::Text)

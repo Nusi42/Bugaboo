@@ -6,7 +6,7 @@ use bb_core::ErrorCode;
 use bb_core::agent_records::GivingState;
 use bb_core::agent_work::{AgentWorkState, HandOverPower, ReviewAnswer};
 use bb_core::event::RecordKind;
-use bb_core::id::AssignmentId;
+use bb_core::id::{AssignmentId, IssueId};
 use bb_core::notification::NotificationKind;
 use bb_core::own_fields::FieldType;
 use bb_policy::StartingRole;
@@ -17,7 +17,7 @@ use super::agent_work_review::{ready, report, review, show};
 use super::agents::{an_agent, key_of, refused};
 use super::scenarios::{a_project, token};
 use super::scenarios_fields::a_field;
-use super::scenarios_issues::an_issue;
+use super::scenarios_issues::{a_type, an_issue};
 use super::workflows_rules::starting_role;
 use super::world::{Outcome, World};
 use crate::agent_work::{
@@ -26,7 +26,7 @@ use crate::agent_work::{
 };
 use crate::auth::AppError;
 use crate::comments::{AddComment, DeleteComment, add_comment, delete_comment};
-use crate::issues::{ChangeIssue, change_issue, issue};
+use crate::issues::{ChangeIssue, CreateIssue, change_issue, create_issue, issue};
 use crate::roles::{AssignRole, Given, RemoveAssignment, Subject, assign_role, remove_assignment};
 
 /// The hand-over that lets the agent change these members.
@@ -187,8 +187,8 @@ async fn ai_33_an_agent_sees_only_its_own_work_on_an_issue() -> Outcome {
 struct TwoProjects {
     key: String,
     team: crate::auth::Started,
-    in_first: bb_core::id::IssueId,
-    in_second: bb_core::id::IssueId,
+    in_first: IssueId,
+    in_second: IssueId,
     first: AssignmentId,
     second: AssignmentId,
 }
@@ -466,5 +466,156 @@ async fn perf_05_the_agent_work_of_an_issue_costs_the_same_reads_for_one_agent_a
         reads_of_a_look_with(1).await?,
         reads_of_a_look_with(5).await?
     );
+    Ok(())
+}
+
+/// The input of a new issue under `parent`, as the agent with this key sends it.
+async fn new_under(
+    world: &World,
+    given: &Handed,
+    parent: Option<IssueId>,
+) -> Result<CreateIssue, AppError> {
+    Ok(CreateIssue {
+        session_token: given.key.clone(),
+        project: given.project.to_string(),
+        issue_type: a_type(world).await.map_err(AppError::Internal)?,
+        title: "A step of the work".to_owned(),
+        description: None,
+        status: None,
+        priority: None,
+        assigned_to: None,
+        estimated_time: None,
+        fields: std::collections::BTreeMap::new(),
+        parent: parent.map(|issue| issue.to_string()),
+    })
+}
+
+#[tokio::test]
+async fn ai_31_an_agent_creates_a_sub_issue_only_under_the_issue_it_was_handed() -> Outcome {
+    let world = World::new().await?;
+    let given = handed_with(&world, |asked| {
+        asked.powers = vec![HandOverPower::CreateSubIssues];
+    })
+    .await?;
+    let sub = create_issue(
+        &world.ctx(),
+        new_under(&world, &given, Some(given.issue)).await?,
+    )
+    .await?
+    .into_value();
+    let parents = world.store.lock().state.parents.clone();
+    assert!(
+        parents
+            .iter()
+            .any(|row| row.child == sub.id && row.parent == given.issue),
+        "the new issue sits under the handed one"
+    );
+    // A tick for sub-issues gives no top-level issue anywhere.
+    let top = create_issue(&world.ctx(), new_under(&world, &given, None).await?).await;
+    assert!(refused(&top.unwrap_err(), ErrorCode::Forbidden));
+    // Under an issue it was not handed, it does not even see the parent.
+    let other = an_issue(&world, given.project)
+        .await
+        .map_err(AppError::Internal)?;
+    let elsewhere = create_issue(&world.ctx(), new_under(&world, &given, Some(other)).await?).await;
+    assert!(refused(&elsewhere.unwrap_err(), ErrorCode::NotFound));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_31_a_new_issue_of_an_agent_carries_only_members_the_hand_over_covers() -> Outcome {
+    let world = World::new().await?;
+    let people = a_field(&world, "Owner", FieldType::Person, &[]).await?;
+    let given = handed_with(&world, |asked| {
+        asked.powers = vec![HandOverPower::CreateSubIssues];
+    })
+    .await?;
+    let mut refusals = Vec::new();
+    let mut with_people = new_under(&world, &given, Some(given.issue)).await?;
+    with_people.assigned_to = Some(vec![given.team.person.id]);
+    refusals.push(with_people);
+    let mut with_field = new_under(&world, &given, Some(given.issue)).await?;
+    with_field.fields.insert(
+        people.id.to_string(),
+        json!(given.team.person.id.to_string()),
+    );
+    refusals.push(with_field);
+    let mut with_status = new_under(&world, &given, Some(given.issue)).await?;
+    with_status.status = Some(bb_core::workflow::starter::in_progress());
+    refusals.push(with_status);
+    let mut with_priority = new_under(&world, &given, Some(given.issue)).await?;
+    with_priority.priority = Some(bb_core::issue::Priority::High);
+    refusals.push(with_priority);
+    for input in refusals {
+        let refusal = create_issue(&world.ctx(), input).await;
+        assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_31_without_the_tick_an_agent_creates_no_sub_issue() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let refusal = create_issue(
+        &world.ctx(),
+        new_under(&world, &given, Some(given.issue)).await?,
+    )
+    .await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_35_a_throw_away_that_cannot_undo_stops_with_an_error_and_leaves_the_work() -> Outcome {
+    let world = World::new().await?;
+    let given = handed_with(&world, ticking(&["title"])).await?;
+    report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
+    let version = issue(&world.ctx(), query(&given.key, given.issue))
+        .await?
+        .into_value()
+        .issue
+        .version;
+    let mut change = ChangeIssue::of(&given.key, given.issue.to_string(), version);
+    change.title = Some("Changed by the attempt".to_owned());
+    change_issue(&world.ctx(), change).await?;
+    end_attempt(&world.ctx(), ready(&given.key, given.issue)).await?;
+    let work = show(&world, &given).await?;
+    // Whatever is looked at from now on has changed again since the last look.
+    world.store.lock().state.later_changes_keep_coming = true;
+    let thrown = review_work(
+        &world.ctx(),
+        review(&given.team.session_token, &work, ReviewAnswer::ThrowAway),
+    )
+    .await;
+    let error = thrown.err().ok_or("the work was thrown away")?;
+    assert!(
+        refused(&error, ErrorCode::VersionChanged) || matches!(error, AppError::Stale(_)),
+        "{error:?}"
+    );
+    world.store.lock().state.later_changes_keep_coming = false;
+    let after = show(&world, &given).await?;
+    assert_ne!(
+        after.state,
+        AgentWorkState::Stopped,
+        "never stopped with changes left"
+    );
+    assert!(after.reviews.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_35_a_throw_away_and_an_accept_with_a_status_at_the_same_moment_give_one_answer()
+-> Outcome {
+    let world = World::new().await?;
+    let given = ready_for_review(&world).await?;
+    let work = show(&world, &given).await?;
+    let mut accept = review(&given.team.session_token, &work, ReviewAnswer::Accept);
+    accept.status = Some(bb_core::workflow::starter::in_progress());
+    let throw = review(&given.team.session_token, &work, ReviewAnswer::ThrowAway);
+    let (first, second) = (world.ctx(), world.ctx());
+    let (one, two) = tokio::join!(review_work(&first, accept), review_work(&second, throw));
+    assert_eq!(u8::from(one.is_ok()) + u8::from(two.is_ok()), 1);
+    assert_eq!(world.store.lock().state.work.reviews.len(), 1);
     Ok(())
 }

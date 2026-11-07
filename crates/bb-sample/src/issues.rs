@@ -400,6 +400,7 @@ impl Maker<'_, '_> {
                     assigned_to: (!assigned.is_empty()).then_some(assigned),
                     estimated_time: None,
                     fields,
+                    parent: None,
                 },
             )
             .await,

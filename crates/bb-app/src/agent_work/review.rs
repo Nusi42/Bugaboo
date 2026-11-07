@@ -39,12 +39,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         id: bb_core::id::AgentWorkId,
         version: Option<i64>,
     ) -> Result<Acting, AppError> {
-        let record = self.active(token).await?;
-        let person = record.person.id;
-        let actor = Actor {
-            person: record.person,
-            key: None,
-        };
+        let actor = self.session_actor(token).await?;
+        let person = actor.person.id;
         let failed = |error| internal::<S>(&error);
         let work = self
             .store()
@@ -320,11 +316,6 @@ pub async fn review_work<S: AuthStore>(
         .await
         .map_err(failed)?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let works = ctx
-        .store()
-        .works_of_hand_over(hand_over.id)
-        .await
-        .map_err(failed)?;
     let event = ctx.event(
         crate::auth::by(person),
         entity(RecordKind::AgentWork, acting.work.id),
@@ -351,7 +342,7 @@ pub async fn review_work<S: AuthStore>(
                         accepted_by_itself: false,
                         status_pending: false,
                     };
-                    close_work_of::<S>(transaction, &hand_over, &works, closing).await?;
+                    close_work_of::<S>(transaction, &hand_over, closing).await?;
                 }
                 Ok(())
             })

@@ -139,16 +139,23 @@ impl GrantStore for super::fake::FakeStore {
         tx: &mut Tx,
         issue: IssueId,
         state: Option<ProposalState>,
+        agent: Option<AgentId>,
+        limit: u64,
     ) -> Result<Vec<Proposal>, FakeError> {
         let mut found: Vec<Proposal> = tx
             .state
             .work
             .proposals
             .iter()
-            .filter(|p| p.issue == issue && state.is_none_or(|s| p.state == s))
+            .filter(|p| {
+                p.issue == issue
+                    && state.is_none_or(|s| p.state == s)
+                    && agent.is_none_or(|agent| p.agent == agent)
+            })
             .cloned()
             .collect();
         found.reverse();
+        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }
 
@@ -240,6 +247,20 @@ impl GrantStore for super::fake::FakeStore {
             .map(|p| {
                 p.state = state;
                 p.decided_by = Some(by);
+            })
+            .is_some())
+    }
+
+    async fn reopen_proposal(tx: &mut Tx, id: AgentNoteId, by: UserId) -> Result<bool, FakeError> {
+        Ok(tx
+            .state
+            .work
+            .proposals
+            .iter_mut()
+            .find(|p| p.id == id && p.state != ProposalState::Open && p.decided_by == Some(by))
+            .map(|p| {
+                p.state = ProposalState::Open;
+                p.decided_by = None;
             })
             .is_some())
     }

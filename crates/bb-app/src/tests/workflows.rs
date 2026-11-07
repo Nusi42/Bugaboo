@@ -204,6 +204,7 @@ async fn wf_06_a_new_organization_has_the_three_starter_workflows() -> Outcome {
             assigned_to: None,
             estimated_time: None,
             fields: BTreeMap::new(),
+            parent: None,
         },
     )
     .await?

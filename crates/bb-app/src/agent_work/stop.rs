@@ -33,7 +33,10 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
     if !S::end_hand_over(transaction, hand_over.id, hand_over.version).await? {
         return Err(S::aborted());
     }
-    for work in works.iter().filter(|work| work.state.is_open()) {
+    for work in works
+        .iter()
+        .filter(|work| !work.closed && work.state.is_open())
+    {
         if !S::set_work_state(
             transaction,
             work.id,
@@ -51,11 +54,12 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
 }
 
 /// Closes the work, which is at `version`, with a review. The hand-over ends with its last piece of
-/// open work. Work that changed since it was read stops the change.
+/// open work, which is read inside the change, after the work is closed, so two reviews of the two
+/// last pieces at the same moment cannot both leave the hand-over open. Work that changed since it
+/// was read stops the change.
 pub(crate) async fn close_work_of<S: AuthStore>(
     transaction: &mut S::Transaction,
     hand_over: &HandOver,
-    works: &[IssueWork],
     closing: Closing,
 ) -> Result<(), S::Error> {
     let Closing {
@@ -75,7 +79,8 @@ pub(crate) async fn close_work_of<S: AuthStore>(
     {
         return Err(S::aborted());
     }
-    let others_open = works
+    let others_open = S::works_of_hand_over_in(transaction, hand_over.id)
+        .await?
         .iter()
         .any(|other| other.id != work && !other.closed && other.state.is_open());
     if !others_open && !S::end_hand_over(transaction, hand_over.id, hand_over.version).await? {
@@ -83,6 +88,9 @@ pub(crate) async fn close_work_of<S: AuthStore>(
     }
     Ok(())
 }
+
+/// How often the end of a hand-over is tried when it changes meanwhile.
+const TRIES: usize = 3;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The work of the job of a hand-over that ran out: ends the hand-over and stops its open
@@ -109,42 +117,62 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.end_hand_over_of(&hand_over).await
     }
 
-    /// Ends one hand-over and stops its open work, as the system.
+    /// Ends one hand-over and stops its open work, as the system. When the hand-over or its work
+    /// changed since they were read, both are read again and the end tried again, a few times; a
+    /// hand-over that kept changing is an error, so the job runs again later.
     pub(crate) async fn end_hand_over_of(&self, hand_over: &HandOver) -> Result<(), AppError> {
-        let works = self
-            .store()
-            .works_of_hand_over(hand_over.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let event = self.event(
-            EventActor::System,
-            entity(RecordKind::HandOver, hand_over.id),
-            vec![
-                set_to(member::STATE, json!(GivingState::Ended.code())),
-                set_to(
-                    member::ISSUES,
-                    json!(
-                        works
-                            .iter()
-                            .map(|w| w.issue.to_string())
-                            .collect::<Vec<_>>()
+        let failed = |error| internal::<S>(&error);
+        let mut current = hand_over.clone();
+        for _ in 0..TRIES {
+            let works = self
+                .store()
+                .works_of_hand_over(current.id)
+                .await
+                .map_err(failed)?;
+            let event = self.event(
+                EventActor::System,
+                entity(RecordKind::HandOver, current.id),
+                vec![
+                    set_to(member::STATE, json!(GivingState::Ended.code())),
+                    set_to(
+                        member::ISSUES,
+                        json!(
+                            works
+                                .iter()
+                                .map(|w| w.issue.to_string())
+                                .collect::<Vec<_>>()
+                        ),
                     ),
-                ),
-                bb_core::version::counted_up(hand_over.version),
-            ],
-        )?;
-        let kept = hand_over.clone();
-        let result = self
-            .store()
-            .record_change(&event, move |transaction| {
-                Box::pin(async move { end_and_stop::<S>(transaction, &kept, &works).await })
-            })
-            .await;
-        match result {
-            // Somebody changed the work at the same moment: the next look finds it ended or not.
-            Err(error) if S::is_aborted(&error) => Ok(()),
-            other => other.map_err(|error| internal::<S>(&error)),
+                    bb_core::version::counted_up(current.version),
+                ],
+            )?;
+            let kept = current.clone();
+            let result = self
+                .store()
+                .record_change(&event, move |transaction| {
+                    Box::pin(async move { end_and_stop::<S>(transaction, &kept, &works).await })
+                })
+                .await;
+            match result {
+                Err(error) if S::is_aborted(&error) => {
+                    // Somebody changed it at the same moment: look again at what is stored now.
+                    match self
+                        .store()
+                        .hand_over(current.id)
+                        .await
+                        .map_err(failed)?
+                        .filter(|found| found.state == GivingState::Open)
+                    {
+                        Some(found) => current = found,
+                        None => return Ok(()),
+                    }
+                }
+                other => return other.map_err(failed),
+            }
         }
+        Err(AppError::Internal(
+            "a hand-over kept changing while it was ended".to_owned(),
+        ))
     }
 
     /// Ends every hand-over and rule of the agent and stops its open work, because the agent was

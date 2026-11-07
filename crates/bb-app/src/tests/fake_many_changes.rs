@@ -291,7 +291,7 @@ impl crate::runs::RunRecordStore for FakeStore {
             .iter()
             .position(|event| event.id == since)
             .unwrap_or(usize::MAX);
-        Ok(shared
+        let mut found: Vec<(i64, bb_core::event::DomainEvent)> = shared
             .events
             .iter()
             .enumerate()
@@ -302,7 +302,43 @@ impl crate::runs::RunRecordStore for FakeStore {
                     && ids.contains(&event.entity.id)
             })
             .map(|(at, event)| (i64::try_from(at).unwrap_or(i64::MAX), event.clone()))
-            .collect())
+            .collect();
+        if shared.state.later_changes_keep_coming {
+            static COMING: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+            let mut bytes = [0_u8; 16];
+            bytes[..8].copy_from_slice(
+                &COMING
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                    .to_be_bytes(),
+            );
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            let template = found
+                .last()
+                .map(|(at, event)| (*at, event.clone()))
+                .or_else(|| {
+                    shared
+                        .events
+                        .iter()
+                        .enumerate()
+                        .find(|(_, event)| {
+                            event.entity.kind == *kind && ids.contains(&event.entity.id)
+                        })
+                        .map(|(at, event)| (i64::try_from(at).unwrap_or(i64::MAX), event.clone()))
+                });
+            if let (Ok(id), Some((at, last))) = (bb_core::id::EventId::from_bytes(bytes), template)
+            {
+                found.push((
+                    at + 1,
+                    bb_core::event::DomainEvent {
+                        id,
+                        run: None,
+                        ..last
+                    },
+                ));
+            }
+        }
+        Ok(found)
     }
 
     async fn text_marks(

@@ -96,6 +96,7 @@ impl Maker<'_, '_> {
                     assigned_to: None,
                     estimated_time: None,
                     fields: std::collections::BTreeMap::new(),
+                    parent: None,
                 },
             )
             .await,

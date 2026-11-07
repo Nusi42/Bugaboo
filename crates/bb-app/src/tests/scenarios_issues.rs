@@ -80,6 +80,7 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
             assigned_to: None,
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
+            parent: None,
         },
     )
     .await
@@ -105,6 +106,7 @@ pub(crate) async fn create_issue_scenario(world: &World) -> Added {
                 assigned_to: Some(vec![world.admin.person.id]),
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
+                parent: None,
             },
         ),
     )

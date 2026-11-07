@@ -36,10 +36,8 @@ pub(super) fn only_open_work(select: &mut SelectStatement) {
     select
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
         .and_where(
-            Expr::col((IssueWorkRow::Table, IssueWorkRow::State)).is_not_in([
-                AgentWorkState::Stopped.code(),
-                AgentWorkState::AgentGaveUp.code(),
-            ]),
+            Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
+                .is_not_in(AgentWorkState::ENDED.map(AgentWorkState::code)),
         )
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open));
 }
@@ -61,13 +59,20 @@ pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatem
     select
 }
 
+/// Which standing rules of an agent work at `now`: the one definition, for the rules it reads and
+/// for the issues they found.
+fn working_rule(agent: AgentId, now: Timestamp) -> sea_query::Cond {
+    let column = |column: StandingRuleRow| Expr::col((StandingRuleRow::Table, column));
+    sea_query::Cond::all()
+        .add(column(StandingRuleRow::Agent).eq(agent.stored()))
+        .add(column(StandingRuleRow::State).eq(GivingState::Open.code()))
+        .add(column(StandingRuleRow::EndsAt).gt(to_micros(now)))
+}
+
 /// The standing rules of an agent that work at `now`.
 pub(super) fn open_rules_of_agent(agent: AgentId, now: Timestamp) -> SelectStatement {
     let mut rules = rule_select();
-    rules
-        .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
-        .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
-        .and_where(Expr::col(StandingRuleRow::EndsAt).gt(to_micros(now)));
+    rules.cond_where(working_rule(agent, now));
     rules
 }
 
@@ -84,12 +89,7 @@ pub(crate) fn issues_of_agent(agent: AgentId, now: Timestamp) -> sea_query::Cond
             Expr::col((StandingRuleRow::Table, StandingRuleRow::Id))
                 .equals((RuleMatchRow::Table, RuleMatchRow::Rule)),
         )
-        .and_where(Expr::col((StandingRuleRow::Table, StandingRuleRow::Agent)).eq(agent.stored()))
-        .and_where(
-            Expr::col((StandingRuleRow::Table, StandingRuleRow::State))
-                .eq(GivingState::Open.code()),
-        )
-        .and_where(Expr::col((StandingRuleRow::Table, StandingRuleRow::EndsAt)).gt(to_micros(now)));
+        .cond_where(working_rule(agent, now));
     sea_query::Cond::any()
         .add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(work))
         .add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found))
@@ -377,12 +377,14 @@ impl AgentWorkStore for AuthStorage {
     /// The issues of the open work of the agent, and of the issues its open rules found, and the
     /// projects of both and of the rules.
     async fn agent_work(&self, agent: AgentId, now: Timestamp) -> Result<AgentWork, StoreError> {
-        self.read_snapshot_work(agent, now).await
+        self.read_agent_work(agent, now).await
     }
 }
 
 impl AuthStorage {
-    async fn read_snapshot_work(
+    /// Several reads one after the other, each on its own: the work of an agent is no snapshot,
+    /// and a change between them is seen on the next request.
+    async fn read_agent_work(
         &self,
         agent: AgentId,
         now: Timestamp,

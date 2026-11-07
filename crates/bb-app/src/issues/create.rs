@@ -11,6 +11,7 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, Priority, StatusGroup};
 use bb_core::project::Project;
 use bb_core::readable_id::IssueCode;
+use bb_core::relation::{IssueParent, SUB_ISSUES_MAX};
 use bb_core::version::FIRST_VERSION;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -250,11 +251,19 @@ pub async fn create_issue<S: AuthStore>(
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
-    ctx.ensure_agent_may_create(&actor, new.issue.project)
+    let parent = ctx
+        .parent_for_create(&actor, &input, new.issue.project)
         .await?;
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
-    let changes = new.changes();
+    let mut changes = new.changes();
+    if let Some(parent) = parent {
+        changes.push(FieldChange {
+            field: crate::issues::member::PARENT.to_owned(),
+            before: None,
+            after: Some(serde_json::json!(parent.to_string())),
+        });
+    }
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {
@@ -288,6 +297,9 @@ pub async fn create_issue<S: AuthStore>(
                         new_code_in::<S>(transaction, issue.project, plan, &mut source).await?;
                     let issue = Issue { code, ..issue };
                     S::insert_issue(transaction, &issue, &people).await?;
+                    if let Some(parent) = parent {
+                        put_under::<S>(transaction, &issue, parent, &stopped).await?;
+                    }
                     for (field, cells) in &own_writes {
                         S::put_field_value(
                             transaction,
@@ -331,4 +343,28 @@ pub async fn create_issue<S: AuthStore>(
         .issue_view(&mut views, &stored, &new.assigned_people)
         .await?;
     Ok(access.authorize(view))
+}
+
+/// Puts the new issue under its parent, inside the change that creates it. An issue holds only so
+/// many sub-issues, counted on what is stored now.
+async fn put_under<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    issue: &Issue,
+    parent: IssueId,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    S::lock_issue_parents(transaction).await?;
+    if S::sub_issues_of_in(transaction, parent).await?.len() >= SUB_ISSUES_MAX {
+        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
+    }
+    S::set_issue_parent(
+        transaction,
+        &IssueParent {
+            child: issue.id,
+            parent,
+            set_by: issue.reported_by,
+            set_at: issue.created_at,
+        },
+    )
+    .await
 }

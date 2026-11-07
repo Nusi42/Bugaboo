@@ -4,12 +4,13 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
+use bb_app::agent_work::{EndAttempt, ReportAttempt, end_attempt, report_attempt};
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok, version_of};
-use super::rig::PASSWORD;
+use super::rig::{PASSWORD, Rig};
 
 /// A team member with an agent, the key of the agent, an issue handed over to it with the title
 /// ticked, and another issue of the same project that was not.
@@ -206,6 +207,86 @@ async fn sec_01_a_hand_over_cannot_name_a_member_that_holds_people_or_is_none() 
             )
             .await?;
         assert_eq!(fine.status, StatusCode::OK, "{}", fine.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_31_a_hand_over_with_one_piece_accepted_still_ends_and_stops_the_other() -> TestResult {
+    each_database("ai_31_end_after_accept", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut given = given(&site, &mut ada).await?;
+        let agent = given.person.send("GET", "/api/v1/agents", None).await?.body["items"][0]["id"]
+            .as_str()
+            .ok_or("no agent")?
+            .to_owned();
+        let third = key_of(&site.create(&mut ada, "The third one").await?)?;
+        let both = given
+            .person
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(json!({"agent": agent, "issues": [given.other, third], "days": 1})),
+            )
+            .await?;
+        ok(&both)?;
+        // The agent finishes the work on one of the two, and the person accepts it.
+        let ctx = rig.services.ctx(Rig::info());
+        report_attempt(
+            &ctx,
+            ReportAttempt {
+                session_token: given.key.clone(),
+                issue: given.other.clone(),
+                plan: None,
+                minutes: 1,
+                cost: 0,
+            },
+        )
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+        end_attempt(
+            &ctx,
+            EndAttempt {
+                session_token: given.key.clone(),
+                issue: given.other.clone(),
+                gave_up: None,
+            },
+        )
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+        let path = |issue: &str| format!("{ISSUES}/{issue}/agent-work");
+        let shown = given.person.send("GET", &path(&given.other), None).await?;
+        let work = ok(&shown)?["work"][0].clone();
+        let accepted = given
+            .person
+            .send(
+                "POST",
+                &format!(
+                    "/api/v1/agent-work/{}/review",
+                    work["id"].as_str().ok_or("no work ID")?
+                ),
+                Some(json!({"answer": "accept", "version": work["version"]})),
+            )
+            .await?;
+        ok(&accepted)?;
+        // The hand-over runs out: the piece nobody finished stops, the accepted one stays.
+        rig.clock.advance(24 * 3600 + 1);
+        ctx.run_due_jobs()
+            .await
+            .map_err(|error| format!("{error:?}"))?;
+        // The session ran out meanwhile: the person signs in again.
+        let mut person = Browser::signed_in_as(&app, "tess@example.test").await?;
+        let state_of = async |browser: &mut Browser, issue: &str| -> Result<Value, Failure> {
+            let shown = browser.send("GET", &path(issue), None).await?;
+            Ok(ok(&shown)?["work"][0].clone())
+        };
+        let left = state_of(&mut person, &third).await?;
+        assert_eq!(left["state"], "stopped", "{left}");
+        assert_eq!(left["open"], false);
+        let done = state_of(&mut person, &given.other).await?;
+        assert_eq!(done["state"], "ready-for-review", "{done}");
         Ok(())
     })
     .await

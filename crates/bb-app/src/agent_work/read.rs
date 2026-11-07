@@ -1,7 +1,7 @@
 //! Reading the agent work on an issue (AI-33): who works on it, what the brief says, the attempts,
 //! the questions and the reviews.
 
-use bb_core::agent_records::{GivingState, HandOver, IssueWork, ProposalState};
+use bb_core::agent_records::{HandOver, IssueWork, ProposalState};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext};
 
@@ -125,7 +125,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             hand_over: work.hand_over,
             agent: work.agent,
             state: work.state,
-            open: hand_over.state == GivingState::Open && work.state.is_open() && !work.closed,
+            open: work.is_open_under(hand_over, self.now()),
             brief,
             attempts,
             questions: questions
@@ -202,10 +202,14 @@ pub async fn issue_agent_work<S: AuthStore>(
     let work = views;
     let mut waiting = ctx
         .store()
-        .proposals_on(issue.id, Some(ProposalState::Open))
+        .proposals_on(
+            issue.id,
+            Some(ProposalState::Open),
+            only,
+            MOST_SHOWN_ON_AN_ISSUE as u64 + 1,
+        )
         .await
         .map_err(failed)?;
-    waiting.retain(|proposal| only.is_none_or(|agent| proposal.agent == agent));
     truncated |= waiting.len() > MOST_SHOWN_ON_AN_ISSUE;
     waiting.truncate(MOST_SHOWN_ON_AN_ISSUE);
     let proposals = waiting

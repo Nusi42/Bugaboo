@@ -285,6 +285,7 @@ pub(super) async fn targets_for_a_job(rig: &Rig, site: &Site<'_>) -> Result<Vec<
                     assigned_to: None,
                     estimated_time: None,
                     fields: BTreeMap::new(),
+                    parent: None,
                 },
             )
             .await

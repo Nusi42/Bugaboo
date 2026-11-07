@@ -161,6 +161,7 @@ async fn issue_of_type(
             assigned_to: None,
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
+            parent: None,
         },
     )
     .await?
@@ -290,6 +291,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
             assigned_to: None,
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
+            parent: None,
         },
     )
     .await;

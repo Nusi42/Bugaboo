@@ -188,6 +188,19 @@ pub struct IssueWork {
     pub version: i64,
 }
 
+impl IssueWork {
+    /// Whether the work is open under its hand-over at `now`: no review closed it, it did not end
+    /// as stopped or given up, and the hand-over still gives work and has not run out. The one
+    /// definition the views use; the store's statements say the same (`open_work_of_agent`).
+    #[must_use]
+    pub fn is_open_under(&self, hand_over: &HandOver, now: Timestamp) -> bool {
+        !self.closed
+            && self.state.is_open()
+            && hand_over.state == GivingState::Open
+            && hand_over.ends_at > now
+    }
+}
+
 /// One go of an agent at an issue (AI-33).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Attempt {

@@ -53,6 +53,7 @@ pub(super) fn create_issue(run: &Run<'_>) -> Result<CreateIssue, AppError> {
         assigned_to: None,
         estimated_time: None,
         fields: BTreeMap::new(),
+        parent: None,
     })
 }
 

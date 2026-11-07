@@ -87,6 +87,7 @@ async fn iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers()
                             assigned_to: None,
                             estimated_time: None,
                             fields: std::collections::BTreeMap::new(),
+                            parent: None,
                         },
                     )
                     .await
@@ -581,6 +582,7 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
                         assigned_to: None,
                         estimated_time: None,
                         fields: std::collections::BTreeMap::new(),
+                        parent: None,
                     },
                 )
                 .await

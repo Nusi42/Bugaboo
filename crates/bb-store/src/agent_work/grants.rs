@@ -103,13 +103,19 @@ impl GrantStore for AuthStorage {
         transaction: &mut Transaction,
         issue: IssueId,
         state: Option<ProposalState>,
+        agent: Option<AgentId>,
+        limit: u64,
     ) -> Result<Vec<Proposal>, StoreError> {
         let mut select = proposal_select();
         select
             .and_where(Expr::col(ProposalRow::Issue).eq(issue.stored()))
-            .order_by(ProposalRow::Id, Order::Desc);
+            .order_by(ProposalRow::Id, Order::Desc)
+            .limit(limit);
         if let Some(state) = state {
             select.and_where(Expr::col(ProposalRow::State).eq(state.code()));
+        }
+        if let Some(agent) = agent {
+            select.and_where(Expr::col(ProposalRow::Agent).eq(agent.stored()));
         }
         all(transaction, &select, read_proposal).await
     }
@@ -319,6 +325,22 @@ impl GrantStore for AuthStorage {
             .value(ProposalRow::DecidedBy, by.stored())
             .and_where(Expr::col(ProposalRow::Id).eq(id.stored()))
             .and_where(Expr::col(ProposalRow::State).eq(ProposalState::Open.code()));
+        Ok(transaction.execute(&update).await? > 0)
+    }
+
+    async fn reopen_proposal(
+        transaction: &mut Transaction,
+        id: AgentNoteId,
+        by: UserId,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(ProposalRow::Table)
+            .value(ProposalRow::State, ProposalState::Open.code())
+            .value(ProposalRow::DecidedBy, Expr::val(None::<Vec<u8>>))
+            .and_where(Expr::col(ProposalRow::Id).eq(id.stored()))
+            .and_where(Expr::col(ProposalRow::DecidedBy).eq(by.stored()))
+            .and_where(Expr::col(ProposalRow::State).ne(ProposalState::Open.code()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

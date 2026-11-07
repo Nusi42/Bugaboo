@@ -51,6 +51,10 @@ pub struct CreateIssue {
     pub estimated_time: Option<Minutes>,
     /// The values of its own fields, by the key of the field; the defaults fill in the rest.
     pub fields: BTreeMap<String, Value>,
+    /// The issue it is created under as a sub-issue, in the project of that issue; none for an
+    /// issue of its own. An agent given *create sub-issues* creates only under the issue it was
+    /// handed.
+    pub parent: Option<String>,
 }
 
 /// Change the fields of an issue: what is `Some` is changed.
