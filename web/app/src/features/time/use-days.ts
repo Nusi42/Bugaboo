@@ -2,9 +2,10 @@ import type { Schema } from "@bugaboo/api-client";
 import type { Wording } from "@bugaboo/wasm";
 import { useState } from "react";
 
+import { personToday } from "../../shared/clock.ts";
 import { useRegion } from "../../shared/region.ts";
 import { useNow } from "../../shared/use-now.ts";
-import { changedDates, daysByDate, todayOf, warningsOfDays, type WorkDay } from "./sheet-model.ts";
+import { changedDates, daysByDate, warningsOfDays, type WorkDay } from "./sheet-model.ts";
 import type { DaysProps } from "./sheet-props.ts";
 import { useSheetEditing } from "./use-sheet-editing.ts";
 import { rangeOf, useDayHistory, useEntriesOnDay, useWorkDays } from "./use-week.ts";
@@ -46,7 +47,7 @@ export function useDays(input: DaysInput): DaysState {
   const workDays = useWorkDays(first, person);
   const page = workDays.data;
   const byDate = daysByDate(page?.days);
-  const today = todayOf(region, now);
+  const today = personToday(region, now);
   const entriesOf = useEntriesOnDay(first);
   const editing = useSheetEditing({
     person,

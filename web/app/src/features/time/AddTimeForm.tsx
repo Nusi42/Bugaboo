@@ -1,8 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form } from "@bugaboo/ui";
 
-import { CALENDAR } from "../../shared/format.ts";
 import { LengthBox } from "../fields/index.ts";
+import { DayBox } from "./DayBox.tsx";
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryForm } from "./EntryForm.tsx";
 import type { AddTimeState } from "./use-add-time-state.ts";
@@ -26,12 +26,7 @@ export function AddTimeForm({ id, issue, defaults, state, problem, onSubmit }: A
       {problem !== undefined && problem.field === undefined ? (
         <Alert tone={alertTone.danger}>{problem.text}</Alert>
       ) : null}
-      <TextField
-        label={t("time.entry.date")}
-        date={CALENDAR}
-        value={state.date}
-        onChange={state.setDate}
-      />
+      <DayBox label={t("time.entry.date")} value={state.date} onChange={state.setDate} />
       <LengthBox
         name={t("time.entry.length")}
         minutes={state.minutes ?? undefined}

@@ -130,6 +130,9 @@ export interface MessageArguments {
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
   "common.show-all": { count: number };
+  "common.time-24": { hour: string | number; minute: string | number };
+  "common.time-am": { hour: string | number; minute: string | number };
+  "common.time-pm": { hour: string | number; minute: string | number };
   "common.weekday-date": { date: string | number; weekday: string | number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
@@ -158,6 +161,10 @@ export interface MessageArguments {
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
+  "error.support-code": { code: string | number };
+  "error.time.entry-too-long": { hours: number };
+  "error.time.entry-too-short": { minutes: number };
+  "error.working-hours.keep-years-too-short": { years: number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.preview-can-change": { fields: string | number };
   "field-permissions.preview-can-see": { fields: string | number };
@@ -177,6 +184,7 @@ export interface MessageArguments {
   "fields.combine-text": { into: string | number; name: string | number };
   "fields.combine-title": { name: string | number };
   "fields.label-required": { field: string | number };
+  "fields.long-edit": { name: string | number };
   "fields.pick-choose-name": { name: string | number };
   "fields.pick-take-out-name": { name: string | number };
   "fields.scope-projects": { count: number };
@@ -623,6 +631,7 @@ export interface MessageArguments {
     decimal: string | number;
     short: string | number;
   };
+  "time.entry.not-a-date": { example: string | number };
   "time.length.hours": { hours: number };
   "time.length.hours-and-minutes": { hours: string | number; minutes: string | number };
   "time.length.minutes": { minutes: number };
@@ -635,6 +644,7 @@ export interface MessageArguments {
   "time.others.reading": { person: string | number };
   "time.others.week-of-person": { date: string | number; person: string | number };
   "time.others.week-worked": { worked: string | number };
+  "time.sheet.breaks-as-times": { example: string | number };
   "time.sheet.cell-label": { day: string | number; row: string | number };
   "time.sheet.day-heading": { day: string | number; weekday: string | number };
   "time.sheet.day-tab": { day: string | number; weekday: string | number };
@@ -650,6 +660,8 @@ export interface MessageArguments {
   "time.sheet.history-start": { time: string | number };
   "time.sheet.history-title": { day: string | number };
   "time.sheet.negative-length": { length: string | number };
+  "time.sheet.not-a-time": { afternoon: string | number; morning: string | number };
+  "time.sheet.not-breaks": { example: string | number };
   "time.sheet.reason-change-end": { after: string | number; before: string | number };
   "time.sheet.reason-change-start": { after: string | number; before: string | number };
   "time.sheet.reason-new-end": { after: string | number };
@@ -659,6 +671,7 @@ export interface MessageArguments {
   "time.sheet.reason-title": { day: string | number };
   "time.sheet.warning-of-day": { day: string | number; sentence: string | number };
   "time.sheet.week-of": { date: string | number };
+  "time.start-time.not-a-time": { afternoon: string | number; morning: string | number };
   "time.stop.nothing": { issue: string | number };
   "time.stop.title": { issue: string | number };
   "time.stop.worked": { length: string | number; title: string | number };
@@ -673,6 +686,7 @@ export interface MessageArguments {
   "time.work-day.done": { end: string | number; start: string | number; worked: string | number };
   "time.work-day.left-open": { day: string | number };
   "time.work-day.on-break": { start: string | number; worked: string | number };
+  "time.work-day.open-text": { example: string | number };
   "time.work-day.open-title": { day: string | number };
   "time.work-day.since": { start: string | number; worked: string | number };
   "time.work-day.timer-text": { issue: string | number };

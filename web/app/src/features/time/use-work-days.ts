@@ -2,7 +2,9 @@ import { dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { addDays, calendarDayOf } from "../../shared/format.ts";
+import { personToday } from "../../shared/clock.ts";
+import { addDays } from "../../shared/format.ts";
+import { useRegion } from "../../shared/region.ts";
 import { timeKeys } from "../../shared/time-keys.ts";
 import { useNow } from "../../shared/use-now.ts";
 import { workDayNow, type WorkDayNow } from "./work-day-state.ts";
@@ -35,7 +37,7 @@ export function workDaysQuery(today: string) {
  * open or no day at all comes to.
  */
 export function useWorkDayNow(): { readonly now: WorkDayNow | undefined; readonly today: string } {
-  const today = calendarDayOf(useNow());
+  const today = personToday(useRegion(), useNow());
   const days = useQuery({
     ...workDaysQuery(today),
     refetchOnWindowFocus: true,

@@ -1,7 +1,8 @@
 import { readStored, storageKey, writeStored } from "@bugaboo/ui";
 
 import { queryClient } from "../../shared/query-client.ts";
-import { calendarDayOf } from "../../shared/format.ts";
+import { personToday } from "../../shared/clock.ts";
+import { currentRegion } from "../../shared/region.ts";
 import { askTime } from "./time-asks.ts";
 import { workDaysQuery } from "./use-work-days.ts";
 import { workDayNow } from "./work-day-state.ts";
@@ -11,7 +12,7 @@ const thisTab = (): Storage => sessionStorage;
 
 /** The person said *Not now* to starting the work day with the timer; the question waits until tomorrow. */
 export function declineWorkDayToday(): void {
-  writeStored(storageKey.workDayDeclined, calendarDayOf(Date.now()), thisTab);
+  writeStored(storageKey.workDayDeclined, personToday(currentRegion(), Date.now()), thisTab);
 }
 
 /**
@@ -20,7 +21,7 @@ export function declineWorkDayToday(): void {
  * read (the timer part says what is wrong when the person tries the work day itself).
  */
 export async function offerWorkDay(issue: string): Promise<void> {
-  const today = calendarDayOf(Date.now());
+  const today = personToday(currentRegion(), Date.now());
   if (readStored(storageKey.workDayDeclined, thisTab) === today) {
     return;
   }

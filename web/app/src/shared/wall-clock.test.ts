@@ -42,6 +42,6 @@ describe("time_08 a moment on a day in the zone of the person", () => {
   it("is none for a day that does not exist, and is written back as the box wrote it", () => {
     expect(momentOnDay("2027-02-30", { hour: 8, minute: 0 }, berlin)).toBeNull();
     const moment = momentOnDay("2027-01-14", { hour: 8, minute: 2 }, berlin);
-    expect(timeBoxText(Number(moment), berlin)).toBe("08:02");
+    expect(timeBoxText(Number(moment), berlin)).toBe("8:02");
   });
 });

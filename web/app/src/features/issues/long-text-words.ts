@@ -4,6 +4,8 @@ import { t } from "@bugaboo/messages";
 export interface LongTextWords {
   readonly title: string;
   readonly empty: string;
+  /** The name of the button that opens the text for editing. */
+  readonly edit: string;
   /** Whether the shortcut *Edit the description* opens this text. */
   readonly shortcut: boolean;
 }
@@ -18,6 +20,7 @@ export function descriptionWords(): LongTextWords {
   return {
     title: t("issue-field.description"),
     empty: t("issues.description.empty"),
+    edit: t("issues.description.edit"),
     shortcut: true,
   };
 }

@@ -143,7 +143,9 @@ test("cf_01 a long text own field is edited under the lock and shown as the serv
   await signIn(page, ada);
   await openIssueWithDetails(page, made.key);
   const section = page.getByRole("region", { name: "Notes", exact: true });
-  await section.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+  await section
+    .getByRole("button", { name: t("fields.long-edit", { name: "Notes" }), exact: true })
+    .click();
   await page.getByRole("textbox", { name: "Notes", exact: true }).fill("Steps: **bold** words");
   await section.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(section.locator("strong")).toHaveText("bold");

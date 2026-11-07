@@ -5,15 +5,18 @@
 //! [`Problem`]; the TypeScript union of codes is generated from this list.
 //!
 //! Safety rule: an error never reveals a hidden thing. Whatever the person may not see answers
-//! with [`ErrorCode::NotFound`], exactly as if it did not exist, and no error message has a
-//! placeholder, so no name, ID or count can leak through it. ARCH-ERRORS checks the table and the
-//! catalog.
+//! with [`ErrorCode::NotFound`], exactly as if it did not exist, and an error message has a
+//! placeholder only for a limit of the product that every code of that kind names ([`ErrorCode::arguments`]),
+//! so no name, ID or count of a person's data can leak through it. ARCH-ERRORS checks the table and
+//! the catalog.
 
 use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::message::{Message, MessageKey};
+use crate::message::{Message, MessageKey, Value};
+use crate::time::{MINUTES_PER_HOUR, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
+use crate::working_time::GERMANY_KEEP_YEARS_LEAST;
 
 /// Declares the codes. One line per code: variant, text, HTTP status. The word, its lists, its
 /// serde form and its message (`error.<area>.<name>`, with `-` for `_`) come from [`words!`]; the
@@ -291,6 +294,32 @@ error_codes! {
 }
 
 impl ErrorCode {
+    /// The values for the placeholders of the message of this code: the limits of the product the
+    /// message names, from the constants that hold them (never a value of a person's data).
+    #[must_use]
+    pub fn arguments(self) -> Vec<(&'static str, Value)> {
+        match self {
+            Self::TimeEntryTooShort => vec![(
+                "minutes",
+                Value::Number(i64::from(TIME_ENTRY_MINUTES_MIN.get())),
+            )],
+            Self::TimeEntryTooLong => vec![(
+                "hours",
+                Value::Number(i64::from(TIME_ENTRY_MINUTES_MAX.get() / MINUTES_PER_HOUR)),
+            )],
+            Self::KeepYearsTooShort => {
+                vec![("years", Value::Number(GERMANY_KEEP_YEARS_LEAST))]
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    /// The English words of the message of this code, with the values of its placeholders.
+    #[must_use]
+    pub fn text(self) -> Message {
+        Message::with_arguments(self.message(), self.arguments())
+    }
+
     /// Whether the code says a value breaks the rule of its field (`field.*`, except
     /// [`Self::FieldNotHere`], which says the field is not used here at all).
     #[must_use]
@@ -328,7 +357,8 @@ pub struct Problem {
     /// The key of the message to show, in the message catalog.
     #[cfg_attr(feature = "openapi", schema(value_type = String))]
     message_key: MessageKey,
-    /// Values for the placeholders of the message. Empty today: error messages have none.
+    /// Values for the placeholders of the message: the limits it names ([`ErrorCode::arguments`]);
+    /// most messages have none.
     params: BTreeMap<String, serde_json::Value>,
     /// The ID of the request, also in the `x-request-id` header, to quote when asking for help.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -341,16 +371,23 @@ pub struct Problem {
 }
 
 impl Problem {
-    /// The error answer for `code`. `params` stays empty: error messages have no placeholders.
+    /// The error answer for `code`; `params` holds the limits its message names, if it names any.
     #[must_use]
     pub fn new(code: ErrorCode) -> Self {
+        let arguments = code.arguments();
         Self {
             kind: format!("urn:bugaboo:error:{}", code.code()),
-            title: Message::from(code.message()).render(),
+            title: code.text().render(),
             status: code.status(),
             code,
             message_key: code.message(),
-            params: BTreeMap::new(),
+            params: arguments
+                .iter()
+                .filter_map(|(name, value)| match value {
+                    Value::Number(number) => Some(((*name).to_owned(), serde_json::json!(number))),
+                    Value::Text(_) | Value::Date(_) => None,
+                })
+                .collect(),
             request_id: None,
             field: None,
         }
@@ -450,14 +487,31 @@ mod tests {
     }
 
     #[test]
-    fn every_code_has_its_own_message_with_no_placeholders() {
+    fn every_code_has_its_own_message_and_a_placeholder_only_for_a_limit_of_the_product() {
         let mut keys = HashSet::new();
         for code in ErrorCode::ALL {
             let key = code.message();
             assert!(keys.insert(key), "{key} is shared");
-            assert!(!key.template().contains('{'), "{key} would leak a value");
-            assert!(!Message::from(key).render().is_empty());
+            // A placeholder is filled from a constant of the product, never from data.
+            assert_eq!(
+                key.template().contains('{'),
+                !code.arguments().is_empty(),
+                "{key} would leak a value or show a placeholder"
+            );
+            let text = code.text().render();
+            assert!(!text.is_empty() && !text.contains('{'), "{text}");
         }
+    }
+
+    #[test]
+    fn the_limits_a_message_names_come_from_the_constants() {
+        let short = Problem::new(ErrorCode::TimeEntryTooShort);
+        let json = serde_json::to_value(&short).unwrap();
+        assert_eq!(json["params"], serde_json::json!({"minutes": 1}));
+        assert_eq!(json["title"], "A time entry needs at least 1 minute.");
+        let long = serde_json::to_value(Problem::new(ErrorCode::TimeEntryTooLong)).unwrap();
+        assert_eq!(long["params"], serde_json::json!({"hours": 24}));
+        assert_eq!(long["title"], "A time entry can be at most 24 hours long.");
     }
 
     #[test]

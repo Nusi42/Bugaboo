@@ -11,9 +11,12 @@ import {
   formatSince,
   formatTime,
   isCalendarDay,
+  dayText,
   plainWords,
+  timeOfDayText,
   splitUptime,
 } from "./format.ts";
+import { readDay } from "./read-day.ts";
 import { deviceRegion, setRegion, type Region } from "./region.ts";
 
 describe("ops_08 formatting for the status page", () => {
@@ -79,7 +82,7 @@ describe("ux_a4 a date or a time never wraps", () => {
 
   it("keeps the numbers as they were", () => {
     expect(formatDateTime("2026-10-18T01:16:00Z", region("year-month-day"))).toBe(
-      "2026\u201110\u201118,\u00A001:16",
+      "2026\u201110\u201118,\u00A01:16",
     );
   });
 });
@@ -171,5 +174,50 @@ describe("cfg_04 every number on a page is written the person's way (M5 exit F-A
     setRegion({ ...deviceRegion, numberFormat: "space" });
     expect(t("issues.count", { count: 0 })).toBe(`${formatNumber(0)} issues found`);
     expect(t("issues.count", { count: 1 })).toBe(`${formatNumber(1)} issue found`);
+  });
+});
+
+describe("txt_dates a day typed into a box is read in the person's date format", () => {
+  const german: Region = { ...deviceRegion, dateFormat: "day-month-year" };
+  const american: Region = { ...deviceRegion, dateFormat: "month-day-year" };
+  const iso: Region = { ...deviceRegion, dateFormat: "year-month-day" };
+
+  it("writes a day the way the person chose", () => {
+    expect(dayText("2026-11-06", german)).toBe("06.11.2026");
+    expect(dayText("2026-11-06", american)).toBe("11/06/2026");
+    expect(dayText("2026-11-06", iso)).toBe("2026-11-06");
+  });
+
+  it.each([
+    ["6.11.2026", german, "2026-11-06"],
+    ["06.11.2026", german, "2026-11-06"],
+    ["11/6/2026", american, "2026-11-06"],
+    ["2026-11-06", american, "2026-11-06"],
+    ["2026-11-06", german, "2026-11-06"],
+    ["  6 11 2026 ", german, "2026-11-06"],
+  ])("reads %s in the order of the format", (typed, region, day) => {
+    expect(readDay(typed, region)).toBe(day);
+  });
+
+  it.each(["", "31.02.2026", "13/40/2026", "soon", "6.11.", "6.11.20266"])(
+    "does not read %j",
+    (typed) => {
+      expect(readDay(typed, german)).toBeUndefined();
+    },
+  );
+});
+
+describe("txt_dates a time of day has no zero in front of its hour", () => {
+  const hours24: Region = { ...deviceRegion, dateFormat: "year-month-day", timeOfDay: "24-hour" };
+  const hours12: Region = { ...deviceRegion, timeOfDay: "12-hour" };
+
+  it("writes 8:05, never 08:05", () => {
+    expect(timeOfDayText(8, 5, hours24)).toBe("8:05");
+    expect(timeOfDayText(0, 0, hours24)).toBe("0:00");
+    expect(timeOfDayText(17, 15, hours24)).toBe("17:15");
+    expect(timeOfDayText(8, 5, hours12)).toBe("8:05 AM");
+    expect(timeOfDayText(0, 5, hours12)).toBe("12:05 AM");
+    expect(timeOfDayText(12, 0, hours12)).toBe("12:00 PM");
+    expect(timeOfDayText(23, 59, hours12)).toBe("11:59 PM");
   });
 });

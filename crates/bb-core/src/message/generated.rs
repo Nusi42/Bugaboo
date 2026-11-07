@@ -1201,12 +1201,6 @@ pub const ERROR_SETTING_UNKNOWN_TIME_ZONE: MessageKey =
 /// The message `error.tag.not-here`.
 pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
-/// The message `error.time.entry-too-long`.
-pub const ERROR_TIME_ENTRY_TOO_LONG: MessageKey = MessageKey::new("error.time.entry-too-long");
-
-/// The message `error.time.entry-too-short`.
-pub const ERROR_TIME_ENTRY_TOO_SHORT: MessageKey = MessageKey::new("error.time.entry-too-short");
-
 /// The message `error.time.note-too-long`.
 pub const ERROR_TIME_NOTE_TOO_LONG: MessageKey = MessageKey::new("error.time.note-too-long");
 
@@ -1275,10 +1269,6 @@ pub const ERROR_WORKING_HOURS_DAY_RUNNING: MessageKey =
 /// The message `error.working-hours.in-the-future`.
 pub const ERROR_WORKING_HOURS_IN_THE_FUTURE: MessageKey =
     MessageKey::new("error.working-hours.in-the-future");
-
-/// The message `error.working-hours.keep-years-too-short`.
-pub const ERROR_WORKING_HOURS_KEEP_YEARS_TOO_SHORT: MessageKey =
-    MessageKey::new("error.working-hours.keep-years-too-short");
 
 /// The message `error.working-hours.no-break-running`.
 pub const ERROR_WORKING_HOURS_NO_BREAK_RUNNING: MessageKey =
@@ -6328,9 +6318,6 @@ pub const TIME_SHEET_BOOKED: MessageKey = MessageKey::new("time.sheet.booked");
 /// The message `time.sheet.breaks`.
 pub const TIME_SHEET_BREAKS: MessageKey = MessageKey::new("time.sheet.breaks");
 
-/// The message `time.sheet.breaks-as-times`.
-pub const TIME_SHEET_BREAKS_AS_TIMES: MessageKey = MessageKey::new("time.sheet.breaks-as-times");
-
 /// The message `time.sheet.cannot-clear`.
 pub const TIME_SHEET_CANNOT_CLEAR: MessageKey = MessageKey::new("time.sheet.cannot-clear");
 
@@ -6376,14 +6363,8 @@ pub const TIME_SHEET_LIST_SEPARATOR: MessageKey = MessageKey::new("time.sheet.li
 /// The message `time.sheet.next-week`.
 pub const TIME_SHEET_NEXT_WEEK: MessageKey = MessageKey::new("time.sheet.next-week");
 
-/// The message `time.sheet.not-a-time`.
-pub const TIME_SHEET_NOT_A_TIME: MessageKey = MessageKey::new("time.sheet.not-a-time");
-
 /// The message `time.sheet.not-booked`.
 pub const TIME_SHEET_NOT_BOOKED: MessageKey = MessageKey::new("time.sheet.not-booked");
-
-/// The message `time.sheet.not-breaks`.
-pub const TIME_SHEET_NOT_BREAKS: MessageKey = MessageKey::new("time.sheet.not-breaks");
 
 /// The message `time.sheet.previous-week`.
 pub const TIME_SHEET_PREVIOUS_WEEK: MessageKey = MessageKey::new("time.sheet.previous-week");
@@ -6439,9 +6420,6 @@ pub const TIME_SHEET_WORKING_HOURS: MessageKey = MessageKey::new("time.sheet.wor
 
 /// The message `time.start-time.day`.
 pub const TIME_START_TIME_DAY: MessageKey = MessageKey::new("time.start-time.day");
-
-/// The message `time.start-time.not-a-time`.
-pub const TIME_START_TIME_NOT_A_TIME: MessageKey = MessageKey::new("time.start-time.not-a-time");
 
 /// The message `time.start-time.save`.
 pub const TIME_START_TIME_SAVE: MessageKey = MessageKey::new("time.start-time.save");
@@ -6533,9 +6511,6 @@ pub const TIME_WORK_DAY_OPEN_REASON: MessageKey = MessageKey::new("time.work-day
 
 /// The message `time.work-day.open-save`.
 pub const TIME_WORK_DAY_OPEN_SAVE: MessageKey = MessageKey::new("time.work-day.open-save");
-
-/// The message `time.work-day.open-text`.
-pub const TIME_WORK_DAY_OPEN_TEXT: MessageKey = MessageKey::new("time.work-day.open-text");
 
 /// The message `time.work-day.open-time`.
 pub const TIME_WORK_DAY_OPEN_TIME: MessageKey = MessageKey::new("time.work-day.open-time");
@@ -7333,6 +7308,42 @@ pub fn common_show_all(count: i64) -> Message {
     )
 }
 
+/// The message `common.time-24`.
+#[must_use]
+pub fn common_time_24(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.time-24"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
+    )
+}
+
+/// The message `common.time-am`.
+#[must_use]
+pub fn common_time_am(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.time-am"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
+    )
+}
+
+/// The message `common.time-pm`.
+#[must_use]
+pub fn common_time_pm(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.time-pm"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
+    )
+}
+
 /// The message `common.weekday-date`.
 #[must_use]
 pub fn common_weekday_date(
@@ -7763,6 +7774,42 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `error.support-code`.
+#[must_use]
+pub fn error_support_code(code: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.support-code"),
+        vec![("code", Value::Text(code.to_string()))],
+    )
+}
+
+/// The message `error.time.entry-too-long`.
+#[must_use]
+pub fn error_time_entry_too_long(hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.time.entry-too-long"),
+        vec![("hours", Value::Number(hours))],
+    )
+}
+
+/// The message `error.time.entry-too-short`.
+#[must_use]
+pub fn error_time_entry_too_short(minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.time.entry-too-short"),
+        vec![("minutes", Value::Number(minutes))],
+    )
+}
+
+/// The message `error.working-hours.keep-years-too-short`.
+#[must_use]
+pub fn error_working_hours_keep_years_too_short(years: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.working-hours.keep-years-too-short"),
+        vec![("years", Value::Number(years))],
+    )
+}
+
 /// The message `field-permissions.intro-project`.
 #[must_use]
 pub fn field_permissions_intro_project(project: impl std::fmt::Display) -> Message {
@@ -7934,6 +7981,15 @@ pub fn fields_label_required(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.label-required"),
         vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `fields.long-edit`.
+#[must_use]
+pub fn fields_long_edit(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.long-edit"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -9744,42 +9800,6 @@ pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.subject-short"),
         vec![("issue", Value::Text(issue.to_string()))],
-    )
-}
-
-/// The message `mail.time-24`.
-#[must_use]
-pub fn mail_time_24(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.time-24"),
-        vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
-        ],
-    )
-}
-
-/// The message `mail.time-am`.
-#[must_use]
-pub fn mail_time_am(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.time-am"),
-        vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
-        ],
-    )
-}
-
-/// The message `mail.time-pm`.
-#[must_use]
-pub fn mail_time_pm(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.time-pm"),
-        vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
-        ],
     )
 }
 
@@ -12699,6 +12719,15 @@ pub fn time_entry_length_hint(
     )
 }
 
+/// The message `time.entry.not-a-date`.
+#[must_use]
+pub fn time_entry_not_a_date(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.entry.not-a-date"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
 /// The message `time.length.hours`.
 #[must_use]
 pub fn time_length_hours(hours: i64) -> Message {
@@ -12816,6 +12845,15 @@ pub fn time_others_week_worked(worked: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("time.others.week-worked"),
         vec![("worked", Value::Text(worked.to_string()))],
+    )
+}
+
+/// The message `time.sheet.breaks-as-times`.
+#[must_use]
+pub fn time_sheet_breaks_as_times(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.breaks-as-times"),
+        vec![("example", Value::Text(example.to_string()))],
     )
 }
 
@@ -12972,6 +13010,30 @@ pub fn time_sheet_negative_length(length: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `time.sheet.not-a-time`.
+#[must_use]
+pub fn time_sheet_not_a_time(
+    afternoon: impl std::fmt::Display,
+    morning: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.not-a-time"),
+        vec![
+            ("afternoon", Value::Text(afternoon.to_string())),
+            ("morning", Value::Text(morning.to_string())),
+        ],
+    )
+}
+
+/// The message `time.sheet.not-breaks`.
+#[must_use]
+pub fn time_sheet_not_breaks(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.sheet.not-breaks"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
 /// The message `time.sheet.reason-change-end`.
 #[must_use]
 pub fn time_sheet_reason_change_end(
@@ -13068,6 +13130,21 @@ pub fn time_sheet_week_of(date: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.week-of"),
         vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `time.start-time.not-a-time`.
+#[must_use]
+pub fn time_start_time_not_a_time(
+    afternoon: impl std::fmt::Display,
+    morning: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.start-time.not-a-time"),
+        vec![
+            ("afternoon", Value::Text(afternoon.to_string())),
+            ("morning", Value::Text(morning.to_string())),
+        ],
     )
 }
 
@@ -13217,6 +13294,15 @@ pub fn time_work_day_on_break(
             ("start", Value::Text(start.to_string())),
             ("worked", Value::Text(worked.to_string())),
         ],
+    )
+}
+
+/// The message `time.work-day.open-text`.
+#[must_use]
+pub fn time_work_day_open_text(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("time.work-day.open-text"),
+        vec![("example", Value::Text(example.to_string()))],
     )
 }
 
@@ -14336,6 +14422,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.save", "Save"),
     ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
+    ("common.time-24", "{hour}:{minute}"),
+    ("common.time-am", "{hour}:{minute} AM"),
+    ("common.time-pm", "{hour}:{minute} PM"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
     ("common.weekday-date", "{weekday}, {date}"),
@@ -14885,17 +14974,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.setting.unknown-time-zone",
         "Bugaboo does not know this time zone. Pick one from the list.",
     ),
+    ("error.support-code", "Code for support: {code}."),
     (
         "error.tag.not-here",
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
     ),
     (
         "error.time.entry-too-long",
-        "A time entry can be at most a day long.",
+        "A time entry can be at most {hours, plural, one {# hour} other {# hours}} long.",
     ),
     (
         "error.time.entry-too-short",
-        "A time entry needs at least a minute.",
+        "A time entry needs at least {minutes, plural, one {# minute} other {# minutes}}.",
     ),
     ("error.time.note-too-long", "The note is too long."),
     (
@@ -14976,7 +15066,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.working-hours.keep-years-too-short",
-        "With the rules of Germany, work days are kept for 2 years at least. Choose No rules first, or keep them longer.",
+        "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
     ),
     (
         "error.working-hours.no-break-running",
@@ -15156,6 +15246,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.kind-question", "What kind of information?"),
     ("fields.label-required", "{field} (required)"),
     ("fields.list", "Fields"),
+    ("fields.long-edit", "Edit {name}"),
     ("fields.long-empty", "Nothing is written here yet."),
     ("fields.look", "Look"),
     ("fields.look-label", "How values are shown"),
@@ -16283,9 +16374,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.test-text",
         "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
     ),
-    ("mail.time-24", "{hour}:{minute}"),
-    ("mail.time-am", "{hour}:{minute} AM"),
-    ("mail.time-pm", "{hour}:{minute} PM"),
     (
         "many-changes-skip.changed-since",
         "It changed after the preview",
@@ -16558,7 +16646,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notification.kind.work-day-changed",
-        "Somebody else changes one of your work days",
+        "Your work day was changed",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
@@ -16603,7 +16691,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notifications.long-timer",
-        "Your timer has been running for longer than a work day. Stop it when you are done.",
+        "Your timer has run longer than a work day. Stop it, or change its start time if you forgot it.",
     ),
     ("notifications.mark-all-read", "Mark all as read"),
     ("notifications.mark-read", "Mark as read"),
@@ -16825,7 +16913,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("permission-topic.work-settings", "Work settings"),
     (
         "permission.book-time",
-        "Book their own time on the issues they see, and change and delete their own time entries",
+        "Book time on the issues they see, and change and delete their own time entries",
     ),
     (
         "permission.change-issues",
@@ -16845,7 +16933,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "permission.change-working-hours-of-others",
-        "Change other people's work days, always with a reason",
+        "Change working hours of others, always with a reason",
     ),
     (
         "permission.check-access",
@@ -16929,7 +17017,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("permission.see-status", "See how the server is doing"),
     (
         "permission.see-working-hours-of-others",
-        "See other people's working hours",
+        "See working hours of others",
     ),
     (
         "permission.share-searches",
@@ -18695,7 +18783,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.work-day-changed-by-mail.name",
-        "Somebody changes your work day: by e-mail",
+        "Your work day was changed: by e-mail",
     ),
     (
         "setting.notifications.work-day-changed-in-app.help",
@@ -18703,7 +18791,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.work-day-changed-in-app.name",
-        "Somebody changes your work day: in the app",
+        "Your work day was changed: in the app",
     ),
     (
         "setting.page.region-intro",
@@ -18899,7 +18987,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.working-hours.first-break-minutes.help",
-        "How long the breaks of such a day are together at least.",
+        "How many minutes of break a day needs at least once its work passes the time above.",
     ),
     (
         "setting.working-hours.first-break-minutes.name",
@@ -18915,7 +19003,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.working-hours.keep-years.help",
-        "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+        "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany a lower number is refused.",
     ),
     (
         "setting.working-hours.keep-years.name",
@@ -18944,7 +19032,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.working-hours.second-break-minutes.help",
-        "How long the breaks of such a day are together at least.",
+        "How many minutes of break a day needs at least once its work passes the longer-break time above.",
     ),
     (
         "setting.working-hours.second-break-minutes.name",
@@ -19248,6 +19336,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "time.entry.length-hint",
         "{colon}, {decimal} and {short} all mean ninety minutes.",
     ),
+    ("time.entry.not-a-date", "Type a date like {example}."),
     ("time.entry.note", "What did you do? (optional)"),
     (
         "time.length.hours",
@@ -19306,7 +19395,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.breaks", "Breaks"),
     (
         "time.sheet.breaks-as-times",
-        "Type the times of the breaks, like 12:10-12:40, not their total.",
+        "Type the times of the breaks, like {example}, not their total.",
     ),
     (
         "time.sheet.cannot-clear",
@@ -19346,7 +19435,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.sheet.next-week", "Next week"),
     (
         "time.sheet.not-a-time",
-        "Type a time of day like 8:05 or 17:15.",
+        "Type a time of day like {morning} or {afternoon}.",
     ),
     (
         "time.sheet.not-booked",
@@ -19354,7 +19443,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "time.sheet.not-breaks",
-        "Type each break from one time to another, like 12:10-12:40, with a comma between breaks.",
+        "Type each break from one time to another, like {example}, with a comma between breaks.",
     ),
     ("time.sheet.previous-week", "Previous week"),
     (
@@ -19409,7 +19498,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.start-time.day", "Day"),
     (
         "time.start-time.not-a-time",
-        "Type a time of day like 8:30 or 16:45.",
+        "Type a time of day like {morning} or {afternoon}.",
     ),
     ("time.start-time.save", "Change start time"),
     ("time.start-time.time", "Time of day"),
@@ -19445,7 +19534,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.timer.running-on", "Timer running on"),
     (
         "time.timer.runs-long",
-        "This timer has run longer than a work day.",
+        "Your timer has run longer than a work day. Stop it, or change its start time if you forgot it.",
     ),
     (
         "time.timer.runs-long-on",
@@ -19475,13 +19564,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.left-open-button", "Say when it ended"),
     (
         "time.work-day.on-break",
-        "On break since {start} · {worked} so far",
+        "On break since {start} · {worked} worked so far",
     ),
     ("time.work-day.open-reason", "Why was it not ended?"),
     ("time.work-day.open-save", "End that day"),
     (
         "time.work-day.open-text",
-        "Type the time of day it ended, like 16:45, and why it was not ended. The old times stay in the history of the day.",
+        "Type the time of day it ended, like {example}, and why it was not ended. The old times stay in the history of the day.",
     ),
     ("time.work-day.open-time", "End time"),
     (
@@ -19491,7 +19580,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.region", "Work day"),
     (
         "time.work-day.since",
-        "Working since {start} · {worked} so far",
+        "Working since {start} · {worked} worked so far",
     ),
     ("time.work-day.start", "Start work day"),
     ("time.work-day.timer-no", "Keep it running"),

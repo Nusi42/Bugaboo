@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
-import { endOfOpenDay } from "./work-day-end.ts";
+import { endOfOpenDay, openDayText } from "./work-day-end.ts";
 import { closeTimeAsk } from "./time-asks.ts";
 import { tellTime } from "./time-notice.ts";
 import { endLeftOpenDay } from "./work-day-requests.ts";
@@ -38,7 +38,7 @@ export function OpenDayAsk() {
         }
       }}
       title={t("time.work-day.open-title", { day: formatCalendarDay(day.date) })}
-      text={t("time.work-day.open-text")}
+      text={openDayText()}
       confirmLabel={t("time.work-day.open-save")}
       cancelLabel={t("common.cancel")}
       confirmDisabled={moment === null || reason.trim() === ""}

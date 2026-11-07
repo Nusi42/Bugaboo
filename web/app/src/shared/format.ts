@@ -5,7 +5,7 @@ import {
   secondsPerHour,
   secondsPerMinute,
 } from "@bugaboo/api-client";
-import { locale } from "@bugaboo/messages";
+import { locale, t } from "@bugaboo/messages";
 
 import { currentRegion, numberLocales, type Region } from "./region.ts";
 
@@ -35,14 +35,30 @@ function clockOf(region: Region): Intl.DateTimeFormatOptions {
   return cycle === undefined ? {} : { hourCycle: cycle };
 }
 
+const hoursOnAClock = 12;
+
+/** A time of day (`8:05`, `8:05 AM`) on the person's clock: the one writer, with no zero before the hour. */
+export function timeOfDayText(
+  hour: number,
+  minute: number,
+  region: Region = currentRegion(),
+): string {
+  const minutes = twoDigits(minute);
+  const cycle = clockOf(region).hourCycle;
+  if (cycle !== "h12" && cycle !== "h11") {
+    return t("common.time-24", { hour, minute: minutes });
+  }
+  const onClock = hour % hoursOnAClock === 0 ? hoursOnAClock : hour % hoursOnAClock;
+  return t(hour < hoursOnAClock ? "common.time-am" : "common.time-pm", {
+    hour: onClock,
+    minute: minutes,
+  });
+}
+
 /** The time of day of a moment (milliseconds since 1970) in the person's zone, on the person's clock. */
 function timeOfDayOf(moment: number, region: Region): string {
-  return new Intl.DateTimeFormat(locale, {
-    ...zoneOf(region),
-    ...clockOf(region),
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(moment);
+  const { hour, minute } = clockPartsOf(moment, region);
+  return timeOfDayText(hour, minute, region);
 }
 
 /**
@@ -216,6 +232,11 @@ export function formatCalendarDay(day: string, region: Region = currentRegion())
 /** The day of a moment (milliseconds since 1970) in the zone of the region, as a date field writes it: `2027-03-01`. */
 export function calendarDayOf(moment: number, region: Region = currentRegion()): string {
   return numeric(moment, { ...region, dateFormat: "year-month-day" });
+}
+
+/** A day as the person writes it in a box: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
+export function dayText(day: string, region: Region = currentRegion()): string {
+  return numeric(Date.parse(`${day}T00:00:00Z`), { ...region, timeZone: "UTC" });
 }
 
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */

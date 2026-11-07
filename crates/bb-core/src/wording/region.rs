@@ -228,23 +228,23 @@ impl Region {
         }
     }
 
-    /// The time of day of a moment in the person's zone, on the person's clock: `09:30` or
-    /// `9:30 AM`.
+    /// The time of day of a moment in the person's zone, on the person's clock: `9:30` or
+    /// `9:30 AM`. The hour has no leading zero, the minute has.
     #[must_use]
     pub fn time_of_day(&self, moment: Timestamp) -> String {
         let zoned = moment.to_zoned(self.zone.clone());
         let (hour, minute) = (zoned.hour(), format!("{:02}", zoned.minute()));
         match self.clock {
-            Clock::TwentyFour => message::mail_time_24(format!("{hour:02}"), minute).render(),
+            Clock::TwentyFour => message::common_time_24(hour, minute).render(),
             Clock::Twelve => {
                 let on_clock = match hour % HOURS_ON_A_CLOCK {
                     0 => HOURS_ON_A_CLOCK,
                     hour => hour,
                 };
                 if hour < HOURS_ON_A_CLOCK {
-                    message::mail_time_am(on_clock, minute).render()
+                    message::common_time_am(on_clock, minute).render()
                 } else {
-                    message::mail_time_pm(on_clock, minute).render()
+                    message::common_time_pm(on_clock, minute).render()
                 }
             }
         }

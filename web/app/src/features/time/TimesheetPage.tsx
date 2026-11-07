@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 
-import { weekFirstOf } from "../../shared/clock.ts";
+import { personToday, weekFirstOf } from "../../shared/clock.ts";
 import { useRegion } from "../../shared/region.ts";
 import { useNow } from "../../shared/use-now.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
-import { todayOf } from "./sheet-model.ts";
 import { OwnSheet } from "./Sheet.tsx";
 
 export interface TimesheetPageProps {
@@ -23,7 +22,7 @@ export function TimesheetPage({ week, onWeek }: TimesheetPageProps) {
   usePageTitle(t("time.sheet.title"));
   const region = useRegion();
   const now = useNow();
-  const first = week ?? weekFirstOf(todayOf(region, now), region.firstDay);
+  const first = week ?? weekFirstOf(personToday(region, now), region.firstDay);
   return (
     <Card heading={t("time.sheet.title")} level={1}>
       <WordingNotice />

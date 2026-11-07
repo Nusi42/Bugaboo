@@ -45,13 +45,13 @@ export function workDayNow(days: readonly WorkDay[], today: string): WorkDayNow 
 }
 
 /** The first start of a day, as the server wrote it; none for a day without a period. */
-export function startOf(day: WorkDay): string | undefined {
-  return day.periods[0]?.start;
+export function startOf(day: WorkDay | undefined): string | undefined {
+  return day?.periods[0]?.start;
 }
 
 /** The last end of a day; none while it runs or for a day without a period. */
-export function endOf(day: WorkDay): string | undefined {
-  return day.periods.at(-1)?.end ?? undefined;
+export function endOf(day: WorkDay | undefined): string | undefined {
+  return day?.periods.at(-1)?.end ?? undefined;
 }
 
 /** The start of the break that runs; none when no break runs. */

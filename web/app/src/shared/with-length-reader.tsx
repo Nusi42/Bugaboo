@@ -1,3 +1,4 @@
+import type { Wording } from "@bugaboo/wasm";
 import type { ReactNode } from "react";
 
 import { lengthReaderOf, type LengthReader } from "./length.ts";
@@ -13,12 +14,12 @@ export type { LengthReader } from "./length.ts";
 export function WithLengthReader({
   children,
 }: {
-  readonly children: (readLength: LengthReader) => ReactNode;
+  readonly children: (readLength: LengthReader, wording: Wording) => ReactNode;
 }) {
   return (
     <>
       <WordingNotice />
-      <WithWording>{(wording) => children(lengthReaderOf(wording))}</WithWording>
+      <WithWording>{(wording) => children(lengthReaderOf(wording), wording)}</WithWording>
     </>
   );
 }

@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import { Button, SaveStatus, partOf, part, type SaveState } from "@bugaboo/ui";
 
 import { doNothing } from "../../shared/do-nothing.ts";
@@ -38,7 +37,7 @@ export function DescriptionHead({ description, titleId, canChange, words }: Desc
       <div {...partOf(part.cardActions)}>
         <SaveStatus state={saveStateOf(description)} labels={saveLabels(savedAt)} />
         {canChange && description.phase.kind === "reading" ? (
-          <Button onPress={description.open}>{t("issues.description.edit")}</Button>
+          <Button onPress={description.open}>{words.edit}</Button>
         ) : null}
       </div>
     </div>

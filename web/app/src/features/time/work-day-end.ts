@@ -1,3 +1,6 @@
+import { t } from "@bugaboo/messages";
+
+import { exampleClock } from "../../shared/clock.ts";
 import { currentRegion } from "../../shared/region.ts";
 import { momentOnDay, readTimeOfDay } from "../../shared/wall-clock.ts";
 import type { WorkDay } from "./work-day-state.ts";
@@ -12,4 +15,9 @@ export function endOfOpenDay(day: Pick<WorkDay, "date" | "zone">, typed: string)
   return time === undefined
     ? null
     : momentOnDay(day.date, time, { ...currentRegion(), timeZone: day.zone });
+}
+
+/** What the question about a day left open asks for, with a time of day on the person's clock as the example. */
+export function openDayText(): string {
+  return t("time.work-day.open-text", { example: exampleClock(16, 45) });
 }

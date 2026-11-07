@@ -2,8 +2,8 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { isSaid, type Said, type Wording } from "@bugaboo/wasm";
 
-import { readClock, weekdayAndDate, zoneNameOf, zoneOfNewDay } from "../../shared/clock.ts";
-import { calendarDayOf, formatNumber, formatTime } from "../../shared/format.ts";
+import { exampleClock, readClock, weekdayAndDate, zoneOfNewDay } from "../../shared/clock.ts";
+import { formatNumber, formatTime } from "../../shared/format.ts";
 import { lengthTyped } from "../../shared/length.ts";
 import type { Region } from "../../shared/region.ts";
 import { renderSaid } from "../../shared/said.ts";
@@ -13,18 +13,24 @@ import type { CellRead } from "./TimeCell.tsx";
 /** The example of a decimal length in the sentence of a mistake: 1.5 hours, written with the person's mark. */
 const EXAMPLE_HOURS = 1.5;
 
+/** The times of day that the sentences of a mistake show to type: one in the morning, one in the afternoon. */
+const EXAMPLE_MORNING = { hour: 8, minute: 5 } as const;
+const EXAMPLE_AFTERNOON = { hour: 17, minute: 15 } as const;
+
+/** The break the sentences show to type: a lunch break on the person's clock. */
+export function exampleBreak(): string {
+  return breakSpan(exampleClock(12, 10), exampleClock(12, 40));
+}
+
 export type WorkDay = Schema<"WorkDayBody">;
+
+export { endOf, startOf } from "./work-day-state.ts";
 
 /** The work days of a week by their date. */
 export function daysByDate(
   days: readonly WorkDay[] | undefined,
 ): Readonly<Record<string, WorkDay>> {
   return Object.fromEntries((days ?? []).map((day) => [day.date, day]));
-}
-
-/** The person's date of today in the zone of their region. */
-export function todayOf(region: Region, now: number): string {
-  return calendarDayOf(now, { ...region, timeZone: zoneNameOf(region.timeZone) });
 }
 
 /** The zone the clock of a day is read and typed in: the zone it started in, or the person's. */
@@ -37,16 +43,6 @@ export function clockText(moment: string | null | undefined, zone: string, regio
   return moment === null || moment === undefined
     ? ""
     : formatTime(moment, { ...region, timeZone: zone });
-}
-
-/** The start of a day: the first start. */
-export function startOf(day: WorkDay | undefined): string | undefined {
-  return day?.periods[0]?.start;
-}
-
-/** The end of a day: the last end, none while it runs. */
-export function endOf(day: WorkDay | undefined): string | null | undefined {
-  return day?.periods.at(-1)?.end;
 }
 
 /**
@@ -84,7 +80,14 @@ export function readTimeOfDay(typed: string): CellRead<number> {
     return { empty: true };
   }
   const minutes = readClock(typed);
-  return minutes === undefined ? { mistake: t("time.sheet.not-a-time") } : { value: minutes };
+  return minutes === undefined
+    ? {
+        mistake: t("time.sheet.not-a-time", {
+          morning: exampleClock(EXAMPLE_MORNING.hour, EXAMPLE_MORNING.minute),
+          afternoon: exampleClock(EXAMPLE_AFTERNOON.hour, EXAMPLE_AFTERNOON.minute),
+        }),
+      }
+    : { value: minutes };
 }
 
 function notALength(mistake: Said | null): string {
@@ -122,13 +125,15 @@ export function readBreakLines(lines: readonly string[]): CellRead<BreakTimes> {
     return { empty: true };
   }
   if (parts.every((part) => !BREAK.test(part))) {
-    return { mistake: t("time.sheet.breaks-as-times") };
+    return { mistake: t("time.sheet.breaks-as-times", { example: exampleBreak() }) };
   }
   const times = parts.flatMap((part) => {
     const found = breakOf(part);
     return found === undefined ? [] : [found];
   });
-  return times.length === parts.length ? { value: times } : { mistake: t("time.sheet.not-breaks") };
+  return times.length === parts.length
+    ? { value: times }
+    : { mistake: t("time.sheet.not-breaks", { example: exampleBreak() }) };
 }
 
 /** One break typed as `12:10-12:40`: its two times, or nothing when it is not two times. */

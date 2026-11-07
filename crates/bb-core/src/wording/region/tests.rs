@@ -44,7 +44,7 @@ fn m4_f140_a_moment_is_in_the_zone_of_the_person_and_names_it() {
     );
     assert_eq!(
         moment_in(&own).as_deref(),
-        Some("05.10.2026, 09:30 (Europe/Berlin)")
+        Some("05.10.2026, 9:30 (Europe/Berlin)")
     );
 }
 
@@ -56,7 +56,7 @@ fn m4_f140_a_person_on_device_gets_the_zone_of_the_organization() {
     );
     assert_eq!(
         moment_in(&on_device).as_deref(),
-        Some("2026-10-05, 09:30 (Europe/Berlin)")
+        Some("2026-10-05, 9:30 (Europe/Berlin)")
     );
     // Nothing chosen by the person gives the same.
     let nothing = layers(&[], &[("region.time-zone", "Europe/Berlin")]);
@@ -67,12 +67,12 @@ fn m4_f140_a_person_on_device_gets_the_zone_of_the_organization() {
 fn m4_f140_where_nobody_chose_a_zone_it_is_utc() {
     assert_eq!(
         moment_in(&layers(&[], &[])).as_deref(),
-        Some("2026-10-05, 07:30 (UTC)")
+        Some("2026-10-05, 7:30 (UTC)")
     );
     // A name the server does not know counts as none.
     assert_eq!(
         moment_in(&layers(&[("region.time-zone", "Mars/Olympus")], &[])).as_deref(),
-        Some("2026-10-05, 07:30 (UTC)")
+        Some("2026-10-05, 7:30 (UTC)")
     );
 }
 
@@ -83,7 +83,7 @@ fn m4_f140_the_zone_data_follows_summer_time() {
         ..Choices::default()
     });
     let winter = berlin.worded(FieldType::DateTime, &json!("2026-12-05T07:30:00Z"));
-    assert_eq!(winter.as_deref(), Some("2026-12-05, 08:30"));
+    assert_eq!(winter.as_deref(), Some("2026-12-05, 8:30"));
 }
 
 #[test]
@@ -98,13 +98,13 @@ fn cfg_04_the_time_of_day_follows_the_region_and_its_default_follows_the_date_fo
     };
     // Every fixed date format starts with the clock of 24 hours.
     for date_format in ["day-month-year", "month-day-year", "year-month-day"] {
-        assert_eq!(at(Some(date_format), None), "07:30", "{date_format}");
-        assert_eq!(at(Some(date_format), Some("device")), "07:30");
-        assert_eq!(at(Some(date_format), Some(TIME_OF_DAY_24_HOUR)), "07:30");
+        assert_eq!(at(Some(date_format), None), "7:30", "{date_format}");
+        assert_eq!(at(Some(date_format), Some("device")), "7:30");
+        assert_eq!(at(Some(date_format), Some(TIME_OF_DAY_24_HOUR)), "7:30");
         assert_eq!(at(Some(date_format), Some(TIME_OF_DAY_12_HOUR)), "7:30 AM");
     }
     // A server does not know the device, so *device* on both is the fixed format of a server.
-    assert_eq!(at(None, None), "07:30");
+    assert_eq!(at(None, None), "7:30");
     // The organization's clock stands for a person who left it on *device*.
     let twelve = layers(&[], &[("region.time-of-day", "12-hour")]);
     assert_eq!(
@@ -142,7 +142,7 @@ fn the_hours_of_a_moment_are_on_the_clock_the_person_chose() {
     );
     assert_eq!(
         at(&usual(), "2026-10-05T00:00:00Z").as_deref(),
-        Some("2026-10-05, 00:00")
+        Some("2026-10-05, 0:00")
     );
     assert_eq!(
         at(&usual(), "2026-10-05T13:05:00Z").as_deref(),

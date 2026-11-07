@@ -15,9 +15,9 @@ import {
 import { useId, useState } from "react";
 
 import { windowLabels } from "../../shared/window-labels.ts";
-import { breaksAsLines, EXAMPLE_BREAK } from "./breaks-lines.ts";
+import { breaksAsLines } from "./breaks-lines.ts";
 import { IdsIn } from "./IdsIn.tsx";
-import type { WorkDay } from "./sheet-model.ts";
+import { exampleBreak, type WorkDay } from "./sheet-model.ts";
 import type { DaysProps } from "./sheet-props.ts";
 import { useDayTitle } from "./use-day-title.ts";
 import { useSaveBreaks } from "./use-save-breaks.ts";
@@ -73,8 +73,8 @@ export function BreaksWindow({ date, day, region, editing, onClose }: BreaksWind
         </span>
         <p {...partOf(part.muted)}>
           <IdsIn
-            sentence={t("time.breaks.hint", { example: EXAMPLE_BREAK })}
-            lengths={[EXAMPLE_BREAK]}
+            sentence={t("time.breaks.hint", { example: exampleBreak() })}
+            lengths={[exampleBreak()]}
           />
         </p>
       </Form>

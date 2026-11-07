@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
+import vectors from "../../../../tools/testdata/value-words.json";
+import { calendarDayOf } from "./format.ts";
+import { deviceRegion, deviceTimeZone } from "./region.ts";
 import {
   clockMinutesOf,
   dayOfMonth,
   momentOfClock,
+  personToday,
   readClock,
   weekdayName,
   weekDaysOf,
   weekFirstOf,
+  zoneOfNewDay,
 } from "./clock.ts";
 
 describe("time_08 a time of day typed into a cell of the work day", () => {
@@ -92,4 +97,48 @@ describe("time_04 the names of the days of the head", () => {
     expect(weekdayName("2026-10-08", "long")).toBe("Thursday");
     expect(dayOfMonth("2026-10-05")).toBe(5);
   });
+});
+
+describe("time_08 the one today of a person", () => {
+  const lateEvening = Date.parse("2027-01-14T23:30:00Z");
+  const berlin = { ...deviceRegion, timeZone: "Europe/Berlin" };
+
+  it("is the date in the zone the person chose", () => {
+    expect(personToday(berlin, lateEvening)).toBe("2027-01-15");
+    expect(personToday({ ...berlin, timeZone: "America/Los_Angeles" }, lateEvening)).toBe(
+      "2027-01-14",
+    );
+  });
+
+  it("is the date of the device for a person whose Region is the device or UTC, as the server starts their day", () => {
+    const onDevice = calendarDayOf(lateEvening, {
+      ...deviceRegion,
+      dateFormat: "year-month-day",
+      timeZone: deviceTimeZone(),
+    });
+    expect(personToday({ ...deviceRegion, timeZone: "device" }, lateEvening)).toBe(onDevice);
+    expect(personToday({ ...deviceRegion, timeZone: "UTC" }, lateEvening)).toBe(onDevice);
+  });
+});
+
+const UNKNOWN_ZONE = "Nowhere/Land";
+
+/** The cases of the server's choice that a browser can follow: it knows its own zone and the zones of the list. */
+type NewDayZone = Readonly<{ chosen: string | null; device: string | null; expected: string }>;
+
+const newDayZones = vectors.newDayZones
+  .filter((each: NewDayZone) => each.chosen !== UNKNOWN_ZONE && each.device !== UNKNOWN_ZONE)
+  .map((each: NewDayZone) => ({
+    chosen: each.chosen ?? "device",
+    device: each.device ?? "UTC",
+    expected: each.expected,
+  }));
+
+describe("time_08 a new work day starts in the zone the server decides", () => {
+  it.each(newDayZones)(
+    "starts in $expected for $chosen on $device",
+    (zones: Readonly<{ chosen: string; device: string; expected: string }>) => {
+      expect(zoneOfNewDay(zones.chosen, zones.device)).toBe(zones.expected);
+    },
+  );
 });

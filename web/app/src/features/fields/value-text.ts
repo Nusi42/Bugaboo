@@ -119,7 +119,7 @@ export function textOf(field: BoxField, value: unknown): string {
     return "";
   }
   if (field.kind === "duration" && typeof value === "number") {
-    return durationText(value);
+    return (field.lengthText ?? durationText)(value);
   }
   return typeof value === "string" || typeof value === "number" ? String(value) : "";
 }

@@ -6,7 +6,7 @@ import { partOf } from "./parts.ts";
 import { alertTone, buttonLook, type AlertTone } from "./props.ts";
 import { part } from "./tokens.ts";
 
-/** One of the two answers of a note. */
+/** An answer of a note: a button. */
 export interface NoteAnswer {
   readonly label: string;
   readonly onPress: () => void;
@@ -20,8 +20,8 @@ export interface AnswerNoteProps {
   readonly tone?: AlertTone;
   /** The answer the screen is for: the one filled button. A note may leave it out. */
   readonly main?: NoteAnswer | undefined;
-  /** The other answer: a plain button. */
-  readonly other: NoteAnswer;
+  /** The other answer: a plain button. A note may leave it out. */
+  readonly other?: NoteAnswer | undefined;
 }
 
 /**
@@ -42,9 +42,11 @@ export function AnswerNote({ text, tone = alertTone.info, main, other }: AnswerN
             {main.label}
           </Button>
         )}
-        <Button isPending={other.isPending ?? false} onPress={other.onPress}>
-          {other.label}
-        </Button>
+        {other === undefined ? null : (
+          <Button isPending={other.isPending ?? false} onPress={other.onPress}>
+            {other.label}
+          </Button>
+        )}
       </div>
     </Alert>
   );

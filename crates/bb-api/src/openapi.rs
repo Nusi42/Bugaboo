@@ -15,7 +15,6 @@ use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
 use bb_core::fields::Field;
 use bb_core::history::HistoryTab;
 use bb_core::mail::MailServerReadiness;
-use bb_core::message::Message;
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::saved_search::{SearchSet, ShareKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
@@ -347,11 +346,7 @@ fn add_conflict_answer(components: &Components, operation: &mut OperationSpec) {
 /// The English words of an answer for a code, then the code: what a person who writes a client
 /// reads (the message key is for the browser, not for the description).
 fn answer_text(code: ErrorCode) -> String {
-    format!(
-        "{} ({})",
-        Message::from(code.message()).render(),
-        code.code()
-    )
+    format!("{} ({})", code.text().render(), code.code())
 }
 
 /// Whether the operation takes the query parameter `name`.

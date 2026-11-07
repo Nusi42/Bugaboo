@@ -292,8 +292,9 @@ fn region_named(name: &str) -> Option<Region> {
 
 /// The moments whose time of day the vectors check in every region: in the morning, exactly at
 /// noon, after noon, a minute before midnight, and exactly at midnight.
-const TIMES: [&str; 5] = [
+const TIMES: [&str; 6] = [
     MOMENT,
+    "2026-10-05T08:05:00Z",
     "2026-10-05T12:00:00Z",
     "2026-10-05T13:05:00Z",
     "2026-10-05T23:59:00Z",
@@ -317,6 +318,32 @@ fn times() -> Result<Vec<Value>, String> {
         }
     }
     Ok(all)
+}
+
+/// The zones a new work day can start in: what the person chose and what the device has, as the
+/// server decides and the browser must (`zone_of_new_day`).
+const NEW_DAY_ZONES: [(Option<&str>, Option<&str>); 8] = [
+    (Some("Europe/Berlin"), Some("Asia/Tokyo")),
+    (Some("UTC"), Some("Asia/Tokyo")),
+    (None, Some("Asia/Tokyo")),
+    (Some("Europe/Berlin"), None),
+    (None, None),
+    (Some("UTC"), None),
+    (Some("Nowhere/Land"), Some("Asia/Tokyo")),
+    (None, Some("Nowhere/Land")),
+];
+
+fn new_day_zones() -> Vec<Value> {
+    NEW_DAY_ZONES
+        .iter()
+        .map(|(chosen, device)| {
+            json!({
+                "chosen": chosen,
+                "device": device,
+                "expected": crate::time::zone::zone_of_new_day(*chosen, *device),
+            })
+        })
+        .collect()
 }
 
 /// The lengths of time a person types that the vectors check, with the decimal mark of their
@@ -477,6 +504,7 @@ pub fn value_words_file() -> Result<String, String> {
         "regions": regions,
         "cases": cases,
         "times": times()?,
+        "newDayZones": new_day_zones(),
         "lists": lists,
         "changes": changes(),
         "lengths": lengths(),

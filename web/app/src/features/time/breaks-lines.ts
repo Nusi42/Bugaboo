@@ -1,9 +1,6 @@
 import type { Region } from "../../shared/region.ts";
 import { breakSpan, clockText, zoneOfDay, type WorkDay } from "./sheet-model.ts";
 
-/** A break as the hint of the window shows it. */
-export const EXAMPLE_BREAK = breakSpan("12:10", "12:40");
-
 /** The line a break is typed as: `12:10-12:40`, in the clock of the person and the zone of the day. */
 function lineOf(
   span: { readonly start: string; readonly end: string | null },

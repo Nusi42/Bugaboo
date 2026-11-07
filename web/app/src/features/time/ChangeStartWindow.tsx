@@ -10,22 +10,12 @@ import {
   partOf,
   part,
 } from "@bugaboo/ui";
-import { useId, useState } from "react";
+import { useId } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
-import { CALENDAR, calendarDayOf } from "../../shared/format.ts";
-import { momentOnDay, readTimeOfDay, timeBoxText } from "../../shared/wall-clock.ts";
+import { DayBox } from "./DayBox.tsx";
 import { EntryWindow } from "./EntryWindow.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
-import { changeTimerStart } from "./timer-requests.ts";
-import { useTimer } from "./use-timer.ts";
-
-/** The new start as the API takes it, from the boxes; none while the day or the time of day is none. */
-function startOf(day: string, time: string): string | undefined {
-  const typed = readTimeOfDay(time);
-  const moment = typed === undefined ? null : momentOnDay(day, typed);
-  return moment === null ? undefined : new Date(moment).toISOString();
-}
+import { useChangeStart } from "./use-change-start.ts";
 
 /**
  * *Change start time* (TIME-01): the day and time of day the running timer started, in the person's
@@ -33,28 +23,12 @@ function startOf(day: string, time: string): string | undefined {
  * start, and says which.
  */
 export function ChangeStartWindow() {
-  const reading = useTimer().data;
-  const started = reading?.timer.running?.started_at;
   const formId = useId();
-  const [day, setDay] = useState(() => calendarDayOf(Date.parse(started ?? "") || Date.now()));
-  const [time, setTime] = useState(() => timeBoxText(Date.parse(started ?? "") || Date.now()));
-  const [problem, setProblem] = useState<string | undefined>();
-  if (reading === undefined || started === undefined) {
+  const start = useChangeStart();
+  if (start === undefined) {
     return null;
   }
-  const save = async (): Promise<void> => {
-    const moment = startOf(day, time);
-    if (moment === undefined) {
-      setProblem(t("time.start-time.not-a-time"));
-      return;
-    }
-    try {
-      await changeTimerStart(reading.timer.version, moment);
-      closeTimeAsk();
-    } catch (error) {
-      setProblem(messageOf(error));
-    }
-  };
+  const { day, setDay, time, setTime, problem, save } = start;
   return (
     <EntryWindow
       title={t("time.start-time.title")}
@@ -76,7 +50,7 @@ export function ChangeStartWindow() {
         }}
       >
         {problem === undefined ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
-        <TextField label={t("time.start-time.day")} date={CALENDAR} value={day} onChange={setDay} />
+        <DayBox label={t("time.start-time.day")} value={day} onChange={setDay} />
         <TextField label={t("time.start-time.time")} value={time} onChange={setTime} />
       </Form>
     </EntryWindow>

@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
+import { Alert, AnswerNote, alertTone, partOf, part } from "@bugaboo/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
+import { codeOf, isRetryable, messageOf, supportCodeOf } from "../../shared/errors.ts";
 
 export interface QueryGateProps<Data> {
   /** Why the query failed, if it did (`query.error`). */
@@ -31,9 +32,27 @@ export function QueryGate<Data>({
   loading,
   children,
 }: QueryGateProps<Data>) {
+  const client = useQueryClient();
   if (error !== null && error !== undefined) {
-    return notFound !== undefined && codeOf(error) === "resource.not-found" ? (
-      notFound
+    if (notFound !== undefined && codeOf(error) === "resource.not-found") {
+      return notFound;
+    }
+    const code = supportCodeOf(error);
+    return isRetryable(error) ? (
+      <AnswerNote
+        tone={alertTone.danger}
+        text={
+          code === undefined
+            ? messageOf(error)
+            : `${messageOf(error)} ${t("error.support-code", { code })}`
+        }
+        main={{
+          label: t("common.try-again"),
+          onPress: () => {
+            void client.refetchQueries({ stale: true });
+          },
+        }}
+      />
     ) : (
       <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>
     );

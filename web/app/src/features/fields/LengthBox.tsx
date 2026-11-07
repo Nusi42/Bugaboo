@@ -1,5 +1,6 @@
 import { secondsPerMinute } from "@bugaboo/api-client";
 import { partOf, part } from "@bugaboo/ui";
+import type { Wording } from "@bugaboo/wasm";
 
 import { WithLengthReader } from "../../shared/with-length-reader.tsx";
 import type { BoxField } from "./fields.ts";
@@ -25,6 +26,22 @@ export interface LengthBoxProps {
 }
 
 /**
+ * The box of a length: in a row of the Details it writes the short form (`1h 30m`, UX §4.9); a box of
+ * a form (*Add time*, *Stop timer*) writes the grid form (`1:30`), the form of the timesheet.
+ */
+function fieldOf(name: string, inRow: boolean, wording: Wording): BoxField {
+  const rules = { required: false };
+  return inRow
+    ? { name, kind: "duration", rules }
+    : {
+        name,
+        kind: "duration",
+        rules,
+        lengthText: (seconds) => wording.lengthOnClock(Math.floor(seconds / secondsPerMinute)),
+      };
+}
+
+/**
  * A box in a row of the Details for a length of the issue itself, in whole minutes (*Estimated
  * time*, *Time left*, TIME-03): the same box, reader and words as the length of an own field, so a
  * length is typed and written one way everywhere. A box of a form (not in a row) says under itself
@@ -38,13 +55,12 @@ export function LengthBox({
   problem,
   onMistake,
 }: LengthBoxProps) {
-  const field: BoxField = { name, kind: "duration", rules: { required: false } };
   return (
     <span {...partOf(part.lengthBox)}>
       <WithLengthReader>
-        {(readLength) => (
+        {(readLength, wording) => (
           <TextEditor
-            field={field}
+            field={fieldOf(name, inRow, wording)}
             value={minutes === undefined ? undefined : minutes * secondsPerMinute}
             inRow={inRow}
             live={!inRow}

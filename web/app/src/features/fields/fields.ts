@@ -30,6 +30,11 @@ export type BoxField = Pick<OwnField, "name" | "kind"> & {
   /** The help under the box, in words; a length box has none of its own (it draws `LengthHint`). */
   readonly help?: OwnField["help"];
   readonly rules: Pick<OwnField["rules"], "required">;
+  /**
+   * How a length (kind `duration`) is written back into the box, in seconds: the short form
+   * (`1h 30m`) when it has none. A box of a form writes the grid form (`1:30`), as the timesheet does.
+   */
+  readonly lengthText?: (seconds: number) => string;
 };
 /** A choice of a *Pick one* or *Pick several* field. */
 export type Choice = Schema<"FieldChoiceBody">;

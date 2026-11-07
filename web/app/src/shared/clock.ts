@@ -5,8 +5,15 @@
  */
 import { locale, t } from "@bugaboo/messages";
 
-import { addDays, clockPartsOf, dayNumbersOf, formatCalendarDay } from "./format.ts";
-import { deviceTimeZone, type FirstDay, type Region } from "./region.ts";
+import {
+  addDays,
+  calendarDayOf,
+  clockPartsOf,
+  dayNumbersOf,
+  formatCalendarDay,
+  timeOfDayText,
+} from "./format.ts";
+import { currentRegion, deviceTimeZone, type FirstDay, type Region } from "./region.ts";
 
 const minutesPerHour = 60;
 const hoursPerDay = 24;
@@ -45,6 +52,14 @@ export function readClock(text: string): number | undefined {
   return hours * minutesPerHour + minute;
 }
 
+/**
+ * A time of day for a sentence that shows what to type (`8:30`, or `8:30 AM` for a person on the
+ * 12-hour clock): the example is written on the person's own clock.
+ */
+export function exampleClock(hour: number, minute: number): string {
+  return timeOfDayText(hour, minute, currentRegion());
+}
+
 /** The zone a person's day is counted in: `device` is the zone of this device. */
 export function zoneNameOf(timeZone: string): string {
   return timeZone === "device" ? deviceTimeZone() : timeZone;
@@ -64,8 +79,17 @@ const zoneRegion = {
  * `working_hours::change`): the zone the person chose, else the one of the device. A person who
  * chose UTC is counted as having chosen none, because UTC is also where nothing is chosen.
  */
-export function zoneOfNewDay(timeZone: string): string {
-  return timeZone === "device" || timeZone === "UTC" ? deviceTimeZone() : timeZone;
+export function zoneOfNewDay(timeZone: string, device: string = deviceTimeZone()): string {
+  return timeZone === "device" || timeZone === "UTC" ? device : timeZone;
+}
+
+/**
+ * The date of today for the person: the day the server starts their work day on, in the zone of
+ * their region (`zoneOfNewDay`). The one "today" of the sidebar, the timesheet, *Add time* and
+ * *Change start time*.
+ */
+export function personToday(region: Region, now: number): string {
+  return calendarDayOf(now, { ...region, timeZone: zoneOfNewDay(region.timeZone) });
 }
 
 /**

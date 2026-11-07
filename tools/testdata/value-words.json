@@ -267,28 +267,28 @@
       "kind": "date-time",
       "value": "2026-10-05T07:30:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 07:30"
+      "expected": "2026-10-05, 7:30"
     },
     {
       "name": "moment in Berlin in summer",
       "kind": "date-time",
       "value": "2026-10-05T07:30:00Z",
       "region": "german",
-      "expected": "05.10.2026, 09:30"
+      "expected": "05.10.2026, 9:30"
     },
     {
       "name": "moment in Berlin in winter",
       "kind": "date-time",
       "value": "2026-12-05T07:30:00Z",
       "region": "german",
-      "expected": "05.12.2026, 08:30"
+      "expected": "05.12.2026, 8:30"
     },
     {
       "name": "moment that is the next day in Berlin",
       "kind": "date-time",
       "value": "2026-10-05T23:30:00Z",
       "region": "german",
-      "expected": "06.10.2026, 01:30"
+      "expected": "06.10.2026, 1:30"
     },
     {
       "name": "moment at noon",
@@ -302,14 +302,14 @@
       "kind": "date-time",
       "value": "2026-10-05T00:00:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 00:00"
+      "expected": "2026-10-05, 0:00"
     },
     {
       "name": "moment in the morning on a 12-hour clock",
       "kind": "date-time",
       "value": "2026-10-05T09:07:00Z",
       "region": "usual",
-      "expected": "2026-10-05, 09:07"
+      "expected": "2026-10-05, 9:07"
     },
     {
       "name": "moment that is the day before in Los Angeles",
@@ -365,7 +365,12 @@
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "usual",
-      "expected": "07:30"
+      "expected": "7:30"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "usual",
+      "expected": "8:05"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
@@ -385,12 +390,17 @@
     {
       "moment": "2026-10-05T00:00:00Z",
       "region": "usual",
-      "expected": "00:00"
+      "expected": "0:00"
     },
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "german",
-      "expected": "09:30"
+      "expected": "9:30"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "german",
+      "expected": "10:05"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
@@ -405,17 +415,22 @@
     {
       "moment": "2026-10-05T23:59:00Z",
       "region": "german",
-      "expected": "01:59"
+      "expected": "1:59"
     },
     {
       "moment": "2026-10-05T00:00:00Z",
       "region": "german",
-      "expected": "02:00"
+      "expected": "2:00"
     },
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "american",
       "expected": "12:30 AM"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "american",
+      "expected": "1:05 AM"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
@@ -440,7 +455,12 @@
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "french",
-      "expected": "07:30"
+      "expected": "7:30"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "french",
+      "expected": "8:05"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
@@ -460,12 +480,17 @@
     {
       "moment": "2026-10-05T00:00:00Z",
       "region": "french",
-      "expected": "00:00"
+      "expected": "0:00"
     },
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "usual on 12 hours",
       "expected": "7:30 AM"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "usual on 12 hours",
+      "expected": "8:05 AM"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
@@ -493,6 +518,11 @@
       "expected": "9:30 AM"
     },
     {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "german on 12 hours",
+      "expected": "10:05 AM"
+    },
+    {
       "moment": "2026-10-05T12:00:00Z",
       "region": "german on 12 hours",
       "expected": "2:00 PM"
@@ -515,17 +545,22 @@
     {
       "moment": "2026-10-05T07:30:00Z",
       "region": "american on 24 hours",
-      "expected": "00:30"
+      "expected": "0:30"
+    },
+    {
+      "moment": "2026-10-05T08:05:00Z",
+      "region": "american on 24 hours",
+      "expected": "1:05"
     },
     {
       "moment": "2026-10-05T12:00:00Z",
       "region": "american on 24 hours",
-      "expected": "05:00"
+      "expected": "5:00"
     },
     {
       "moment": "2026-10-05T13:05:00Z",
       "region": "american on 24 hours",
-      "expected": "06:05"
+      "expected": "6:05"
     },
     {
       "moment": "2026-10-05T23:59:00Z",
@@ -536,6 +571,48 @@
       "moment": "2026-10-05T00:00:00Z",
       "region": "american on 24 hours",
       "expected": "17:00"
+    }
+  ],
+  "newDayZones": [
+    {
+      "chosen": "Europe/Berlin",
+      "device": "Asia/Tokyo",
+      "expected": "Europe/Berlin"
+    },
+    {
+      "chosen": "UTC",
+      "device": "Asia/Tokyo",
+      "expected": "Asia/Tokyo"
+    },
+    {
+      "chosen": null,
+      "device": "Asia/Tokyo",
+      "expected": "Asia/Tokyo"
+    },
+    {
+      "chosen": "Europe/Berlin",
+      "device": null,
+      "expected": "Europe/Berlin"
+    },
+    {
+      "chosen": null,
+      "device": null,
+      "expected": "UTC"
+    },
+    {
+      "chosen": "UTC",
+      "device": null,
+      "expected": "UTC"
+    },
+    {
+      "chosen": "Nowhere/Land",
+      "device": "Asia/Tokyo",
+      "expected": "Asia/Tokyo"
+    },
+    {
+      "chosen": null,
+      "device": "Nowhere/Land",
+      "expected": "UTC"
     }
   ],
   "lists": [

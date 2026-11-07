@@ -1,6 +1,6 @@
 import { minutesPerHour } from "@bugaboo/api-client";
 
-import { clockPartsOf, dayNumbersOf, isCalendarDay, twoDigits } from "./format.ts";
+import { clockPartsOf, dayNumbersOf, isCalendarDay, timeOfDayText } from "./format.ts";
 import { currentRegion, type Region } from "./region.ts";
 
 const NOON = 12;
@@ -31,10 +31,10 @@ export function momentOnDay(
   return asIfUtc - (wallClockAsUtc(guess, region) - guess);
 }
 
-/** The time of day of a moment in the region, as a box writes it for the person to change: `08:02`. */
+/** The time of day of a moment in the region, as a box writes it for the person to change: `8:02`. */
 export function timeBoxText(moment: number, region: Region = currentRegion()): string {
   const clock = clockPartsOf(moment, region);
-  return `${twoDigits(clock.hour)}:${twoDigits(clock.minute)}`;
+  return timeOfDayText(clock.hour, clock.minute, region);
 }
 
 /** A time of day somebody typed. */

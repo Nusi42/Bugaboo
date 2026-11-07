@@ -2,13 +2,12 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { weekDaysOf, weekFirstOf } from "../../shared/clock.ts";
+import { personToday, weekDaysOf, weekFirstOf } from "../../shared/clock.ts";
 import { fieldList, itemsOf, pageSize, useAllPages, usePaged } from "../../shared/paged.ts";
 import { useRegion } from "../../shared/region.ts";
 import { timeKeys } from "../../shared/time-keys.ts";
 import { useNow } from "../../shared/use-now.ts";
 import { startersOf } from "./rows.ts";
-import { todayOf } from "./sheet-model.ts";
 
 type TimeEntry = Schema<"TimeEntryItem">;
 
@@ -29,7 +28,7 @@ const ENTRY_FIELDS = fieldList<TimeEntry>([
 /** The first date of the week of today, as the person counts weeks (what *This week* goes to). */
 export function useThisWeek(): string {
   const region = useRegion();
-  return weekFirstOf(todayOf(region, useNow()), region.firstDay);
+  return weekFirstOf(personToday(region, useNow()), region.firstDay);
 }
 
 /** The seven days of the week that starts on `first`, and its first and last date. */

@@ -37,7 +37,11 @@ function LongTextField({
       text={typeof text === "string" ? text : ""}
       html={ownFieldsHtml.find((each) => each.field === fieldId)?.html}
       canChange={mask.changes(fieldId)}
-      words={{ title: field.name, empty: t("fields.long-empty") }}
+      words={{
+        title: field.name,
+        empty: t("fields.long-empty"),
+        edit: t("fields.long-edit", { name: field.name }),
+      }}
       save={save}
     />
   );

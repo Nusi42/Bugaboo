@@ -348,7 +348,7 @@ export const messages = {
   "permission.change-organization-settings": "Change organization settings",
   "permission.see-status": "See how the server is doing",
   "permission.book-time":
-    "Book their own time on the issues they see, and change and delete their own time entries",
+    "Book time on the issues they see, and change and delete their own time entries",
   "starting-role.administrator": "Administrator",
   "starting-role.project-lead": "Project lead",
   "starting-role.team-member": "Team member",
@@ -480,8 +480,10 @@ export const messages = {
   "error.timer.too-fast": "The timer was just started or switched. Wait a second and try again.",
   "error.time.too-many-entries":
     "This date holds as many time entries as one date can have. Book on another date or change an entry.",
-  "error.time.entry-too-short": "A time entry needs at least a minute.",
-  "error.time.entry-too-long": "A time entry can be at most a day long.",
+  "error.time.entry-too-short":
+    "A time entry needs at least {minutes, plural, one {# minute} other {# minutes}}.",
+  "error.time.entry-too-long":
+    "A time entry can be at most {hours, plural, one {# hour} other {# hours}} long.",
   "error.time.note-too-long": "The note is too long.",
   "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
@@ -799,6 +801,9 @@ export const messages = {
   "person.via-app": "{who} via {app}",
   "person.agent-of": "{agent}, agent of {person}",
   "issue-type.only-for": "It is only for {type}.",
+  "common.time-24": "{hour}:{minute}",
+  "common.time-am": "{hour}:{minute} AM",
+  "common.time-pm": "{hour}:{minute} PM",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
     "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
@@ -832,7 +837,7 @@ export const messages = {
   "notifications.let-go": "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
   "notifications.long-timer":
-    "Your timer has been running for longer than a work day. Stop it when you are done.",
+    "Your timer has run longer than a work day. Stop it, or change its start time if you forgot it.",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
@@ -841,10 +846,10 @@ export const messages = {
   "notifications.issue-ids-failed-hidden":
     "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
   "notifications.count-capped": "{max}+",
-  "permission.see-working-hours-of-others": "See other people's working hours",
+  "permission.see-working-hours-of-others": "See working hours of others",
   "permission.create-agents": "Create agents that work for you, and hand them work in the project",
   "permission.change-working-hours-of-others":
-    "Change other people's work days, always with a reason",
+    "Change working hours of others, always with a reason",
   "starting-role.hr": "HR",
   "working-time.preset.germany": "Germany",
   "working-time.preset.no-rules": "No rules",
@@ -867,13 +872,13 @@ export const messages = {
     "A day with more work than this needs the first break.",
   "setting.working-hours.first-break-minutes.name": "First break",
   "setting.working-hours.first-break-minutes.help":
-    "How long the breaks of such a day are together at least.",
+    "How many minutes of break a day needs at least once its work passes the time above.",
   "setting.working-hours.second-break-after-minutes.name": "Longer break is due after",
   "setting.working-hours.second-break-after-minutes.help":
     "A day with more work than this needs the longer break.",
   "setting.working-hours.second-break-minutes.name": "Longer break",
   "setting.working-hours.second-break-minutes.help":
-    "How long the breaks of such a day are together at least.",
+    "How many minutes of break a day needs at least once its work passes the longer-break time above.",
   "setting.working-hours.shortest-break-minutes.name": "Shortest break that counts",
   "setting.working-hours.shortest-break-minutes.help":
     "A shorter break does not count for the rules.",
@@ -885,7 +890,7 @@ export const messages = {
     "Less rest between the end of one work day and the start of the next gets a warning.",
   "setting.working-hours.keep-years.name": "Keep work days for",
   "setting.working-hours.keep-years.help":
-    "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany it is at least 2 years.",
+    "Work days are kept at least this long from their date. After that they stay until an administrator deletes them. With the rules of Germany a lower number is refused.",
   "setting.working-hours.totals-only.name": "Totals only",
   "setting.working-hours.totals-only.help":
     "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",
@@ -900,13 +905,11 @@ export const messages = {
   "error.working-hours.reason-needed": "Say in a few words why this work day changes.",
   "error.working-hours.week-totals-only":
     "Only the week totals of other people are shown, so their work days cannot be changed. An administrator can turn Totals only off.",
-  "notification.kind.work-day-changed": "Somebody else changes one of your work days",
-  "setting.notifications.work-day-changed-in-app.name":
-    "Somebody changes your work day: in the app",
+  "notification.kind.work-day-changed": "Your work day was changed",
+  "setting.notifications.work-day-changed-in-app.name": "Your work day was changed: in the app",
   "setting.notifications.work-day-changed-in-app.help":
     "Tells you under Notifications when somebody else changes one of your work days, with the reason they gave.",
-  "setting.notifications.work-day-changed-by-mail.name":
-    "Somebody changes your work day: by e-mail",
+  "setting.notifications.work-day-changed-by-mail.name": "Your work day was changed: by e-mail",
   "setting.notifications.work-day-changed-by-mail.help":
     "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
   "notifications.work-day-changed": "{who} changed your work day of {date}",
@@ -914,7 +917,7 @@ export const messages = {
   "error.working-hours.in-the-future":
     "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short":
-    "With the rules of Germany, work days are kept for 2 years at least. Choose No rules first, or keep them longer.",
+    "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
   "setting.ai.enabled.name": "Use AI",
   "setting.ai.enabled.help":
     "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",

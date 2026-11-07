@@ -211,14 +211,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(String, TimeZone), AppError> {
         let layers = self.setting_layers_of(Some(person)).await?;
         let region = Region::of(&layers);
-        let chosen = region
-            .zone()
-            .iana_name()
-            .and_then(named)
-            .filter(|(name, _)| name != zone::UTC);
-        Ok(chosen
-            .or_else(|| device.and_then(named))
-            .unwrap_or_else(|| (zone::UTC.to_owned(), TimeZone::UTC)))
+        let name = zone::zone_of_new_day(region.zone().iana_name(), device);
+        let zone = zone_of(&name);
+        Ok((name, zone))
     }
 
     /// The person's last day, if a period of it runs.

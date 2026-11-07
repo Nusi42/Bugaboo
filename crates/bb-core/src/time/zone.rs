@@ -52,6 +52,20 @@ pub fn known_names() -> Vec<String> {
     names
 }
 
+/// The name of the zone a new work day starts in: the zone the person chose when it is one the
+/// server knows, else the zone of the device when the server knows it, else UTC. A person who chose
+/// UTC counts as having chosen none, because UTC is also where nothing is chosen. The browser
+/// works out the same (`zoneOfNewDay`); `tools/testdata/value-words.json` holds the two together.
+#[must_use]
+pub fn zone_of_new_day(chosen: Option<&str>, device: Option<&str>) -> String {
+    let known = |name: &&str| *name != UTC && named(name).is_some();
+    chosen
+        .filter(known)
+        .or_else(|| device.filter(|name| named(name).is_some()))
+        .unwrap_or(UTC)
+        .to_owned()
+}
+
 /// The zone of a name of the list; `None` for a name the server does not know, also one that is
 /// only written another way (`europe/berlin`).
 #[must_use]

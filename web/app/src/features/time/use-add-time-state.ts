@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { calendarDayOf } from "../../shared/format.ts";
+import { personToday } from "../../shared/clock.ts";
+import { useRegion } from "../../shared/region.ts";
 import { startingValues, type EntryValues } from "./entry-values.ts";
 import type { EntryDefaults } from "./use-entry-defaults.ts";
 
@@ -20,7 +21,8 @@ export interface AddTimeState {
 
 /** The values of *Add time*: today, no length yet, and the defaults of the issue. */
 export function useAddTimeState(defaults: EntryDefaults): AddTimeState {
-  const [date, setDate] = useState(() => calendarDayOf(Date.now()));
+  const region = useRegion();
+  const [date, setDate] = useState(() => personToday(region, Date.now()));
   const [minutes, setMinutes] = useState<number | null>(null);
   const [values, setValues] = useState<EntryValues>(() => startingValues(defaults));
   return {

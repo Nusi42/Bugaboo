@@ -10,6 +10,9 @@ import { press } from "./support/working-hours-scene.ts";
 import { boxOf as boxOnPage } from "./support/windows.ts";
 import { partIn } from "./support/parts.ts";
 
+/** The years the rules of Germany ask work days to be kept at least. */
+const GERMANY_KEEP_YEARS = 2;
+
 // Organization settings › Work › Working hours (TIME-09, TIME-10, TIME-12, ADR-0018, ADR-0035): the rules
 // as lengths, the keep period that stays within the law, the work days past it with *Delete them* after a
 // question, *Totals only*, and who holds the permission to see working hours of others.
@@ -72,6 +75,7 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   await page.goto(paths.workingHours);
   const name = t("setting.working-hours.keep-years.name");
   const keep = page.getByLabel(name, { exact: true });
+  const tooShort = t("error.working-hours.keep-years-too-short", { years: GERMANY_KEEP_YEARS });
   // The box holds the number; what it counts stands beside it in words.
   await expect(keep).toHaveValue("2");
   await expect(
@@ -79,9 +83,7 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   ).toBeVisible();
   await keep.fill("1");
   await keep.press("Enter");
-  await expect(
-    page.getByRole("alert").filter({ hasText: t("error.working-hours.keep-years-too-short") }),
-  ).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: tooShort })).toBeVisible();
   // Without rules the organization chooses.
   await page.getByRole("radio", { name: t("working-time.preset.no-rules"), exact: true }).click();
   await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
@@ -90,14 +92,10 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   await page.getByLabel(name, { exact: true }).fill("1");
   await page.getByLabel(name, { exact: true }).press("Enter");
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("1");
-  await expect(
-    page.getByRole("alert").filter({ hasText: t("error.working-hours.keep-years-too-short") }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("alert").filter({ hasText: tooShort })).toHaveCount(0);
   // Choosing Germany again with one year kept is refused too, and the preset stays.
   await page.getByRole("radio", { name: t("working-time.preset.germany"), exact: true }).click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: t("error.working-hours.keep-years-too-short") }),
-  ).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: tooShort })).toBeVisible();
   await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
   // The tests of a file share one server: the rules go back to the preset, two years first.
   await page.getByLabel(name, { exact: true }).fill("2");

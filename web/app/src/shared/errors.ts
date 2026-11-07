@@ -30,6 +30,32 @@ export function messageOf(error: unknown): string {
   return t(error instanceof ApiError ? error.messageKey : messageKeyOf());
 }
 
+/** How long the code for support is: the start of the ID of the request is enough to find it. */
+const SUPPORT_CODE_LENGTH = 8;
+
+/** The codes of the answers that a person may try again, because nothing they did was wrong. */
+const RETRYABLE: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
+  "request.timed-out",
+  "server.unavailable",
+  "server.internal",
+]);
+
+/** Whether the failure is one the person can try again: a request that took too long, a server that could not answer, or no answer. */
+export function isRetryable(error: unknown): boolean {
+  if (!(error instanceof ApiError)) {
+    return false;
+  }
+  return error.problem === undefined || RETRYABLE.has(error.problem.code);
+}
+
+/** The short code for support that ends a note about a failure of the server: the start of the ID of the request, none without one. */
+export function supportCodeOf(error: unknown): string | undefined {
+  const id = error instanceof ApiError ? error.problem?.request_id : undefined;
+  return id === undefined || id === null || id === ""
+    ? undefined
+    : id.slice(0, SUPPORT_CODE_LENGTH);
+}
+
 /** Whether the answer says that the person has to set up a second step before anything else. */
 export function isSecondStepRequired(error: unknown): boolean {
   return codeOf(error) === "auth.second-step-required";
