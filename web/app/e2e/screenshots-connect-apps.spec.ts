@@ -2,9 +2,15 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
-import { appAtTheDoor, catchTheAnswer, switchAiOn } from "./support/connect-app.ts";
+import {
+  allowWebAddress,
+  appAtTheDoor,
+  catchTheAnswer,
+  switchAiOn,
+} from "./support/connect-app.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { createProject } from "./support/projects.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 import { inOrder } from "./support/sequence.ts";
@@ -15,8 +21,13 @@ test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the scr
 test.use({
   preparation: {
     run: async (server) => {
-      await (await createAdmin(server)).dispose();
+      const admin = await createAdmin(server);
+      // Projects to choose from, so the consent step shows the picker.
+      await createProject(admin, "WEB", "Website");
+      await createProject(admin, "APP", "Mobile app");
+      await admin.dispose();
       await switchAiOn(server);
+      await allowWebAddress(server);
     },
   },
 });
@@ -46,6 +57,17 @@ test("the consent step, for an app that asks to see and change and for one that 
   await inFourChosenThemes(page, "consent-see-only", MILESTONE, paths.appearance, async () => {
     await page.goto(asksLess.address);
     await expect(page.getByText(t("connect.may-only"))).toBeVisible();
+  });
+});
+
+test("an app on the web says where it comes back to", async ({ page, server }) => {
+  const web = await appAtTheDoor(server, "Cloud Notes", "see-and-change", true);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "consent-web", MILESTONE, paths.appearance, async () => {
+    await page.goto(web.address);
+    await expect(
+      page.getByText(t("connect.where-web", { address: "https://app.example.com/callback" })),
+    ).toBeVisible();
   });
 });
 

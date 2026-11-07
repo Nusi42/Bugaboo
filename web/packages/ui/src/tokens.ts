@@ -1186,7 +1186,7 @@ export const partWords = {
   "apps.table": { variant: [], state: [] },
   "apps.head": { variant: [], state: [] },
   "apps.row": { variant: [], state: [] },
-  "apps.cell": { variant: ["head", "action"], state: [] },
+  "apps.cell": { variant: ["head", "name", "date", "action"], state: [] },
   "apps.body": { variant: [], state: [] },
   "apps.label": { variant: [], state: [] },
   "access-keys.item-text": { variant: [], state: [] },

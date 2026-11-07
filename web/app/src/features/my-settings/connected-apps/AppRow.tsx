@@ -15,15 +15,17 @@ export interface AppRowProps {
 }
 
 interface CellProps {
+  /** A cell of a date stays on one line. */
+  readonly date?: boolean;
   /** What the cell is, said beside its words on a phone, where the head of the table is not shown. */
   readonly label: string;
   readonly children: string;
 }
 
 /** A cell of the table. */
-function Cell({ label, children }: CellProps) {
+function Cell({ label, date = false, children }: CellProps) {
   return (
-    <td {...partOf(part.appsCell)}>
+    <td {...partOf(part.appsCell, { variants: [date && "date"] })}>
       <span {...partOf(part.appsLabel)}>{label} </span>
       {children}
     </td>
@@ -37,7 +39,7 @@ export function AppRow({ item, onTakeBack }: AppRowProps) {
   const used = item.last_used_at;
   return (
     <tr {...partOf(part.appsRow)}>
-      <th scope={rowHeader} {...partOf(part.appsCell)}>
+      <th scope={rowHeader} {...partOf(part.appsCell, { variants: ["name"] })}>
         <span {...partOf(part.startColumn)}>
           <span {...partOf(part.itemTitle)}>{name}</span>
           <span {...partOf(part.muted)}>
@@ -54,10 +56,10 @@ export function AppRow({ item, onTakeBack }: AppRowProps) {
         )}
       </Cell>
       <Cell label={t("connected-apps.col.projects")}>{whereText(item.projects)}</Cell>
-      <Cell label={t("connected-apps.col.allowed")}>
+      <Cell label={t("connected-apps.col.allowed")} date>
         {allowed === undefined || allowed === null ? "" : formatDate(allowed)}
       </Cell>
-      <Cell label={t("connected-apps.col.last-used")}>
+      <Cell label={t("connected-apps.col.last-used")} date>
         {used === undefined || used === null
           ? t("connected-apps.row.never-used")
           : formatDateTime(used)}

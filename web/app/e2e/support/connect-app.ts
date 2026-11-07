@@ -11,6 +11,24 @@ export const COMES_BACK_TO = "http://127.0.0.1:51734/callback";
 /** The address an app registers: the port is not part of it. */
 const REGISTERED = "http://127.0.0.1/callback";
 
+/** The web address of an app that does not run on this computer, once an administrator allowed it. */
+export const WEB_RETURN = "https://app.example.com/callback";
+
+/** An administrator allows the web address of an app (Organization settings). */
+export async function allowWebAddress(server: Instance): Promise<void> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  const allowed = await admin.client.POST("/api/v1/oauth/web-addresses", {
+    body: { address: WEB_RETURN },
+  });
+  if (!allowed.response.ok) {
+    throw new Error(`the web address was not allowed: ${String(allowed.response.status)}`);
+  }
+  await admin.dispose();
+}
+
 /** An AI app that registered itself and is about to send a person to the consent step. */
 export interface AppAtTheDoor {
   readonly name: string;
@@ -68,20 +86,23 @@ export async function appAtTheDoor(
   server: Instance,
   name: string,
   scope: "see-only" | "see-and-change",
+  onTheWeb = false,
 ): Promise<AppAtTheDoor> {
+  const registeredAt = onTheWeb ? WEB_RETURN : REGISTERED;
+  const comesBackTo = onTheWeb ? WEB_RETURN : COMES_BACK_TO;
   const web = await request.newContext({
     baseURL: server.url,
     ignoreHTTPSErrors: true,
   });
   const registered = await web.post("/oauth/register", {
-    data: { client_name: name, redirect_uris: [REGISTERED] },
+    data: { client_name: name, redirect_uris: [registeredAt] },
   });
   const client = textOf(await registered.json(), "client_id");
   const { verifier, challenge } = proof();
   const query = new URLSearchParams({
     client_id: client,
     response_type: "code",
-    redirect_uri: COMES_BACK_TO,
+    redirect_uri: comesBackTo,
     code_challenge: challenge,
     code_challenge_method: "S256",
     scope,
@@ -97,7 +118,7 @@ export async function appAtTheDoor(
           grant_type: "authorization_code",
           client_id: client,
           code,
-          redirect_uri: COMES_BACK_TO,
+          redirect_uri: comesBackTo,
           code_verifier: verifier,
         },
       });

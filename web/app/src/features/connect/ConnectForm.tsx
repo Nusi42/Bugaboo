@@ -12,6 +12,7 @@ import {
 } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { toggled } from "../../shared/toggled.ts";
 import { choiceName, ProjectLimitPicker } from "../my-settings/index.ts";
 import type { ConnectRequest } from "./request.ts";
 import { useDecision } from "./use-decision.ts";
@@ -41,12 +42,6 @@ const helps: Readonly<Record<Scope, MessageKey>> = {
  */
 function offered(asked: Schema<"KeyChoice">): readonly Scope[] {
   return asked === "see-and-change" ? ["see-and-change", "see-only"] : ["see-only"];
-}
-
-/** The projects with one taken in or out. */
-function withProject(list: readonly string[], project: string, on: boolean): readonly string[] {
-  const without = list.filter((each) => each !== project);
-  return on ? [...without, project] : without;
 }
 
 interface MayProps {
@@ -94,7 +89,7 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
       <ProjectLimitPicker
         picked={picked}
         onPick={(project, on) => {
-          setPicked((now) => withProject(now, project, on));
+          setPicked((now) => toggled(now, project, on));
         }}
       />
       <p {...partOf(part.muted)}>

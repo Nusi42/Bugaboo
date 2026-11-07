@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { personName } from "../../shared/person.ts";
+import { whoOf } from "../../shared/change-sentence.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** How many of the newest changes are read to find the last change of one text. */
@@ -27,7 +27,7 @@ export function useWhoChanged(issue: string, part: string, version: number): str
   });
   for (const item of found.data?.items ?? []) {
     if (item.kind === "change" && item.change?.field === part) {
-      return item.by === undefined || item.by === null ? undefined : personName(item.by);
+      return item.by === undefined || item.by === null ? undefined : whoOf(item);
     }
   }
   return undefined;

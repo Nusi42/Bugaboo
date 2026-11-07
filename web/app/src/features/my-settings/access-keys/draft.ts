@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { PermissionKey } from "../../../shared/permissions.ts";
+import { toggled } from "../../../shared/toggled.ts";
 import type { PlainChoice } from "./choice.ts";
 
 /** What the person has filled in so far, and how to change each part. */
@@ -24,22 +25,6 @@ export interface Draft {
   readonly setPassword: (password: string) => void;
 }
 
-/** The permissions with one taken in or out. */
-function withPermission(
-  list: readonly PermissionKey[],
-  item: PermissionKey,
-  on: boolean,
-): readonly PermissionKey[] {
-  const without = list.filter((one) => one !== item);
-  return on ? [...without, item] : without;
-}
-
-/** The projects with one taken in or out. */
-function withProject(list: readonly string[], item: string, on: boolean): readonly string[] {
-  const without = list.filter((one) => one !== item);
-  return on ? [...without, item] : without;
-}
-
 /** The form of *Create an access key*, as a person fills it in. */
 export function useDraft(): Draft {
   const [name, setName] = useState("");
@@ -61,10 +46,10 @@ export function useDraft(): Draft {
     setChoice,
     setSingle,
     pick: (permission, on) => {
-      setPicked(withPermission(picked, permission, on));
+      setPicked(toggled(picked, permission, on));
     },
     limitTo: (project, on) => {
-      setProjects(withProject(projects, project, on));
+      setProjects(toggled(projects, project, on));
     },
     setDay,
     setPassword,
