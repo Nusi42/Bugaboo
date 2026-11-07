@@ -648,30 +648,95 @@ sort by priority, highest first</div>
     <h3 id="s4-12"><button type="button" class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
     <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Assistant panel</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-9px">
       <div class="u-8d461e0"><span class="muted">Looking at:</span><span class="chip">WEB-142<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip">This list<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
-      <div class="src">Answers come from <b>Claude (Anthropic)</b>. Your organization chose this.<br><span class="muted">Never sent to AI: Cost center</span></div>
+      <div class="src">Answers come from <b>Claude (Anthropic)</b>. Your organization chose this. People are sent as their role (<i>"a Team member"</i>), not by name.<br><span class="muted">Never sent to AI: Cost center</span></div>
       <div class="msg me">Summarize the comments on WEB-142.</div>
       <div><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Assistant</div><div class="msg ai">Signing in fails right after a password reset. 14 customers reported it since Friday. I suggest raising the priority.</div></div>
       <div class="prop"><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Proposed change. Nothing is saved until you apply it.</div><div><span class="key">WEB-142</span> Priority: <span class="old">High</span> → <span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div><div class="u-display-flex--gap-6px"><span class="btn sm primary">Apply</span><span class="btn sm">Discard</span></div></div>
     </div></div></div>
     <div class="u-flex-1-1-280px--min-width-0"><ul class="u-margin-top-0">
-      <li>Opens from <i>Assistant</i> in the top bar or from small sparkle buttons where they help (<i>Summarize comments</i>, <i>Write it up for me</i>, <i>Suggest fields</i>).</li>
-      <li><b>What it can see</b> is shown at the top. Each item can be removed.</li>
-      <li><b>Where your data goes</b> is always shown: <i>"Answers come from Claude (Anthropic)"</i> or <i>"Answers come from a model on your own server"</i>. Fields never sent to AI are listed (AI-03).</li>
-      <li><b>Proposed changes</b> appear as cards with <i>Apply</i> and <i>Discard</i>. Nothing is saved until <i>Apply</i>.</li>
-      <li><b>Suggestions</b> for a new issue appear next to the fields as ✓ / ✕ buttons.</li>
+      <li>Opens from <i>Assistant</i> in the top bar. You type what you want to know about what you are <b>looking at</b>: the issue, the list or the project. <i>"Summarize the comments on WEB-142"</i> is a typed question like any other (M7-Q2).</li>
+      <li><b>Looking at</b> is shown at the top. Each item can be removed.</li>
+      <li>The assistant reads with your rights only, through the same tools as AI apps. It never changes anything by itself: a change comes back as a <b>proposed change</b>.</li>
+      <li><b>Where your data goes</b> is always shown: <i>"Answers come from Claude (Anthropic)"</i> or <i>"Answers come from a model on your own server"</i>. Fields and projects <i>Never sent to AI</i> are listed (AI-03). With an outside AI provider, people are sent as their role (<i>"a Team member"</i>, <i>"you"</i>), never by name or e-mail, unless an administrator switched on <i>Send names of people</i>; the line then says so. A local model gets names as you see them (M7-Q5).</li>
+      <li><b>Proposed changes</b> appear as cards with <i>Apply</i> and <i>Discard</i>, as a before and after. Nothing is saved until <i>Apply</i>; <i>Apply</i> saves as you, and the text is marked <i>Written with the assistant</i>.</li>
+      <li><b>The conversation lives in the open panel only.</b> Closing the panel ends it; nothing of it is stored on the server (M7-Q6).</li>
       <li>Answers never load outside images, and links show their full address (AI-05).</li>
-      <li>When AI is switched off, all assistant buttons and the panel are gone. Administrators see one <i>Set up the assistant</i> item in Organization settings.</li>
+      <li>When AI is switched off, for the organization or the project, the <i>Assistant</i> button and the panel are gone. Administrators see one <i>Set up the assistant</i> item in Organization settings (§5.1).</li>
+      <li><b>Later, 1.0 (M12):</b> sparkle buttons where they help (<i>Summarize comments</i>, <i>Write it up for me</i>, <i>Suggest fields</i>), catching up on what changed, and suggestions next to the fields of a new issue as ✓ / ✕ buttons (AI-12, AI-13, AI-14).</li>
     </ul></div></div>
+
+    <div class="demo"><div class="frame phone"><div class="frame-cap">Phone · the assistant as a full screen</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="u-flex-1--text-align-center">Assistant</span></div>
+      <div class="ph-body u-padding-12px--display-flex--flex-direction-column--gap-10px">
+        <div class="u-8d461e0"><span class="muted">Looking at:</span><span class="chip">Website<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
+        <div class="src">Answers come from <b>a model on your own server</b>. Nothing leaves your organization.</div>
+        <div class="msg me">Which open bugs in Website have no steps to reproduce?</div>
+        <div><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Assistant</div><div class="msg ai">Three: <span class="key">WEB-150</span>, <span class="key">WEB-147</span> and <span class="key">WEB-139</span>. <span class="key">WEB-139</span> also has no priority.</div></div>
+        <div class="prop"><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Proposed change. Nothing is saved until you apply it.</div><div><span class="key">WEB-139</span> Priority: <span class="old">None</span> → <span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span></div><div class="u-display-flex--gap-6px"><span class="btn sm primary">Apply</span><span class="btn sm">Discard</span></div></div>
+        <div class="muted u-font-size-11px">Closing the assistant ends this conversation. It is not stored.</div>
+      </div>
+    </div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Text written with AI · the marks</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="bubble"><b>Ana</b> · Tue 6 Oct, 10:14 · <span class="tag c2"><svg class="ico"><use href="#i-spark"/></svg>Written with the assistant</span><br>Raised the priority: 14 customers since Friday.</div>
+      <div class="bubble"><b>Ada Brandt via Claude Code</b> · Tue 6 Oct, 11:02 · <span class="tag c4"><svg class="ico"><use href="#i-spark"/></svg>Written by an AI app</span><br>The token check runs before the new password is saved. <a href="#s4-12">Run of this session</a></div>
+      <div class="bubble"><b>Fixer, agent of Ada Brandt</b> · Tue 6 Oct, 11:40 · <span class="tag c6"><svg class="ico"><use href="#i-spark"/></svg>Written by an agent</span><br>Attempt 1 is ready for review. <a href="#s4-17">Agent work</a></div>
+      <div class="muted u-font-size-11px">The mark is stored with the text. It shows in the history, in the API and in every export (COMP-08, COMP-09).</div>
+    </div></div></div></div>
+
+    <div class="demo"><div class="frame"><div class="frame-cap">A run · Claude Code for Ada Brandt, Tue 6 Oct, 11:02–11:31</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="muted u-font-size-12px">Everything one session of an AI app changed. An attempt of an agent is shown the same way.</div>
+      <table class="perm"><thead><tr><th>Issue</th><th>What changed</th><th>When</th></tr></thead><tbody>
+        <tr><td><span class="key">WEB-142</span></td><td>Comment added</td><td class="mono">11:02</td></tr>
+        <tr><td><span class="key">WEB-142</span></td><td>Priority: High → Critical</td><td class="mono">11:05</td></tr>
+        <tr><td><span class="key">WEB-150</span></td><td>Labels: + login</td><td class="mono">11:12</td></tr>
+        <tr><td><span class="key">WEB-151</span></td><td>Created</td><td class="mono">11:31</td></tr>
+      </tbody></table>
+      <div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm danger">Undo the run</span></div>
+    </div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Undo the run</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Undo what Claude Code changed?</div><div class="db">
+      <div class="u-font-size-12-5px"><b>Goes back (3):</b> the comment on WEB-142 and the label on WEB-150 are taken away; WEB-151 goes to the trash.</div>
+      <div class="u-font-size-12-5px"><b>Skipped (1):</b> WEB-142 priority: Ben changed it to Medium afterwards, so his change stays.</div>
+      <div class="muted u-font-size-11px">An undo never touches a change somebody made later.</div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm danger">Undo 3 changes</span></div></div></div></div></div></div>
 
     <h3 id="s4-13"><button type="button" class="sec" data-sec>§4.13</button>My settings</h3>
     <ul>
       <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2); <i>Spacing</i> (<i>Comfortable</i> or <i>Compact</i>), which every screen follows, the issue list and saved searches included; <i>Less motion</i>; <i>Larger text</i>.</li>
       <li><b>Region:</b> time zone, date format, <i>Time of day</i> (<i>24-hour (14:30)</i> or <i>12-hour (2:30 pm)</i>; its default follows the date format), number format, first day of the week. Every date and time on screens, in e-mails and in notifications follows these choices, the timer and the timesheet included.</li>
       <li><b>Sign-in &amp; security:</b> password, passkeys, two-step sign-in, backup codes, and <i>Where you're signed in</i> with <i>Sign out</i> per device.</li>
-      <li><b>Connected apps:</b> apps and AI apps (MCP) you allowed, what they may do, when last used, and <i>Remove</i>. <b>Access keys:</b> create one (name; what it may do: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, single permissions under <i>More options</i>; optionally only some projects; when it runs out, 90 days unless you pick another date, at most a year), copy it once, and delete it.</li>
+      <li><b>Connected apps</b> (under <i>Sign-in and security</i>): the AI apps you allowed, what each may do, when you allowed it, when it was last used, and <i>Take back</i>. <i>Sign out everywhere</i> takes back every app too. <b>Access keys:</b> create one (name; what it may do: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, single permissions under <i>More options</i>; optionally only some projects; when it runs out, 90 days unless you pick another date, at most a year), copy it once, and delete it.</li>
       <li><b>Keyboard shortcuts:</b> see and change them.</li>
       <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
     </ul>
+
+    <h4>Connecting an AI app <span class="ids">AI-22, ADR-0042</span></h4>
+    <p>An AI app such as Claude Code signs in as you. Bugaboo asks you first, every time an app connects (M7-Q3). An app on your own computer registers by itself; an app on a web address needs an administrator to allow its address first (M7-Q4, §5.1).</p>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · the app asks to connect</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Claude Code wants to work with your account</div><div class="db">
+      <div class="u-font-size-12-5px">It will act as <b>Ada Brandt</b> and can never do more than you can.</div>
+      <div class="u-font-size-12-5px"><b>What it may do</b></div>
+      <label class="u-font-size-12-5px"><input type="radio" name="consent-pc" class="cb"> See only</label>
+      <label class="u-font-size-12-5px"><input type="radio" name="consent-pc" class="cb" checked> See and change</label>
+      <div class="muted u-font-size-11px">It comes back to <span class="mono">127.0.0.1</span>: an app on this computer. The name is the app's own; Bugaboo can't check it.</div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Allow</span></div></div></div></div></div>
+    <div class="frame phone"><div class="frame-cap">Phone · the same step</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><span class="u-flex-1--text-align-center">Connect an app</span></div>
+      <div class="ph-body u-padding-12px--display-flex--flex-direction-column--gap-10px">
+        <b class="u-font-size-16px--line-height-1-3">Claude Desktop wants to work with your account</b>
+        <div class="u-font-size-12-5px">It will act as you and can never do more than you can.</div>
+        <div class="blk"><div class="r"><label class="u-flex-1"><input type="radio" name="consent-ph" class="cb" checked> See only</label></div></div>
+        <div class="muted u-font-size-11px"><i>See and change</i> is offered only when the app asks for it. This app asked to see only.</div>
+        <div class="muted u-font-size-11px">It comes back to <span class="mono">localhost</span>: an app on this device. The name is the app's own; Bugaboo can't check it.</div>
+        <span class="btn sm primary">Allow</span><span class="btn sm">Cancel</span>
+      </div>
+    </div></div></div>
+    <div class="frame"><div class="frame-cap">My settings › Sign-in and security › Connected apps</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="muted u-font-size-12px">AI apps that work with your account. Each does at most what you can do, and only what you allowed.</div>
+      <table class="perm"><thead><tr><th>App</th><th>What it may do</th><th>Allowed</th><th>Last used</th><th>Access</th></tr></thead><tbody>
+        <tr><td><b>Claude Code</b><div class="muted u-font-size-11px">on this computer</div></td><td>See and change</td><td>Oct 2</td><td>Today, 11:31</td><td><span class="btn sm">Take back</span></td></tr>
+        <tr><td><b>Claude Desktop</b><div class="muted u-font-size-11px">on this computer</div></td><td>See only</td><td>Sep 28</td><td>Oct 1</td><td><span class="btn sm">Take back</span></td></tr>
+      </tbody></table>
+      <div class="muted u-font-size-11px--margin-top-8px"><i>Take back</i> ends the app's access at once; it must ask again. Remembering your answer per app and the details of each app's use come in 1.0 (AI-24).</div>
+    </div></div></div></div>
 
     <h3 id="s4-14"><button type="button" class="sec" data-sec>§4.14</button>First start and signing in</h3>
     <div class="demo"><div class="u-flex-1-1-320px--min-width-0">
@@ -794,13 +859,92 @@ sort by priority, highest first</div>
     <h3 id="s4-17"><button type="button" class="sec" data-sec>§4.17</button>Agents <span class="ids">AI-30…38, ADR-0029</span></h3>
     <p>An agent is an account of its own that works on issues a person hands over. It has one responsible person and can never do more than that person. Bugaboo does not run agents; they connect from outside through MCP (§4.12).</p>
     <ul>
-      <li><b>Hand over</b> (a window, §6.3): from one or several issues, pick the agent, check the brief (description, steps, <i>Done when</i>, a note; a missing <i>Done when</i> is asked for), tick what it may do, set a budget and whether its <i>Plan needs approval</i> (it then waits for <i>Approve plan</i>). A hand-over runs out after 14 days.</li>
-      <li><b>Agent work on the issue:</b> its own block under the description, apart from the comments: who handed it over, the brief, each attempt with what it changed, its questions (answered right there; the answer joins the brief) and its state: <i>Waiting for the agent</i>, <i>Agent working</i>, <i>Waiting for you</i>, <i>Ready for review</i>, <i>Agent gave up</i>, <i>Stopped</i>.</li>
-      <li><b>Review:</b> <i>Accept</i>, <i>Send back</i> (with a note, starts a new attempt) or <i>Throw away</i> (undoes everything that attempt changed, in one step).</li>
-      <li><b>Never assigned:</b> the issue stays <i>Assigned to</i> its person and shows <i>"worked on by Fixer"</i>. Text an agent wrote is marked <i>Written by an agent</i>.</li>
-      <li><b>My agents</b> (computer and phone): one person can drive several agents. What waits for you is at the top (questions, plans to approve, reviews), then each agent with its state, what it works on, and <i>Pause</i> or <i>Stop</i>. <i>Stop all my agents</i> stops every one at once.</li>
-      <li><b>Standing rules:</b> a saved search an agent watches; at the start it only proposes, or changes a few named fields; never people fields or the status. It runs out after 30 days unless renewed.</li>
+      <li><b>Who may create agents</b> (M7-Q1): <i>Create agents that work for you</i> is a project permission, held at the start by <i>Administrator</i>, <i>Project lead</i> and <i>Team member</i>. Holding it in one project is enough to create an agent; an agent is handed issues, or given a standing rule, only in the projects where its person holds it.</li>
+      <li><b>Hand over</b> (a window, §6.3): from one or several issues, pick the agent, check the brief (description, steps, <i>Done when</i>, a note; the window says what is missing, such as <i>"No steps to reproduce"</i>, but does not stop the hand-over), tick what it may do, set a <i>Budget</i> and whether its <i>Plan needs approval</i> (it then waits for <i>Approve plan</i>). A hand-over runs out after 14 days.</li>
+      <li><b>Agent work on the issue:</b> its own block under the description, apart from the comments: who handed it over, the brief, each attempt with its plan, steps and results, its questions (answered right there; the answer joins the brief) and its state: <i>Waiting for the agent</i>, <i>Agent working</i>, <i>Waiting for you</i>, <i>Ready for review</i>, <i>Agent gave up</i>, <i>Stopped</i>.</li>
+      <li><b>An agent's time</b> (M7-Q7): the time and cost an agent reports stay on its attempt, marked <i>reported by the agent</i>. They are never a time entry and never count in <i>Time spent</i>.</li>
+      <li><b>Review:</b> <i>Accept</i> (with the status the workflow proposes, which the reviewer can change), <i>Send back</i> (with a note, starts a new attempt) or <i>Throw away</i> (undoes everything the attempts changed in Bugaboo, in one step).</li>
+      <li><b>Accepted by itself</b> (M7-Q8): an agent attaches results of the kind <i>Check</i>, each <i>passed</i> or <i>failed</i>. An attempt is accepted by itself only when the project allows it, the hand-over did not turn it off, it has at least one check, and every check passed. Bugaboo does not run or verify the checks, and the window says so. The status is then the one the workflow proposes, and the issue is listed under <i>Accepted by itself</i> in <i>My agents</i> until a person looked at it.</li>
+      <li><b>Never assigned:</b> the issue stays <i>Assigned to</i> its person and shows <i>"worked on by Fixer"</i>. Text an agent wrote is marked <i>Written by an agent</i> (§4.12).</li>
+      <li><b>My agents</b> (computer and phone): one person can drive several agents. <i>Waiting for you</i> is at the top (questions, plans to approve, reviews, <i>Accepted by itself</i>, standing rules about to run out), then each agent with its state, what it works on, and <i>Pause</i> (or <i>Resume</i>) and <i>Stop</i>. <i>Stop all my agents</i> stops every one at once.</li>
+      <li><b>An agent's page:</b> its person, its agent keys (each runs out; <i>Create an agent key</i>, <i>Take back</i>), its <i>Limits</i> (changes a minute, issues at once, attempts on one issue; at the start 60, 5 and 5, never more than the organization's maximum), <i>Pause</i> and <i>Stop</i>. Reaching a limit pauses the agent with a sentence that says which.</li>
+      <li><b>Standing rules:</b> a saved search an agent watches; at the start it only proposes, or changes a few named fields; never people fields or the status. It runs out after 30 days unless renewed (at most 90).</li>
     </ul>
+
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Hand over to an agent</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Hand over WEB-142 to an agent</div><div class="db">
+      <div class="field"><label>Agent</label><select><option>Fixer</option><option>Sorter</option></select></div>
+      <div class="field"><label>Note for the agent <span class="req">(optional)</span></label><input type="text" value="Keep the old reset links working" readonly></div>
+      <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span>No steps to reproduce. The agent gets the description and <i>Done when</i>. You can hand it over anyway.</span></div>
+      <div class="u-font-size-12-5px"><b>What it may do</b> <span class="muted">Always: read the issue and what it links to, comment, report its work, attach results, link related issues.</span></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Change the status</label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Change these fields: Labels, Found in release</label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Make sub-issues</label>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Budget: attempts</label><input type="text" value="3" readonly></div><div class="field"><label>Budget: time</label><input type="text" value="2 hours" readonly></div></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Plan needs approval</label>
+      <div class="muted u-font-size-11px">The issue stays assigned to Ana. The hand-over runs out on Oct 20 (14 days).</div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Hand over</span></div></div></div></div></div>
+    <div class="frame"><div class="frame-cap">Issue page · agent work</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="u-display-flex--gap-6px--align-items-center"><b>Agent work</b><span class="pill st-ip">Waiting for you</span><span class="muted u-font-size-11px">Fixer, agent of Ada Brandt · handed over by Ada on Oct 6</span></div>
+      <div class="blk"><div class="r"><span class="muted u-flex-1">Brief</span><span>Description, <i>Done when</i>, a note · <a href="#s4-17">Show</a></span></div><div class="r"><span class="muted u-flex-1">Budget</span><span>Attempt 2 of 3 · 0:40 of 2 hours</span></div></div>
+      <div class="sh">Attempt 1 · sent back</div>
+      <div class="muted u-font-size-11px">Plan approved by Ada · 3 steps · results: branch <span class="mono">fix-reset-token</span>, pull request #88, check <i>Tests</i> failed · 0:25, €0.40 reported by the agent</div>
+      <div class="sh">Attempt 2 · the agent asks</div>
+      <div class="bubble"><b>Fixer</b> · <span class="tag c6">Written by an agent</span><br>Should a reset link from before the fix still work for 24 hours, or stop at once?</div>
+      <div class="u-display-flex--gap-6px--margin-top-8px--flex-wrap-wrap"><div class="field u-flex-1--min-width-160px"><label>Your answer</label><input type="text" value="Keep them working for 24 hours" readonly></div><span class="btn sm primary">Answer</span></div>
+      <div class="muted u-font-size-11px--margin-top-8px">The answer joins the brief, so the next attempt and any other agent read it.</div>
+    </div></div></div></div>
+
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Review</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Review attempt 2 of Fixer on WEB-142</div><div class="db">
+      <div class="u-font-size-12-5px">Results: pull request #91, check <i>Tests</i> passed, check <i>Lint</i> passed. Bugaboo does not run or verify these checks.</div>
+      <div class="field"><label>Accept and set the status to</label><select><option>Done (the workflow proposes it)</option><option>In review</option></select></div>
+      <div class="field"><label>Or send back with a note</label><input type="text" value="Also cover the e-mail link" readonly></div>
+      <div class="explain"><b>Throw away</b> undoes in Bugaboo: 2 comments, the status change, the label <i>login</i>.<br><span class="muted">The branch and pull request #91 are outside Bugaboo: they are the agent's business.</span></div></div>
+      <div class="df"><span class="btn sm danger">Throw away</span><span class="btn sm">Send back</span><span class="btn sm primary">Accept</span></div></div></div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Standing rule</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">New standing rule for Sorter</div><div class="db">
+      <div class="field"><label>Saved search</label><select><option>New bugs in Website</option></select></div>
+      <div class="u-font-size-12-5px"><b>What it may do</b></div>
+      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb" checked> Propose only (nothing changes until a person applies it)</label>
+      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb"> Change only: Labels, Tags, Type, Duplicate of, Found in release</label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Create issues in one project: <i>Operations</i></label>
+      <div class="field"><label>Runs out after</label><input type="text" value="30 days" readonly></div>
+      <div class="muted u-font-size-11px">Never changes a field that holds people or the status. At most 90 days; <i>Renew</i> starts again. Every issue that newly comes under the rule is written down.</div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Create the rule</span></div></div></div></div></div></div>
+
+    <div class="demo"><div class="frame"><div class="frame-cap">My agents · computer</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="u-display-flex--gap-6px--align-items-center"><b>My agents</b><span class="btn sm danger u-margin-left-auto">Stop all my agents</span></div>
+      <div class="sh">Waiting for you (3)</div>
+      <div class="blk"><div class="r"><span class="key">WEB-142</span><span class="u-flex-1--min-width-0">Fixer asks: keep old reset links?</span><span class="btn sm">Answer</span></div><div class="r"><span class="key">APP-K7Q2X</span><span class="u-flex-1--min-width-0">Fixer: plan to approve</span><span class="btn sm">Approve plan</span></div><div class="r"><span class="key">WEB-150</span><span class="u-flex-1--min-width-0">Ready for review</span><span class="btn sm">Review</span></div></div>
+      <div class="sh">Accepted by itself (1)</div>
+      <div class="blk"><div class="r"><span class="key">WEB-147</span><span class="u-flex-1--min-width-0">2 checks passed · Done</span><span class="btn sm">Open</span></div></div>
+      <div class="sh">Agents</div>
+      <table class="perm"><thead><tr><th>Agent</th><th>State</th><th>Working on</th><th>Pause or stop</th></tr></thead><tbody>
+        <tr><td><b>Fixer</b></td><td><span class="pill st-ip">Agent working</span></td><td>3 issues of 5</td><td><span class="btn sm">Pause</span> <span class="btn sm danger">Stop</span></td></tr>
+        <tr><td><b>Sorter</b></td><td><span class="pill st-ns">Paused</span></td><td>Standing rule <i>New bugs in Website</i>, runs out in 4 days</td><td><span class="btn sm">Resume</span> <span class="btn sm danger">Stop</span></td></tr>
+      </tbody></table>
+    </div></div></div>
+    <div class="frame phone"><div class="frame-cap">Phone · My agents, Waiting for you first</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><span class="u-flex-1--text-align-center">My agents</span></div>
+      <div class="ph-body u-padding-12px--display-flex--flex-direction-column--gap-10px">
+        <div class="sh">Waiting for you (3)</div>
+        <div class="blk"><div class="r"><span class="key">WEB-142</span><span class="u-flex-1--min-width-0">Fixer asks a question</span></div><div class="r"><span class="key">APP-K7Q2X</span><span class="u-flex-1--min-width-0">A plan waits for you</span></div><div class="r"><span class="key">WEB-150</span><span class="u-flex-1--min-width-0">Ready for review</span></div></div>
+        <div class="sh">Agents</div>
+        <div class="blk"><div class="r"><b class="u-flex-1">Fixer</b><span class="pill st-ip">Agent working</span></div><div class="r"><b class="u-flex-1">Sorter</b><span class="pill st-ns">Paused</span></div></div>
+        <span class="btn sm danger">Stop all my agents</span>
+      </div>
+    </div></div></div></div>
+
+    <div class="demo"><div class="frame"><div class="frame-cap">An agent's page · Fixer</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="u-display-flex--gap-6px--align-items-center"><b>Fixer</b><span class="muted u-font-size-11px">agent of Ada Brandt</span><span class="u-margin-left-auto--display-flex--gap-6px"><span class="btn sm">Pause</span><span class="btn sm danger">Stop</span></span></div>
+      <div class="sh">Agent keys</div>
+      <table class="perm"><thead><tr><th>Key</th><th>Runs out</th><th>Last used</th><th>Access</th></tr></thead><tbody>
+        <tr><td>Build machine</td><td>Dec 30</td><td>Today, 11:40</td><td><span class="btn sm">Take back</span></td></tr>
+      </tbody></table>
+      <div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Create an agent key</span></div>
+      <div class="sh">Limits</div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Changes a minute</label><input type="text" value="60" readonly></div><div class="field"><label>Issues at once</label><input type="text" value="5" readonly></div></div>
+      <div class="field"><label>Attempts on one issue</label><input type="text" value="5" readonly></div>
+      <div class="muted u-font-size-11px--margin-top-8px">Each limit is at most the organization's maximum. Fixer can never do more than Ada can, and only on the issues she hands over.</div>
+    </div></div></div></div>
 
     <!-- ================= 5 ================= -->
     <h2 id="s5"><button type="button" class="sec" data-sec>§5</button>Settings screens</h2>
@@ -812,7 +956,7 @@ sort by priority, highest first</div>
           <li><b>People:</b> People (with <i>Invite</i> and the sign-up rule), Groups, Roles &amp; permissions (roles, <i>Who has which role</i> for the whole organization, field permissions, <i>Who sees people</i>, <i>Check access</i>), Sign-in rules</li>
           <li><b>Work:</b> Projects, Issue types, Fields, Workflows, Kinds of relation, Layouts, Labels &amp; tags, Working hours, Releases, Templates</li>
           <li><b>Look:</b> Themes, Logo &amp; name</li>
-          <li><b>Connections:</b> Assistant &amp; AI apps, E-mail &amp; notifications, Webhooks, Company sign-in (SSO)</li>
+          <li><b>Connections:</b> AI, Agents, E-mail &amp; notifications, Webhooks, Company sign-in (SSO)</li>
           <li><b>Privacy:</b> Keep and delete rules, Remove a person, Data exports, Outside services, Record of processing</li>
           <li><b>System:</b> Safety check, Security log, Backups, Status, About (version, support period, licenses of all third-party parts, SBOM download)</li>
         </ul></li>
@@ -829,8 +973,10 @@ sort by priority, highest first</div>
           <tr><td><code>security.session-*</code>, <code>security.two-step-required</code>, <code>auth.access-key-*</code></td><td>People › Sign-in rules (how long people stay signed in, two-step sign-in for everybody, how long access keys live)</td></tr>
           <tr><td><code>appearance.*</code> (the organization's defaults)</td><td>Look › Themes</td></tr>
           <tr><td><code>working-hours.*</code> (the preset, each rule, the keep period, <i>Totals only</i>) and <code>time.billable</code></td><td>Work › Working hours</td></tr>
+          <tr><td><code>ai.*</code> (AI on or off, the AI provider, <i>Send names of people</i>, AI apps)</td><td>Connections › AI</td></tr>
+          <tr><td><code>agents.*</code> (agents on or off, the organization's maximum limits)</td><td>Connections › Agents</td></tr>
         </tbody></table></div>
-        Two-step sign-in for one role is not a setting: it is the switch on the role page. The settings of e-mail (<code>mail.*</code>) are on Connections › E-mail &amp; notifications. A later topic (<code>ai.*</code>, …) names its menu item here when it comes.</li>
+        Two-step sign-in for one role is not a setting: it is the switch on the role page. The settings of e-mail (<code>mail.*</code>) are on Connections › E-mail &amp; notifications. A project's own values of <code>ai.*</code> and <code>agents.*</code> (AI on or off for the project, agents on or off, <i>Accept by itself when its checks pass</i>) are in its project settings, on the page <i>AI and agents</i>.</li>
       <li>A setting an administrator locked shows <i>Set by your organization</i> on lower levels, read-only, with the reason; <i>Reset to default</i> takes away the value set on this level.</li>
     </ul>
 
@@ -852,6 +998,54 @@ sort by priority, highest first</div>
     <ul>
       <li><b>Working hours</b> (TIME-09, TIME-10, TIME-12): the preset (<i>Germany</i> or <i>No rules</i>) and each of its numbers, with <i>Reset to default</i> back to the preset's number; the keep period (ADR-0035 §7), with how many work days are older than it, for each person and in total, and <i>Delete them</i> (all at once or for one person, after a confirmation in the page; only with <i>Change organization settings</i>, and in the security log); <i>Totals only</i>; <i>Billable</i>. Who sees working hours is not a setting here: it is the starting role <i>HR</i> in <i>Who has which role</i> (§4.9).</li>
       <li>The defaults of <i>Activity</i> and <i>Cost center</i> for time entries are set on the project (in its project settings) and on each issue (§4.4, <i>Accounting</i>); the lists themselves are in <i>Fields</i>, like every own field. The layouts of the issue page and of the new-issue form do not offer them.</li>
+    </ul>
+
+    <h4>Setting up AI <span class="ids">AI-01, AI-02, PRIV-08, COMP-08, M7-Q4, M7-Q5</span></h4>
+    <div class="demo"><div class="frame"><div class="frame-cap">Organization settings › Connections › AI · Set up the assistant</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="muted u-font-size-12px">AI is off until you set it up. Every change here is written to the security log.</div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>AI provider</label><select><option>Anthropic</option><option>OpenAI-compatible (also a local model)</option></select></div><div class="field"><label>Model</label><input type="text" value="claude-sonnet" readonly></div></div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Address</label><input type="text" value="https://api.anthropic.com" readonly></div><div class="field"><label>API key</label><input type="text" value="••••7Q2X (stored as a secret)" readonly></div></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> We have a data processing agreement with Anthropic</label>
+      <div class="muted u-font-size-11px">Needed for an outside AI provider before AI can be switched on; not for a local model. Changing the provider, the address or the key asks for your password again. A failed test names the problem, never the provider's answer.</div>
+      <div class="sh">What goes where</div>
+      <table class="perm"><thead><tr><th>What</th><th>To</th><th>Country</th></tr></thead><tbody>
+        <tr><td>The question, and the issues, lists and projects the person is looking at</td><td>Anthropic</td><td>USA</td></tr>
+        <tr><td>Fields the person can read, except those <i>Never sent to AI</i> (Cost center)</td><td>Anthropic</td><td>USA</td></tr>
+        <tr><td>People: as their role (<i>"a Team member"</i>), not by name</td><td>Anthropic</td><td>USA</td></tr>
+      </tbody></table>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>AI for the organization</label><select><option>Off</option><option>On</option></select></div><div class="field"><label>Send names of people</label><select><option>Off</option><option>On</option></select></div></div>
+      <div class="sh">AI apps</div>
+      <div class="field"><label>AI apps may sign in</label><select><option>On</option><option>Off</option></select></div>
+      <table class="perm"><thead><tr><th>Web addresses allowed to sign in</th><th>Added by</th><th>Remove</th></tr></thead><tbody>
+        <tr><td class="mono">https://agents.acme.example/callback</td><td>Hana Wolf</td><td><span class="btn sm">Remove</span></td></tr>
+      </tbody></table>
+      <div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Add an address</span></div>
+      <div class="muted u-font-size-11px--margin-top-8px">Apps on a person's own computer, such as Claude Code and Claude Desktop, register by themselves. An app on a web address signs in only after you add its address here.</div>
+    </div></div></div>
+    <div class="frame"><div class="frame-cap">Organization settings › Connections › Agents</div><div class="frame-body"><div class="scr u-padding-10px">
+      <div class="muted u-font-size-12px">Every agent of the organization. Each works for one person and never does more than that person can.</div>
+      <div class="field"><label>Agents for the organization</label><select><option>On</option><option>Off</option></select></div>
+      <table class="perm"><thead><tr><th>Agent</th><th>Its person</th><th>State</th><th>Stop</th></tr></thead><tbody>
+        <tr><td><b>Fixer</b></td><td>Ada Brandt</td><td><span class="pill st-ip">Agent working</span></td><td><span class="btn sm danger">Stop</span></td></tr>
+        <tr><td><b>Sorter</b></td><td>Ada Brandt</td><td><span class="pill st-ns">Paused</span></td><td><span class="btn sm danger">Stop</span></td></tr>
+      </tbody></table>
+      <div class="sh">The organization's maximum limits</div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Changes a minute</label><input type="text" value="60" readonly></div><div class="field"><label>Issues at once</label><input type="text" value="5" readonly></div></div>
+      <div class="field"><label>Attempts on one issue</label><input type="text" value="5" readonly></div>
+      <div class="muted u-font-size-11px--margin-top-8px">Each agent's own limits stay within these.</div>
+    </div></div></div></div>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Project settings › AI and agents</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="field"><label>AI in this project</label><select><option>As the organization (on)</option><option>Off</option></select></div>
+      <div class="field"><label>Never sent to AI</label><select><option>Off</option><option>On</option></select></div>
+      <div class="field"><label>Agents in this project</label><select><option>As the organization (on)</option><option>Off</option></select></div>
+      <div class="field"><label>Accept by itself when its checks pass</label><select><option>Off</option><option>On</option></select></div>
+      <div class="muted u-font-size-11px"><i>Never sent to AI</i>: nothing of this project goes to AI, even for people who can read it. It covers its sub-projects too.</div>
+    </div></div></div></div>
+    <ul>
+      <li><b>AI</b> (AI-01, AI-02, PRIV-08): off at the start. <i>Set up the assistant</i> picks the AI provider (<i>Anthropic</i>, or <i>OpenAI-compatible</i>, which covers a local model), the model, the address and the API key, stored as a secret and never shown again in full. An outside provider needs the <i>Data processing agreement</i> box first; <i>What goes where</i> says what goes to which provider and country. <i>Send names of people</i> is off at the start (M7-Q5).</li>
+      <li><b>AI apps</b> (M7-Q4): on when AI is on, and can be switched off for the organization. Apps on the person's own computer register by themselves; an app on a web address needs its address here first.</li>
+      <li><b>Agents</b> (AI-30, AI-37): every agent with its person and <i>Stop</i>; agents off for the organization; the maximum limits (at the start 60 changes a minute, 5 issues at once, 5 attempts on one issue).</li>
+      <li>A project switches AI and agents off for itself and its sub-projects; it cannot switch on what the organization switched off.</li>
     </ul>
 
     <h3 id="s5-2"><button type="button" class="sec" data-sec>§5.2</button>Roles and permissions <span class="ids">SEC-03, SEC-04, SEC-07</span></h3>
@@ -904,11 +1098,15 @@ sort by priority, highest first</div>
     </div></div></div></div></div>
     <ul>
       <li>Creating a field starts with <b>"What kind of information?"</b>, shown as cards with examples. Also available: <i>Date and time</i>, <i>People</i>, <i>Group</i>, <i>Issue</i>.</li>
-      <li>Field page tabs: <i>Basics</i> (name, help text, required, default) · <i>Choices</i> · <i>Rules</i> (allowed range, length, pattern) · <i>Look</i> · <i>Where it's used</i> · <i>Who can see it</i> · <i>Assistant</i> (never send to AI).</li>
+      <li>Field page tabs: <i>Basics</i> (name, help text, required, default) · <i>Choices</i> · <i>Rules</i> (allowed range, length, pattern) · <i>Look</i> · <i>Where it's used</i> · <i>Who can see it</i> · <i>AI</i> (the switch <i>Never sent to AI</i>: the field is kept from AI even for people who can read it; restricted issue groups follow in 1.0, SEC-05).</li>
       <li><b>Choices:</b> drag to reorder; each gets a color and an icon. <i>Combine with another choice</i> moves all issues over; <i>Retire</i> hides it for new issues but keeps old values.</li>
       <li><b>Look</b> (CF-04): pick how values are shown (<i>Badge, Pill, Plain text, Progress bar, Avatar</i>) with a live preview in all four themes side by side.</li>
       <li><b>Look rules</b> (CF-05): <i>"When Severity is Critical and status is not Done, show as Danger."</i> Rules use the same filter buttons as Simple search. The first matching rule wins.</li>
     </ul>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Fields › Cost center › AI</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="field"><label>Never sent to AI</label><select><option>On</option><option>Off</option></select></div>
+      <div class="muted u-font-size-11px">Kept from the assistant, AI apps and agents, even for people who can read it. The assistant lists it under <i>Never sent to AI</i>.</div>
+    </div></div></div></div>
 
     <h3 id="s5-4"><button type="button" class="sec" data-sec>§5.4</button>Workflow editor <span class="ids">WF</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Workflow for Bugs · plain list (default)</div><div class="frame-body"><div class="scr">
@@ -1176,6 +1374,7 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>The look</b> (2026-10-15): one UX concept with ten rules, colors per status group and priority on whole rows, one spacing scale, controls 36 with a mouse and 44 with touch, Details saved in place, forms as windows, In progress in Paper as teal, and the timeline as drawn (§1.1, §6.3, §7).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>People on the timeline</b> (2026-10-16, ADR-0030): the person on the bar, away times without a reason, work hours and a share per project, plan by effort, plan warnings, and a time factor that is the assigned person's own estimate (§4.7).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Agents</b> (2026-10-16, ADR-0029): agents work on issues a person hands over, with their own record on the issue and a review; one person can drive several (§4.17).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Assistant, AI apps and agents in M7</b> (2026-11-07, M7-Q1…Q10): the assistant answers typed questions and proposes; AI apps connect after a consent step and are taken back under <i>Connected apps</i>; people go to an outside AI provider by role unless <i>Send names of people</i> is on; conversations are not stored; agents are created with a project permission, report time only on their attempts and are accepted by themselves only on passed checks (§4.12, §4.13, §4.17, §5.1).</div></div>
     <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>
   </main>
