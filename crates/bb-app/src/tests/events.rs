@@ -248,7 +248,10 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             // the undo on the run and the event of the one issue it puts back. A session of an app
             // also writes the event of the run, and ending one the event that ends the run: the use
             // case adds the fact that the session began or ended.
-            "move_issue" | "create_starter_time_fields" | "undo_run" | "start_app_session"
+            "move_issue"
+            | "create_starter_time_fields"
+            | "undo_run"
+            | "start_app_session"
             | "end_app_runs" => {
                 assert_eq!(added, 2, "{name} appended {added} events");
             }
