@@ -26,24 +26,24 @@ use crate::test_support::{at, event};
 use bb_app::ports::ChangeStore as _;
 
 /// The moment the tests ask at, and when the hand-overs and rules made here end.
-const NOW: i64 = 100;
-const ENDS: i64 = 1_000;
+pub(super) const NOW: i64 = 100;
+pub(super) const ENDS: i64 = 1_000;
 
 /// Ids that differ for every record, from a counter.
-struct Made {
-    source: SequentialIds,
-    step: i64,
+pub(super) struct Made {
+    pub(super) source: SequentialIds,
+    pub(super) step: i64,
 }
 
 impl Made {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             source: SequentialIds::default(),
             step: 1_000,
         }
     }
 
-    fn bytes(&mut self) -> [u8; 16] {
+    pub(super) fn bytes(&mut self) -> [u8; 16] {
         self.step += 1;
         let mut bytes = [0_u8; 16];
         bytes[8..].copy_from_slice(&self.step.to_be_bytes());
@@ -52,14 +52,14 @@ impl Made {
 }
 
 /// The storage of a test, the issues of the search tests, a person and one agent of theirs.
-struct Given {
-    fixture: crate::test_support::Fixture,
-    data: Data,
-    owner: UserId,
-    fixer: AgentId,
+pub(super) struct Given {
+    pub(super) fixture: crate::test_support::Fixture,
+    pub(super) data: Data,
+    pub(super) owner: UserId,
+    pub(super) fixer: AgentId,
 }
 
-async fn given(
+pub(super) async fn given(
     db: &bb_testing::TestDatabase,
 ) -> Result<Given, Box<dyn std::error::Error + Send + Sync>> {
     let fixture = crate::test_support::fixture(db).await?;
@@ -75,7 +75,7 @@ async fn given(
 }
 
 /// A hand-over of the agent for these issues, with its work; the powers and fields ticked.
-async fn hand_over(
+pub(super) async fn hand_over(
     storage: &AuthStorage,
     made: &mut Made,
     (person, agent): (UserId, AgentId),
@@ -133,7 +133,7 @@ async fn hand_over(
 }
 
 /// A standing rule of the agent that found these issues.
-async fn rule_that_found(
+pub(super) async fn rule_that_found(
     storage: &AuthStorage,
     made: &mut Made,
     (person, agent): (UserId, AgentId),
@@ -180,7 +180,7 @@ async fn rule_that_found(
 }
 
 /// Closes a piece of work, as a review does; whether it was at `version`.
-async fn close(
+pub(super) async fn close(
     storage: &AuthStorage,
     made: &mut Made,
     work: AgentWorkId,
@@ -656,118 +656,6 @@ async fn ai_33_writes_of_work_count_versions_and_end_only_what_is_open() -> Test
         let ended = storage.hand_over(record.id).await?.ok_or("no hand-over")?;
         assert_eq!(ended.state, GivingState::Ended);
         assert_eq!(ended.version, 2, "counted up once, not again");
-        Ok(())
-    })
-    .await
-}
-
-#[tokio::test]
-async fn ai_33_agent_state_finds_every_state_until_a_review_and_agent_only_who_still_works()
--> TestResult {
-    each_database("ai_33_agent_state_forms", async |db| {
-        let Given {
-            fixture,
-            data,
-            owner,
-            fixer,
-        } = given(db).await?;
-        let storage = &fixture.storage;
-        let mut made = Made::new();
-        let issues: Vec<IssueId> = data.issues.iter().take(4).map(|issue| issue.id).collect();
-        let (_, works) = hand_over(
-            storage,
-            &mut made,
-            (owner, fixer),
-            &issues,
-            (Vec::new(), Vec::new()),
-        )
-        .await?;
-        // Waiting for you, stopped, gave up, closed by a review.
-        made.step += 1;
-        let step = made.step;
-        let ids: Vec<AgentWorkId> = works.iter().map(|work| work.id).collect();
-        storage
-            .record_change(&event(&mut made.source, step), move |transaction| {
-                Box::pin(async move {
-                    let states = [
-                        AgentWorkState::WaitingForYou,
-                        AgentWorkState::Stopped,
-                        AgentWorkState::AgentGaveUp,
-                        AgentWorkState::ReadyForReview,
-                    ];
-                    for (id, state) in ids.iter().zip(states) {
-                        AuthStorage::set_work_state(transaction, *id, state, None, false, 1)
-                            .await?;
-                    }
-                    AuthStorage::close_work(transaction, ids[3], false, false, 2).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-        let titled = |index: usize| data.issues[index].title.clone();
-        let asked = request_with(
-            &data,
-            "agent state is \"waiting-for-you\"",
-            None,
-            100,
-            agent_fields(),
-            Vec::new(),
-        );
-        assert_eq!(titles_of(storage, &asked).await?, [titled(0)]);
-        let stopped = request_with(
-            &data,
-            "agent state is \"stopped\"",
-            None,
-            100,
-            agent_fields(),
-            Vec::new(),
-        );
-        assert_eq!(titles_of(storage, &stopped).await?, [titled(1)]);
-        // *Agent* is who works now: not on work that stopped or gave up, nor on closed work.
-        let working = request_with(
-            &data,
-            "agent is Fixer",
-            None,
-            100,
-            agent_fields(),
-            Vec::new(),
-        );
-        assert_eq!(titles_of(storage, &working).await?, [titled(0)]);
-        Ok(())
-    })
-    .await
-}
-
-#[tokio::test]
-async fn ai_33_the_work_on_an_issue_is_cut_in_the_statement_and_to_the_agent() -> TestResult {
-    each_database("ai_33_work_on_issue", async |db| {
-        let Given {
-            fixture,
-            data,
-            owner,
-            fixer,
-        } = given(db).await?;
-        let storage = &fixture.storage;
-        let helper = an_agent(storage, owner, "Helper", 2).await?;
-        let mut made = Made::new();
-        let issue = data.issues[0].id;
-        for agent in [fixer, helper] {
-            hand_over(
-                storage,
-                &mut made,
-                (owner, agent),
-                &[issue],
-                (Vec::new(), Vec::new()),
-            )
-            .await?;
-        }
-        // The work on an issue: newest first, cut in the statement, only the agent's own.
-        let all = storage.work_on_issue(issue, None, 10).await?;
-        assert_eq!(all.len(), 2);
-        assert_eq!(storage.work_on_issue(issue, None, 1).await?.len(), 1);
-        let own = storage.work_on_issue(issue, Some(fixer), 10).await?;
-        assert_eq!(own.len(), 1);
-        assert_eq!(own[0].agent, fixer);
         Ok(())
     })
     .await

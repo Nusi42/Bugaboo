@@ -317,6 +317,8 @@ pub(super) mod tests_agent;
 #[cfg(test)]
 mod tests_agent_work;
 #[cfg(test)]
+mod tests_agent_work_more;
+#[cfg(test)]
 mod tests_ai;
 #[cfg(test)]
 mod tests_more;
