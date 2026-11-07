@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M6, Time and working hours, [plan](milestones/M6/README.md): 12 work packages in 4 waves. Every recommendation of the plan's questions M6-Q1 to M6-Q13 is taken. Its first package is the theme structure of the sister project (M5-F167).
 - **Done:** M0 to M5 (`m0-done` to `m5-done`).
-- **Wave:** 1 and 2 are merged: WP-01 to WP-08. Wave 3 is merged: WP-09 to WP-11. Wave 4 runs: WP-13 is merged; WP-14 and WP-12 are building (merge order WP-14, WP-12). The open Dependabot alerts of GitHub are fixed and closed. The faster local runs are merged (Rust tests with cargo-nextest, the sample organization made in the background, checks side by side); a folder runs `cargo xtask setup` once after it rebases onto them. Branches are now rebased onto `WIN1` and fast-forwarded, never merged (ADR-0041, GIT-LINEAR).
+- **Wave:** 1 and 2 are merged: WP-01 to WP-08. Wave 3 is merged: WP-09 to WP-11. Wave 4 runs: WP-13 and WP-14 are merged; WP-12 is building, the last package of M6. The open Dependabot alerts of GitHub are fixed and closed. The faster local runs are merged (Rust tests with cargo-nextest, the sample organization made in the background, checks side by side); a folder runs `cargo xtask setup` once after it rebases onto them. Branches are now rebased onto `WIN1` and fast-forwarded, never merged (ADR-0041, GIT-LINEAR).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M6)
@@ -26,7 +26,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-11 | The settings of working hours and time | merged (four fix rounds) | `win4` / `WIN4` | Wave 3 |
 | WP-12 | Sample part 5, timers under load, speed, the exit demo | building | `win2` / `WIN2` | Wave 4 |
 | WP-13 | The time fields in layouts and an estimate when an issue is made | merged (four fix rounds; the board card waits for a board, M6-F160) | `win3` / `WIN3` | Wave 4 |
-| WP-14 | Numbered choices: *Cost center* as number and name | building | `win4` / `WIN4` | Wave 4 |
+| WP-14 | Numbered choices: *Cost center* as number and name | merged (four fix rounds; the first page made 3 KB smaller to fit its budget) | `win4` / `WIN4` | Wave 4 |
 
 ## Resuming a package marked "building" in a new session
 
@@ -46,7 +46,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-Wave 3 of M6 is merged (WP-09 to WP-11). Wave 4 runs: WP-13 is merged without the board-card half of its first task, because there is no board yet (M6-F160); WP-14 in `win4` and WP-12 in `win2` follow in that order; WP-12 first fixes the typed length that a busy computer still loses (M6-F154). The passkeys run on the stable webauthn-rs 0.6.2 (M6-F127, M1-F36 done). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on. After M6 comes M7, the assistant, AI apps and agents; the timeline and theme editor moved to M8 (the maintainer, 2026-11-06).
+Wave 3 of M6 is merged (WP-09 to WP-11). Wave 4 runs: WP-13 is merged without the board-card half of its first task, because there is no board yet (M6-F160); WP-14 is merged; WP-12 in `win2` is last. The time totals of the biggest project (`project-time-totals`) stay over their budget of 100 ms on 1 M issues: the maintainer accepted a known gap (2026-11-07), held to its own limit in the nightly run, and kept totals or a project on each time entry come later. The passkeys run on the stable webauthn-rs 0.6.2 (M6-F127, M1-F36 done). Every work folder runs `cargo xtask setup` once after rebasing onto the faster runs, which need `cargo-nextest`. Each package gets a code review and a UX review of its pictures, then the lead's full run on a rebased copy. The lead does not wait for a nightly run before going on. After M6 comes M7, the assistant, AI apps and agents; the timeline and theme editor moved to M8 (the maintainer, 2026-11-06).
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
