@@ -24,7 +24,7 @@ use super::inputs::{
     ListProjectsInput, LogTimeInput, SearchIssuesInput, StartTimerInput, StopTimerInput,
     UpdateIssueInput,
 };
-use super::{preview, read};
+use super::{apply, preview, read};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
@@ -34,6 +34,7 @@ use crate::auth::{AppError, AuthStore, Ctx};
 pub(super) type Boxed<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// What a tool is run with: who asks, the input, and what is kept from AI.
+#[derive(Clone, Copy)]
 pub(super) struct Run<'a> {
     pub(super) actor: &'a Actor,
     pub(super) token: &'a str,
@@ -63,6 +64,8 @@ pub struct ToolSpec<S: AuthStore> {
     input: fn() -> Value,
     effect: ToolEffect,
     run: Runner<S>,
+    /// For a tool that changes something: *Apply*, which saves what the preview showed.
+    apply: Option<Runner<S>>,
 }
 
 impl<S: AuthStore> ToolSpec<S> {
@@ -88,6 +91,16 @@ impl<S: AuthStore> ToolSpec<S> {
     #[must_use]
     pub fn input_schema(&self) -> Value {
         (self.input)()
+    }
+
+    /// *Apply* of a tool that changes something: the same input, saved as the person. A tool that
+    /// only reads has none.
+    pub(super) fn apply<'a>(
+        &self,
+        ctx: &'a Ctx<'_, S>,
+        run: Run<'a>,
+    ) -> Option<Boxed<'a, Result<Vec<Part>, AppError>>> {
+        self.apply.map(|apply| apply(ctx, run))
     }
 
     /// What the tool does: for a tool that reads, its answer; for a tool that changes, the
@@ -118,6 +131,7 @@ fn reads<S: AuthStore>(
         input,
         effect: ToolEffect::Reads,
         run,
+        apply: None,
     }
 }
 
@@ -126,6 +140,7 @@ fn changes<S: AuthStore>(
     use_case: &'static str,
     input: fn() -> Value,
     run: Runner<S>,
+    apply: Runner<S>,
 ) -> ToolSpec<S> {
     ToolSpec {
         tool,
@@ -133,6 +148,7 @@ fn changes<S: AuthStore>(
         input,
         effect: ToolEffect::Changes,
         run,
+        apply: Some(apply),
     }
 }
 
@@ -169,42 +185,49 @@ pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 11] {
             "create_issue",
             schema_of::<CreateIssueInput>,
             preview::create_issue::<S>,
+            apply::create_issue::<S>,
         ),
         changes(
             Tool::UpdateIssue,
             "change_issue",
             schema_of::<UpdateIssueInput>,
             preview::update_issue::<S>,
+            apply::update_issue::<S>,
         ),
         changes(
             Tool::ChangeStatus,
             "change_issue",
             schema_of::<ChangeStatusInput>,
             preview::change_status::<S>,
+            apply::change_status::<S>,
         ),
         changes(
             Tool::AddComment,
             "add_comment",
             schema_of::<AddCommentInput>,
             preview::add_comment::<S>,
+            apply::add_comment::<S>,
         ),
         changes(
             Tool::LogTime,
             "add_time",
             schema_of::<LogTimeInput>,
             preview::log_time::<S>,
+            apply::log_time::<S>,
         ),
         changes(
             Tool::StartTimer,
             "start_timer",
             schema_of::<StartTimerInput>,
             preview::start_timer::<S>,
+            apply::start_timer::<S>,
         ),
         changes(
             Tool::StopTimer,
             "stop_timer",
             schema_of::<StopTimerInput>,
             preview::stop_timer::<S>,
+            apply::stop_timer::<S>,
         ),
     ]
 }

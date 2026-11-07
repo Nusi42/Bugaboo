@@ -16,6 +16,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::log::Called;
+use super::preview::{ProposedChange, proposed_changes};
 use super::registry::{Run, ToolSpec, registry};
 use crate::access::Actor;
 use crate::ai::context::{PeopleMode, render};
@@ -27,8 +28,13 @@ pub enum ToolMode {
     /// Run the tool. A tool that changes something is not run here: it is run by *Apply*, or by
     /// an app with the scope to change (the assistant and MCP packages).
     Run,
-    /// Say what a tool that changes something would do, without saving.
+    /// Say what a tool that changes something would do, without saving. A tool that reads answers
+    /// as it does when it runs.
     Preview,
+    /// Save what the preview of a tool that changes something showed, with the use case of the
+    /// tool, as the person, through the channel of the caller. Only a tool that changes something
+    /// is applied.
+    Apply,
 }
 
 /// One call of a tool.
@@ -56,6 +62,10 @@ pub struct ToolCallQuery {
 pub struct ToolAnswer {
     /// The text, with the fences of the texts people wrote.
     pub text: String,
+    /// For a preview or an *Apply*: what the tool changes, as the person may read it. Empty for a
+    /// tool that reads. The AI reads `text`; this is for the person.
+    #[serde(skip)]
+    pub changes: Vec<ProposedChange>,
 }
 
 impl Masked for ToolAnswer {}
@@ -125,7 +135,7 @@ pub async fn list_tools<S: AuthStore>(
 }
 
 /// How a call ended, for the log.
-fn outcome_of(result: &Result<String, AppError>) -> ToolOutcome {
+fn outcome_of<T>(result: &Result<T, AppError>) -> ToolOutcome {
     match result {
         Ok(_) => ToolOutcome::Done,
         Err(AppError::Refused(_) | AppError::Mistakes(_)) => ToolOutcome::Refused,
@@ -175,13 +185,13 @@ pub async fn call_tool<S: AuthStore>(
         tool: found.map(|spec| spec.tool),
         effect: found.map(ToolSpec::effect),
         bytes_in,
-        bytes_out: result.as_ref().map_or(0, String::len),
+        bytes_out: result.as_ref().map_or(0, |(text, _)| text.len()),
         outcome,
     })
     .await;
-    let text = result?;
+    let (text, changes) = result?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(ToolAnswer { text }))
+    Ok(held.authorize(ToolAnswer { text, changes }))
 }
 
 /// A word that is new for every answer: both marker lines of a fence carry it, so a text cannot
@@ -201,9 +211,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         spec: &ToolSpec<S>,
         request: &ToolCallQuery,
-    ) -> Result<String, AppError> {
-        if spec.effect() == ToolEffect::Changes && request.mode == ToolMode::Run {
+    ) -> Result<(String, Vec<ProposedChange>), AppError> {
+        let refused = match request.mode {
             // A tool that changes something is run by *Apply* and by apps with the scope to change.
+            ToolMode::Run => spec.effect() == ToolEffect::Changes,
+            ToolMode::Preview => false,
+            ToolMode::Apply => spec.effect() != ToolEffect::Changes,
+        };
+        if refused {
             return Err(AppError::Refused(ErrorCode::Forbidden));
         }
         // What is kept from AI is read first, for a preview as for a read.
@@ -215,10 +230,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             withheld: &withheld,
             caller: request.caller,
         };
-        let parts = spec.run(self, run).await?;
+        let parts = if request.mode == ToolMode::Apply {
+            let applied = spec
+                .apply(self, run)
+                .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
+            // What the use case records says it was made through the assistant or an AI app.
+            self.act_through(request.caller.channel());
+            applied.await?
+        } else {
+            spec.run(self, run).await?
+        };
+        let changes = if spec.effect() == ToolEffect::Changes {
+            proposed_changes(&parts)
+        } else {
+            Vec::new()
+        };
         let people = self
             .people_as(actor.person.id, request.people, &parts)
             .await?;
-        Ok(render(&parts, &people, &nonce()?))
+        Ok((render(&parts, &people, &nonce()?), changes))
     }
 }

@@ -5,12 +5,14 @@
 //! `call.rs` is the only path in: it checks the scope, runs the tool as the actor, takes out what
 //! is kept from AI, fences the text and writes the log of tool calls (`log.rs`).
 
+mod apply;
 mod call;
 mod inputs;
 mod log;
 mod preview;
 mod read;
 mod registry;
+mod requests;
 
 pub use call::{
     ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, ToolListing, ToolMode, call_tool,
@@ -18,4 +20,5 @@ pub use call::{
 };
 pub use inputs::*;
 pub use log::ToolCallStore;
+pub use preview::ProposedChange;
 pub use registry::{DESIGNED_OUT, ToolSpec, registry};

@@ -281,6 +281,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             &Options {
                 image_hosts,
                 plain_tokens: resolution.plain,
+                ..Options::default()
             },
         )
         .html)

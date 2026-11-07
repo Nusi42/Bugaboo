@@ -8,6 +8,7 @@
 
 use jiff::Timestamp;
 
+use crate::event::Channel;
 use crate::fields::Field;
 use crate::id::{ProjectId, ToolCallId, UserId};
 use crate::personal::Entity;
@@ -25,6 +26,19 @@ words! {
         AiApp => "ai-app",
         /// An agent.
         Agent => "agent",
+    }
+}
+
+impl ToolCaller {
+    /// The channel the events of what this caller saves carry; none when the way the caller signs
+    /// in decides it (an agent signs in with a key, so its events say it came through the API).
+    #[must_use]
+    pub const fn channel(self) -> Option<Channel> {
+        match self {
+            Self::Assistant => Some(Channel::Assistant),
+            Self::AiApp => Some(Channel::Mcp),
+            Self::Agent => None,
+        }
     }
 }
 

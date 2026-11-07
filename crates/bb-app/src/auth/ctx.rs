@@ -192,6 +192,7 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             policies: Mutex::default(),
             via_key: AtomicBool::new(false),
+            channel: Mutex::default(),
             acting_agent: Mutex::default(),
             run: Mutex::new(run),
             marks: Mutex::default(),
@@ -315,6 +316,9 @@ pub struct Ctx<'a, S> {
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,
+    /// The channel the request was made through when it is not decided by how the person signed
+    /// in: *Apply* of the assistant saves through `assistant`, an AI app through `mcp`.
+    pub(crate) channel: Mutex<Option<Channel>>,
     /// The request came with the key of an agent: the agent and the person responsible for it.
     /// What the request changes is recorded as made by the agent (AI-30), in the one place that
     /// makes events ([`Self::event_maker`]), so no use case can record the agent as its person.
@@ -501,11 +505,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         EventMaker {
             clock: Arc::clone(&self.services.clock),
             actor,
-            channel: if self.via_key.load(Ordering::Relaxed) {
-                Channel::Api
-            } else {
-                Channel::Ui
-            },
+            channel: locked(&self.channel).unwrap_or_else(|| {
+                if self.via_key.load(Ordering::Relaxed) {
+                    Channel::Api
+                } else {
+                    Channel::Ui
+                }
+            }),
             reason: locked(&self.reason).clone(),
             run: *locked(&self.run),
         }
@@ -515,6 +521,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// away with `None`.
     pub(crate) fn set_run(&self, run: Option<RunId>) {
         *locked(&self.run) = run;
+    }
+
+    /// Makes the events of the changes that follow carry `channel`, until it is set again; none
+    /// leaves the channel to how the person signed in.
+    pub(crate) fn act_through(&self, channel: Option<Channel>) {
+        *locked(&self.channel) = channel;
     }
 
     /// Makes the events of the changes that follow carry `reason`, until it is set again.

@@ -7,46 +7,19 @@
 //! values that are there now were written by people and are fenced as theirs, and only the values
 //! the AI proposes are fenced as the proposer's.
 
-use std::collections::BTreeMap;
-
 use bb_core::ErrorCode;
 use bb_core::ai::{AuthorKind, ToolCaller};
 use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
-use bb_core::id::{IssueId, IssueTypeId, UserId};
-use bb_core::issue::Priority;
-use bb_core::time::Minutes;
-use bb_core::workflow::StatusKey;
-use serde_json::json;
+use bb_core::id::IssueId;
+use serde::Serialize;
+use serde_json::{Value, json};
 
-use super::inputs::{
-    AddCommentInput, ChangeStatusInput, CreateIssueInput, LogTimeInput, StartTimerInput,
-    StopTimerInput, UpdateIssueInput,
-};
 use super::registry::{Boxed, Run};
+use super::requests;
 use crate::ai::context::Part;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::comments::AddComment;
-use crate::issues::{ChangeIssue, CreateIssue};
-use crate::time::{AddTime, EntryDetails, StartTimer, StopTimer};
-
-fn invalid<T, E>(parsed: Result<T, E>) -> Result<T, AppError> {
-    parsed.map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))
-}
-
-fn priority(text: Option<&str>) -> Result<Option<Priority>, AppError> {
-    text.map(|text| Priority::from_code(text).ok_or(AppError::Refused(ErrorCode::InvalidRequest)))
-        .transpose()
-}
-
-fn people(ids: Option<&[String]>) -> Result<Option<Vec<UserId>>, AppError> {
-    ids.map(|ids| {
-        ids.iter()
-            .map(|id| invalid(id.parse::<UserId>()))
-            .collect::<Result<Vec<_>, _>>()
-    })
-    .transpose()
-}
+use crate::issues::ChangeIssue;
 
 /// Who the AI is told wrote the values it proposes.
 const fn proposer(caller: ToolCaller) -> AuthorKind {
@@ -129,31 +102,15 @@ pub(super) fn create_issue<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: CreateIssueInput = run.input()?;
+        let request = requests::create_issue(&run)?;
         let in_kept_project = ctx
-            .find_project(&input.project)
+            .find_project(&request.project)
             .await?
             .is_some_and(|found| run.withheld.hides_project(found.project.id));
         if in_kept_project {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
-        let changes = ctx
-            .preview_create_issue(
-                run.actor,
-                &CreateIssue {
-                    session_token: run.token.to_owned(),
-                    project: input.project,
-                    issue_type: invalid(input.issue_type.parse::<IssueTypeId>())?,
-                    title: input.title,
-                    description: input.description,
-                    status: None,
-                    priority: priority(input.priority.as_deref())?,
-                    assigned_to: None,
-                    estimated_time: None,
-                    fields: BTreeMap::new(),
-                },
-            )
-            .await?;
+        let changes = ctx.preview_create_issue(run.actor, &request).await?;
         Ok(preview_parts(&run, changes, proposer(run.caller)))
     })
 }
@@ -164,21 +121,8 @@ pub(super) fn update_issue<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: UpdateIssueInput = run.input()?;
-        let change = ChangeIssue {
-            session_token: run.token.to_owned(),
-            issue: input.issue,
-            version: input.version,
-            issue_type: None,
-            title: input.title,
-            status: None,
-            priority: priority(input.priority.as_deref())?,
-            estimated_time: None,
-            time_left: None,
-            assigned_to: people(input.assigned_to.as_deref())?,
-            fields: BTreeMap::new(),
-        };
-        ctx.preview_change_of_issue(&run, change).await
+        ctx.preview_change_of_issue(&run, requests::update_issue(&run)?)
+            .await
     })
 }
 
@@ -188,21 +132,8 @@ pub(super) fn change_status<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: ChangeStatusInput = run.input()?;
-        let change = ChangeIssue {
-            session_token: run.token.to_owned(),
-            issue: input.issue,
-            version: input.version,
-            issue_type: None,
-            title: None,
-            status: Some(invalid(StatusKey::new(&input.status))?),
-            priority: None,
-            estimated_time: None,
-            time_left: None,
-            assigned_to: None,
-            fields: BTreeMap::new(),
-        };
-        ctx.preview_change_of_issue(&run, change).await
+        ctx.preview_change_of_issue(&run, requests::change_status(&run)?)
+            .await
     })
 }
 
@@ -212,18 +143,9 @@ pub(super) fn add_comment<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: AddCommentInput = run.input()?;
-        let before_by = ctx.preview_issue(&run, &input.issue).await?;
-        let changes = ctx
-            .preview_add_comment(
-                run.actor,
-                &AddComment {
-                    session_token: run.token.to_owned(),
-                    issue: input.issue,
-                    text: input.text,
-                },
-            )
-            .await?;
+        let request = requests::add_comment(&run)?;
+        let before_by = ctx.preview_issue(&run, &request.issue).await?;
+        let changes = ctx.preview_add_comment(run.actor, &request).await?;
         Ok(preview_parts(&run, changes, before_by))
     })
 }
@@ -234,23 +156,9 @@ pub(super) fn log_time<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: LogTimeInput = run.input()?;
-        let before_by = ctx.preview_issue(&run, &input.issue).await?;
-        let changes = ctx
-            .preview_add_time(
-                run.actor,
-                &AddTime {
-                    session_token: run.token.to_owned(),
-                    issue: input.issue,
-                    date: invalid(input.date.parse())?,
-                    minutes: Minutes::new(input.minutes),
-                    details: EntryDetails {
-                        note: input.note,
-                        ..EntryDetails::default()
-                    },
-                },
-            )
-            .await?;
+        let request = requests::log_time(&run)?;
+        let before_by = ctx.preview_issue(&run, &request.issue).await?;
+        let changes = ctx.preview_add_time(run.actor, &request).await?;
         Ok(preview_parts(&run, changes, before_by))
     })
 }
@@ -261,17 +169,9 @@ pub(super) fn start_timer<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: StartTimerInput = run.input()?;
-        let before_by = ctx.preview_issue(&run, &input.issue).await?;
-        let changes = ctx
-            .preview_start_timer(
-                run.actor,
-                &StartTimer {
-                    session_token: run.token.to_owned(),
-                    issue: input.issue,
-                },
-            )
-            .await?;
+        let request = requests::start_timer(&run)?;
+        let before_by = ctx.preview_issue(&run, &request.issue).await?;
+        let changes = ctx.preview_start_timer(run.actor, &request).await?;
         Ok(preview_parts(&run, changes, before_by))
     })
 }
@@ -282,16 +182,8 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let input: StopTimerInput = run.input()?;
         let (changes, on): (Vec<FieldChange>, IssueId) = ctx
-            .preview_stop_timer(
-                run.actor,
-                &StopTimer {
-                    session_token: run.token.to_owned(),
-                    version: input.version,
-                    details: EntryDetails::default(),
-                },
-            )
+            .preview_stop_timer(run.actor, &requests::stop_timer(&run)?)
             .await?;
         let issue = ctx
             .store()
@@ -302,4 +194,48 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
         let before_by = ctx.author_of_issue(&run, &issue).await?;
         Ok(preview_parts(&run, changes, before_by))
     })
+}
+
+/// One field a proposal would change, with the value now and the value after, as the person may
+/// read them. It is made from the parts of the preview, which are the one account of a preview.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ProposedChange {
+    /// The field (`title`, `priority`, `status`, `comment`, …).
+    pub field: String,
+    /// The value now; none when the field is new.
+    pub before: Option<Value>,
+    /// The value after; none when the change takes the value away.
+    pub after: Option<Value>,
+}
+
+/// The changes a preview lists, in order: each `would_change` part opens one, and the `before` and
+/// `after` parts after it fill it.
+pub(super) fn proposed_changes(parts: &[Part]) -> Vec<ProposedChange> {
+    let mut changes: Vec<ProposedChange> = Vec::new();
+    for part in parts {
+        match part.name {
+            "would_change" => changes.push(ProposedChange {
+                field: part
+                    .value
+                    .get("field")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned(),
+                before: None,
+                after: None,
+            }),
+            "before" => {
+                if let Some(last) = changes.last_mut() {
+                    last.before = Some(part.value.clone());
+                }
+            }
+            "after" => {
+                if let Some(last) = changes.last_mut() {
+                    last.after = Some(part.value.clone());
+                }
+            }
+            _ => {}
+        }
+    }
+    changes
 }
