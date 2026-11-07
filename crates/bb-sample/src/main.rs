@@ -71,7 +71,7 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
     let mut checked = None;
     let sample = if args.large {
         let mut large = Large::new(args.issues, args.check)?;
-        let sample = create(&options, &output.data_folder(), &target, &mut large).await?;
+        let sample = Box::pin(create(&options, &output.data_folder(), &target, &mut large)).await?;
         checked = Some(sample.check_large(large.facts(), large.is_check()).await?);
         sample
     } else {
