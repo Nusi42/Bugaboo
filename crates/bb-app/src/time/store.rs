@@ -19,6 +19,39 @@ use crate::store_macros::{queries, reads, writes};
 /// Where a page of time entries starts: after the entry with this ID, in the order of the page.
 pub type EntryCursor = Option<TimeEntryId>;
 
+/// Where a page of the entries of an issue starts for a reader who may not see the moment they were
+/// saved: after the entry of this date and hash. It is all a cursor of such a page holds.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DayKey {
+    /// The date of the entry.
+    pub day: Date,
+    /// The hash of the ID of the entry (`opaque_id`), which follows no order of making.
+    pub hash: String,
+}
+
+impl std::fmt::Display for DayKey {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}:{}", self.day, self.hash)
+    }
+}
+
+impl std::str::FromStr for DayKey {
+    type Err = ();
+
+    fn from_str(text: &str) -> Result<Self, ()> {
+        let (day, hash) = text.split_once(':').ok_or(())?;
+        let clean = !hash.is_empty() && hash.bytes().all(|byte| byte.is_ascii_hexdigit());
+        clean
+            .then(|| day.parse().ok())
+            .flatten()
+            .map(|day| Self {
+                day,
+                hash: hash.to_owned(),
+            })
+            .ok_or(())
+    }
+}
+
 /// What the timer and the time entries need from storage.
 pub trait TimeStore: TimeSpentStore + FieldStore + 'static {
     queries! {
@@ -47,6 +80,14 @@ pub trait TimeStore: TimeSpentStore + FieldStore + 'static {
         ) -> Vec<TimeEntry>;
         /// The time entries on an issue, newest first, a page after `after`.
         fn entries_of_issue(issue: IssueId, after: EntryCursor, limit: u64) -> Vec<TimeEntry>;
+        /// The time entries on an issue by date, the latest date first and, among entries of one
+        /// date, by the hash of their IDs, a page after `after`, each with its place: the order of a
+        /// reader who may not see the moment the entries were saved.
+        fn entries_of_issue_by_date(
+            issue: IssueId,
+            after: Option<DayKey>,
+            limit: u64
+        ) -> Vec<(TimeEntry, DayKey)>;
     }
 
     writes! {

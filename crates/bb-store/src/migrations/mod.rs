@@ -71,6 +71,7 @@ mod m0039_agents;
 mod m0040_runs;
 mod m0041_assistant_references;
 mod m0043_oauth;
+mod m0044_shown_moments;
 #[cfg(test)]
 mod old_rows;
 
@@ -378,6 +379,11 @@ const ALL: &[Definition] = &[
         version: 43,
         name: "oauth",
         steps: || Ok(m0043_oauth::steps()),
+    },
+    Definition {
+        version: 44,
+        name: "shown_moments",
+        steps: || Ok(m0044_shown_moments::steps()),
     },
 ];
 

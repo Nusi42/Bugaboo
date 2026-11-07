@@ -32,6 +32,7 @@ pub(crate) enum TimeEntryRow {
     StartedAt,
     CreatedAt,
     Version,
+    ShownHash,
 }
 
 /// Which own field each starter field of time entries is (TIME-13): found by the mark, never by
@@ -73,6 +74,7 @@ stored_tables! {
         StartedAt => started_at,
         CreatedAt => created_at,
         Version => version,
+        ShownHash => id,
     },
     TimeEntryValueRow(FieldValueRow) => bb_core::time::entry::TimeEntryValue {
         EntityKind => entity_kind,

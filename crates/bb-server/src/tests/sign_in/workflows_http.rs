@@ -109,6 +109,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let made = site.create(&mut ada, "In the middle").await?;
         let issue = key_of(&made)?;
+        rig.clock.advance(1);
         ok(&go(&mut ada, &issue, "in-progress").await?)?;
         // The project gets a workflow of its own to change.
         let editor = ok(&ada
@@ -141,6 +142,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
             (refused.status, refused.code()),
             (StatusCode::CONFLICT, "workflow.status-in-use")
         );
+        rig.clock.advance(1);
         ok(&ada
             .send(
                 "PUT",

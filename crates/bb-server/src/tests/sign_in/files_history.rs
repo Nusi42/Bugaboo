@@ -35,10 +35,13 @@ async fn iss_06_history_has_a_row_for_each_file_added_deleted_and_brought_back()
         let path = format!("{ISSUES}/{issue}/history?tab=changes");
         let file = upload(&mut ada, &issue, "jam.txt", b"the jam").await?;
         let id = id_in(&file)?;
+        // Each step at a moment of its own: the history is in the order of the moments it is shown at.
+        rig.clock.advance(1);
         let gone = ada
             .send("DELETE", &format!("{ATTACHMENTS}/{id}"), None)
             .await?;
         assert_eq!(gone.status, StatusCode::NO_CONTENT);
+        rig.clock.advance(1);
         ok(&ada
             .send("POST", &format!("{ATTACHMENTS}/{id}/restore"), None)
             .await?)?;
@@ -61,6 +64,7 @@ async fn iss_06_a_file_that_is_gone_for_good_keeps_its_row_without_its_name() ->
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         let file = upload(&mut ada, &issue, "private-notes.txt", b"the jam").await?;
+        rig.clock.advance(1);
         let gone = ada
             .send("DELETE", &format!("{ATTACHMENTS}/{}", id_in(&file)?), None)
             .await?;

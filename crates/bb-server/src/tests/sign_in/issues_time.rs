@@ -51,7 +51,9 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
         assert!(fresh.get("estimated_time").is_none(), "{fresh}");
         assert!(fresh.get("time_left").is_none(), "{fresh}");
 
-        // An estimate, then a typed time left: each a change on the version that was read.
+        // An estimate, then a typed time left: each a change on the version that was read, each at a
+        // moment of its own (the history is in the order of the moments it is shown at).
+        rig.clock.advance(1);
         let estimated = ada
             .send(
                 "PATCH",
@@ -61,6 +63,7 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
             .await?;
         assert_eq!(ok(&estimated)?["estimated_time"], 240);
         assert_eq!(ok(&estimated)?["version"], 2);
+        rig.clock.advance(1);
         let typed = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 90})))
             .await?;
@@ -83,6 +86,7 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
         );
         // Taking the typed value away leaves the estimate: time left is worked out again, from
         // nothing spent.
+        rig.clock.advance(1);
         let cleared = ada
             .send(
                 "PATCH",

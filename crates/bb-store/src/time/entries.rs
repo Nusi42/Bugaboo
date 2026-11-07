@@ -2,7 +2,8 @@
 //! time entries. The values of the own fields of an entry are in `field_value`, under the kind
 //! `time_entry`, and go with it.
 
-use bb_app::time::{EntryCursor, TimeStore};
+use bb_app::history::opaque_id;
+use bb_app::time::{DayKey, EntryCursor, TimeStore};
 use bb_core::id::{IssueId, TimeEntryId, UserId};
 use bb_core::time::entry::{StarterFieldMark, TimeEntry, Timer};
 use bb_core::version::Version;
@@ -203,6 +204,46 @@ impl TimeStore for AuthStorage {
             .collect()
     }
 
+    async fn entries_of_issue_by_date(
+        &self,
+        issue: IssueId,
+        after: Option<DayKey>,
+        limit: u64,
+    ) -> Result<Vec<(TimeEntry, DayKey)>, StoreError> {
+        let mut select = entry_select();
+        select
+            .column((TimeEntryRow::Table, TimeEntryRow::ShownHash))
+            .and_where(column(TimeEntryRow::Issue).eq(issue.stored()));
+        if let Some(after) = after {
+            let day = stored_day(after.day)?;
+            select.and_where(
+                column(TimeEntryRow::Day)
+                    .lt(day)
+                    .or(column(TimeEntryRow::Day)
+                        .eq(day)
+                        .and(column(TimeEntryRow::ShownHash).lt(after.hash))),
+            );
+        }
+        select
+            .order_by((TimeEntryRow::Table, TimeEntryRow::Day), Order::Desc)
+            .order_by((TimeEntryRow::Table, TimeEntryRow::ShownHash), Order::Desc)
+            .order_by((TimeEntryRow::Table, TimeEntryRow::Id), Order::Desc)
+            .limit(limit);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                let entry = read_entry(row)?;
+                let key = DayKey {
+                    day: entry.date,
+                    hash: row.get(TimeEntryRow::ShownHash)?,
+                };
+                Ok((entry, key))
+            })
+            .collect()
+    }
+
     async fn entries_of_issue(
         &self,
         issue: IssueId,
@@ -231,7 +272,7 @@ impl TimeStore for AuthStorage {
         let mut insert = Query::insert();
         insert
             .into_table(TimeEntryRow::Table)
-            .columns(ENTRY_COLUMNS)
+            .columns(ENTRY_COLUMNS.into_iter().chain([TimeEntryRow::ShownHash]))
             .values([
                 Expr::val(entry.id.stored()),
                 Expr::val(entry.person.stored()),
@@ -243,6 +284,7 @@ impl TimeStore for AuthStorage {
                 Expr::val(entry.started_at.map(to_micros)),
                 Expr::val(to_micros(entry.created_at)),
                 Expr::val(entry.version),
+                Expr::val(opaque_id(&entry.id.to_string())),
             ])
             .map_err(|_| StoreError::Corrupt("a time entry"))?;
         transaction.execute(&insert).await?;

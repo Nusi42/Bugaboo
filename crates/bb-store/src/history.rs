@@ -7,19 +7,84 @@
 //! that stops reads the same events again and finds its rows made, so nothing is doubled and nothing
 //! is lost.
 
-use bb_app::history::HistoryStore;
+use bb_app::history::{HistoryStore, ShownKey, opaque_id, shown_moment};
 use bb_core::event::{DomainEvent, FieldChange};
 use bb_core::history::{CONSUMER, HistoryEntry, HistoryKind};
 use bb_core::id::{AgentId, EntityId, EventId, IssueId, RunId, UserId};
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
+use sea_query::{Expr, ExprTrait as _, Iden, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
 use crate::events::{consumer_name, outbox_move};
 use crate::schema::{Event, HistoryEntryRow, ManyChangeRunRow};
+
+/// The name of the column that holds the moment a row is shown at to one reader.
+#[derive(Clone, Copy, Iden)]
+enum Shown {
+    Moment,
+}
+
+/// The columns of a row of the history.
+const ENTRY_COLUMNS: [HistoryEntryRow; 12] = [
+    HistoryEntryRow::Event,
+    HistoryEntryRow::Issue,
+    HistoryEntryRow::Position,
+    HistoryEntryRow::At,
+    HistoryEntryRow::By,
+    HistoryEntryRow::Agent,
+    HistoryEntryRow::Kind,
+    HistoryEntryRow::Record,
+    HistoryEntryRow::RecordKind,
+    HistoryEntryRow::Run,
+    HistoryEntryRow::UndidRun,
+    HistoryEntryRow::Changes,
+];
+
+/// The moment a row is shown at to `reader`: the moment it happened for a row they made, and the
+/// stored moment (the start of the date for a time entry) for every other row.
+fn shown_for(reader: UserId) -> sea_query::CaseStatement {
+    Expr::case(
+        Expr::col(HistoryEntryRow::By).eq(reader.stored()),
+        Expr::col(HistoryEntryRow::At),
+    )
+    .finally(Expr::col(HistoryEntryRow::ShownAt))
+}
+
+/// The rows of one issue for a reader, after `after` in the order of shown moments.
+fn shown_select(
+    issue: IssueId,
+    kind: Option<HistoryKind>,
+    reader: UserId,
+    after: Option<&ShownKey>,
+) -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns(ENTRY_COLUMNS)
+        .column(HistoryEntryRow::ShownHash)
+        .expr_as(shown_for(reader), Shown::Moment)
+        .from(HistoryEntryRow::Table)
+        .and_where(Expr::col(HistoryEntryRow::Issue).eq(issue.stored()));
+    if let Some(kind) = kind {
+        select.and_where(Expr::col(HistoryEntryRow::Kind).eq(kind.code()));
+    }
+    if let Some(after) = after {
+        select.and_where(
+            Expr::expr(shown_for(reader))
+                .lt(after.micros)
+                .or(Expr::expr(shown_for(reader))
+                    .eq(after.micros)
+                    .and(Expr::col(HistoryEntryRow::ShownHash).lt(after.hash.clone()))),
+        );
+    }
+    select
+        .order_by_expr(Expr::col(Shown::Moment), Order::Desc)
+        .order_by(HistoryEntryRow::ShownHash, Order::Desc)
+        .order_by(HistoryEntryRow::Event, Order::Desc);
+    select
+}
 
 fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
     let changes: Vec<FieldChange> =
@@ -74,6 +139,8 @@ impl HistoryStore for AuthStorage {
                     HistoryEntryRow::Run,
                     HistoryEntryRow::UndidRun,
                     HistoryEntryRow::Changes,
+                    HistoryEntryRow::ShownAt,
+                    HistoryEntryRow::ShownHash,
                 ])
                 .values([
                     Expr::val(entry.event.stored()),
@@ -88,6 +155,8 @@ impl HistoryStore for AuthStorage {
                     Expr::val(entry.run.map(StoredId::stored)),
                     Expr::val(entry.undid_run.map(StoredId::stored)),
                     Expr::val(serde_json::to_string(&entry.changes)?),
+                    Expr::val(to_micros(shown_moment(entry))),
+                    Expr::val(opaque_id(&entry.event.to_string())),
                 ])
                 .map_err(|_| StoreError::Corrupt("a history row"))?
                 .on_conflict(
@@ -150,20 +219,7 @@ impl HistoryStore for AuthStorage {
     ) -> Result<Vec<HistoryEntry>, StoreError> {
         let mut select = Query::select();
         select
-            .columns([
-                HistoryEntryRow::Event,
-                HistoryEntryRow::Issue,
-                HistoryEntryRow::Position,
-                HistoryEntryRow::At,
-                HistoryEntryRow::By,
-                HistoryEntryRow::Agent,
-                HistoryEntryRow::Kind,
-                HistoryEntryRow::Record,
-                HistoryEntryRow::RecordKind,
-                HistoryEntryRow::Run,
-                HistoryEntryRow::UndidRun,
-                HistoryEntryRow::Changes,
-            ])
+            .columns(ENTRY_COLUMNS)
             .from(HistoryEntryRow::Table)
             .and_where(Expr::col(HistoryEntryRow::Issue).eq(issue.stored()))
             .order_by(HistoryEntryRow::Position, Order::Desc)
@@ -181,6 +237,31 @@ impl HistoryStore for AuthStorage {
             .await?
             .iter()
             .map(read_entry)
+            .collect()
+    }
+
+    async fn history_page_shown(
+        &self,
+        issue: IssueId,
+        kind: Option<HistoryKind>,
+        reader: UserId,
+        after: Option<ShownKey>,
+        skip: u64,
+        limit: u64,
+    ) -> Result<Vec<(HistoryEntry, ShownKey)>, StoreError> {
+        let mut select = shown_select(issue, kind, reader, after.as_ref());
+        select.limit(limit).offset(skip);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                let key = ShownKey {
+                    micros: row.get(Shown::Moment)?,
+                    hash: row.get(HistoryEntryRow::ShownHash)?,
+                };
+                Ok((read_entry(row)?, key))
+            })
             .collect()
     }
 }

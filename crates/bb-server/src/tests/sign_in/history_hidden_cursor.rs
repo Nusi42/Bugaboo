@@ -37,6 +37,8 @@ async fn salary_changes(
     count: usize,
 ) -> TestResult {
     for number in 0..count {
+        // Each change at a moment of its own: the history is in the order of the moments it is shown at.
+        rig.clock.advance(1);
         let version = rig
             .api()
             .issue(
@@ -126,6 +128,7 @@ async fn iss_06_a_long_run_of_hidden_changes_leaves_a_cursor_that_names_no_row()
             ],
         )
         .await?;
+        rig.clock.advance(1);
         change(&mut ada, &issue, json!({"title": "The first title"})).await?;
         // More changes the reader may not see than one request looks at, then one they may.
         salary_changes(
@@ -136,6 +139,7 @@ async fn iss_06_a_long_run_of_hidden_changes_leaves_a_cursor_that_names_no_row()
             LOOKED_AT_MAX + 5,
         )
         .await?;
+        rig.clock.advance(1);
         change(&mut ada, &issue, json!({"title": "The last title"})).await?;
 
         let pages = walked(&mut reader, &issue, 50).await?;

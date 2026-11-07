@@ -14,6 +14,7 @@ mod build;
 mod dated;
 mod map;
 mod names;
+mod opaque;
 mod page;
 mod read;
 mod run_mark;
@@ -24,7 +25,9 @@ mod walk;
 
 pub use build::{catch_up, catch_up_batch};
 pub(crate) use map::issue_in;
+pub use opaque::opaque_id;
 pub use page::history;
 pub(crate) use read::{ChangeReader, visible_changes};
-pub use store::HistoryStore;
+pub use store::{HistoryStore, ShownKey};
+pub use time::shown_moment;
 pub use types::*;

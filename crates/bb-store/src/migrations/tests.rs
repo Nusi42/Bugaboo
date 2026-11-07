@@ -211,6 +211,51 @@ async fn adr_0019_groups_and_roles_that_were_there_start_at_the_first_version() 
     .await
 }
 
+#[tokio::test]
+async fn priv_09_rows_of_the_history_that_were_there_get_their_shown_moment_and_a_hash()
+-> TestResult {
+    each_database("migration_44_shown_moments", async |db| {
+        use crate::schema::HistoryEntryRow as History;
+        const DAY: i64 = 86_400_000_000;
+        let database = Database::connect(db.url()).await?;
+        database.migrate_until(39, at(0)).await?;
+        // Written at 2027-01-15 08:30 UTC, a time entry and something else.
+        let written = 1_800_000_000_000_000 + 3 * DAY / 4 / 2 * 2;
+        old_rows::old_history_row(&database, 1, "time_entry", written).await?;
+        old_rows::old_history_row(&database, 2, "issue", written).await?;
+        database.migrate(at(1)).await?;
+        let mut select = Query::select();
+        select
+            .columns([
+                History::Event,
+                History::At,
+                History::ShownAt,
+                History::ShownHash,
+            ])
+            .from(History::Table);
+        let rows = database.fetch_all(&select).await?;
+        assert_eq!(rows.len(), 2);
+        let mut hashes = Vec::new();
+        for row in &rows {
+            let event = row.get::<Vec<u8>>(History::Event)?[0];
+            let shown = row.get::<i64>(History::ShownAt)?;
+            // A time entry is shown at the start of the day it was written on, the rest at its moment.
+            let expected = if event == 1 {
+                written - written % DAY
+            } else {
+                written
+            };
+            assert_eq!(shown, expected, "event {event}");
+            let hash = row.get::<String>(History::ShownHash)?;
+            assert_eq!(hash.len(), 32, "{hash}");
+            hashes.push(hash);
+        }
+        assert_ne!(hashes[0], hashes[1]);
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn two_processes_migrating_at_once_apply_each_migration_once() -> TestResult {
     each_database("migrations_race", async |db| {

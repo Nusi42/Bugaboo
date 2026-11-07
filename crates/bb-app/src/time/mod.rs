@@ -29,7 +29,7 @@ pub use limits::{
 };
 pub use read::{issue_time_entries, my_time_entries, time_entry_defaults};
 pub use starter::{CreateStarterTimeFields, create_starter_time_fields};
-pub use store::{EntryCursor, TimeStore};
+pub use store::{DayKey, EntryCursor, TimeStore};
 pub use timer::{
     change_start_time, start_timer, stop_timer, switch_timer, throw_away_timer, timer,
 };

@@ -35,19 +35,19 @@ pub async fn history<S: AuthStore>(
         HistoryTab::Comments => Some(HistoryKind::Comment),
         HistoryTab::Changes => Some(HistoryKind::Change),
     };
+    // A reader who may not see the moment of the time entries of others gets those rows placed by
+    // their dates: the order the rows were written in would tell it. Looked up once.
+    let sees_moments = ctx
+        .evaluation_of(&actor, Place::Organization)
+        .await?
+        .allows(Permission::SeeWorkingHoursOfOthers);
     // The people of the values of the page are resolved once for every row of it.
-    let mut reading = Reading::new(&actor, &held, ctx.line_maker().await?);
+    let mut reading = Reading::new(&actor, &held, ctx.line_maker().await?, sees_moments);
     let kinds = ctx
         .store()
         .relation_kinds()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    // A reader who may not see the moment of the time entries of others gets those rows placed by
-    // their dates: the order the rows were written in would tell it.
-    let sees_moments = ctx
-        .evaluation_of(&actor, Place::Organization)
-        .await?
-        .allows(Permission::SeeWorkingHoursOfOthers);
     if !sees_moments {
         let asked = PageQuery {
             cursor: input.cursor.as_deref(),

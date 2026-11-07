@@ -8,7 +8,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat, RunMarkKind};
+use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat, RunMarkKind, opaque_id};
 use bb_core::history::{FileEvent, HistoryTab, TimeEvent};
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
@@ -22,7 +22,6 @@ use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, 
 use super::comments::CommentItem;
 use super::many_changes::FieldChangeBody;
 use super::relations::IssueRef;
-use crate::api::time_entries::opaque_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 

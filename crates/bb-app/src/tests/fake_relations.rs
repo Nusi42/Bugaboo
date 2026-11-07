@@ -13,7 +13,7 @@ use jiff::Timestamp;
 use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::comments::CommentStore;
 use crate::follow::FollowStore;
-use crate::history::HistoryStore;
+use crate::history::{HistoryStore, ShownKey, opaque_id, shown_moment};
 use crate::relations::RelationStore;
 use crate::text_index::{TextIndexStore, Touched};
 
@@ -408,6 +408,49 @@ impl HistoryStore for FakeStore {
                 .cloned()
                 .collect();
             found.sort_by_key(|entry| std::cmp::Reverse((entry.position, entry.event)));
+            found
+                .into_iter()
+                .skip(usize::try_from(skip).unwrap_or(usize::MAX))
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
+        }))
+    }
+
+    async fn history_page_shown(
+        &self,
+        issue: IssueId,
+        kind: Option<HistoryKind>,
+        reader: UserId,
+        after: Option<ShownKey>,
+        skip: u64,
+        limit: u64,
+    ) -> Result<Vec<(HistoryEntry, ShownKey)>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<(HistoryEntry, ShownKey)> = state
+                .history
+                .iter()
+                .filter(|entry| entry.issue == issue && kind.is_none_or(|kind| entry.kind == kind))
+                .map(|entry| {
+                    let shown = if entry.by == Some(reader) {
+                        entry.at
+                    } else {
+                        shown_moment(entry)
+                    };
+                    let key = ShownKey {
+                        micros: shown.as_microsecond(),
+                        hash: opaque_id(&entry.event.to_string()),
+                    };
+                    (entry.clone(), key)
+                })
+                .filter(|(_, key)| {
+                    after
+                        .as_ref()
+                        .is_none_or(|after| (key.micros, &key.hash) < (after.micros, &after.hash))
+                })
+                .collect();
+            found.sort_by(|(_, one), (_, other)| {
+                (other.micros, &other.hash).cmp(&(one.micros, &one.hash))
+            });
             found
                 .into_iter()
                 .skip(usize::try_from(skip).unwrap_or(usize::MAX))

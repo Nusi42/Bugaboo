@@ -10,9 +10,10 @@ use jiff::civil::Date;
 use jiff::{SignedDuration, Timestamp};
 
 use super::fake::{FakeError, FakeStore, State, Tx};
+use crate::history::opaque_id;
 use crate::search::{SearchFailure, SearchRequest};
 use crate::time::spent::TimeSpentStore;
-use crate::time::{EntryCursor, TimeStore};
+use crate::time::{DayKey, EntryCursor, TimeStore};
 
 /// The minutes booked on an issue.
 fn spent_on(state: &State, issue: IssueId) -> Minutes {
@@ -168,6 +169,40 @@ impl TimeStore for FakeStore {
                 .collect();
             found.sort_by_key(|entry| std::cmp::Reverse(entry.id));
             cut(found, limit)
+        }))
+    }
+
+    async fn entries_of_issue_by_date(
+        &self,
+        issue: IssueId,
+        after: Option<DayKey>,
+        limit: u64,
+    ) -> Result<Vec<(TimeEntry, DayKey)>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<(TimeEntry, DayKey)> = state
+                .time_entries
+                .iter()
+                .filter(|entry| entry.issue == issue)
+                .map(|entry| {
+                    let key = DayKey {
+                        day: entry.date,
+                        hash: opaque_id(&entry.id.to_string()),
+                    };
+                    (entry.clone(), key)
+                })
+                .filter(|(_, key)| {
+                    after
+                        .as_ref()
+                        .is_none_or(|after| (key.day, &key.hash) < (after.day, &after.hash))
+                })
+                .collect();
+            found.sort_by(|(_, one), (_, other)| {
+                (other.day, &other.hash).cmp(&(one.day, &one.hash))
+            });
+            found
+                .into_iter()
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
         }))
     }
 

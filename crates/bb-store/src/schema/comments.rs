@@ -79,6 +79,8 @@ pub(crate) enum HistoryEntryRow {
     Run,
     UndidRun,
     Changes,
+    ShownAt,
+    ShownHash,
 }
 
 stored_tables! {
@@ -122,6 +124,8 @@ stored_tables! {
         Run => run,
         UndidRun => undid_run,
         Changes => changes,
+        ShownAt => at,
+        ShownHash => event,
     },
     TextMarkRow => bb_core::mark::TextMark {
         EntityKind => entity_kind,

@@ -628,7 +628,9 @@ async fn iss_06_a_page_is_filled_past_hidden_rows_and_repeats_nothing() -> TestR
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut reader = reader_without_priority(&site, &rig).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        // One change the reader sees, then many they do not (the newest are read first).
+        // One change the reader sees, then many they do not (the newest are read first), each at a
+        // moment of its own (the history is in the order of the moments it is shown at).
+        rig.clock.advance(1);
         ok(&ada
             .send(
                 "PATCH",
@@ -638,6 +640,7 @@ async fn iss_06_a_page_is_filled_past_hidden_rows_and_repeats_nothing() -> TestR
             .await?)?;
         for version in 2..=30 {
             let priority = if version % 2 == 0 { "low" } else { "high" };
+            rig.clock.advance(1);
             ok(&ada
                 .send(
                     "PATCH",

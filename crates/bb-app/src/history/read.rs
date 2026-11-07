@@ -123,6 +123,8 @@ impl Batch<'_> {
 pub(super) struct Reading<'a> {
     pub(super) actor: &'a Actor,
     pub(super) held: &'a Evaluation,
+    /// Whether the reader holds *See working hours of others*, looked up once for the request.
+    pub(super) sees_moments: bool,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     maker: LineMaker,
     /// The names of types and labels the reader may know, read when first needed.
@@ -136,10 +138,16 @@ pub(super) struct Reading<'a> {
 
 impl<'a> Reading<'a> {
     /// What a page of the history for `actor` starts with: nobody resolved yet.
-    pub(super) fn new(actor: &'a Actor, held: &'a Evaluation, maker: LineMaker) -> Self {
+    pub(super) fn new(
+        actor: &'a Actor,
+        held: &'a Evaluation,
+        maker: LineMaker,
+        sees_moments: bool,
+    ) -> Self {
         Self {
             actor,
             held,
+            sees_moments,
             people: HashMap::new(),
             maker,
             names: KnownNames::default(),
@@ -453,6 +461,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut reading = Reading {
             actor,
             held,
+            // Changes of issue fields, never a row of time: the moment is not asked.
+            sees_moments: false,
             people: std::mem::take(&mut reader.people),
             maker: std::mem::take(&mut reader.maker),
             names: std::mem::take(&mut reader.names),
@@ -683,7 +693,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             None => None,
         };
         let (run_mark, run) = self.run_mark_of(reading, row).await?;
-        let at = super::time::shown_at(&what, row.at);
+        // A row of time is shown at the start of its date to a reader who is told only the date.
+        let at = match &what {
+            HistoryWhat::Time { day: Some(_), .. } => super::time::shown_moment(row),
+            _ => row.at,
+        };
         Ok(Some(HistoryItem {
             event: row.event,
             at,

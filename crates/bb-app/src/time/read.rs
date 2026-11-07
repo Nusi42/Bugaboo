@@ -11,10 +11,11 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::Field;
 use bb_core::id::{EntityId, TimeEntryId};
-use bb_core::paging::{Cut, page_len, read_len, window};
+use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, PeopleContext, Permission, Place};
 
+use super::store::DayKey;
 use super::types::{
     EntryDefaults, EntryDefaultsQuery, IssueTimeEntries, IssueTimeEntriesQuery, IssueTimeEntryView,
     MyTimeEntriesQuery, TimeEntryPage,
@@ -42,52 +43,6 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// The entry a page starts after, from the `next_cursor` of the page before.
 fn entry_cursor(cursor: Option<&str>) -> Result<Option<TimeEntryId>, AppError> {
     cursor_or_invalid(cursor, |text| text.parse().ok())
-}
-
-/// How many entries of an issue one read of the store takes while the whole list is built.
-const WHOLE_LIST_STEP: u64 = 500;
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// The entries of an issue by date, newest date first, one page of them and the cursor of the
-    /// next: for a reader who may not see the moment entries were saved. Entries of one date are in
-    /// an order that follows nothing (a hash of the ID), and the cursor is the number of entries
-    /// before the page, so neither tells when an entry was made.
-    async fn entries_by_date(
-        &self,
-        issue: bb_core::id::IssueId,
-        cursor: Option<&str>,
-        limit: u32,
-    ) -> Result<(Vec<bb_core::time::entry::TimeEntry>, Option<String>), AppError> {
-        let mut all = Vec::new();
-        let mut after = None;
-        loop {
-            let found = self
-                .store()
-                .entries_of_issue(issue, after, WHOLE_LIST_STEP)
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            let done = u64::try_from(found.len()).is_ok_and(|count| count < WHOLE_LIST_STEP);
-            after = found.last().map(|entry| entry.id);
-            all.extend(found);
-            if done {
-                break;
-            }
-        }
-        all.sort_by_key(|entry| (std::cmp::Reverse(entry.date), scrambled(entry.id)));
-        let window =
-            window(all.len(), cursor, limit).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-        let page = all.drain(window.start..window.end).collect();
-        Ok((page, window.next))
-    }
-}
-
-/// A number made from an ID that has no order of making: entries of one date are put in the order
-/// of it.
-fn scrambled(id: TimeEntryId) -> u64 {
-    use std::hash::{DefaultHasher, Hash, Hasher};
-    let mut hasher = DefaultHasher::new();
-    id.to_string().hash(&mut hasher);
-    hasher.finish()
 }
 
 /// The person's own time entries from one date to another (both included), by date, then in the
@@ -155,8 +110,19 @@ pub async fn issue_time_entries<S: AuthStore>(
         let next = cut.next_cursor(|entry| entry.id.to_string());
         (cut.items, next)
     } else {
-        ctx.entries_by_date(issue.id, input.cursor.as_deref(), input.limit)
-            .await?
+        let after = cursor_or_invalid(input.cursor.as_deref(), |text| text.parse::<DayKey>().ok())?;
+        let len = page_len(Some(input.limit));
+        let found = ctx
+            .store()
+            .entries_of_issue_by_date(issue.id, after, read_len(len))
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let cut = Cut::of(found, len);
+        let next = cut.next_cursor(|(_, key)| key.to_string());
+        (
+            cut.items.into_iter().map(|(entry, _)| entry).collect(),
+            next,
+        )
     };
     let spent = held
         .field_mask_for(Some(issue.issue_type))

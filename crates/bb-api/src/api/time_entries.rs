@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 
 use axum::extract::State;
 use axum::response::Response;
+use bb_app::history::opaque_id;
 use bb_app::time::{
     AddTime, ChangeTimeEntry, DeleteTimeEntry, EntryDefaults, EntryDefaultsQuery,
     IssueTimeEntriesQuery, IssueTimeEntryView, MyTimeEntriesQuery, TimeEntryView,
@@ -161,23 +162,6 @@ impl Masked for IssueTimeEntryItem {
         drop_hidden_own_fields(value, OWN_FIELDS, mask);
     }
 }
-
-/// An ID that tells nothing about when it was made: the first bytes of its hash, for a reader who
-/// may not see the moment (an ID made by the server holds the moment it was made).
-pub(crate) fn opaque_id(id: &str) -> String {
-    use sha2::{Digest, Sha256};
-    use std::fmt::Write as _;
-    Sha256::digest(id.as_bytes())
-        .iter()
-        .take(OPAQUE_ID_BYTES)
-        .fold(String::new(), |mut text, byte| {
-            let _ = write!(text, "{byte:02x}");
-            text
-        })
-}
-
-/// How many bytes of the hash an opaque ID keeps.
-const OPAQUE_ID_BYTES: usize = 16;
 
 impl From<&IssueTimeEntryView> for IssueTimeEntryItem {
     fn from(view: &IssueTimeEntryView) -> Self {

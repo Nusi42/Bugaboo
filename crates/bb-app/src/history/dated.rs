@@ -2,79 +2,28 @@
 //! (PRIV-09, ADR-0035, decision 8).
 //!
 //! A row of time is dated, not timed, for such a reader, and it is also *placed* by its date: the
-//! rows are put in the order of their shown moments (the start of the date for a time entry), so a
-//! time row between two events of one day tells nothing by its place. The order is not the order
-//! the rows were written in, so the page is cut from the whole history of the issue, which is read
-//! once and sorted here. The cursor holds the shown moment and the place of the row after which the
-//! next page starts; it is sealed over HTTP, and the moment in it is the one the reader has seen.
-
-use std::cmp::Reverse;
-use std::fmt;
-use std::str::FromStr;
+//! database puts the rows in the order of the moments they are shown at (the start of the date for a
+//! time entry of somebody else, the moment itself for every other row), tied by a hash of the event
+//! that follows no order of making, and cuts the pages by a keyset of that moment and hash. A time
+//! row between two events of one day therefore tells nothing by its place, and the cursor holds the
+//! moment the reader was shown and the hash, never a place in the outbox.
 
 use bb_core::ErrorCode;
-use bb_core::history::{HistoryEntry, HistoryKind};
+use bb_core::history::HistoryKind;
 use bb_core::issue::Issue;
 use bb_core::paging::SkipCursor;
 use bb_core::relation::RelationKind;
-use bb_policy::{Authorized, Evaluation, Permission};
-use jiff::Timestamp;
-use jiff::tz::TimeZone;
+use bb_policy::{Authorized, Evaluation};
 
-use super::read::{Reading, is_time};
-use super::time::hidden_day;
+use super::read::Reading;
+use super::store::ShownKey;
 use super::types::{HistoryItem, HistoryPage};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::walk::{Walk, fill_past_hidden};
 
-/// How many rows of the history one read of the store takes while the whole history is built.
-const WHOLE_HISTORY_STEP: u64 = 500;
-
-/// Where a row stands in the order of shown moments: the moment it is shown at (milliseconds), then
-/// its place in the outbox, which only tells the rows of one moment apart.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct Spot {
-    millis: i64,
-    position: i64,
-}
-
-impl fmt::Display for Spot {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "{}:{}", self.millis, self.position)
-    }
-}
-
-impl FromStr for Spot {
-    type Err = ();
-
-    fn from_str(text: &str) -> Result<Self, ()> {
-        let (millis, position) = text.split_once(':').ok_or(())?;
-        Ok(Self {
-            millis: millis.parse().map_err(|_| ())?,
-            position: position.parse().map_err(|_| ())?,
-        })
-    }
-}
-
-/// The spot of a row for a reader: the start of its date for a time entry whose moment the reader
-/// may not see, else the moment it happened.
-fn spot_of(row: &HistoryEntry, sees_moment: bool) -> Spot {
-    let shown = if is_time(row) {
-        hidden_day(row, sees_moment)
-            .and_then(|day| day.to_zoned(TimeZone::UTC).ok())
-            .map(|start| start.timestamp())
-    } else {
-        None
-    };
-    Spot {
-        millis: shown.unwrap_or(row.at).as_millisecond(),
-        position: row.position,
-    }
-}
-
-/// A row with its spot, shaped for the reader unless it has nothing in it for them.
+/// A row with its place in the order, shaped for the reader unless it has nothing in it for them.
 pub(super) struct Dated {
-    spot: Spot,
+    key: ShownKey,
     item: Option<HistoryItem>,
 }
 
@@ -85,83 +34,40 @@ struct DatedHistory<'a, 'c, 'r, S: AuthStore> {
     kind: Option<HistoryKind>,
     kinds: &'a [RelationKind],
     reading: &'a mut Reading<'r>,
-    /// Whether the reader holds *See working hours of others*.
-    sees_moments: bool,
-    /// The whole history, latest shown moment first; read when the first page asks for it.
-    ordered: Option<Vec<(Spot, HistoryEntry)>>,
-}
-
-impl<S: AuthStore> DatedHistory<'_, '_, '_, S> {
-    /// The whole history of the issue in the order of shown moments, read once.
-    async fn whole(&mut self) -> Result<&[(Spot, HistoryEntry)], AppError> {
-        if self.ordered.is_none() {
-            let mut rows = Vec::new();
-            loop {
-                let step = self
-                    .ctx
-                    .store()
-                    .history_page(
-                        self.issue.id,
-                        self.kind,
-                        None,
-                        u64::try_from(rows.len()).unwrap_or(u64::MAX),
-                        WHOLE_HISTORY_STEP,
-                    )
-                    .await
-                    .map_err(|error| internal::<S>(&error))?;
-                let done = u64::try_from(step.len()).is_ok_and(|count| count < WHOLE_HISTORY_STEP);
-                rows.extend(step);
-                if done {
-                    break;
-                }
-            }
-            let reader = self.reading.actor.person.id;
-            let mut placed: Vec<(Spot, HistoryEntry)> = rows
-                .into_iter()
-                .map(|row| {
-                    let own = row.by == Some(reader);
-                    (spot_of(&row, own || self.sees_moments), row)
-                })
-                .collect();
-            placed.sort_by_key(|(spot, _)| Reverse(*spot));
-            self.ordered = Some(placed);
-        }
-        Ok(self.ordered.as_deref().unwrap_or_default())
-    }
 }
 
 impl<S: AuthStore> Walk for DatedHistory<'_, '_, '_, S> {
     type Row = Dated;
-    type Key = Spot;
+    type Key = ShownKey;
 
     async fn fetch(
         &mut self,
-        after: Option<&Spot>,
+        after: Option<&ShownKey>,
         skip: u64,
         limit: u64,
     ) -> Result<Vec<Dated>, AppError> {
-        let whole = self.whole().await?;
-        let first = after.map_or(0, |after| whole.partition_point(|(spot, _)| spot >= after));
-        let first = first.saturating_add(usize::try_from(skip).unwrap_or(usize::MAX));
-        let rows: Vec<(Spot, HistoryEntry)> = whole
-            .iter()
-            .skip(first)
-            .take(usize::try_from(limit).unwrap_or(usize::MAX))
-            .cloned()
-            .collect();
-        let entries: Vec<HistoryEntry> = rows.iter().map(|(_, row)| row.clone()).collect();
+        let found = self
+            .ctx
+            .store()
+            .history_page_shown(
+                self.issue.id,
+                self.kind,
+                self.reading.actor.person.id,
+                after.cloned(),
+                skip,
+                limit,
+            )
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let entries: Vec<_> = found.iter().map(|(entry, _)| entry.clone()).collect();
         let batch = self.ctx.batch_of(&entries, self.kinds).await?;
-        let mut shaped = Vec::with_capacity(rows.len());
-        for (spot, row) in &rows {
-            let mut item = self
+        let mut shaped = Vec::with_capacity(found.len());
+        for (entry, key) in found {
+            let item = self
                 .ctx
-                .history_item(self.reading, self.issue, &batch, row)
+                .history_item(self.reading, self.issue, &batch, &entry)
                 .await?;
-            if let Some(item) = item.as_mut() {
-                // The row is shown at the moment it is placed by.
-                item.at = Timestamp::from_millisecond(spot.millis).unwrap_or(item.at);
-            }
-            shaped.push(Dated { spot: *spot, item });
+            shaped.push(Dated { key, item });
         }
         Ok(shaped)
     }
@@ -174,8 +80,8 @@ impl<S: AuthStore> Walk for DatedHistory<'_, '_, '_, S> {
         Ok(row.item.is_some())
     }
 
-    fn key_of(row: &Dated) -> Result<Spot, AppError> {
-        Ok(row.spot)
+    fn key_of(row: &Dated) -> Result<ShownKey, AppError> {
+        Ok(row.key.clone())
     }
 }
 
@@ -199,20 +105,14 @@ pub(super) async fn dated_page<S: AuthStore>(
     held: &Evaluation,
     asked: PageQuery<'_>,
 ) -> Result<Authorized<HistoryPage>, AppError> {
-    let start = SkipCursor::<Spot>::read(asked.cursor)
+    let start = SkipCursor::<ShownKey>::read(asked.cursor)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-    let sees_moments = ctx
-        .evaluation_of(reading.actor, bb_policy::Place::Organization)
-        .await?
-        .allows(Permission::SeeWorkingHoursOfOthers);
     let mut walk = DatedHistory {
         ctx,
         issue,
         kind,
         kinds,
         reading,
-        sees_moments,
-        ordered: None,
     };
     let filled = fill_past_hidden(&mut walk, &start, asked.len).await?;
     Ok(held.authorize(HistoryPage {

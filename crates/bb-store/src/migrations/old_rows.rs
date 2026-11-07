@@ -155,3 +155,39 @@ pub(super) async fn old_layout(
     }
     Ok(())
 }
+
+/// A row of the history as it was before the moment it is shown at was stored (migration 44): of
+/// the kind of record `record_kind`, written at `at` microseconds.
+pub(super) async fn old_history_row(
+    database: &Database,
+    event: u8,
+    record_kind: &str,
+    at: i64,
+) -> TestResult {
+    use crate::schema::HistoryEntryRow as Row;
+    insert(
+        database,
+        Row::Table,
+        [
+            Row::Event.into_iden(),
+            Row::Issue.into_iden(),
+            Row::Position.into_iden(),
+            Row::At.into_iden(),
+            Row::Kind.into_iden(),
+            Row::Record.into_iden(),
+            Row::RecordKind.into_iden(),
+            Row::Changes.into_iden(),
+        ],
+        [
+            Expr::val(vec![event; 16]),
+            Expr::val(vec![9_u8; 16]),
+            Expr::val(i64::from(event)),
+            Expr::val(at),
+            Expr::val("change"),
+            Expr::val(vec![8_u8; 16]),
+            Expr::val(record_kind),
+            Expr::val("[]"),
+        ],
+    )
+    .await
+}

@@ -75,6 +75,8 @@ async fn changes(
 ) -> Result<(), AppError> {
     let admin = token(world);
     for count in 0..=priorities {
+        // Each change at a moment of its own: the history is in the order of the moments it is shown at.
+        world.clock.advance(1);
         let version = issue(
             &world.ctx(),
             IssueQuery {
@@ -157,7 +159,7 @@ async fn walked(
 }
 
 /// What the key of a cursor is for a row: the moment it is shown at (the moment it happened, for a
-/// row that is no time entry) and its place in the outbox.
+/// row that is no time entry) and the hash of its event, and no place in the outbox.
 async fn position_of(world: &World, issue_id: IssueId, event: EventId) -> Result<String, String> {
     let rows = world
         .store
@@ -166,7 +168,13 @@ async fn position_of(world: &World, issue_id: IssueId, event: EventId) -> Result
         .map_err(|error| format!("{error:?}"))?;
     rows.iter()
         .find(|row| row.event == event)
-        .map(|row| format!("{}:{}", row.at.as_millisecond(), row.position))
+        .map(|row| {
+            format!(
+                "{}:{}",
+                row.at.as_microsecond(),
+                crate::history::opaque_id(&row.event.to_string())
+            )
+        })
         .ok_or_else(|| "no such row".to_owned())
 }
 
