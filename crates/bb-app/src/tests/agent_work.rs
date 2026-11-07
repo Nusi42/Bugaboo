@@ -1,7 +1,7 @@
 //! Hand-overs and agent work (AI-31 to AI-35, ADR-0029).
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::GrantState;
+use bb_core::agent_records::GivingState;
 use bb_core::agent_work::{AgentWorkState, BriefPart};
 use bb_core::id::{AgentId, HandOverId, IssueId, ProjectId};
 use bb_policy::StartingRole;
@@ -155,7 +155,7 @@ async fn ai_31_the_brief_names_what_is_missing_and_does_not_stop_the_hand_over()
             BriefPart::DoneWhen
         ]
     );
-    assert_eq!(given.hand_over.state, GrantState::Open);
+    assert_eq!(given.hand_over.state, GivingState::Open);
     Ok(())
 }
 
@@ -218,14 +218,14 @@ async fn ai_31_a_hand_over_runs_out_after_14_days() -> Outcome {
     };
     assert_eq!(
         work(&world),
-        (GrantState::Open, AgentWorkState::WaitingForTheAgent)
+        (GivingState::Open, AgentWorkState::WaitingForTheAgent)
     );
     world.clock.advance(2 * 24 * 3600);
     world
         .ctx()
         .run_hand_over_runs_out(&json!({ "hand_over": id.to_string() }))
         .await?;
-    assert_eq!(work(&world), (GrantState::Ended, AgentWorkState::Stopped));
+    assert_eq!(work(&world), (GivingState::Ended, AgentWorkState::Stopped));
     // The agent has lost the issue with its hand-over.
     let refusal = issue(&world.ctx(), query(&given.key, given.issue)).await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::NotFound));
@@ -239,7 +239,7 @@ async fn ai_33_open_work_becomes_stopped_when_the_person_loses_access() -> Outco
     world.ctx().stop_work_of_agent(given.agent).await?;
     let stored = world.store.lock().state.work.clone();
     assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
-    assert_eq!(stored.hand_overs[0].state, GrantState::Ended);
+    assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }
 
@@ -256,6 +256,6 @@ async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome 
     .await?;
     let stored = world.store.lock().state.work.clone();
     assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
-    assert_eq!(stored.hand_overs[0].state, GrantState::Ended);
+    assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }

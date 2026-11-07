@@ -1,7 +1,7 @@
 //! The agent side of agent work and the review (AI-33 to AI-35, ADR-0029).
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::GrantState;
+use bb_core::agent_records::GivingState;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::id::{IssueId, ProjectId};
 use bb_policy::StartingRole;
@@ -61,7 +61,7 @@ pub(super) fn review(session: &str, work: &WorkView, answer: ReviewAnswer) -> Re
     ReviewWork {
         session_token: session.to_owned(),
         work: work.id,
-        answer,
+        verdict: answer,
         note: None,
         status: None,
         version: work.version,
@@ -107,7 +107,7 @@ async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -
             session_token: given.team.session_token.clone(),
             work: asked.id,
             question: asked.questions[0].id,
-            answer: "Firefox".to_owned(),
+            reply: "Firefox".to_owned(),
             version: asked.version,
         },
     )
@@ -125,7 +125,7 @@ async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -
             session_token: admin_token(&world),
             work: asked.id,
             question: asked.questions[0].id,
-            answer: "x".to_owned(),
+            reply: "x".to_owned(),
             version: answered.version,
         },
     )
@@ -202,7 +202,7 @@ async fn ai_31_a_hand_over_ends_at_accept() -> Outcome {
     .into_value();
     assert!(!accepted.open);
     let ended = world.store.lock().state.work.hand_overs[0].state;
-    assert_eq!(ended, GrantState::Ended);
+    assert_eq!(ended, GivingState::Ended);
     let refusal = issue(&world.ctx(), query(&given.key, given.issue)).await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::NotFound));
     Ok(())

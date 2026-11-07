@@ -55,7 +55,7 @@ impl GrantStore for AuthStorage {
         let mut select = rule_select();
         select
             .and_where(Expr::col(StandingRuleRow::Project).eq(project.stored()))
-            .and_where(Expr::col(StandingRuleRow::State).eq(GrantState::Open.code()))
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
             .order_by(StandingRuleRow::Id, Order::Asc);
         all(transaction, &select, read_rule).await
     }
@@ -159,7 +159,7 @@ impl GrantStore for AuthStorage {
             HandOverRow::Version,
             version,
             |update| {
-                update.value(HandOverRow::State, GrantState::Ended.code());
+                update.value(HandOverRow::State, GivingState::Ended.code());
             },
         )
         .await
@@ -211,9 +211,9 @@ impl GrantStore for AuthStorage {
         version: i64,
     ) -> Result<bool, StoreError> {
         let state = if ended {
-            GrantState::Ended
+            GivingState::Ended
         } else {
-            GrantState::Open
+            GivingState::Open
         };
         update_at(
             transaction,
@@ -312,13 +312,13 @@ impl GrantStore for AuthStorage {
         let mut hand_overs = Query::update();
         hand_overs
             .table(HandOverRow::Table)
-            .value(HandOverRow::State, GrantState::Ended.code())
+            .value(HandOverRow::State, GivingState::Ended.code())
             .and_where(Expr::col(HandOverRow::Agent).eq(agent.stored()));
         transaction.execute(&hand_overs).await?;
         let mut rules = Query::update();
         rules
             .table(StandingRuleRow::Table)
-            .value(StandingRuleRow::State, GrantState::Ended.code())
+            .value(StandingRuleRow::State, GivingState::Ended.code())
             .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()));
         transaction.execute(&rules).await?;
         Ok(())

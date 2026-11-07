@@ -20,6 +20,7 @@ use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
 mod requests;
+pub(super) use requests::NOBODYS_RANDOM_ID;
 use requests::*;
 
 /// A request: the method, the address and the body.
@@ -321,6 +322,16 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("deleteAgentKey", &[Quirk::NamesAMissingThing]),
     Example::route("stopAllMyAgents"),
     Example::route("listOrganizationAgents"),
+    Example::with("handOver", &[Quirk::NamesAMissingThing]),
+    Example::with("getIssueAgentWork", &[Quirk::NamesAMissingThing]),
+    Example::with("answerAgentQuestion", &[Quirk::NamesAMissingThing]),
+    Example::with("approveAgentPlan", &[Quirk::NamesAMissingThing]),
+    Example::with("reviewAgentWork", &[Quirk::NamesAMissingThing]),
+    Example::with("lookAtAgentWork", &[Quirk::NamesAMissingThing]),
+    Example::with("createStandingRule", &[Quirk::NamesAMissingThing]),
+    Example::with("changeStandingRule", &[Quirk::NamesAMissingThing]),
+    Example::with("listStandingRules", &[Quirk::NamesAMissingThing]),
+    Example::with("decideProposal", &[Quirk::NamesAMissingThing]),
     Example::route("listProjectChoices"),
     Example::route("getSecondStepGap"),
     Example::route("listOrganizationSettings"),
@@ -685,6 +696,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = agent_request(operation) {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_agent_work::agent_work_request(operation) {
         return Ok(found);
     }
     if let Some(found) = organization_request(fixture, operation).await? {

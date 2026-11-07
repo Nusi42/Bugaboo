@@ -1,7 +1,7 @@
 //! Reading the agent work on an issue (AI-33): who works on it, what the brief says, the attempts,
 //! the questions and the reviews.
 
-use bb_core::agent_records::{GrantState, IssueWork, ProposalState};
+use bb_core::agent_records::{GivingState, IssueWork, ProposalState};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext};
 
@@ -87,7 +87,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             hand_over: work.hand_over,
             agent: work.agent,
             state: work.state,
-            open: hand_over.state == GrantState::Open && work.state.is_open(),
+            open: hand_over.state == GivingState::Open && work.state.is_open(),
             brief,
             attempts,
             questions: questions

@@ -109,7 +109,7 @@ pub(crate) async fn answer_question_scenario(world: &World) -> Added {
                 session_token: given.team.session_token.clone(),
                 work: asked.id,
                 question: asked.questions[0].id,
-                answer: "Firefox".to_owned(),
+                reply: "Firefox".to_owned(),
                 version: asked.version,
             },
         ),

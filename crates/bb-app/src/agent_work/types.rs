@@ -1,7 +1,7 @@
 //! What the use cases of agent work take and give back. Inputs that change something are named
 //! after what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 
-use bb_core::agent_records::{GrantState, ProposalState, ResultKind};
+use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
     AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField,
 };
@@ -64,7 +64,7 @@ pub struct HandOverView {
     /// When it ends.
     pub ends_at: Timestamp,
     /// Whether it still gives work.
-    pub state: GrantState,
+    pub state: GivingState,
     /// The version of the record.
     pub version: i64,
 }
@@ -222,7 +222,7 @@ pub struct AnswerQuestion {
     /// The question.
     pub question: AgentNoteId,
     /// The answer, which joins the brief.
-    pub answer: String,
+    pub reply: String,
     /// The version of the work the person saw.
     pub version: i64,
 }
@@ -246,7 +246,7 @@ pub struct ReviewWork {
     /// The work.
     pub work: AgentWorkId,
     /// The answer.
-    pub answer: ReviewAnswer,
+    pub verdict: ReviewAnswer,
     /// The note; it joins the brief with *Send back*.
     pub note: Option<String>,
     /// With *Accept*: the status the issue moves to, as the workflow's own change (the one the
@@ -313,7 +313,7 @@ pub struct StandingRuleView {
     /// The project in which it may create issues.
     pub creates_in: Option<ProjectId>,
     /// Whether it still works.
-    pub state: GrantState,
+    pub state: GivingState,
     /// When it ends.
     pub ends_at: Timestamp,
     /// The version of the record.

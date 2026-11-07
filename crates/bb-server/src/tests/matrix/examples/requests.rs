@@ -12,7 +12,7 @@ pub(super) const SEES_THE_ISSUE: Quirk = Quirk::OnTheTargetProject(Permission::S
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
 /// one would not be an ID of these, and the route would say "not found" before it looked at
 /// anything).
-pub(super) const NOBODYS_RANDOM_ID: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
+pub(crate) const NOBODYS_RANDOM_ID: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
 /// A short name that no other call of the matrix used, for a project to make.
 pub(super) fn unique_short_name(fixture: &Fixture<'_>) -> String {

@@ -7,7 +7,7 @@ mod work;
 
 use bb_app::agents::{AgentWork, AgentWorkStore};
 use bb_core::agent_records::{
-    Attempt, AttemptResult, GrantState, HandOver, IssueWork, Proposal, ProposalState, Question,
+    Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     ResultKind, Review, RuleMatch, StandingRule,
 };
 use bb_core::agent_work::{AgentWorkState, Allowance, CheckResult, HandOverPower, ReviewAnswer};
@@ -32,7 +32,7 @@ pub(super) fn only_open_work(select: &mut SelectStatement) {
     let mut open = Query::select();
     open.column(HandOverRow::Id)
         .from(HandOverRow::Table)
-        .and_where(Expr::col(HandOverRow::State).eq(GrantState::Open.code()));
+        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
     select
         .and_where(
             Expr::col((IssueWorkRow::Table, IssueWorkRow::State)).is_not_in([
@@ -87,7 +87,7 @@ pub(super) fn read_hand_over(row: &Row) -> Result<HandOver, StoreError> {
         budget_cost: row.get(HandOverRow::BudgetCost)?,
         plan_needs_approval: row.get(HandOverRow::PlanNeedsApproval)?,
         accept_by_itself: row.get(HandOverRow::AcceptByItself)?,
-        state: word::<GrantState>(row, HandOverRow::State)?,
+        state: word::<GivingState>(row, HandOverRow::State)?,
         ends_at: row.time(HandOverRow::EndsAt)?,
         made_at: row.time(HandOverRow::MadeAt)?,
         version: row.get(HandOverRow::Version)?,
@@ -363,7 +363,7 @@ impl AuthStorage {
         let mut rules = rule_select();
         rules
             .and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()))
-            .and_where(Expr::col(StandingRuleRow::State).eq(GrantState::Open.code()));
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()));
         let rules: Vec<StandingRule> = self
             .database()
             .fetch_all(&rules)

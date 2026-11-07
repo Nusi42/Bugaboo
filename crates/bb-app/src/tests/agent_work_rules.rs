@@ -1,7 +1,7 @@
 //! Standing rules, proposals and what an agent may change (AI-31, AI-32, ADR-0029).
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::{GrantState, ProposalState};
+use bb_core::agent_records::{GivingState, ProposalState};
 use bb_core::agent_work::{HandOverPower, RuleField};
 use bb_core::id::{AgentId, IssueId, IssueTypeId, ProjectId};
 use bb_policy::StartingRole;
@@ -205,7 +205,7 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
     world.ctx().run_rule_runs_out(&payload_of(&rule)).await?;
     assert_eq!(
         world.store.lock().state.work.rules[0].state,
-        GrantState::Open
+        GivingState::Open
     );
     // Renewing queues a new end; the job of the old end finds another end and does nothing.
     let stale = payload_of(&rule);
@@ -225,7 +225,7 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
     world.ctx().run_rule_runs_out(&stale).await?;
     assert_eq!(
         world.store.lock().state.work.rules[0].state,
-        GrantState::Open
+        GivingState::Open
     );
     // At its end the rule ends.
     let current = StandingRuleView {
@@ -235,7 +235,7 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
     world.ctx().run_rule_runs_out(&payload_of(&current)).await?;
     assert_eq!(
         world.store.lock().state.work.rules[0].state,
-        GrantState::Ended
+        GivingState::Ended
     );
     Ok(())
 }

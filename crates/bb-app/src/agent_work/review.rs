@@ -100,7 +100,7 @@ pub async fn answer_question<S: AuthStore>(
     let acting = ctx
         .work_to_answer(&input.session_token, input.work, Some(input.version))
         .await?;
-    let answer = clean_text(&input.answer, TEXT_MAX)?;
+    let answer = clean_text(&input.reply, TEXT_MAX)?;
     let failed = |error| internal::<S>(&error);
     let question: Question = ctx
         .store()
@@ -275,7 +275,7 @@ pub async fn review_work<S: AuthStore>(
         .filter(|note| !note.trim().is_empty())
         .map(clean_long_text)
         .transpose()?;
-    let (next, ends) = match input.answer {
+    let (next, ends) = match input.verdict {
         ReviewAnswer::Accept => (AgentWorkState::ReadyForReview, true),
         ReviewAnswer::SendBack if note.is_some() => (AgentWorkState::WaitingForTheAgent, false),
         ReviewAnswer::SendBack | ReviewAnswer::ThrowAway => {
@@ -289,7 +289,7 @@ pub async fn review_work<S: AuthStore>(
     let review = Review {
         id: AgentNoteId::generate(&mut ctx.ids()),
         work: acting.work.id,
-        answer: input.answer,
+        answer: input.verdict,
         note,
         by: Some(person),
         at: ctx.now(),

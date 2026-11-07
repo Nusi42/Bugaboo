@@ -40,11 +40,9 @@ impl AgentWorkStore for FakeStore {
                         .map(|issue| issue.project),
                 );
             }
-            for rule in records
-                .rules
-                .iter()
-                .filter(|r| r.agent == agent && r.state == bb_core::agent_records::GrantState::Open)
-            {
+            for rule in records.rules.iter().filter(|r| {
+                r.agent == agent && r.state == bb_core::agent_records::GivingState::Open
+            }) {
                 work.projects.insert(rule.project);
                 for found in records.matches.iter().filter(|m| m.rule == rule.id) {
                     work.issues.insert(found.issue);

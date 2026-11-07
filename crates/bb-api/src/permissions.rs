@@ -799,6 +799,7 @@ pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
 mod access_keys;
+mod agent_work;
 mod agents;
 mod ai;
 mod comments;

@@ -43,6 +43,8 @@ use crate::web::decode_path;
 mod access_bodies;
 mod access_keys;
 mod admin;
+mod agent_work;
+mod agent_work_bodies;
 mod agents;
 mod ai_setup;
 mod assignments;
@@ -171,6 +173,7 @@ where
         .routes(routes!(get_openapi))
         .merge(auth::routes(limits))
         .merge(access_keys::routes())
+        .merge(agent_work::routes())
         .merge(agents::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())

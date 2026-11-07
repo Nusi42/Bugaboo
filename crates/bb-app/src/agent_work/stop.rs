@@ -2,7 +2,7 @@
 //! out, an agent that is stopped, a person who loses access.
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::{GrantState, HandOver, IssueWork};
+use bb_core::agent_records::{GivingState, HandOver, IssueWork};
 use bb_core::agent_work::AgentWorkState;
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{AgentId, HandOverId};
@@ -74,7 +74,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .hand_over(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|found| found.state == GrantState::Open && found.ends_at <= self.now())
+            .filter(|found| found.state == GivingState::Open && found.ends_at <= self.now())
         else {
             return Ok(());
         };
@@ -92,7 +92,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             EventActor::System,
             entity(RecordKind::HandOver, hand_over.id),
             vec![
-                set_to(member::STATE, json!(GrantState::Ended.code())),
+                set_to(member::STATE, json!(GivingState::Ended.code())),
                 set_to(
                     member::ISSUES,
                     json!(

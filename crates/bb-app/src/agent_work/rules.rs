@@ -5,7 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::{
-    GrantState, Proposal, ProposalState, RuleMatch, StandingRule as RuleRecord,
+    GivingState, Proposal, ProposalState, RuleMatch, StandingRule as RuleRecord,
 };
 use bb_core::agent_work::{RuleField, rule_end, rule_warning_at};
 use bb_core::event::{Actor as EventActor, RecordKind};
@@ -132,7 +132,7 @@ pub async fn create_standing_rule<S: AuthStore>(
         project: input.project,
         fields,
         creates_in: input.creates_in,
-        state: GrantState::Open,
+        state: GivingState::Open,
         ends_at,
         made_at: now,
         version: 1,
@@ -196,7 +196,7 @@ pub async fn change_standing_rule<S: AuthStore>(
             person,
         ));
     }
-    if found.state != GrantState::Open {
+    if found.state != GivingState::Open {
         return Err(ErrorCode::InvalidRequest.into());
     }
     let now = ctx.now();
@@ -215,9 +215,9 @@ pub async fn change_standing_rule<S: AuthStore>(
     let next = RuleRecord {
         ends_at,
         state: if ended {
-            GrantState::Ended
+            GivingState::Ended
         } else {
-            GrantState::Open
+            GivingState::Open
         },
         version: found.version + 1,
         ..found.clone()
@@ -316,7 +316,7 @@ pub async fn propose_change<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .filter(|rule| rule.agent == agent)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if rule.state != GrantState::Open || rule.ends_at <= ctx.now() {
+    if rule.state != GivingState::Open || rule.ends_at <= ctx.now() {
         return Err(ErrorCode::AgentWorkNotReady.into());
     }
     if !ctx.chain_of(found.project).await?.contains(&rule.project) {
@@ -489,7 +489,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             EventActor::System,
             entity(RecordKind::StandingRule, rule.id),
             vec![
-                set_to(member::STATE, json!(GrantState::Ended.code())),
+                set_to(member::STATE, json!(GivingState::Ended.code())),
                 bb_core::version::counted_up(rule.version),
             ],
         )?;
@@ -555,7 +555,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .standing_rule(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|rule| rule.state == GrantState::Open && ends == Some(rule.ends_at)))
+            .filter(|rule| rule.state == GivingState::Open && ends == Some(rule.ends_at)))
     }
 
     /// The work of the job that writes down what newly came under the rules of a project: it runs

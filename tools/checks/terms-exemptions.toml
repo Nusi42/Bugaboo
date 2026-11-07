@@ -144,3 +144,21 @@ reason = "The names of the parameters of PKCE (RFC 7636), which AI apps send and
 term = "state"
 at = ["api:parameter state", "api:property AuthorizationParams.state"]
 reason = "The name of the parameter of OAuth (RFC 6749) that an app wants back unchanged, which no screen shows. Not the status of an issue."
+
+[[allow]]
+term = "state"
+at = [
+  "api:property HandOverAnswer.state",
+  "api:property ProposalBody.state",
+  "api:property StandingRuleItem.state",
+  "api:property WorkBody.state",
+  "api:schema AgentWorkState",
+  "api:schema GivingState",
+  "api:schema ProposalState",
+]
+reason = "The state of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) is the word of ADR-0029 and of the glossary's own entry; the state of a hand-over, a standing rule or a proposal is its open or ended standing. None of them is the status of an issue, which the glossary means."
+
+[[allow]]
+term = "link"
+at = ["api:property ResultBody.link", "api:enum ResultKind link"]
+reason = "A result an agent attached can be a web link to a branch, a pull request or a test report. It is not the connection between two issues, which is a Relation."

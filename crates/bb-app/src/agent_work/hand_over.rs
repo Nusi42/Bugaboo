@@ -3,7 +3,7 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::{GrantState, HandOver as HandOverRecord, IssueWork};
+use bb_core::agent_records::{GivingState, HandOver as HandOverRecord, IssueWork};
 use bb_core::agent_work::{
     AgentWorkState, BriefPart, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end, missing_in_brief,
 };
@@ -216,7 +216,7 @@ pub async fn hand_over<S: AuthStore>(
         budget_cost: input.budget_cost,
         plan_needs_approval: input.plan_needs_approval,
         accept_by_itself: input.accept_by_itself,
-        state: GrantState::Open,
+        state: GivingState::Open,
         ends_at,
         made_at: now,
         version: 1,
@@ -248,7 +248,7 @@ pub async fn hand_over<S: AuthStore>(
         agent: agent.id,
         issues: handed,
         ends_at,
-        state: GrantState::Open,
+        state: GivingState::Open,
         version: 1,
     };
     Ok(ctx

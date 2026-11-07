@@ -15,7 +15,7 @@ use crate::personal::Entity;
 
 words! {
     /// Whether a hand-over or a standing rule still gives the agent work.
-    pub enum GrantState {
+    pub enum GivingState {
         /// It gives work.
         Open => "open",
         /// It ended: accepted, stopped or ran out.
@@ -24,7 +24,7 @@ words! {
 }
 
 crate::words_in_api!(
-    GrantState,
+    GivingState,
     "Whether a hand-over or a standing rule still gives work."
 );
 
@@ -95,7 +95,7 @@ pub struct HandOver {
     pub accept_by_itself: bool,
     /// Whether it still gives work.
     #[not_personal]
-    pub state: GrantState,
+    pub state: GivingState,
     /// When it ends.
     #[not_personal]
     pub ends_at: Timestamp,
@@ -133,7 +133,7 @@ pub struct StandingRule {
     pub creates_in: Option<ProjectId>,
     /// Whether it still works.
     #[not_personal]
-    pub state: GrantState,
+    pub state: GivingState,
     /// When it ends.
     #[not_personal]
     pub ends_at: Timestamp,

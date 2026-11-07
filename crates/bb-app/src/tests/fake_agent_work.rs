@@ -1,7 +1,7 @@
 //! The agent work part of the in-memory store (AI-31 to AI-35).
 
 use bb_core::agent_records::{
-    Attempt, AttemptResult, GrantState, HandOver, IssueWork, Proposal, ProposalState, Question,
+    Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     Review, RuleMatch, StandingRule,
 };
 use bb_core::agent_work::AgentWorkState;
@@ -36,7 +36,7 @@ impl FakeAgentWork {
             && self
                 .hand_overs
                 .iter()
-                .any(|h| h.id == work.hand_over && h.state == GrantState::Open)
+                .any(|h| h.id == work.hand_over && h.state == GivingState::Open)
     }
 }
 
@@ -104,7 +104,7 @@ impl GrantStore for super::fake::FakeStore {
             .work
             .rules
             .iter()
-            .filter(|r| r.project == project && r.state == GrantState::Open)
+            .filter(|r| r.project == project && r.state == GivingState::Open)
             .cloned()
             .collect())
     }
@@ -158,7 +158,7 @@ impl GrantStore for super::fake::FakeStore {
             .iter_mut()
             .find(|h| h.id == id && h.version == version)
             .map(|h| {
-                h.state = GrantState::Ended;
+                h.state = GivingState::Ended;
                 h.version += 1;
             })
             .is_some())
@@ -185,9 +185,9 @@ impl GrantStore for super::fake::FakeStore {
             .map(|r| {
                 r.ends_at = ends_at;
                 r.state = if ended {
-                    GrantState::Ended
+                    GivingState::Ended
                 } else {
-                    GrantState::Open
+                    GivingState::Open
                 };
                 r.version += 1;
             })
@@ -239,10 +239,10 @@ impl GrantStore for super::fake::FakeStore {
             .iter_mut()
             .filter(|h| h.agent == agent)
         {
-            h.state = GrantState::Ended;
+            h.state = GivingState::Ended;
         }
         for r in tx.state.work.rules.iter_mut().filter(|r| r.agent == agent) {
-            r.state = GrantState::Ended;
+            r.state = GivingState::Ended;
         }
         Ok(())
     }
