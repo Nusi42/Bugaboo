@@ -22,16 +22,33 @@ pub(crate) const OUTPUT: &str = "web/tooling/bench/budgets.generated.ts";
 /// The settings file.
 #[derive(Debug, Deserialize)]
 pub(crate) struct Budgets {
-    budgets: BTreeMap<String, Budget>,
-    /// Scenarios that are over their budget on one database and are accepted for now.
-    #[serde(default)]
-    known_gaps: BTreeMap<String, KnownGap>,
+    #[serde(rename = "budgets")]
+    limits: BTreeMap<String, Budget>,
+    /// Scenarios that are over their budget on one database and are accepted for now: a scenario
+    /// has one entry with its `database`, or one table for each database it is over on.
+    #[serde(default, rename = "known_gaps")]
+    written_gaps: BTreeMap<String, WrittenGaps>,
+    /// The same, one entry for each scenario and database (made by [`Budgets::parse`]).
+    #[serde(skip)]
+    known_gaps: Vec<(String, KnownGap)>,
+}
+
+/// How a scenario writes its known gaps: one for the database it names, or a table for each
+/// database (`[known_gaps.name.sqlite]`, `[known_gaps.name.postgres]`).
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum WrittenGaps {
+    One(KnownGap),
+    Each(BTreeMap<String, KnownGap>),
 }
 
 /// A scenario over its budget that the maintainer accepted: the one place that says so, with the
 /// follow-up that closes it and the reason. The budget itself stays as it is.
 #[derive(Debug, Deserialize)]
 struct KnownGap {
+    /// The database it is for: written in a gap with one entry, the name of the table in a gap
+    /// with a table for each database.
+    #[serde(default)]
     database: String,
     /// The most the scenario may take at the 95th percentile while it is a known gap; over it the
     /// run fails, so the gap cannot grow unseen.
@@ -90,18 +107,33 @@ impl Budgets {
     /// # Errors
     /// The text is not TOML of this shape.
     pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
-        toml::from_str(text).with_context(|| format!("{BUDGETS_PATH} is not valid"))
+        let mut budgets: Self =
+            toml::from_str(text).with_context(|| format!("{BUDGETS_PATH} is not valid"))?;
+        for (name, written) in std::mem::take(&mut budgets.written_gaps) {
+            match written {
+                WrittenGaps::One(gap) => budgets.known_gaps.push((name, gap)),
+                WrittenGaps::Each(each) => {
+                    for (database, gap) in each {
+                        budgets
+                            .known_gaps
+                            .push((name.clone(), KnownGap { database, ..gap }));
+                    }
+                }
+            }
+        }
+        Ok(budgets)
     }
 
     fn gap_of(&self, scenario: &str, database: &str) -> Option<&KnownGap> {
         self.known_gaps
-            .get(scenario)
-            .filter(|gap| gap.database == database)
+            .iter()
+            .find(|(name, gap)| name == scenario && gap.database == database)
+            .map(|(_, gap)| gap)
     }
 
     /// The most a budget allows at the 95th percentile.
     pub(crate) fn p95_ms(&self, name: &str) -> Option<f64> {
-        self.budgets.get(name).map(|budget| budget.p95_ms)
+        self.limits.get(name).map(|budget| budget.p95_ms)
     }
 }
 
@@ -132,7 +164,7 @@ pub(crate) fn scenarios(source: &str) -> Vec<(Scenario, usize)> {
 /// What is wrong with the budgets and the scenarios, each in a sentence with its place.
 pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(String, String)> {
     let mut found = Vec::new();
-    for (name, budget) in &budgets.budgets {
+    for (name, budget) in &budgets.limits {
         if budget.p95_ms.is_nan() || budget.p95_ms <= 0.0 {
             found.push((
                 BUDGETS_PATH.to_owned(),
@@ -213,7 +245,7 @@ pub(crate) fn typescript(budgets: &Budgets) -> String {
          /** The most a request may take at the 95th percentile, in milliseconds (tools/checks/perf-bench.toml). */\n\
          export const budgets = {\n",
     );
-    for (name, budget) in &budgets.budgets {
+    for (name, budget) in &budgets.limits {
         let _ = writeln!(text, "  {name}: {{ p95Ms: {} }},", budget.p95_ms);
     }
     text.push_str("} as const;\n\n/** The name of a budget. */\nexport type BudgetName = keyof typeof budgets;\n");
@@ -374,6 +406,39 @@ p95_ms = 1
             ]
         );
         assert!(found.known.is_empty());
+    }
+
+    #[test]
+    fn a_scenario_has_a_known_gap_for_each_database_with_its_own_limit() {
+        let gaps = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search.sqlite]
+p95_ms_at_most = 1500
+follow_up = \"M6-F186\"
+reason = \"slow\"
+
+[known_gaps.search.postgres]
+p95_ms_at_most = 600
+follow_up = \"M6-F186\"
+reason = \"slow\"
+"
+        ))
+        .unwrap();
+        let at = |p95: f64| {
+            BTreeMap::from([(
+                "search".to_owned(),
+                Measured {
+                    budget: "search".to_owned(),
+                    p95,
+                    ..Measured::default()
+                },
+            )])
+        };
+        // 1,400 ms is a known gap on SQLite and over the limit on PostgreSQL, 500 ms the other way.
+        assert!(over(&gaps, "sqlite", &at(1400.0)).failures.is_empty());
+        assert_eq!(over(&gaps, "sqlite", &at(1400.0)).known.len(), 1);
+        assert_eq!(over(&gaps, "postgres", &at(1400.0)).failures.len(), 1);
+        assert!(over(&gaps, "postgres", &at(500.0)).failures.is_empty());
+        assert_eq!(over(&gaps, "sqlite", &at(1600.0)).failures.len(), 1);
     }
 
     #[test]

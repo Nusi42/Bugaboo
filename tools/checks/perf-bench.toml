@@ -33,3 +33,13 @@ database = "sqlite"
 p95_ms_at_most = 700
 follow_up = "M5-F89"
 reason = "SQLite reads the whole table of the issues for the IDs of the about 116,000 that match; reading the IDs from an index, only the rows found, and parallel slices were measured and each failed another scenario or did not help; kept counts come later (numbers: architecture section 11)"
+
+[known_gaps.project-time-totals.sqlite]
+p95_ms_at_most = 1500
+follow_up = "M6-F186"
+reason = "the totals of the biggest project sum the minutes spent with one probe of the entries by issue for each of its about 260,000 issues; the index of migration 36 took the sums of the estimate and the time left out of that cost (numbers and cause: architecture section 11, M6-F186)"
+
+[known_gaps.project-time-totals.postgres]
+p95_ms_at_most = 600
+follow_up = "M6-F186"
+reason = "the same cause as on SQLite: one probe of the entries by issue for each issue of the biggest project (numbers and cause: architecture section 11, M6-F186)"
