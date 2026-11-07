@@ -432,7 +432,7 @@ A session can end at any time, and a new one starts in the master and continues 
 - *My agents* on the computer and the phone; agent states on list rows and in search
 - AI literacy guide in the user docs
 
-**Demo (exit):** Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.
+**Demo (exit):** Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; asked in the panel to summarize the comments of an issue, the assistant answers and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.
 
 **Tests and checks added:** ARCH-AI-TOOLS active (every tool declares read or change and has a preview test); prompt-injection test set, also for agents and standing rules; assistant, MCP and agent entry points in SEC-MATRIX (an agent never does more than its person).
 

@@ -307,9 +307,9 @@ What each means in practice:
   - read: `search_issues` (search language), `get_issue`, `list_projects`, `get_my_work`;
   - write: `create_issue`, `update_issue`, `change_status`, `add_comment`, `log_time`, `start/stop_timer`;
   - plus resources (issues, saved searches) and prompts.
-- **AI-22 (M)** — MCP authentication via **OAuth 2.1 with PKCE**, following the MCP authorization spec, or a scoped access key. Read and write scopes are separate, and scopes can only narrow the user's permissions.
+- **AI-22 (M)** — MCP authentication via **OAuth 2.1 with PKCE**, following the MCP authorization spec, or a scoped access key. Read and write scopes are separate, and scopes can only narrow the user's permissions. Before an app may act, the person allows it on a consent page, and a plain **Connected apps** list lets them take an app's access back (M7-Q3, ADR-0042).
 - **AI-23 (M)** — Every MCP call goes through the same policy engine. Results are filtered per field, and changes are attributed in the audit log as *"user via MCP client X"*.
-- **AI-24 (V1)** — Per-client consent screen and a **Connected apps** page where users can revoke access.
+- **AI-24 (V1)** — More of **Connected apps**: the consent remembered per app, and the details of each app's use. The consent step and the plain list with *Take back* come with AI-22 (M7-Q3).
 
 ### Agents (ADR-0029)
 
