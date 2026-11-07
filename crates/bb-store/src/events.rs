@@ -342,8 +342,36 @@ impl Database {
         consumer: &TechnicalName,
         limit: u64,
     ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
+        self.outbox_after_as(consumer, limit, false).await
+    }
+
+    /// As [`Database::outbox_after`], with the run each event was made in: for the reader that
+    /// tells which changes belong to a run (the history). A database that is older than the runs
+    /// has no such column, so the readers that migrations and their tests use read without it.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn outbox_after_with_run(
+        &self,
+        consumer: &TechnicalName,
+        limit: u64,
+    ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
+        self.outbox_after_as(consumer, limit, true).await
+    }
+
+    async fn outbox_after_as(
+        &self,
+        consumer: &TechnicalName,
+        limit: u64,
+        with_run: bool,
+    ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
         let done = self.outbox_position(consumer).await?;
-        let mut select = committed_events_of(Order::Asc, event_columns().len());
+        let columns = if with_run {
+            event_columns().len()
+        } else {
+            WITHOUT_RUN
+        };
+        let mut select = committed_events_of(Order::Asc, columns);
         select
             .column((Outbox::Table, Outbox::Position))
             .column((Outbox::Table, Outbox::CreatedAt))
@@ -353,7 +381,11 @@ impl Database {
             .await?
             .iter()
             .map(|row| {
-                let event = read_event(row)?;
+                let event = if with_run {
+                    read_event(row)?
+                } else {
+                    read_event_without_run(row)?
+                };
                 let entry = OutboxEntry {
                     position: row.get(Outbox::Position)?,
                     event_id: event.id,
@@ -409,6 +441,23 @@ impl Database {
     ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
         Ok(self
             .outbox_after(&consumer_name(consumer)?, limit)
+            .await?
+            .into_iter()
+            .map(|(entry, event)| (entry.position, event))
+            .collect())
+    }
+
+    /// As [`Database::outbox_events`], with the run of each event.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn outbox_events_with_run(
+        &self,
+        consumer: &'static str,
+        limit: u64,
+    ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
+        Ok(self
+            .outbox_after_with_run(&consumer_name(consumer)?, limit)
             .await?
             .into_iter()
             .map(|(entry, event)| (entry.position, event))

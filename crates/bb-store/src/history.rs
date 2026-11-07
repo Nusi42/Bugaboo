@@ -45,7 +45,9 @@ fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
 
 impl HistoryStore for AuthStorage {
     async fn history_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
-        self.database().outbox_events(CONSUMER, limit).await
+        self.database()
+            .outbox_events_with_run(CONSUMER, limit)
+            .await
     }
 
     async fn store_history(

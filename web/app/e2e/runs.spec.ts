@@ -76,6 +76,10 @@ test("ai_38 the run page lists the changes in a table and undoes the run after t
   await expect(page.getByText(/^Undone by Ada Admin, /u)).toBeVisible();
   await expect(page.getByText(t("runs.outcome-went-back"))).toHaveCount(2);
   await expect(page.getByRole("button", { name: t("runs.undo"), exact: true })).toHaveCount(0);
+  // The history of an issue marks the change of the run and its undo, each with a link to the run.
+  await page.goto("/issues/WEB-1");
+  await expect(page.getByRole("link", { name: t("history.run-link") })).toHaveCount(2);
+  await expect(page.getByText(t("history.undid-run"))).toBeVisible();
 });
 
 test("ai_38 a change made afterwards is skipped and named", async ({ page, server }) => {
