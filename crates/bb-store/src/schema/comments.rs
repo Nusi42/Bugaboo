@@ -1,6 +1,6 @@
 //! The tables of comments, mentions, followers and the history.
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 /// Comments under issues (ISS-05).
 #[derive(Clone, Copy, Iden)]
@@ -64,4 +64,46 @@ pub(crate) enum HistoryEntryRow {
     Record,
     RecordKind,
     Changes,
+}
+
+stored_tables! {
+    CommentRow => bb_core::comment::Comment {
+        Id => id,
+        Issue => issue,
+        Author => author,
+        Text => text,
+        CreatedAt => created_at,
+        EditedAt => edited_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    CommentVersionRow => bb_core::comment::CommentVersion {
+        Comment => comment,
+        Version => version,
+        Text => text,
+        SavedAt => saved_at,
+    },
+    MentionRow => bb_core::comment::Mention {
+        Comment => comment,
+        Recipient => recipient,
+        Via => via,
+    },
+    FollowerRow => bb_core::follow::Follower {
+        Issue => issue,
+        Person => person,
+        Reason => reason,
+        Since => since,
+    },
+    HistoryEntryRow => bb_core::history::HistoryEntry {
+        Event => event,
+        Issue => issue,
+        Position => position,
+        At => at,
+        By => by,
+        Agent => agent,
+        Kind => kind,
+        Record => record,
+        RecordKind => record_kind,
+        Changes => changes,
+    },
 }

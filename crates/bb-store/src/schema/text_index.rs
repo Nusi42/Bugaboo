@@ -1,6 +1,6 @@
 //! The table of the full-text search (ADR-0016, amendment M5).
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 /// One text of an issue that a search may look into, with its prepared words. On SQLite a table
 /// `text_index_fts` (FTS5) follows it, on PostgreSQL the column `words_tsv` does; both are made
@@ -25,4 +25,14 @@ pub(crate) enum TextIndexExtra {
     /// The `tsvector` column made from `words` (PostgreSQL).
     #[iden = "words_tsv"]
     WordsTsv,
+}
+
+stored_tables! {
+    TextIndexRow => bb_core::text_index::IndexedText {
+        Id => id,
+        Issue => issue,
+        Source => source,
+        SourceRef => source_ref,
+        Words => words,
+    },
 }

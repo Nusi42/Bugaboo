@@ -1,6 +1,6 @@
 //! The tables of the event log, the jobs, the security log, the secrets, the locks, the settings and the record of migrations.
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum Event {
@@ -201,4 +201,127 @@ pub(crate) enum Computed {
     First,
     Last,
     Newest,
+}
+
+stored_tables! {
+    Event => bb_core::event::DomainEvent {
+        Id => id,
+        Time => time,
+        ActorKind => actor,
+        ActorId => actor,
+        Channel => channel,
+        EntityKind => entity,
+        EntityId => entity,
+        Changes => changes,
+        Reason => reason,
+    },
+    Job => bb_core::job::Job {
+        Id => id,
+        Kind => kind,
+        Payload => payload,
+        RunAt => run_at,
+        Attempts => attempts,
+        MaxAttempts => max_attempts,
+        State => state,
+        LeaseOwner => lease_owner,
+        LeaseUntil => lease_until,
+        LastFailure => last_failure,
+        CreatedAt => created_at,
+    },
+    Migration => bb_core::migration::MigrationRecord {
+        Version => version,
+        Name => name,
+        Checksum => checksum,
+        AppliedAt => applied_at,
+    },
+    Outbox => bb_core::outbox::OutboxEntry {
+        Position => position,
+        EventId => event_id,
+        CreatedAt => created_at,
+    },
+    OutboxPosition => bb_core::outbox::OutboxPosition {
+        Consumer => consumer,
+        Position => position,
+        UpdatedAt => updated_at,
+    },
+    Secret => bb_core::secret::StoredSecret {
+        Name => name,
+        KeyId => key_id,
+        WrappedKey => wrapped_key,
+        WrappedNonce => wrapped_nonce,
+        Nonce => nonce,
+        Ciphertext => ciphertext,
+        UpdatedAt => updated_at,
+    },
+    SecurityLog => bb_core::security_log::SecurityLogEntry {
+        Seq => seq,
+        Time => time,
+        Person => person,
+        Action => action,
+        SubjectKind => subject,
+        SubjectId => subject,
+        Network => network,
+        PreviousHash => previous_hash,
+        Hash => hash,
+    },
+    SecurityLogCheckpoint => bb_core::security_log::SecurityLogCheckpoint {
+        Seq => seq,
+        Hash => hash,
+        Signature => signature,
+        CreatedAt => created_at,
+    },
+    EditLockRow => bb_core::edit::EditLock {
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Holder => holder,
+        Editor => editor,
+        Token => token,
+        TakenAt => taken_at,
+        ExpiresAt => expires_at,
+    },
+    EditDraftRow => bb_core::edit::Draft {
+        Author => author,
+        Target => target,
+        Text => text,
+        BaseVersion => base_version,
+        SavedAt => saved_at,
+    },
+    EditNoticeRow => bb_core::edit::EditNotice {
+        Recipient => recipient,
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Kind => kind,
+        FromPerson => from,
+        At => at,
+    },
+    SettingRow => bb_core::settings::StoredSetting {
+        Key => key,
+        Level => level,
+        Scope => scope,
+        Value => value,
+        Locked => locked,
+        UpdatedAt => updated_at,
+    },
+    AiAgreementRow => bb_core::ai::Agreement {
+        Destination => destination,
+        ConfirmedBy => confirmed_by,
+        ConfirmedAt => confirmed_at,
+    },
+    PolicyVersionRow => bb_core::settings::PolicyVersion {
+        Policy => policy,
+        Version => version,
+    },
+    PersonSettingCounterRow => bb_core::settings::PersonSettingCounter {
+        Person => person,
+        Counter => counter,
+    },
+    PersonSettingRow => bb_core::settings::StoredPersonSetting {
+        Person => person,
+        Key => key,
+        Value => value,
+        UpdatedAt => updated_at,
+        Version => version,
+    },
 }

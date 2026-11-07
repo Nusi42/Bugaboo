@@ -1,6 +1,6 @@
 //! The tables of groups, roles, who has which role, levels and access keys.
 
-use super::{Iden, IdenStatic};
+use super::{Iden, IdenStatic, StoredTable};
 
 /// Groups of people. The table is called `person_group`: `group` is a word of SQL.
 #[derive(Clone, Copy, Iden)]
@@ -150,4 +150,89 @@ pub(crate) enum StartingRoleDueRow {
     #[iden = "starting_role_due"]
     Table,
     Key,
+}
+
+stored_tables! {
+    GroupRow => bb_core::access::Group {
+        Id => id,
+        Name => name,
+        Version => version,
+    },
+    GroupMemberRow => bb_core::access::GroupMember {
+        Group => group,
+        Person => person,
+        AddedAt => added_at,
+    },
+    RoleRow => bb_core::access::Role {
+        Id => id,
+        Name => name,
+        Starting => starting,
+        Position => position,
+        TwoStep => two_step,
+        Version => version,
+    },
+    RolePermissionRow => bb_core::access::RolePermission {
+        Role => role,
+        Permission => permission,
+    },
+    AssignmentRow => bb_core::access::Assignment {
+        Id => id,
+        Person => person,
+        Group => group,
+        Role => role,
+        Project => project,
+        AppliesTo => applies_to,
+        GivenAt => given_at,
+    },
+    RoleFieldLevelRow => bb_core::access::RoleFieldLevel {
+        Role => role,
+        Field => field,
+        Level => level,
+    },
+    ProjectFieldLevelRow => bb_core::access::ProjectFieldLevel {
+        Project => project,
+        Role => role,
+        Field => field,
+        Level => level,
+    },
+    RolePeopleLevelRow => bb_core::access::RolePeopleLevel {
+        Role => role,
+        Kind => kind,
+        Level => level,
+    },
+    ProjectPeopleLevelRow => bb_core::access::ProjectPeopleLevel {
+        Project => project,
+        Role => role,
+        Kind => kind,
+        Level => level,
+    },
+    LegacyAdministratorRow => bb_core::access::LegacyAdministrator {
+        Person => person,
+    },
+    StartingRolesMadeRow => bb_core::access::StartingRolesMade {
+        MadeAt => made_at,
+    },
+    StartingRoleDueRow => bb_core::access::StartingRoleDue {
+        Key => key,
+    },
+    AccessKeyRow => bb_core::access_key::AccessKey {
+        Id => id,
+        Owner => owner,
+        Name => name,
+        Prefix => prefix,
+        SecretHash => secret_hash,
+        Choice => choice,
+        CreatedAt => created_at,
+        ExpiresAt => expires_at,
+        LastUsedAt => last_used_at,
+        Agent => agent,
+    },
+    AccessKeyPermissionRow => bb_core::access_key::AccessKeyPermission {
+        Key => key,
+        Permission => permission,
+    },
+    AccessKeyProjectRow => bb_core::access_key::AccessKeyProject {
+        Key => key,
+        Project => project,
+    },
 }

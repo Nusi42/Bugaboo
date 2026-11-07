@@ -1,7 +1,7 @@
 //! The tables of working hours (TIME-08, ADR-0035, decision 5): a work day, its periods of work and
 //! its breaks.
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 /// Work days: one for a person and a date. The person has no reference: a removed person's days
 /// stay with the link (ADR-0035, decision 7).
@@ -36,4 +36,26 @@ pub(crate) enum WorkBreakRow {
     Day,
     Start,
     End,
+}
+
+stored_tables! {
+    WorkDayRow => bb_core::working_time::record::WorkDay {
+        Id => id,
+        Person => person,
+        Date => date,
+        Zone => zone,
+        Warnings => warnings,
+        UpdatedAt => updated_at,
+        Version => version,
+    },
+    WorkPeriodRow => bb_core::working_time::record::WorkPeriod {
+        Day => day,
+        Start => start,
+        End => end,
+    },
+    WorkBreakRow => bb_core::working_time::record::WorkBreak {
+        Day => day,
+        Start => start,
+        End => end,
+    },
 }

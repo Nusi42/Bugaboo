@@ -1,7 +1,7 @@
 //! The tables of AI (ADR-0013): the marks *Never sent to AI* of built-in fields and projects, and
 //! the log of tool calls.
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 /// The mark *Never sent to AI* of a built-in field or a project: one row has a field or a project,
 /// never both. An own field carries its mark in `field.never_to_assistant`.
@@ -30,4 +30,25 @@ pub(crate) enum ToolCallRow {
     BytesOut,
     At,
     Outcome,
+}
+
+stored_tables! {
+    NeverSentRow => bb_core::ai::NeverSentMark {
+        Field => subject,
+        Project => subject,
+        Marked => marked,
+        Version => version,
+    },
+    ToolCallRow => bb_core::ai::ToolCall {
+        Id => id,
+        Person => person,
+        Caller => caller,
+        App => app,
+        Tool => tool,
+        Effect => effect,
+        BytesIn => bytes_in,
+        BytesOut => bytes_out,
+        At => at,
+        Outcome => outcome,
+    },
 }

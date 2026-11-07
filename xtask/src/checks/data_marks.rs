@@ -53,7 +53,7 @@ struct ListedTable {
     columns: Vec<(String, String)>,
 }
 
-/// The entries of the `stored_tables!` list:
+/// The entries of every `stored_tables!` list (one in each file of an area):
 ///
 /// ```text
 /// Table => path::Entity {
@@ -64,12 +64,18 @@ struct ListedTable {
 /// },
 /// ```
 fn listed_tables(schema: &str) -> Vec<ListedTable> {
-    let Some(start) = schema.find("stored_tables! {\n") else {
-        return Vec::new();
-    };
+    let lists = schema.match_indices(
+        "stored_tables! {
+",
+    );
+    lists.flat_map(|(at, _)| listed_in(&schema[at..])).collect()
+}
+
+/// The entries of the list that starts at the first line of `list`.
+fn listed_in(list: &str) -> Vec<ListedTable> {
     let mut tables: Vec<ListedTable> = Vec::new();
     let mut open = false;
-    for line in schema[start..].lines().skip(1) {
+    for line in list.lines().skip(1) {
         let line = line.trim();
         if line.starts_with('}') && !open {
             break;

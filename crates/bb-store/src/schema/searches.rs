@@ -1,6 +1,6 @@
 //! The tables of saved searches (QRY-06, ADR-0034).
 
-use super::Iden;
+use super::{Iden, StoredTable};
 
 /// Saved searches. The maker has no reference: a removed person leaves a tombstone (PRIV-04).
 #[derive(Clone, Copy, Iden)]
@@ -50,4 +50,35 @@ pub(crate) enum ProjectDefaultListRow {
     Table,
     Project,
     Search,
+}
+
+stored_tables! {
+    SavedSearchRow => bb_core::saved_search::SavedSearch {
+        Id => id,
+        Name => name,
+        Text => text,
+        Maker => maker,
+        View => view,
+        GroupBy => group_by,
+        CreatedAt => created_at,
+        UpdatedAt => updated_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    SearchColumnRow => bb_core::saved_search::SearchColumn {
+        Search => search,
+        Position => position,
+        Field => field,
+        Width => width,
+    },
+    SearchShareRow => bb_core::saved_search::SearchShare {
+        Search => search,
+        Kind => target,
+        Target => target,
+        SharedAt => shared_at,
+    },
+    ProjectDefaultListRow => bb_core::saved_search::ProjectDefaultList {
+        Project => project,
+        Search => search,
+    },
 }
