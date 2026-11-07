@@ -6,13 +6,14 @@ use bb_core::ai::{Agreement, Destination, KEY_SECRET};
 use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, Query};
+use sea_query::{Expr, ExprTrait as _, Query};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, StoredId as _, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::schema::AiAgreementRow as Columns;
+use crate::schema::UsedReferenceRow;
 
 fn key_name() -> Result<TechnicalName, StoreError> {
     TechnicalName::new(KEY_SECRET).map_err(|_| StoreError::Corrupt("the name of a secret"))
@@ -42,6 +43,27 @@ impl AiStore for AuthStorage {
             .delete_secret(&key_name()?)
             .await
             .map(|_| ())
+    }
+
+    async fn use_assistant_reference(
+        &self,
+        nonce: &str,
+        now: Timestamp,
+        expires_at: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut forget = Query::delete();
+        forget
+            .from_table(UsedReferenceRow::Table)
+            .and_where(Expr::col(UsedReferenceRow::ExpiresAt).lt(to_micros(now)));
+        self.database().execute(&forget).await?;
+        let mut insert = Query::insert();
+        insert
+            .into_table(UsedReferenceRow::Table)
+            .columns([UsedReferenceRow::Nonce, UsedReferenceRow::ExpiresAt])
+            .values([Expr::val(nonce), Expr::val(to_micros(expires_at))])
+            .map_err(|_| StoreError::Corrupt("a used reference"))?
+            .on_conflict(sea_query::OnConflict::new().do_nothing().to_owned());
+        Ok(self.database().execute(&insert).await? > 0)
     }
 
     async fn ai_agreement(&self) -> Result<Option<Agreement>, StoreError> {

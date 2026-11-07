@@ -32,12 +32,25 @@ pub(crate) enum ToolCallRow {
     Outcome,
 }
 
+/// A reference of the assistant that was applied, until it runs out.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum UsedReferenceRow {
+    #[iden = "assistant_reference"]
+    Table,
+    Nonce,
+    ExpiresAt,
+}
+
 stored_tables! {
     NeverSentRow => bb_core::ai::NeverSentMark {
         Field => subject,
         Project => subject,
         Marked => marked,
         Version => version,
+    },
+    UsedReferenceRow => bb_core::ai::UsedReference {
+        Nonce => nonce,
+        ExpiresAt => expires_at,
     },
     ToolCallRow => bb_core::ai::ToolCall {
         Id => id,

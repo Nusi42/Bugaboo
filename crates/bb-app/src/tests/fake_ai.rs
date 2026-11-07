@@ -22,6 +22,24 @@ impl AiStore for FakeStore {
         Ok(())
     }
 
+    async fn use_assistant_reference(
+        &self,
+        nonce: &str,
+        now: Timestamp,
+        expires_at: Timestamp,
+    ) -> Result<bool, FakeError> {
+        let mut shared = self.lock();
+        shared
+            .state
+            .used_references
+            .retain(|_, until| *until >= now);
+        Ok(shared
+            .state
+            .used_references
+            .insert(nonce.to_owned(), expires_at)
+            .is_none())
+    }
+
     async fn ai_agreement(&self) -> Result<Option<Agreement>, FakeError> {
         Ok(self.read(|state| state.ai_agreement.clone()))
     }

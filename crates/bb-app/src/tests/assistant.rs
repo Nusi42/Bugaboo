@@ -715,3 +715,48 @@ async fn ai_02_a_project_with_ai_switched_off_is_kept_from_every_tool() -> Outco
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_05_a_reference_works_once() -> Outcome {
+    let (world, key) = with_an_issue().await?;
+    will_call(
+        &world,
+        "add_comment",
+        json!({"issue": key, "text": "A summary of the thread."}),
+    );
+    will_say(&world, "Here is a comment.");
+    let answer = ask(&world, question(&token(&world), "Write a comment")).await?;
+    let events = world.store.event_count();
+    apply_proposal(&world.ctx(), apply_of(&world, &answer.proposals[0])).await?;
+    assert_eq!(world.store.event_count(), events + 1);
+    // A retry or a second click saves nothing again.
+    let again = apply_proposal(&world.ctx(), apply_of(&world, &answer.proposals[0]))
+        .await
+        .unwrap_err();
+    assert_eq!(again, AppError::Refused(ErrorCode::AiProposalInvalid));
+    assert_eq!(world.store.event_count(), events + 1);
+    // The same change proposed again is a new reference and works.
+    will_call(
+        &world,
+        "add_comment",
+        json!({"issue": key, "text": "A summary of the thread."}),
+    );
+    will_say(&world, "Again.");
+    let second = ask(&world, question(&token(&world), "Write it again")).await?;
+    assert_ne!(second.proposals[0].reference, answer.proposals[0].reference);
+    apply_proposal(&world.ctx(), apply_of(&world, &second.proposals[0])).await?;
+    assert_eq!(world.store.event_count(), events + 2);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_05_a_change_too_long_to_be_applied_is_not_proposed() -> Outcome {
+    let (world, key) = with_an_issue().await?;
+    let long = "x".repeat(bb_core::ai::PROPOSAL_INPUT_BYTES_MAX + 1);
+    will_call(&world, "add_comment", json!({"issue": key, "text": long}));
+    will_say(&world, "Done.");
+    let answer = ask(&world, question(&token(&world), "Write a long comment")).await?;
+    assert!(answer.proposals.is_empty());
+    assert!(tool_results(&world).contains("not valid"));
+    Ok(())
+}

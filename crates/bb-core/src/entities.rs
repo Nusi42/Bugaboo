@@ -23,6 +23,7 @@ crate::entities! {
     crate::access_key::AccessKey,
     crate::ai::NeverSentMark,
     crate::ai::ToolCall,
+    crate::ai::UsedReference,
     crate::access_key::AccessKeyPermission,
     crate::access_key::AccessKeyProject,
     crate::many_changes::ManyChangeRun,

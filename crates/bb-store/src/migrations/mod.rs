@@ -69,6 +69,7 @@ mod m0037_ai_agreement;
 mod m0038_ai_tools;
 mod m0039_agents;
 mod m0040_runs;
+mod m0041_assistant_references;
 #[cfg(test)]
 mod old_rows;
 
@@ -366,6 +367,11 @@ const ALL: &[Definition] = &[
         version: 40,
         name: "runs",
         steps: || Ok(m0040_runs::steps()),
+    },
+    Definition {
+        version: 41,
+        name: "assistant_references",
+        steps: || Ok(m0041_assistant_references::steps()),
     },
 ];
 

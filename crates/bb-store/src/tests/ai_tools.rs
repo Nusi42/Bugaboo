@@ -102,3 +102,24 @@ async fn ai_05_the_log_of_tool_calls_keeps_newest_first_and_prunes_by_time() -> 
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_05_a_reference_of_the_assistant_is_used_once_until_it_runs_out() -> TestResult {
+    use bb_app::ai::AiStore;
+    each_database("ai_05_references", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let (now, until) = (at(100), at(700));
+        assert!(storage.use_assistant_reference("one", now, until).await?);
+        assert!(!storage.use_assistant_reference("one", now, until).await?);
+        assert!(storage.use_assistant_reference("two", now, until).await?);
+        // After it ran out the word is forgotten; the reference itself is no longer good.
+        assert!(
+            storage
+                .use_assistant_reference("one", at(800), at(1400))
+                .await?
+        );
+        Ok(())
+    })
+    .await
+}

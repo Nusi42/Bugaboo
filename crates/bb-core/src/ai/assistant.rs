@@ -1,6 +1,10 @@
 //! The limits of a question to the assistant and of the proposals it makes (AI-10, AI-05, M7-Q6).
 //! Written once: the use case, the route and the screen all read these.
 
+use jiff::Timestamp;
+
+use crate::personal::Entity;
+
 /// The longest question a person types, in characters.
 pub const QUESTION_CHARS_MAX: usize = 4_000;
 
@@ -64,3 +68,21 @@ words_in_api!(
     LookingAtKind,
     "What the panel looks at: an issue, the search of a list, or a project."
 );
+
+/// A reference of a proposal that was applied. It works once, so its random word is kept until the
+/// reference would have run out anyway.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct UsedReference {
+    /// The random word of the reference; it tells nothing about the change or the person.
+    #[not_personal]
+    pub nonce: ReferenceWord,
+    /// When the reference runs out and the word can go.
+    #[not_personal]
+    pub expires_at: Timestamp,
+}
+
+/// The random word of a reference of the assistant. It tells nothing about the change or the person.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReferenceWord(pub String);
+
+impl crate::personal::NotPersonal for ReferenceWord {}

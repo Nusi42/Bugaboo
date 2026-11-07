@@ -11,8 +11,8 @@ mod tools;
 pub use address::{ADDRESS_MAX, AddressProblem, ModelAddress, ModelEndpoint};
 pub use assistant::{
     ChatFrom, LOOKING_AT_CHARS_MAX, LOOKING_AT_MAX, LookingAtKind, PROPOSAL_INPUT_BYTES_MAX,
-    PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, ROUNDS_MAX, TOOL_CALLS_MAX,
-    TURN_CHARS_MAX, TURNS_MAX,
+    PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, ROUNDS_MAX, ReferenceWord,
+    TOOL_CALLS_MAX, TURN_CHARS_MAX, TURNS_MAX, UsedReference,
 };
 pub use tools::{
     AuthorKind, NeverSentMark, NeverSentSubject, TOOL_CALL_KEEP_DAYS, Tool, ToolCall, ToolCaller,

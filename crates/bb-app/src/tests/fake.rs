@@ -125,6 +125,9 @@ pub(crate) struct State {
     pub(crate) mail_password: Option<Vec<u8>>,
     /// The key of the AI provider, as the secrets table would hold it (not encrypted here).
     pub(crate) ai_key: Option<Vec<u8>>,
+    /// The random words of the references of the assistant that were applied, with the moment each
+    /// runs out.
+    pub(crate) used_references: std::collections::HashMap<String, Timestamp>,
     /// The agreement an administrator confirmed for the AI provider.
     pub(crate) ai_agreement: Option<bb_core::ai::Agreement>,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,

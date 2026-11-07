@@ -9,7 +9,7 @@ use serde_json::Value;
 use super::{reference, session_only};
 use crate::ai::context::PeopleMode;
 use crate::ai::tools::{ProposedChange, ToolAnswer, ToolCallQuery, ToolMode, call_tool};
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// A proposal the person applies.
 pub struct ApplyProposal {
@@ -47,17 +47,27 @@ pub async fn apply_proposal<S: AuthStore>(
 ) -> Result<Authorized<Applied>, AppError> {
     session_only(&input.session_token)?;
     let actor = ctx.actor(&input.session_token).await?;
-    if input.input.to_string().len() > PROPOSAL_INPUT_BYTES_MAX
-        || !reference::holds(
-            &ctx.services.links,
-            &input.reference,
-            actor.person.id,
-            ctx.now(),
-            &input.tool,
-            &input.input,
-        )
-    {
-        return Err(AppError::Refused(ErrorCode::AiProposalInvalid));
+    let invalid = || AppError::Refused(ErrorCode::AiProposalInvalid);
+    if input.input.to_string().len() > PROPOSAL_INPUT_BYTES_MAX {
+        return Err(invalid());
+    }
+    let opened = reference::open(
+        &ctx.services.links,
+        &input.reference,
+        actor.person.id,
+        ctx.now(),
+        &input.tool,
+        &input.input,
+    )
+    .ok_or_else(invalid)?;
+    // A reference works once: a retry or a second click saves nothing again.
+    let first = ctx
+        .store()
+        .use_assistant_reference(&opened.word, ctx.now(), opened.expires_at)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    if !first {
+        return Err(invalid());
     }
     let applied = call_tool(
         ctx,

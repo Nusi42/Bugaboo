@@ -53,8 +53,22 @@ fn bound(tool: &str, input: &Value) -> Vec<u8> {
     text.into_bytes()
 }
 
-fn claim(person: UserId, expires_at: i64) -> Vec<u8> {
-    format!("{PURPOSE}\n{person}\n{expires_at}").into_bytes()
+fn claim(person: UserId, expires_at: i64, word: &str) -> Vec<u8> {
+    format!("{PURPOSE}\n{person}\n{expires_at}\n{word}").into_bytes()
+}
+
+/// A word that is new for every reference, so a reference can be told from another made for the
+/// same change and works once.
+fn fresh_word() -> Option<String> {
+    let mut bytes = [0_u8; 12];
+    getrandom::fill(&mut bytes).ok()?;
+    Some(bb_core::hex::encode(&bytes))
+}
+
+/// A reference that checked out: its random word and the moment it runs out.
+pub(super) struct Opened {
+    pub(super) word: String,
+    pub(super) expires_at: Timestamp,
 }
 
 /// The reference for a change shown to `person` now.
@@ -67,37 +81,38 @@ pub(super) fn create(
 ) -> Option<String> {
     let expires = now.checked_add(SignedDuration::from_secs(PROPOSAL_LIFETIME_SECONDS));
     key.sign_bound(
-        &claim(person, expires.ok()?.as_second()),
+        &claim(person, expires.ok()?.as_second(), &fresh_word()?),
         &bound(tool, input),
     )
 }
 
-/// Whether `reference` was made for exactly this person, tool and input, and has not run out.
-pub(super) fn holds(
+/// The word and the end of `reference`, when it was made for exactly this person, tool and input
+/// and has not run out. Whether it was used before is for the store to say.
+pub(super) fn open(
     key: &LinkKey,
     reference: &str,
     person: UserId,
     now: Timestamp,
     tool: &str,
     input: &Value,
-) -> bool {
-    let Some(opened) = key.open_bound(reference, &bound(tool, input)) else {
-        return false;
-    };
-    let Ok(text) = String::from_utf8(opened) else {
-        return false;
-    };
+) -> Option<Opened> {
+    let opened = key.open_bound(reference, &bound(tool, input))?;
+    let text = String::from_utf8(opened).ok()?;
     let mut parts = text.split('\n');
-    let (Some(purpose), Some(who), Some(until), None) =
-        (parts.next(), parts.next(), parts.next(), parts.next())
-    else {
-        return false;
+    let (Some(purpose), Some(who), Some(until), Some(word), None) = (
+        parts.next(),
+        parts.next(),
+        parts.next(),
+        parts.next(),
+        parts.next(),
+    ) else {
+        return None;
     };
-    purpose == PURPOSE
-        && who == person.to_string()
-        && until
-            .parse::<i64>()
-            .is_ok_and(|until| until > now.as_second())
+    let until: i64 = until.parse().ok()?;
+    (purpose == PURPOSE && who == person.to_string() && until > now.as_second()).then(|| Opened {
+        word: word.to_owned(),
+        expires_at: Timestamp::from_second(until).unwrap_or(now),
+    })
 }
 
 #[cfg(test)]

@@ -25,6 +25,10 @@ pub trait AiStore: SettingsStore + 'static {
         fn delete_ai_key() -> ();
         /// The agreement an administrator confirmed, if there is one.
         fn ai_agreement() -> Option<Agreement>;
+        /// Notes that the reference with this random word is used, and forgets the words of the
+        /// references that ran out before `now`. Answers whether it was the first use: a word
+        /// that is there already answers `false`.
+        fn use_assistant_reference(nonce: &str, now: Timestamp, expires_at: Timestamp) -> bool;
     }
 
     writes! {
