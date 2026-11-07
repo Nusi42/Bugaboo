@@ -27,7 +27,7 @@ theme "paper" extends="default" kind="light" {
         color "on-disabled" "#564e45" more="#3d3731"
         color "danger" "#b23a2e" more="#802a21"
         color "danger-soft" "#f8e6e1"
-        color "warning" "#925611" more="#693e0c"
+        color "warning" "#9d4906" more="#6f3504"
         color "warning-soft" "#f6ead5"
         color "success" "#3f6e3a" more="#2e502a"
         color "success-soft" "#e5eedf"
