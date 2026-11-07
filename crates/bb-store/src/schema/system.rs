@@ -147,6 +147,17 @@ pub(crate) enum PolicyVersionRow {
     Version,
 }
 
+/// The one agreement an administrator confirmed for the AI provider (migration 37): at most one
+/// row, so the destination it was given for is its key.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum AiAgreementRow {
+    #[iden = "ai_agreement"]
+    Table,
+    Destination,
+    ConfirmedBy,
+    ConfirmedAt,
+}
+
 /// The values of settings that people chose for themselves in *My settings*. Only `settings.rs`
 /// reads or writes this table (ARCH-SETTINGS); it is its own table so the person it belongs to is
 /// a column of its own with a personal-data mark.

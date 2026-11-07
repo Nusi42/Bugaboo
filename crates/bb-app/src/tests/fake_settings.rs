@@ -97,6 +97,23 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
 }
 
 impl SettingsStore for FakeStore {
+    async fn project_values(
+        &self,
+        setting: &'static SettingDefinition,
+    ) -> Result<Vec<(ProjectId, SettingValue)>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .settings
+                .iter()
+                .filter(|row| row.key == setting.key())
+                .filter_map(|row| match row.scope {
+                    Scope::Project(project) => Some((project, row.value.clone())),
+                    Scope::Organization | Scope::Person(_) => None,
+                })
+                .collect()
+        }))
+    }
+
     async fn person_settings(
         &self,
         people: Vec<UserId>,

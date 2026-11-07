@@ -663,6 +663,24 @@ pub(crate) fn resolved<T: SettingKind>(
 }
 
 impl SettingsStore for AuthStorage {
+    async fn project_values(
+        &self,
+        setting: &'static SettingDefinition,
+    ) -> Result<Vec<(ProjectId, SettingValue)>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([Columns::Scope, Columns::Value])
+            .from(Columns::Table)
+            .and_where(Expr::col(Columns::Level).eq(Level::Project.code()))
+            .and_where(Expr::col(Columns::Key).eq(setting.key()));
+        let mut values = Vec::new();
+        for row in self.database().fetch_all(&select).await? {
+            let value = serde_json::from_str(&row.get::<String>(Columns::Value)?)?;
+            values.push((row.id::<ProjectId>(Columns::Scope)?, value));
+        }
+        Ok(values)
+    }
+
     async fn person_settings(
         &self,
         people: Vec<UserId>,

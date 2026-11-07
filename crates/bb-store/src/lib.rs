@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 mod access_keys;
+mod ai;
 mod anchor;
 mod auth;
 mod chain;

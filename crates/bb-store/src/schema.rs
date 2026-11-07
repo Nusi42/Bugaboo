@@ -722,6 +722,11 @@ stored_tables! {
         Locked => locked,
         UpdatedAt => updated_at,
     },
+    AiAgreementRow => bb_core::ai::Agreement {
+        Destination => destination,
+        ConfirmedBy => confirmed_by,
+        ConfirmedAt => confirmed_at,
+    },
     PolicyVersionRow => bb_core::settings::PolicyVersion {
         Policy => policy,
         Version => version,

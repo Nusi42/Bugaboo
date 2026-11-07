@@ -26,6 +26,9 @@ pub trait SettingsStore: PolicyStore + 'static {
     }
 
     reads! {
+        /// The values that projects set for themselves for one setting, whatever the level above
+        /// says: one read for all projects (what *What goes where* of AI lists).
+        fn project_values(setting: &'static SettingDefinition) -> Vec<(ProjectId, SettingValue)>;
         /// The values of the settings that these people chose themselves, in one read: the person
         /// level of their layers, for each person who has any. What the reader of notifications
         /// needs for all the followers of an event at once.

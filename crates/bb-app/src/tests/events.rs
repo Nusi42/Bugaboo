@@ -12,6 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use super::scenarios::{self as s, Added};
+use super::scenarios_ai as sai;
 use super::scenarios_fields as sf;
 use super::scenarios_files as sfi;
 use super::scenarios_issues as si;
@@ -124,6 +125,11 @@ table! {
     "create_missing_handles" => sn::create_missing_handles_scenario,
     "set_mail_password" => sn::set_mail_password_scenario,
     "send_test_email" => sn::send_test_email_scenario,
+    "change_ai_setup" => sai::change_ai_setup_scenario,
+    "set_ai_key" => sai::set_ai_key_scenario,
+    "confirm_ai_agreement" => sai::confirm_ai_agreement_scenario,
+    "change_project_ai" => sai::change_project_ai_scenario,
+    "try_ai_provider" => sai::try_ai_provider_scenario,
     "follow_issue" => sr::follow_issue_scenario,
     "unfollow_issue" => sr::unfollow_issue_scenario,
     "create_field" => sf::create_field_scenario,

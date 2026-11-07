@@ -166,7 +166,7 @@ pub const TRY_TEXT: &str = "Reply with the word OK.";
 /// one answer every way in asks (the assistant, MCP, agents); `place_on` is the value that counts
 /// at the place (the nearest project that sets it, else the organization's).
 #[must_use]
-pub fn counts_here(organization_on: bool, place_on: bool) -> bool {
+pub const fn counts_here(organization_on: bool, place_on: bool) -> bool {
     organization_on && place_on
 }
 

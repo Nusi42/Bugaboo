@@ -29,6 +29,12 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, WhoMayChange, WhoMayChangeQuery,
     field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
+use crate::ai::{
+    AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, ProjectAi,
+    ProjectAiQuery, SetAiKey, TryAiProvider, WhatGoesWhere, WhatGoesWhereQuery, ai_setup,
+    change_ai_setup, change_project_ai, confirm_ai_agreement, project_ai, set_ai_key,
+    try_ai_provider, what_goes_where,
+};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
@@ -526,6 +532,22 @@ use_cases! {
     my_handle(MyHandleQuery) -> Authorized<MyHandle>;
     /// Changes the handle of the person.
     change_handle(ChangeHandle) -> Authorized<MyHandle>;
+    /// Reads the setup of AI of the organization.
+    ai_setup(AiSetupQuery) -> Authorized<AiSetup>;
+    /// Changes the settings of AI of the organization.
+    change_ai_setup(ChangeAiSetup) -> Authorized<AiSetup>;
+    /// Enters, changes or removes the key of the AI provider.
+    set_ai_key(SetAiKey) -> Authorized<Done>;
+    /// Confirms that a data processing agreement with the AI provider is in place.
+    confirm_ai_agreement(ConfirmAiAgreement) -> Authorized<AiSetup>;
+    /// Tells what goes where when AI is on.
+    what_goes_where(WhatGoesWhereQuery) -> Authorized<WhatGoesWhere>;
+    /// Tries the AI provider with one short call.
+    try_ai_provider(TryAiProvider) -> Authorized<Done>;
+    /// Reads the switch of AI of one project.
+    project_ai(ProjectAiQuery) -> Authorized<ProjectAi>;
+    /// Switches AI on or off for one project.
+    change_project_ai(ChangeProjectAi) -> Authorized<ProjectAi>;
     /// Enters, changes or removes the password of the mail server.
     set_mail_password(SetMailPassword) -> Authorized<Done>;
     /// Tells whether the password of the mail server is entered.

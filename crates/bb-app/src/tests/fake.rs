@@ -123,6 +123,10 @@ pub(crate) struct State {
     pub(crate) notification_position: i64,
     /// The password of the mail server, as the secrets table would hold it (not encrypted here).
     pub(crate) mail_password: Option<Vec<u8>>,
+    /// The key of the AI provider, as the secrets table would hold it (not encrypted here).
+    pub(crate) ai_key: Option<Vec<u8>>,
+    /// The agreement an administrator confirmed for the AI provider.
+    pub(crate) ai_agreement: Option<bb_core::ai::Agreement>,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,
     pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
     pub(crate) tags: Vec<bb_core::tags::Tag>,

@@ -21,6 +21,7 @@ use super::error::{AppError, internal};
 use super::limit::FailureLimit;
 use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
+use crate::ai::{AiProvider, NoAiProvider};
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
 use crate::files::{FileStore, NoFileStore};
@@ -58,6 +59,8 @@ pub struct AuthServices<S> {
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
     pub(crate) mailer: Arc<dyn Mailer>,
+    /// The AI provider (AI-01). Without one, every call is turned away.
+    pub(crate) ai: Arc<dyn AiProvider>,
     pub(crate) server_log: Option<Arc<dyn ServerLogFile>>,
     /// The address people reach the server at, which the links in e-mails start with.
     pub(crate) public_url: String,
@@ -65,6 +68,8 @@ pub struct AuthServices<S> {
     pub(crate) mail_batch: SignedDuration,
     /// When each person last sent a test e-mail, so they cannot send a stream of them.
     pub(crate) test_mail_at: Mutex<HashMap<UserId, Timestamp>>,
+    /// When each person last tried the AI provider, for the same reason.
+    pub(crate) test_ai_at: Mutex<HashMap<UserId, Timestamp>>,
 }
 
 impl<S> AuthServices<S> {
@@ -95,10 +100,12 @@ impl<S> AuthServices<S> {
             files: Arc::new(NoFileStore),
             links,
             mailer: Arc::new(NoMailer),
+            ai: Arc::new(NoAiProvider),
             server_log: None,
             public_url: String::new(),
             mail_batch: mail_batch(),
             test_mail_at: Mutex::default(),
+            test_ai_at: Mutex::default(),
         }
     }
 
@@ -122,6 +129,13 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_mailer(mut self, mailer: Arc<dyn Mailer>) -> Self {
         self.mailer = mailer;
+        self
+    }
+
+    /// The adapter that calls the AI provider (AI-01). Without one, every call is turned away.
+    #[must_use]
+    pub fn with_ai_provider(mut self, ai: Arc<dyn AiProvider>) -> Self {
+        self.ai = ai;
         self
     }
 
@@ -370,9 +384,36 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// `Limited` with the seconds to wait.
     pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
+        self.reserve_try(
+            &self.services.test_mail_at,
+            bb_core::mail::TEST_EMAIL_EVERY_SECONDS,
+            person,
+        )
+    }
+
+    /// Lets a person try the AI provider if they did not try it in the last
+    /// `TRY_EVERY_SECONDS` seconds, and notes the moment.
+    ///
+    /// # Errors
+    /// `Limited` with the seconds to wait.
+    pub(crate) fn reserve_ai_try(&self, person: UserId) -> Result<(), AppError> {
+        self.reserve_try(
+            &self.services.test_ai_at,
+            bb_core::ai::TRY_EVERY_SECONDS,
+            person,
+        )
+    }
+
+    /// One try in `every_seconds` seconds for a person, kept in `tried`.
+    fn reserve_try(
+        &self,
+        tried: &Mutex<HashMap<UserId, Timestamp>>,
+        every_seconds: i64,
+        person: UserId,
+    ) -> Result<(), AppError> {
         let now = self.now();
-        let every = SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
-        let mut sent = locked(&self.services.test_mail_at);
+        let every = SignedDuration::from_secs(every_seconds);
+        let mut sent = locked(tried);
         // Only the last few seconds matter: the others are forgotten, so the map stays small.
         sent.retain(|_, at| at.checked_add(every).is_ok_and(|until| until > now));
         if let Some(at) = sent.get(&person)

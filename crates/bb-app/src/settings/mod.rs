@@ -158,7 +158,7 @@ pub struct SettingList {
 
 /// The ID that names the record an event is about: the same setting on the same scope is always
 /// the same record.
-fn record_of(scope: Scope, key: &str) -> String {
+pub(crate) fn record_of(scope: Scope, key: &str) -> String {
     match scope {
         Scope::Organization => key.to_owned(),
         Scope::Project(project) => format!("{project}/{key}"),
@@ -167,11 +167,11 @@ fn record_of(scope: Scope, key: &str) -> String {
 }
 
 /// The name of a field in an event: the key with underscores, like the other events.
-fn field_of(key: &str) -> String {
+pub(crate) fn field_of(key: &str) -> String {
     key.replace(['.', '-'], "_")
 }
 
-fn json_of(value: &SettingValue) -> Value {
+pub(crate) fn json_of(value: &SettingValue) -> Value {
     match value {
         SettingValue::Bool(value) => json!(value),
         SettingValue::Integer(value) => json!(value),
