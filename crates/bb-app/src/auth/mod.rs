@@ -46,6 +46,11 @@ use crate::agent_work::{
     approve_plan, ask_question, attach_result, end_attempt, hand_over, issue_agent_work,
     look_at_work, report_attempt, review_work,
 };
+use crate::agent_work::{
+    ChangeStandingRule, CreateStandingRule, DecideProposal, ProposalView, ProposeChange,
+    StandingRulePage, StandingRuleView, StandingRulesQuery, change_standing_rule,
+    create_standing_rule, decide_proposal, propose_change, standing_rules,
+};
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
     HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
@@ -789,6 +794,16 @@ use_cases! {
     review_work(ReviewWork) -> Authorized<WorkView>;
     /// Marks work that was accepted by itself as looked at.
     look_at_work(LookAtWork) -> Authorized<WorkView>;
+    /// Makes a standing rule for one of the person's agents.
+    create_standing_rule(CreateStandingRule) -> Authorized<StandingRuleView>;
+    /// Renews or stops a standing rule.
+    change_standing_rule(ChangeStandingRule) -> Authorized<StandingRuleView>;
+    /// Lists the standing rules of one agent.
+    standing_rules(StandingRulesQuery) -> Authorized<StandingRulePage>;
+    /// An agent proposes a change under a standing rule.
+    propose_change(ProposeChange) -> Authorized<ProposalView>;
+    /// Applies or discards a proposal of a standing rule.
+    decide_proposal(DecideProposal) -> Authorized<ProposalView>;
     /// Shows the timer of the person.
     timer(TimerQuery) -> Authorized<TimerView>;
     /// Starts the timer of the person on an issue.

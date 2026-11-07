@@ -5,14 +5,12 @@
 mod grants;
 mod work;
 
-use std::collections::BTreeSet;
-
 use bb_app::agents::{AgentWork, AgentWorkStore};
 use bb_core::agent_records::{
     Attempt, AttemptResult, GrantState, HandOver, IssueWork, Proposal, ProposalState, Question,
     ResultKind, Review, RuleMatch, StandingRule,
 };
-use bb_core::agent_work::{AgentWorkState, CheckResult, ReviewAnswer};
+use bb_core::agent_work::{AgentWorkState, Allowance, CheckResult, HandOverPower, ReviewAnswer};
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId, UserId,
@@ -333,18 +331,34 @@ impl AuthStorage {
         let mut open = Query::select();
         open.column((IssueRow::Table, IssueRow::Id))
             .column((IssueRow::Table, IssueRow::Project))
+            .column((HandOverRow::Table, HandOverRow::Powers))
+            .column((HandOverRow::Table, HandOverRow::Fields))
             .from(IssueWorkRow::Table)
             .inner_join(
                 IssueRow::Table,
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueWorkRow::Table, IssueWorkRow::Issue)),
             )
+            .inner_join(
+                HandOverRow::Table,
+                Expr::col((HandOverRow::Table, HandOverRow::Id))
+                    .equals((IssueWorkRow::Table, IssueWorkRow::HandOver)),
+            )
             .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()));
         only_open_work(&mut open);
         for row in self.database().fetch_all(&open).await? {
-            work.issues.insert(row.id::<IssueId>(IssueRow::Id)?);
+            let issue = row.id::<IssueId>(IssueRow::Id)?;
+            work.issues.insert(issue);
             work.projects
                 .insert(row.id::<ProjectId>(IssueRow::Project)?);
+            let powers: Vec<HandOverPower> =
+                serde_json::from_str(&row.get::<String>(HandOverRow::Powers)?)?;
+            let fields: Vec<String> =
+                serde_json::from_str(&row.get::<String>(HandOverRow::Fields)?)?;
+            work.allowances
+                .entry(issue)
+                .or_default()
+                .add(Allowance::of_hand_over(&powers, &fields));
         }
         let mut rules = rule_select();
         rules
@@ -357,21 +371,20 @@ impl AuthStorage {
             .iter()
             .map(read_rule)
             .collect::<Result<_, _>>()?;
-        let ids: Vec<Vec<u8>> = rules.iter().map(|rule| rule.id.stored()).collect();
-        work.projects.extend(
-            rules
-                .iter()
-                .map(|rule| rule.project)
-                .collect::<BTreeSet<_>>(),
-        );
-        if !ids.is_empty() {
+        for rule in &rules {
+            work.projects.insert(rule.project);
             let mut found = Query::select();
             found
                 .column(RuleMatchRow::Issue)
                 .from(RuleMatchRow::Table)
-                .and_where(Expr::col(RuleMatchRow::Rule).is_in(ids));
+                .and_where(Expr::col(RuleMatchRow::Rule).eq(rule.id.stored()));
             for row in self.database().fetch_all(&found).await? {
-                work.issues.insert(row.id::<IssueId>(RuleMatchRow::Issue)?);
+                let issue = row.id::<IssueId>(RuleMatchRow::Issue)?;
+                work.issues.insert(issue);
+                work.allowances
+                    .entry(issue)
+                    .or_default()
+                    .add(Allowance::of_rule(&rule.fields));
             }
         }
         Ok(work)

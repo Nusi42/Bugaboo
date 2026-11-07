@@ -1,0 +1,459 @@
+//! Standing rules, proposals and what an agent may change (AI-31, AI-32, ADR-0029).
+
+use bb_core::ErrorCode;
+use bb_core::agent_records::{GrantState, ProposalState};
+use bb_core::agent_work::{HandOverPower, RuleField};
+use bb_core::id::{AgentId, IssueId, IssueTypeId, ProjectId};
+use bb_policy::StartingRole;
+use serde_json::json;
+
+use super::agent_work::{plain_hand_over, query};
+use super::agents::{an_agent, key_of, refused};
+use super::scenarios::a_project;
+use super::scenarios::{Added, measured, text};
+use super::scenarios_issues::an_issue;
+use super::scenarios_searches::save;
+use super::workflows_rules::member;
+use super::world::{Outcome, World};
+use crate::agent_work::{
+    ChangeStandingRule, CreateStandingRule, DecideProposal, ProposeChange, StandingRuleView,
+    change_standing_rule, create_standing_rule, decide_proposal, hand_over, propose_change,
+};
+use crate::auth::{AppError, Started};
+use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
+
+fn change(key: &str, issue_id: IssueId, version: i64) -> ChangeIssue {
+    ChangeIssue {
+        session_token: key.to_owned(),
+        issue: issue_id.to_string(),
+        version,
+        issue_type: None,
+        title: None,
+        status: None,
+        priority: None,
+        estimated_time: None,
+        time_left: None,
+        assigned_to: None,
+        fields: std::collections::BTreeMap::default(),
+    }
+}
+
+async fn version_of(world: &World, key: &str, issue_id: IssueId) -> Result<i64, AppError> {
+    Ok(issue(&world.ctx(), query(key, issue_id))
+        .await?
+        .into_value()
+        .issue
+        .version)
+}
+
+#[tokio::test]
+async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "WEB").await?;
+    let team = member(
+        &world,
+        "team@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?;
+    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
+    let key = key_of(&world, &team.session_token, agent).await?;
+    let issue_id = an_issue(&world, project).await?;
+    // Handed over with nothing ticked: the agent reads and reports, and changes nothing.
+    hand_over(
+        &world.ctx(),
+        plain_hand_over(&team.session_token, agent, &[issue_id]),
+    )
+    .await?;
+    let version = version_of(&world, &key, issue_id).await?;
+    let mut title = change(&key, issue_id, version);
+    title.title = Some("Changed by an agent".to_owned());
+    assert!(refused(
+        &change_issue(&world.ctx(), title).await.unwrap_err(),
+        ErrorCode::Forbidden
+    ));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "WEB").await?;
+    let team = member(
+        &world,
+        "team@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?;
+    let agent = an_agent(&world, &team.session_token, "Fixer").await?;
+    let key = key_of(&world, &team.session_token, agent).await?;
+    let issue_id = an_issue(&world, project).await?;
+    let mut asked = plain_hand_over(&team.session_token, agent, &[issue_id]);
+    asked.powers = vec![HandOverPower::ChangeFields];
+    asked.fields = vec!["title".to_owned(), "assigned_to".to_owned()];
+    hand_over(&world.ctx(), asked).await?;
+    let version = version_of(&world, &key, issue_id).await?;
+    let mut title = change(&key, issue_id, version);
+    title.title = Some("Fixed title".to_owned());
+    change_issue(&world.ctx(), title).await?;
+    // A member that holds people is refused even when the hand-over names it.
+    let version = version_of(&world, &key, issue_id).await?;
+    let mut people = change(&key, issue_id, version);
+    people.assigned_to = Some(vec![team.person.id]);
+    assert!(refused(
+        &change_issue(&world.ctx(), people).await.unwrap_err(),
+        ErrorCode::Forbidden
+    ));
+    // The status was not ticked.
+    let mut priority = change(&key, issue_id, version);
+    priority.priority = Some(bb_core::issue::Priority::High);
+    assert!(refused(
+        &change_issue(&world.ctx(), priority).await.unwrap_err(),
+        ErrorCode::Forbidden
+    ));
+    Ok(())
+}
+
+/// A project, its team member with an agent, an issue and a saved search over the project.
+struct RuleWorld {
+    project: ProjectId,
+    team: Started,
+    agent: AgentId,
+    key: String,
+    issue: IssueId,
+    search: bb_core::id::SavedSearchId,
+}
+
+async fn rule_world(world: &World) -> Result<RuleWorld, AppError> {
+    let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
+    let team = member(
+        world,
+        "team@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?;
+    let agent = an_agent(world, &team.session_token, "Fixer").await?;
+    let key = key_of(world, &team.session_token, agent).await?;
+    let issue = an_issue(world, project).await.map_err(AppError::Internal)?;
+    let search = save(world, &team.session_token, "Everything", "").await?.id;
+    Ok(RuleWorld {
+        project,
+        team,
+        agent,
+        key,
+        issue,
+        search,
+    })
+}
+
+fn rule_request(given: &RuleWorld, fields: Vec<RuleField>) -> CreateStandingRule {
+    CreateStandingRule {
+        session_token: given.team.session_token.clone(),
+        agent: given.agent,
+        search: given.search,
+        project: given.project,
+        fields,
+        creates_in: None,
+        days: None,
+    }
+}
+
+async fn made(world: &World, given: &RuleWorld) -> Result<StandingRuleView, AppError> {
+    Ok(
+        create_standing_rule(&world.ctx(), rule_request(given, Vec::new()))
+            .await?
+            .into_value(),
+    )
+}
+
+/// What the saved search finds: every issue the store has (the in-memory store does not search).
+fn found_by_search(world: &World) {
+    let mut shared = world.store.lock();
+    let hits = shared
+        .state
+        .issues
+        .iter()
+        .cloned()
+        .map(|issue| crate::search::SearchHit { issue })
+        .collect();
+    shared.search_hits = hits;
+}
+
+fn payload_of(rule: &StandingRuleView) -> serde_json::Value {
+    json!({ "rule": rule.id.to_string(), "ends_at": rule.ends_at.to_string() })
+}
+
+#[tokio::test]
+async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_90() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    let thirty = rule.ends_at.as_second() - world.ctx().now().as_second();
+    assert_eq!(thirty, 30 * 24 * 3600);
+    let mut too_long = rule_request(&given, Vec::new());
+    too_long.days = Some(91);
+    assert!(refused(
+        &create_standing_rule(&world.ctx(), too_long)
+            .await
+            .unwrap_err(),
+        ErrorCode::InvalidRequest
+    ));
+    // The job of an end that has not come leaves the rule as it is.
+    world.ctx().run_rule_runs_out(&payload_of(&rule)).await?;
+    assert_eq!(
+        world.store.lock().state.work.rules[0].state,
+        GrantState::Open
+    );
+    // Renewing queues a new end; the job of the old end finds another end and does nothing.
+    let stale = payload_of(&rule);
+    let renewed = change_standing_rule(
+        &world.ctx(),
+        ChangeStandingRule {
+            session_token: given.team.session_token.clone(),
+            rule: rule.id,
+            renew: true,
+            days: Some(90),
+            version: rule.version,
+        },
+    )
+    .await?
+    .into_value();
+    world.store.lock().state.work.rules[0].ends_at = world.ctx().now();
+    world.ctx().run_rule_runs_out(&stale).await?;
+    assert_eq!(
+        world.store.lock().state.work.rules[0].state,
+        GrantState::Open
+    );
+    // At its end the rule ends.
+    let current = StandingRuleView {
+        ends_at: world.ctx().now(),
+        ..renewed
+    };
+    world.ctx().run_rule_runs_out(&payload_of(&current)).await?;
+    assert_eq!(
+        world.store.lock().state.work.rules[0].state,
+        GrantState::Ended
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_32_every_new_match_is_written_down() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    let job = json!({ "project": given.project.to_string() });
+    found_by_search(&world);
+    world.ctx().run_rule_matches(&job).await?;
+    let matches = world.store.lock().state.work.matches.clone();
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].issue, given.issue);
+    assert_eq!(matches[0].rule, rule.id);
+    // Written once: the same issue is not new the second time, a new one is.
+    world.ctx().run_rule_matches(&job).await?;
+    assert_eq!(world.store.lock().state.work.matches.len(), 1);
+    an_issue(&world, given.project).await?;
+    found_by_search(&world);
+    world.ctx().run_rule_matches(&job).await?;
+    assert_eq!(world.store.lock().state.work.matches.len(), 2);
+    // The agent now sees the issues the rule found, and only those.
+    assert!(
+        issue(&world.ctx(), query(&given.key, given.issue))
+            .await
+            .is_ok()
+    );
+    Ok(())
+}
+
+async fn type_of(world: &World, given: &RuleWorld) -> Result<IssueTypeId, AppError> {
+    Ok(
+        issue(&world.ctx(), query(&given.team.session_token, given.issue))
+            .await?
+            .into_value()
+            .issue
+            .issue_type
+            .id,
+    )
+}
+
+async fn another_type(world: &World, current: IssueTypeId) -> Result<IssueTypeId, AppError> {
+    let page = issue_types(
+        &world.ctx(),
+        IssueTypesQuery {
+            project: None,
+            session_token: super::scenarios::token(world),
+            cursor: None,
+            limit: 50,
+        },
+    )
+    .await?
+    .into_value();
+    page.items
+        .into_iter()
+        .map(|item| item.id)
+        .find(|id| *id != current)
+        .ok_or_else(|| AppError::Internal("there is only one issue type".to_owned()))
+}
+
+#[tokio::test]
+async fn ai_32_a_proposal_of_a_standing_rule_changes_nothing_until_a_person_applies_it() -> Outcome
+{
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    found_by_search(&world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await?;
+    let before = issue(&world.ctx(), query(&given.team.session_token, given.issue))
+        .await?
+        .into_value()
+        .issue
+        .issue_type
+        .id;
+    let to = another_type(&world, before).await?;
+    let proposed = propose_change(
+        &world.ctx(),
+        ProposeChange {
+            session_token: given.key.clone(),
+            rule: rule.id,
+            issue: given.issue.to_string(),
+            field: RuleField::Type,
+            after: json!(to.to_string()),
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(
+        type_of(&world, &given).await?,
+        before,
+        "a proposal changes nothing"
+    );
+    // Somebody else cannot decide it; the person who made the rule applies it.
+    let stranger = decide_proposal(
+        &world.ctx(),
+        DecideProposal {
+            session_token: super::scenarios::token(&world),
+            proposal: proposed.id,
+            apply: true,
+        },
+    )
+    .await;
+    assert!(refused(&stranger.unwrap_err(), ErrorCode::NotFound));
+    let applied = decide_proposal(
+        &world.ctx(),
+        DecideProposal {
+            session_token: given.team.session_token.clone(),
+            proposal: proposed.id,
+            apply: true,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(applied.state, ProposalState::Applied);
+    assert_eq!(type_of(&world, &given).await?, to);
+    let again = decide_proposal(
+        &world.ctx(),
+        DecideProposal {
+            session_token: given.team.session_token.clone(),
+            proposal: proposed.id,
+            apply: false,
+        },
+    )
+    .await;
+    assert!(refused(&again.unwrap_err(), ErrorCode::AgentWorkNotReady));
+    Ok(())
+}
+
+pub(crate) async fn create_standing_rule_scenario(world: &World) -> Added {
+    let given = rule_world(world).await.map_err(text)?;
+    measured(
+        &world.store,
+        create_standing_rule(&world.ctx(), rule_request(&given, Vec::new())),
+    )
+    .await
+}
+
+pub(crate) async fn change_standing_rule_scenario(world: &World) -> Added {
+    let given = rule_world(world).await.map_err(text)?;
+    let rule = made(world, &given).await.map_err(text)?;
+    measured(
+        &world.store,
+        change_standing_rule(
+            &world.ctx(),
+            ChangeStandingRule {
+                session_token: given.team.session_token.clone(),
+                rule: rule.id,
+                renew: false,
+                days: None,
+                version: rule.version,
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn propose_change_scenario(world: &World) -> Added {
+    let given = rule_world(world).await.map_err(text)?;
+    let rule = made(world, &given).await.map_err(text)?;
+    found_by_search(world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await
+        .map_err(text)?;
+    measured(
+        &world.store,
+        propose_change(
+            &world.ctx(),
+            ProposeChange {
+                session_token: given.key.clone(),
+                rule: rule.id,
+                issue: given.issue.to_string(),
+                field: RuleField::Labels,
+                after: json!("blocker"),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn decide_proposal_scenario(world: &World) -> Added {
+    let given = rule_world(world).await.map_err(text)?;
+    let rule = made(world, &given).await.map_err(text)?;
+    found_by_search(world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await
+        .map_err(text)?;
+    let proposed = propose_change(
+        &world.ctx(),
+        ProposeChange {
+            session_token: given.key.clone(),
+            rule: rule.id,
+            issue: given.issue.to_string(),
+            field: RuleField::Labels,
+            after: json!("blocker"),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    measured(
+        &world.store,
+        decide_proposal(
+            &world.ctx(),
+            DecideProposal {
+                session_token: given.team.session_token.clone(),
+                proposal: proposed.id,
+                apply: false,
+            },
+        ),
+    )
+    .await
+}

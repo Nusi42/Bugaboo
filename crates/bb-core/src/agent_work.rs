@@ -222,6 +222,89 @@ impl RulePower {
     }
 }
 
+/// The keys of the members of an issue that hold people. An agent never changes one of them,
+/// whatever it was given (ADR-0029, decision 3; COMP-10).
+pub const PEOPLE_FIELDS: [&str; 3] = ["assigned_to", "followers", "reported_by"];
+
+/// What an agent may change on one issue, from the hand-overs and standing rules it works under
+/// (ADR-0029, decision 3). Reading, commenting, reporting and attaching are always allowed and are
+/// not part of it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Allowance {
+    /// The members of the issue it may change, by their keys.
+    pub fields: Vec<String>,
+    /// Whether it may change the status.
+    pub status: bool,
+    /// Whether it may create sub-issues.
+    pub sub_issues: bool,
+}
+
+impl Allowance {
+    /// The allowance a hand-over gives: its ticks and, when it may change fields, the named ones.
+    #[must_use]
+    pub fn of_hand_over(powers: &[HandOverPower], fields: &[String]) -> Self {
+        Self {
+            fields: if powers.contains(&HandOverPower::ChangeFields) {
+                fields.to_vec()
+            } else {
+                Vec::new()
+            },
+            status: powers.contains(&HandOverPower::ChangeStatus),
+            sub_issues: powers.contains(&HandOverPower::CreateSubIssues),
+        }
+    }
+
+    /// The allowance a standing rule gives: only the fields it names, and only those that are
+    /// members of an issue.
+    #[must_use]
+    pub fn of_rule(fields: &[RuleField]) -> Self {
+        Self {
+            fields: fields
+                .iter()
+                .filter_map(|field| field.issue_member())
+                .map(str::to_owned)
+                .collect(),
+            ..Self::default()
+        }
+    }
+
+    /// Adds what another hand-over or rule allows on the same issue.
+    pub fn add(&mut self, other: Self) {
+        for field in other.fields {
+            if !self.fields.contains(&field) {
+                self.fields.push(field);
+            }
+        }
+        self.status |= other.status;
+        self.sub_issues |= other.sub_issues;
+    }
+
+    /// Whether the agent may change this member of the issue: never one that holds people, and
+    /// the status only when it was ticked.
+    #[must_use]
+    pub fn may_change(&self, member: &str, status_member: &str) -> bool {
+        if PEOPLE_FIELDS.contains(&member) {
+            return false;
+        }
+        if member == status_member {
+            return self.status;
+        }
+        self.fields.iter().any(|field| field == member)
+    }
+}
+
+impl RuleField {
+    /// The member of an issue that a change of this field writes, when it is a plain member.
+    /// Labels, tags, *Duplicate of* and *Found in release* are changed by their own use cases.
+    #[must_use]
+    pub const fn issue_member(self) -> Option<&'static str> {
+        match self {
+            Self::Type => Some("issue_type"),
+            Self::Labels | Self::Tags | Self::DuplicateOf | Self::FoundInRelease => None,
+        }
+    }
+}
+
 /// The state of agent work after the agent is stopped or its person loses access: open work is
 /// *Stopped*, work that ended stays as it ended.
 #[must_use]
@@ -315,6 +398,26 @@ mod tests {
         assert!(!RulePower::Propose.may_change(RuleField::Labels));
         assert!(RulePower::ChangeFields(vec![RuleField::Labels]).may_change(RuleField::Labels));
         assert!(!RulePower::ChangeFields(vec![RuleField::Labels]).may_change(RuleField::Tags));
+    }
+
+    #[test]
+    fn ai_32_an_agent_never_changes_a_member_that_holds_people_or_the_status_unasked() {
+        let hand_over = Allowance::of_hand_over(
+            &[HandOverPower::ChangeFields],
+            &["title".to_owned(), "assigned_to".to_owned()],
+        );
+        assert!(hand_over.may_change("title", "status"));
+        assert!(
+            !hand_over.may_change("assigned_to", "status"),
+            "people never"
+        );
+        assert!(!hand_over.may_change("status", "status"), "not ticked");
+        assert!(!hand_over.may_change("priority", "status"), "not named");
+        let status = Allowance::of_hand_over(&[HandOverPower::ChangeStatus], &[]);
+        assert!(status.may_change("status", "status"));
+        let rule = Allowance::of_rule(&[RuleField::Type, RuleField::Labels]);
+        assert!(rule.may_change("issue_type", "status"));
+        assert!(!rule.may_change("status", "status"));
     }
 
     #[test]

@@ -365,7 +365,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(result.kind.code()),
                 Expr::val(result.label.as_str()),
                 Expr::val(result.link.clone()),
-                Expr::val(result.outcome.map(|outcome| outcome.code())),
+                Expr::val(result.outcome.map(CheckResult::code)),
             ])
             .map_err(|_| StoreError::Corrupt("a result"))?;
         transaction.execute(&insert).await?;

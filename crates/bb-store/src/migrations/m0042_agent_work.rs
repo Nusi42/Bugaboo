@@ -54,6 +54,14 @@ fn maybe_id(name: impl sea_query::Iden + 'static) -> ColumnDef {
 }
 
 pub(super) fn steps() -> Vec<Step> {
+    let mut steps = grant_steps();
+    steps.extend(work_steps());
+    steps.extend(proposal_steps());
+    steps
+}
+
+/// Hand-overs and standing rules.
+fn grant_steps() -> Vec<Step> {
     vec![
         Step::Table(
             Table::create()
@@ -105,6 +113,12 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(StandingRuleRow::Project)
                 .to_owned(),
         ),
+    ]
+}
+
+/// The work on an issue and what belongs to it.
+fn work_steps() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(IssueWorkRow::Table)
@@ -177,6 +191,13 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(AttemptResultRow::Attempt)
                 .to_owned(),
         ),
+    ]
+}
+
+/// The questions and reviews of agent work, what standing rules propose and the issues that came
+/// under them.
+fn proposal_steps() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(QuestionRow::Table)

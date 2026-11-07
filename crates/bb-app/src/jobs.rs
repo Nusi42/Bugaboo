@@ -72,6 +72,15 @@ bb_core::words! {
         /// for each hand-over for its end; the payload names the hand-over, and one that ended
         /// before leaves it nothing to do.
         HandOverRunsOut => "agents.hand-over-runs-out",
+        /// Ending a standing rule that was not renewed (ADR-0029, decision 3): queued for each end
+        /// of a rule; the payload names the rule and the end, and a rule renewed since leaves it
+        /// nothing to do.
+        RuleRunsOut => "agents.rule-runs-out",
+        /// Telling a person three days before a standing rule runs out (ADR-0033, amendment M7).
+        RuleAboutToRunOut => "agents.rule-about-to-run-out",
+        /// Writing down what newly came under the standing rules of a project, once for each issue
+        /// (ADR-0029, decision 3): queued by the outbox after an event that changes an issue.
+        RuleMatches => "agents.rule-matches",
     }
 }
 
@@ -95,7 +104,10 @@ impl JobKind {
             | Self::MailSend
             | Self::PreviewFile
             | Self::TimersLongRunning
-            | Self::HandOverRunsOut => false,
+            | Self::HandOverRunsOut
+            | Self::RuleRunsOut
+            | Self::RuleAboutToRunOut
+            | Self::RuleMatches => false,
         }
     }
 
@@ -119,7 +131,10 @@ impl JobKind {
             | Self::MailSend
             | Self::PreviewFile
             | Self::TimersLongRunning
-            | Self::HandOverRunsOut => Rhythm::FromTheStart,
+            | Self::HandOverRunsOut
+            | Self::RuleRunsOut
+            | Self::RuleAboutToRunOut
+            | Self::RuleMatches => Rhythm::FromTheStart,
         }
     }
 
@@ -367,6 +382,24 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a hand-over could not be ended");
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::RuleRunsOut => Box::pin(self.run_rule_runs_out(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a standing rule could not be ended");
+                    JobFailure::of(&error, FAILED, job)
+                }),
+            JobKind::RuleAboutToRunOut => Box::pin(self.run_rule_about_to_run_out(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a standing rule could not be told");
+                    JobFailure::of(&error, FAILED, job)
+                }),
+            JobKind::RuleMatches => Box::pin(self.run_rule_matches(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "the matches of a standing rule were not written");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             JobKind::TimersLongRunning => Box::pin(self.run_long_timer(&job.payload))
                 .await
                 .map_err(|error| {
@@ -444,26 +477,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 })
             }
-            JobKind::PurgeSessions => Box::pin(self.run_daily(JobKind::PurgeSessions, async {
-                self.purge_dead_sessions().await.map(|()| {
-                    tracing::info!("sessions nobody can use were deleted");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "old sessions could not be deleted");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            JobKind::RotateServerLog => Box::pin(self.run_daily(JobKind::RotateServerLog, async {
-                self.rotate_old_server_log().await.map(|rotated| {
-                    tracing::info!(rotated, "the server log was looked at");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "the server log could not be rotated");
-                JobFailure::of(&error, FAILED, job)
-            }),
+            JobKind::PurgeSessions => self.purge_sessions_daily(job).await,
+            JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
             JobKind::CleanUpFiles => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
                 self.clean_up_files().await.map(|cleaned| {
                     tracing::info!(
@@ -487,7 +502,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::MailSend
             | JobKind::PreviewFile
             | JobKind::TimersLongRunning
-            | JobKind::HandOverRunsOut => Err(misrouted(job, kind)),
+            | JobKind::HandOverRunsOut
+            | JobKind::RuleRunsOut
+            | JobKind::RuleAboutToRunOut
+            | JobKind::RuleMatches => Err(misrouted(job, kind)),
         }
     }
 
@@ -507,6 +525,35 @@ impl<S: AuthStore> Ctx<'_, S> {
         .await
         .map_err(|error| {
             tracing::warn!(cause = %error, "old grants of AI apps could not be cleared");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
+
+    /// The daily round of `sessions.purge` (in a function of its own, so `do_daily_job` stays
+    /// short).
+    async fn purge_sessions_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::PurgeSessions, async {
+            self.purge_dead_sessions().await.map(|()| {
+                tracing::info!("sessions nobody can use were deleted");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "old sessions could not be deleted");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
+
+    /// The daily round of `server-log.rotate`.
+    async fn rotate_server_log_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::RotateServerLog, async {
+            self.rotate_old_server_log().await.map(|rotated| {
+                tracing::info!(rotated, "the server log was looked at");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the server log could not be rotated");
             JobFailure::of(&error, FAILED, job)
         })
     }
@@ -557,7 +604,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             // Nobody waits for the note of a long timer: a timer that is not told runs on as
             // before.
-            Some(JobKind::TimersLongRunning | JobKind::HandOverRunsOut) | None => Ok(()),
+            Some(
+                JobKind::TimersLongRunning
+                | JobKind::HandOverRunsOut
+                | JobKind::RuleRunsOut
+                | JobKind::RuleAboutToRunOut
+                | JobKind::RuleMatches,
+            )
+            | None => Ok(()),
         };
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");

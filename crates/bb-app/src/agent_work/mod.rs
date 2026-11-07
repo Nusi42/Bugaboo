@@ -5,9 +5,11 @@
 mod attempt;
 mod hand_over;
 mod members;
+mod narrow;
 mod queue;
 mod read;
 mod review;
+mod rules;
 mod settings;
 mod stop;
 mod store;
@@ -17,5 +19,8 @@ pub use attempt::{ask_question, attach_result, end_attempt, report_attempt};
 pub use hand_over::hand_over;
 pub use read::issue_agent_work;
 pub use review::{answer_question, approve_plan, look_at_work, review_work};
+pub use rules::{
+    change_standing_rule, create_standing_rule, decide_proposal, propose_change, standing_rules,
+};
 pub use store::{AgentWorkRecords, GrantStore};
 pub use types::*;

@@ -216,6 +216,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &ChangeIssue,
     ) -> Result<(Arc<Evaluation>, Plan), AppError> {
         let (held, current) = self.issue_to_change(actor, &input.issue).await?;
+        // An agent changes only what its hand-overs and rules allow (ADR-0029, decision 3).
+        self.ensure_agent_may_change(actor, current.id, input)
+            .await?;
         // Nothing asked: no field of the catalogue, no issue type, no own field.
         if named(input).is_empty() && input.issue_type.is_none() && input.fields.is_empty() {
             return Err(ErrorCode::InvalidRequest.into());

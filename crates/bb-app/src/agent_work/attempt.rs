@@ -117,6 +117,55 @@ fn may_work(state: AgentWorkState) -> bool {
     )
 }
 
+/// The attempt a report goes to: the one that runs, or a new one when the hand-over has attempts
+/// left.
+fn attempt_to_report<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    mine: &Mine,
+    attempts: &[Attempt],
+) -> Result<(Attempt, bool), AppError> {
+    if let Some(found) = running(attempts) {
+        return Ok((found.clone(), false));
+    }
+    let held = i64::try_from(attempts.len()).unwrap_or(i64::MAX);
+    if held >= mine.hand_over.budget_attempts {
+        return Err(ErrorCode::AgentWorkBudget.into());
+    }
+    Ok((
+        Attempt {
+            id: AttemptId::generate(&mut ctx.ids()),
+            work: mine.work.id,
+            number: held + 1,
+            plan: None,
+            plan_approved: false,
+            reported_minutes: 0,
+            reported_cost: 0,
+            started_at: ctx.now(),
+            ended_at: None,
+        },
+        true,
+    ))
+}
+
+/// Refuses a report that would take the time or the cost the agent reports past the budget of the
+/// hand-over.
+fn ensure_within_budget(
+    hand_over: &HandOver,
+    attempts: &[Attempt],
+    current: AttemptId,
+    input: &ReportAttempt,
+) -> Result<(), AppError> {
+    let others = || attempts.iter().filter(move |each| each.id != current);
+    let minutes = others().map(|each| each.reported_minutes).sum::<i64>() + input.minutes;
+    let cost = others().map(|each| each.reported_cost).sum::<i64>() + input.cost;
+    if hand_over.budget_minutes.is_some_and(|most| minutes > most)
+        || hand_over.budget_cost.is_some_and(|most| cost > most)
+    {
+        return Err(ErrorCode::AgentWorkBudget.into());
+    }
+    Ok(())
+}
+
 /// Reports an attempt: the first report of a go starts the attempt, later ones add the plan and
 /// the time and cost the agent reports. With *Plan needs approval* the plan comes first and the
 /// work waits as *Waiting for you* until a person approves it.
@@ -147,52 +196,8 @@ pub async fn report_attempt<S: AuthStore>(
         .attempts_of(mine.work.id)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let now = ctx.now();
-    let (mut attempt, is_new) = match running(&attempts) {
-        Some(found) => (found.clone(), false),
-        None => {
-            if i64::try_from(attempts.len()).unwrap_or(i64::MAX) >= mine.hand_over.budget_attempts {
-                return Err(ErrorCode::AgentWorkBudget.into());
-            }
-            (
-                Attempt {
-                    id: AttemptId::generate(&mut ctx.ids()),
-                    work: mine.work.id,
-                    number: i64::try_from(attempts.len()).unwrap_or(i64::MAX) + 1,
-                    plan: None,
-                    plan_approved: false,
-                    reported_minutes: 0,
-                    reported_cost: 0,
-                    started_at: now,
-                    ended_at: None,
-                },
-                true,
-            )
-        }
-    };
-    let spent_minutes: i64 = attempts
-        .iter()
-        .filter(|each| each.id != attempt.id)
-        .map(|each| each.reported_minutes)
-        .sum::<i64>()
-        + input.minutes;
-    let spent_cost: i64 = attempts
-        .iter()
-        .filter(|each| each.id != attempt.id)
-        .map(|each| each.reported_cost)
-        .sum::<i64>()
-        + input.cost;
-    if mine
-        .hand_over
-        .budget_minutes
-        .is_some_and(|most| spent_minutes > most)
-        || mine
-            .hand_over
-            .budget_cost
-            .is_some_and(|most| spent_cost > most)
-    {
-        return Err(ErrorCode::AgentWorkBudget.into());
-    }
+    let (mut attempt, is_new) = attempt_to_report(ctx, &mine, &attempts)?;
+    ensure_within_budget(&mine.hand_over, &attempts, attempt.id, &input)?;
     if plan.is_some() {
         attempt.plan = plan;
     }

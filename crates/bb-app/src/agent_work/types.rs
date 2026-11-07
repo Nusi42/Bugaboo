@@ -272,6 +272,9 @@ pub struct CreateStandingRule {
     pub agent: AgentId,
     /// The saved search.
     pub search: SavedSearchId,
+    /// The project the rule works in: the search runs inside it, and the person needs *Create
+    /// agents that work for you* there.
+    pub project: ProjectId,
     /// The fields the rule may change; empty means it only proposes.
     pub fields: Vec<RuleField>,
     /// The project in which it may create issues.
@@ -375,4 +378,39 @@ pub struct EndAttempt {
     pub issue: String,
     /// The reason, when the agent gives up; empty for a result that is ready.
     pub gave_up: Option<String>,
+}
+
+/// A change an agent proposes under a standing rule. Nothing changes until a person applies it.
+pub struct ProposeChange {
+    /// The secret of the key of the agent.
+    pub session_token: String,
+    /// The rule.
+    pub rule: StandingRuleId,
+    /// The issue, by its ID as people write it.
+    pub issue: String,
+    /// The field.
+    pub field: RuleField,
+    /// The value proposed.
+    pub after: serde_json::Value,
+}
+
+/// The standing rules of one agent, a page at a time.
+pub struct StandingRulesQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The agent.
+    pub agent: AgentId,
+    /// Where the page after the last one starts.
+    pub cursor: Option<String>,
+    /// How many rules a page holds at most.
+    pub limit: u32,
+}
+
+/// A page of standing rules.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StandingRulePage {
+    /// The rules.
+    pub items: Vec<StandingRuleView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
 }

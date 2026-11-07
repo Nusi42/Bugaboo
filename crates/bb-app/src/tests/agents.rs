@@ -132,6 +132,13 @@ pub(super) fn give_work_on(
         .find(|(id, _)| *id == agent)
     {
         held.issues.insert(issue);
+        held.allowances
+            .entry(issue)
+            .or_default()
+            .add(bb_core::agent_work::Allowance {
+                fields: vec!["title".to_owned()],
+                ..bb_core::agent_work::Allowance::default()
+            });
     }
 }
 

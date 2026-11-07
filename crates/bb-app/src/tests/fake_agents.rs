@@ -23,6 +23,15 @@ impl AgentWorkStore for FakeStore {
                 .filter(|w| w.agent == agent && records.is_open(w))
             {
                 work.issues.insert(held.issue);
+                if let Some(hand_over) = records.hand_overs.iter().find(|h| h.id == held.hand_over)
+                {
+                    work.allowances.entry(held.issue).or_default().add(
+                        bb_core::agent_work::Allowance::of_hand_over(
+                            &hand_over.powers,
+                            &hand_over.fields,
+                        ),
+                    );
+                }
                 work.projects.extend(
                     state
                         .issues
@@ -37,13 +46,13 @@ impl AgentWorkStore for FakeStore {
                 .filter(|r| r.agent == agent && r.state == bb_core::agent_records::GrantState::Open)
             {
                 work.projects.insert(rule.project);
-                work.issues.extend(
-                    records
-                        .matches
-                        .iter()
-                        .filter(|m| m.rule == rule.id)
-                        .map(|m| m.issue),
-                );
+                for found in records.matches.iter().filter(|m| m.rule == rule.id) {
+                    work.issues.insert(found.issue);
+                    work.allowances
+                        .entry(found.issue)
+                        .or_default()
+                        .add(bb_core::agent_work::Allowance::of_rule(&rule.fields));
+                }
             }
             work
         }))

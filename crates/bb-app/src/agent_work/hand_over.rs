@@ -7,7 +7,7 @@ use bb_core::agent_records::{GrantState, HandOver as HandOverRecord, IssueWork};
 use bb_core::agent_work::{
     AgentWorkState, BriefPart, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end, missing_in_brief,
 };
-use bb_core::event::{EntityKind, RecordKind};
+use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::id::{AgentWorkId, EntityId, HandOverId, IssueId};
 use bb_core::issue::Issue;
 use bb_policy::{Authorized, Permission, Place};
@@ -19,7 +19,7 @@ use super::types::{HandOver, HandOverView, HandedIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 use crate::input::clean_long_text;
-use crate::jobs::JobKind;
+use crate::jobs::{JobKind, QueuedJob};
 
 /// The names of the fields a brief takes from the issue, as people name them.
 const STEPS_FIELD: &str = "steps to reproduce";
@@ -64,6 +64,93 @@ impl<S: AuthStore> Ctx<'_, S> {
             &text_of(DONE_WHEN_FIELD),
         ))
     }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The work a hand-over gives, one piece for each distinct issue, and what each brief lacks.
+    /// The person needs to change each issue and to create agents in its project, where agents
+    /// are not switched off; one issue that fails stops the whole hand-over.
+    async fn works_to_hand_over(
+        &self,
+        actor: &Actor,
+        agent: &bb_core::agent::Agent,
+        hand_over: HandOverId,
+        addresses: &[String],
+        now: jiff::Timestamp,
+    ) -> Result<(Vec<IssueWork>, Vec<HandedIssue>), AppError> {
+        let person = actor.person.id;
+        let may_create = self
+            .projects_where(person, Permission::CreateAgents)
+            .await?;
+        let off = self.projects_with_agents_off(person).await?;
+        let mut works: Vec<IssueWork> = Vec::new();
+        let mut handed: Vec<HandedIssue> = Vec::new();
+        let mut seen: BTreeSet<IssueId> = BTreeSet::new();
+        for address in addresses {
+            let (issue, held) = self.visible_issue(actor, address).await?;
+            if !seen.insert(issue.id) {
+                continue;
+            }
+            if !held.may_change_issue(issue.reported_by)
+                || !may_create.contains(&issue.project)
+                || off.contains(&issue.project)
+            {
+                return Err(ErrorCode::Forbidden.into());
+            }
+            let work = IssueWork {
+                id: AgentWorkId::generate(&mut self.ids()),
+                issue: issue.id,
+                hand_over,
+                agent: agent.id,
+                person,
+                state: AgentWorkState::WaitingForTheAgent,
+                gave_up: None,
+                closed: false,
+                accepted_by_itself: false,
+                made_at: now,
+                version: 1,
+            };
+            handed.push(HandedIssue {
+                work: work.id,
+                issue: issue.id,
+                missing: self.brief_missing(&issue).await?,
+            });
+            works.push(work);
+        }
+        Ok((works, handed))
+    }
+}
+
+/// The event of a hand-over and the job of its end.
+fn hand_over_event<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    hand_over: &HandOverRecord,
+    works: &[IssueWork],
+) -> Result<(DomainEvent, QueuedJob), AppError> {
+    let event = ctx.event(
+        crate::auth::by(hand_over.person),
+        entity(RecordKind::HandOver, hand_over.id),
+        vec![
+            set_to(member::AGENT, json!(hand_over.agent.to_string())),
+            set_to(
+                member::ISSUES,
+                json!(
+                    works
+                        .iter()
+                        .map(|w| w.issue.to_string())
+                        .collect::<Vec<_>>()
+                ),
+            ),
+            set_to(member::ENDS_AT, json!(hand_over.ends_at.to_string())),
+            set_to(bb_core::version::FIELD, json!(1)),
+        ],
+    )?;
+    let job = ctx.queued(
+        JobKind::HandOverRunsOut,
+        json!({ payload::HAND_OVER: hand_over.id.to_string() }),
+        hand_over.ends_at,
+    )?;
+    Ok((event, job))
 }
 
 /// Hands one or several issues over to one of the person's agents. The person needs *Change
@@ -113,43 +200,10 @@ pub async fn hand_over<S: AuthStore>(
     };
     let ends_at =
         hand_over_end(now, Some(days)).map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
-    let may_create = ctx.projects_where(person, Permission::CreateAgents).await?;
-    let off = ctx.projects_with_agents_off(person).await?;
     let id = HandOverId::generate(&mut ctx.ids());
-    let mut works: Vec<IssueWork> = Vec::new();
-    let mut handed: Vec<HandedIssue> = Vec::new();
-    let mut seen: BTreeSet<IssueId> = BTreeSet::new();
-    for address in &input.issues {
-        let (issue, held) = ctx.visible_issue(&actor, address).await?;
-        if !seen.insert(issue.id) {
-            continue;
-        }
-        if !held.may_change_issue(issue.reported_by)
-            || !may_create.contains(&issue.project)
-            || off.contains(&issue.project)
-        {
-            return Err(ErrorCode::Forbidden.into());
-        }
-        let work = IssueWork {
-            id: AgentWorkId::generate(&mut ctx.ids()),
-            issue: issue.id,
-            hand_over: id,
-            agent: agent.id,
-            person,
-            state: AgentWorkState::WaitingForTheAgent,
-            gave_up: None,
-            closed: false,
-            accepted_by_itself: false,
-            made_at: now,
-            version: 1,
-        };
-        handed.push(HandedIssue {
-            work: work.id,
-            issue: issue.id,
-            missing: ctx.brief_missing(&issue).await?,
-        });
-        works.push(work);
-    }
+    let (works, handed) = ctx
+        .works_to_hand_over(&actor, &agent, id, &input.issues, now)
+        .await?;
     let hand_over = HandOverRecord {
         id,
         agent: agent.id,
@@ -167,29 +221,7 @@ pub async fn hand_over<S: AuthStore>(
         made_at: now,
         version: 1,
     };
-    let event = ctx.event(
-        crate::auth::by(person),
-        entity(RecordKind::HandOver, id),
-        vec![
-            set_to(member::AGENT, json!(agent.id.to_string())),
-            set_to(
-                member::ISSUES,
-                json!(
-                    works
-                        .iter()
-                        .map(|w| w.issue.to_string())
-                        .collect::<Vec<_>>()
-                ),
-            ),
-            set_to(member::ENDS_AT, json!(ends_at.to_string())),
-            set_to(bb_core::version::FIELD, json!(1)),
-        ],
-    )?;
-    let job = ctx.queued(
-        JobKind::HandOverRunsOut,
-        json!({ payload::HAND_OVER: id.to_string() }),
-        ends_at,
-    )?;
+    let (event, job) = hand_over_event(ctx, &hand_over, &works)?;
     let stored = hand_over.clone();
     ctx.store()
         .record_change(&event, move |transaction| {

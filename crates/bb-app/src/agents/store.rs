@@ -3,10 +3,11 @@
 //! Like the other ports, reads take `&self` and **writes** are associated functions that run inside
 //! `record_change`, so a change and its domain event are committed together (ARCH-EVENTS).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 
 use bb_core::agent::{Agent, AgentState};
+use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
 
 use crate::auth::AccessKeyRecord;
@@ -20,8 +21,11 @@ use crate::store_macros::{queries, reads, writes};
 pub struct AgentWork {
     /// The projects the work is in.
     pub projects: BTreeSet<ProjectId>,
-    /// The issues handed over.
+    /// The issues handed over, or found by a standing rule.
     pub issues: BTreeSet<IssueId>,
+    /// What the agent may change on each of them: the ticks of the hand-overs and the fields of
+    /// the rules. Reading, commenting and reporting need nothing.
+    pub allowances: BTreeMap<IssueId, Allowance>,
 }
 
 /// The work of agents, read as the policy needs it. The store of hand-overs and standing rules
