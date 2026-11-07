@@ -59,6 +59,7 @@ pub(crate) enum HistoryEntryRow {
     Position,
     At,
     By,
+    Agent,
     Kind,
     Record,
     RecordKind,

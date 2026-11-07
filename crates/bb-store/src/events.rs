@@ -475,15 +475,7 @@ pub(crate) async fn append_events(
             Outbox::CreatedAt,
         ]);
         for event in chunk {
-            // An agent is stored with the person responsible for it as the actor, so what is
-            // kept and erased about a person finds the agent's changes too.
-            let (actor_kind, actor_id) = match event.actor {
-                Actor::Person(person) => (ACTOR_PERSON.to_owned(), Some(person.stored())),
-                Actor::Agent { agent, person } => {
-                    (format!("{ACTOR_AGENT}{agent}"), Some(person.stored()))
-                }
-                Actor::System => (ACTOR_SYSTEM.to_owned(), None),
-            };
+            let (actor_kind, actor_id) = actor_columns(event.actor);
             insert
                 .values([
                     Expr::val(event.id.stored()),
@@ -526,24 +518,41 @@ pub(crate) fn event_columns() -> [Event; 9] {
     ]
 }
 
-pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
+/// The two columns that hold the actor of an event: the kind and the ID. The one function that
+/// writes them, with [`actor_of`], which reads them: a person is `person` with their ID, the
+/// system `system` with no ID, and an agent `agent:` and the agent's ID, with the person
+/// responsible for it in the ID column, so what is kept and erased about a person finds the changes
+/// of their agents too (documented with the events in architecture §4, M7-F37).
+fn actor_columns(actor: Actor) -> (String, Option<Vec<u8>>) {
+    match actor {
+        Actor::Person(person) => (ACTOR_PERSON.to_owned(), Some(person.stored())),
+        Actor::Agent { agent, person } => (format!("{ACTOR_AGENT}{agent}"), Some(person.stored())),
+        Actor::System => (ACTOR_SYSTEM.to_owned(), None),
+    }
+}
+
+/// The actor of an event from the two columns that [`actor_columns`] writes.
+fn actor_of(row: &Row) -> Result<Actor, StoreError> {
     let kind: String = row.get(Event::ActorKind)?;
-    let actor = match kind.as_str() {
-        agent if agent.starts_with(ACTOR_AGENT) => Actor::Agent {
+    let person = || {
+        row.optional_id(Event::ActorId)?
+            .ok_or(StoreError::Corrupt("an actor"))
+    };
+    match kind.as_str() {
+        ACTOR_PERSON => Ok(Actor::Person(person()?)),
+        ACTOR_SYSTEM => Ok(Actor::System),
+        agent if agent.starts_with(ACTOR_AGENT) => Ok(Actor::Agent {
             agent: agent[ACTOR_AGENT.len()..]
                 .parse::<AgentId>()
                 .map_err(|_| StoreError::Corrupt("an actor"))?,
-            person: row
-                .optional_id(Event::ActorId)?
-                .ok_or(StoreError::Corrupt("an actor"))?,
-        },
-        ACTOR_PERSON => Actor::Person(
-            row.optional_id(Event::ActorId)?
-                .ok_or(StoreError::Corrupt("an actor"))?,
-        ),
-        ACTOR_SYSTEM => Actor::System,
-        _ => return Err(StoreError::Corrupt("an actor")),
-    };
+            person: person()?,
+        }),
+        _ => Err(StoreError::Corrupt("an actor")),
+    }
+}
+
+pub(crate) fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
+    let actor = actor_of(row)?;
     let changes: Vec<FieldChange> = serde_json::from_str(&row.get::<String>(Event::Changes)?)?;
     Ok(DomainEvent {
         id: row.id(Event::Id)?,

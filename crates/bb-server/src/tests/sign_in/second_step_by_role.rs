@@ -154,6 +154,7 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
                 projects: Vec::new(),
                 expires_at: None,
                 agent: None,
+                renews: None,
             },
         )
         .await;

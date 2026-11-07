@@ -559,6 +559,7 @@ async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() 
                             projects: Vec::new(),
                             expires_at: None,
                             agent: None,
+                            renews: None,
                         },
                     )
                     .await

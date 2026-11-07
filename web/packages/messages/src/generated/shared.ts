@@ -512,6 +512,18 @@ export const messages = {
     "That issue type is retired, so no new issues can be created with it. Choose another type.",
   "error.issue.type-not-offered":
     "This project does not offer that issue type. Choose another type, or ask the project lead.",
+  "setting.agents.enabled.name": "Agents may work",
+  "setting.agents.enabled.help":
+    "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
+  "setting.agents.maximum-changes-a-minute.name": "Most changes a minute for an agent",
+  "setting.agents.maximum-changes-a-minute.help":
+    "The most changes a minute that any agent can be given as its limit.",
+  "setting.agents.maximum-issues-at-once.name": "Most issues at once for an agent",
+  "setting.agents.maximum-issues-at-once.help":
+    "The most issues that any agent can be given to work on at the same time.",
+  "setting.agents.maximum-attempts-on-one-issue.name": "Most attempts on one issue for an agent",
+  "setting.agents.maximum-attempts-on-one-issue.help":
+    "The most attempts on one issue that any agent can be given as its limit.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
     "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",

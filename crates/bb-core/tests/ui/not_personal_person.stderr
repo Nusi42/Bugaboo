@@ -12,11 +12,11 @@ help: the trait `NotPersonal` is not implemented for `Person`
    = note: or implement `NotPersonal` for the type, if it can never hold personal data (DATA-MARKS)
    = help: the following other types implement trait `NotPersonal`:
              AccessKeyId
-             AgreementStatus
+             AgentId
+             AgentState
              AppliesTo
              AssignmentId
              AttachmentId
-             AuthorKind
              Basis
              Box<T>
            and $N others

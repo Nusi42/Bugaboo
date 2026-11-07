@@ -5,13 +5,15 @@
 //!   `stopped`; the three limits are whole numbers; `offered_to` is the person an agent is handed
 //!   to who has not accepted it yet.
 //! - `access_key.agent` names the agent of an agent key, and is empty for the key of a person.
+//! - `history_entry.agent` names the agent that made the change a row of the history tells of; it
+//!   is empty for every row made before and for every change of a person.
 //!
 //! Nothing is written into the tables. Both people of an agent are references to `person`.
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
-use crate::schema::{AccessKeyRow, AgentRow, PersonRow};
+use crate::schema::{AccessKeyRow, AgentRow, HistoryEntryRow, PersonRow};
 
 pub(super) fn steps() -> Vec<Step> {
     vec![
@@ -61,6 +63,12 @@ pub(super) fn steps() -> Vec<Step> {
             Table::alter()
                 .table(AccessKeyRow::Table)
                 .add_column(ColumnDef::new(AccessKeyRow::Agent).blob())
+                .to_owned(),
+        ),
+        Step::Alter(
+            Table::alter()
+                .table(HistoryEntryRow::Table)
+                .add_column(ColumnDef::new(HistoryEntryRow::Agent).blob())
                 .to_owned(),
         ),
         Step::Index(

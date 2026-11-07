@@ -201,6 +201,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/agents/{agent}/keys/{access_key}/renew": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Renews a key of an agent: a new key with the name of the old one, which is taken back in the same
+     *     change. The new key is shown once.
+     */
+    post: operations["renewAgentKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assignment-choices": {
     parameters: {
       query?: never;
@@ -5775,6 +5795,7 @@ export interface components {
     };
     /** @description One item of the history of an issue. */
     HistoryEntryItem: {
+      agent?: components["schemas"]["NamedRef"] | null;
       /**
        * Format: date-time
        * @description When it happened.
@@ -8223,6 +8244,16 @@ export interface components {
        */
       version?: number | null;
     };
+    /** @description An agent key to renew: the new key keeps the name of the old one, which is taken back. */
+    RenewAgentKeyBody: {
+      /**
+       * Format: date-time
+       * @description When the new key stops working. Left out: the default number of days from now.
+       */
+      expires_at?: string | null;
+      /** @description The password of the person, asked again. */
+      password: string;
+    };
     /** @description The answer to a heartbeat. */
     RenewAnswerBody: {
       /** @description The text that came with the heartbeat was kept as the draft of the person. */
@@ -10169,6 +10200,43 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  renewAgentKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+        /** @description The ID of the key to renew. */
+        access_key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenewAgentKeyBody"];
+      };
+    };
+    responses: {
+      /** @description The new key, with its secret. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreatedAccessKeyBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

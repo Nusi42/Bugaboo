@@ -311,6 +311,13 @@ pub(super) const EXAMPLES: &[Example] = &[
             Quirk::AlsoAnswers("auth.wrong-credentials"),
         ],
     ),
+    Example::with(
+        "renewAgentKey",
+        &[
+            Quirk::NamesAMissingThing,
+            Quirk::AlsoAnswers("auth.wrong-credentials"),
+        ],
+    ),
     Example::with("deleteAgentKey", &[Quirk::NamesAMissingThing]),
     Example::route("stopAllMyAgents"),
     Example::route("listOrganizationAgents"),

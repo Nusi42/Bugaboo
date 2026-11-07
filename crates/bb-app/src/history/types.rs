@@ -6,7 +6,7 @@
 //! reader may see it.
 
 use bb_core::history::{FileEvent, HistoryTab};
-use bb_core::id::EventId;
+use bb_core::id::{AgentId, EventId};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_core::time::Minutes;
@@ -132,6 +132,15 @@ pub enum HistoryWhat {
     },
 }
 
+/// An agent as the history names it: its ID and its name.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct AgentLabel {
+    /// The ID of the agent.
+    pub id: AgentId,
+    /// Its name.
+    pub name: String,
+}
+
 /// One row of the history.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct HistoryItem {
@@ -141,6 +150,9 @@ pub struct HistoryItem {
     pub at: Timestamp,
     /// Who did it, as the kind *Authors* says for this reader; nobody for Bugaboo itself.
     pub by: Option<PersonRef>,
+    /// The agent that did it, when an agent did: `by` is then the person responsible for it, and
+    /// the row reads *"Fixer, agent of Ada Brandt"*.
+    pub agent: Option<AgentLabel>,
     /// What happened.
     pub what: HistoryWhat,
 }

@@ -9,7 +9,8 @@ use bb_core::access::AppliesTo;
 use bb_core::access_key::KeyChoice;
 use bb_core::agent::AgentState;
 use bb_core::event::Actor;
-use bb_core::id::{AgentId, ProjectId, UserId};
+use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
+use bb_core::settings::SettingValue;
 use bb_policy::StartingRole;
 
 use super::scenarios::{a_project, token};
@@ -21,11 +22,18 @@ use crate::agents::{
     create_agent, my_agents, organization_agents,
 };
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
+use crate::history::{HistoryQuery, history};
 use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
 use crate::projects::{ChangeProject, ProjectsQuery, change_project, projects};
 use crate::roles::{AssignRole, Given, RemoveAssignment, Subject, assign_role, remove_assignment};
+use crate::settings::{ChangeSetting, SettingsScope, change_setting};
+use bb_core::history::HistoryTab;
 
-async fn an_agent(world: &World, session: &str, name: &str) -> Result<AgentId, AppError> {
+pub(super) async fn an_agent(
+    world: &World,
+    session: &str,
+    name: &str,
+) -> Result<AgentId, AppError> {
     Ok(create_agent(
         &world.ctx(),
         CreateAgent {
@@ -38,35 +46,51 @@ async fn an_agent(world: &World, session: &str, name: &str) -> Result<AgentId, A
     .id)
 }
 
+/// The request that makes a key of an agent, or renews one of its keys.
+fn key_request(session: &str, agent: AgentId, renews: Option<AccessKeyId>) -> CreateAccessKey {
+    CreateAccessKey {
+        session_token: session.to_owned(),
+        password: PASSWORD.to_owned(),
+        name: "Fixer's key".to_owned(),
+        choice: KeyChoice::SeeAndChange,
+        permissions: Vec::new(),
+        projects: Vec::new(),
+        expires_at: None,
+        agent: Some(agent),
+        renews,
+    }
+}
+
 /// The key of an agent: its secret, shown once.
-async fn key_of(world: &World, session: &str, agent: AgentId) -> Result<String, AppError> {
-    Ok(create_access_key(
-        &world.ctx(),
-        CreateAccessKey {
-            session_token: session.to_owned(),
-            password: PASSWORD.to_owned(),
-            name: "Fixer's key".to_owned(),
-            choice: KeyChoice::SeeAndChange,
-            permissions: Vec::new(),
-            projects: Vec::new(),
-            expires_at: None,
-            agent: Some(agent),
-        },
+pub(super) async fn key_of(
+    world: &World,
+    session: &str,
+    agent: AgentId,
+) -> Result<String, AppError> {
+    Ok(
+        create_access_key(&world.ctx(), key_request(session, agent, None))
+            .await?
+            .into_value()
+            .secret,
     )
-    .await?
-    .into_value()
-    .secret)
 }
 
 /// Gives the agent work in a project, as a hand-over will.
-fn give_work(world: &World, agent: AgentId, project: ProjectId) {
-    world.store.lock().state.agent_work.push((
-        agent,
-        AgentWork {
-            projects: [project].into(),
-            ..AgentWork::default()
-        },
-    ));
+pub(super) fn give_work(world: &World, agent: AgentId, project: ProjectId) {
+    let mut shared = world.store.lock();
+    let work = &mut shared.state.agent_work;
+    match work.iter_mut().find(|(id, _)| *id == agent) {
+        Some((_, held)) => {
+            held.projects.insert(project);
+        }
+        None => work.push((
+            agent,
+            AgentWork {
+                projects: [project].into(),
+                ..AgentWork::default()
+            },
+        )),
+    }
 }
 
 fn list(session: &str) -> ProjectsQuery {
@@ -79,6 +103,24 @@ fn list(session: &str) -> ProjectsQuery {
         cursor: None,
         limit: 100,
     }
+}
+
+/// A project, a team member of it, and an agent of theirs with its key and work in the project.
+async fn a_team_agent(
+    world: &World,
+) -> Result<(ProjectId, crate::auth::Started, AgentId, String), AppError> {
+    let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
+    let team = member(
+        world,
+        "team@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?;
+    let fixer = an_agent(world, &team.session_token, "Fixer").await?;
+    let key = key_of(world, &team.session_token, fixer).await?;
+    give_work(world, fixer, project);
+    Ok((project, team, fixer, key))
 }
 
 fn refused(error: &AppError, code: ErrorCode) -> bool {
@@ -255,17 +297,7 @@ async fn ai_30_an_agent_stops_when_its_person_loses_access() -> Outcome {
 #[tokio::test]
 async fn ai_30_an_administrator_stops_any_agent() -> Outcome {
     let world = World::new().await?;
-    let project = a_project(&world, "WEB").await?;
-    let team = member(
-        &world,
-        "team@example.test",
-        StartingRole::TeamMember,
-        project,
-    )
-    .await?;
-    let fixer = an_agent(&world, &team.session_token, "Fixer").await?;
-    let key = key_of(&world, &team.session_token, fixer).await?;
-    give_work(&world, fixer, project);
+    let (project, team, fixer, key) = a_team_agent(&world).await?;
     let other = member(
         &world,
         "other@example.test",
@@ -320,6 +352,7 @@ async fn ai_30_an_agent_key_always_runs_out_and_is_shown_once() -> Outcome {
             projects: Vec::new(),
             expires_at: Some("2999-01-01T00:00:00Z".to_owned()),
             agent: Some(fixer),
+            renews: None,
         },
     )
     .await;
@@ -439,6 +472,29 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
         last.actor
     );
     assert!(last.actor.person().is_some());
+    // The history says who did it: the agent by its name, and the person responsible for it.
+    let page = history(
+        &world.ctx(),
+        HistoryQuery {
+            session_token: admin,
+            issue: issue_id.to_string(),
+            tab: HistoryTab::Changes,
+            cursor: None,
+            limit: 20,
+        },
+    )
+    .await?
+    .into_value();
+    let by_the_agent = page
+        .items
+        .iter()
+        .find(|item| item.agent.is_some())
+        .expect("a row of the history names the agent");
+    assert_eq!(
+        by_the_agent.agent.as_ref().map(|a| a.name.as_str()),
+        Some("Fixer")
+    );
+    assert!(by_the_agent.by.is_some());
     Ok(())
 }
 
@@ -571,4 +627,153 @@ pub(crate) async fn accept_agent_scenario(world: &World) -> Added {
         ),
     )
     .await
+}
+
+// ---- Switches, maximums, the most agents and a person who is gone ----
+
+async fn set(world: &World, scope: SettingsScope, key: &str, value: SettingValue) -> Outcome {
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: token(world),
+            scope,
+            key: key.to_owned(),
+            value,
+        },
+    )
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_30_agents_off_for_a_project_refuses_its_agents_there() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let web = a_project(&world, "WEB").await?;
+    let api = a_project(&world, "API").await?;
+    let fixer = an_agent(&world, &admin, "Fixer").await?;
+    let key = key_of(&world, &admin, fixer).await?;
+    give_work(&world, fixer, web);
+    give_work(&world, fixer, api);
+    let seen = projects(&world.ctx(), list(&key)).await?.into_value();
+    assert_eq!(seen.items.len(), 2);
+    // Off for one project: the agent works nowhere in it, and still in the other.
+    set(
+        &world,
+        SettingsScope::Project(web),
+        "agents.enabled",
+        SettingValue::Bool(false),
+    )
+    .await?;
+    let seen = projects(&world.ctx(), list(&key)).await?.into_value();
+    let names: Vec<&str> = seen.items.iter().map(|i| i.short_name.as_str()).collect();
+    assert_eq!(names, ["API"]);
+    // Off for the organization: every agent is refused at its next request.
+    set(
+        &world,
+        SettingsScope::Organization,
+        "agents.enabled",
+        SettingValue::Bool(false),
+    )
+    .await?;
+    let next = projects(&world.ctx(), list(&key)).await;
+    assert!(refused(&next.unwrap_err(), ErrorCode::NotSignedIn));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_30_a_new_agent_starts_within_the_maximums_of_the_organization() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    a_project(&world, "WEB").await?;
+    set(
+        &world,
+        SettingsScope::Organization,
+        "agents.maximum-issues-at-once",
+        SettingValue::Integer(2),
+    )
+    .await?;
+    let fixer = an_agent(&world, &admin, "Fixer").await?;
+    let view = agent(
+        &world.ctx(),
+        AgentQuery {
+            session_token: admin,
+            id: fixer,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(view.limits.issues_at_once, 2);
+    assert_eq!(view.limits.changes_a_minute, 60);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_30_a_person_has_at_most_fifty_agents() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    a_project(&world, "WEB").await?;
+    for number in 0..bb_core::agent::MOST_AGENTS {
+        an_agent(&world, &admin, &format!("Agent {number}")).await?;
+    }
+    let one_more = an_agent(&world, &admin, "One more").await;
+    assert!(refused(&one_more.unwrap_err(), ErrorCode::InvalidRequest));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_30_an_agent_of_a_person_who_is_gone_is_refused_at_once() -> Outcome {
+    let world = World::new().await?;
+    let (_, team, _, key) = a_team_agent(&world).await?;
+    assert!(projects(&world.ctx(), list(&key)).await.is_ok());
+    // The person is removed from the organization.
+    world
+        .store
+        .lock()
+        .state
+        .people
+        .retain(|(person, _)| person.id != team.person.id);
+    let next = projects(&world.ctx(), list(&key)).await;
+    assert!(refused(&next.unwrap_err(), ErrorCode::NotSignedIn));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_30_renewing_an_agent_key_replaces_it_in_one_change() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    a_project(&world, "WEB").await?;
+    let fixer = an_agent(&world, &admin, "Fixer").await?;
+    let old = key_of(&world, &admin, fixer).await?;
+    let before = agent(
+        &world.ctx(),
+        AgentQuery {
+            session_token: admin.clone(),
+            id: fixer,
+        },
+    )
+    .await?
+    .into_value();
+    let old_id = before.keys[0].id;
+    let events = world.store.event_count();
+    let renewed = create_access_key(&world.ctx(), key_request(&admin, fixer, Some(old_id)))
+        .await?
+        .into_value();
+    assert_eq!(world.store.event_count(), events + 1, "one change");
+    assert_eq!(renewed.key.name, "Fixer's key");
+    // The old key is gone, the new one works, and the agent has one key.
+    assert!(projects(&world.ctx(), list(&old)).await.is_err());
+    assert!(projects(&world.ctx(), list(&renewed.secret)).await.is_ok());
+    let after = agent(
+        &world.ctx(),
+        AgentQuery {
+            session_token: admin,
+            id: fixer,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(after.keys.len(), 1);
+    Ok(())
 }

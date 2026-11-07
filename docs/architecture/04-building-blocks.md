@@ -157,7 +157,7 @@ pub async fn change_status(
 
 1. Ask `bb-policy` whether the actor may do it.
 2. Load, change and validate inside one transaction.
-3. Append domain events (same transaction). A command use case writes only through the `ChangeStore` port (`record_change`), which `bb-store` implements; a use case whose input type ends in `Query` only reads. Enforced by: ARCH-EVENTS.
+3. Append domain events (same transaction). An event names its actor: a person, Bugaboo itself, or an agent with the person responsible for it; in the table `event` an agent is the actor kind `agent:` and the agent's ID, with the person in `actor_id` (`actor_columns` and `actor_of` in `bb-store/src/events.rs` are the only code that writes and reads that form). A command use case writes only through the `ChangeStore` port (`record_change`), which `bb-store` implements; a use case whose input type ends in `Query` only reads. Enforced by: ARCH-EVENTS.
 4. Return the result through `Authorized<T>`.
 
 ### bb-store

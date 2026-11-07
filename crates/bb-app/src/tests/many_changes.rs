@@ -379,19 +379,20 @@ async fn iss_09_a_label_put_on_after_the_preview_makes_the_change_skip_and_name_
     Ok(())
 }
 
-#[tokio::test]
-async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
-    let world = World::new().await?;
-    let admin = token(&world);
-    let project = a_project(&world, "ACME").await?;
-    let kind = a_type(&world).await?;
+/// One more than the most that a change waits for, in one project.
+async fn more_than_a_thousand_issues(
+    world: &World,
+    admin: &str,
+    project: bb_core::id::ProjectId,
+) -> Result<Vec<IssueId>, Box<dyn std::error::Error + Send + Sync>> {
+    let kind = a_type(world).await?;
     let mut issues = Vec::new();
     for number in 0..=MANY_CHANGES_JOB_ABOVE {
         issues.push(
             create_issue(
                 &world.ctx(),
                 CreateIssue {
-                    session_token: admin.clone(),
+                    session_token: admin.to_owned(),
                     project: project.to_string(),
                     issue_type: kind,
                     title: format!("Issue {number}"),
@@ -408,6 +409,15 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
             .id,
         );
     }
+    Ok(issues)
+}
+
+#[tokio::test]
+async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let issues = more_than_a_thousand_issues(&world, &admin, project).await?;
     assert_eq!(issues.len(), MANY_CHANGES_JOB_ABOVE + 1);
     let asked = preview(&world, &admin, &issues, &done()).await?;
     assert!(asked.runs_in_background);
@@ -715,5 +725,27 @@ async fn iss_09_a_stopped_run_changes_nothing_more() -> Outcome {
         (after.status, after.done, after.changed),
         (ManyChangeStatus::Stopped, 0, 0)
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_09_a_key_of_an_agent_never_starts_a_change_to_more_than_a_thousand() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let issues = more_than_a_thousand_issues(&world, &admin, project).await?;
+    let fixer = super::agents::an_agent(&world, &admin, "Fixer").await?;
+    let key = super::agents::key_of(&world, &admin, fixer).await?;
+    super::agents::give_work(&world, fixer, project);
+    let asked = preview(&world, &admin, &issues, &done()).await?;
+    let events = world.store.event_count();
+    let started = apply(&world, &key, targets(&asked), &done()).await;
+    assert!(matches!(
+        started,
+        Err(crate::auth::AppError::Refused(
+            bb_core::ErrorCode::AccessKeyNotAllowed
+        ))
+    ));
+    assert_eq!(world.store.event_count(), events, "nothing was started");
     Ok(())
 }

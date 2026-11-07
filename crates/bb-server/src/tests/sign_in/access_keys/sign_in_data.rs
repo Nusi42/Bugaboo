@@ -76,21 +76,7 @@ async fn the_sign_in_data_turns_the_key_away(rig: &Rig, key: &str) -> Run<()> {
         )
         .await;
     assert_eq!(refused(who), not_allowed);
-    let create_another = api
-        .create_access_key(
-            info(),
-            CreateAccessKey {
-                session_token: token(),
-                password: PASSWORD.to_owned(),
-                name: "Another".to_owned(),
-                choice: KeyChoice::Everything,
-                permissions: vec![],
-                projects: vec![],
-                expires_at: None,
-                agent: None,
-            },
-        )
-        .await;
+    let create_another = api.create_access_key(info(), another_key(token())).await;
     assert_eq!(refused(create_another), not_allowed);
     let own = api
         .access_keys(
@@ -134,4 +120,19 @@ async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> TestResult {
         Ok(())
     })
     .await
+}
+
+/// A key that the key under test tries to make.
+fn another_key(session_token: String) -> CreateAccessKey {
+    CreateAccessKey {
+        session_token,
+        password: PASSWORD.to_owned(),
+        name: "Another".to_owned(),
+        choice: KeyChoice::Everything,
+        permissions: vec![],
+        projects: vec![],
+        expires_at: None,
+        agent: None,
+        renews: None,
+    }
 }

@@ -425,6 +425,11 @@ pub(super) fn agent_request(operation: &str) -> Option<Request> {
             format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/keys"),
             Some(json!({"password": wrong, "name": "Made by the matrix"})),
         ),
+        "renewAgentKey" => (
+            "POST",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/keys/{NOBODYS_RANDOM_ID}/renew"),
+            Some(json!({"password": wrong})),
+        ),
         "deleteAgentKey" => (
             "DELETE",
             format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/keys/{NOBODYS_RANDOM_ID}"),

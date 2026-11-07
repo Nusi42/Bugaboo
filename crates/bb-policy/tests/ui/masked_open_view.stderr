@@ -12,11 +12,11 @@ help: the trait `bb_core::plain::Plain` is not implemented for `Inner`
    = note: an `open` member of a view is shown to everybody who sees the view (SEC-04, M2-F21)
    = help: the following other types implement trait `bb_core::plain::Plain`:
              AccessKeyId
-             AgreementStatus
+             AgentId
+             AgentState
              AppliesTo
              AssignmentId
              AttachmentId
-             AuthorKind
              Basis
              Box<T>
            and $N others

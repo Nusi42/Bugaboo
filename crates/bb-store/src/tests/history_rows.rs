@@ -28,6 +28,7 @@ async fn iss_06_the_rows_of_the_history_and_the_place_of_the_reader_are_stored_t
             position: 1,
             at: at(1),
             by: None,
+            agent: None,
             kind: HistoryKind::Change,
             record: EntityId::from(issue),
             record_kind: TechnicalName::new("issue")?,

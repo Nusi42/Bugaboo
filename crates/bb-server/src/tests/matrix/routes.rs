@@ -24,10 +24,8 @@ use axum::http::StatusCode;
 use bb_api::openapi::{Operation, operations};
 use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
-use bb_app::auth::CreateAccessKey;
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
-use bb_core::access_key::KeyChoice;
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
@@ -58,7 +56,6 @@ pub(super) enum Expect {
     NotForKeys,
 }
 
-/// What the server must answer `actor` for `route`, from the table of `actors.rs`.
 /// A route that lets in whoever holds the permission in at least one project, wherever it is.
 fn expectation_when_held_in_some_project(actor: Actor, permission: Permission) -> Expect {
     if holds_in_some_project(actor, permission) {
@@ -68,6 +65,25 @@ fn expectation_when_held_in_some_project(actor: Actor, permission: Permission) -
     }
 }
 
+/// What a key is answered on a route of the person's own data: nothing, except the choices of the
+/// person (*My settings*), which a key reads and, if it may change, changes.
+fn keys_and_the_persons_own_data(actor: Actor, route: &Operation, example: &Example) -> Expect {
+    if example.has(Quirk::KeysActAsThePerson) {
+        return if route.method == Method::GET || actor.key_may_change() {
+            Expect::Allowed
+        } else {
+            Expect::Forbidden
+        };
+    }
+    Expect::NotForKeys
+}
+
+/// An agent reads its own record, and the example names an agent that is nobody's.
+fn reads_its_own_record(actor: Actor, route: &Operation) -> bool {
+    actor == Actor::AgentWithoutWork && route.id == "getAgent"
+}
+
+/// What the server must answer `actor` for `route`, from the table of `actors.rs`.
 pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
     if route.needs == Declared::Public {
         return Expect::Allowed;
@@ -81,16 +97,11 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     }
     // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
     // the session of a browser: who is signed in, signing out.
+    if reads_its_own_record(actor, route) {
+        return Expect::NotFound;
+    }
     if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {
-        if example.has(Quirk::KeysActAsThePerson) {
-            // The choices of the person: a key reads them and, if it may change, changes them.
-            return if route.method == Method::GET || actor.key_may_change() {
-                Expect::Allowed
-            } else {
-                Expect::Forbidden
-            };
-        }
-        return Expect::NotForKeys;
+        return keys_and_the_persons_own_data(actor, route, example);
     }
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
         return Expect::NotSignedIn;
@@ -298,6 +309,7 @@ impl<'a> Fixture<'a> {
                 .map(|permission| Actor::Exactly(Some(*permission))),
         );
         everyone.push(Actor::Exactly(None));
+        everyone.push(Actor::AgentWithoutWork);
         everyone.extend(both_actors());
         for actor in everyone {
             if !actor.signed_in() {
@@ -429,35 +441,15 @@ async fn hold(
                 .await?;
             org.forbid(member, target).await?;
         }
-        // An administrator who comes with a key: one that may only see, and one for the
-        // sibling project (a key made by its owner, with the password asked again).
-        Actor::KeySeeOnly | Actor::KeyForAnotherProject => {
+        // An administrator who comes with a key: one that may only see, one for the sibling
+        // project (a key made by its owner, with the password asked again), and the key of an
+        // agent of theirs that has no work.
+        Actor::KeySeeOnly | Actor::KeyForAnotherProject | Actor::AgentWithoutWork => {
             org.give_everywhere(member, role(StartingRole::Administrator))
                 .await?;
-            let (choice, projects) = if actor == Actor::KeySeeOnly {
-                (KeyChoice::SeeOnly, Vec::new())
-            } else {
-                (KeyChoice::Everything, vec![sibling])
-            };
-            let made = rig
-                .api()
-                .create_access_key(
-                    Rig::info(),
-                    CreateAccessKey {
-                        session_token: member.session.clone(),
-                        password: PASSWORD.to_owned(),
-                        name: actor.name(),
-                        choice,
-                        permissions: Vec::new(),
-                        projects,
-                        expires_at: None,
-                        agent: None,
-                    },
-                )
-                .await
-                .map_err(|error| error.to_string())?
-                .into_value();
-            return Ok(Some(made.secret));
+            return Ok(Some(
+                super::agent_actor::a_key(rig, actor, member, sibling).await?,
+            ));
         }
     }
     Ok(None)
@@ -559,7 +551,7 @@ fn both_actors() -> Vec<Actor> {
 }
 
 /// Runs every route as every actor; the record of what ran.
-async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
+pub(super) async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     let fixture = Fixture::start(rig).await?;
     let routes = operations();
     // Besides the actors of the list, each route is run by the person who holds exactly the

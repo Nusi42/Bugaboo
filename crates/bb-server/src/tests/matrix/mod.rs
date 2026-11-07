@@ -12,6 +12,7 @@
 //! they use.
 
 mod actors;
+mod agent_actor;
 mod delivery;
 mod examples;
 mod examples_ai;

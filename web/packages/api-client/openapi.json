@@ -794,6 +794,81 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/agents/{agent}/keys/{access_key}/renew": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Renews a key of an agent: a new key with the name of the old one, which is taken back in the same\nchange. The new key is shown once.",
+        "operationId": "renewAgentKey",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "access_key",
+            "in": "path",
+            "description": "The ID of the key to renew.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewAgentKeyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new key, with its secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAccessKeyBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account",
+        "x-secret": true
+      }
+    },
     "/api/v1/assignment-choices": {
       "get": {
         "tags": ["roles"],
@@ -18623,6 +18698,17 @@
         "description": "One item of the history of an issue.",
         "required": ["event", "at", "kind"],
         "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NamedRef",
+                "description": "The agent that did it, when an agent did; `by` is then the person responsible for it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "at": {
             "type": "string",
             "description": "When it happened.",
@@ -23727,6 +23813,22 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "RenewAgentKeyBody": {
+        "type": "object",
+        "description": "An agent key to renew: the new key keeps the name of the old one, which is taken back.",
+        "required": ["password"],
+        "properties": {
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When the new key stops working. Left out: the default number of days from now.",
+            "format": "date-time"
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again."
           }
         }
       },

@@ -13,6 +13,7 @@ fn see_only_key(world: &World) -> CreateAccessKey {
         projects: Vec::new(),
         expires_at: None,
         agent: None,
+        renews: None,
     }
 }
 

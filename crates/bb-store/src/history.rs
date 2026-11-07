@@ -10,7 +10,7 @@
 use bb_app::history::HistoryStore;
 use bb_core::event::{DomainEvent, FieldChange};
 use bb_core::history::{CONSUMER, HistoryEntry, HistoryKind};
-use bb_core::id::{EntityId, EventId, IssueId, UserId};
+use bb_core::id::{AgentId, EntityId, EventId, IssueId, UserId};
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
@@ -31,6 +31,7 @@ fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
         position: row.get(HistoryEntryRow::Position)?,
         at: row.time(HistoryEntryRow::At)?,
         by: row.optional_id::<UserId>(HistoryEntryRow::By)?,
+        agent: row.optional_id::<AgentId>(HistoryEntryRow::Agent)?,
         kind: HistoryKind::from_code(&row.get::<String>(HistoryEntryRow::Kind)?)
             .ok_or(StoreError::Corrupt("a kind of history row"))?,
         record: row.id::<EntityId>(HistoryEntryRow::Record)?,
@@ -62,6 +63,7 @@ impl HistoryStore for AuthStorage {
                     HistoryEntryRow::Position,
                     HistoryEntryRow::At,
                     HistoryEntryRow::By,
+                    HistoryEntryRow::Agent,
                     HistoryEntryRow::Kind,
                     HistoryEntryRow::Record,
                     HistoryEntryRow::RecordKind,
@@ -73,6 +75,7 @@ impl HistoryStore for AuthStorage {
                     Expr::val(entry.position),
                     Expr::val(to_micros(entry.at)),
                     Expr::val(entry.by.map(StoredId::stored)),
+                    Expr::val(entry.agent.map(StoredId::stored)),
                     Expr::val(entry.kind.code()),
                     Expr::val(entry.record.stored()),
                     Expr::val(entry.record_kind.as_str()),
@@ -106,6 +109,7 @@ impl HistoryStore for AuthStorage {
                 HistoryEntryRow::Position,
                 HistoryEntryRow::At,
                 HistoryEntryRow::By,
+                HistoryEntryRow::Agent,
                 HistoryEntryRow::Kind,
                 HistoryEntryRow::Record,
                 HistoryEntryRow::RecordKind,

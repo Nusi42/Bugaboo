@@ -54,6 +54,9 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
     }
 
     writes! {
+        /// Takes the lock of one person's agents, so that two changes at the same moment cannot
+        /// both pass the most agents; does nothing where writes cannot overlap.
+        fn lock_agents_of(person: UserId) -> ();
         /// Adds an agent.
         fn insert_agent(agent: &Agent) -> ();
         /// Writes the name, counts the version up and says whether the agent was at `version`.

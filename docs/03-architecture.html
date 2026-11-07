@@ -282,7 +282,7 @@
 <ol>
 <li>Ask <code>bb-policy</code> whether the actor may do it.</li>
 <li>Load, change and validate inside one transaction.</li>
-<li>Append domain events (same transaction). A command use case writes only through the <code>ChangeStore</code> port (<code>record_change</code>), which <code>bb-store</code> implements; a use case whose input type ends in <code>Query</code> only reads. Enforced by: ARCH-EVENTS.</li>
+<li>Append domain events (same transaction). An event names its actor: a person, Bugaboo itself, or an agent with the person responsible for it; in the table <code>event</code> an agent is the actor kind <code>agent:</code> and the agent's ID, with the person in <code>actor_id</code> (<code>actor_columns</code> and <code>actor_of</code> in <code>bb-store/src/events.rs</code> are the only code that writes and reads that form). A command use case writes only through the <code>ChangeStore</code> port (<code>record_change</code>), which <code>bb-store</code> implements; a use case whose input type ends in <code>Query</code> only reads. Enforced by: ARCH-EVENTS.</li>
 <li>Return the result through <code>Authorized&lt;T&gt;</code>.</li>
 </ol>
 <h4>bb-store</h4>

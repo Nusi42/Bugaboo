@@ -7,7 +7,7 @@
 //! work than that.
 
 use bb_core::ErrorCode;
-use bb_core::agent::{Agent, AgentLimits, AgentState, MOST_AGENTS};
+use bb_core::agent::{Agent, AgentState, MOST_AGENTS};
 use bb_core::event::RecordKind;
 use bb_core::id::{AgentId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
@@ -37,6 +37,16 @@ fn counted<S: AuthStore>(
         crate::auth::by(by),
         entity(RecordKind::Agent, agent),
         changes,
+    )
+}
+
+/// The answer for a change made on a version of an agent that is not the current one: the person
+/// is told what changed meanwhile (`edit.version-changed` with the conflict).
+fn stale_agent(person: UserId, agent: AgentId) -> AppError {
+    AppError::stale(
+        entity(RecordKind::Agent, agent),
+        Place::Organization,
+        person,
     )
 }
 
@@ -130,15 +140,7 @@ pub async fn create_agent<S: AuthStore>(
         return Err(AppError::Refused(ErrorCode::Forbidden));
     }
     let name = clean_name(&input.name)?;
-    let held = ctx
-        .store()
-        .agent_count_of(person)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    if usize::try_from(held).map_or(true, |held| held >= MOST_AGENTS) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let limits = AgentLimits::default();
+    let limits = ctx.starting_limits().await?;
     let agent = Agent {
         id: AgentId::generate(&mut ctx.ids()),
         person,
@@ -164,10 +166,24 @@ pub async fn create_agent<S: AuthStore>(
     let to_store = agent.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::insert_agent(transaction, &to_store).await })
+            Box::pin(async move {
+                // One person's agents are counted one change at a time, so two requests at the
+                // same moment cannot both pass the most.
+                S::lock_agents_of(transaction, person).await?;
+                let held = S::agent_count_of_in(transaction, person).await?;
+                if usize::try_from(held).map_or(true, |held| held >= MOST_AGENTS) {
+                    return Err(S::aborted());
+                }
+                S::insert_agent(transaction, &to_store).await
+            })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::InvalidRequest, ErrorCode::NameTaken),
+            )
+        })?;
     let actor = crate::access::Actor {
         person: record.person,
         key: None,
@@ -304,7 +320,7 @@ pub async fn rename_agent<S: AuthStore>(
     let name = clean_name(&input.name)?;
     let found = ctx.agent_to_handle(person, false, input.id).await?;
     if found.version != input.version {
-        return Err(AppError::Refused(ErrorCode::VersionChanged));
+        return Err(stale_agent(person, found.id));
     }
     let event = counted(
         ctx,
@@ -334,6 +350,7 @@ pub async fn rename_agent<S: AuthStore>(
                 &error,
                 Stops::new(ErrorCode::VersionChanged, ErrorCode::NameTaken),
             )
+            .about(&entity(RecordKind::Agent, id), Place::Organization, person)
         })?;
     agent(
         ctx,
@@ -374,7 +391,7 @@ pub async fn change_agent<S: AuthStore>(
         _ => return Err(ErrorCode::InvalidRequest.into()),
     };
     if found.version != input.version {
-        return Err(AppError::Refused(ErrorCode::VersionChanged));
+        return Err(stale_agent(person, found.id));
     }
     let event = counted(
         ctx,
@@ -399,7 +416,13 @@ pub async fn change_agent<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)).about(
+                &entity(RecordKind::Agent, id),
+                Place::Organization,
+                person,
+            )
+        })?;
     if !own {
         ctx.note(
             SecurityAction::AgentStopped,
@@ -462,7 +485,7 @@ pub async fn hand_agent<S: AuthStore>(
     let person = record.person.id;
     let found = ctx.agent_to_handle(person, false, input.id).await?;
     if found.version != input.version || found.state == AgentState::Stopped {
-        return Err(AppError::Refused(ErrorCode::VersionChanged));
+        return Err(stale_agent(person, found.id));
     }
     if ctx.person_known(input.to).await?.is_none() || input.to == person {
         return Err(AppError::Refused(ErrorCode::NotFound));
@@ -493,7 +516,13 @@ pub async fn hand_agent<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)).about(
+                &entity(RecordKind::Agent, id),
+                Place::Organization,
+                person,
+            )
+        })?;
     Ok(Done)
 }
 

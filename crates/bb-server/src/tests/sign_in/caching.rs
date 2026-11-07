@@ -239,6 +239,13 @@ async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
     )
 }
 
+async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
+    id_of(
+        &ada.send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
+            .await?,
+    )
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -276,6 +283,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let search_id = a_saved_search(&mut ada).await?;
+        let agent_id = an_agent(&mut ada).await?;
         // A work day of the person, for the routes that name a date.
         a_work_day(&mut ada).await?;
         let routes = get_routes();
@@ -302,6 +310,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{search}", &search_id)
+                .replace("{agent}", &agent_id)
                 .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, project, &project_id);

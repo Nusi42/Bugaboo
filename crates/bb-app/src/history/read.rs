@@ -28,7 +28,7 @@ use serde_json::Value;
 
 use super::names::{KnownNames, leaves_nothing};
 use super::types::{
-    ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
+    AgentLabel, ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
 use super::walk::IssueHistory;
 use crate::access::Actor;
@@ -642,10 +642,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             ),
             None => None,
         };
+        let agent = match row.agent {
+            Some(id) => self
+                .store()
+                .agent(id)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+                .map(|found| AgentLabel {
+                    id,
+                    name: found.name,
+                }),
+            None => None,
+        };
         Ok(Some(HistoryItem {
             event: row.event,
             at: row.at,
             by,
+            agent,
             what,
         }))
     }

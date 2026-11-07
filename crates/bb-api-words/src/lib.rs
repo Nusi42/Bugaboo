@@ -151,6 +151,8 @@ pub mod sec_matrix {
     pub const KEY_SEE_ONLY: &str = "key-see-only";
     /// The access key for another project.
     pub const KEY_FOR_ANOTHER_PROJECT: &str = "key-for-another-project";
+    /// The key of an agent that has no work: it reads only its own record (AI-30).
+    pub const AGENT_WITHOUT_WORK: &str = "agent-without-work";
 
     /// The actor that holds the starting role with this key.
     #[must_use]

@@ -20,7 +20,7 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
-    FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
+    AgentId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
     RelationKindId, RoleId, SavedSearchId, TagId, TimeEntryId, UserId, WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
@@ -289,6 +289,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|entry| entry.person == stale.viewer)
             .map(|entry| entry.version),
+            // An agent is its person's own: nobody else is told its version.
+            RecordKind::Agent => found(AgentId::from_bytes(bytes).ok(), |id| store.agent(id))
+                .await
+                .map_err(failed)?
+                .filter(|agent| agent.person == stale.viewer)
+                .map(|agent| agent.version),
             // Only a person who may change the day was told it is stale (`working_hours`).
             RecordKind::WorkDay => found(WorkDayId::from_bytes(bytes).ok(), |id| {
                 store.work_day_by_id(id)

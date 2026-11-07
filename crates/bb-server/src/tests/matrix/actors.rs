@@ -72,6 +72,9 @@ pub(super) enum Actor {
     KeySeeOnly,
     /// An *Administrator* who came with an access key for the sibling project (WP-09).
     KeyForAnotherProject,
+    /// An *Administrator*'s agent with its key and no work: its person may do everything, and it
+    /// may do nothing but read its own record (AI-30, ADR-0029).
+    AgentWithoutWork,
 }
 
 /// The actors of the matrix, the two with an access key (WP-09) last.
@@ -84,14 +87,24 @@ pub(super) fn actors() -> Vec<Actor> {
         Actor::NoAccessOnTarget,
         Actor::NoAccessUnderLead,
     ]);
-    all.extend(Actor::WITH_A_KEY);
+    // The agent runs apart (`sec_01_an_agent_without_work_...`): one more actor in this run would
+    // use up the room that the examples have for fields and issue types.
+    all.extend(
+        Actor::WITH_A_KEY
+            .into_iter()
+            .filter(|actor| *actor != Actor::AgentWithoutWork),
+    );
     all
 }
 
 impl Actor {
     /// The actors that come with an access key (M2-F27): the key is made by its owner and sent as
     /// `Authorization: Bearer …`.
-    pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
+    pub(super) const WITH_A_KEY: [Self; 3] = [
+        Self::KeySeeOnly,
+        Self::KeyForAnotherProject,
+        Self::AgentWithoutWork,
+    ];
 
     /// The actor that holds exactly what a route declares.
     pub(super) fn exactly(declared: Declared, example: &Example) -> Self {
@@ -130,6 +143,7 @@ impl Actor {
             Self::NoAccessUnderLead => words::NO_ACCESS_UNDER_LEAD.to_owned(),
             Self::KeySeeOnly => words::KEY_SEE_ONLY.to_owned(),
             Self::KeyForAnotherProject => words::KEY_FOR_ANOTHER_PROJECT.to_owned(),
+            Self::AgentWithoutWork => words::AGENT_WITHOUT_WORK.to_owned(),
         }
     }
 
@@ -388,7 +402,8 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
         | Actor::NoRole
         | Actor::Exactly(None)
         | Actor::LeadOnSiblingOnly
-        | Actor::KeyForAnotherProject => Standing::nothing(),
+        | Actor::KeyForAnotherProject
+        | Actor::AgentWithoutWork => Standing::nothing(),
         // The one permission, for the whole organization: at a project it counts only when it
         // counts in projects.
         Actor::Exactly(Some(permission)) => match at {
@@ -434,7 +449,7 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
 /// Which projects the actor sees, in the order of the tree.
 pub(super) fn sees(actor: Actor, project: Project) -> bool {
     match actor {
-        Actor::Nobody | Actor::NoRole | Actor::KeyForAnotherProject => {
+        Actor::Nobody | Actor::NoRole | Actor::AgentWithoutWork | Actor::KeyForAnotherProject => {
             // A key for the sibling project sees the sibling project (and below).
             actor == Actor::KeyForAnotherProject && project == Project::Sibling
         }
@@ -498,7 +513,11 @@ mod tests {
     fn the_actors_are_named_once_and_the_two_with_a_key_are_among_them() {
         let names: BTreeSet<String> = actors().into_iter().map(Actor::name).collect();
         assert_eq!(names.len(), actors().len());
-        for keyed in Actor::WITH_A_KEY {
+        // The agent runs apart from the record of the matrix (`agent_actor.rs`).
+        for keyed in Actor::WITH_A_KEY
+            .into_iter()
+            .filter(|actor| *actor != Actor::AgentWithoutWork)
+        {
             assert!(actors().contains(&keyed));
             assert!(keyed.has_a_key() && names.contains(&keyed.name()));
         }

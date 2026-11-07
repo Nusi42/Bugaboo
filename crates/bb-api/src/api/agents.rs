@@ -159,6 +159,16 @@ pub(crate) struct HandAgentBody {
     version: i64,
 }
 
+/// An agent key to renew: the new key keeps the name of the old one, which is taken back.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct RenewAgentKeyBody {
+    /// The password of the person, asked again.
+    password: String,
+    /// When the new key stops working. Left out: the default number of days from now.
+    #[serde(default)]
+    expires_at: Option<String>,
+}
+
 /// An agent key to make.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct CreateAgentKeyBody {
@@ -441,6 +451,62 @@ async fn create_agent_key(
                 projects: Vec::new(),
                 expires_at: body.expires_at,
                 agent: Some(agent),
+                renews: None,
+            },
+        )
+        .await?;
+    answer_authorized(&created.map(CreatedAccessKeyBody::from))
+}
+
+/// Renews a key of an agent: a new key with the name of the old one, which is taken back in the same
+/// change. The new key is shown once.
+#[utoipa::path(
+    post,
+    path = "/api/v1/agents/{agent}/keys/{access_key}/renew",
+    operation_id = "renewAgentKey",
+    tag = "agents",
+    params(
+        ("agent" = String, Path, description = "The ID of the agent."),
+        ("access_key" = String, Path, description = "The ID of the key to renew.")
+    ),
+    request_body = RenewAgentKeyBody,
+    responses(
+        (status = 200, description = "The new key, with its secret.", body = CreatedAccessKeyBody),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn renew_agent_key(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath((agent_id, key_id)): ApiPath<(String, String)>,
+    body: Result<ApiJson<RenewAgentKeyBody>, ApiError>,
+) -> Result<Response, ApiError> {
+    let read = body.and_then(|ApiJson(body)| {
+        Ok((
+            body,
+            path_id::<AgentId>(&agent_id)?,
+            path_id::<AccessKeyId>(&key_id)?,
+        ))
+    });
+    let (body, agent, old) = auth.after_who_asks(&info, &session_token, read).await?;
+    let created = auth
+        .api()?
+        .create_access_key(
+            info,
+            CreateAccessKey {
+                session_token,
+                password: body.password,
+                name: String::new(),
+                choice: KeyChoice::SeeAndChange,
+                permissions: Vec::new(),
+                projects: Vec::new(),
+                expires_at: body.expires_at,
+                agent: Some(agent),
+                renews: Some(old),
             },
         )
         .await?;
@@ -544,6 +610,7 @@ where
         .routes(routes!(hand_agent))
         .routes(routes!(accept_agent))
         .routes(routes!(create_agent_key))
+        .routes(routes!(renew_agent_key))
         .routes(routes!(delete_agent_key))
         .routes(routes!(stop_all_my_agents))
         .routes(routes!(list_organization_agents))

@@ -11,11 +11,11 @@ help: the trait `bb_core::plain::sealed::Sealed` is not implemented for `View`
   | ^^^^^^^^^^^
   = help: the following other types implement trait `bb_core::plain::sealed::Sealed`:
             AccessKeyId
-            AgreementStatus
+            AgentId
+            AgentState
             AppliesTo
             AssignmentId
             AttachmentId
-            AuthorKind
             Basis
             Box<T>
           and $N others

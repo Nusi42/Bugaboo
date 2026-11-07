@@ -274,6 +274,7 @@ pub(super) async fn key_in(
             projects,
             expires_at: None,
             agent: None,
+            renews: None,
         },
     )
     .await?

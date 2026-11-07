@@ -7,7 +7,7 @@
 use jiff::Timestamp;
 
 use crate::event::FieldChange;
-use crate::id::{EntityId, EventId, IssueId, UserId};
+use crate::id::{AgentId, EntityId, EventId, IssueId, UserId};
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
 
@@ -102,6 +102,9 @@ pub struct HistoryEntry {
     /// Who did it; nobody for Bugaboo itself.
     #[personal(category = "activity", basis = "legitimate_interests")]
     pub by: Option<UserId>,
+    /// The agent that did it, when an agent did: `by` is then the person responsible for it.
+    #[not_personal]
+    pub agent: Option<AgentId>,
     /// What it is.
     #[not_personal]
     pub kind: HistoryKind,

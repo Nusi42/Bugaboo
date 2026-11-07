@@ -60,6 +60,9 @@ pub(crate) enum LockClass {
     /// The work days of one person (key: four bytes of the person's ID): two changes of one
     /// person's days at the same moment are judged one after the other on what is stored.
     WorkDays = 13,
+    /// The agents of one person (key: four bytes of the person's ID): two changes at the same
+    /// moment cannot both pass the most agents of a person.
+    Agents = 14,
 }
 
 impl LockClass {
@@ -82,6 +85,7 @@ impl LockClass {
             Self::TextIndex => 10,
             Self::SavedSearches => 11,
             Self::WorkDays => 12,
+            Self::Agents => 13,
         }
     }
 }

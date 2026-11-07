@@ -531,6 +531,7 @@ async fn add_access_key(
             projects: Vec::new(),
             expires_at: None,
             agent: None,
+            renews: None,
         },
     )
     .await

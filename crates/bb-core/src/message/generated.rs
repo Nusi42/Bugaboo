@@ -4891,6 +4891,36 @@ pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-
 /// The message `set-up-second-step.why`.
 pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
 
+/// The message `setting.agents.enabled.help`.
+pub const SETTING_AGENTS_ENABLED_HELP: MessageKey = MessageKey::new("setting.agents.enabled.help");
+
+/// The message `setting.agents.enabled.name`.
+pub const SETTING_AGENTS_ENABLED_NAME: MessageKey = MessageKey::new("setting.agents.enabled.name");
+
+/// The message `setting.agents.maximum-attempts-on-one-issue.help`.
+pub const SETTING_AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE_HELP: MessageKey =
+    MessageKey::new("setting.agents.maximum-attempts-on-one-issue.help");
+
+/// The message `setting.agents.maximum-attempts-on-one-issue.name`.
+pub const SETTING_AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE_NAME: MessageKey =
+    MessageKey::new("setting.agents.maximum-attempts-on-one-issue.name");
+
+/// The message `setting.agents.maximum-changes-a-minute.help`.
+pub const SETTING_AGENTS_MAXIMUM_CHANGES_A_MINUTE_HELP: MessageKey =
+    MessageKey::new("setting.agents.maximum-changes-a-minute.help");
+
+/// The message `setting.agents.maximum-changes-a-minute.name`.
+pub const SETTING_AGENTS_MAXIMUM_CHANGES_A_MINUTE_NAME: MessageKey =
+    MessageKey::new("setting.agents.maximum-changes-a-minute.name");
+
+/// The message `setting.agents.maximum-issues-at-once.help`.
+pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_HELP: MessageKey =
+    MessageKey::new("setting.agents.maximum-issues-at-once.help");
+
+/// The message `setting.agents.maximum-issues-at-once.name`.
+pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_NAME: MessageKey =
+    MessageKey::new("setting.agents.maximum-issues-at-once.name");
+
 /// The message `setting.ai.address.help`.
 pub const SETTING_AI_ADDRESS_HELP: MessageKey = MessageKey::new("setting.ai.address.help");
 
@@ -17457,6 +17487,35 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "set-up-second-step.why",
         "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
+    ),
+    (
+        "setting.agents.enabled.help",
+        "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
+    ),
+    ("setting.agents.enabled.name", "Agents may work"),
+    (
+        "setting.agents.maximum-attempts-on-one-issue.help",
+        "The most attempts on one issue that any agent can be given as its limit.",
+    ),
+    (
+        "setting.agents.maximum-attempts-on-one-issue.name",
+        "Most attempts on one issue for an agent",
+    ),
+    (
+        "setting.agents.maximum-changes-a-minute.help",
+        "The most changes a minute that any agent can be given as its limit.",
+    ),
+    (
+        "setting.agents.maximum-changes-a-minute.name",
+        "Most changes a minute for an agent",
+    ),
+    (
+        "setting.agents.maximum-issues-at-once.help",
+        "The most issues that any agent can be given to work on at the same time.",
+    ),
+    (
+        "setting.agents.maximum-issues-at-once.name",
+        "Most issues at once for an agent",
     ),
     (
         "setting.ai.address.help",

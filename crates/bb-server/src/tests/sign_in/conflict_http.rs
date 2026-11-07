@@ -35,6 +35,8 @@ const VERSIONED: [&str; 44] = [
     "changeChoice",
     "combineChoices",
     "changeGroup",
+    "changeAgent",
+    "handAgent",
     "changeSavedSearch",
     "changeIssueType",
     "changeIssueTypeOffers",
@@ -177,6 +179,25 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 format!("/api/v1/groups/{}", text_in(&group, "id")?),
                 json!({"name": "Frontend"}),
                 &group["version"],
+            )
+        }
+        "changeAgent" => {
+            let agent = made(ada, "/api/v1/agents", json!({"name": "Fixer"})).await?;
+            Save::new(
+                "PATCH",
+                format!("/api/v1/agents/{}", text_in(&agent, "id")?),
+                json!({"name": "Finder"}),
+                &agent["version"],
+            )
+        }
+        "handAgent" => {
+            // The version is looked at first, so the person it is offered to need not be there.
+            let agent = made(ada, "/api/v1/agents", json!({"name": "Helper"})).await?;
+            Save::new(
+                "POST",
+                format!("/api/v1/agents/{}/hand-over", text_in(&agent, "id")?),
+                json!({"to": text_in(&agent, "id")?}),
+                &agent["version"],
             )
         }
         "changeSavedSearch" => {

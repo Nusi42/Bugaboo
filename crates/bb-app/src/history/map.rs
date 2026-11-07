@@ -72,6 +72,7 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         position,
         at: event.time,
         by: event.actor.person(),
+        agent: event.actor.agent(),
         kind,
         record: event.entity.id,
         record_kind: record_kind.clone(),

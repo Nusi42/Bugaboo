@@ -17,7 +17,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{NamedRef, cursor_error};
 use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer};
 use super::comments::CommentItem;
 use super::many_changes::FieldChangeBody;
@@ -88,6 +88,9 @@ pub(crate) struct HistoryEntryItem {
     /// Who did it, as the reader may see people of the kind *Authors*; left out for Bugaboo itself.
     #[serde(skip_serializing_if = "Option::is_none")]
     by: Option<PersonRef>,
+    /// The agent that did it, when an agent did; `by` is then the person responsible for it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agent: Option<NamedRef>,
     /// What it is.
     kind: HistoryEntryKind,
     /// A comment: its ID.
@@ -151,6 +154,10 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         event: item.event.to_string(),
         at: item.at.to_string(),
         by: item.by.clone(),
+        agent: item.agent.as_ref().map(|agent| NamedRef {
+            id: agent.id.to_string(),
+            name: agent.name.clone(),
+        }),
         kind,
         comment: None,
         text: None,
@@ -329,6 +336,7 @@ mod tests {
             event: String::new(),
             at: String::new(),
             by: Some(PersonRef::Someone),
+            agent: None,
             kind: HistoryEntryKind::Change,
             comment: Some(String::new()),
             text: Some(String::new()),

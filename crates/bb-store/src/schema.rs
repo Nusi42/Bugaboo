@@ -557,6 +557,7 @@ stored_tables! {
         Position => position,
         At => at,
         By => by,
+        Agent => agent,
         Kind => kind,
         Record => record,
         RecordKind => record_kind,

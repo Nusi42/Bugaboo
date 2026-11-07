@@ -84,6 +84,10 @@ impl AgentStore for FakeStore {
         Ok(self.read(|state| page(&state.agents, |a| a.offered_to == Some(person), None, 100)))
     }
 
+    async fn lock_agents_of(_tx: &mut Tx, _person: UserId) -> Result<(), FakeError> {
+        Ok(())
+    }
+
     async fn insert_agent(tx: &mut Tx, agent: &Agent) -> Result<(), FakeError> {
         let taken = tx
             .state

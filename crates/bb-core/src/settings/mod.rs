@@ -22,6 +22,12 @@ mod themes;
 pub mod working_hours;
 
 pub use ai::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, is_ai_setting};
+pub mod agents;
+pub use agents::{
+    AGENTS_ENABLED, AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE, AGENTS_MAXIMUM_CHANGES_A_MINUTE,
+    AGENTS_MAXIMUM_ISSUES_AT_ONCE,
+};
+
 pub use catalog::*;
 pub use format::{Choice, DEVICE, Format, is_host};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
@@ -628,6 +634,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
     ALL.iter()
         .chain(working_hours::ALL)
         .chain(ai::ALL)
+        .chain(agents::ALL)
         .copied()
         .chain(extra.iter().copied())
 }

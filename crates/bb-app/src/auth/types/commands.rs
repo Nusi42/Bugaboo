@@ -158,6 +158,9 @@ pub struct CreateAccessKey {
     pub expires_at: Option<String>,
     /// The agent the key is for; none for a key of the person themselves.
     pub agent: Option<AgentId>,
+    /// A key of the agent that the new key takes the place of: it keeps its name, and is taken back
+    /// in the same change. Only with `agent`.
+    pub renews: Option<AccessKeyId>,
 }
 
 /// Delete an access key of the person.

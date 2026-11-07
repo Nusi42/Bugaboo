@@ -10,6 +10,7 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{AccessKeyRow, AgentRow, Computed};
 
 fn agent_select() -> SelectStatement {
@@ -156,6 +157,15 @@ impl AgentStore for AuthStorage {
             .iter()
             .map(read_agent)
             .collect()
+    }
+
+    async fn lock_agents_of(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock(LockClass::Agents, lock_key(person.to_bytes()))
+            .await
     }
 
     async fn insert_agent(transaction: &mut Transaction, agent: &Agent) -> Result<(), StoreError> {

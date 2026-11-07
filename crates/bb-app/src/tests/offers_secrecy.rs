@@ -67,6 +67,7 @@ async fn key_for(world: &World, project: ProjectId) -> Result<String, AppError> 
             projects: vec![project],
             expires_at: None,
             agent: None,
+            renews: None,
         },
     )
     .await?

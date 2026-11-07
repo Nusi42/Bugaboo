@@ -72,6 +72,34 @@ fn to_the_minute(moment: Timestamp) -> Timestamp {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// A project the person may not know about is not one they can name, whether it exists or not.
+    async fn ensure_projects_known(
+        &self,
+        actor: &Actor,
+        projects: &[ProjectId],
+    ) -> Result<(), AppError> {
+        for project in projects {
+            let access = self.evaluation_of(actor, Place::Project(*project)).await?;
+            if !access.knows_project() {
+                return Err(AppError::Refused(ErrorCode::NotFound));
+            }
+        }
+        Ok(())
+    }
+
+    /// A person has at most `MOST_KEYS` keys.
+    async fn ensure_room_for_a_key(&self, owner: UserId) -> Result<(), AppError> {
+        let held = self
+            .store()
+            .access_key_count(owner)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if usize::try_from(held).map_or(true, |held| held >= MOST_KEYS) {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        Ok(())
+    }
+
     /// The key and its owner behind this text, if it is a key that works now.
     async fn working_key(
         &self,
@@ -291,8 +319,12 @@ pub async fn create_access_key<S: AuthStore>(
     let record = ctx.active(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let owner = record.person.id;
-    let name = clean_name(&input.name)?;
-    if let Some(agent) = input.agent {
+    let name = match (input.agent, input.renews) {
+        (Some(agent), Some(old)) => ctx.renewed_key_name(owner, agent, old).await?,
+        (None, Some(_)) => return Err(ErrorCode::InvalidRequest.into()),
+        _ => clean_name(&input.name)?,
+    };
+    if let (Some(agent), None) = (input.agent, input.renews) {
         ctx.ensure_agent_may_have_a_key(owner, agent).await?;
     }
     let permissions = clean_choice(input.choice, &input.permissions)?;
@@ -311,12 +343,7 @@ pub async fn create_access_key<S: AuthStore>(
         person: record.person.clone(),
         key: None,
     };
-    for project in &projects {
-        let access = ctx.evaluation_of(&actor, Place::Project(*project)).await?;
-        if !access.knows_project() {
-            return Err(AppError::Refused(ErrorCode::NotFound));
-        }
-    }
+    ctx.ensure_projects_known(&actor, &projects).await?;
     let settings = ctx.settings().await?;
     let now = ctx.now();
     let picked = input
@@ -331,14 +358,7 @@ pub async fn create_access_key<S: AuthStore>(
         settings.access_key_default_days,
         settings.access_key_longest_days,
     )?;
-    let held = ctx
-        .store()
-        .access_key_count(owner)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    if usize::try_from(held).map_or(true, |held| held >= MOST_KEYS) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    ctx.ensure_room_for_a_key(owner).await?;
     let draft = AccessKeyRecord {
         key: AccessKey {
             id: AccessKeyId::generate(&mut ctx.ids()),
@@ -359,10 +379,18 @@ pub async fn create_access_key<S: AuthStore>(
     let (secret, stored) = loop {
         let (secret, stored, event) = a_try_at_the_key(ctx, &draft)?;
         let to_store = stored.clone();
+        let renews = input.renews;
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
-                Box::pin(async move { S::insert_access_key(transaction, &to_store).await })
+                Box::pin(async move {
+                    S::insert_access_key(transaction, &to_store).await?;
+                    // A renewed key is taken back in the change that makes its replacement.
+                    if let Some(old) = renews {
+                        S::delete_access_key(transaction, to_store.key.owner, old).await?;
+                    }
+                    Ok(())
+                })
             })
             .await;
         match result {
