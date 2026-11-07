@@ -403,6 +403,11 @@ pub(crate) fn body_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError>
         .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
 }
 
+/// The IDs in a request body, each one an ID or the whole request is not valid.
+pub(crate) fn body_ids<Id: std::str::FromStr>(texts: &[String]) -> Result<Vec<Id>, ApiError> {
+    texts.iter().map(|text| body_id(text)).collect()
+}
+
 /// A member that is `Clear` when the request says `null` and `Keep` when it says nothing
 /// (`#[serde(default, deserialize_with = "crate::api::null_or_value")]`).
 pub(crate) fn null_or_value<'de, D, T>(deserializer: D) -> Result<Edit<T>, D::Error>

@@ -37,7 +37,7 @@ export function AppRow({ item, onTakeBack }: AppRowProps) {
   const used = item.last_used_at;
   return (
     <tr {...partOf(part.appsRow)}>
-      <th scope={rowHeader} {...partOf(part.appsCell, { variants: ["name"] })}>
+      <th scope={rowHeader} {...partOf(part.appsCell)}>
         <span {...partOf(part.startColumn)}>
           <span {...partOf(part.itemTitle)}>{name}</span>
           <span {...partOf(part.muted)}>

@@ -41,7 +41,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::{body_id, path_id};
+use super::{body_ids, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery, json_no_store, with_retry_after};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use crate::logging::Scheme;
@@ -396,11 +396,7 @@ async fn decide_authorization(
     body: Result<ApiJson<DecisionBody>, ApiError>,
 ) -> Result<Response, ApiError> {
     let read = body.and_then(|ApiJson(body)| {
-        let projects = body
-            .projects
-            .iter()
-            .map(|project| body_id::<ProjectId>(project))
-            .collect::<Result<Vec<_>, _>>()?;
+        let projects = body_ids::<ProjectId>(&body.projects)?;
         Ok((body, projects))
     });
     let (body, projects) = auth.after_who_asks(&info, &session_token, read).await?;
