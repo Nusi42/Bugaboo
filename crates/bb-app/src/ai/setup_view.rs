@@ -107,7 +107,7 @@ pub struct ProjectAi {
     /// The organization has AI on.
     pub organization_on: bool,
     /// AI counts in this project: the organization and the project both have it on.
-    pub counts_here: bool,
+    pub works_here: bool,
 }
 
 impl Masked for ProjectAi {}
@@ -275,6 +275,6 @@ pub async fn project_ai<S: AuthStore>(
     Ok(access.authorize(ProjectAi {
         own,
         organization_on: state.organization_on,
-        counts_here: state.counts(),
+        works_here: state.counts(),
     }))
 }

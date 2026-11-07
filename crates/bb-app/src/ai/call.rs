@@ -107,7 +107,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// `ai.agreement-needed` while an outside provider has no agreement, `ai.address-invalid` and
-    /// `ai.address-not-encrypted` for an address that is not usable, `ai.unavailable` while the
+    /// `ai.address-not-encrypted` for an address that is not usable, `ai.not-set-up` while the
     /// model or the key that the provider needs is missing.
     pub(crate) async fn ai_target(&self, state: &AiState) -> Result<AiTarget, AppError> {
         let address = state.model_address()?;
@@ -123,7 +123,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .and_then(|bytes| String::from_utf8(bytes.to_vec()).ok())
             .unwrap_or_default();
         if state.model.is_empty() || (state.kind == ProviderKind::Anthropic && key.is_empty()) {
-            return Err(ErrorCode::AiUnavailable.into());
+            return Err(ErrorCode::AiNotSetUp.into());
         }
         Ok(AiTarget {
             kind: state.kind,

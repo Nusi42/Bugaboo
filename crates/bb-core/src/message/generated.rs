@@ -818,6 +818,9 @@ pub const ERROR_AI_ADDRESS_NOT_ENCRYPTED: MessageKey =
 /// The message `error.ai.agreement-needed`.
 pub const ERROR_AI_AGREEMENT_NEEDED: MessageKey = MessageKey::new("error.ai.agreement-needed");
 
+/// The message `error.ai.not-set-up`.
+pub const ERROR_AI_NOT_SET_UP: MessageKey = MessageKey::new("error.ai.not-set-up");
+
 /// The message `error.ai.off`.
 pub const ERROR_AI_OFF: MessageKey = MessageKey::new("error.ai.off");
 
@@ -13800,6 +13803,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.ai.agreement-needed",
         "Confirm first that a data processing agreement with this provider is in place.",
+    ),
+    (
+        "error.ai.not-set-up",
+        "AI is not set up. Enter the model, and the key if the provider asks for one.",
     ),
     ("error.ai.off", "AI is off here."),
     ("error.ai.unavailable", "The AI provider did not answer."),

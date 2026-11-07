@@ -911,6 +911,8 @@ export const messages = {
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
   "error.ai.off": "AI is off here.",
   "error.ai.unavailable": "The AI provider did not answer.",
+  "error.ai.not-set-up":
+    "AI is not set up. Enter the model, and the key if the provider asks for one.",
   "error.ai.agreement-needed":
     "Confirm first that a data processing agreement with this provider is in place.",
   "error.ai.address-invalid":

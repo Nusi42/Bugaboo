@@ -115,7 +115,7 @@ async fn ai_02_a_project_follows_the_organization_until_it_has_its_own_switch() 
     .await?
     .into_value();
     assert_eq!(off.own, Some(false));
-    assert!(!off.counts_here);
+    assert!(!off.works_here);
     let error = world
         .ctx()
         .ask_ai(Some(acme_id), &a_question())
@@ -137,7 +137,7 @@ async fn ai_02_a_project_follows_the_organization_until_it_has_its_own_switch() 
     .await?
     .into_value();
     assert_eq!(back.own, None);
-    assert!(back.counts_here);
+    assert!(back.works_here);
 
     // A project cannot switch on what the organization has off.
     change_ai_setup(
@@ -167,7 +167,7 @@ async fn ai_02_a_project_follows_the_organization_until_it_has_its_own_switch() 
     .await?
     .into_value();
     assert_eq!(view.own, Some(true));
-    assert!(!view.counts_here);
+    assert!(!view.works_here);
     Ok(())
 }
 

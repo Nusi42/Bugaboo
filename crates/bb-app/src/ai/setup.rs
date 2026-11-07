@@ -435,7 +435,7 @@ pub async fn change_project_ai<S: AuthStore>(
     Ok(access.authorize(ProjectAi {
         own,
         organization_on: state.organization_on,
-        counts_here: state.counts(),
+        works_here: state.counts(),
     }))
 }
 

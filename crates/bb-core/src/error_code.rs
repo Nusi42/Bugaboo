@@ -215,6 +215,8 @@ error_codes! {
     /// The AI provider did not answer, or its answer could not be used. Nothing of what the
     /// provider sent is passed on (AI-01).
     AiUnavailable => ("ai.unavailable", 502),
+    /// The model, or the key that the provider asks for, is not entered (AI-01).
+    AiNotSetUp => ("ai.not-set-up", 409),
     /// An outside provider cannot be used before an administrator confirms that a data processing
     /// agreement is in place (PRIV-08).
     AiAgreementNeeded => ("ai.agreement-needed", 409),
