@@ -15,7 +15,6 @@ import {
   createSessionOfTwo,
   createSessionWithComment,
   issueIdOf,
-  letAnaIntoTheProject,
   markText,
 } from "./support/runs.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -76,7 +75,6 @@ test("the question and the page of a run with one skipped change", async ({ page
 test("the lines of the history that belong to a run and to its undo", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
   const { admin, run } = await createSessionOfThird(server);
-  await letAnaIntoTheProject(server, admin);
   await admin.dispose();
   await signIn(page, ada);
   await page.goto(runAddress(run));
@@ -92,6 +90,7 @@ test("the lines of the history that belong to a run and to its undo", async ({ p
     await expect(page.getByRole("link", { name: t("history.undid-run-link") })).toBeVisible();
   });
   // Somebody who may not open the run sees the marks without a link.
+  await page.context().clearCookies();
   await signIn(page, ana);
   await inFourChosenThemes(page, "history-run-no-link", MILESTONE, paths.appearance, async () => {
     await page.goto("/issues/WEB-3");

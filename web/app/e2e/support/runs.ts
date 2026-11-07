@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { dataOf } from "@bugaboo/api-client";
 
-import { ana, createPeopleWithRoles, roleName, signedInAdmin } from "./access.ts";
+import { signedInAdmin } from "./access.ts";
 import type { ApiSession } from "./api.ts";
 import { ownId } from "./accounts.ts";
 import { createProjectWithIssue, type MadeIssue } from "./issues.ts";
@@ -244,11 +244,4 @@ export async function createSessionWithComment(
     database.close();
   }
   return { admin, run };
-}
-
-/** Ana, a team member of WEB, who may not open the runs of Ada. */
-export async function letAnaIntoTheProject(server: Instance, admin: ApiSession): Promise<void> {
-  await createPeopleWithRoles(server, admin, [
-    { person: ana, role: roleName.teamMember, project: "WEB" },
-  ]);
 }
