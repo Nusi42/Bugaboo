@@ -215,37 +215,14 @@ Enforced by: ARCH-DEPS (the edges), ARCH-AI-TOOLS (it reads `crates/bb-app/src/a
 
 ### The port of runs (`RunStore`, M7)
 
-Every session of an AI app and every attempt of an agent is one run, built on `change_run` ([ADR-0029](../adr/0029-ai-agents.md), decision 7). The port is how the use cases of MCP (WP-05) and of agent work (WP-08) open and close runs and undo them, while `bb-store` implements it (WP-07); until then they test against a fake of it. Its shape, which WP-07 writes into `crates/bb-app/src/ports.rs`:
+Every session of an AI app and every attempt of an agent is one run, built on `change_run` ([ADR-0029](../adr/0029-ai-agents.md), decision 7). The port is how the use cases of MCP (WP-05) and of agent work (WP-08) open and close runs and undo them, while `bb-store` implements it (WP-07); until then they test against `FakeRunStore`. The port `RunStore` is in `crates/bb-app/src/runs/mod.rs` and the words and shapes it speaks in (`RunKind`, `RunEnd`, `RunActor`, `RunSummary`, `RunChange`, `UndoPreview`, `UndoVersion`, `UndoOutcome`) in `crates/bb-core/src/run.rs`; the code is the one definition. In short:
 
-```rust
-pub trait RunStore: Send + Sync {
-    /// Opens a run of `kind` (`AppSession` or `Attempt`; `ManyChanges` keeps its own start) for
-    /// `actor` (the person, with the app or the agent) at `at`. Every event written while the run
-    /// is open carries its ID.
-    fn open_run(&self, kind: RunKind, actor: &RunActor, at: Timestamp) -> Result<RunId, StoreError>;
-    /// Closes the run as `ended` (`Done`, `Stopped`, `Failed`); a run that is closed already
-    /// stays as it is (idempotent).
-    fn close_run(&self, run: RunId, ended: RunEnd, at: Timestamp) -> Result<(), StoreError>;
-    /// The changes of the run, oldest first, one page after `after` (a cursor that holds only the
-    /// ID of the last event of the page before). Each change names the issue, the field, before
-    /// and after, and the event.
-    fn run_changes(&self, run: RunId, after: Option<EventId>, limit: PageSize)
-        -> Result<Page<RunChange>, StoreError>;
-    /// What *Undo the run* would do now: each change goes back, or is skipped with its reason
-    /// (`ChangedSince { by, at }`: somebody changed the same field afterwards; `Gone`: the issue
-    /// is in the trash or deleted), and the version of this preview.
-    fn preview_undo(&self, run: RunId) -> Result<UndoPreview, StoreError>;
-    /// Undoes the run as the preview with `version` said; refused with the newer preview when
-    /// anything changed since (the version differs). It writes new events that put the old
-    /// values back, marked as an undo of the run, and never deletes history.
-    fn undo_run(&self, run: RunId, version: UndoVersion, by: &RunActor, at: Timestamp)
-        -> Result<UndoResult, StoreError>;
-}
-```
-
+- `open_run(run, kind, actor, at)` opens a run the caller gave an ID (the store makes no IDs and has no clock); every event written while it is open carries it. `close_run(run, ended, at)` ends it and is idempotent (it says whether this call closed it).
+- `run(run)` and `run_changes(run, after, limit)` read it: the changes oldest first, one page after an event ID (the cursor holds nothing else). The use case leaves out what the reader cannot see.
+- `preview_undo(run)` says what would go back and what is skipped and why, with a version; `undo_run(run, version, by, at)` applies it, or answers `Changed` with the newer preview and writes nothing.
 - **The rule of an undo:** it never touches a change that somebody made later. A field that any event outside the run changed after the run's change is skipped and named, never written over; the preview and the undo use the same one evaluation (the long preview of *Change many issues*).
 - **Who may undo, and as whom:** the use case judges, not the port: the run's person, and for an attempt the reviewer through *Throw away*; each change is judged again as the person who undoes it, and a large run goes on in the step-wise job of *Change many issues* (ADR-0017).
-- The names (`RunKind`, `RunActor`, `RunEnd`, `RunChange`, `UndoPreview`, `UndoVersion`, `UndoResult`) and the async form follow the other ports; the code is the one definition once WP-07 writes it, and this section then points to it.
+- The port and its fake are async in the form of the other ports (`impl Future … + Send`).
 
 ### bb-sample
 

@@ -32,6 +32,7 @@ pub mod preview;
 pub mod projects;
 pub mod relations;
 pub mod roles;
+pub mod runs;
 pub mod saved_searches;
 pub mod search;
 pub mod server_log;
