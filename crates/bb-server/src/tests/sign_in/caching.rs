@@ -230,6 +230,25 @@ async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
     )
 }
 
+/// The query of the consent step for an app that registered itself (AI is on, so apps may).
+async fn a_registered_app_query(rig: &Rig, ada: &mut Browser) -> Result<String, Failure> {
+    rig.set_organization_switch("ai.enabled", true).await?;
+    let registered = ada
+        .send(
+            "POST",
+            "/oauth/register",
+            Some(json!({"client_name": "Claude Code", "redirect_uris": ["http://127.0.0.1/callback"]})),
+        )
+        .await?;
+    let client = registered.body["client_id"]
+        .as_str()
+        .ok_or("no client ID")?
+        .to_owned();
+    Ok(format!(
+        "client={client}&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A5000%2Fcallback&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&scope=see-only&state=s1"
+    ))
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -270,6 +289,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let agent_id = an_agent(&mut ada).await?;
         // A work day of the person, for the routes that name a date.
         a_work_day(&mut ada).await?;
+        let app_query = a_registered_app_query(&rig, &mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -298,6 +318,11 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, project, &project_id);
+            let filled = if template == "/api/v1/oauth/authorization" {
+                format!("{filled}?{app_query}")
+            } else {
+                filled
+            };
             let filled = if template.ends_with("/status-changes") {
                 format!("{filled}?person={person_id}")
             } else {
