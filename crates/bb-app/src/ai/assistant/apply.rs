@@ -6,7 +6,7 @@ use bb_policy::{Authorized, Masked, Place};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::reference;
+use super::{reference, session_only};
 use crate::ai::context::PeopleMode;
 use crate::ai::tools::{ProposedChange, ToolAnswer, ToolCallQuery, ToolMode, call_tool};
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -39,12 +39,13 @@ impl Masked for Applied {}
 /// (the answer then holds the newer value, as it does for a person).
 ///
 /// # Errors
-/// `ai.proposal-invalid` for a reference that does not hold, and what the use case of the tool
+/// `auth.access-key-not-allowed` for an access key, `ai.proposal-invalid` for a reference that does not hold, and what the use case of the tool
 /// refuses.
 pub async fn apply_proposal<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ApplyProposal,
 ) -> Result<Authorized<Applied>, AppError> {
+    session_only(&input.session_token)?;
     let actor = ctx.actor(&input.session_token).await?;
     if input.input.to_string().len() > PROPOSAL_INPUT_BYTES_MAX
         || !reference::holds(

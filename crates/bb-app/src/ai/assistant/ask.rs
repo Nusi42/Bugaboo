@@ -12,6 +12,7 @@ use bb_core::id::ProjectId;
 use bb_policy::{Authorized, Place};
 use serde_json::Value;
 
+use super::session_only;
 use super::step::Tools;
 use super::system::SYSTEM;
 use super::{AssistantAnswer, ChatTurn, LookingAt};
@@ -178,7 +179,7 @@ fn tools_of(
 /// proposes and saves nothing.
 ///
 /// # Errors
-/// `request.invalid` for a question that is empty or over a limit, `resource.not-found` for
+/// `auth.access-key-not-allowed` for an access key, `request.invalid` for a question that is empty or over a limit, `resource.not-found` for
 /// something the panel looks at that the person may not read, `ai.off` while AI does not count at a
 /// place, the errors of the provider (`ai.agreement-needed`, `ai.not-set-up`, `ai.unavailable`),
 /// and `ai.unavailable` when the model never gives an answer.
@@ -186,6 +187,7 @@ pub async fn ask_assistant<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AskAssistantQuery,
 ) -> Result<Authorized<AssistantAnswer>, AppError> {
+    session_only(&input.session_token)?;
     let actor = ctx.actor(&input.session_token).await?;
     check(&input)?;
     // Off for the organization: nothing else is read.

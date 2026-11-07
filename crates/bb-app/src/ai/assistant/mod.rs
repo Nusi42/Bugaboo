@@ -20,6 +20,8 @@ mod reference;
 mod step;
 mod system;
 
+use bb_auth::looks_like_access_key;
+use bb_core::ErrorCode;
 use bb_core::ai::{ChatFrom, LookingAtKind};
 use bb_policy::Masked;
 use serde::Serialize;
@@ -29,6 +31,16 @@ pub use apply::{Applied, ApplyProposal, apply_proposal};
 pub use ask::{AskAssistantQuery, ask_assistant};
 
 use super::tools::ProposedChange;
+use crate::auth::AppError;
+
+/// The assistant is the panel of a person who is signed in: an access key, also the key of an AI
+/// app, is turned away. AI apps work through MCP, with the scopes they were given (ADR-0042).
+fn session_only(token: &str) -> Result<(), AppError> {
+    if looks_like_access_key(token) {
+        return Err(AppError::Refused(ErrorCode::AccessKeyNotAllowed));
+    }
+    Ok(())
+}
 
 /// One thing the panel looks at when the question is asked.
 #[derive(Clone, Debug, PartialEq, Eq)]

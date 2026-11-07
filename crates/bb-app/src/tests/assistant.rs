@@ -32,7 +32,7 @@ use crate::auth::AppError;
 use crate::issues::{ChangeIssue, change_issue};
 
 /// A local model, with AI on.
-async fn ai_on(world: &World) -> Outcome {
+pub(super) async fn ai_on(world: &World) -> Outcome {
     a_local_model(world).await?;
     change_ai_setup(
         &world.ctx(),
@@ -46,7 +46,7 @@ async fn ai_on(world: &World) -> Outcome {
 }
 
 /// The model's next answer asks for a tool.
-fn will_call(world: &World, tool: &str, arguments: Value) {
+pub(super) fn will_call(world: &World, tool: &str, arguments: Value) {
     world.ai.will_answer(AiAnswer {
         tool_calls: vec![AiToolCall {
             id: format!("call-{tool}"),
@@ -58,14 +58,14 @@ fn will_call(world: &World, tool: &str, arguments: Value) {
 }
 
 /// The model's next answer is this text.
-fn will_say(world: &World, text: &str) {
+pub(super) fn will_say(world: &World, text: &str) {
     world.ai.will_answer(AiAnswer {
         text: text.to_owned(),
         ..AiAnswer::default()
     });
 }
 
-fn question(who: &str, text: &str) -> AskAssistantQuery {
+pub(super) fn question(who: &str, text: &str) -> AskAssistantQuery {
     AskAssistantQuery {
         session_token: who.to_owned(),
         text: text.to_owned(),
@@ -74,12 +74,15 @@ fn question(who: &str, text: &str) -> AskAssistantQuery {
     }
 }
 
-async fn ask(world: &World, query: AskAssistantQuery) -> Result<AssistantAnswer, AppError> {
+pub(super) async fn ask(
+    world: &World,
+    query: AskAssistantQuery,
+) -> Result<AssistantAnswer, AppError> {
     Ok(ask_assistant(&world.ctx(), query).await?.into_value())
 }
 
 /// What the tools answered in the last call to the provider, as one text.
-fn tool_results(world: &World) -> String {
+pub(super) fn tool_results(world: &World) -> String {
     let calls = world.ai.calls();
     let Some(last) = calls.last() else {
         return String::new();
