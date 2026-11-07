@@ -165,7 +165,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
         scope: SearchScope,
     ) -> Result<Prepared, AppError> {
+        self.prepare_search_within(actor, text, scope, None).await
+    }
+
+    /// The same for the AI (AI-03): what is kept from AI is not among the fields or the projects.
+    pub(crate) async fn prepare_search_within(
+        &self,
+        actor: &Actor,
+        text: &str,
+        scope: SearchScope,
+        withheld: Option<&crate::ai::Withheld>,
+    ) -> Result<Prepared, AppError> {
         let looked = self.looked_at(actor, scope).await?;
+        let looked = match withheld {
+            Some(withheld) => looked.without(withheld),
+            None => looked,
+        };
         let readable = readable_of(&looked.fields);
         let parsed =
             parse_with(text, &readable).map_err(|mistake| AppError::Mistakes(vec![mistake]))?;
@@ -247,7 +262,23 @@ pub(crate) async fn search_page<S: AuthStore + SearchStore>(
     query: &SearchQuery,
     with_people: bool,
 ) -> Result<Authorized<SearchPage>, AppError> {
-    let mut prepared = ctx.prepare_search(actor, &query.text, query.scope).await?;
+    search_page_within(ctx, actor, query, with_people, None).await
+}
+
+/// The same page for the AI (AI-03): what is kept from AI is not looked at.
+///
+/// # Errors
+/// As [`search`].
+pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
+    ctx: &Ctx<'_, S>,
+    actor: &Actor,
+    query: &SearchQuery,
+    with_people: bool,
+    withheld: Option<&crate::ai::Withheld>,
+) -> Result<Authorized<SearchPage>, AppError> {
+    let mut prepared = ctx
+        .prepare_search_within(actor, &query.text, query.scope, withheld)
+        .await?;
     let len = page_len(Some(query.limit));
     prepared.request.limit = read_len(len);
     // A cursor is the ID of the last issue of the page before: the store reads its place in the

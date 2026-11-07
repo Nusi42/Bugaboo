@@ -82,6 +82,35 @@ impl FieldTarget {
         }
     }
 
+    /// The built-in field this reads, if it reads one: the status group and the day an issue
+    /// closed are read from the status. Parts that belong to no field of the catalogue (the
+    /// project, the type, the parent, when it was made or changed) have none.
+    #[must_use]
+    pub const fn catalogue_field(self) -> Option<bb_core::fields::Field> {
+        use bb_core::fields::Field;
+        Some(match self {
+            Self::Title => Field::Title,
+            Self::Description => Field::Description,
+            Self::Status | Self::StatusGroup | Self::Closed => Field::Status,
+            Self::Priority => Field::Priority,
+            Self::AssignedTo => Field::AssignedTo,
+            Self::ReportedBy => Field::ReportedBy,
+            Self::Labels => Field::Labels,
+            Self::Tags => Field::Tags,
+            Self::EstimatedTime => Field::EstimatedTime,
+            Self::TimeLeft => Field::TimeLeft,
+            Self::TimeSpent => Field::TimeSpent,
+            Self::Project
+            | Self::Type
+            | Self::Parent
+            | Self::Created
+            | Self::Changed
+            | Self::Own { .. } => {
+                return None;
+            }
+        })
+    }
+
     /// Where the words of `<field> contains` are looked for; none for a field whose text is not in
     /// the index (a short text, an address, anything that is not text).
     #[must_use]

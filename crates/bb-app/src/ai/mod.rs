@@ -8,11 +8,14 @@
 //! can repeat the text of the request (DATA-LOGS).
 
 mod call;
+pub mod context;
 #[cfg(any(test, feature = "testing"))]
 mod fake;
+mod never_sent;
 mod setup;
 mod setup_view;
 mod store;
+pub mod tools;
 
 use std::fmt;
 
@@ -23,6 +26,10 @@ use zeroize::Zeroizing;
 
 use crate::ports::BoxFuture;
 
+pub use never_sent::{
+    NEVER_SENT_PROJECTS_MAX, NeverSentField, NeverSentList, NeverSentProject, NeverSentQuery,
+    NeverSentStore, NeverSentTarget, SetNeverSent, Withheld, never_sent_list, set_never_sent,
+};
 pub use setup::{
     ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, SetAiKey, TryAiProvider, change_ai_setup,
     change_project_ai, confirm_ai_agreement, set_ai_key, try_ai_provider,

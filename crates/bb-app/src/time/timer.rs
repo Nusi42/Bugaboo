@@ -238,6 +238,83 @@ pub async fn timer<S: AuthStore>(
     ctx.own_answer(&actor, view).await
 }
 
+/// What starting the timer comes to, judged and not yet written.
+struct StartPlan {
+    started: Timer,
+    before: Option<Version>,
+    changes: Vec<FieldChange>,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Judges a start of the timer on an issue: the issue is one the actor sees and may book on, and
+    /// the timer does not run. The one judgment [`start_timer`] writes and its preview answers.
+    async fn plan_timer_start(&self, actor: &Actor, address: &str) -> Result<StartPlan, AppError> {
+        let (issue, _) = self.bookable_issue(actor, address).await?;
+        let now = self.now();
+        let current = self.timer_of(actor.person.id).await?;
+        if let Some(timer) = &current {
+            if timer.running.is_some() {
+                return Err(ErrorCode::TimerRunning.into());
+            }
+            may_change_timer(timer.changed_at, now)?;
+        }
+        let started = Timer {
+            person: actor.person.id,
+            running: Some(Running {
+                issue: issue.id,
+                started_at: now,
+                warned_at: None,
+            }),
+            changed_at: now,
+            version: current
+                .as_ref()
+                .map_or(FIRST_VERSION, |timer| next(timer.version)),
+        };
+        let mut changes = vec![
+            set_to(member::ISSUE, json!(issue.id.to_string())),
+            set_to(member::STARTED_AT, json!(now.to_string())),
+        ];
+        let before = current.as_ref().map(|timer| Version::new(timer.version));
+        if let Some(timer) = &current {
+            changes.push(counted_up(timer.version));
+        }
+        Ok(StartPlan {
+            started,
+            before,
+            changes,
+        })
+    }
+
+    /// What starting the timer on an issue would record, answered without saving (AI-21).
+    ///
+    /// # Errors
+    /// As [`start_timer`].
+    pub(crate) async fn preview_start_timer(
+        &self,
+        actor: &Actor,
+        input: &StartTimer,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self.plan_timer_start(actor, &input.issue).await?.changes)
+    }
+
+    /// What stopping the timer would record, answered without saving (AI-21).
+    ///
+    /// # Errors
+    /// As [`stop_timer`].
+    pub(crate) async fn preview_stop_timer(
+        &self,
+        actor: &Actor,
+        input: &StopTimer,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        let (timer, running) = self.running_timer(actor, input.version).await?;
+        let saving = self
+            .saving(actor, &running, self.now(), &input.details)
+            .await?;
+        let changes = vec![issue_cleared(&running), counted_up(timer.version)];
+        stop_changes(&saving, changes)
+    }
+}
+
 /// Starts the person's timer on an issue they see and may book on.
 ///
 /// # Errors
@@ -249,35 +326,12 @@ pub async fn start_timer<S: AuthStore>(
     input: StartTimer,
 ) -> Result<Authorized<TimerView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (issue, _) = ctx.bookable_issue(&actor, &input.issue).await?;
-    let now = ctx.now();
-    let current = ctx.timer_of(actor.person.id).await?;
-    if let Some(timer) = &current {
-        if timer.running.is_some() {
-            return Err(ErrorCode::TimerRunning.into());
-        }
-        may_change_timer(timer.changed_at, now)?;
-    }
-    let started = Timer {
-        person: actor.person.id,
-        running: Some(Running {
-            issue: issue.id,
-            started_at: now,
-            warned_at: None,
-        }),
-        changed_at: now,
-        version: current
-            .as_ref()
-            .map_or(FIRST_VERSION, |timer| next(timer.version)),
-    };
-    let mut changes = vec![
-        set_to(member::ISSUE, json!(issue.id.to_string())),
-        set_to(member::STARTED_AT, json!(now.to_string())),
-    ];
-    let before = current.as_ref().map(|timer| Version::new(timer.version));
-    if let Some(timer) = &current {
-        changes.push(counted_up(timer.version));
-    }
+    let StartPlan {
+        started,
+        before,
+        changes,
+    } = ctx.plan_timer_start(&actor, &input.issue).await?;
+    let now = started.changed_at;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Timer, actor.person.id),
@@ -370,21 +424,34 @@ fn saving_event<S: AuthStore>(
     saving: &Saving,
     timer_changes: Vec<FieldChange>,
 ) -> Result<bb_core::event::DomainEvent, AppError> {
+    let changes = stop_changes(saving, timer_changes)?;
+    match &saving.entry {
+        Some(made) => ctx.event(
+            by(actor.person.id),
+            entity(RecordKind::TimeEntry, made.entry.id),
+            changes,
+        ),
+        None => ctx.event(
+            by(actor.person.id),
+            entity(RecordKind::Timer, actor.person.id),
+            changes,
+        ),
+    }
+}
+
+/// The changes of a stop: the entry's, with the change of the timer in it; or the timer's alone
+/// when nothing is saved.
+fn stop_changes(
+    saving: &Saving,
+    timer_changes: Vec<FieldChange>,
+) -> Result<Vec<FieldChange>, AppError> {
     match &saving.entry {
         Some(made) => {
             let mut changes = made.changes();
             changes.extend(as_the_timers(timer_changes)?);
-            ctx.event(
-                by(actor.person.id),
-                entity(RecordKind::TimeEntry, made.entry.id),
-                changes,
-            )
+            Ok(changes)
         }
-        None => ctx.event(
-            by(actor.person.id),
-            entity(RecordKind::Timer, actor.person.id),
-            timer_changes,
-        ),
+        None => Ok(timer_changes),
     }
 }
 

@@ -348,6 +348,9 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[Quirk::KeysActAsThePerson, Quirk::NamesASubjectOfTheTarget],
     ),
     Example::with("changeLabelGroupOffers", &[Quirk::AtTheTargetProject]),
+    Example::with("listNeverSentToAi", &[Quirk::KeysActAsThePerson]),
+    Example::route("setFieldNeverSentToAi"),
+    Example::with("setProjectNeverSentToAi", &[Quirk::HidesUnseen]),
     Example::with(
         "getFormLayout",
         &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],
@@ -619,6 +622,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_ai::ai_request(fixture, operation).await? {
         return Ok(found);
     }
     if let Some(found) = super::examples_fields::field_request(fixture, operation).await? {

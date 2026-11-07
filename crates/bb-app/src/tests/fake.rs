@@ -141,6 +141,7 @@ pub(crate) struct State {
     pub(crate) workflows: Vec<bb_core::workflow::StoredWorkflow>,
     pub(crate) workflow_uses: Vec<bb_core::workflow::WorkflowUse>,
     pub(crate) offers: Vec<bb_core::offer::Offer>,
+    pub(crate) never_sent: Vec<bb_core::ai::NeverSentMark>,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
@@ -164,6 +165,8 @@ pub(crate) struct Shared {
     pub(crate) reads: usize,
     /// How many times the policy was read with the levels of its roles, and every project.
     pub(crate) leveled_reads: usize,
+    /// The log of tool calls (not part of a change).
+    pub(crate) tool_calls: Vec<bb_core::ai::ToolCall>,
     /// The security log cannot be written.
     pub(crate) log_fails: bool,
     /// Changes fail as the database does when it breaks.

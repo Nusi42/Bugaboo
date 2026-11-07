@@ -66,6 +66,7 @@ mod m0034_layout_time_fields;
 mod m0035_choice_numbers;
 mod m0036_issue_totals_index;
 mod m0037_ai_agreement;
+mod m0038_ai_tools;
 #[cfg(test)]
 mod old_rows;
 
@@ -348,6 +349,11 @@ const ALL: &[Definition] = &[
         version: 37,
         name: "ai_agreement",
         steps: || Ok(m0037_ai_agreement::steps()),
+    },
+    Definition {
+        version: 38,
+        name: "ai_tools",
+        steps: || Ok(m0038_ai_tools::steps()),
     },
 ];
 

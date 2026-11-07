@@ -1,8 +1,6 @@
 //! What each route needs and what kind of answer it gives: declared in one place, written into the
 //! API description by `crate::openapi` (M1-F32, ADR-0025 decision 1, architecture §7 *The
-//! permission catalogue*, *Cache rules in one place*).
-//!
-//! A route declares either a key of the permission catalogue (`manage-invitations`) or one of three
+//! permission catalogue*, *Cache rules in one place*). A route declares either a key of the permission catalogue (`manage-invitations`) or one of three
 //! words for the routes that need no catalogue permission: `public` (anybody, also nobody signed
 //! in), `signed-in` (a signed-in person, nothing more) and `own-account` (a person's own sign-in
 //! data: password, passkeys, second step, sessions). The use case behind the route enforces what

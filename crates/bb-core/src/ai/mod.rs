@@ -5,8 +5,13 @@
 //! (SEC-16) and the agreement is a stored record ([`Agreement`]). Nothing here does input or output.
 
 mod address;
+mod tools;
 
 pub use address::{ADDRESS_MAX, AddressProblem, ModelAddress, ModelEndpoint};
+pub use tools::{
+    AuthorKind, NeverSentMark, NeverSentSubject, TOOL_CALL_KEEP_DAYS, Tool, ToolCall, ToolCaller,
+    ToolEffect, ToolOutcome, ToolScope,
+};
 
 use jiff::Timestamp;
 

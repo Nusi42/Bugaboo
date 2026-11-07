@@ -65,6 +65,7 @@ mod issue_types;
 mod issues;
 mod layouts;
 mod many_changes;
+mod never_sent;
 mod notifications;
 mod offers;
 mod own_access;
@@ -170,6 +171,7 @@ where
         .merge(projects::routes())
         .merge(fields::routes())
         .merge(issue_types::routes())
+        .merge(never_sent::routes())
         .merge(offers::routes())
         .merge(layouts::routes())
         .merge(workflows::routes())

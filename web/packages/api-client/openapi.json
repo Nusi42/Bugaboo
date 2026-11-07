@@ -9686,6 +9686,182 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/never-sent-to-ai": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "Which built-in fields and projects are kept from AI. Open to everybody who is signed in.",
+        "operationId": "listNeverSentToAi",
+        "responses": {
+          "200": {
+            "description": "The marks.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeverSentBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/never-sent-to-ai/fields/{field}": {
+      "put": {
+        "tags": ["ai"],
+        "summary": "Marks a built-in field *Never sent to AI*, or takes the mark away. Needs *Change organization\nsettings*.",
+        "operationId": "setFieldNeverSentToAi",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The key of the built-in field, like `description`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNeverSentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Every mark, after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeverSentBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/never-sent-to-ai/projects/{project}": {
+      "put": {
+        "tags": ["ai"],
+        "summary": "Marks a project *Never sent to AI*, with every project inside it, or takes the mark away. Needs\n*Change project settings* in the project.",
+        "operationId": "setProjectNeverSentToAi",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNeverSentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Every mark, after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeverSentBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-project-settings"
+      }
+    },
     "/api/v1/notifications": {
       "get": {
         "tags": ["notifications"],
@@ -20563,6 +20739,71 @@
           }
         }
       },
+      "NeverSentBody": {
+        "type": "object",
+        "description": "The marks the person may know about.",
+        "required": ["fields", "projects", "truncated"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NeverSentFieldBody"
+            },
+            "description": "Every built-in field, in the order of the catalogue."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NeverSentProjectBody"
+            },
+            "description": "The projects that have a mark and that the person sees, at most 200."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether more projects than that were left out."
+          }
+        }
+      },
+      "NeverSentFieldBody": {
+        "type": "object",
+        "description": "One built-in field and whether it is kept from AI.",
+        "required": ["field", "marked", "version"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field, like `description`."
+          },
+          "marked": {
+            "type": "boolean",
+            "description": "Whether it is kept from AI."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version to change it on; 0 for a field that never had a mark."
+          }
+        }
+      },
+      "NeverSentProjectBody": {
+        "type": "object",
+        "description": "One project that has a mark.",
+        "required": ["project", "marked", "version"],
+        "properties": {
+          "marked": {
+            "type": "boolean",
+            "description": "Whether it is kept from AI, with every project inside it."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef",
+            "description": "The project."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version to change it on."
+          }
+        }
+      },
       "NewCommentBody": {
         "type": "object",
         "description": "A comment to write.",
@@ -24638,6 +24879,22 @@
           "truncated": {
             "type": "boolean",
             "description": "There are more sessions than the list holds."
+          }
+        }
+      },
+      "SetNeverSentBody": {
+        "type": "object",
+        "description": "Marks a subject or takes the mark away, on the version that was looked at.",
+        "required": ["marked", "version"],
+        "properties": {
+          "marked": {
+            "type": "boolean",
+            "description": "`true` keeps the subject from AI, `false` takes the mark away."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at; 0 for a subject that never had a mark."
           }
         }
       },

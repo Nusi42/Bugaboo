@@ -327,6 +327,34 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What booking the time would record, answered without saving: the entry [`add_time`] would
+    /// write, judged the same way (AI-21).
+    ///
+    /// # Errors
+    /// As [`add_time`], but for a full date, which only the write sees.
+    pub(crate) async fn preview_add_time(
+        &self,
+        actor: &Actor,
+        input: &AddTime,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        let (issue, held) = self.bookable_issue(actor, &input.issue).await?;
+        let made = self
+            .new_entry(
+                actor,
+                (&issue, &held),
+                EntryTime {
+                    date: input.date,
+                    minutes: input.minutes,
+                    started_at: None,
+                },
+                &input.details,
+            )
+            .await?;
+        Ok(made.changes())
+    }
+}
+
 /// Books time on an issue by hand (*Add time*): a date and a length, with the defaults of the issue
 /// for the own fields that are left out.
 ///

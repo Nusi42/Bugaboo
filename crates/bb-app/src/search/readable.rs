@@ -254,6 +254,20 @@ pub(crate) struct Looked {
     pub(crate) seen: crate::projects::Leveled,
 }
 
+impl Looked {
+    /// What the search may look at when the AI asks: without the fields and the projects kept from
+    /// AI. A word of such a field is then unknown, exactly like a word that is no field, and no
+    /// issue of such a project is found (AI-03).
+    #[must_use]
+    pub(crate) fn without(mut self, withheld: &crate::ai::Withheld) -> Self {
+        self.fields
+            .retain(|searchable| !withheld.hides_target(searchable.target));
+        self.projects
+            .retain(|project| !withheld.hides_project(*project));
+        self
+    }
+}
+
 /// The names, each once (names that are the same name are one), in the order they come.
 fn once_each(names: impl IntoIterator<Item = String>) -> Vec<String> {
     let mut seen = std::collections::HashSet::new();

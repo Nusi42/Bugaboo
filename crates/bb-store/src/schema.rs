@@ -12,6 +12,7 @@
 use sea_query::{Iden, IdenStatic};
 
 mod access;
+mod ai;
 mod comments;
 mod files;
 mod notify;
@@ -24,6 +25,7 @@ mod work;
 mod working_hours;
 
 pub(crate) use access::*;
+pub(crate) use ai::*;
 pub(crate) use comments::*;
 pub(crate) use files::*;
 pub(crate) use notify::*;
@@ -426,6 +428,24 @@ stored_tables! {
         Version => version,
         Text => text,
         SavedAt => saved_at,
+    },
+    NeverSentRow => bb_core::ai::NeverSentMark {
+        Field => subject,
+        Project => subject,
+        Marked => marked,
+        Version => version,
+    },
+    ToolCallRow => bb_core::ai::ToolCall {
+        Id => id,
+        Person => person,
+        Caller => caller,
+        App => app,
+        Tool => tool,
+        Effect => effect,
+        BytesIn => bytes_in,
+        BytesOut => bytes_out,
+        At => at,
+        Outcome => outcome,
     },
     TimerRow => bb_core::time::entry::Timer {
         Person => person,

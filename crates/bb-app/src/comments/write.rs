@@ -102,6 +102,43 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What writing the comment would record, answered without saving: the same checks
+    /// [`add_comment`] makes before it writes (AI-21).
+    ///
+    /// # Errors
+    /// As [`add_comment`].
+    pub(crate) async fn preview_add_comment(
+        &self,
+        actor: &Actor,
+        input: &AddComment,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        let (issue, text, _) = self.comment_to_write(actor, input).await?;
+        Ok(crate::event_members::comment_written(issue.id, &text))
+    }
+
+    /// The issue the actor may comment on and the cleaned text, with their evaluation: what
+    /// [`add_comment`] and its preview both start from.
+    async fn comment_to_write(
+        &self,
+        actor: &Actor,
+        input: &AddComment,
+    ) -> Result<
+        (
+            bb_core::issue::Issue,
+            String,
+            std::sync::Arc<bb_policy::Evaluation>,
+        ),
+        AppError,
+    > {
+        let (issue, held) = self.visible_issue(actor, &input.issue).await?;
+        if !held.allows(Permission::Comment) {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        Ok((issue, clean_comment(&input.text)?, held))
+    }
+}
+
 /// Writes a comment under an issue.
 ///
 /// # Errors
@@ -113,11 +150,7 @@ pub async fn add_comment<S: AuthStore>(
     input: AddComment,
 ) -> Result<Authorized<CommentView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    if !held.allows(Permission::Comment) {
-        return Err(ErrorCode::Forbidden.into());
-    }
-    let text = clean_comment(&input.text)?;
+    let (issue, text, held) = ctx.comment_to_write(&actor, &input).await?;
     let tokens = bb_markdown::render(&text, &bb_markdown::Options::default()).tokens;
     let resolution = ctx
         .resolve_tokens(&actor, &held, &issue, &text, &tokens)

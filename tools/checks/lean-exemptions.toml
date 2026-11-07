@@ -365,3 +365,13 @@ reason = "The people who have work days older than the keep period, at most `OLD
 route = "GET /api/v1/ai/what-goes-where"
 property = "switched_off"
 reason = "The projects that switched AI off for themselves are a choice of project leads and stay few; the list names at most 100 and says when it cut the list off (`truncated`), which a page for administrators reads as one answer with the rest of what goes where (M7-F10)."
+
+[[exempt]]
+route = "GET /api/v1/never-sent-to-ai"
+property = "fields"
+reason = "The built-in fields are the catalogue, fourteen of them; the list is the catalogue and has no cap to cut it (M7-F28)."
+
+[[exempt]]
+route = "GET /api/v1/never-sent-to-ai"
+property = "projects"
+reason = "The projects with a mark are few; the list has a hard cap (NEVER_SENT_PROJECTS_MAX) and says when it was cut (M7-F28)."

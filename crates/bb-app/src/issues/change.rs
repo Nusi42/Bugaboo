@@ -367,6 +367,25 @@ fn assigned_rows(issue: IssueId, people: &[UserId], added_at: Timestamp) -> Vec<
         .collect()
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What changing the issue would record, answered without saving: the plan [`change_issue`]
+    /// writes (AI-21). A change that changes nothing answers with no change.
+    ///
+    /// # Errors
+    /// As [`change_issue`].
+    pub(crate) async fn preview_change_issue(
+        &self,
+        actor: &Actor,
+        input: &ChangeIssue,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self
+            .plan_issue_change(actor, input)
+            .await?
+            .1
+            .field_changes())
+    }
+}
+
 /// Changes the fields of an issue. What is left out stays as it is; a change that changes nothing
 /// writes nothing and answers with the issue as it is.
 ///

@@ -2708,6 +2708,63 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/never-sent-to-ai": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Which built-in fields and projects are kept from AI. Open to everybody who is signed in. */
+    get: operations["listNeverSentToAi"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/never-sent-to-ai/fields/{field}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Marks a built-in field *Never sent to AI*, or takes the mark away. Needs *Change organization
+     *     settings*.
+     */
+    put: operations["setFieldNeverSentToAi"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/never-sent-to-ai/projects/{project}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Marks a project *Never sent to AI*, with every project inside it, or takes the mark away. Needs
+     *     *Change project settings* in the project.
+     */
+    put: operations["setProjectNeverSentToAi"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/notifications": {
     parameters: {
       query?: never;
@@ -6751,6 +6808,39 @@ export interface components {
       /** @description What kind of input it needs. */
       kind: components["schemas"]["NeedKind"];
     };
+    /** @description The marks the person may know about. */
+    NeverSentBody: {
+      /** @description Every built-in field, in the order of the catalogue. */
+      fields: components["schemas"]["NeverSentFieldBody"][];
+      /** @description The projects that have a mark and that the person sees, at most 200. */
+      projects: components["schemas"]["NeverSentProjectBody"][];
+      /** @description Whether more projects than that were left out. */
+      truncated: boolean;
+    };
+    /** @description One built-in field and whether it is kept from AI. */
+    NeverSentFieldBody: {
+      /** @description The key of the field, like `description`. */
+      field: string;
+      /** @description Whether it is kept from AI. */
+      marked: boolean;
+      /**
+       * Format: int64
+       * @description The version to change it on; 0 for a field that never had a mark.
+       */
+      version: number;
+    };
+    /** @description One project that has a mark. */
+    NeverSentProjectBody: {
+      /** @description Whether it is kept from AI, with every project inside it. */
+      marked: boolean;
+      /** @description The project. */
+      project: components["schemas"]["ProjectRef"];
+      /**
+       * Format: int64
+       * @description The version to change it on.
+       */
+      version: number;
+    };
     /** @description A comment to write. */
     NewCommentBody: {
       /** @description The text, in Markdown. */
@@ -8775,6 +8865,16 @@ export interface components {
       sessions: components["schemas"]["SessionBody"][];
       /** @description There are more sessions than the list holds. */
       truncated: boolean;
+    };
+    /** @description Marks a subject or takes the mark away, on the version that was looked at. */
+    SetNeverSentBody: {
+      /** @description `true` keeps the subject from AI, `false` takes the mark away. */
+      marked: boolean;
+      /**
+       * Format: int64
+       * @description The version the person looked at; 0 for a subject that never had a mark.
+       */
+      version: number;
     };
     /** @description One setting: what the registry knows about it, and the value that counts. */
     SettingBody: {
@@ -15233,6 +15333,104 @@ export interface operations {
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listNeverSentToAi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The marks. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NeverSentBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setFieldNeverSentToAi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the built-in field, like `description`. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetNeverSentBody"];
+      };
+    };
+    responses: {
+      /** @description Every mark, after the change. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NeverSentBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setProjectNeverSentToAi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetNeverSentBody"];
+      };
+    };
+    responses: {
+      /** @description Every mark, after the change. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NeverSentBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

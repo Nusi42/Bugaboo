@@ -27,6 +27,7 @@ use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
+use bb_core::event::FieldChange;
 
 /// How often a change is tried again when two writers drew the same random code at the same
 /// moment (the second one hits the unique key of the project's codes and draws another).
@@ -43,6 +44,11 @@ struct NewIssue {
 }
 
 impl NewIssue {
+    /// What making the issue records: the changes of its event, which its preview answers too.
+    fn changes(&self) -> Vec<FieldChange> {
+        crate::event_members::issue_created(&self.issue, &self.assigned_people, self.own.changes())
+    }
+
     /// The rows of the people the issue is assigned to.
     fn people(&self) -> Vec<AssignedPerson> {
         self.assigned_people
@@ -215,6 +221,21 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What creating the issue would record, answered without saving: the plan [`create_issue`]
+    /// writes (AI-21).
+    ///
+    /// # Errors
+    /// As [`create_issue`].
+    pub(crate) async fn preview_create_issue(
+        &self,
+        actor: &Actor,
+        input: &CreateIssue,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self.plan_new_issue(actor, input).await?.1.changes())
+    }
+}
+
 /// Creates an issue in a project. The person needs *Create issues* there; the fields they set must be
 /// ones they may change (the title always).
 ///
@@ -231,9 +252,7 @@ pub async fn create_issue<S: AuthStore>(
     let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
-    let own_changes = new.own.changes();
-    let changes =
-        crate::event_members::issue_created(&new.issue, &new.assigned_people, own_changes);
+    let changes = new.changes();
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {

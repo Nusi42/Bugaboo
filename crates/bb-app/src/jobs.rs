@@ -411,9 +411,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             JobKind::PruneSecurityLog => {
                 Box::pin(self.run_daily(JobKind::PruneSecurityLog, async {
-                    self.prune_old_security_log().await.map(|entries| {
-                        tracing::info!(entries, "old entries of the security log were deleted");
-                    })
+                    async {
+                        let entries = self.prune_old_security_log().await?;
+                        // The log of tool calls is pruned with the security log (ADR-0013).
+                        let tool_calls = self.prune_old_tool_calls().await?;
+                        tracing::info!(entries, tool_calls, "old entries of the logs were deleted");
+                        Ok(())
+                    }
+                    .await
                 }))
                 .await
                 .map_err(|error| {

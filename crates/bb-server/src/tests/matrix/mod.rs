@@ -14,6 +14,7 @@
 mod actors;
 mod delivery;
 mod examples;
+mod examples_ai;
 mod examples_editing;
 mod examples_fields;
 mod examples_files;

@@ -17,6 +17,7 @@ use super::scenarios_fields as sf;
 use super::scenarios_files as sfi;
 use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
+use super::scenarios_never_sent as snv;
 use super::scenarios_notifications as sn;
 use super::scenarios_relations as sr;
 use super::scenarios_searches as ss;
@@ -109,6 +110,7 @@ table! {
     "create_issue_type" => si::create_issue_type_scenario,
     "change_issue_type" => si::change_issue_type_scenario,
     "change_offers" => si::change_offers_scenario,
+    "set_never_sent" => snv::set_never_sent_scenario,
     "create_starting_issue_types" => si::create_starting_issue_types_scenario,
     "create_relation_kind" => sr::create_relation_kind_scenario,
     "change_relation_kind" => sr::change_relation_kind_scenario,

@@ -27,6 +27,8 @@ use super::sign_up::SignUpStore;
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::ai::AiStore;
+use crate::ai::NeverSentStore;
+use crate::ai::tools::ToolCallStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
@@ -357,6 +359,8 @@ pub trait AuthStore:
     + TimeStore
     + WorkingHoursStore
     + AiStore
+    + NeverSentStore
+    + ToolCallStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

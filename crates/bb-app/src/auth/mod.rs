@@ -29,12 +29,14 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, WhoMayChange, WhoMayChangeQuery,
     field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
+use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{
     AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, ProjectAi,
     ProjectAiQuery, SetAiKey, TryAiProvider, WhatGoesWhere, WhatGoesWhereQuery, ai_setup,
     change_ai_setup, change_project_ai, confirm_ai_agreement, project_ai, set_ai_key,
     try_ai_provider, what_goes_where,
 };
+use crate::ai::{NeverSentList, NeverSentQuery, SetNeverSent, never_sent_list, set_never_sent};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
@@ -460,6 +462,14 @@ use_cases! {
     offers(OffersQuery) -> Authorized<OfferRowPage>;
     /// Changes where an issue type or a group of labels is offered.
     change_offers(ChangeOffers) -> Authorized<Offers>;
+    /// Lists the built-in fields and the projects marked *Never sent to AI*.
+    never_sent_list(NeverSentQuery) -> Authorized<NeverSentList>;
+    /// Marks a built-in field or a project *Never sent to AI*, or takes the mark away.
+    set_never_sent(SetNeverSent) -> Authorized<NeverSentList>;
+    /// Lists the tools a caller may use.
+    list_tools(ToolListQuery) -> Authorized<ToolList>;
+    /// Calls a tool as the person behind the session or key.
+    call_tool(ToolCallQuery) -> Authorized<ToolAnswer>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<SearchPage>;
     /// A page of the issues a search finds, in the projects the person sees.

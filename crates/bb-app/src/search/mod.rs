@@ -26,5 +26,5 @@ pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
     SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
 };
-pub(crate) use run::{search_page, stopped};
+pub(crate) use run::{search_page, search_page_within, stopped};
 pub use target::{FieldTarget, Searchable, TextPlace, target_of};

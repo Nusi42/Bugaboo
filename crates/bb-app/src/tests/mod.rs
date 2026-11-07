@@ -3,6 +3,7 @@
 //! server on it; the files below are the tests.
 
 mod ai_setup;
+mod ai_tools;
 mod check_access_types;
 mod choice_numbers;
 mod editing;
@@ -11,6 +12,7 @@ mod events;
 mod failures;
 mod fake;
 mod fake_ai;
+mod fake_ai_tools;
 mod fake_auth;
 mod fake_auth_store;
 mod fake_editing;
@@ -57,6 +59,7 @@ mod notifications_projects;
 mod offers;
 mod offers_known_uses;
 mod offers_secrecy;
+mod prompt_injection;
 mod recurring_jobs;
 mod rights_once;
 mod runs_end;
@@ -69,6 +72,7 @@ mod scenarios_fields;
 mod scenarios_files;
 mod scenarios_issues;
 mod scenarios_layouts;
+mod scenarios_never_sent;
 mod scenarios_notifications;
 mod scenarios_relations;
 mod scenarios_searches;

@@ -1,4 +1,6 @@
-//! What the routes of setting up AI need (AI-01, AI-02, PRIV-08): the organization's settings,
+//! What the routes of AI need (AI-01, AI-02, AI-03, PRIV-08): the marks *Never sent to AI* (read by
+//! everybody who is signed in, set with *Change organization settings* for a built-in field and
+//! *Change project settings* for a project), the organization's settings,
 //! the key, the agreement, *What goes where* and the try of the provider need *Change organization
 //! settings*, the switch of a project *Change project settings* there. Kept beside the table so it
 //! does not grow.
@@ -46,6 +48,17 @@ pub(super) const ROUTES: &[Route] = &[
     ),
     route(
         "changeProjectAi",
+        Declared::Permission(Permission::ChangeProjectSettings),
+        Answer::Ordinary,
+    ),
+    route("listNeverSentToAi", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "setFieldNeverSentToAi",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+        Answer::Ordinary,
+    ),
+    route(
+        "setProjectNeverSentToAi",
         Declared::Permission(Permission::ChangeProjectSettings),
         Answer::Ordinary,
     ),

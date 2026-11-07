@@ -9,6 +9,7 @@
 
 mod access_keys;
 mod ai;
+mod ai_tools;
 mod anchor;
 mod auth;
 mod chain;
