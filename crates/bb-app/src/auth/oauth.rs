@@ -28,7 +28,7 @@ use bb_core::oauth::{
     OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD, ReturnAddress, ReturnKind,
     code_life, is_registered, with_query,
 };
-use bb_core::settings::{AI_APPS_ENABLED, AI_ENABLED};
+use bb_core::settings::AI_APPS_ENABLED;
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::days;
 use bb_policy::{Authorized, Place};
@@ -64,8 +64,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Whether AI apps may register and sign in now: AI is on for the organization and an
     /// administrator has not switched apps off.
     pub(crate) async fn apps_may_sign_in(&self) -> Result<bool, AppError> {
-        let layers = self.setting_layers_of(None).await?;
-        Ok(layers.yes(&AI_ENABLED) && layers.yes(&AI_APPS_ENABLED))
+        if !self.ai_state_at(None).await?.organization_on {
+            return Ok(false);
+        }
+        Ok(self.setting_layers_of(None).await?.yes(&AI_APPS_ENABLED))
     }
 
     /// The return addresses administrators allowed.
@@ -418,10 +420,7 @@ pub async fn connected_apps<S: AuthStore>(
         items.push(ConnectedAppView {
             id: found.grant.id,
             name: client.name,
-            on_this_computer: client.return_addresses.iter().all(|address| {
-                ReturnAddress::read(address)
-                    .is_some_and(|read| read.kind() == ReturnKind::OnThisComputer)
-            }),
+            on_this_computer: client.return_addresses.iter().all(|a| on_this_computer(a)),
             scope: found.grant.scope,
             projects,
             allowed_at: found.grant.allowed_at,

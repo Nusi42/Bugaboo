@@ -528,3 +528,54 @@ async fn ai_02_a_project_with_ai_off_and_the_organization_with_ai_off_are_kept_f
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_22_a_pause_that_ended_leaves_no_mark_to_move_the_next_one() -> TestResult {
+    each_database("ai_22_resume_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let signed = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        let clean = async || -> Result<(), bb_testing::Failure> {
+            bb_app::auth::clean_old_grants(&rig.services.ctx(Rig::info())).await?;
+            Ok(())
+        };
+        // Off for a day, a clean-up marks the moment; on again, a clean-up ends the pause.
+        rig.set_organization_switch("ai-apps.enabled", false)
+            .await?;
+        rig.clock.advance(24 * 3600);
+        clean().await?;
+        rig.set_organization_switch("ai-apps.enabled", true).await?;
+        rig.clock.advance(24 * 3600);
+        clean().await?;
+        // Ten days with apps on, then off again and one clean-up: the first pause only marks the
+        // moment, so the end is not moved by the days with apps on.
+        rig.clock.advance(10 * 24 * 3600);
+        rig.set_organization_switch("ai-apps.enabled", false)
+            .await?;
+        clean().await?;
+        rig.set_organization_switch("ai-apps.enabled", true).await?;
+        // The renewing token was made 30 days before its end: day 35 is past it.
+        rig.clock.advance(23 * 24 * 3600);
+        let renewed = mcp
+            .post_form(
+                "/oauth/token",
+                &format!(
+                    "grant_type=refresh_token&client_id={}&refresh_token={}",
+                    signed.client, signed.refresh
+                ),
+            )
+            .await?;
+        assert_eq!(renewed.status, StatusCode::BAD_REQUEST, "{}", renewed.json);
+        Ok(())
+    })
+    .await
+}

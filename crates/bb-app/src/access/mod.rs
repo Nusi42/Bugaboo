@@ -104,6 +104,25 @@ impl Actor {
         self.key.as_ref().and_then(|key| key.agent)
     }
 
+    /// What the credential is counted under: the grant of an app, the access key, or the person
+    /// when there is neither. The one place that tells it, for the limits and for the session of
+    /// an app.
+    pub(crate) fn credential_key(&self) -> String {
+        match self.key.as_ref().map(|key| &key.source) {
+            Some(CredentialSource::App { grant, .. }) => grant.to_string(),
+            Some(CredentialSource::Key(key)) => key.to_string(),
+            None => self.person.id.to_string(),
+        }
+    }
+
+    /// The name of the AI app behind the request, when an app's grant is.
+    pub(crate) fn app_name(&self) -> Option<String> {
+        match self.key.as_ref().map(|key| &key.source) {
+            Some(CredentialSource::App { name, .. }) => Some(name.clone()),
+            _ => None,
+        }
+    }
+
     /// What the access key behind the request narrows its owner to, if there is one. The one
     /// place that tells it: every decision about what the actor sees (the list, the search, the
     /// trail, the references, the preview of a move, the re-check of a move) is made with it.

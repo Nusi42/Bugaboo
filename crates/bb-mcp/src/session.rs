@@ -140,6 +140,12 @@ impl Sessions {
                 idle.push(open.run);
             }
         }
+        // A slot nobody holds (only the map has it) and that has no run is left out, so the map
+        // does not grow with every grant that ever called. The test is made under the lock of the
+        // map: nobody can take the slot out of it while it is judged.
+        locked(&self.open).retain(|_, slot| {
+            Arc::strong_count(slot) > 1 || slot.try_lock().is_ok_and(|held| held.is_some())
+        });
         self.close(&RequestInfo::default(), idle, RunEnd::Done)
             .await;
     }

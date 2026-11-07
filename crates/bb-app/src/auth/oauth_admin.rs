@@ -19,7 +19,6 @@ use super::oauth_types::{
 };
 use super::store::AuthStore;
 use super::types::Done;
-use crate::access::CredentialSource;
 
 /// The web addresses administrators allowed, for *Apps that may sign in*.
 ///
@@ -166,7 +165,8 @@ pub async fn clean_old_grants<S: AuthStore>(
 ) -> Result<super::oauth_store::OAuthCleaned, AppError> {
     let now = ctx.now();
     // While AI apps are off the days without use do not count: the tokens that were not used are
-    // moved by a day, and nothing is deleted (ADR-0042), so switching on again brings the apps back.
+    // moved by the time since the last pause (the first pause only marks), and nothing is deleted
+    // (ADR-0042), so switching on again brings the apps back.
     let apps_on = ctx.apps_may_sign_in().await?;
     let back = |count: i64| {
         now.checked_sub(days(count))
@@ -222,19 +222,10 @@ pub async fn mcp_identity<S: AuthStore>(
             .await;
         return Err(error);
     }
-    let app = match actor.key.as_ref().map(|key| &key.source) {
-        Some(CredentialSource::App { name, .. }) => Some(name.clone()),
-        _ => None,
-    };
-    let credential = match actor.key.as_ref().map(|key| &key.source) {
-        Some(CredentialSource::App { grant, .. }) => grant.to_string(),
-        Some(CredentialSource::Key(key)) => key.to_string(),
-        None => actor.person.id.to_string(),
-    };
     Ok(McpIdentity {
         person: actor.person.id,
-        credential,
-        app,
+        credential: actor.credential_key(),
+        app: actor.app_name(),
         agent: actor.agent(),
     })
 }

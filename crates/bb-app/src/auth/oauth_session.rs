@@ -17,7 +17,6 @@ use super::events::{by, entity, set_to};
 use super::oauth_types::{AppSession, EndAppRuns, StartAppSession};
 use super::store::AuthStore;
 use super::types::Done;
-use crate::access::CredentialSource;
 use crate::runs::{RunStore, RunsOf};
 
 /// Opens the run of a session of an AI app, for the person and the app behind the token (or the
@@ -33,10 +32,7 @@ pub async fn start_app_session<S: AuthStore>(
     if actor.agent().is_some() {
         return Ok(AppSession { run: None });
     }
-    let app = match actor.key.as_ref().map(|key| &key.source) {
-        Some(CredentialSource::App { name, .. }) => Some(name.clone()),
-        _ => None,
-    };
+    let app = actor.app_name();
     let run =
         RunId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
     let who = RunActor {

@@ -13,7 +13,7 @@ use bb_core::oauth::{
 use super::ctx::Ctx;
 use super::error::AppError;
 use super::store::AuthStore;
-use crate::access::{Actor, CredentialSource};
+use crate::access::Actor;
 use crate::rate_window::{Overflow, Window};
 
 /// The calls of the last minute, by grant and by person, and the registrations of the last hour,
@@ -89,11 +89,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// [`AppError::Limited`] with the seconds to wait.
     pub(crate) fn count_call(&self, actor: &Actor) -> Result<(), AppError> {
-        let grant = match actor.key.as_ref().map(|key| &key.source) {
-            Some(CredentialSource::Key(id)) => id.to_string(),
-            Some(CredentialSource::App { grant, .. }) => grant.to_string(),
-            None => actor.person.id.to_string(),
-        };
+        let grant = actor.credential_key();
         self.services
             .call_rate
             .take(
