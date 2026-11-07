@@ -83,8 +83,10 @@ test("the lines of the history that belong to a run and to its undo", async ({ p
   await expect(page.getByText(t("runs.undone-message", { back: 2, skipped: 0 }))).toBeVisible();
   await inFourChosenThemes(page, "history-run", MILESTONE, paths.appearance, async () => {
     await page.goto("/issues/WEB-1");
-    await expect(page.getByRole("link", { name: t("history.run-link") })).toBeVisible();
-    await expect(page.getByRole("link", { name: t("history.undid-run-link") })).toBeVisible();
+    await expect(page.getByRole("link", { name: t("history.run-link") }).first()).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: t("history.undid-run-link") }).first(),
+    ).toBeVisible();
   });
 });
 
