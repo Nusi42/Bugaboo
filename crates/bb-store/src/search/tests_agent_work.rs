@@ -480,6 +480,52 @@ async fn ai_33_a_search_of_an_agent_is_cut_to_its_open_work_and_its_rules() -> T
     .await
 }
 
+/// An attempt with a check, a question and a review for the pieces of work: the first piece has the
+/// first three, the second the review.
+fn records_of(
+    made: &mut Made,
+    mine: &[IssueWork],
+    owner: UserId,
+) -> (Attempt, AttemptResult, Question, Review) {
+    let attempt = Attempt {
+        id: AttemptId::from_random(made.bytes()),
+        work: mine[0].id,
+        number: 1,
+        plan: Some("Plan".to_owned()),
+        plan_approved: true,
+        reported_minutes: 5,
+        reported_cost: 7,
+        started_at: at(2),
+        ended_at: None,
+        run: None,
+    };
+    let result = AttemptResult {
+        id: AgentNoteId::from_random(made.bytes()),
+        attempt: attempt.id,
+        kind: ResultKind::Check,
+        label: "Tests".to_owned(),
+        link: None,
+        outcome: Some(CheckResult::Passed),
+    };
+    let question = Question {
+        id: AgentNoteId::from_random(made.bytes()),
+        work: mine[0].id,
+        text: "Which browser?".to_owned(),
+        answer: Some("Firefox".to_owned()),
+        answered_by: Some(owner),
+        asked_at: at(3),
+    };
+    let review = Review {
+        id: AgentNoteId::from_random(made.bytes()),
+        work: mine[1].id,
+        answer: ReviewAnswer::SendBack,
+        note: Some("Again".to_owned()),
+        by: Some(owner),
+        at: at(4),
+    };
+    (attempt, result, question, review)
+}
+
 #[tokio::test]
 async fn ai_33_the_details_of_a_page_of_work_are_read_together_and_in_order() -> TestResult {
     each_database("ai_33_details", async |db| {
@@ -509,42 +555,7 @@ async fn ai_33_the_details_of_a_page_of_work_are_read_together_and_in_order() ->
             (Vec::new(), Vec::new()),
         )
         .await?;
-        let attempt = Attempt {
-            id: AttemptId::from_random(made.bytes()),
-            work: mine[0].id,
-            number: 1,
-            plan: Some("Plan".to_owned()),
-            plan_approved: true,
-            reported_minutes: 5,
-            reported_cost: 7,
-            started_at: at(2),
-            ended_at: None,
-            run: None,
-        };
-        let result = AttemptResult {
-            id: AgentNoteId::from_random(made.bytes()),
-            attempt: attempt.id,
-            kind: ResultKind::Check,
-            label: "Tests".to_owned(),
-            link: None,
-            outcome: Some(CheckResult::Passed),
-        };
-        let question = Question {
-            id: AgentNoteId::from_random(made.bytes()),
-            work: mine[0].id,
-            text: "Which browser?".to_owned(),
-            answer: Some("Firefox".to_owned()),
-            answered_by: Some(owner),
-            asked_at: at(3),
-        };
-        let review = Review {
-            id: AgentNoteId::from_random(made.bytes()),
-            work: mine[1].id,
-            answer: ReviewAnswer::SendBack,
-            note: Some("Again".to_owned()),
-            by: Some(owner),
-            at: at(4),
-        };
+        let (attempt, result, question, review) = records_of(&mut made, &mine, owner);
         made.step += 1;
         let step = made.step;
         let (a, r, q, v) = (
