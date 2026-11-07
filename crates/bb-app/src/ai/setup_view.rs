@@ -1,7 +1,7 @@
 //! Reading the setup of AI (AI-01, AI-02, PRIV-08, COMP-08): the settings as they are, what goes
 //! where, and the switch of one project. Reads only; the changes are in `setup`.
 
-use bb_core::ai::{AgreementStatus, Destination, ProviderKind};
+use bb_core::ai::{AgreementStatus, Destination, ProviderKind, SWITCHED_OFF_MAX};
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::{AI_ENABLED, SettingValue};
@@ -81,6 +81,8 @@ pub struct WhatGoesWhere {
     /// The projects that switched AI off for themselves; AI works in every other project (and in
     /// the sub-projects of those, unless they switch it on again).
     pub switched_off: Vec<SwitchedOff>,
+    /// More projects switched it off than the list names.
+    pub truncated: bool,
     /// Whether people go to the provider by name; if not, as their role.
     pub names_sent: bool,
     /// The agreement that was confirmed, if there is one.
@@ -204,12 +206,17 @@ pub async fn what_goes_where<S: AuthStore>(
     let destination = state.destination().unwrap_or(Destination::OtherProvider);
     let agreement = ctx.ai_agreement().await?;
     let mut switched_off = Vec::new();
+    let mut truncated = false;
     for (id, value) in ctx
         .store()
         .project_values(AI_ENABLED.definition())
         .await
         .map_err(|error| internal::<S>(&error))?
     {
+        if switched_off.len() >= SWITCHED_OFF_MAX {
+            truncated = true;
+            break;
+        }
         if value == SettingValue::Bool(false)
             && let Some(project) = ctx
                 .store()
@@ -228,6 +235,7 @@ pub async fn what_goes_where<S: AuthStore>(
         model: state.model,
         enabled: state.organization_on,
         switched_off,
+        truncated,
         // A model on the organization's own network gets the names each person may see
         // (M7-Q5); an outside provider gets roles unless an administrator chose otherwise.
         names_sent: !destination.is_outside() || state.send_names,

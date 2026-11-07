@@ -196,6 +196,10 @@ pub const ANSWER_BYTES_MAX: usize = 1024 * 1024;
 /// to find open ports on the network.
 pub const TRY_EVERY_SECONDS: i64 = 10;
 
+/// The most projects *What goes where* names as having switched AI off; it says when it cut the
+/// list off.
+pub const SWITCHED_OFF_MAX: usize = 100;
+
 /// The text the try of the provider sends: it holds no data of the organization.
 pub const TRY_TEXT: &str = "Reply with the word OK.";
 

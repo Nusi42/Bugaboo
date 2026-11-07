@@ -25287,21 +25287,6 @@
           }
         }
       },
-      "SwitchedOffBody": {
-        "type": "object",
-        "description": "A project that has switched AI off for itself.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the project."
-          },
-          "name": {
-            "type": "string",
-            "description": "What people call it."
-          }
-        }
-      },
       "TagItem": {
         "type": "object",
         "description": "A tag as the people who look after tags see it: the fields that can be asked for.",
@@ -25910,6 +25895,7 @@
           "model",
           "enabled",
           "switched_off",
+          "truncated",
           "names_sent",
           "agreement_status"
         ],
@@ -25948,9 +25934,13 @@
           "switched_off": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SwitchedOffBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The projects that switched AI off for themselves. AI works in every other project."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "More projects switched AI off than the list names (at most 100 are named)."
           }
         }
       },

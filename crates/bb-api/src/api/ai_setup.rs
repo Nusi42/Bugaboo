@@ -21,6 +21,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::NamedRef;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     TooSoonAnswer, answer_authorized, done,
@@ -134,15 +135,6 @@ pub(crate) struct AgreementConfirmBody {
     destination: Destination,
 }
 
-/// A project that has switched AI off for itself.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct SwitchedOffBody {
-    /// The ID of the project.
-    id: String,
-    /// What people call it.
-    name: String,
-}
-
 /// What goes where.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WhatGoesWhereBody {
@@ -154,7 +146,9 @@ pub(crate) struct WhatGoesWhereBody {
     /// AI is on for the organization.
     enabled: bool,
     /// The projects that switched AI off for themselves. AI works in every other project.
-    switched_off: Vec<SwitchedOffBody>,
+    switched_off: Vec<NamedRef>,
+    /// More projects switched AI off than the list names (at most 100 are named).
+    truncated: bool,
     /// Whether people go to the provider by name; otherwise as their role.
     names_sent: bool,
     /// The agreement that was confirmed, if there is one.
@@ -175,11 +169,12 @@ impl From<&WhatGoesWhere> for WhatGoesWhereBody {
             switched_off: view
                 .switched_off
                 .iter()
-                .map(|project| SwitchedOffBody {
+                .map(|project| NamedRef {
                     id: project.id.to_string(),
                     name: project.name.clone(),
                 })
                 .collect(),
+            truncated: view.truncated,
             names_sent: view.names_sent,
             agreement: view.agreement.as_ref().map(AgreementBody::from),
             agreement_status: view.agreement_status,

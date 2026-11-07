@@ -9103,13 +9103,6 @@ export interface components {
        */
       version: number;
     };
-    /** @description A project that has switched AI off for itself. */
-    SwitchedOffBody: {
-      /** @description The ID of the project. */
-      id: string;
-      /** @description What people call it. */
-      name: string;
-    };
     /** @description A tag as the people who look after tags see it: the fields that can be asked for. */
     TagItem: {
       color?: components["schemas"]["ChoiceColor"] | null;
@@ -9441,7 +9434,9 @@ export interface components {
       /** @description Whether people go to the provider by name; otherwise as their role. */
       names_sent: boolean;
       /** @description The projects that switched AI off for themselves. AI works in every other project. */
-      switched_off: components["schemas"]["SwitchedOffBody"][];
+      switched_off: components["schemas"]["NamedRef"][];
+      /** @description More projects switched AI off than the list names (at most 100 are named). */
+      truncated: boolean;
     };
     /** @description Where a project would go. */
     WhereToBody: {

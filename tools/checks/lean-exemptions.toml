@@ -360,3 +360,8 @@ reason = "The changes of one work day, few by nature; at most the newest `HISTOR
 route = "GET /api/v1/work-days/old"
 property = "people"
 reason = "The people who have work days older than the keep period, at most `OLD_PEOPLE_MAX` (`bb_app::working_hours`); the answer says when more have them (PRIV-09, ADR-0035, decision 7; M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/ai/what-goes-where"
+property = "switched_off"
+reason = "The projects that switched AI off for themselves are a choice of project leads and stay few; the list names at most 100 and says when it cut the list off (`truncated`), which a page for administrators reads as one answer with the rest of what goes where (M7-F10)."
