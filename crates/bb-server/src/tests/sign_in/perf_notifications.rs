@@ -19,8 +19,8 @@ const NOTIFICATIONS: &str = "/api/v1/notifications";
 /// The most statements the page or the number may run, however many rows there are (a ceiling that a
 /// change to the code has to notice; the exact numbers are compared apart). Most of them are the
 /// session and the rights of the person, which every read pays (31 measured, 42 before the rights
-/// of the person were read once, M4-F137).
-const AT_MOST: usize = 31;
+/// of the person were read once, M4-F137; 32 with the one read of the marks of the texts of a page).
+const AT_MOST: usize = 32;
 
 /// The same for the number over many projects: the rights in each project of the page are decided
 /// from the tree (36 measured, 39 on main).

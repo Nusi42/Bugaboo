@@ -118,7 +118,7 @@ async fn priority_of(ada: &mut Browser, key: &str) -> Result<String, Failure> {
 }
 
 fn field_of(body: &Value, at: usize) -> Option<&str> {
-    body["items"][at]["fields"][0]["field"].as_str()
+    body["items"][at]["changes"][0]["field"].as_str()
 }
 
 #[tokio::test]
@@ -150,12 +150,14 @@ async fn ai_38_a_run_lists_its_changes_previews_and_undoes_them_over_http() -> T
             .send("GET", &format!("/api/v1/runs/{run}/undo"), None)
             .await?;
         assert_eq!(ok(&preview)?["goes_back"], 1);
-        let version = preview.body["version"].as_str().ok_or("no version")?;
+        let version = preview.body["preview_version"]
+            .as_str()
+            .ok_or("no version")?;
         let undone = ada
             .send(
                 "POST",
                 &format!("/api/v1/runs/{run}/undo"),
-                Some(json!({"version": version})),
+                Some(json!({"preview_version": version})),
             )
             .await?;
         assert_eq!(ok(&undone)?["goes_back"], 1);
@@ -168,7 +170,7 @@ async fn ai_38_a_run_lists_its_changes_previews_and_undoes_them_over_http() -> T
             .send(
                 "POST",
                 &format!("/api/v1/runs/{run}/undo"),
-                Some(json!({"version": version})),
+                Some(json!({"preview_version": version})),
             )
             .await?;
         assert_eq!(ok(&again)?["changed_since_preview"], true);
@@ -200,7 +202,7 @@ async fn ai_38_a_run_is_not_there_for_anybody_but_its_person() -> TestResult {
             (
                 "POST",
                 format!("/api/v1/runs/{run}/undo"),
-                Some(json!({"version": "x"})),
+                Some(json!({"preview_version": "x"})),
             ),
         ] {
             let reply = bob.send(method, &path, body).await?;
