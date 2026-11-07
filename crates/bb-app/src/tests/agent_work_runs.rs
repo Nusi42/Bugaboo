@@ -6,9 +6,10 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::message::Message;
 use bb_policy::StartingRole;
 
-use super::agent_work::{Handed, plain_hand_over, query};
+use super::agent_work::{Handed, handed, plain_hand_over, query};
 use super::agent_work_review::{check, ready, report, review, show};
 use super::agents::{an_agent, key_of};
+use super::runs::open;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::{go, member, status_of};
@@ -17,6 +18,7 @@ use crate::agent_work::{attach_result, end_attempt};
 use crate::agent_work::{hand_over, report_attempt, review_work};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
+use crate::runs::{RunQuery, get_run, preview_undo_run};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_core::settings::SettingValue;
 
@@ -323,5 +325,41 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
         assert_eq!(asked.only, expected);
     }
     let _ = other;
+    Ok(())
+}
+
+/// An agent that holds work reaches the run of its own attempt, and the runs of its person stay
+/// closed to it, the preview and the undo too (AI-30, ADR-0029).
+#[tokio::test]
+async fn ai_30_an_agent_with_work_reaches_its_attempt_and_not_the_runs_of_its_person() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
+    let theirs = open(&world, &given.team.session_token, given.team.person.id).await?;
+    let read = |session: &str, run| RunQuery {
+        session_token: session.to_owned(),
+        run,
+    };
+    let refusal = get_run(&world.ctx(), read(&given.key, theirs)).await;
+    assert!(matches!(
+        refusal,
+        Err(AppError::Refused(bb_core::ErrorCode::NotFound))
+    ));
+    assert!(
+        preview_undo_run(&world.ctx(), read(&given.key, theirs))
+            .await
+            .is_err()
+    );
+    let attempt = world
+        .store
+        .lock()
+        .state
+        .work
+        .attempts
+        .iter()
+        .find_map(|attempt| attempt.run)
+        .ok_or("the attempt has no run")?;
+    get_run(&world.ctx(), read(&given.key, attempt)).await?;
+    get_run(&world.ctx(), read(&given.team.session_token, attempt)).await?;
     Ok(())
 }
