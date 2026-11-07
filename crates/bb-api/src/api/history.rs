@@ -29,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 21] = [
+const HISTORY_FIELDS: [FieldSpec; 23] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -51,6 +51,8 @@ const HISTORY_FIELDS: [FieldSpec; 21] = [
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("time_event"),
     FieldSpec::by_default("minutes"),
+    FieldSpec::by_default("run"),
+    FieldSpec::by_default("undid_run"),
 ];
 
 /// What happened to a relation.
@@ -92,6 +94,12 @@ pub(crate) struct HistoryEntryItem {
     /// The agent that did it, when an agent did; `by` is then the person responsible for it.
     #[serde(skip_serializing_if = "Option::is_none")]
     agent: Option<NamedRef>,
+    /// The run the change was made in, when it was made in one (a session of an AI app, an attempt).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    run: Option<String>,
+    /// The run the change is the undo of, when it is one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    undid_run: Option<String>,
     /// What it is.
     kind: HistoryEntryKind,
     /// A comment: its ID.
@@ -162,6 +170,8 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
             id: agent.id.to_string(),
             name: agent.name.clone(),
         }),
+        run: item.run.map(|run| run.to_string()),
+        undid_run: item.undid_run.map(|run| run.to_string()),
         kind,
         comment: None,
         text: None,
@@ -343,6 +353,8 @@ mod tests {
             at: String::new(),
             by: Some(PersonRef::Someone),
             agent: None,
+            run: Some(String::new()),
+            undid_run: Some(String::new()),
             kind: HistoryEntryKind::Change,
             comment: Some(String::new()),
             text: Some(String::new()),

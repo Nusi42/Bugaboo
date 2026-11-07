@@ -6,6 +6,8 @@
 //!   attempt hold no action and no items.
 //! - `event.run` names the run an event was made in, empty for every event before and for every
 //!   change outside a run. The index serves the list of the changes of a run.
+//! - `history_entry.run` and `history_entry.undid_run` name the run a row of the history was made
+//!   in, and the run it is the undo of; they are empty for every row before and outside a run.
 //! - `text_mark` holds, for each text that AI wrote (a part of a record), how it was written, with
 //!   the app or the agent. A text without a row has no mark. A removed agent or person leaves the
 //!   row as it is (the mark says how, not who).
@@ -15,7 +17,7 @@
 use sea_query::{ColumnDef, Index, Table};
 
 use super::{Step, id_column};
-use crate::schema::{Event, ManyChangeRunRow, TextMarkRow};
+use crate::schema::{Event, HistoryEntryRow, ManyChangeRunRow, TextMarkRow};
 
 pub(super) fn steps() -> Vec<Step> {
     vec![
@@ -46,6 +48,18 @@ pub(super) fn steps() -> Vec<Step> {
             Table::alter()
                 .table(Event::Table)
                 .add_column(ColumnDef::new(Event::Run).blob())
+                .to_owned(),
+        ),
+        Step::Alter(
+            Table::alter()
+                .table(HistoryEntryRow::Table)
+                .add_column(ColumnDef::new(HistoryEntryRow::Run).blob())
+                .to_owned(),
+        ),
+        Step::Alter(
+            Table::alter()
+                .table(HistoryEntryRow::Table)
+                .add_column(ColumnDef::new(HistoryEntryRow::UndidRun).blob())
                 .to_owned(),
         ),
         Step::Index(

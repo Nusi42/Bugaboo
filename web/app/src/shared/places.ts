@@ -24,6 +24,14 @@ export const places: readonly Place[] = [
     listed: false,
   },
   {
+    // A run of an AI app, an agent or a change to many issues: reached by its address, `/runs/<id>`.
+    path: paths.run,
+    name: "runs.place",
+    icon: iconName.issues,
+    parent: paths.home,
+    listed: false,
+  },
+  {
     // The search over every project, and a saved search: reached from the menu's *Saved searches*.
     path: paths.search,
     name: "search.page.title",

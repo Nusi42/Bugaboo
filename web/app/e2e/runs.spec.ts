@@ -8,7 +8,13 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { commentOn, createAppSession, issueIdOf, markText } from "./support/runs.ts";
+import {
+  changeAfterTheRun,
+  commentOn,
+  createSessionOfTwo,
+  issueIdOf,
+  markText,
+} from "./support/runs.ts";
 
 // Runs and the marks of texts written with AI (AI-38, COMP-08, M7 WP-07): the page of a session of an
 // AI app lists what it changed and undoes it in one step after a look; a text that AI wrote says so
@@ -26,13 +32,12 @@ async function priorityOf(server: Parameters<typeof signedInAdmin>[0], key: stri
   return issue.issue.priority;
 }
 
-test("ai_38 the run page previews and undoes a run", async ({ page, server }) => {
-  const admin = await signedInAdmin(server);
+test("ai_38 the run page lists the changes in a table and undoes the run after the question", async ({
+  page,
+  server,
+}) => {
   const was = await priorityOf(server, "WEB-1");
-  const run = await createAppSession(server, admin, [
-    { issue: { id: await issueIdOf(admin, "WEB-1"), key: "WEB-1" }, version: 1 },
-    { issue: { id: await issueIdOf(admin, "WEB-2"), key: "WEB-2" }, version: 1 },
-  ]);
+  const { admin, run } = await createSessionOfTwo(server);
   await admin.dispose();
   await signIn(page, ada);
   await page.goto(runAddress(run));
@@ -42,17 +47,52 @@ test("ai_38 the run page previews and undoes a run", async ({ page, server }) =>
       name: t("runs.title-app-session-named", { app: "Claude Code" }),
     }),
   ).toBeVisible();
-  // Its changes, in the words of the history.
-  await expect(page.getByText("WEB-1", { exact: true })).toBeVisible();
-  await expect(page.getByText("WEB-2", { exact: true })).toBeVisible();
+  // Who, through which app, and where the run is, in a run's own words.
+  await expect(page.getByText(/Ada Admin via Claude Code, /u)).toBeVisible();
+  await expect(page.getByText(t("runs.state-finished"), { exact: true })).toBeVisible();
+  // The changes are a table: the issue, what changed from what to what, and when.
+  await expect(page.getByRole("columnheader")).toHaveText([
+    t("runs.column-issue"),
+    t("runs.column-what"),
+    t("runs.column-when"),
+  ]);
+  await expect(page.getByRole("link", { name: "WEB-1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "WEB-2" })).toBeVisible();
+  await expect(page.getByText(/^Priority: .+ → Critical$/u)).toHaveCount(2);
   await expectGoodInEveryLook(page);
-  // Look first, then undo with what was looked at.
-  await page.getByRole("button", { name: t("runs.look-first"), exact: true }).click();
-  await expect(page.getByText(t("runs.preview", { back: 2, skipped: 0 }))).toBeVisible();
+  // One button opens the question; it names who and through which app, and what goes back.
   await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
-  await expect(page.getByText(t("runs.undone", { back: 2, skipped: 0 }))).toBeVisible();
+  const question = page.getByRole("alertdialog");
+  await expect(
+    question.getByText(t("runs.question", { person: "Ada Admin", app: "Claude Code" })),
+  ).toBeVisible();
+  await expect(question.getByText(t("runs.goes-back", { count: 2 }))).toBeVisible();
+  await question.getByRole("button", { name: t("runs.confirm", { count: 2 }) }).click();
+  await expect(page.getByText(t("runs.undone-message", { back: 2, skipped: 0 }))).toBeVisible();
   expect(await priorityOf(server, "WEB-1")).toBe(was);
   expect(await priorityOf(server, "WEB-2")).toBe(was);
+  // After the undo: no preview line and no button; the state says who undid it; each row says what became of it.
+  await page.reload();
+  await expect(page.getByText(/^Undone by Ada Admin, /u)).toBeVisible();
+  await expect(page.getByText(t("runs.outcome-went-back"))).toHaveCount(2);
+  await expect(page.getByRole("button", { name: t("runs.undo"), exact: true })).toHaveCount(0);
+});
+
+test("ai_38 a change made afterwards is skipped and named", async ({ page, server }) => {
+  const { admin, run } = await createSessionOfTwo(server);
+  await changeAfterTheRun(admin);
+  await admin.dispose();
+  await signIn(page, ada);
+  await page.goto(runAddress(run));
+  await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
+  const question = page.getByRole("alertdialog");
+  await expect(question.getByText(t("runs.goes-back", { count: 1 }))).toBeVisible();
+  await expect(question.getByText(t("runs.skipped-title", { count: 1 }))).toBeVisible();
+  await question.getByRole("button", { name: t("runs.confirm", { count: 1 }) }).click();
+  await expect(page.getByText(t("runs.undone-message", { back: 1, skipped: 1 }))).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(t("runs.outcome-went-back"))).toHaveCount(1);
+  await expect(page.getByText(t("runs.outcome-kept-by", { person: "Ada Admin" }))).toHaveCount(1);
 });
 
 test("comp_08 the mark shows beside the text", async ({ page, server }) => {

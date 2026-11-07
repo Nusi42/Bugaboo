@@ -1893,6 +1893,9 @@ pub const HISTORY_NOTHING: MessageKey = MessageKey::new("history.nothing");
 /// The message `history.people-none`.
 pub const HISTORY_PEOPLE_NONE: MessageKey = MessageKey::new("history.people-none");
 
+/// The message `history.run-link`.
+pub const HISTORY_RUN_LINK: MessageKey = MessageKey::new("history.run-link");
+
 /// The message `history.tab-changes`.
 pub const HISTORY_TAB_CHANGES: MessageKey = MessageKey::new("history.tab-changes");
 
@@ -1910,6 +1913,9 @@ pub const HISTORY_TITLE: MessageKey = MessageKey::new("history.title");
 
 /// The message `history.type-unknown`.
 pub const HISTORY_TYPE_UNKNOWN: MessageKey = MessageKey::new("history.type-unknown");
+
+/// The message `history.undid-run`.
+pub const HISTORY_UNDID_RUN: MessageKey = MessageKey::new("history.undid-run");
 
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
@@ -3985,21 +3991,46 @@ pub const RUNS_CHANGED_SINCE_PREVIEW: MessageKey = MessageKey::new("runs.changed
 /// The message `runs.changes-heading`.
 pub const RUNS_CHANGES_HEADING: MessageKey = MessageKey::new("runs.changes-heading");
 
-/// The message `runs.look-first`.
-pub const RUNS_LOOK_FIRST: MessageKey = MessageKey::new("runs.look-first");
+/// The message `runs.column-issue`.
+pub const RUNS_COLUMN_ISSUE: MessageKey = MessageKey::new("runs.column-issue");
+
+/// The message `runs.column-what`.
+pub const RUNS_COLUMN_WHAT: MessageKey = MessageKey::new("runs.column-what");
+
+/// The message `runs.column-when`.
+pub const RUNS_COLUMN_WHEN: MessageKey = MessageKey::new("runs.column-when");
+
+/// The message `runs.dialog-note`.
+pub const RUNS_DIALOG_NOTE: MessageKey = MessageKey::new("runs.dialog-note");
 
 /// The message `runs.nothing-to-show`.
 pub const RUNS_NOTHING_TO_SHOW: MessageKey = MessageKey::new("runs.nothing-to-show");
 
+/// The message `runs.outcome-kept-changed`.
+pub const RUNS_OUTCOME_KEPT_CHANGED: MessageKey = MessageKey::new("runs.outcome-kept-changed");
+
+/// The message `runs.outcome-kept-gone`.
+pub const RUNS_OUTCOME_KEPT_GONE: MessageKey = MessageKey::new("runs.outcome-kept-gone");
+
+/// The message `runs.outcome-kept-not-allowed`.
+pub const RUNS_OUTCOME_KEPT_NOT_ALLOWED: MessageKey =
+    MessageKey::new("runs.outcome-kept-not-allowed");
+
+/// The message `runs.outcome-kept-not-undoable`.
+pub const RUNS_OUTCOME_KEPT_NOT_UNDOABLE: MessageKey =
+    MessageKey::new("runs.outcome-kept-not-undoable");
+
+/// The message `runs.outcome-went-back`.
+pub const RUNS_OUTCOME_WENT_BACK: MessageKey = MessageKey::new("runs.outcome-went-back");
+
+/// The message `runs.place`.
+pub const RUNS_PLACE: MessageKey = MessageKey::new("runs.place");
+
 /// The message `runs.show-more`.
 pub const RUNS_SHOW_MORE: MessageKey = MessageKey::new("runs.show-more");
 
-/// The message `runs.skip-changed-since`.
-pub const RUNS_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("runs.skip-changed-since");
-
-/// The message `runs.skip-changed-since-by-you`.
-pub const RUNS_SKIP_CHANGED_SINCE_BY_YOU: MessageKey =
-    MessageKey::new("runs.skip-changed-since-by-you");
+/// The message `runs.skip-changed`.
+pub const RUNS_SKIP_CHANGED: MessageKey = MessageKey::new("runs.skip-changed");
 
 /// The message `runs.skip-gone`.
 pub const RUNS_SKIP_GONE: MessageKey = MessageKey::new("runs.skip-gone");
@@ -4010,8 +4041,17 @@ pub const RUNS_SKIP_NOT_ALLOWED: MessageKey = MessageKey::new("runs.skip-not-all
 /// The message `runs.skip-not-undoable`.
 pub const RUNS_SKIP_NOT_UNDOABLE: MessageKey = MessageKey::new("runs.skip-not-undoable");
 
-/// The message `runs.skipped-list`.
-pub const RUNS_SKIPPED_LIST: MessageKey = MessageKey::new("runs.skipped-list");
+/// The message `runs.state-failed`.
+pub const RUNS_STATE_FAILED: MessageKey = MessageKey::new("runs.state-failed");
+
+/// The message `runs.state-finished`.
+pub const RUNS_STATE_FINISHED: MessageKey = MessageKey::new("runs.state-finished");
+
+/// The message `runs.state-running`.
+pub const RUNS_STATE_RUNNING: MessageKey = MessageKey::new("runs.state-running");
+
+/// The message `runs.state-stopped`.
+pub const RUNS_STATE_STOPPED: MessageKey = MessageKey::new("runs.state-stopped");
 
 /// The message `runs.title-app-session`.
 pub const RUNS_TITLE_APP_SESSION: MessageKey = MessageKey::new("runs.title-app-session");
@@ -10480,15 +10520,106 @@ pub fn roles_used_projects(count: i64) -> Message {
     )
 }
 
-/// The message `runs.preview`.
+/// The message `runs.actor-plain`.
 #[must_use]
-pub fn runs_preview(back: i64, skipped: i64) -> Message {
+pub fn runs_actor_plain(person: impl std::fmt::Display, span: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("runs.preview"),
+        MessageKey::new("runs.actor-plain"),
         vec![
-            ("back", Value::Number(back)),
-            ("skipped", Value::Number(skipped)),
+            ("person", Value::Text(person.to_string())),
+            ("span", Value::Text(span.to_string())),
         ],
+    )
+}
+
+/// The message `runs.actor-via`.
+#[must_use]
+pub fn runs_actor_via(
+    app: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    span: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.actor-via"),
+        vec![
+            ("app", Value::Text(app.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("span", Value::Text(span.to_string())),
+        ],
+    )
+}
+
+/// The message `runs.change-line`.
+#[must_use]
+pub fn runs_change_line(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.change-line"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
+/// The message `runs.confirm`.
+#[must_use]
+pub fn runs_confirm(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.confirm"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `runs.goes-back`.
+#[must_use]
+pub fn runs_goes_back(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.goes-back"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `runs.outcome-kept-by`.
+#[must_use]
+pub fn runs_outcome_kept_by(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.outcome-kept-by"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `runs.question`.
+#[must_use]
+pub fn runs_question(app: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.question"),
+        vec![
+            ("app", Value::Text(app.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `runs.question-plain`.
+#[must_use]
+pub fn runs_question_plain(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.question-plain"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `runs.skip-by`.
+#[must_use]
+pub fn runs_skip_by(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.skip-by"),
+        vec![("person", Value::Text(person.to_string()))],
     )
 }
 
@@ -10509,12 +10640,45 @@ pub fn runs_skip_line(
     )
 }
 
-/// The message `runs.status`.
+/// The message `runs.skipped-more`.
 #[must_use]
-pub fn runs_status(status: impl std::fmt::Display) -> Message {
+pub fn runs_skipped_more(count: i64) -> Message {
     Message::with_arguments(
-        MessageKey::new("runs.status"),
-        vec![("status", Value::Text(status.to_string()))],
+        MessageKey::new("runs.skipped-more"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `runs.skipped-title`.
+#[must_use]
+pub fn runs_skipped_title(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.skipped-title"),
+        vec![("count", Value::Text(count.to_string()))],
+    )
+}
+
+/// The message `runs.span`.
+#[must_use]
+pub fn runs_span(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.span"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `runs.state-undone`.
+#[must_use]
+pub fn runs_state_undone(at: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("runs.state-undone"),
+        vec![
+            ("at", Value::Text(at.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
     )
 }
 
@@ -10527,11 +10691,11 @@ pub fn runs_title_app_session_named(app: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `runs.undone`.
+/// The message `runs.undone-message`.
 #[must_use]
-pub fn runs_undone(back: i64, skipped: i64) -> Message {
+pub fn runs_undone_message(back: i64, skipped: i64) -> Message {
     Message::with_arguments(
-        MessageKey::new("runs.undone"),
+        MessageKey::new("runs.undone-message"),
         vec![
             ("back", Value::Number(back)),
             ("skipped", Value::Number(skipped)),
@@ -14934,6 +15098,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "history.relation-removed",
         "{who} took away a relation: this issue · {name} · {issue}",
     ),
+    ("history.run-link", "Run of this session"),
     ("history.set", "{who} set {field}: {after}"),
     ("history.tab-changes", "Changes"),
     ("history.tab-comments", "Comments"),
@@ -14959,6 +15124,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.title", "History"),
     ("history.type-unknown", "another issue type"),
+    ("history.undid-run", "Undid a run"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
@@ -16687,40 +16853,86 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {in # project you can see} other {in # projects you can see}}",
     ),
     ("roles.used-whole", "for the whole organization"),
+    ("runs.actor-plain", "{person}, {span}"),
+    ("runs.actor-via", "{person} via {app}, {span}"),
+    ("runs.change-line", "{field}: {before} → {after}"),
     (
         "runs.changed-since-preview",
         "Something changed since you looked. Look at what would go back again.",
     ),
     ("runs.changes-heading", "Changes"),
-    ("runs.look-first", "Look at what would go back first"),
+    ("runs.column-issue", "Issue"),
+    ("runs.column-what", "What changed"),
+    ("runs.column-when", "When"),
+    (
+        "runs.confirm",
+        "{count, plural, one {Undo # change} other {Undo # changes}}",
+    ),
+    (
+        "runs.dialog-note",
+        "An undo never touches a field that somebody else changed afterwards.",
+    ),
+    (
+        "runs.goes-back",
+        "Goes back ({count}): {count, plural, =0 {nothing.} one {# change.} other {# changes.}}",
+    ),
     (
         "runs.nothing-to-show",
         "This run changed nothing that you can see.",
     ),
     (
-        "runs.preview",
-        "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}{skipped, plural, =0 {} one {, # is skipped} other {, # are skipped}}.",
+        "runs.outcome-kept-by",
+        "Skipped: {person} changed it afterwards",
     ),
-    ("runs.show-more", "Show more"),
-    ("runs.skip-changed-since", "was changed after the run"),
     (
-        "runs.skip-changed-since-by-you",
-        "was changed by you after the run",
+        "runs.outcome-kept-changed",
+        "Skipped: it was changed afterwards",
     ),
-    ("runs.skip-gone", "is gone"),
-    ("runs.skip-line", "{issue}: {field} {reason}"),
-    ("runs.skip-not-allowed", "you may not change it"),
-    ("runs.skip-not-undoable", "cannot be put back yet"),
-    ("runs.skipped-list", "Changes that are skipped"),
-    ("runs.status", "Status: {status}"),
+    ("runs.outcome-kept-gone", "Skipped: the issue is gone"),
+    (
+        "runs.outcome-kept-not-allowed",
+        "Skipped: you may not change it",
+    ),
+    (
+        "runs.outcome-kept-not-undoable",
+        "Skipped: cannot be put back yet",
+    ),
+    ("runs.outcome-went-back", "Went back"),
+    ("runs.place", "Run"),
+    ("runs.question", "Undo what {person} via {app} changed?"),
+    ("runs.question-plain", "Undo what {person} changed?"),
+    ("runs.show-more", "Show more changes"),
+    (
+        "runs.skip-by",
+        "{person} changed it afterwards, so that change stays.",
+    ),
+    (
+        "runs.skip-changed",
+        "It was changed afterwards, so that change stays.",
+    ),
+    ("runs.skip-gone", "The issue is gone."),
+    ("runs.skip-line", "{issue} {field}: {reason}"),
+    ("runs.skip-not-allowed", "You may not change it."),
+    ("runs.skip-not-undoable", "It cannot be put back yet."),
+    (
+        "runs.skipped-more",
+        "{count, plural, one {# more is skipped.} other {# more are skipped.}}",
+    ),
+    ("runs.skipped-title", "Skipped ({count})"),
+    ("runs.span", "{from}–{to}"),
+    ("runs.state-failed", "Stopped because something went wrong"),
+    ("runs.state-finished", "Finished"),
+    ("runs.state-running", "Running"),
+    ("runs.state-stopped", "Stopped"),
+    ("runs.state-undone", "Undone by {person}, {at}"),
     ("runs.title-app-session", "Session of an AI app"),
     ("runs.title-app-session-named", "Session of {app}"),
     ("runs.title-attempt", "Attempt of an agent"),
     ("runs.title-many-changes", "Change to many issues"),
     ("runs.undo", "Undo the run"),
     (
-        "runs.undone",
-        "{back, plural, =0 {No change went back} one {# change went back} other {# changes went back}}{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
+        "runs.undone-message",
+        "{back, plural, =0 {No change went back} one {# change went back} other {# changes went back}}. {skipped, plural, =0 {None were skipped.} one {# was skipped.} other {# were skipped.}}",
     ),
     ("runs.unknown-issue", "An issue"),
     (

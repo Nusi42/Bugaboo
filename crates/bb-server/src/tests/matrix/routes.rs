@@ -93,6 +93,12 @@ fn reads_its_own_record(actor: Actor, route: &Operation) -> bool {
     actor == Actor::AgentWithoutWork && route.id == "getAgent"
 }
 
+/// *Undo the run* is the person's own act: a key that may only look and an agent (which is not the
+/// person) are refused before the run is looked up (`may_change_own`).
+fn is_refused_as_the_persons_undo(actor: Actor, route: &Operation) -> bool {
+    route.id == "undoRun" && matches!(actor, Actor::KeySeeOnly | Actor::AgentWithoutWork)
+}
+
 /// What the server must answer `actor` for `route`, from the table of `actors.rs`.
 pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
     if route.needs == Declared::Public {
@@ -110,7 +116,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     if reads_its_own_record(actor, route) {
         return Expect::NotFound;
     }
-    if is_refused_as_the_persons_own(actor, route, example) {
+    if is_refused_as_the_persons_own(actor, route, example)
+        || is_refused_as_the_persons_undo(actor, route)
+    {
         return Expect::Forbidden;
     }
     if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {

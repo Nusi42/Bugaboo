@@ -225,8 +225,9 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
         match *name {
             "create_starting_roles" => {}
             // A move also writes the event of the new readable ID; the starter fields of time
-            // entries are one change for each of the two fields.
-            "move_issue" | "create_starter_time_fields" => {
+            // entries are one change for each of the two fields; an undo of a run is the event of
+            // the undo on the run and the event of the one issue it puts back.
+            "move_issue" | "create_starter_time_fields" | "undo_run" => {
                 assert_eq!(added, 2, "{name} appended {added} events");
             }
             _ => assert_eq!(added, 1, "{name} appended {added} events"),

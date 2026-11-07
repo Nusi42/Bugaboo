@@ -148,7 +148,7 @@ async fn ai_38_a_run_is_undone_in_one_step_and_skips_later_changes() -> Outcome 
     .await?
     .into_value();
     assert_eq!(page.items.len(), 3);
-    assert_eq!(page.items[0].changes[0].field, "priority");
+    assert_eq!(page.items[0].changes[0].change.field, "priority");
     let preview = preview_of(&world, &admin, run).await?;
     assert_eq!((preview.goes_back, preview.skipped), (2, 1));
     assert_eq!(preview.skips[0].kind, UndoSkipKind::ChangedSince);
@@ -295,7 +295,7 @@ async fn ai_38_an_undo_is_judged_again_as_the_person_who_undoes_it() -> Outcome 
 }
 
 /// The scenario of the table of command use cases: undoing a run is one event of the run, and each
-/// issue put back has its own (the run of this scenario changed nothing).
+/// issue put back has its own (the run of this scenario changed one issue).
 pub(crate) async fn undo_run_scenario(world: &World) -> super::scenarios::Added {
     let admin = token(world);
     let person = world
@@ -305,7 +305,12 @@ pub(crate) async fn undo_run_scenario(world: &World) -> super::scenarios::Added 
         .map_err(|error| error.to_string())?
         .person
         .id;
+    let project = a_project(world, "ACME").await?;
+    let issue = an_issue(world, project).await?;
     let run = open(world, &admin, person).await?;
+    change_in_run(world, &admin, run, issue, 1, Priority::Critical)
+        .await
+        .map_err(|error| error.to_string())?;
     let preview = preview_of(world, &admin, run)
         .await
         .map_err(|error| error.to_string())?;
@@ -466,5 +471,102 @@ async fn ai_38_two_undos_with_one_preview_put_back_once_and_record_one_undo() ->
         .filter(|event| event.changes.iter().any(|change| change.field == "undone"))
         .count();
     assert_eq!(recorded, 1);
+    Ok(())
+}
+
+/// Once a run is undone it says who undid it and when, and each field says whether it went back or
+/// stayed, and who changed it afterwards.
+#[tokio::test]
+async fn ai_38_an_undone_run_says_who_undid_it_and_what_became_of_each_field() -> Outcome {
+    use crate::runs::{FieldOutcome, get_run};
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let first = an_issue(&world, project).await?;
+    let second = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    for each in [first, second] {
+        change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
+    }
+    let query = || RunQuery {
+        session_token: admin.clone(),
+        run,
+    };
+    assert!(
+        get_run(&world.ctx(), query())
+            .await?
+            .into_value()
+            .undone
+            .is_none()
+    );
+    change_issue(
+        &world.ctx(),
+        priority_change(&admin, second, 2, Priority::Low),
+    )
+    .await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    undo(&world, &admin, run, preview).await?;
+    let seen = get_run(&world.ctx(), query()).await?.into_value();
+    assert!(seen.undone.is_some());
+    let page = run_changes(
+        &world.ctx(),
+        RunChangesQuery {
+            session_token: admin.clone(),
+            run,
+            after: None,
+            limit: None,
+        },
+    )
+    .await?
+    .into_value();
+    let outcomes: Vec<_> = page
+        .items
+        .iter()
+        .map(|item| item.changes[0].outcome.clone())
+        .collect();
+    assert_eq!(outcomes[0], Some(FieldOutcome::WentBack));
+    assert!(matches!(
+        outcomes[1],
+        Some(FieldOutcome::Kept {
+            kind: UndoSkipKind::ChangedSince,
+            by: Some(_),
+            ..
+        })
+    ));
+    Ok(())
+}
+
+/// The history says which changes were made in a run and which are the undo of it.
+#[tokio::test]
+async fn ai_38_the_history_marks_the_changes_of_a_run_and_the_undo() -> Outcome {
+    use crate::history::{HistoryQuery, history};
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    undo(&world, &admin, run, preview).await?;
+    let page = history(
+        &world.ctx(),
+        HistoryQuery {
+            session_token: admin.clone(),
+            issue: id.to_string(),
+            tab: bb_core::history::HistoryTab::Changes,
+            cursor: None,
+            limit: 50,
+        },
+    )
+    .await?
+    .into_value();
+    assert!(
+        page.items
+            .iter()
+            .any(|row| row.run == Some(run) && row.undid_run.is_none())
+    );
+    assert!(page.items.iter().any(|row| row.undid_run == Some(run)));
     Ok(())
 }

@@ -5,12 +5,13 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::runs::{
-    RunChangeView, RunChangesQuery, RunQuery, RunView, UndoRun, UndoSkipView, UndoView,
+    FieldOutcome, RunChangeView, RunChangesQuery, RunFieldView, RunQuery, RunView, UndoRun,
+    UndoSkipView, UndoView,
 };
 use bb_core::id::{EventId, RunId};
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::run::{RunKind, UndoSkipKind, UndoVersion};
-use bb_policy::Masked;
+use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -43,9 +44,75 @@ pub(crate) struct RunBody {
     /// When it ended.
     #[serde(skip_serializing_if = "Option::is_none")]
     ended_at: Option<String>,
+    /// The person it belongs to.
+    person: PersonRef,
+    /// Who undid it and when; left out until it was undone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    undone: Option<UndoneBody>,
 }
 
 impl Masked for RunBody {}
+
+/// Who undid a run, and when.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct UndoneBody {
+    /// The person.
+    by: PersonRef,
+    /// When.
+    at: String,
+}
+
+/// What became of a field of an undone run.
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub(crate) enum FieldOutcomeBody {
+    /// The old value is back.
+    WentBack,
+    /// The field stayed as it is.
+    Kept {
+        /// Why.
+        reason: UndoSkipKind,
+        /// Who changed it afterwards, when somebody did.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        by: Option<PersonRef>,
+        /// When.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        at: Option<String>,
+    },
+}
+
+impl From<&FieldOutcome> for FieldOutcomeBody {
+    fn from(outcome: &FieldOutcome) -> Self {
+        match outcome {
+            FieldOutcome::WentBack => Self::WentBack,
+            FieldOutcome::Kept { kind, by, at } => Self::Kept {
+                reason: *kind,
+                by: by.clone(),
+                at: at.map(|at| at.to_string()),
+            },
+        }
+    }
+}
+
+/// One field of a change of a run, with what became of it once the run was undone.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct RunFieldBody {
+    /// What changed.
+    #[serde(flatten)]
+    change: FieldChangeBody,
+    /// What became of it; left out until the run was undone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    outcome: Option<FieldOutcomeBody>,
+}
+
+impl From<&RunFieldView> for RunFieldBody {
+    fn from(field: &RunFieldView) -> Self {
+        Self {
+            change: FieldChangeBody::from(&field.change),
+            outcome: field.outcome.as_ref().map(FieldOutcomeBody::from),
+        }
+    }
+}
 
 impl From<&RunView> for RunBody {
     fn from(run: &RunView) -> Self {
@@ -56,6 +123,11 @@ impl From<&RunView> for RunBody {
             app: run.app.clone(),
             started_at: run.started_at.to_string(),
             ended_at: run.ended_at.map(|at| at.to_string()),
+            person: run.person.clone(),
+            undone: run.undone.as_ref().map(|done| UndoneBody {
+                by: done.by.clone(),
+                at: done.at.to_string(),
+            }),
         }
     }
 }
@@ -70,7 +142,7 @@ pub(crate) struct RunChangeBody {
     /// The issue.
     issue: IssueRef,
     /// What changed, leaving out the fields the reader may not see.
-    changes: Vec<FieldChangeBody>,
+    changes: Vec<RunFieldBody>,
 }
 
 impl Masked for RunChangeBody {}
@@ -81,7 +153,7 @@ impl From<&RunChangeView> for RunChangeBody {
             event: change.event.to_string(),
             at: change.at.to_string(),
             issue: IssueRef::from(&change.issue),
-            changes: change.changes.iter().map(FieldChangeBody::from).collect(),
+            changes: change.changes.iter().map(RunFieldBody::from).collect(),
         }
     }
 }
@@ -98,6 +170,9 @@ pub(crate) struct UndoSkipBody {
     kind: UndoSkipKind,
     /// Somebody changed it afterwards, and it was the reader.
     by_you: bool,
+    /// Who changed it afterwards.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    by: Option<PersonRef>,
     /// When it was changed afterwards.
     #[serde(skip_serializing_if = "Option::is_none")]
     at: Option<String>,
@@ -110,6 +185,7 @@ impl From<&UndoSkipView> for UndoSkipBody {
             field: skip.field.clone(),
             kind: skip.kind,
             by_you: skip.by_you,
+            by: skip.by.clone(),
             at: skip.at.map(|at| at.to_string()),
         }
     }

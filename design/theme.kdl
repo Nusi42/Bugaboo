@@ -14735,6 +14735,32 @@ part "sheet.change" {
 }
 
 // The grid scrolls sideways on a narrow window; the ring of a cell is not cut at its edge.
+// The changes of a run (UX §4.12): one row for each field that changed, the issue, what changed and when.
+part "run-table" {
+    width "100%"
+    border-collapse collapse
+    font-size "$fs-base"
+}
+
+part "run-table.head" {
+    padding "$space-2 $space-3 $space-2 0"
+    color "$fg-muted"
+    font-weight "$weight-regular"
+    text-align start
+    vertical-align top
+    border-bottom "$border-width solid $divider"
+}
+
+part "run-table.cell" {
+    padding "$space-2 $space-3 $space-2 0"
+    vertical-align top
+    border-bottom "$border-width solid $divider"
+}
+
+part "run-table.cell[variant=when]" {
+    white-space nowrap
+}
+
 part "sheet.scroll" {
     use "ring-room"
     use "ring-room-flush"

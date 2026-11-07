@@ -76,6 +76,8 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         kind,
         record: event.entity.id,
         record_kind: record_kind.clone(),
+        run: event.run,
+        undid_run: event.reason.as_deref().and_then(bb_core::run::undone_run),
         changes,
     };
     if kind_is(RecordKind::Issue) {

@@ -1,10 +1,18 @@
 import type { Schema } from "@bugaboo/api-client";
-import { isMessageKey, t } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
+import { calendarDayOf, formatDateTime, formatTime } from "../../shared/format.ts";
+import { pageSize, usePaged } from "../../shared/paged.ts";
+import { personName } from "../../shared/person.ts";
+import { refreshIssues, refreshRoutes, reread } from "../../shared/query-keys.ts";
+import { runKeys } from "../../shared/run-keys.ts";
 
 export type Run = Schema<"RunBody">;
 export type RunChange = Schema<"RunChangeBody">;
+export type RunField = Schema<"RunFieldBody">;
+export type FieldOutcome = Schema<"FieldOutcomeBody">;
 export type UndoPreview = Schema<"UndoBody">;
 export type UndoSkip = Schema<"UndoSkipBody">;
 
@@ -13,11 +21,22 @@ export function useRun(run: string) {
   return api.query.useQuery("get", "/api/v1/runs/{run}", { params: { path: { run } } });
 }
 
-/** One page of the changes of a run, from the cursor the page before gave. */
-export function useRunChanges(run: string, cursor: string | undefined) {
-  return api.query.useQuery("get", "/api/v1/runs/{run}/changes", {
-    params: { path: { run }, query: cursor === undefined ? {} : { cursor } },
+/** The changes of a run, a page at a time: *Show more* reads the next page. */
+export function useRunChanges(run: string) {
+  return usePaged({
+    queryKey: runKeys.changes(run),
+    read: (after) =>
+      api.client.GET("/api/v1/runs/{run}/changes", {
+        params: { path: { run }, query: { limit: pageSize.usual, ...after } },
+      }),
   });
+}
+
+/** A run was undone: the run, its changes, what undoing it would do and the issues are read again. */
+export function refreshRun(): void {
+  reread({ queryKey: runKeys.all });
+  refreshRoutes(["/api/v1/runs"]);
+  refreshIssues();
 }
 
 /** What undoing the run would do now; asked for when the person wants to look. */
@@ -47,19 +66,77 @@ export function runTitle(run: Run): string {
   return app === "" ? t("runs.title-app-session") : t("runs.title-app-session-named", { app });
 }
 
-/** Where a run is, in the words of the status of a change to many issues. */
-export function runStatusText(run: Run): string {
-  const key = `many-changes-status.${run.status}`;
-  return isMessageKey(key) ? t(key) : run.status;
+/** Where a run is, in the words of a run (not of an issue): *Finished*, *Undone by Ada, …*. */
+export function runStateText(run: Run): string {
+  if (run.undone !== undefined && run.undone !== null) {
+    return t("runs.state-undone", {
+      person: personName(run.undone.by),
+      at: formatDateTime(run.undone.at),
+    });
+  }
+  if (run.status === "queued" || run.status === "running") {
+    return t("runs.state-running");
+  }
+  if (run.status === "failed") {
+    return t("runs.state-failed");
+  }
+  return run.status === "stopped" ? t("runs.state-stopped") : t("runs.state-finished");
 }
 
-/** Why a field stays when the run is undone. */
+/** Who made the run and when: *Ada Brandt via Claude Code, Tue 6 Oct, 11:02–11:31*. */
+export function runActorLine(run: Run): string {
+  const from = formatDateTime(run.started_at);
+  const ended = run.ended_at ?? undefined;
+  const sameDay =
+    ended !== undefined &&
+    calendarDayOf(Date.parse(run.started_at)) === calendarDayOf(Date.parse(ended));
+  const to = ended === undefined ? undefined : sameDay ? formatTime(ended) : formatDateTime(ended);
+  const span = to === undefined ? from : t("runs.span", { from, to });
+  const person = personName(run.person);
+  return run.app === undefined || run.app === null || run.app === ""
+    ? t("runs.actor-plain", { person, span })
+    : t("runs.actor-via", { person, app: run.app, span });
+}
+
+/** What became of a field once the run was undone, in words; none before. */
+export function outcomeText(outcome: FieldOutcome | null | undefined): string | undefined {
+  if (outcome === undefined || outcome === null) {
+    return undefined;
+  }
+  if (outcome.kind === "went-back") {
+    return t("runs.outcome-went-back");
+  }
+  if (outcome.reason === "changed-since") {
+    return outcome.by === undefined || outcome.by === null
+      ? t("runs.outcome-kept-changed")
+      : t("runs.outcome-kept-by", { person: personName(outcome.by) });
+  }
+  if (outcome.reason === "gone") {
+    return t("runs.outcome-kept-gone");
+  }
+  return outcome.reason === "not-allowed"
+    ? t("runs.outcome-kept-not-allowed")
+    : t("runs.outcome-kept-not-undoable");
+}
+
+/** Why a field stays when the run is undone, as a sentence of the question. */
 export function skipReasonText(skip: UndoSkip): string {
   if (skip.kind === "changed-since") {
-    return skip.by_you ? t("runs.skip-changed-since-by-you") : t("runs.skip-changed-since");
+    return skip.by === undefined || skip.by === null
+      ? t("runs.skip-changed")
+      : t("runs.skip-by", { person: personName(skip.by) });
   }
   if (skip.kind === "gone") {
     return t("runs.skip-gone");
   }
   return skip.kind === "not-allowed" ? t("runs.skip-not-allowed") : t("runs.skip-not-undoable");
+}
+
+/** One skipped field of the question: the issue, the field by its name, and why. */
+export function skipLineText(skip: UndoSkip): string {
+  return t("runs.skip-line", {
+    issue: skip.issue?.readable_id ?? t("runs.unknown-issue"),
+    field: fieldNameOf({ code: skip.field }),
+    reason: skipReasonText(skip),
+  });
 }

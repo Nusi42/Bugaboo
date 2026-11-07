@@ -10,7 +10,7 @@
 use bb_app::history::HistoryStore;
 use bb_core::event::{DomainEvent, FieldChange};
 use bb_core::history::{CONSUMER, HistoryEntry, HistoryKind};
-use bb_core::id::{AgentId, EntityId, EventId, IssueId, UserId};
+use bb_core::id::{AgentId, EntityId, EventId, IssueId, RunId, UserId};
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
@@ -37,6 +37,8 @@ fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
         record: row.id::<EntityId>(HistoryEntryRow::Record)?,
         record_kind: TechnicalName::new(&row.get::<String>(HistoryEntryRow::RecordKind)?)
             .map_err(|_| StoreError::Corrupt("a kind of record"))?,
+        run: row.optional_id::<RunId>(HistoryEntryRow::Run)?,
+        undid_run: row.optional_id::<RunId>(HistoryEntryRow::UndidRun)?,
         changes,
     })
 }
@@ -67,6 +69,8 @@ impl HistoryStore for AuthStorage {
                     HistoryEntryRow::Kind,
                     HistoryEntryRow::Record,
                     HistoryEntryRow::RecordKind,
+                    HistoryEntryRow::Run,
+                    HistoryEntryRow::UndidRun,
                     HistoryEntryRow::Changes,
                 ])
                 .values([
@@ -79,6 +83,8 @@ impl HistoryStore for AuthStorage {
                     Expr::val(entry.kind.code()),
                     Expr::val(entry.record.stored()),
                     Expr::val(entry.record_kind.as_str()),
+                    Expr::val(entry.run.map(StoredId::stored)),
+                    Expr::val(entry.undid_run.map(StoredId::stored)),
                     Expr::val(serde_json::to_string(&entry.changes)?),
                 ])
                 .map_err(|_| StoreError::Corrupt("a history row"))?
@@ -113,6 +119,8 @@ impl HistoryStore for AuthStorage {
                 HistoryEntryRow::Kind,
                 HistoryEntryRow::Record,
                 HistoryEntryRow::RecordKind,
+                HistoryEntryRow::Run,
+                HistoryEntryRow::UndidRun,
                 HistoryEntryRow::Changes,
             ])
             .from(HistoryEntryRow::Table)

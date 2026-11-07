@@ -7526,6 +7526,31 @@ textarea,
   font-size: var(--fs-base);
 }
 
+[data-part="run-table"] {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-base);
+}
+
+[data-part="run-table.head"] {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  color: var(--fg-muted);
+  font-weight: var(--weight-regular);
+  text-align: start;
+  vertical-align: top;
+  border-bottom: var(--border-width) solid var(--divider);
+}
+
+[data-part="run-table.cell"] {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  vertical-align: top;
+  border-bottom: var(--border-width) solid var(--divider);
+}
+
+[data-part="run-table.cell"][data-variant~="when"] {
+  white-space: nowrap;
+}
+
 [data-part="sheet.scroll"] {
   scroll-padding: var(--ring-room);
   margin-block: 0;

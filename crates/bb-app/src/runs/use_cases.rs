@@ -5,14 +5,16 @@
 
 use std::collections::HashMap;
 
-use bb_core::event::{Actor as EventActor, RecordKind};
+use bb_core::event::{Actor as EventActor, EntityKind, RecordKind};
 use bb_core::id::{EventId, IssueId, RunId};
 use bb_core::many_changes::ManyChangeStatus;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::run::{RunActor, RunKind, UndoOutcome, UndoSkip, UndoSkipKind, UndoVersion};
-use bb_policy::{Authorized, Masked, Place};
+use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place};
 use jiff::Timestamp;
 use serde::Serialize;
 
+use super::{FieldOutcome, UndoneView};
 use super::{RunStore, RunsOf};
 use crate::auth::{AppError, AuthStore, Ctx, by as by_person, entity, internal, set_to};
 use crate::history::FieldChangeView;
@@ -68,9 +70,22 @@ pub struct RunView {
     pub started_at: Timestamp,
     /// When it ended.
     pub ended_at: Option<Timestamp>,
+    /// The person it belongs to, as the kind *Authors* says for the reader.
+    pub person: PersonRef,
+    /// Who undid it and when, once it was undone.
+    pub undone: Option<UndoneView>,
 }
 
 impl Masked for RunView {}
+
+/// One field of a change of a run, and what became of it once the run was undone.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunFieldView {
+    /// What changed.
+    pub change: FieldChangeView,
+    /// What became of it; none before the run was undone.
+    pub outcome: Option<FieldOutcome>,
+}
 
 /// One change of a run: an issue and what changed on it, in the words of the history.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -82,7 +97,7 @@ pub struct RunChangeView {
     /// The issue.
     pub issue: IssueLine,
     /// What changed, leaving out what the reader may not see.
-    pub changes: Vec<FieldChangeView>,
+    pub changes: Vec<RunFieldView>,
 }
 
 /// A page of the changes of a run.
@@ -109,6 +124,8 @@ pub struct UndoSkipView {
     pub kind: UndoSkipKind,
     /// Somebody changed it afterwards and it was the reader.
     pub by_you: bool,
+    /// Who changed it afterwards, as the kind *Authors* says for the reader.
+    pub by: Option<PersonRef>,
     /// When it was changed afterwards.
     pub at: Option<Timestamp>,
 }
@@ -132,9 +149,25 @@ impl Masked for UndoView {}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The run, when it is the actor's own; for anybody else it is not there.
-    async fn run_of(&self, actor: &crate::access::Actor, run: RunId) -> Result<RunView, AppError> {
+    async fn run_of(
+        &self,
+        actor: &crate::access::Actor,
+        held: &bb_policy::Evaluation,
+        run: RunId,
+    ) -> Result<RunView, AppError> {
         let found = self.own_run(actor, run).await?;
+        let person = self
+            .person_ref(
+                held,
+                PeopleKind::Authors,
+                PeopleContext::Ordinary,
+                found.person,
+            )
+            .await?;
+        let undone = self.undone_of(held, run).await?;
         Ok(RunView {
+            person,
+            undone,
             id: found.id,
             kind: found.kind,
             status: found.status,
@@ -148,6 +181,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn skip_views(
         &self,
         actor: &crate::access::Actor,
+        held: &bb_policy::Evaluation,
         skips: &[UndoSkip],
     ) -> Result<Vec<UndoSkipView>, AppError> {
         let mut maker = self.line_maker().await?;
@@ -160,7 +194,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 },
                 None => None,
             };
+            let by = match skip.by.and_then(EventActor::person) {
+                Some(person) => Some(
+                    self.person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
+                        .await?,
+                ),
+                None => None,
+            };
             views.push(UndoSkipView {
+                by,
                 issue,
                 field: skip.field.clone(),
                 kind: skip.kind,
@@ -182,7 +224,7 @@ pub async fn get_run<S: AuthStore>(
 ) -> Result<Authorized<RunView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(ctx.run_of(&actor, input.run).await?))
+    Ok(held.authorize(ctx.run_of(&actor, &held, input.run).await?))
 }
 
 /// The changes of a run, oldest first, a page at a time: only issues the reader may see, and on
@@ -196,7 +238,7 @@ pub async fn run_changes<S: AuthStore>(
 ) -> Result<Authorized<RunChangesPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let run = ctx.run_of(&actor, input.run).await?;
+    let run = ctx.run_of(&actor, &held, input.run).await?;
     let limit = input.limit.unwrap_or(PAGE_DEFAULT).clamp(1, PAGE_MAX);
     let events = ctx
         .store()
@@ -206,11 +248,26 @@ pub async fn run_changes<S: AuthStore>(
     let next = (events.len() as u64 == limit)
         .then(|| events.last().map(|(_, event)| event.id))
         .flatten();
+    let undone = run.undone.is_some();
+    let mut by_kind: HashMap<EntityKind, Vec<bb_core::id::EntityId>> = HashMap::new();
+    for (_, event) in &events {
+        by_kind
+            .entry(event.entity.kind.clone())
+            .or_default()
+            .push(event.entity.id);
+    }
+    let mut later = Vec::new();
+    if undone {
+        for (kind, ids) in &by_kind {
+            later.extend(ctx.events_after_run(input.run, kind, ids).await?);
+        }
+        later.sort_by_key(|(place, _)| *place);
+    }
     let mut reader = ctx.change_reader().await?;
     let mut maker = ctx.line_maker().await?;
     let mut seen: HashMap<IssueId, Option<(bb_core::issue::Issue, _)>> = HashMap::new();
     let mut items = Vec::new();
-    for (_, event) in events {
+    for (place, event) in events {
         let Some(id) = super::issue_of(&event.entity) else {
             continue;
         };
@@ -229,6 +286,19 @@ pub async fn run_changes<S: AuthStore>(
         if changes.is_empty() {
             continue;
         }
+        let mut fields = Vec::new();
+        for change in changes {
+            let outcome = if undone {
+                Some(
+                    ctx.outcome_of(&held, input.run, place, &event, &change.field, &later)
+                        .await?,
+                )
+            } else {
+                None
+            };
+            fields.push(RunFieldView { change, outcome });
+        }
+        let changes = fields;
         items.push(RunChangeView {
             event: event.id,
             at: event.time,
@@ -253,7 +323,7 @@ pub async fn preview_undo_run<S: AuthStore>(
     let preview = RunsOf::new(ctx, &actor, &input.session_token)
         .preview_undo(input.run)
         .await?;
-    let skips = ctx.skip_views(&actor, &preview.skips).await?;
+    let skips = ctx.skip_views(&actor, &held, &preview.skips).await?;
     Ok(held.authorize(UndoView {
         version: preview.version,
         goes_back: preview.goes_back,
@@ -306,7 +376,7 @@ pub async fn undo_run<S: AuthStore>(
             UndoView {
                 version: input.version,
                 goes_back: done.undone,
-                skips: ctx.skip_views(&actor, &done.skips).await?,
+                skips: ctx.skip_views(&actor, &held, &done.skips).await?,
                 skipped: done.skipped,
                 changed_since_preview: false,
             }
@@ -314,7 +384,7 @@ pub async fn undo_run<S: AuthStore>(
         UndoOutcome::Changed(preview) => UndoView {
             version: preview.version,
             goes_back: preview.goes_back,
-            skips: ctx.skip_views(&actor, &preview.skips).await?,
+            skips: ctx.skip_views(&actor, &held, &preview.skips).await?,
             skipped: preview.skipped,
             changed_since_preview: true,
         },

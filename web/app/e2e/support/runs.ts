@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { dataOf } from "@bugaboo/api-client";
 
+import { signedInAdmin } from "./access.ts";
 import type { ApiSession } from "./api.ts";
 import { ownId } from "./accounts.ts";
 import { createProjectWithIssue, type MadeIssue } from "./issues.ts";
@@ -83,7 +84,7 @@ export async function createAppSession(
     for (const change of changes) {
       const done = database
         .prepare(
-          `UPDATE event SET run = ? WHERE entity_kind = 'issue' AND entity_id = ? AND changes LIKE '%"field":"priority","before":"%'`,
+          `UPDATE event SET run = ? WHERE rowid = (SELECT MAX(rowid) FROM event WHERE entity_kind = 'issue' AND entity_id = ? AND changes LIKE '%"field":"priority","before":"%')`,
         )
         .run(stored(run), stored(change.issue.id));
       if (Number(done.changes) !== 1) {
@@ -167,5 +168,44 @@ export async function commentOn(admin: ApiSession, key: string, text: string): P
         body: { text },
       }),
     ).id,
+  );
+}
+
+/** The version an issue has now. */
+async function versionOf(admin: ApiSession, key: string): Promise<number> {
+  const version = dataOf(
+    await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
+  ).issue.version;
+  if (version === undefined || version === null) {
+    throw new TypeError("The server gave no version.");
+  }
+  return version;
+}
+
+/** A session of an AI app that changed the priority of WEB-1 and WEB-2 to critical. */
+export async function createSessionOfTwo(
+  server: Instance,
+): Promise<{ readonly admin: ApiSession; readonly run: string }> {
+  const admin = await signedInAdmin(server);
+  const run = await createAppSession(server, admin, [
+    {
+      issue: { id: await issueIdOf(admin, "WEB-1"), key: "WEB-1" },
+      version: await versionOf(admin, "WEB-1"),
+    },
+    {
+      issue: { id: await issueIdOf(admin, "WEB-2"), key: "WEB-2" },
+      version: await versionOf(admin, "WEB-2"),
+    },
+  ]);
+  return { admin, run };
+}
+
+/** Somebody changes the priority of WEB-2 to low after the run, outside it. */
+export async function changeAfterTheRun(admin: ApiSession): Promise<void> {
+  dataOf(
+    await admin.client.PATCH("/api/v1/issues/{issue}", {
+      params: { path: { issue: "WEB-2" } },
+      body: { version: await versionOf(admin, "WEB-2"), priority: "low" },
+    }),
   );
 }

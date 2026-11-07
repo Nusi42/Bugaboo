@@ -19338,6 +19338,53 @@
           }
         }
       },
+      "FieldOutcomeBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The old value is back.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["went-back"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The field stayed as it is.",
+            "required": ["reason", "kind"],
+            "properties": {
+              "at": {
+                "type": ["string", "null"],
+                "description": "When.",
+                "format": "date-time"
+              },
+              "by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PersonRef",
+                    "description": "Who changed it afterwards, when somebody did."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["kept"]
+              },
+              "reason": {
+                "$ref": "#/components/schemas/UndoSkipKind",
+                "description": "Why."
+              }
+            }
+          }
+        ],
+        "description": "What became of a field of an undone run."
+      },
       "FieldRoleSaysBody": {
         "type": "object",
         "description": "What one role says about a field or a kind.",
@@ -19823,6 +19870,10 @@
             "type": ["string", "null"],
             "description": "A relation: what the relation reads (*blocks*)."
           },
+          "run": {
+            "type": ["string", "null"],
+            "description": "The run the change was made in, when it was made in one (a session of an AI app, an attempt)."
+          },
           "text": {
             "type": ["string", "null"],
             "description": "A comment: the text, in Markdown."
@@ -19837,6 +19888,10 @@
                 "type": "null"
               }
             ]
+          },
+          "undid_run": {
+            "type": ["string", "null"],
+            "description": "The run the change is the undo of, when it is one."
           },
           "version": {
             "type": ["integer", "null"],
@@ -25260,7 +25315,7 @@
       "RunBody": {
         "type": "object",
         "description": "A run, as the person it belongs to sees it.",
-        "required": ["id", "kind", "status", "started_at"],
+        "required": ["id", "kind", "status", "started_at", "person"],
         "properties": {
           "app": {
             "type": ["string", "null"],
@@ -25279,6 +25334,10 @@
             "$ref": "#/components/schemas/RunKind",
             "description": "What it is of."
           },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person it belongs to."
+          },
           "started_at": {
             "type": "string",
             "description": "When it began.",
@@ -25287,6 +25346,17 @@
           "status": {
             "$ref": "#/components/schemas/ManyChangeStatus",
             "description": "Where it is."
+          },
+          "undone": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UndoneBody",
+                "description": "Who undid it and when; left out until it was undone."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -25303,7 +25373,7 @@
           "changes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FieldChangeBody"
+              "$ref": "#/components/schemas/RunFieldBody"
             },
             "description": "What changed, leaving out the fields the reader may not see."
           },
@@ -25316,6 +25386,31 @@
             "description": "The issue."
           }
         }
+      },
+      "RunFieldBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FieldChangeBody",
+            "description": "What changed."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "outcome": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FieldOutcomeBody",
+                    "description": "What became of it; left out until the run was undone."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "description": "One field of a change of a run, with what became of it once the run was undone."
       },
       "RunKind": {
         "type": "string",
@@ -27292,6 +27387,17 @@
             "description": "When it was changed afterwards.",
             "format": "date-time"
           },
+          "by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who changed it afterwards."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "by_you": {
             "type": "boolean",
             "description": "Somebody changed it afterwards, and it was the reader."
@@ -27321,6 +27427,22 @@
         "type": "string",
         "description": "Why a change of a run does not go back.",
         "enum": ["changed-since", "gone", "not-allowed", "not-undoable"]
+      },
+      "UndoneBody": {
+        "type": "object",
+        "description": "Who undid a run, and when.",
+        "required": ["by", "at"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When.",
+            "format": "date-time"
+          },
+          "by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person."
+          }
+        }
       },
       "UnreadBody": {
         "type": "object",

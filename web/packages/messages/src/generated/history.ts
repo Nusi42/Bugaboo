@@ -7,6 +7,8 @@ export const messages = {
   "history.tab-everything": "Everything",
   "history.tab-comments": "Comments",
   "history.tab-changes": "Changes",
+  "history.run-link": "Run of this session",
+  "history.undid-run": "Undid a run",
   "history.nothing": "Nothing here yet.",
   "history.more": "Show earlier",
   "history.by": "{who} · {when}",

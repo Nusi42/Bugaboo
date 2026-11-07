@@ -939,6 +939,8 @@ export const messages = {
   "written-by.app-unnamed": "Written by an AI app",
   "written-by.agent": "Written by an agent: {agent}",
   "written-by.agent-unnamed": "Written by an agent",
+  "runs.place": "Run",
+  "runs.change-line": "{field}: {before} → {after}",
 } as const;
 
 register(messages);

@@ -343,7 +343,7 @@ impl Database {
         limit: u64,
     ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
         let done = self.outbox_position(consumer).await?;
-        let mut select = committed_events_of(Order::Asc, WITHOUT_RUN);
+        let mut select = committed_events_of(Order::Asc, event_columns().len());
         select
             .column((Outbox::Table, Outbox::Position))
             .column((Outbox::Table, Outbox::CreatedAt))
@@ -353,7 +353,7 @@ impl Database {
             .await?
             .iter()
             .map(|row| {
-                let event = read_event_without_run(row)?;
+                let event = read_event(row)?;
                 let entry = OutboxEntry {
                     position: row.get(Outbox::Position)?,
                     event_id: event.id,

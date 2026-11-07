@@ -11,6 +11,7 @@ use bb_core::run::{
 use jiff::Timestamp;
 
 mod marks;
+mod outcome;
 mod own;
 mod records;
 mod restore;
@@ -23,12 +24,13 @@ mod fake;
 
 pub(crate) use marks::Marks;
 pub use marks::WrittenByView;
+pub use outcome::{FieldOutcome, UndoneView};
 pub(crate) use own::issue_of;
 pub use records::RunRecordStore;
 pub use service::RunsOf;
 pub use use_cases::{
-    RunChangeView, RunChangesPage, RunChangesQuery, RunQuery, RunView, UndoRun, UndoSkipView,
-    UndoView, get_run, preview_undo_run, run_changes, undo_run,
+    RunChangeView, RunChangesPage, RunChangesQuery, RunFieldView, RunQuery, RunView, UndoRun,
+    UndoSkipView, UndoView, get_run, preview_undo_run, run_changes, undo_run,
 };
 
 #[cfg(any(test, feature = "testing"))]

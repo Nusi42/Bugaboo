@@ -5925,6 +5925,24 @@ export interface components {
       /** @description There are more roles than the table holds; the first ones are shown. */
       truncated: boolean;
     };
+    /** @description What became of a field of an undone run. */
+    FieldOutcomeBody:
+      | {
+          /** @enum {string} */
+          kind: "went-back";
+        }
+      | {
+          /**
+           * Format: date-time
+           * @description When.
+           */
+          at?: string | null;
+          by?: components["schemas"]["PersonRef"] | null;
+          /** @enum {string} */
+          kind: "kept";
+          /** @description Why. */
+          reason: components["schemas"]["UndoSkipKind"];
+        };
     /** @description What one role says about a field or a kind. */
     FieldRoleSaysBody: {
       /** @description Its level. */
@@ -6162,9 +6180,13 @@ export interface components {
       relation_event?: components["schemas"]["RelationEvent"] | null;
       /** @description A relation: what the relation reads (*blocks*). */
       relation_name?: string | null;
+      /** @description The run the change was made in, when it was made in one (a session of an AI app, an attempt). */
+      run?: string | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
       time_event?: components["schemas"]["TimeEvent"] | null;
+      /** @description The run the change is the undo of, when it is one. */
+      undid_run?: string | null;
       /**
        * Format: int64
        * @description A comment: the version, which a change of it is made on.
@@ -8829,6 +8851,8 @@ export interface components {
       id: string;
       /** @description What it is of. */
       kind: components["schemas"]["RunKind"];
+      /** @description The person it belongs to. */
+      person: components["schemas"]["PersonRef"];
       /**
        * Format: date-time
        * @description When it began.
@@ -8836,6 +8860,7 @@ export interface components {
       started_at: string;
       /** @description Where it is. */
       status: components["schemas"]["ManyChangeStatus"];
+      undone?: components["schemas"]["UndoneBody"] | null;
     };
     /** @description One change of a run: an issue and what changed on it. */
     RunChangeBody: {
@@ -8845,11 +8870,15 @@ export interface components {
        */
       at: string;
       /** @description What changed, leaving out the fields the reader may not see. */
-      changes: components["schemas"]["FieldChangeBody"][];
+      changes: components["schemas"]["RunFieldBody"][];
       /** @description The ID of the event, which a page continues after. */
       event: string;
       /** @description The issue. */
       issue: components["schemas"]["IssueRef"];
+    };
+    /** @description One field of a change of a run, with what became of it once the run was undone. */
+    RunFieldBody: components["schemas"]["FieldChangeBody"] & {
+      outcome?: components["schemas"]["FieldOutcomeBody"] | null;
     };
     /**
      * @description What a run is of.
@@ -9873,6 +9902,7 @@ export interface components {
        * @description When it was changed afterwards.
        */
       at?: string | null;
+      by?: components["schemas"]["PersonRef"] | null;
       /** @description Somebody changed it afterwards, and it was the reader. */
       by_you: boolean;
       /** @description The field. */
@@ -9886,6 +9916,16 @@ export interface components {
      * @enum {string}
      */
     UndoSkipKind: "changed-since" | "gone" | "not-allowed" | "not-undoable";
+    /** @description Who undid a run, and when. */
+    UndoneBody: {
+      /**
+       * Format: date-time
+       * @description When.
+       */
+      at: string;
+      /** @description The person. */
+      by: components["schemas"]["PersonRef"];
+    };
     /** @description How many notifications the person has not read. */
     UnreadBody: {
       /** @description The number, at most 100: only what the person may still see is counted. */

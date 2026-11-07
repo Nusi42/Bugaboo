@@ -293,7 +293,7 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
         }
         let mut skips = plan.skips;
         let mut undone = 0;
-        self.ctx.set_reason(Some(format!("undo-run:{run}")));
+        self.ctx.set_reason(Some(bb_core::run::undo_reason(run)));
         for (issue, nets) in &plan.by_issue {
             let version = plan.versions.get(issue).copied().unwrap_or_default();
             let outcome = self.restore(*issue, version, nets).await;

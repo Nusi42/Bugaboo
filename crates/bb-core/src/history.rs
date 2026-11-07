@@ -114,6 +114,12 @@ pub struct HistoryEntry {
     /// The kind of record, as the event names it.
     #[not_personal]
     pub record_kind: TechnicalName,
+    /// The run the event was made in, when it was made in one.
+    #[not_personal]
+    pub run: Option<crate::id::RunId>,
+    /// The run the event is the undo of, when it is one.
+    #[not_personal]
+    pub undid_run: Option<crate::id::RunId>,
     /// What changed. It can hold anything a person typed.
     #[personal(category = "content", basis = "legitimate_interests")]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]

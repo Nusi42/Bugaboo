@@ -7,7 +7,13 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inFourChosenThemes, inFourThemes } from "./support/four-themes.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { commentOn, createAppSession, issueIdOf, markText } from "./support/runs.ts";
+import {
+  changeAfterTheRun,
+  commentOn,
+  createSessionOfTwo,
+  issueIdOf,
+  markText,
+} from "./support/runs.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The run page and the mark of AI-written text in the four themes, for the maintainer's review of M7.
@@ -22,24 +28,45 @@ const MILESTONE = "M7/runs";
 /** Four themes of a screen take longer than an ordinary test. */
 const TAKING_MS = 300_000;
 
-test("the page of a run before and after the look and the undo", async ({ page, server }) => {
+test("the page of a run, the question and the page after the undo", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
-  const admin = await signedInAdmin(server);
-  const run = await createAppSession(server, admin, [
-    { issue: { id: await issueIdOf(admin, "WEB-1"), key: "WEB-1" }, version: 1 },
-    { issue: { id: await issueIdOf(admin, "WEB-2"), key: "WEB-2" }, version: 1 },
-  ]);
+  const { admin, run } = await createSessionOfTwo(server);
   await admin.dispose();
   await signIn(page, ada);
   await page.goto(runAddress(run));
-  await expect(page.getByText("WEB-1", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "WEB-1" })).toBeVisible();
   await inFourThemes(page, "run-before", MILESTONE);
-  await page.getByRole("button", { name: t("runs.look-first"), exact: true }).click();
-  await expect(page.getByText(t("runs.preview", { back: 2, skipped: 0 }))).toBeVisible();
-  await inFourThemes(page, "run-preview", MILESTONE);
   await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
-  await expect(page.getByText(t("runs.undone", { back: 2, skipped: 0 }))).toBeVisible();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await inFourThemes(page, "run-question", MILESTONE);
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("runs.confirm", { count: 2 }) })
+    .click();
+  await expect(page.getByText(t("runs.undone-message", { back: 2, skipped: 0 }))).toBeVisible();
   await inFourThemes(page, "run-undone", MILESTONE);
+});
+
+test("the question and the page of a run with one skipped change", async ({ page, server }) => {
+  test.setTimeout(TAKING_MS);
+  const { admin, run } = await createSessionOfTwo(server);
+  await changeAfterTheRun(admin);
+  await admin.dispose();
+  await signIn(page, ada);
+  await page.goto(runAddress(run));
+  await page.getByRole("button", { name: t("runs.undo"), exact: true }).click();
+  await expect(
+    page.getByRole("alertdialog").getByText(t("runs.skipped-title", { count: 1 })),
+  ).toBeVisible();
+  await inFourThemes(page, "run-question-skipped", MILESTONE);
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("runs.confirm", { count: 1 }) })
+    .click();
+  await expect(page.getByText(t("runs.undone-message", { back: 1, skipped: 1 }))).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(t("runs.outcome-went-back"))).toBeVisible();
+  await inFourThemes(page, "run-undone-skipped", MILESTONE);
 });
 
 test("the mark beside a comment and the description", async ({ page, server }) => {

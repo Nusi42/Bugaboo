@@ -32,6 +32,8 @@ async fn iss_06_the_rows_of_the_history_and_the_place_of_the_reader_are_stored_t
             kind: HistoryKind::Change,
             record: EntityId::from(issue),
             record_kind: TechnicalName::new("issue")?,
+            run: None,
+            undid_run: None,
             changes: Vec::new(),
         };
         // The place of the reader is a table of its own; putting it away makes the move fail.

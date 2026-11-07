@@ -6,9 +6,13 @@ import { wordedSideOf } from "./change-sentence.ts";
 import { fieldNameOf } from "./field-names.ts";
 import { renderSaid } from "./said.ts";
 
-/** What a field is after a change, in words; *nothing* for no value. */
-function afterText(wording: Wording, change: Schema<"FieldChangeBody">): string {
-  const side = wordedSideOf(change.after);
+/** What a field is on one side of a change, in words; *nothing* for no value. */
+function sideText(
+  wording: Wording,
+  change: Schema<"FieldChangeBody">,
+  value: Schema<"FieldChangeBody">["after"],
+): string {
+  const side = wordedSideOf(value);
   const said = side === null ? null : wording.sideWords(change.field, side);
   return said === null ? t("common.nothing") : renderSaid(said);
 }
@@ -20,6 +24,15 @@ function afterText(wording: Wording, change: Schema<"FieldChangeBody">): string 
 export function changeLineText(wording: Wording, change: Schema<"FieldChangeBody">): string {
   return t("preview.line-changes", {
     field: fieldNameOf({ code: change.field, name: change.name }),
-    after: afterText(wording, change),
+    after: sideText(wording, change, change.after),
+  });
+}
+
+/** The line that says what one field was and is: *Priority: Normal → Critical*. */
+export function changeArrowText(wording: Wording, change: Schema<"FieldChangeBody">): string {
+  return t("runs.change-line", {
+    field: fieldNameOf({ code: change.field, name: change.name }),
+    before: sideText(wording, change, change.before),
+    after: sideText(wording, change, change.after),
   });
 }

@@ -679,6 +679,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             at: row.at,
             by,
             agent,
+            run: row.run,
+            undid_run: row.undid_run,
             what,
         }))
     }

@@ -50,6 +50,20 @@ impl RunEnd {
     }
 }
 
+/// The reason the events of an undo of `run` carry: the one word that marks them.
+#[must_use]
+pub fn undo_reason(run: crate::id::RunId) -> String {
+    format!("{UNDO_REASON}{run}")
+}
+
+/// The run an event is the undo of, read from its reason.
+#[must_use]
+pub fn undone_run(reason: &str) -> Option<crate::id::RunId> {
+    reason.strip_prefix(UNDO_REASON)?.parse().ok()
+}
+
+const UNDO_REASON: &str = "undo-run:";
+
 /// Who a run belongs to: the person who answers for it, with the app or the agent that acted for
 /// them. Never both.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
