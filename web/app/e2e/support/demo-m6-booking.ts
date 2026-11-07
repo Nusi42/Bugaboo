@@ -10,9 +10,9 @@ import { choiceNamed, setTimeDefault, starterField } from "./time.ts";
 /** The issue that was booked on in step 8, which step 9 reads as another person. */
 let booked = "";
 
-/** The key of the issue that was booked on. */
-export function bookedIssue(): string {
-  return booked;
+/** The key of the issue that was booked on, booked on now when no step before did it (a step run alone). */
+export function bookedIssueOf(server: Instance): Promise<string> {
+  return booked === "" ? bookedByAna(server) : Promise.resolve(booked);
 }
 
 /**

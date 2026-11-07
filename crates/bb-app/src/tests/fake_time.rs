@@ -10,6 +10,7 @@ use jiff::civil::Date;
 use jiff::{SignedDuration, Timestamp};
 
 use super::fake::{FakeError, FakeStore, State, Tx};
+use crate::hashed_key::fake_page;
 use crate::history::opaque_id;
 use crate::search::{SearchFailure, SearchRequest};
 use crate::time::spent::TimeSpentStore;
@@ -179,7 +180,7 @@ impl TimeStore for FakeStore {
         limit: u64,
     ) -> Result<Vec<(TimeEntry, DayKey)>, FakeError> {
         Ok(self.read(|state| {
-            let mut found: Vec<(TimeEntry, DayKey)> = state
+            let found: Vec<(TimeEntry, DayKey)> = state
                 .time_entries
                 .iter()
                 .filter(|entry| entry.issue == issue)
@@ -190,17 +191,8 @@ impl TimeStore for FakeStore {
                     };
                     (entry.clone(), key)
                 })
-                .filter(|(_, key)| {
-                    after
-                        .as_ref()
-                        .is_none_or(|after| (key.at, &key.hash) < (after.at, &after.hash))
-                })
                 .collect();
-            found.sort_by(|(_, one), (_, other)| (other.at, &other.hash).cmp(&(one.at, &one.hash)));
-            found
-                .into_iter()
-                .take(usize::try_from(limit).unwrap_or(usize::MAX))
-                .collect()
+            fake_page(found, after.as_ref(), 0, limit)
         }))
     }
 

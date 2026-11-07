@@ -1,6 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { factJoiner } from "@bugaboo/ui";
+import { factJoinerHeld } from "@bugaboo/ui";
 
 import { signedInAdmin } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
@@ -90,8 +90,8 @@ test("time_02 the history says the fields of booked time in the sentence of the 
   await window.getByLabel(t("time.entry.length"), { exact: true }).fill("45m");
   await window.getByRole("button", { name: t("time.add.save"), exact: true }).click();
   const history = page.getByRole("region", { name: t("history.title") }).first();
-  const fields = ["Testing", "4100 Product development"].join(factJoiner);
-  await expect(history).toContainText(`Ada Admin booked 45m${factJoiner}${fields}`);
+  const fields = ["Testing", "4100 Product development"].join(factJoinerHeld);
+  await expect(history).toContainText(`Ada Admin booked 45m${factJoinerHeld}${fields}`);
   // The fields are not sentences of their own.
   await expect(history.getByText(/changed Activity/u)).toHaveCount(0);
 });

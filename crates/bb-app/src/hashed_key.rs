@@ -38,6 +38,23 @@ impl<T: FromStr> FromStr for HashedKey<T> {
     }
 }
 
+/// What a fake store does for a keyset page: the rows after the key, newest first by key, with `skip`
+/// rows passed over and at most `limit` taken.
+#[cfg(test)]
+pub(crate) fn fake_page<E, T: Ord + Copy>(
+    mut rows: Vec<(E, HashedKey<T>)>,
+    after: Option<&HashedKey<T>>,
+    skip: u64,
+    limit: u64,
+) -> Vec<(E, HashedKey<T>)> {
+    rows.retain(|(_, key)| after.is_none_or(|after| (key.at, &key.hash) < (after.at, &after.hash)));
+    rows.sort_by(|(_, one), (_, other)| (other.at, &other.hash).cmp(&(one.at, &one.hash)));
+    rows.into_iter()
+        .skip(usize::try_from(skip).unwrap_or(usize::MAX))
+        .take(usize::try_from(limit).unwrap_or(usize::MAX))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use jiff::civil::Date;

@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signInThroughApi } from "./accounts.ts";
-import { bookedByAna, bookedIssue } from "./demo-m6-booking.ts";
+import { bookedByAna, bookedIssueOf } from "./demo-m6-booking.ts";
 import { ana, good } from "./demo-m6-common.ts";
 import { timerOn } from "./demo-m6.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
@@ -73,8 +73,16 @@ export async function aTimeEntryInTheHistoryOfItsBooker(
 }
 
 /** Step 9: the same time entry in the history, as another reader. */
-export async function aTimeEntryInTheHistoryOfAnotherReader(page: Page): Promise<void> {
-  await historyAs(page, bookedIssue, sampleNamed("Ben Hale"), "08-b-history-as-another-reader");
+export async function aTimeEntryInTheHistoryOfAnotherReader(
+  page: Page,
+  server: Instance,
+): Promise<void> {
+  await historyAs(
+    page,
+    await bookedIssueOf(server),
+    sampleNamed("Ben Hale"),
+    "08-b-history-as-another-reader",
+  );
 }
 
 /** Step 10: the names of the permissions of working hours on the page of the role *HR*. */

@@ -13,6 +13,7 @@ use jiff::Timestamp;
 use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::comments::CommentStore;
 use crate::follow::FollowStore;
+use crate::hashed_key::fake_page;
 use crate::history::{HistoryStore, ShownKey, opaque_id, shown_moment};
 use crate::relations::RelationStore;
 use crate::text_index::{TextIndexStore, Touched};
@@ -426,7 +427,7 @@ impl HistoryStore for FakeStore {
         limit: u64,
     ) -> Result<Vec<(HistoryEntry, ShownKey)>, FakeError> {
         Ok(self.read(|state| {
-            let mut found: Vec<(HistoryEntry, ShownKey)> = state
+            let found: Vec<(HistoryEntry, ShownKey)> = state
                 .history
                 .iter()
                 .filter(|entry| entry.issue == issue && kind.is_none_or(|kind| entry.kind == kind))
@@ -442,18 +443,8 @@ impl HistoryStore for FakeStore {
                     };
                     (entry.clone(), key)
                 })
-                .filter(|(_, key)| {
-                    after
-                        .as_ref()
-                        .is_none_or(|after| (key.at, &key.hash) < (after.at, &after.hash))
-                })
                 .collect();
-            found.sort_by(|(_, one), (_, other)| (other.at, &other.hash).cmp(&(one.at, &one.hash)));
-            found
-                .into_iter()
-                .skip(usize::try_from(skip).unwrap_or(usize::MAX))
-                .take(usize::try_from(limit).unwrap_or(usize::MAX))
-                .collect()
+            fake_page(found, after.as_ref(), skip, limit)
         }))
     }
 }
