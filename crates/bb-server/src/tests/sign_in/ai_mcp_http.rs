@@ -471,8 +471,20 @@ async fn ai_23_a_grant_over_its_limit_waits_and_changes_nothing() -> TestResult 
                 json!({"project": "ACME", "issue_type": site.kind, "title": "Too many"}),
             )
             .await?;
-        assert_eq!(over.status, StatusCode::TOO_MANY_REQUESTS);
+        // A tool call over the limit is answered as a sentence the AI can read, with the wait.
+        assert_eq!(over.status, StatusCode::OK);
+        assert_eq!(over.json["result"]["isError"], json!(true));
+        let sentence = over.json["result"]["content"][0]["text"]
+            .as_str()
+            .ok_or("no sentence")?;
+        assert!(sentence.contains("Wait "), "{sentence}");
         assert!(over.header("retry-after").parse::<u64>().is_ok());
+        // Every other message counts too, and is answered with the status of the limit.
+        let ping = mcp
+            .post(Some(&signed.access), json!({"jsonrpc":"2.0","id":2,"method":"ping"}))
+            .await?;
+        assert_eq!(ping.status, StatusCode::TOO_MANY_REQUESTS);
+        assert!(ping.header("retry-after").parse::<u64>().is_ok());
         let found = ada
             .send("GET", &format!("/api/v1/projects/{}/issues", site.acme), None)
             .await?;

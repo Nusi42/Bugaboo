@@ -28,6 +28,8 @@ pub const SESSION_IDLE_MINUTES: u64 = 30;
 pub const CALLS_A_MINUTE_FOR_A_GRANT: u32 = 120;
 /// The most calls one person may make in a minute over all their grants and keys.
 pub const CALLS_A_MINUTE_FOR_A_PERSON: u32 = 240;
+/// How many apps one network may register in an hour (RFC 7591 registration is open to anybody).
+pub const REGISTRATIONS_AN_HOUR: u32 = 20;
 /// The most return addresses one app may register.
 pub const MOST_RETURN_ADDRESSES: usize = 5;
 /// The longest return address, in bytes.
@@ -56,8 +58,6 @@ pub const AUTHORIZATION_SERVER_METADATA_PATH: &str = "/.well-known/oauth-authori
 pub const REGISTRATION_PATH: &str = "/oauth/register";
 /// The path apps swap a code or a renewing token at.
 pub const TOKEN_PATH: &str = "/oauth/token";
-/// The page of the browser app where a person is asked to allow an app.
-pub const CONSENT_PATH: &str = "/connect";
 
 /// The only way to prove a code: the SHA-256 form of PKCE (RFC 7636).
 pub const PKCE_METHOD: &str = "S256";
@@ -469,38 +469,16 @@ pub fn percent_encode(text: &str) -> String {
     out
 }
 
-/// Reads text written by [`percent_encode`], with `+` for a space as forms write it; `None` for a
-/// broken escape or text that is not UTF-8.
-#[must_use]
-pub fn percent_decode(text: &str) -> Option<String> {
-    let bytes = text.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut at = 0;
-    while let Some(&byte) = bytes.get(at) {
-        match byte {
-            b'+' => out.push(b' '),
-            b'%' => {
-                let pair = text.get(at + 1..at + 3)?;
-                out.push(u8::from_str_radix(pair, 16).ok()?);
-                at += 2;
-            }
-            other => out.push(other),
-        }
-        at += 1;
-    }
-    String::from_utf8(out).ok()
-}
-
-/// The pairs of a form body or a query (`a=b&c=d`), decoded; `None` when one is broken.
+/// The pairs of a form body or a query (`a=b&c=d`), decoded; `None` when the text is not a form
+/// or a name is there twice (a parameter an app sends twice is refused, RFC 6749 §3.1).
 #[must_use]
 pub fn form_pairs(body: &str) -> Option<Vec<(String, String)>> {
-    body.split('&')
-        .filter(|part| !part.is_empty())
-        .map(|part| {
-            let (name, value) = part.split_once('=').unwrap_or((part, ""));
-            Some((percent_decode(name)?, percent_decode(value)?))
-        })
-        .collect()
+    let pairs: Vec<(String, String)> = serde_urlencoded::from_str(body).ok()?;
+    let mut names = std::collections::BTreeSet::new();
+    pairs
+        .iter()
+        .all(|(name, _)| names.insert(name.clone()))
+        .then_some(pairs)
 }
 
 /// `address` with the `pairs` added to its query, the way an app wants its answer (RFC 6749
@@ -525,8 +503,8 @@ mod form_tests {
     fn ai_22_text_goes_into_a_query_and_back() {
         let tricky = "a b&c=d/é?";
         assert_eq!(
-            percent_decode(&percent_encode(tricky)).as_deref(),
-            Some(tricky)
+            form_pairs(&format!("x={}", percent_encode(tricky))),
+            Some(vec![("x".to_owned(), tricky.to_owned())])
         );
         assert_eq!(
             with_query(
@@ -546,7 +524,15 @@ mod form_tests {
                 ("refresh_token".to_owned(), "a+b c".to_owned())
             ]
         );
-        assert_eq!(percent_decode("%zz"), None);
-        assert_eq!(percent_decode("%"), None);
+        // A broken escape stays as it was written, and a sign after the percent sign is no byte.
+        assert_eq!(
+            form_pairs("a=%zz&b=%+1"),
+            Some(vec![
+                ("a".to_owned(), "%zz".to_owned()),
+                ("b".to_owned(), "% 1".to_owned())
+            ])
+        );
+        // A name sent twice is refused.
+        assert_eq!(form_pairs("code=a&code=b"), None);
     }
 }

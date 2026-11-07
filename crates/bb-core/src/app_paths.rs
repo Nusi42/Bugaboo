@@ -24,6 +24,10 @@ pub const NOTIFICATIONS: &str = "/notifications";
 /// The page to sign in.
 pub const SIGN_IN: &str = "/sign-in";
 
+/// The page where a person is asked to allow an AI app (the authorization endpoint of the sign-in of
+/// apps, ADR-0042); the address an app sends the person to.
+pub const CONNECT: &str = "/connect";
+
 /// The address of an issue page from the readable ID of the issue.
 #[must_use]
 pub fn issue(key: &str) -> String {

@@ -75,7 +75,7 @@ flowchart TB
 
   server --> api & jobs & store & files & ai & notify & auth & app & core & mcp
   api --> app & auth & core & policy & words
-  mcp --> app & core
+  mcp --> app & api & core
   jobs --> app
   app --> policy & core & search & md & auth
   auth --> core
@@ -209,7 +209,7 @@ Every AI tool is a `bb-app` use case run as the actor, the assistant is a `bb-ap
 
 - **The tool registry and the context builder live in `bb-app`** (`crates/bb-app/src/ai/`), next to the use cases they call, and do no I/O of their own. The registry is one table (`ai/tools/`): each tool has its name, *reads* or *changes*, the use case it calls, the scope it needs, the schema of its input (generated from the Rust type) and, when it changes something, a preview from the use case's own evaluation. The assistant, MCP and agents list and call tools only through it. The context builder (`ai/context/`) reads as the actor, leaves out hidden fields and everything *Never sent to AI*, and fences people's text with its author mark (§7, *AI*).
 - **`bb-ai` holds the provider adapters** (Anthropic and OpenAI-compatible, which covers a local model) behind the port `AiProvider` of `bb-app`, and, behind its feature `testing`, offers again the test fake that is defined with the port in `bb-app` (like `FakeMailer`), so the tests of `bb-app` and of the server use the same one. One adapter serves both kinds of provider and is chosen for every call by the settings, so `bb-server` wires it once. The outgoing call is `ureq` run on a thread of its own (ARCH-HTTP-EDGE).
-- **`bb-mcp` turns the registry into MCP** over streamable HTTP at `/mcp` (it speaks the few messages of the protocol itself, ADR-0042 amendment), and depends on `bb-app` and the words of `bb-core` only; `bb-server` wires it into the router of `bb-api`; the sign-in of apps is in `bb-auth`, `bb-app/src/auth/` and `bb-api` ([ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). There is no edge `mcp --> ai` (M4-F133).
+- **`bb-mcp` turns the registry into MCP** over streamable HTTP at `/mcp` (it speaks the few messages of the protocol itself, ADR-0042 amendment), and depends on `bb-app`, the words of `bb-core` and the reading of a request of `bb-api` (the client, the origin, the token and the answers in the words of another protocol are written once there), nothing else; `bb-server` wires it into the router of `bb-api`; the sign-in of apps is in `bb-auth`, `bb-app/src/auth/` and `bb-api` ([ADR-0042](../adr/0042-mcp-server-and-how-ai-apps-sign-in.md)). There is no edge `mcp --> ai` (M4-F133).
 
 Enforced by: ARCH-DEPS (the edges), ARCH-AI-TOOLS (it reads `crates/bb-app/src/ai/tools/**` and `crates/bb-mcp/**`).
 

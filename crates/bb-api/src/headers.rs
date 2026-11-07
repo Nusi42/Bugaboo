@@ -15,7 +15,6 @@ use axum::middleware::{Next, from_fn_with_state};
 use axum::response::Response;
 use bb_app::auth::RequestInfo;
 use bb_app::settings::DocumentImagesQuery;
-use bb_auth::Device;
 use tokio::sync::Mutex;
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -99,12 +98,7 @@ impl ImageHostsCache {
         if let Some(hosts) = self.fresh().await {
             return hosts;
         }
-        let request = RequestInfo {
-            network: None,
-            device: Device::default(),
-            background: false,
-            run: None,
-        };
+        let request = RequestInfo::default();
         // Without a database, or when the read fails, the base policy applies: no image from
         // outside. That answer is not kept: the next page load reads again, so a read that failed
         // once does not shut the images out for the time a good answer is kept.

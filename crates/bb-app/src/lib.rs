@@ -30,6 +30,7 @@ pub mod people;
 pub mod ports;
 pub mod preview;
 pub mod projects;
+pub mod rate_window;
 pub mod relations;
 pub mod roles;
 pub mod runs;

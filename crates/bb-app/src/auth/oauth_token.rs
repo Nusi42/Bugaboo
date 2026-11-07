@@ -120,9 +120,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             used_at: None,
         };
         let answer = TokenAnswer {
-            access_token: access.encode(),
+            access_token: access.encode().into(),
             expires_in: access_row.expires_at.as_second() - now.as_second(),
-            refresh_token: refresh.encode(),
+            refresh_token: refresh.encode().into(),
             scope: grant.scope,
         };
         Ok(([access_row, refresh_row], answer))

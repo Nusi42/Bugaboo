@@ -6,27 +6,30 @@
 //! same function as for an access key (`narrowing_for`). So a role taken away counts from the next
 //! call, and what no key holds no grant holds.
 
-use std::sync::atomic::Ordering;
-
 use bb_auth::{OAuthKind, OAuthSecret};
 use bb_core::ErrorCode;
-use bb_core::oauth::TokenKind;
+use bb_core::event::RecordKind;
+use bb_core::id::ProjectId;
+use bb_core::oauth::{OAuthGrant, TokenKind};
+use bb_core::person::Person;
 use bb_core::sign_in::SecurityAction;
-use jiff::Timestamp;
 
-use super::access_keys::narrowing_for;
+use super::access_keys::{narrowing_for, to_the_minute};
 use super::ctx::Ctx;
 use super::error::{AppError, internal};
+use super::events::entity;
 use super::store::AuthStore;
 use crate::access::{Actor, CredentialSource, KeyInUse};
 
 /// The purpose under which guessing tokens is counted per network.
 const GUESSING: &str = "oauth-token-guess";
 
-/// The moment cut to the minute, like the last use of an access key.
-fn to_the_minute(moment: Timestamp) -> Timestamp {
-    let seconds = moment.as_second();
-    Timestamp::from_second(seconds - seconds.rem_euclid(60)).unwrap_or(moment)
+/// A token that works now: its grant, the projects of the grant, the name of its app and its person.
+struct WorkingToken {
+    grant: OAuthGrant,
+    projects: Vec<ProjectId>,
+    name: String,
+    owner: Person,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -40,19 +43,29 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// `auth.not-signed-in` for a token that does not work, 429 for a network that guessed too
     /// often, `auth.second-step-required` while the person has to set up a second step.
     pub(crate) async fn grant_actor(&self, token_text: &str) -> Result<Actor, AppError> {
-        let Some(found) = self.working_token(token_text).await? else {
-            let slot = self.reserve_network(GUESSING)?;
-            self.slot_failed(slot, None).await;
-            self.note(SecurityAction::OAuthRefused, None, None).await;
+        // AI apps off is no guess of a network: the answer is the one of any token that does not
+        // work, and nothing is counted.
+        if !self.apps_may_sign_in().await? {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
-        };
-        let (grant, projects, name, owner) = found;
-        if self.must_set_up_second_step(owner.id).await? {
-            self.note(SecurityAction::OAuthRefused, Some(owner.id), None)
-                .await;
-            return Err(AppError::Refused(ErrorCode::SecondStepRequired));
         }
-        self.via_mcp.store(true, Ordering::Relaxed);
+        let Some(found) = self.working_token(token_text).await? else {
+            return Err(self
+                .credential_guessed(GUESSING, SecurityAction::OAuthRefused)
+                .await);
+        };
+        let WorkingToken {
+            grant,
+            projects,
+            name,
+            owner,
+        } = found;
+        self.owner_may_use_credential(
+            owner.id,
+            SecurityAction::OAuthRefused,
+            entity(RecordKind::ConnectedApp, grant.id),
+        )
+        .await?;
+        self.enter_mcp();
         // A busy app does not write at all within the minute it was last used in.
         let minute = to_the_minute(self.now());
         if grant.last_used_at != Some(minute) {
@@ -75,18 +88,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The grant, its projects, the name of its app and its person, for a token that works now.
-    async fn working_token(
-        &self,
-        token_text: &str,
-    ) -> Result<
-        Option<(
-            bb_core::oauth::OAuthGrant,
-            Vec<bb_core::id::ProjectId>,
-            String,
-            bb_core::person::Person,
-        )>,
-        AppError,
-    > {
+    async fn working_token(&self, token_text: &str) -> Result<Option<WorkingToken>, AppError> {
         let Some(secret) = OAuthSecret::parse(OAuthKind::Access, token_text) else {
             return Ok(None);
         };
@@ -109,9 +111,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(None);
         };
-        if !self.apps_may_sign_in().await? {
-            return Ok(None);
-        }
         let Some(client) = self
             .store()
             .oauth_client(found.grant.client)
@@ -123,6 +122,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(owner) = self.person_known(found.grant.person).await? else {
             return Ok(None);
         };
-        Ok(Some((found.grant, found.projects, client.name, owner)))
+        Ok(Some(WorkingToken {
+            grant: found.grant,
+            projects: found.projects,
+            name: client.name,
+            owner,
+        }))
     }
 }

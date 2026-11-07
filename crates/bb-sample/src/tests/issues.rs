@@ -25,7 +25,7 @@ fn options() -> Options {
 
 async fn made(target: &Target, folder: &Path) -> Result<Sample, Failure> {
     let mut everything = Everything::new(ISSUES)?;
-    Ok(create(&options(), folder, target, &mut everything).await?)
+    Ok(Box::pin(create(&options(), folder, target, &mut everything)).await?)
 }
 
 async fn dump_of(sample: Sample) -> Result<String, Failure> {

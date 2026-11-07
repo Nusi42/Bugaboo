@@ -9,6 +9,7 @@ license.workspace = true
 
 [dependencies]
 axum = { workspace = true, features = ["http1", "http2", "json", "tokio"] }
+bb-api = { path = "../bb-api" }
 bb-app = { path = "../bb-app" }
 bb-core = { path = "../bb-core" }
 serde_json = { workspace = true }

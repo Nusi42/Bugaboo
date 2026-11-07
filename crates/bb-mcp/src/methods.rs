@@ -18,7 +18,7 @@ use bb_core::id::RunId;
 use bb_core::message::{self, Message, MessageKey};
 use serde_json::{Value, json};
 
-use crate::protocol::{Fault, Message as Request};
+use crate::protocol::{Fault, Message as Request, sentence};
 
 /// The address every resource of this server starts with.
 const SCHEME: &str = "bugaboo://";
@@ -38,8 +38,9 @@ pub(crate) enum Failure {
 }
 
 impl Failure {
-    fn fault(fault: Fault, message: &str) -> Self {
-        Self::Fault(fault, message.to_owned())
+    /// A fault with its sentence from the catalog.
+    pub(crate) fn fault(fault: Fault, message: MessageKey) -> Self {
+        Self::Fault(fault, sentence(message))
     }
 }
 
@@ -53,11 +54,17 @@ impl From<AppError> for Failure {
             AppError::Limited { retry_after } => Self::Limited(retry_after),
             other => {
                 tracing::error!(cause = %other, "an MCP call failed inside the server");
-                Self::fault(Fault::Internal, "The server could not answer this call.")
+                Self::fault(Fault::Internal, message::MCP_ERROR_INTERNAL)
             }
         }
     }
 }
+
+/// The scope the registry is asked for. The token narrows what its person may do (a *See only*
+/// grant holds no permission to change, a project limit takes projects away), and the registry
+/// offers and runs only what the actor, so narrowed, may use (`effective_scope`), so the widest
+/// scope here lets the grant decide and never lets a tool through that the grant does not allow.
+const NARROWED_BY_THE_TOKEN: ToolScope = ToolScope::SeeAndChange;
 
 /// Who calls, and what the call belongs to.
 pub(crate) struct Caller<'a> {
@@ -66,10 +73,6 @@ pub(crate) struct Caller<'a> {
     pub(crate) token: &'a str,
     pub(crate) who: &'a McpIdentity,
     pub(crate) run: Option<RunId>,
-}
-
-fn sentence(key: MessageKey) -> String {
-    Message::from(key).render()
 }
 
 /// What `initialize` answers: the version, what the server offers and who it is.
@@ -103,7 +106,7 @@ impl Caller<'_> {
                     session_token: self.token.to_owned(),
                     caller: ToolCaller::AiApp,
                     app: self.who.app.clone(),
-                    granted: ToolScope::SeeAndChange,
+                    granted: NARROWED_BY_THE_TOKEN,
                     people: PeopleMode::AsSeen,
                     tool: tool.to_owned(),
                     input,
@@ -114,7 +117,7 @@ impl Caller<'_> {
         match answer {
             Ok(answer) => {
                 let value = answer.masked_value().map_err(|_| {
-                    Failure::fault(Fault::Internal, "The answer could not be read.")
+                    Failure::fault(Fault::Internal, message::MCP_ERROR_ANSWER_UNREADABLE)
                 })?;
                 let text = value
                     .get("text")
@@ -145,13 +148,13 @@ impl Caller<'_> {
                 self.info.clone(),
                 ToolListQuery {
                     session_token: self.token.to_owned(),
-                    granted: ToolScope::SeeAndChange,
+                    granted: NARROWED_BY_THE_TOKEN,
                 },
             )
             .await?;
         let value = listed
             .masked_value()
-            .map_err(|_| Failure::fault(Fault::Internal, "The tools could not be read."))?;
+            .map_err(|_| Failure::fault(Fault::Internal, message::MCP_ERROR_TOOLS_UNREADABLE))?;
         let tools: Vec<Value> = value
             .get("tools")
             .and_then(Value::as_array)
@@ -178,14 +181,14 @@ impl Caller<'_> {
     pub(crate) async fn call_tool(&self, request: &Request) -> Result<Value, Failure> {
         let name = request
             .text("name")
-            .ok_or_else(|| Failure::fault(Fault::InvalidParams, "A tool call names its tool."))?;
+            .ok_or_else(|| Failure::fault(Fault::InvalidParams, message::MCP_ERROR_TOOL_NAME))?;
         let arguments = match request.params.get("arguments") {
             None | Some(Value::Null) => json!({}),
             Some(arguments @ Value::Object(_)) => arguments.clone(),
             Some(_) => {
                 return Err(Failure::fault(
                     Fault::InvalidParams,
-                    "The arguments of a tool call are an object.",
+                    message::MCP_ERROR_ARGUMENTS,
                 ));
             }
         };
@@ -230,14 +233,11 @@ impl Caller<'_> {
 
     /// `resources/read`: the tool that reads what the address names.
     pub(crate) async fn read_resource(&self, request: &Request) -> Result<Value, Failure> {
-        let uri = request
-            .text("uri")
-            .ok_or_else(|| Failure::fault(Fault::InvalidParams, "A read names its address."))?;
+        let uri = request.text("uri").ok_or_else(|| {
+            Failure::fault(Fault::InvalidParams, message::MCP_ERROR_RESOURCE_ADDRESS)
+        })?;
         let rest = uri.strip_prefix(SCHEME).ok_or_else(|| {
-            Failure::fault(
-                Fault::InvalidParams,
-                "That is not an address of this server.",
-            )
+            Failure::fault(Fault::InvalidParams, message::MCP_ERROR_NOT_AN_ADDRESS)
         })?;
         let (tool, input) = match rest.split_once('/') {
             Some(("issue", key)) if !key.is_empty() => (Tool::GetIssue, json!({ "issue": key })),
@@ -246,7 +246,7 @@ impl Caller<'_> {
             _ => {
                 return Err(Failure::fault(
                     Fault::InvalidParams,
-                    "That is not an address of this server.",
+                    message::MCP_ERROR_NOT_AN_ADDRESS,
                 ));
             }
         };
@@ -290,7 +290,7 @@ pub(crate) fn get_prompt(request: &Request) -> Result<Value, Failure> {
                 .and_then(Value::as_str)
                 .filter(|issue| !issue.is_empty())
                 .ok_or_else(|| {
-                    Failure::fault(Fault::InvalidParams, "This prompt needs the issue.")
+                    Failure::fault(Fault::InvalidParams, message::MCP_ERROR_PROMPT_ISSUE)
                 })?;
             format!(
                 "{} {issue}",
@@ -301,7 +301,7 @@ pub(crate) fn get_prompt(request: &Request) -> Result<Value, Failure> {
         _ => {
             return Err(Failure::fault(
                 Fault::InvalidParams,
-                "There is no such prompt.",
+                message::MCP_ERROR_NO_PROMPT,
             ));
         }
     };

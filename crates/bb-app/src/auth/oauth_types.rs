@@ -8,6 +8,7 @@ use bb_core::id::{GrantId, OAuthClientId, ProjectId};
 use bb_core::oauth::OAuthProblem;
 use bb_policy::Masked;
 use jiff::Timestamp;
+use zeroize::Zeroizing;
 
 use crate::access::ProjectLabel;
 
@@ -80,6 +81,9 @@ pub struct AuthorizationView {
     pub app_name: String,
     /// Whether the app comes back to the person's own computer.
     pub on_this_computer: bool,
+    /// The web address the app comes back to, for an app that does not come back to this computer:
+    /// the person sees where the answer will go.
+    pub web_address: Option<String>,
     /// The scope the app asked for; the person may narrow it, never widen it.
     pub asked: KeyChoice,
 }
@@ -102,10 +106,20 @@ pub struct DecideAuthorization {
 }
 
 /// Where the browser goes next: back to the app, with a code or with the refusal.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// The address holds the code, so it is wiped when it is dropped and never written by `Debug`.
+#[derive(Clone)]
 pub struct AuthorizationAnswer {
     /// The address of the app with the answer in it.
-    pub redirect_to: String,
+    pub redirect_to: Zeroizing<String>,
+}
+
+impl fmt::Debug for AuthorizationAnswer {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("AuthorizationAnswer")
+            .finish_non_exhaustive()
+    }
 }
 
 impl Masked for AuthorizationAnswer {}
@@ -118,13 +132,13 @@ pub struct TokenRequest {
     /// The ID of the app.
     pub client_id: String,
     /// For a code: the code.
-    pub code: String,
+    pub code: Zeroizing<String>,
     /// For a code: the address the code was given for.
     pub return_address: String,
     /// For a code: the PKCE verifier.
-    pub verifier: String,
+    pub verifier: Zeroizing<String>,
     /// For a renewal: the renewing token.
-    pub refresh_token: String,
+    pub refresh_token: Zeroizing<String>,
     /// The resource the token is for; empty means the MCP server.
     pub resource: String,
 }
@@ -142,11 +156,11 @@ impl fmt::Debug for TokenRequest {
 #[derive(Clone)]
 pub struct TokenAnswer {
     /// The token to send with every call.
-    pub access_token: String,
+    pub access_token: Zeroizing<String>,
     /// Seconds the access token works.
     pub expires_in: i64,
     /// The token that renews it; the old one is dead from now.
-    pub refresh_token: String,
+    pub refresh_token: Zeroizing<String>,
     /// What the app may do.
     pub scope: KeyChoice,
 }
@@ -285,13 +299,10 @@ pub struct McpIdentity {
     pub agent: Option<bb_core::id::AgentId>,
 }
 
-/// Ask where the sign-in of AI apps is: for the two metadata documents.
+/// Ask where the sign-in of AI apps is: for the two metadata documents. The address the request
+/// came to is in the request info.
 #[derive(Clone, Debug)]
-pub struct OAuthMetadataQuery {
-    /// The address the request came to (`https://bugaboo.example.com`), used when the server does
-    /// not know its public address.
-    pub origin_seen: String,
-}
+pub struct OAuthMetadataQuery;
 
 /// Where the sign-in of AI apps is.
 #[derive(Clone, Debug, PartialEq, Eq)]

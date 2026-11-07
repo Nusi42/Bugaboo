@@ -24,9 +24,9 @@ use bb_core::access_key::KeyChoice;
 use bb_core::event::RecordKind;
 use bb_core::id::{GrantId, OAuthClientId, ProjectId};
 use bb_core::oauth::{
-    APP_NAME_LENGTH_MAX, GrantEnd, MCP_PATH, MOST_GRANT_PROJECTS, MOST_GRANTS,
-    MOST_RETURN_ADDRESSES, OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD,
-    ReturnAddress, ReturnKind, code_life, is_registered, with_query,
+    APP_NAME_LENGTH_MAX, GrantEnd, MOST_GRANT_PROJECTS, MOST_GRANTS, MOST_RETURN_ADDRESSES,
+    OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD, ReturnAddress, ReturnKind,
+    code_life, is_registered, with_query,
 };
 use bb_core::settings::{AI_APPS_ENABLED, AI_ENABLED};
 use bb_core::sign_in::SecurityAction;
@@ -37,7 +37,7 @@ use serde_json::json;
 use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, entity, set_to};
-use super::oauth_store::GrantRecord;
+use super::oauth_store::{GrantRecord, GrantWithApp};
 use super::oauth_types::{
     AuthorizationAnswer, AuthorizationQuery, AuthorizationRequest, AuthorizationView,
     ConnectedAppView, ConnectedApps, ConnectedAppsQuery, DecideAuthorization, RegisterApp,
@@ -140,11 +140,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.note(SecurityAction::OAuthRefused, None, None).await;
         Err(AppError::Refused(ErrorCode::InvalidRequest))
     }
-
-    /// The resource a token is for: the MCP server of this server.
-    pub(crate) fn mcp_resource(&self) -> String {
-        format!("{}{MCP_PATH}", self.services.public_url)
-    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -198,15 +193,16 @@ pub async fn register_app<S: AuthStore>(
             return Err(error);
         }
     };
-    let event = ctx.event(
-        bb_core::event::Actor::System,
-        entity(RecordKind::OAuthClient, client.id),
-        vec![set_to("name", json!(client.name))],
-    )?;
+    if let Err(error) = ctx.count_registration() {
+        ctx.slot_given_back(&slot);
+        return Err(error);
+    }
+    // Anybody can register, so a registration is written to the security log and not to the history
+    // of the organization: it has no person and nothing a person did.
     let stored = client.clone();
     let written = ctx
         .store()
-        .record_change(&event, move |transaction| {
+        .record_changes(&[], move |transaction| {
             Box::pin(async move { S::insert_oauth_client(transaction, &stored).await })
         })
         .await;
@@ -244,10 +240,16 @@ pub async fn authorization<S: AuthStore>(
     let access = ctx.evaluate(record.person.id, Place::Organization).await?;
     Ok(access.authorize(AuthorizationView {
         app_name: client.name,
-        on_this_computer: ReturnAddress::read(&input.request.return_address)
-            .is_some_and(|read| read.kind() == ReturnKind::OnThisComputer),
+        on_this_computer: on_this_computer(&input.request.return_address),
+        web_address: (!on_this_computer(&input.request.return_address))
+            .then(|| input.request.return_address.clone()),
         asked,
     }))
+}
+
+/// Whether the address is on the person's own computer.
+fn on_this_computer(address: &str) -> bool {
+    ReturnAddress::read(address).is_some_and(|read| read.kind() == ReturnKind::OnThisComputer)
 }
 
 /// The answer to *Cancel*: back to the app with `access_denied` and the state it gave.
@@ -257,7 +259,7 @@ fn turned_down(request: &AuthorizationRequest) -> AuthorizationAnswer {
         pairs.push(("state", request.state.as_str()));
     }
     AuthorizationAnswer {
-        redirect_to: with_query(&request.return_address, &pairs),
+        redirect_to: with_query(&request.return_address, &pairs).into(),
     }
 }
 
@@ -308,7 +310,7 @@ pub async fn decide_authorization<S: AuthStore>(
     ctx.ensure_projects_known(&actor, &projects).await?;
     let held = ctx
         .store()
-        .grant_count_of(person)
+        .grant_count_of(person, ctx.now())
         .await
         .map_err(|error| internal::<S>(&error))?;
     if usize::try_from(held).map_or(true, |held| held >= MOST_GRANTS) {
@@ -375,7 +377,7 @@ pub async fn decide_authorization<S: AuthStore>(
     }
     let pairs: Vec<(&str, &str)> = pairs.iter().map(|(a, b)| (*a, b.as_str())).collect();
     Ok(access.authorize(AuthorizationAnswer {
-        redirect_to: with_query(&input.request.return_address, &pairs),
+        redirect_to: with_query(&input.request.return_address, &pairs).into(),
     }))
 }
 
@@ -395,19 +397,15 @@ pub async fn connected_apps<S: AuthStore>(
     };
     let grants = ctx
         .store()
-        .grants_of(person, MOST_GRANTS as u64)
+        .grants_of(person, ctx.now(), MOST_GRANTS as u64)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let mut items = Vec::with_capacity(grants.len());
-    for found in grants {
-        let Some(client) = ctx
-            .store()
-            .oauth_client(found.grant.client)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
-            continue;
-        };
+    for GrantWithApp {
+        record: found,
+        client,
+    } in grants
+    {
         let mut projects = Vec::new();
         for project in &found.projects {
             projects.push(ctx.project_label(&actor, *project).await?);

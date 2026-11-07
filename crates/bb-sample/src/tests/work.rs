@@ -22,7 +22,7 @@ async fn dump_of(target: &Target, folder: &std::path::Path) -> Result<Value, Fai
         start: Timestamp::from_second(START)?,
     };
     let mut everything = Everything::new(ISSUES)?;
-    let sample: Sample = create(&options, folder, target, &mut everything).await?;
+    let sample: Sample = Box::pin(create(&options, folder, target, &mut everything)).await?;
     sample.verify_security_log().await?;
     let text = sample.dump().await?.to_json()?;
     sample.close().await;

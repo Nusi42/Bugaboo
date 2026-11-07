@@ -496,6 +496,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "trybuild",
  "unicode-normalization",
  "unicode-properties",
@@ -574,6 +575,7 @@ name = "bb-mcp"
 version = "0.3.0"
 dependencies = [
  "axum",
+ "bb-api",
  "bb-app",
  "bb-core",
  "serde_json",

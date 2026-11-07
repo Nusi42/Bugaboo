@@ -32,7 +32,7 @@ async fn ai_38_an_mcp_session_is_one_run_and_its_changes_say_which_app() -> Outc
     let session = crate::auth::start_app_session(
         &world.ctx(),
         crate::auth::StartAppSession {
-            token: tokens.access_token.clone(),
+            token: tokens.access_token.to_string(),
         },
     )
     .await?;
@@ -183,7 +183,7 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
     let run = crate::auth::start_app_session(
         &world.ctx(),
         crate::auth::StartAppSession {
-            token: tokens.access_token.clone(),
+            token: tokens.access_token.to_string(),
         },
     )
     .await?

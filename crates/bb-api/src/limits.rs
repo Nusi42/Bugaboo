@@ -30,15 +30,14 @@
 //! give. A fixed window allows up to twice the limit around a window edge; that is accepted for
 //! these limits.
 
-use std::collections::HashMap;
-use std::hash::Hash;
 use std::net::{IpAddr, Ipv4Addr};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
+use bb_app::rate_window::{Overflow, Window};
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::network::NetworkPrefix;
@@ -48,20 +47,8 @@ use crate::errors::ApiError;
 use crate::failures::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
 use crate::logging::ClientIp;
 
-/// How long a window lasts.
-const PERIOD: Duration = Duration::from_mins(1);
-
 /// How long the hourly window of signing up lasts.
 const HOUR: Duration = Duration::from_hours(1);
-
-/// Each window remembers at most this many clients. A flood of invented addresses must not be
-/// able to use up the memory. When the table is full, expired entries go first; counters of
-/// clients that are still within their minute are never thrown away. If it is still full, see
-/// [`Overflow`].
-const MAX_CLIENTS: usize = 100_000;
-
-/// A full table is swept for expired counters at most this often.
-const SWEEP_EVERY: Duration = Duration::from_secs(1);
 
 /// Requests of the whole API, per client network and minute, when nothing else is set.
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
@@ -125,119 +112,6 @@ impl Default for LimitsConfig {
             sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
             access_key_requests_per_minute: DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
             searches_per_minute: DEFAULT_SEARCHES_PER_MINUTE,
-        }
-    }
-}
-
-struct Entry {
-    started: Instant,
-    count: u32,
-}
-
-/// What a window does with a new key when its table is full of unexpired counters.
-enum Overflow<K> {
-    /// All such keys share one counter. Used for the general limit: a flood of invented clients
-    /// ends up sharing one limit, while the clients already counted keep theirs.
-    Share(K),
-    /// The new key is refused (counts as over the limit). Used for sign-in: fail closed.
-    Refuse,
-}
-
-/// Counts events per key in fixed windows.
-struct Window<K> {
-    limit: u32,
-    /// How long a window lasts.
-    period: Duration,
-    overflow: Overflow<K>,
-    table: Mutex<Table<K>>,
-}
-
-/// The counters of one window.
-struct Table<K> {
-    entries: HashMap<K, Entry>,
-    /// When expired entries were last swept out. A full table is swept at most once per
-    /// [`SWEEP_EVERY`], so a flood cannot make every request scan 100,000 entries.
-    last_sweep: Option<Instant>,
-    /// How many sweeps ran (tests count them).
-    #[cfg(test)]
-    sweeps: u32,
-}
-
-impl<K: Hash + Eq + Clone> Window<K> {
-    fn new(limit: u32, overflow: Overflow<K>) -> Self {
-        Self::lasting(PERIOD, limit, overflow)
-    }
-
-    fn lasting(period: Duration, limit: u32, overflow: Overflow<K>) -> Self {
-        Self {
-            limit,
-            period,
-            overflow,
-            table: Mutex::new(Table {
-                entries: HashMap::new(),
-                last_sweep: None,
-                #[cfg(test)]
-                sweeps: 0,
-            }),
-        }
-    }
-
-    fn lock(&self) -> std::sync::MutexGuard<'_, Table<K>> {
-        self.table.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-
-    /// Counts one event. `Err` holds the seconds to wait (at least one) when the key is over
-    /// the limit.
-    fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
-        let mut table = self.lock();
-        let mut key = key;
-        if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
-            create_room(&mut table, now, self.period);
-            if table.entries.len() >= MAX_CLIENTS {
-                match &self.overflow {
-                    Overflow::Share(shared) => key = shared.clone(),
-                    Overflow::Refuse => return Err(self.period.as_secs()),
-                }
-            }
-        }
-        let entry = table.entries.entry(key).or_insert(Entry {
-            started: now,
-            count: 0,
-        });
-        if now.duration_since(entry.started) >= self.period {
-            *entry = Entry {
-                started: now,
-                count: 0,
-            };
-        }
-        if entry.count >= self.limit {
-            return Err(seconds_left(entry.started, now, self.period));
-        }
-        entry.count += 1;
-        Ok(())
-    }
-}
-
-/// The seconds a key that started its window at `started` still has to wait: at least one.
-fn seconds_left(started: Instant, now: Instant, period: Duration) -> u64 {
-    let wait = period.saturating_sub(now.duration_since(started));
-    (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
-}
-
-/// Throws out the counters whose window is over, when the table is full. A full table is swept
-/// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
-fn create_room<K>(table: &mut Table<K>, now: Instant, period: Duration) {
-    let due = table
-        .last_sweep
-        .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
-    if due {
-        table
-            .entries
-            .retain(|_, entry| now.duration_since(entry.started) < period);
-        table.last_sweep = Some(now);
-        #[cfg(test)]
-        {
-            table.sweeps += 1;
         }
     }
 }
@@ -459,6 +333,8 @@ pub async fn limit_sign_up(
 
 #[cfg(test)]
 mod tests {
+    use bb_app::rate_window::PERIOD;
+
     use super::*;
 
     fn limits(requests: u32, sign_in: u32) -> Arc<Limits> {
@@ -648,63 +524,5 @@ mod tests {
             .check_request_at(ip("203.0.113.8"), later)
             .unwrap_err();
         assert!(wait_of(&error) >= 1);
-    }
-
-    fn fill(window: &Window<u32>, now: Instant) {
-        for key in 0..u32::try_from(MAX_CLIENTS).unwrap() {
-            window.hit(key, now).unwrap();
-        }
-    }
-
-    #[test]
-    fn sec_14_a_full_table_never_forgets_counters_that_are_still_running() {
-        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
-        let now = Instant::now();
-        fill(&window, now);
-        // A client already counted keeps its counter, also while the table is full.
-        assert!(window.hit(7, now).is_err());
-        // New clients share one counter: the first passes, the next are over the limit.
-        window.hit(u32::MAX - 1, now).unwrap();
-        assert!(window.hit(u32::MAX - 2, now).is_err());
-        assert!(window.table.lock().unwrap().entries.len() <= MAX_CLIENTS + 1);
-        assert!(window.hit(7, now).is_err());
-        // Expired counters make room again.
-        let later = now + PERIOD + Duration::from_secs(1);
-        window.hit(u32::MAX - 3, later).unwrap();
-        window.hit(8, later).unwrap();
-    }
-
-    #[test]
-    fn sec_14_a_full_table_is_swept_at_most_once_a_second_not_on_every_request() {
-        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
-        let now = Instant::now();
-        fill(&window, now);
-        for new in 0..1000 {
-            let _ = window.hit(
-                u32::try_from(MAX_CLIENTS).unwrap() + new,
-                now + Duration::from_millis(u64::from(new)),
-            );
-        }
-        // 1000 requests over about one second: one sweep, maybe two at the second's edge.
-        let sweeps = window.table.lock().unwrap().sweeps;
-        assert!((1..=2).contains(&sweeps), "{sweeps}");
-        // Much later the sweep runs again and frees the expired counters.
-        let later = now + PERIOD + Duration::from_secs(5);
-        window.hit(u32::MAX - 5, later).unwrap();
-        assert!(window.table.lock().unwrap().entries.len() < 10);
-    }
-
-    #[test]
-    fn sec_14_sign_in_refuses_new_keys_when_the_table_is_full() {
-        let window: Window<u32> = Window::new(5, Overflow::Refuse);
-        let now = Instant::now();
-        fill(&window, now);
-        let wait = window.hit(u32::MAX, now).unwrap_err();
-        assert_eq!(wait, PERIOD.as_secs());
-        // Known keys still work; after expiry a new key is accepted.
-        window.hit(3, now).unwrap();
-        window
-            .hit(u32::MAX, now + PERIOD + Duration::from_secs(1))
-            .unwrap();
     }
 }

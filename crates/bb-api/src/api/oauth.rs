@@ -13,11 +13,11 @@
 //! A token an app got is no session: the `Session` extractor does not take one from a cookie, and
 //! the API takes none from `Authorization`; it works at `/mcp` only.
 
+use axum::Router;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
 use axum::routing::{get, post};
-use axum::{Extension, Router};
 use bb_app::auth::{
     AddWebAddress, AuthorizationQuery, AuthorizationRequest, ConnectedAppView, ConnectedAppsQuery,
     DecideAuthorization, OAuthMetadataQuery, RegisterApp, RegisterOutcome, RemoveWebAddress,
@@ -26,12 +26,12 @@ use bb_app::auth::{
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{GrantId, ProjectId};
 use bb_core::oauth::{
-    AUTHORIZATION_SERVER_METADATA_PATH, CONSENT_PATH, OAuthProblem, PKCE_METHOD,
+    AUTHORIZATION_SERVER_METADATA_PATH, OAuthProblem, PKCE_METHOD,
     PROTECTED_RESOURCE_METADATA_PATH, REGISTRATION_PATH, TOKEN_PATH, form_pairs,
 };
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::json;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -42,7 +42,7 @@ use super::auth::{
     answer_authorized, done,
 };
 use super::{body_id, path_id};
-use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
+use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery, json_no_store, with_retry_after};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use crate::logging::Scheme;
 
@@ -77,16 +77,6 @@ pub fn origin_of(parts: &axum::http::request::Parts) -> String {
     origin_seen(&parts.headers, parts.extensions.get::<Scheme>())
 }
 
-/// A JSON answer that no cache keeps.
-fn json_no_store(status: StatusCode, body: &Value) -> Response {
-    let mut response = (status, axum::Json(body.clone())).into_response();
-    response.headers_mut().insert(
-        header::CACHE_CONTROL,
-        header::HeaderValue::from_static("no-store"),
-    );
-    response
-}
-
 /// The answer to an app that was turned away: the error of OAuth.
 fn oauth_error(problem: OAuthProblem) -> Response {
     let status = match problem {
@@ -106,9 +96,7 @@ fn app_failure(error: bb_app::auth::AppError) -> Response {
                 StatusCode::TOO_MANY_REQUESTS,
                 &json!({ "error": "slow_down" }),
             );
-            if let Ok(wait) = header::HeaderValue::from_str(&retry_after.to_string()) {
-                response.headers_mut().insert(header::RETRY_AFTER, wait);
-            }
+            with_retry_after(&mut response, retry_after);
             response
         }
         other => ApiError::from(other).into_response(),
@@ -119,18 +107,8 @@ fn app_failure(error: bb_app::auth::AppError) -> Response {
 async fn protected_resource_metadata(
     State(auth): State<AuthHandle>,
     Info(info): Info,
-    headers: HeaderMap,
-    scheme: Option<Extension<Scheme>>,
 ) -> Result<Response, ApiError> {
-    let seen = auth
-        .api()?
-        .oauth_metadata(
-            info,
-            OAuthMetadataQuery {
-                origin_seen: origin_seen(&headers, scheme.as_ref().map(|each| &each.0)),
-            },
-        )
-        .await?;
+    let seen = auth.api()?.oauth_metadata(info, OAuthMetadataQuery).await?;
     Ok(axum::Json(json!({
         "resource": seen.resource,
         "authorization_servers": [seen.origin],
@@ -145,22 +123,12 @@ async fn protected_resource_metadata(
 async fn authorization_server_metadata(
     State(auth): State<AuthHandle>,
     Info(info): Info,
-    headers: HeaderMap,
-    scheme: Option<Extension<Scheme>>,
 ) -> Result<Response, ApiError> {
-    let seen = auth
-        .api()?
-        .oauth_metadata(
-            info,
-            OAuthMetadataQuery {
-                origin_seen: origin_seen(&headers, scheme.as_ref().map(|each| &each.0)),
-            },
-        )
-        .await?;
+    let seen = auth.api()?.oauth_metadata(info, OAuthMetadataQuery).await?;
     let origin = &seen.origin;
     Ok(axum::Json(json!({
         "issuer": origin,
-        "authorization_endpoint": format!("{origin}{CONSENT_PATH}"),
+        "authorization_endpoint": format!("{origin}{}", bb_core::app_paths::CONNECT),
         "token_endpoint": format!("{origin}{TOKEN_PATH}"),
         "registration_endpoint": format!("{origin}{REGISTRATION_PATH}"),
         "response_types_supported": ["code"],
@@ -240,10 +208,10 @@ async fn exchange_token(
             TokenRequest {
                 grant_type: field("grant_type"),
                 client_id: field("client_id"),
-                code: field("code"),
+                code: field("code").into(),
                 return_address: field("redirect_uri"),
-                verifier: field("code_verifier"),
-                refresh_token: field("refresh_token"),
+                verifier: field("code_verifier").into(),
+                refresh_token: field("refresh_token").into(),
                 resource: field("resource"),
             },
         )
@@ -252,10 +220,10 @@ async fn exchange_token(
         Ok(TokenOutcome::Issued(tokens)) => json_no_store(
             StatusCode::OK,
             &json!({
-                "access_token": tokens.access_token,
+                "access_token": tokens.access_token.as_str(),
                 "token_type": "Bearer",
                 "expires_in": tokens.expires_in,
-                "refresh_token": tokens.refresh_token,
+                "refresh_token": tokens.refresh_token.as_str(),
                 "scope": tokens.scope.code(),
             }),
         ),
@@ -332,6 +300,8 @@ pub(crate) struct AuthorizationBody {
     app_name: String,
     /// Whether the app comes back to the person's own computer.
     on_this_computer: bool,
+    /// The web address the app comes back to, when it is not this computer.
+    web_address: Option<String>,
     /// What the app asked for: the person may narrow it, never widen it.
     asked: KeyChoice,
 }
@@ -398,6 +368,7 @@ async fn get_authorization(
     answer_authorized(&seen.map(|seen| AuthorizationBody {
         app_name: seen.app_name,
         on_this_computer: seen.on_this_computer,
+        web_address: seen.web_address,
         asked: seen.asked,
     }))
 }
@@ -447,7 +418,7 @@ async fn decide_authorization(
         )
         .await?;
     answer_authorized(&answer.map(|answer| DecisionAnswerBody {
-        redirect_to: answer.redirect_to,
+        redirect_to: answer.redirect_to.to_string(),
     }))
 }
 

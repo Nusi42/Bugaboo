@@ -13,4 +13,4 @@ mod protocol;
 mod server;
 mod session;
 
-pub use server::{McpOptions, McpService, Seen, router};
+pub use server::{McpOptions, McpService, router};

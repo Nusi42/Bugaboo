@@ -23,7 +23,7 @@ use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
 use bb_core::agent::MOST_AGENT_KEYS;
-use bb_core::event::{DomainEvent, RecordKind};
+use bb_core::event::{DomainEvent, EntityRef, RecordKind};
 use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::paging::{Cut, SkipCursor, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::sign_in::{SecurityAction, SessionStage};
@@ -79,12 +79,48 @@ pub(crate) fn narrowing_of(record: &AccessKeyRecord) -> Narrowing {
 
 /// The moment cut to the minute: the last use of a key is kept to the minute (PRIV-02: no more
 /// exact than a purpose needs), and a busy key writes at most once a minute.
-fn to_the_minute(moment: Timestamp) -> Timestamp {
+pub(crate) fn to_the_minute(moment: Timestamp) -> Timestamp {
     let seconds = moment.as_second();
     Timestamp::from_second(seconds - seconds.rem_euclid(60)).unwrap_or(moment)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The answer for a secret that no credential of its kind has (a guess, or one that ran out):
+    /// the answer of any credential that does not work, counted as a try of the network and
+    /// written down without a person, because who sent it is not known (SEC-14). The one way an
+    /// access key and the access token of an app are turned away.
+    pub(crate) async fn credential_guessed(
+        &self,
+        purpose: &'static str,
+        action: SecurityAction,
+    ) -> AppError {
+        let slot = match self.reserve_network(purpose) {
+            Ok(slot) => slot,
+            Err(error) => return error,
+        };
+        self.slot_failed(slot, None).await;
+        self.note(action, None, None).await;
+        AppError::Refused(ErrorCode::NotSignedIn)
+    }
+
+    /// A credential follows its owner's two-step requirement: a person who has to set up a second
+    /// step cannot get around it with a key or an app (ADR-0025, decision 8; M2-F46).
+    ///
+    /// # Errors
+    /// `auth.second-step-required` while the owner has to set up a second step.
+    pub(crate) async fn owner_may_use_credential(
+        &self,
+        owner: UserId,
+        action: SecurityAction,
+        subject: EntityRef,
+    ) -> Result<(), AppError> {
+        if self.must_set_up_second_step(owner).await? {
+            self.note(action, Some(owner), Some(subject)).await;
+            return Err(AppError::Refused(ErrorCode::SecondStepRequired));
+        }
+        Ok(())
+    }
+
     /// A project the person may not know about is not one they can name, whether it exists or not.
     pub(crate) async fn ensure_projects_known(
         &self,
@@ -163,21 +199,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// `auth.second-step-required` while the owner has to set up a second step.
     pub(crate) async fn key_actor(&self, key_text: &str) -> Result<Actor, AppError> {
         let Some((record, owner)) = self.working_key(key_text).await? else {
-            let slot = self.reserve_network(GUESSING)?;
-            self.slot_failed(slot, None).await;
-            // Who sent it is not known: the entry holds the shortened network only.
-            self.note(SecurityAction::AccessKeyRefused, None, None)
-                .await;
-            return Err(AppError::Refused(ErrorCode::NotSignedIn));
+            return Err(self
+                .credential_guessed(GUESSING, SecurityAction::AccessKeyRefused)
+                .await);
         };
         // A key follows its owner's two-step requirement: a person who has to set up a second
         // step cannot get around it with a key (ADR-0025, decision 8; M2-F46).
-        if self.must_set_up_second_step(owner.id).await? {
-            let subject = Some(entity(RecordKind::AccessKey, record.key.id));
-            self.note(SecurityAction::AccessKeyRefused, Some(owner.id), subject)
-                .await;
-            return Err(AppError::Refused(ErrorCode::SecondStepRequired));
-        }
+        let subject = entity(RecordKind::AccessKey, record.key.id);
+        self.owner_may_use_credential(owner.id, SecurityAction::AccessKeyRefused, subject)
+            .await?;
         self.via_key
             .store(true, std::sync::atomic::Ordering::Relaxed);
         // A busy key does not write at all within the minute it was last used in.

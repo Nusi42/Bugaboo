@@ -786,9 +786,6 @@ pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-fil
 /// The message `config.tls-files-unused`.
 pub const CONFIG_TLS_FILES_UNUSED: MessageKey = MessageKey::new("config.tls-files-unused");
 
-/// The message `connect.acts-as`.
-pub const CONNECT_ACTS_AS: MessageKey = MessageKey::new("connect.acts-as");
-
 /// The message `connect.allow`.
 pub const CONNECT_ALLOW: MessageKey = MessageKey::new("connect.allow");
 
@@ -3055,6 +3052,51 @@ pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
 
 /// The message `markdown.write`.
 pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
+
+/// The message `mcp.error.answer-unreadable`.
+pub const MCP_ERROR_ANSWER_UNREADABLE: MessageKey = MessageKey::new("mcp.error.answer-unreadable");
+
+/// The message `mcp.error.arguments`.
+pub const MCP_ERROR_ARGUMENTS: MessageKey = MessageKey::new("mcp.error.arguments");
+
+/// The message `mcp.error.batch`.
+pub const MCP_ERROR_BATCH: MessageKey = MessageKey::new("mcp.error.batch");
+
+/// The message `mcp.error.internal`.
+pub const MCP_ERROR_INTERNAL: MessageKey = MessageKey::new("mcp.error.internal");
+
+/// The message `mcp.error.method`.
+pub const MCP_ERROR_METHOD: MessageKey = MessageKey::new("mcp.error.method");
+
+/// The message `mcp.error.no-prompt`.
+pub const MCP_ERROR_NO_PROMPT: MessageKey = MessageKey::new("mcp.error.no-prompt");
+
+/// The message `mcp.error.not-a-request`.
+pub const MCP_ERROR_NOT_A_REQUEST: MessageKey = MessageKey::new("mcp.error.not-a-request");
+
+/// The message `mcp.error.not-an-address`.
+pub const MCP_ERROR_NOT_AN_ADDRESS: MessageKey = MessageKey::new("mcp.error.not-an-address");
+
+/// The message `mcp.error.not-json`.
+pub const MCP_ERROR_NOT_JSON: MessageKey = MessageKey::new("mcp.error.not-json");
+
+/// The message `mcp.error.prompt-issue`.
+pub const MCP_ERROR_PROMPT_ISSUE: MessageKey = MessageKey::new("mcp.error.prompt-issue");
+
+/// The message `mcp.error.resource-address`.
+pub const MCP_ERROR_RESOURCE_ADDRESS: MessageKey = MessageKey::new("mcp.error.resource-address");
+
+/// The message `mcp.error.session`.
+pub const MCP_ERROR_SESSION: MessageKey = MessageKey::new("mcp.error.session");
+
+/// The message `mcp.error.too-big`.
+pub const MCP_ERROR_TOO_BIG: MessageKey = MessageKey::new("mcp.error.too-big");
+
+/// The message `mcp.error.tool-name`.
+pub const MCP_ERROR_TOOL_NAME: MessageKey = MessageKey::new("mcp.error.tool-name");
+
+/// The message `mcp.error.tools-unreadable`.
+pub const MCP_ERROR_TOOLS_UNREADABLE: MessageKey = MessageKey::new("mcp.error.tools-unreadable");
 
 /// The message `mcp.instructions`.
 pub const MCP_INSTRUCTIONS: MessageKey = MessageKey::new("mcp.instructions");
@@ -7499,6 +7541,15 @@ pub fn conflict_sentence_plain(
     )
 }
 
+/// The message `connect.acts-as`.
+#[must_use]
+pub fn connect_acts_as(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("connect.acts-as"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
 /// The message `connect.title`.
 #[must_use]
 pub fn connect_title(app: impl std::fmt::Display) -> Message {
@@ -9833,6 +9884,15 @@ pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message
             ("action", Value::Text(action.to_string())),
             ("count", Value::Number(count)),
         ],
+    )
+}
+
+/// The message `mcp.wait`.
+#[must_use]
+pub fn mcp_wait(seconds: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mcp.wait"),
+        vec![("seconds", Value::Text(seconds.to_string()))],
     )
 }
 
@@ -14328,7 +14388,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "connect.acts-as",
-        "It will act as you and can never do more than you can.",
+        "{app} will act as you and can never do more than you can.",
     ),
     ("connect.allow", "Allow"),
     ("connect.cancel", "Cancel"),
@@ -16315,6 +16375,36 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
     (
+        "mcp.error.answer-unreadable",
+        "The answer could not be read.",
+    ),
+    (
+        "mcp.error.arguments",
+        "The arguments of a tool call are an object.",
+    ),
+    (
+        "mcp.error.batch",
+        "A message holds one request. Batches are not supported.",
+    ),
+    (
+        "mcp.error.internal",
+        "The server could not answer this call.",
+    ),
+    ("mcp.error.method", "This server does not know that method."),
+    ("mcp.error.no-prompt", "There is no such brief."),
+    ("mcp.error.not-a-request", "That is not a request."),
+    (
+        "mcp.error.not-an-address",
+        "That is not an address of this server.",
+    ),
+    ("mcp.error.not-json", "The message is not JSON."),
+    ("mcp.error.prompt-issue", "This brief needs the issue."),
+    ("mcp.error.resource-address", "A read names its address."),
+    ("mcp.error.session", "The session could not begin."),
+    ("mcp.error.too-big", "The message is too big."),
+    ("mcp.error.tool-name", "A tool call names its tool."),
+    ("mcp.error.tools-unreadable", "The tools could not be read."),
+    (
         "mcp.instructions",
         "Bugaboo keeps issues for teams. You work as the person who allowed you and can never do more than they can. Use the tools to look at issues, and to change them if the person allowed that.",
     ),
@@ -16344,6 +16434,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mcp.resource.projects-help",
         "The list of projects the person may see.",
     ),
+    ("mcp.wait", "Wait {seconds} seconds and call again."),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),

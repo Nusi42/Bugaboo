@@ -156,6 +156,7 @@ pub fn request_info(parts: &Parts) -> RequestInfo {
         device,
         background,
         run: None,
+        origin_seen: crate::api::oauth::origin_of(parts),
     }
 }
 

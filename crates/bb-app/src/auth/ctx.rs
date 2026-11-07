@@ -43,6 +43,9 @@ pub struct RequestInfo {
     /// The run the request works inside (a session of an AI app, an attempt of an agent): every
     /// event of the request carries it. Set by the way in that opened the run, never by a client.
     pub run: Option<RunId>,
+    /// The address the request came to (`https://bugaboo.example.com`), for the places that name
+    /// the server to somebody else (the sign-in of AI apps) when it does not know its public address.
+    pub origin_seen: String,
 }
 
 /// Everything the sign-in use cases share. Built once at start-up (`bb-server`).
@@ -236,7 +239,7 @@ pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
 /// lock: these hold values that were only ever whole insertions of what the store said, so after a
 /// panic elsewhere the value is as good as before, and a read goes on from it. Never read a cache
 /// with `.lock().ok()`, which would answer from the store again silently, nor with `.unwrap()`.
-pub(crate) fn locked<T>(lock: &Mutex<T>) -> MutexGuard<'_, T> {
+pub fn locked<T>(lock: &Mutex<T>) -> MutexGuard<'_, T> {
     lock.lock().unwrap_or_else(PoisonError::into_inner)
 }
 

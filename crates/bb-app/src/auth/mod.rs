@@ -198,8 +198,8 @@ pub use access_keys::{
     require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code};
-pub use ctx::{AuthServices, Ctx, RequestInfo};
-pub(crate) use ctx::{EventMaker, KnownProjects, locked};
+pub use ctx::{AuthServices, Ctx, RequestInfo, locked};
+pub(crate) use ctx::{EventMaker, KnownProjects};
 pub use error::AppError;
 pub(crate) use error::{Stops, change_failed, if_there, internal};
 pub(crate) use events::{by, changed, entity, fixed_entity, set_to};
@@ -216,7 +216,7 @@ pub use oauth_admin::{
     add_web_address, mcp_identity, oauth_metadata, remove_web_address, web_addresses,
 };
 pub use oauth_session::{end_app_runs, start_app_session};
-pub use oauth_store::{GrantRecord, OAuthCleaned, OAuthStore};
+pub use oauth_store::{GrantRecord, GrantWithApp, OAuthCleaned, OAuthStore};
 pub use oauth_token::exchange_token;
 pub use oauth_types::*;
 pub use second_factor::{

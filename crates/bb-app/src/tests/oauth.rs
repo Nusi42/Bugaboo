@@ -104,27 +104,27 @@ pub(super) fn swap_code(client: OAuthClientId, code: &str, verifier: &str) -> To
     TokenRequest {
         grant_type: "authorization_code".to_owned(),
         client_id: client.to_string(),
-        code: code.to_owned(),
+        code: code.to_owned().into(),
         return_address: "http://127.0.0.1:51234/callback".to_owned(),
-        verifier: verifier.to_owned(),
-        refresh_token: String::new(),
+        verifier: verifier.to_owned().into(),
+        refresh_token: String::new().into(),
         resource: String::new(),
     }
 }
 
-fn renew(client: OAuthClientId, refresh: &str) -> TokenRequest {
+pub(super) fn renew(client: OAuthClientId, refresh: &str) -> TokenRequest {
     TokenRequest {
         grant_type: "refresh_token".to_owned(),
         client_id: client.to_string(),
-        code: String::new(),
+        code: String::new().into(),
         return_address: String::new(),
-        verifier: String::new(),
-        refresh_token: refresh.to_owned(),
+        verifier: String::new().into(),
+        refresh_token: refresh.to_owned().into(),
         resource: String::new(),
     }
 }
 
-async fn issued(
+pub(super) async fn issued(
     world: &World,
     request: TokenRequest,
 ) -> Result<crate::auth::TokenAnswer, AppError> {
@@ -195,7 +195,7 @@ async fn ai_22_an_app_on_this_computer_registers_and_the_person_allows_it() -> O
     .await?
     .into_value();
     assert_eq!(
-        cancelled.redirect_to,
+        cancelled.redirect_to.as_str(),
         "http://127.0.0.1:51234/callback?error=access_denied&state=s1"
     );
     let listed = connected_apps(
@@ -359,7 +359,7 @@ async fn ai_22_a_code_used_twice_ends_the_grant_it_made() -> Outcome {
     let listed = list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token,
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -383,7 +383,7 @@ async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
     list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: second.access_token.clone(),
+            session_token: second.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -397,7 +397,7 @@ async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
         let listed = list_tools(
             &world.ctx(),
             ToolListQuery {
-                session_token: dead.clone(),
+                session_token: dead.to_string(),
                 granted: ToolScope::SeeAndChange,
             },
         )
@@ -424,7 +424,7 @@ async fn ai_22_an_access_token_lives_fifteen_minutes_and_a_refresh_token_thirty_
     let late = list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token.clone(),
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeOnly,
         },
     )
@@ -449,7 +449,7 @@ async fn ai_22_a_see_only_grant_cannot_call_change_status() -> Outcome {
     let tools = list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token.clone(),
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -544,7 +544,7 @@ async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
     list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token.clone(),
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -589,7 +589,7 @@ async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
     let dead = list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token,
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -624,7 +624,7 @@ async fn ai_22_sign_out_everywhere_ends_every_grant() -> Outcome {
         let listed = list_tools(
             &world.ctx(),
             ToolListQuery {
-                session_token: dead,
+                session_token: dead.to_string(),
                 granted: ToolScope::SeeAndChange,
             },
         )
@@ -652,7 +652,7 @@ async fn ai_22_the_token_of_an_app_is_not_a_session() -> Outcome {
     let listed = connected_apps(
         &world.ctx(),
         ConnectedAppsQuery {
-            session_token: tokens.access_token.clone(),
+            session_token: tokens.access_token.to_string(),
         },
     )
     .await;
@@ -660,7 +660,7 @@ async fn ai_22_the_token_of_an_app_is_not_a_session() -> Outcome {
     let decided = decide_authorization(
         &world.ctx(),
         DecideAuthorization {
-            session_token: tokens.access_token,
+            session_token: tokens.access_token.to_string(),
             request: request(OAuthClientId::from_random([1; 16]), "see-only"),
             allow: true,
             scope: KeyChoice::SeeOnly,
@@ -688,7 +688,7 @@ async fn ai_22_switching_apps_off_refuses_the_grants_but_keeps_them() -> Outcome
     let refused_now = list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token.clone(),
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )
@@ -701,7 +701,7 @@ async fn ai_22_switching_apps_off_refuses_the_grants_but_keeps_them() -> Outcome
     list_tools(
         &world.ctx(),
         ToolListQuery {
-            session_token: tokens.access_token,
+            session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
         },
     )

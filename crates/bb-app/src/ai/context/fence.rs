@@ -42,6 +42,52 @@ pub fn fence(text: &str, author: AuthorKind, nonce: &str) -> String {
     )
 }
 
+/// Whether the rest of a marker line, after the run of `=`, says `phrase`, with or without the word
+/// that is new for every answer between the marker and the phrase.
+fn says(rest: &str, phrase: &str) -> bool {
+    let rest = rest.trim_start();
+    rest.starts_with(phrase)
+        || rest
+            .split_once(' ')
+            .is_some_and(|(_, after)| after.starts_with(phrase))
+}
+
+/// For the tests that read what an AI is given, here and over MCP: the lines of an answer with
+/// whether each is inside a fence: a line is inside when an opening line came
+/// before it and the matching closing line did not.
+#[must_use]
+pub fn fenced_lines(answer: &str) -> Vec<(&str, bool)> {
+    let mut open: Option<usize> = None;
+    answer
+        .lines()
+        .map(|line| {
+            let marker = line.chars().take_while(|c| *c == '=').count();
+            if marker >= 8 && says(&line[marker..], "text written by ") && open.is_none() {
+                open = Some(marker);
+                return (line, false);
+            }
+            if marker >= 8
+                && says(&line[marker..], "end of text written by ")
+                && open == Some(marker)
+            {
+                open = None;
+                return (line, false);
+            }
+            (line, open.is_some())
+        })
+        .collect()
+}
+
+/// Every line of the answer that holds `needle` is inside a fence, and there is one at least.
+#[must_use]
+pub fn only_inside_a_fence(answer: &str, needle: &str) -> bool {
+    let holding: Vec<_> = fenced_lines(answer)
+        .into_iter()
+        .filter(|(line, _)| line.contains(needle))
+        .collect();
+    !holding.is_empty() && holding.iter().all(|(_, inside)| *inside)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

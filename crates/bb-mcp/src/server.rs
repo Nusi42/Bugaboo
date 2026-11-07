@@ -4,10 +4,12 @@
 //! access key. A request with neither, or with one that does not work, is answered `401` with the
 //! `WWW-Authenticate` header that names the metadata of the sign-in, so an app can find it by itself
 //! (the authorization part of the MCP specification). A request is answered in its own response as
-//! JSON; the server never opens a stream of its own, so `GET` is `405`.
+//! JSON; the server never opens a stream of its own, so `GET` is `405`. A request holds one message:
+//! a batch is refused, as the newer versions of the protocol dropped it.
 //!
 //! The server keeps no session of its own: the token says who calls, and the run of the session of an
-//! app is kept per grant (`session.rs`).
+//! app is kept per grant (`session.rs`). The reading of a request (who asks, from where, with which
+//! token, from which origin) is the one of the API (`bb-api`), written once there.
 
 use std::sync::Arc;
 
@@ -15,36 +17,28 @@ use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::extract::{DefaultBodyLimit, State};
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, HeaderValue, Method, Request, StatusCode, header};
+use axum::http::{HeaderValue, Method, Request, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
 use axum::routing::any;
+use bb_api::{bearer_token, is_same_origin_of, json_no_store, request_info, with_retry_after};
 use bb_app::auth::{AuthApi, McpIdentity, McpIdentityQuery, OAuthMetadataQuery, RequestInfo};
+use bb_core::ErrorCode;
+use bb_core::message;
 use bb_core::oauth::{MCP_PATH, PROTECTED_RESOURCE_METADATA_PATH};
 use serde_json::{Value, json};
 
 use crate::methods::{self, Caller, Failure};
-use crate::protocol::{self, Fault, Message};
+use crate::protocol::{self, Fault, Message, sentence};
 use crate::session::Sessions;
 
 /// The biggest message the server reads.
 const BODY_LIMIT_BYTES: usize = 1024 * 1024;
-
-/// Who asks and where from, as the HTTP layer of the server knows it.
-pub struct Seen {
-    /// The client network and the program.
-    pub info: RequestInfo,
-    /// The address the request came to (`https://bugaboo.example.com`), for a server that does not
-    /// know its public address.
-    pub origin: String,
-}
 
 /// What the MCP server needs from the server around it.
 #[derive(Clone)]
 pub struct McpOptions {
     /// The use cases.
     pub api: Arc<dyn AuthApi>,
-    /// How the HTTP layer reads the client and the address out of a request, written once there.
-    pub seen: Arc<dyn Fn(&Parts) -> Seen + Send + Sync>,
 }
 
 #[derive(Clone)]
@@ -65,60 +59,23 @@ pub fn router(options: McpOptions) -> McpService {
         .with_state(McpState { options, sessions })
 }
 
-/// The token of the request: `Authorization: Bearer <token>`.
-fn bearer(headers: &HeaderMap) -> Option<&str> {
-    headers
-        .get(header::AUTHORIZATION)?
-        .to_str()
-        .ok()?
-        .strip_prefix("Bearer ")
-        .map(str::trim)
-        .filter(|token| !token.is_empty())
-}
-
-/// Whether a browser page of another website sent the request: its `Origin` is not the host the
-/// request came to (a defence against DNS rebinding, MCP specification). A program that is not a
-/// browser sends none.
-fn from_another_site(headers: &HeaderMap) -> bool {
-    let Some(origin) = headers
+/// Whether a browser page of another website sent the request (a defence against DNS rebinding,
+/// MCP specification). A program that is not a browser sends no `Origin`. A page is of this
+/// server when its `Origin` is the one the request came to (the API's rule) and, where the server
+/// knows its public address, is that address: a name an attacker points at this machine is neither.
+fn from_another_site(parts: &Parts, own_origin: &str) -> bool {
+    let Some(origin) = parts
+        .headers
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
     else {
         return false;
     };
-    let host = headers
-        .get(header::HOST)
-        .and_then(|value| value.to_str().ok())
-        .unwrap_or_default();
-    origin
-        .split_once("://")
-        .is_none_or(|(_, authority)| !authority.eq_ignore_ascii_case(host))
-}
-
-fn json_response(status: StatusCode, body: &Value) -> Response {
-    let mut response = (status, axum::Json(body.clone())).into_response();
-    response
-        .headers_mut()
-        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    response
+    !is_same_origin_of(parts) || !origin.eq_ignore_ascii_case(own_origin)
 }
 
 /// `401` with the header that tells the app where the sign-in is.
-async fn challenge(state: &McpState, seen: &Seen, bad_token: bool) -> Response {
-    let origin = match state
-        .options
-        .api
-        .oauth_metadata(
-            seen.info.clone(),
-            OAuthMetadataQuery {
-                origin_seen: seen.origin.clone(),
-            },
-        )
-        .await
-    {
-        Ok(found) => found.origin,
-        Err(_) => seen.origin.clone(),
-    };
+fn challenge(origin: &str, bad_token: bool) -> Response {
     let error = if bad_token {
         ", error=\"invalid_token\""
     } else {
@@ -126,7 +83,7 @@ async fn challenge(state: &McpState, seen: &Seen, bad_token: bool) -> Response {
     };
     let value =
         format!("Bearer resource_metadata=\"{origin}{PROTECTED_RESOURCE_METADATA_PATH}\"{error}");
-    let mut response = json_response(
+    let mut response = json_no_store(
         StatusCode::UNAUTHORIZED,
         &json!({ "error": "unauthorized" }),
     );
@@ -139,44 +96,78 @@ async fn challenge(state: &McpState, seen: &Seen, bad_token: bool) -> Response {
 }
 
 /// The answer for a failure that ends the whole request.
-async fn failure_response(state: &McpState, seen: &Seen, failure: Failure) -> Option<Response> {
+fn failure_response(origin: &str, failure: Failure) -> Response {
     match failure {
-        Failure::Unauthorized => Some(challenge(state, seen, true).await),
+        Failure::Unauthorized => challenge(origin, true),
         Failure::Limited(wait) => {
-            let mut response = json_response(
+            let mut response = json_no_store(
                 StatusCode::TOO_MANY_REQUESTS,
                 &json!({ "error": "too_many_requests", "retry_after": wait }),
             );
-            if let Ok(value) = HeaderValue::from_str(&wait.to_string()) {
-                response.headers_mut().insert(header::RETRY_AFTER, value);
-            }
-            Some(response)
+            with_retry_after(&mut response, wait);
+            response
         }
-        Failure::SecondStep => Some(json_response(
+        Failure::SecondStep => json_no_store(
             StatusCode::FORBIDDEN,
             &json!({ "error": "second_step_required" }),
-        )),
-        Failure::Fault(..) => None,
+        ),
+        Failure::Fault(fault, text) => json_no_store(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &protocol::error_without_id(fault, &text),
+        ),
     }
+}
+
+/// What the HTTP request is about, found out once.
+struct Asked<'a> {
+    state: &'a McpState,
+    info: RequestInfo,
+    /// The address of this server as told to apps.
+    origin: String,
 }
 
 async fn handle(State(state): State<McpState>, request: Request<Body>) -> Response {
     let (parts, body) = request.into_parts();
-    let seen = (state.options.seen)(&parts);
-    if from_another_site(&parts.headers) {
-        return json_response(
+    let info = request_info(&parts);
+    let origin = state
+        .options
+        .api
+        .oauth_metadata(info.clone(), OAuthMetadataQuery)
+        .await
+        .map_or_else(|_| info.origin_seen.clone(), |found| found.origin);
+    if from_another_site(&parts, &origin) {
+        return json_no_store(
             StatusCode::FORBIDDEN,
             &json!({ "error": "forbidden_origin" }),
         );
     }
-    let Some(token) = bearer(&parts.headers).map(str::to_owned) else {
-        return challenge(&state, &seen, false).await;
+    let Some(token) = bearer_token(&parts.headers).map(str::to_owned) else {
+        return challenge(&origin, false);
+    };
+    let asked = Asked {
+        state: &state,
+        info,
+        origin,
+    };
+    let bytes = if parts.method == Method::POST {
+        let Ok(bytes) = axum::body::to_bytes(body, BODY_LIMIT_BYTES).await else {
+            return json_no_store(
+                StatusCode::PAYLOAD_TOO_LARGE,
+                &protocol::error_without_id(
+                    Fault::InvalidRequest,
+                    &sentence(message::MCP_ERROR_TOO_BIG),
+                ),
+            );
+        };
+        bytes
+    } else {
+        Bytes::new()
     };
     let who = match state
         .options
         .api
         .mcp_identity(
-            seen.info.clone(),
+            asked.info.clone(),
             McpIdentityQuery {
                 token: token.clone(),
             },
@@ -184,24 +175,12 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
         .await
     {
         Ok(who) => who,
-        Err(error) => {
-            return failure_response(&state, &seen, error.into())
-                .await
-                .unwrap_or_else(|| json_response(StatusCode::INTERNAL_SERVER_ERROR, &json!({})));
-        }
+        Err(error) => return asked.turned_away(error.into(), &bytes),
     };
     match parts.method {
-        Method::POST => {
-            let Ok(bytes) = axum::body::to_bytes(body, BODY_LIMIT_BYTES).await else {
-                return json_response(
-                    StatusCode::PAYLOAD_TOO_LARGE,
-                    &protocol::error_without_id(Fault::InvalidRequest, "The message is too big."),
-                );
-            };
-            post(&state, &seen, &token, &who, &bytes).await
-        }
+        Method::POST => asked.post(&token, &who, &bytes).await,
         Method::DELETE => {
-            state.sessions.end(&seen.info, &who).await;
+            state.sessions.end(&asked.info, &who).await;
             StatusCode::NO_CONTENT.into_response()
         }
         _ => {
@@ -214,106 +193,111 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
     }
 }
 
-async fn post(
-    state: &McpState,
-    seen: &Seen,
-    token: &str,
-    who: &McpIdentity,
-    bytes: &Bytes,
-) -> Response {
-    let Ok(value) = serde_json::from_slice::<Value>(bytes) else {
-        return json_response(
-            StatusCode::BAD_REQUEST,
-            &protocol::error_without_id(Fault::Parse, "The message is not JSON."),
-        );
-    };
-    let (batch, items) = match value {
-        Value::Array(items) => (true, items),
-        single => (false, vec![single]),
-    };
-    let mut answers = Vec::new();
-    let mut started = false;
-    for item in &items {
-        match reply_to(state, seen, token, who, item).await {
-            Ok(Some((answered, began))) => {
-                started |= began;
-                answers.push(answered);
+impl Asked<'_> {
+    /// The answer when the credential was turned away. A tool call over the limit is answered as a
+    /// result the AI can read, with the time to wait; everything else as the HTTP answer.
+    fn turned_away(&self, failure: Failure, bytes: &Bytes) -> Response {
+        if let Failure::Limited(wait) = failure
+            && let Ok(value) = serde_json::from_slice::<Value>(bytes)
+            && let Some(message) = Message::read(&value)
+            && message.method == "tools/call"
+            && let Some(id) = message.id
+        {
+            let text = format!(
+                "{} {}",
+                sentence(ErrorCode::TooManyRequests.message()),
+                message::mcp_wait(wait).render()
+            );
+            let mut response = json_no_store(
+                StatusCode::OK,
+                &protocol::result(
+                    &id,
+                    &json!({ "content": [{ "type": "text", "text": text }], "isError": true }),
+                ),
+            );
+            with_retry_after(&mut response, wait);
+            return response;
+        }
+        failure_response(&self.origin, failure)
+    }
+
+    async fn post(&self, token: &str, who: &McpIdentity, bytes: &Bytes) -> Response {
+        let Ok(value) = serde_json::from_slice::<Value>(bytes) else {
+            return json_no_store(
+                StatusCode::BAD_REQUEST,
+                &protocol::error_without_id(Fault::Parse, &sentence(message::MCP_ERROR_NOT_JSON)),
+            );
+        };
+        // A batch, an empty one too, is no request of this server (the newer protocol has none).
+        if value.is_array() {
+            return json_no_store(
+                StatusCode::BAD_REQUEST,
+                &protocol::error_without_id(
+                    Fault::InvalidRequest,
+                    &sentence(message::MCP_ERROR_BATCH),
+                ),
+            );
+        }
+        match self.reply_to(token, who, &value).await {
+            Ok(Some((answer, began))) => {
+                let mut response = json_no_store(StatusCode::OK, &answer);
+                if began && let Ok(id) = HeaderValue::from_str(&who.credential) {
+                    response.headers_mut().insert(protocol::SESSION_HEADER, id);
+                }
+                response
             }
-            Ok(None) => {}
-            Err(response) => return response,
+            Ok(None) => StatusCode::ACCEPTED.into_response(),
+            Err(response) => response,
         }
     }
-    if answers.is_empty() {
-        return StatusCode::ACCEPTED.into_response();
-    }
-    let body = if batch {
-        Value::Array(answers)
-    } else {
-        answers.remove(0)
-    };
-    let mut response = json_response(StatusCode::OK, &body);
-    if started && let Ok(id) = HeaderValue::from_str(&session_id(who)) {
-        response.headers_mut().insert(protocol::SESSION_HEADER, id);
-    }
-    response
-}
 
-/// The session id sent at `initialize` for clients of the older transport: it names the grant (or
-/// key), which is not a secret, and is never asked for again.
-fn session_id(who: &McpIdentity) -> String {
-    who.credential.clone()
-}
-
-/// The answer to one message, `None` for a notification, and whether it began the session. An `Err`
-/// is the answer of the whole request (the token stopped working).
-async fn reply_to(
-    state: &McpState,
-    seen: &Seen,
-    token: &str,
-    who: &McpIdentity,
-    item: &Value,
-) -> Result<Option<(Value, bool)>, Response> {
-    let Some(message) = Message::read(item) else {
-        let id = item.get("id").cloned().unwrap_or(Value::Null);
-        return Ok(Some((
-            protocol::error(&id, Fault::InvalidRequest, "That is not a request."),
-            false,
-        )));
-    };
-    let Some(id) = message.id.clone() else {
-        // A notification: nothing to answer.
-        return Ok(None);
-    };
-    let begins = message.method == "initialize";
-    let run = if matches!(message.method.as_str(), "tools/call" | "resources/read") || begins {
-        match state.sessions.run_of(&seen.info, token, who, begins).await {
-            Ok(run) => run,
-            Err(error) => {
-                return match failure_response(state, seen, error.into()).await {
-                    Some(response) => Err(response),
-                    None => Ok(Some((
-                        protocol::error(&id, Fault::Internal, "The session could not begin."),
-                        false,
-                    ))),
-                };
+    /// The answer to the message, `None` for a notification, and whether it was `initialize`. An
+    /// `Err` is the answer of the whole request (the token stopped working).
+    async fn reply_to(
+        &self,
+        token: &str,
+        who: &McpIdentity,
+        item: &Value,
+    ) -> Result<Option<(Value, bool)>, Response> {
+        let Some(message) = Message::read(item) else {
+            let id = item.get("id").cloned().unwrap_or(Value::Null);
+            return Ok(Some((
+                protocol::error(
+                    &id,
+                    Fault::InvalidRequest,
+                    &sentence(message::MCP_ERROR_NOT_A_REQUEST),
+                ),
+                false,
+            )));
+        };
+        let Some(id) = message.id.clone() else {
+            // A notification: nothing to answer.
+            return Ok(None);
+        };
+        let begins = message.method == "initialize";
+        let run = if matches!(message.method.as_str(), "tools/call" | "resources/read") || begins {
+            self.state
+                .sessions
+                .run_of(&self.info, token, who)
+                .await
+                .map_err(|error| failure_response(&self.origin, error.into()))?
+        } else {
+            None
+        };
+        let caller = Caller {
+            api: &self.state.options.api,
+            info: &self.info,
+            token,
+            who,
+            run,
+        };
+        match dispatch(&caller, &message).await {
+            Ok(result) => Ok(Some((protocol::result(&id, &result), begins))),
+            Err(Failure::Fault(fault, text)) => {
+                Ok(Some((protocol::error(&id, fault, &text), false)))
             }
+            Err(failure) => Err(failure_response(&self.origin, failure)),
         }
-    } else {
-        None
-    };
-    let caller = Caller {
-        api: &state.options.api,
-        info: &seen.info,
-        token,
-        who,
-        run,
-    };
-    match dispatch(&caller, &message).await {
-        Ok(result) => Ok(Some((protocol::result(&id, &result), begins))),
-        Err(Failure::Fault(fault, text)) => Ok(Some((protocol::error(&id, fault, &text), false))),
-        Err(failure) => Err(failure_response(state, seen, failure)
-            .await
-            .unwrap_or_else(|| json_response(StatusCode::INTERNAL_SERVER_ERROR, &json!({})))),
     }
 }
 
@@ -329,9 +313,9 @@ async fn dispatch(caller: &Caller<'_>, message: &Message) -> Result<Value, Failu
         "resources/read" => caller.read_resource(message).await,
         "prompts/list" => Ok(methods::list_prompts()),
         "prompts/get" => methods::get_prompt(message),
-        _ => Err(Failure::Fault(
+        _ => Err(Failure::fault(
             Fault::MethodNotFound,
-            "This server does not know that method.".to_owned(),
+            message::MCP_ERROR_METHOD,
         )),
     }
 }

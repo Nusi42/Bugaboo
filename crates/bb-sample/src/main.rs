@@ -79,7 +79,13 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
             Some(issues) => Everything::new(issues)?,
             None => Everything::full()?,
         };
-        create(&options, &output.data_folder(), &target, &mut everything).await?
+        Box::pin(create(
+            &options,
+            &output.data_folder(),
+            &target,
+            &mut everything,
+        ))
+        .await?
     };
     sample.verify_security_log().await?;
     if let Some(report) = checked {

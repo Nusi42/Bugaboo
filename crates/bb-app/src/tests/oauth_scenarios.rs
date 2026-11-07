@@ -129,7 +129,7 @@ pub(crate) async fn start_app_session_scenario(world: &World) -> Added {
         crate::auth::start_app_session(
             &world.ctx(),
             crate::auth::StartAppSession {
-                token: tokens.access_token,
+                token: tokens.access_token.to_string(),
             },
         ),
     )
@@ -144,7 +144,7 @@ pub(crate) async fn end_app_runs_scenario(world: &World) -> Added {
     let run = crate::auth::start_app_session(
         &world.ctx(),
         crate::auth::StartAppSession {
-            token: tokens.access_token,
+            token: tokens.access_token.to_string(),
         },
     )
     .await

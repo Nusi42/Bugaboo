@@ -3,15 +3,18 @@
 //! to the run of its attempt.
 //!
 //! The newer protocol has no session of its own, so the run is kept per grant (or access key), not
-//! per transport session: `initialize` starts a fresh run, a call after the idle time starts one, and
-//! the sweeper closes the runs nobody calls any more. The runs are opened and closed through the use
-//! cases of `bb-app`, which keep them with the port of runs.
+//! per transport session: the first call opens a run, the calls that follow within the idle time
+//! (`initialize` too) go on in it, a call after the idle time starts a new one, and the sweeper
+//! closes the runs nobody calls any more. The runs are opened and closed through the use cases of
+//! `bb-app`, which keep them with the port of runs.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use bb_app::auth::{AppError, AuthApi, EndAppRuns, McpIdentity, RequestInfo, StartAppSession};
+use bb_app::auth::{
+    AppError, AuthApi, EndAppRuns, McpIdentity, RequestInfo, StartAppSession, locked,
+};
 use bb_core::id::RunId;
 use bb_core::oauth::SESSION_IDLE_MINUTES;
 use bb_core::run::RunEnd;
@@ -32,10 +35,6 @@ struct Open {
 pub(crate) struct Sessions {
     api: Arc<dyn AuthApi>,
     open: Mutex<HashMap<String, Open>>,
-}
-
-fn locked<T>(lock: &Mutex<T>) -> MutexGuard<'_, T> {
-    lock.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 impl Sessions {
@@ -61,7 +60,8 @@ impl Sessions {
         sessions
     }
 
-    /// The run the calls of this session belong to. `fresh` starts a new one (`initialize`).
+    /// The run the calls of this session belong to: the open one when it was called within
+    /// [`IDLE`], else a new one.
     ///
     /// # Errors
     /// The error of the use case when the token does not work.
@@ -70,7 +70,6 @@ impl Sessions {
         info: &RequestInfo,
         token: &str,
         who: &McpIdentity,
-        fresh: bool,
     ) -> Result<Option<RunId>, AppError> {
         if who.agent.is_some() {
             return Ok(None);
@@ -80,7 +79,7 @@ impl Sessions {
         {
             let mut open = locked(&self.open);
             if let Some(found) = open.get_mut(&who.credential) {
-                if !fresh && now.duration_since(found.seen) < IDLE {
+                if now.duration_since(found.seen) < IDLE {
                     found.seen = now;
                     return Ok(Some(found.run));
                 }

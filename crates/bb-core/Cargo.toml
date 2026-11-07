@@ -31,6 +31,7 @@ bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_urlencoded = { workspace = true }
 unicode-normalization = { workspace = true, optional = true }
 unicode-properties = { version = "0.1.4", default-features = false, features = [
   "general-category",

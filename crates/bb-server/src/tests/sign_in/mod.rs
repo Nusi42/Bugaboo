@@ -17,6 +17,7 @@ mod access_keys_never;
 mod access_screens;
 mod access_screens_review;
 mod ai_http;
+mod ai_mcp_guards;
 mod ai_mcp_http;
 mod ai_mcp_rig;
 mod assignments_http;

@@ -5,7 +5,7 @@
 //! a wrong one are the same lookup that finds nothing. Ending a grant takes away its codes and
 //! tokens in the same change.
 
-use bb_app::auth::{GrantRecord, OAuthCleaned, OAuthStore};
+use bb_app::auth::{GrantRecord, GrantWithApp, OAuthCleaned, OAuthStore};
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{GrantId, OAuthClientId, ProjectId, UserId};
 use bb_core::oauth::{
@@ -165,13 +165,19 @@ impl OAuthStore for AuthStorage {
         Ok(found.pop())
     }
 
-    async fn grants_of(&self, person: UserId, limit: u64) -> Result<Vec<GrantRecord>, StoreError> {
+    async fn grants_of(
+        &self,
+        person: UserId,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Vec<GrantWithApp>, StoreError> {
         let mut select = Query::select();
         select
             .columns(GRANT_COLUMNS)
             .from(OAuthGrantRow::Table)
             .and_where(Expr::col(OAuthGrantRow::Person).eq(person.stored()))
             .and_where(Expr::col(OAuthGrantRow::EndedAt).is_null())
+            .and_where(Expr::col(OAuthGrantRow::EndsAt).gt(to_micros(now)))
             .order_by(OAuthGrantRow::AllowedAt, Order::Desc)
             .order_by(OAuthGrantRow::Id, Order::Asc)
             .limit(limit);
@@ -182,16 +188,50 @@ impl OAuthStore for AuthStorage {
             .iter()
             .map(read_grant)
             .collect::<Result<Vec<_>, _>>()?;
-        with_projects(self.database(), grants).await
+        let records = with_projects(self.database(), grants).await?;
+        // The apps of all the grants in one read, not one read for each grant.
+        let mut apps = Query::select();
+        apps.columns([
+            OAuthClientRow::Id,
+            OAuthClientRow::Name,
+            OAuthClientRow::ReturnAddresses,
+            OAuthClientRow::RegisteredAt,
+        ])
+        .from(OAuthClientRow::Table)
+        .and_where(
+            Expr::col(OAuthClientRow::Id).is_in(
+                records
+                    .iter()
+                    .map(|found| found.grant.client.stored())
+                    .collect::<Vec<_>>(),
+            ),
+        );
+        let mut clients = std::collections::BTreeMap::new();
+        if !records.is_empty() {
+            for row in self.database().fetch_all(&apps).await? {
+                let client = read_client(&row)?;
+                clients.insert(client.id, client);
+            }
+        }
+        Ok(records
+            .into_iter()
+            .filter_map(|record| {
+                clients
+                    .get(&record.grant.client)
+                    .cloned()
+                    .map(|client| GrantWithApp { record, client })
+            })
+            .collect())
     }
 
-    async fn grant_count_of(&self, person: UserId) -> Result<i64, StoreError> {
+    async fn grant_count_of(&self, person: UserId, now: Timestamp) -> Result<i64, StoreError> {
         let mut select = Query::select();
         select
             .expr_as(Expr::col(OAuthGrantRow::Id).count(), Computed::Total)
             .from(OAuthGrantRow::Table)
             .and_where(Expr::col(OAuthGrantRow::Person).eq(person.stored()))
-            .and_where(Expr::col(OAuthGrantRow::EndedAt).is_null());
+            .and_where(Expr::col(OAuthGrantRow::EndedAt).is_null())
+            .and_where(Expr::col(OAuthGrantRow::EndsAt).gt(to_micros(now)));
         match self.database().fetch_optional(&select).await? {
             Some(row) => row.get(Computed::Total),
             None => Ok(0),
@@ -523,6 +563,24 @@ impl OAuthStore for AuthStorage {
         Ok(transaction.execute(&delete).await? > 0)
     }
 
+    async fn pause_unused_tokens(
+        transaction: &mut Transaction,
+        now: Timestamp,
+        seconds: i64,
+    ) -> Result<u64, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(OAuthTokenRow::Table)
+            .value(
+                OAuthTokenRow::ExpiresAt,
+                Expr::col(OAuthTokenRow::ExpiresAt).add(seconds.saturating_mul(1_000_000)),
+            )
+            .and_where(Expr::col(OAuthTokenRow::Kind).eq(TokenKind::Refresh.code()))
+            .and_where(Expr::col(OAuthTokenRow::UsedAt).is_null())
+            .and_where(Expr::col(OAuthTokenRow::ExpiresAt).gt(to_micros(now)));
+        transaction.execute(&update).await
+    }
+
     async fn clean_oauth(
         transaction: &mut Transaction,
         now: Timestamp,
@@ -542,7 +600,11 @@ impl OAuthStore for AuthStorage {
         let mut old = Query::select();
         old.column(OAuthGrantRow::Id)
             .from(OAuthGrantRow::Table)
-            .and_where(Expr::col(OAuthGrantRow::EndedAt).lte(to_micros(ended_before)));
+            .cond_where(
+                Cond::any()
+                    .add(Expr::col(OAuthGrantRow::EndedAt).lte(to_micros(ended_before)))
+                    .add(Expr::col(OAuthGrantRow::EndsAt).lte(to_micros(ended_before))),
+            );
         let mut gone = Vec::new();
         for row in transaction.fetch_all(&old).await? {
             gone.push(row.id::<GrantId>(OAuthGrantRow::Id)?.stored());

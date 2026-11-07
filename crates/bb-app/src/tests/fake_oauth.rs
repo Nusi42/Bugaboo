@@ -1,12 +1,12 @@
 //! The sign-in of AI apps in the in-memory store (AI-22, ADR-0042).
 
 use bb_core::id::{GrantId, OAuthClientId, UserId};
-use bb_core::oauth::{GrantEnd, OAuthClient, OAuthCode, OAuthToken, OAuthWebAddress};
+use bb_core::oauth::{GrantEnd, OAuthClient, OAuthCode, OAuthToken, OAuthWebAddress, TokenKind};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::auth::{GrantRecord, OAuthCleaned, OAuthStore};
+use crate::auth::{GrantRecord, GrantWithApp, OAuthCleaned, OAuthStore};
 
 /// What the in-memory store keeps of the sign-in of apps.
 #[derive(Clone, Default)]
@@ -51,28 +51,44 @@ impl OAuthStore for FakeStore {
         }))
     }
 
-    async fn grants_of(&self, person: UserId, limit: u64) -> Result<Vec<GrantRecord>, FakeError> {
+    async fn grants_of(
+        &self,
+        person: UserId,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Vec<GrantWithApp>, FakeError> {
         Ok(self.read(|state| {
             let mut found: Vec<GrantRecord> = state
                 .oauth
                 .grants
                 .iter()
-                .filter(|found| found.grant.person == person && found.grant.ended_at.is_none())
+                .filter(|found| found.grant.person == person && found.grant.works_at(now))
                 .cloned()
                 .collect();
             found.sort_by_key(|each| std::cmp::Reverse(each.grant.allowed_at));
             found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             found
+                .into_iter()
+                .filter_map(|record| {
+                    state
+                        .oauth
+                        .clients
+                        .iter()
+                        .find(|client| client.id == record.grant.client)
+                        .cloned()
+                        .map(|client| GrantWithApp { record, client })
+                })
+                .collect()
         }))
     }
 
-    async fn grant_count_of(&self, person: UserId) -> Result<i64, FakeError> {
+    async fn grant_count_of(&self, person: UserId, now: Timestamp) -> Result<i64, FakeError> {
         Ok(self.read(|state| {
             let held = state
                 .oauth
                 .grants
                 .iter()
-                .filter(|found| found.grant.person == person && found.grant.ended_at.is_none())
+                .filter(|found| found.grant.person == person && found.grant.works_at(now))
                 .count();
             i64::try_from(held).unwrap_or(i64::MAX)
         }))
@@ -217,6 +233,25 @@ impl OAuthStore for FakeStore {
         Ok(tx.state.oauth.web_addresses.len() < before)
     }
 
+    async fn pause_unused_tokens(
+        tx: &mut Tx,
+        now: Timestamp,
+        seconds: i64,
+    ) -> Result<u64, FakeError> {
+        let mut moved = 0;
+        for token in &mut tx.state.oauth.tokens {
+            if token.kind == TokenKind::Refresh && token.used_at.is_none() && token.expires_at > now
+            {
+                token.expires_at = token
+                    .expires_at
+                    .checked_add(jiff::SignedDuration::from_secs(seconds))
+                    .unwrap_or(token.expires_at);
+                moved += 1;
+            }
+        }
+        Ok(moved)
+    }
+
     async fn clean_oauth(
         tx: &mut Tx,
         now: Timestamp,
@@ -235,6 +270,7 @@ impl OAuthStore for FakeStore {
                 .grant
                 .ended_at
                 .is_none_or(|ended| ended > ended_before)
+                && found.grant.ends_at > ended_before
         });
         let grants = count(grants, oauth.grants.len());
         let clients = oauth.clients.len();

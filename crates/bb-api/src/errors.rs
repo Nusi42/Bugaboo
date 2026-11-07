@@ -184,8 +184,31 @@ fn problem_response(problem: &Problem, extras: &Extras) -> Response {
         HeaderValue::from_static(PROBLEM_CONTENT_TYPE),
     );
     // An error answer is about one request; no cache may keep it.
-    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    no_store(&mut response);
     response
+}
+
+/// Tells every cache to keep nothing of this answer.
+fn no_store(response: &mut Response) {
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+}
+
+/// A JSON answer that no cache keeps, for the routes that answer in the words of another
+/// protocol than the problem of this API (OAuth, MCP).
+#[must_use]
+pub fn json_no_store(status: StatusCode, body: &serde_json::Value) -> Response {
+    let mut response = (status, axum::Json(body.clone())).into_response();
+    no_store(&mut response);
+    response
+}
+
+/// Puts the seconds to wait into `Retry-After`: the one place that writes the header.
+pub fn with_retry_after(response: &mut Response, seconds: u64) {
+    response
+        .headers_mut()
+        .insert(header::RETRY_AFTER, HeaderValue::from(seconds));
 }
 
 impl IntoResponse for ApiError {
@@ -193,9 +216,7 @@ impl IntoResponse for ApiError {
         let mut response =
             problem_response(&problem_of(self.code, self.field.clone()), &self.extras());
         if let Some(seconds) = self.retry_after {
-            response
-                .headers_mut()
-                .insert(header::RETRY_AFTER, HeaderValue::from(seconds));
+            with_retry_after(&mut response, seconds);
         }
         if self.ends_session {
             Cookie::Session.forget(&mut response);

@@ -188,10 +188,6 @@ pub(crate) async fn wire(
     let services = Arc::new(services);
     let mcp = bb_mcp::router(bb_mcp::McpOptions {
         api: services.clone(),
-        seen: Arc::new(|parts| bb_mcp::Seen {
-            info: bb_api::request_info(parts),
-            origin: bb_api::origin_of(parts),
-        }),
     });
     Ok(Wired {
         jobs: Arc::clone(&services),

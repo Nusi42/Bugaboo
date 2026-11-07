@@ -2,8 +2,6 @@
 //! (no cookie, no `Origin`, only a bearer token), and the steps of signing in with OAuth as an app
 //! does them (AI-20 to AI-23, ADR-0042).
 
-use std::sync::Arc;
-
 use axum::Router;
 use axum::body::Body;
 use axum::http::{HeaderMap, Method, Request, StatusCode, header};
@@ -64,10 +62,6 @@ impl<'a> Mcp<'a> {
         let rig = Rig::start(db).await?;
         let mcp = bb_mcp::router(bb_mcp::McpOptions {
             api: rig.services.clone(),
-            seen: Arc::new(|parts| bb_mcp::Seen {
-                info: bb_api::request_info(parts),
-                origin: bb_api::origin_of(parts),
-            }),
         });
         let app = router(bb_api::Options {
             mcp: Some(mcp),
@@ -136,6 +130,16 @@ impl<'a> Mcp<'a> {
 
     /// A message to `/mcp`, with the token of an app when there is one.
     pub(super) async fn post(&self, token: Option<&str>, body: Value) -> Result<Answer, Failure> {
+        self.post_with(token, &[], body).await
+    }
+
+    /// A message to `/mcp` with more headers, such as the `Origin` of a browser page.
+    pub(super) async fn post_with(
+        &self,
+        token: Option<&str>,
+        headers: &[(&str, &str)],
+        body: Value,
+    ) -> Result<Answer, Failure> {
         let mut request = Request::builder()
             .method(Method::POST)
             .uri("/mcp")
@@ -144,6 +148,9 @@ impl<'a> Mcp<'a> {
             .header(header::ACCEPT, "application/json, text/event-stream");
         if let Some(token) = token {
             request = request.header(header::AUTHORIZATION, format!("Bearer {token}"));
+        }
+        for (name, value) in headers {
+            request = request.header(*name, *value);
         }
         self.send(request.body(Body::from(serde_json::to_vec(&body)?))?)
             .await
@@ -177,6 +184,18 @@ pub(super) async fn sign_in_app(
     name: &str,
     asked: &str,
     given: &str,
+) -> Result<Signed, Failure> {
+    sign_in_app_in(mcp, person, name, asked, given, &[]).await
+}
+
+/// [`sign_in_app`] for an app the person limits to these projects (by ID).
+pub(super) async fn sign_in_app_in(
+    mcp: &Mcp<'_>,
+    person: &mut Browser,
+    name: &str,
+    asked: &str,
+    given: &str,
+    projects: &[String],
 ) -> Result<Signed, Failure> {
     let registered = mcp
         .post_json(
@@ -218,7 +237,7 @@ pub(super) async fn sign_in_app(
         .send(
             "POST",
             "/api/v1/oauth/authorization",
-            Some(json!({"request": request, "allow": true, "scope": given, "projects": []})),
+            Some(json!({"request": request, "allow": true, "scope": given, "projects": projects})),
         )
         .await?;
     let redirect = decided.body["redirect_to"]

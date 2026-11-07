@@ -227,13 +227,21 @@ pub(crate) fn is_api(path: &str) -> bool {
 /// The access key a request presents: `Authorization: Bearer bb_…`. Anything else in that header
 /// is no key and is left alone, so a page's own requests never meet this.
 pub(crate) fn presented_key(headers: &HeaderMap) -> Option<&str> {
+    bearer_token(headers).filter(|key| bb_auth::looks_like_access_key(key))
+}
+
+/// The token a request presents: `Authorization: Bearer <token>`, of whatever kind. The one place
+/// that reads the header; `presented_key` keeps the access keys among them, and the MCP server
+/// takes the access tokens of apps as well.
+#[must_use]
+pub fn bearer_token(headers: &HeaderMap) -> Option<&str> {
     headers
         .get(header::AUTHORIZATION)?
         .to_str()
         .ok()?
         .strip_prefix("Bearer ")
         .map(str::trim)
-        .filter(|key| bb_auth::looks_like_access_key(key))
+        .filter(|token| !token.is_empty())
 }
 
 /// Whether the request comes from a script with an access key: it presents one and has no
@@ -287,18 +295,28 @@ async fn origin_check(request: Request, next: Next) -> Response {
 /// asked for: the one in the address of the request when there is one (HTTP/2 and absolute-form
 /// requests carry no `Host` header), else the `Host` header.
 fn is_same_origin(request: &Request) -> bool {
-    let headers = request.headers();
+    same_origin(request.headers(), request.uri(), request.extensions())
+}
+
+/// [`is_same_origin`] for the code that reads requests outside this crate (the MCP server): the
+/// parts of the request.
+#[must_use]
+pub fn is_same_origin_of(parts: &axum::http::request::Parts) -> bool {
+    same_origin(&parts.headers, &parts.uri, &parts.extensions)
+}
+
+fn same_origin(
+    headers: &HeaderMap,
+    uri: &axum::http::Uri,
+    extensions: &axum::http::Extensions,
+) -> bool {
     let text = |name| headers.get(name).and_then(|value| value.to_str().ok());
     if let Some(origin) = text(header::ORIGIN) {
-        let authority = request
-            .uri()
+        let authority = uri
             .authority()
             .map(axum::http::uri::Authority::as_str)
             .or_else(|| text(header::HOST));
-        let scheme = request
-            .extensions()
-            .get::<Scheme>()
-            .map_or("http", |scheme| scheme.0);
+        let scheme = extensions.get::<Scheme>().map_or("http", |scheme| scheme.0);
         // `null` and anything that is not scheme://host[:port] never match.
         return authority.is_some_and(|authority| {
             origin.eq_ignore_ascii_case(&format!("{scheme}://{authority}"))

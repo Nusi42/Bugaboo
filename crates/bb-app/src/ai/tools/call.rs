@@ -158,12 +158,7 @@ pub async fn call_tool<S: AuthStore>(
 ) -> Result<Authorized<ToolAnswer>, AppError> {
     let actor = ctx.actor(&request.session_token).await?;
     if request.caller == ToolCaller::AiApp {
-        // An AI app is counted per grant and per person; a call over the limit does nothing.
-        if let Err(error) = ctx.count_call(&actor) {
-            ctx.note(SecurityAction::AiCallLimited, Some(actor.person.id), None)
-                .await;
-            return Err(error);
-        }
+        // The call was counted per grant and per person at the entry of MCP (`mcp_identity`).
         ctx.enter_mcp();
     }
     let bytes_in = request.input.to_string().len();

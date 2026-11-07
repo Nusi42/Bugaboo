@@ -156,12 +156,15 @@ pub async fn remove_web_address<S: AuthStore>(
 }
 
 /// The daily clean-up (`oauth.clean-old-grants`): codes and tokens that ran out, grants that ended
-/// long ago, and apps that registered and were never allowed. While AI apps are off the grants are
-/// left alone, as ADR-0042 says, so switching them on brings them back.
+/// or ran out long ago, and apps that registered and were never allowed. While AI apps are off
+/// nothing is deleted and the days without use do not count, as ADR-0042 says.
 pub(crate) async fn clean_old_grants<S: AuthStore>(
     ctx: &Ctx<'_, S>,
 ) -> Result<super::oauth_store::OAuthCleaned, AppError> {
     let now = ctx.now();
+    // While AI apps are off the days without use do not count: the tokens that were not used are
+    // moved by a day, and nothing is deleted (ADR-0042), so switching on again brings the apps back.
+    let apps_on = ctx.apps_may_sign_in().await?;
     let back = |count: i64| {
         now.checked_sub(days(count))
             .map_err(|error| AppError::Internal(error.to_string()))
@@ -178,7 +181,13 @@ pub(crate) async fn clean_old_grants<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::clean_oauth(transaction, now, ended_before, registered_before).await
+                if apps_on {
+                    S::clean_oauth(transaction, now, ended_before, registered_before).await
+                } else {
+                    S::pause_unused_tokens(transaction, now, 24 * 60 * 60)
+                        .await
+                        .map(|_| super::oauth_store::OAuthCleaned::default())
+                }
             })
         })
         .await
@@ -194,7 +203,22 @@ pub async fn mcp_identity<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: McpIdentityQuery,
 ) -> Result<McpIdentity, AppError> {
+    // AI apps off (or AI off for the organization) turns away every way in to MCP, whatever the
+    // credential: an app, an access key or an agent key. It is no guess of a network.
+    if !ctx.apps_may_sign_in().await? {
+        return Err(AppError::Refused(ErrorCode::NotSignedIn));
+    }
     let actor = ctx.actor(&input.token).await?;
+    // Only a credential for programs opens MCP: the secret of a session of the browser does not.
+    if actor.key.is_none() {
+        return Err(AppError::Refused(ErrorCode::NotSignedIn));
+    }
+    // Every message to the MCP server counts against the limits of its grant (or key) and person.
+    if let Err(error) = ctx.count_call(&actor) {
+        ctx.note(SecurityAction::AiCallLimited, Some(actor.person.id), None)
+            .await;
+        return Err(error);
+    }
     let app = match actor.key.as_ref().map(|key| &key.source) {
         Some(CredentialSource::App { name, .. }) => Some(name.clone()),
         _ => None,
@@ -219,16 +243,28 @@ pub async fn mcp_identity<S: AuthStore>(
 /// Never fails today; the type is the one of a use case.
 pub async fn oauth_metadata<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: OAuthMetadataQuery,
+    _input: OAuthMetadataQuery,
 ) -> Result<OAuthMetadata, AppError> {
-    let known = ctx.services.public_url.trim_end_matches('/');
-    let origin = if known.is_empty() {
-        input.origin_seen.trim_end_matches('/').to_owned()
-    } else {
-        known.to_owned()
-    };
     Ok(OAuthMetadata {
-        resource: format!("{origin}{MCP_PATH}"),
-        origin,
+        origin: ctx.mcp_origin(),
+        resource: ctx.mcp_resource(),
     })
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The address of this server as it is told to apps: the public address when the server knows
+    /// it, else the address the request came to, never with a slash at the end.
+    pub(crate) fn mcp_origin(&self) -> String {
+        let known = self.services.public_url.trim_end_matches('/');
+        if known.is_empty() {
+            self.request.origin_seen.trim_end_matches('/').to_owned()
+        } else {
+            known.to_owned()
+        }
+    }
+
+    /// The resource a token is for: the MCP server of this server. The one place that builds it.
+    pub(crate) fn mcp_resource(&self) -> String {
+        format!("{}{MCP_PATH}", self.mcp_origin())
+    }
 }

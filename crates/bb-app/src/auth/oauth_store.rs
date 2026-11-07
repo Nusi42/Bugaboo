@@ -23,6 +23,15 @@ pub struct GrantRecord {
     pub projects: Vec<ProjectId>,
 }
 
+/// A grant of a person with the app it belongs to, read together.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GrantWithApp {
+    /// The grant and its projects.
+    pub record: GrantRecord,
+    /// The app.
+    pub client: OAuthClient,
+}
+
 /// What a clean-up of the sign-in of apps removed.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct OAuthCleaned {
@@ -41,10 +50,11 @@ pub trait OAuthStore: ChangeStore + 'static {
         fn oauth_client(id: OAuthClientId) -> Option<OAuthClient>;
         /// The grant with this ID, with its projects.
         fn oauth_grant(id: GrantId) -> Option<GrantRecord>;
-        /// The grants of a person that have not ended, newest first, at most `limit`.
-        fn grants_of(person: UserId, limit: u64) -> Vec<GrantRecord>;
-        /// How many grants of a person have not ended.
-        fn grant_count_of(person: UserId) -> i64;
+        /// The grants of a person that work at `now` (not taken back, not past their end), each with
+        /// its app, newest first, at most `limit`.
+        fn grants_of(person: UserId, now: Timestamp, limit: u64) -> Vec<GrantWithApp>;
+        /// How many grants of a person work at `now`.
+        fn grant_count_of(person: UserId, now: Timestamp) -> i64;
         /// The token with this hash.
         fn oauth_token(hash: &Digest) -> Option<OAuthToken>;
         /// The code with this hash.
@@ -77,8 +87,11 @@ pub trait OAuthStore: ChangeStore + 'static {
         fn insert_oauth_web_address(address: &OAuthWebAddress) -> bool;
         /// Takes a web address away (`false` when it was not there).
         fn delete_oauth_web_address(address: &str) -> bool;
-        /// Deletes what ran out: codes and tokens past their time, grants that ended `ended_before`
-        /// or earlier, and apps registered before `registered_before` that no grant belongs to.
+        /// Moves the end of every renewing token that was not used by `seconds`, so the days an app was
+        /// not used while AI apps were off do not count (ADR-0042). Says how many moved.
+        fn pause_unused_tokens(now: Timestamp, seconds: i64) -> u64;
+        /// Deletes what ran out: codes and tokens past their time, grants that ended or ran out
+        /// `ended_before` or earlier, and apps registered before `registered_before` that no grant belongs to.
         fn clean_oauth(
             now: Timestamp,
             ended_before: Timestamp,

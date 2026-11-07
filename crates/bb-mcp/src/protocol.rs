@@ -4,6 +4,7 @@
 //! Only what the server needs is read: a request has a `method`, maybe an `id` and `params`. A
 //! message without an `id` is a notification and is not answered.
 
+use bb_core::message::{Message as Sentence, MessageKey};
 use serde_json::{Map, Value, json};
 
 /// The versions of the protocol this server speaks, newest first. An app that asks for one of them
@@ -45,6 +46,11 @@ impl Fault {
             Self::Internal => -32603,
         }
     }
+}
+
+/// The sentence of a message of the catalog: every text the server says to an app comes from it.
+pub(crate) fn sentence(key: MessageKey) -> String {
+    Sentence::from(key).render()
 }
 
 /// A message an app sent.

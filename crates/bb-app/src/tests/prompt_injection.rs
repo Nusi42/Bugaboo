@@ -22,7 +22,7 @@ use super::scenarios::{a_project, token};
 use super::scenarios_fields::a_field;
 use super::world::{Outcome, World};
 use crate::ai::NeverSentTarget;
-use crate::ai::context::{Part, PeopleAs, render};
+use crate::ai::context::{Part, PeopleAs, fenced_lines, only_inside_a_fence, render};
 use crate::ai::tools::{ToolMode, call_tool};
 use crate::auth::AppError;
 use crate::comments::{AddComment, add_comment};
@@ -63,39 +63,6 @@ async fn obey(
     );
     will_say(world, "Done.");
     ask(world, question(who, "Please read this issue.")).await
-}
-
-/// The lines of an answer that are inside a fence: a line is inside when an opening line came
-/// before it and the matching closing line did not.
-fn fenced_lines(answer: &str) -> Vec<(&str, bool)> {
-    let mut open: Option<usize> = None;
-    answer
-        .lines()
-        .map(|line| {
-            let marker = line.chars().take_while(|c| *c == '=').count();
-            if marker >= 8 && line[marker..].starts_with(" text written by ") && open.is_none() {
-                open = Some(marker);
-                return (line, false);
-            }
-            if marker >= 8
-                && line[marker..].starts_with(" end of text written by ")
-                && open == Some(marker)
-            {
-                open = None;
-                return (line, false);
-            }
-            (line, open.is_some())
-        })
-        .collect()
-}
-
-/// Every line of the answer that holds `needle` is inside a fence, and there is one at least.
-fn only_inside_a_fence(answer: &str, needle: &str) -> bool {
-    let holding: Vec<_> = fenced_lines(answer)
-        .into_iter()
-        .filter(|(line, _)| line.contains(needle))
-        .collect();
-    !holding.is_empty() && holding.iter().all(|(_, inside)| *inside)
 }
 
 #[tokio::test]

@@ -230,8 +230,10 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             .await
             .map_err(|error| format!("{name}: {error}"))?;
         // The swap of a code for tokens appends none: a plain renewal of a token is not logged one
-        // by one, the last use of the grant says it (ADR-0042, decision 6).
-        if *name == "exchange_token" {
+        // by one, the last use of the grant says it (ADR-0042, decision 6). Nor does the
+        // registration of an app, which anybody may make: the security log has it, and the
+        // history of the organization has no person to name.
+        if matches!(*name, "exchange_token" | "register_app") {
             assert_eq!(added, 0, "{name} appended {added} events");
             continue;
         }
