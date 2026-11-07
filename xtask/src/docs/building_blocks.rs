@@ -90,6 +90,17 @@ pub(crate) type Map = BTreeMap<String, BTreeSet<String>>;
 ///
 /// `a --> b` and `a -.-> b` mean "a may depend on b"; `a --> b & c` lists several targets.
 pub(crate) fn parse_module_map(markdown: &str) -> anyhow::Result<Map> {
+    Ok(parse_edges(markdown)?.0)
+}
+
+/// The edges of the module map that are drawn "tests only" and no other way: a crate may use the
+/// target in `[dev-dependencies]` only (M5-F110).
+pub(crate) fn tests_only_edges(markdown: &str) -> anyhow::Result<BTreeSet<(String, String)>> {
+    Ok(parse_edges(markdown)?.1)
+}
+
+/// The map, and the edges that are tests only.
+fn parse_edges(markdown: &str) -> anyhow::Result<(Map, BTreeSet<(String, String)>)> {
     let after = markdown
         .split_once("## Module map")
         .map(|(_, rest)| rest)
@@ -104,20 +115,26 @@ pub(crate) fn parse_module_map(markdown: &str) -> anyhow::Result<Map> {
 
     let mut names = BTreeMap::new(); // box id -> crate name
     let mut edges = Vec::new();
+    let mut plain = BTreeSet::new();
+    let mut only_tests = BTreeSet::new();
     for line in block.lines().map(str::trim) {
         if let Some((id, rest)) = line.split_once("[\"") {
             let label = rest.split("\"]").next().unwrap_or("");
             let name = label.split("<br/>").next().unwrap_or(label);
             names.insert(id.trim().to_owned(), name.to_owned());
         } else if let Some((left, right)) = split_edge(line) {
-            edges.push((left.to_owned(), right.to_owned()));
+            edges.push((
+                left.to_owned(),
+                right.to_owned(),
+                line.contains("tests only"),
+            ));
         }
     }
     let mut map: Map = names
         .values()
         .map(|name| (name.clone(), BTreeSet::new()))
         .collect();
-    for (left, right) in &edges {
+    for (left, right, tests_only) in &edges {
         for from in left.split('&').map(str::trim) {
             for to in right.split('&').map(str::trim) {
                 let (Some(from), Some(to)) = (names.get(from), names.get(to)) else {
@@ -126,10 +143,17 @@ pub(crate) fn parse_module_map(markdown: &str) -> anyhow::Result<Map> {
                     );
                 };
                 map.entry(from.clone()).or_default().insert(to.clone());
+                let edge = (from.clone(), to.clone());
+                if *tests_only {
+                    only_tests.insert(edge);
+                } else {
+                    plain.insert(edge);
+                }
             }
         }
     }
-    Ok(map)
+    // An edge that is also drawn as an ordinary one is an ordinary one.
+    Ok((map, only_tests.difference(&plain).cloned().collect()))
 }
 
 /// Splits `a --> b`, `a -.-> b` and `a -. text .-> b` into the two sides.

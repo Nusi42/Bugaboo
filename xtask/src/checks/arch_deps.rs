@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
-use crate::docs::building_blocks::{Map, parse_module_map};
+use crate::docs::building_blocks::{Map, parse_module_map, tests_only_edges};
 use crate::docs::source::BUILDING_BLOCKS as MAP_DOC;
 use crate::metadata::{self, Package};
 use crate::source::read_text;
@@ -44,11 +44,16 @@ impl Check for ArchDeps {
         let root = context.repo.root();
         let text = read_text(context.repo, MAP_DOC)?;
         let map = parse_module_map(&text)?;
-        Ok(evaluate(&metadata::load(root)?, &map))
+        let tests_only = tests_only_edges(&text)?;
+        Ok(evaluate(&metadata::load(root)?, &map, &tests_only))
     }
 }
 
-fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
+fn evaluate(
+    packages: &[Package],
+    map: &Map,
+    tests_only: &BTreeSet<(String, String)>,
+) -> Vec<Finding> {
     let mut findings = Vec::new();
     let members: BTreeSet<&str> = packages
         .iter()
@@ -114,6 +119,18 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
             if dependency.name == name && dependency.kind.as_deref() == Some("dev") {
                 continue;
             }
+            // An edge the map draws as "tests only" is for `[dev-dependencies]` (M5-F110).
+            if dependency.kind.as_deref() != Some("dev")
+                && tests_only.contains(&(name.to_owned(), dependency.name.clone()))
+            {
+                findings.push(Finding::at(
+                    name,
+                    format!(
+                        "depends on `{}` outside `[dev-dependencies]`, but the module map draws the edge as \"tests only\".",
+                        dependency.name
+                    ),
+                ));
+            }
             // Only edges between workspace members count; crates.io names are not ours.
             if members.contains(dependency.name.as_str()) && !allowed.contains(&dependency.name) {
                 findings.push(Finding::at(
@@ -150,6 +167,47 @@ mod tests {
         app --> core\n  store -. implements ports .-> app\n  store --> core & macros\n  \
         core -.-> macros\n```\n";
 
+    fn check(packages: &[Package], map: &Map) -> Vec<Finding> {
+        evaluate(packages, map, &BTreeSet::new())
+    }
+
+    #[test]
+    fn bad_example_an_edge_drawn_tests_only_in_the_normal_dependencies() {
+        let text = MAP.replace(
+            "store --> core & macros",
+            "store --> core & macros
+  core -. tests only .-> store",
+        );
+        let map = parse_map(&text).unwrap();
+        let only = tests_only_edges(&text).unwrap();
+        let messages = |kind: Option<&str>| {
+            let mut core = package("bb-core", &["bb-store"]);
+            core.dependencies[0].kind = kind.map(str::to_owned);
+            let packages = [
+                core,
+                package("bb-app", &[]),
+                package("bb-store", &[]),
+                package("bb-macros", &[]),
+            ];
+            evaluate(&packages, &map, &only)
+                .into_iter()
+                .map(|finding| finding.message)
+                .collect::<Vec<_>>()
+        };
+        assert!(
+            messages(None)
+                .iter()
+                .any(|text| text.contains("tests only")),
+            "{:?}",
+            messages(None)
+        );
+        assert!(
+            messages(Some("dev")).is_empty(),
+            "{:?}",
+            messages(Some("dev"))
+        );
+    }
+
     fn crates(deps: &[(&str, &[&str])]) -> Vec<Package> {
         ["bb-app", "bb-core", "bb-store", "bb-macros"]
             .iter()
@@ -173,7 +231,7 @@ mod tests {
         packages.retain(|p| p.name != "bb-store");
         store.dependencies[0].kind = None;
         packages.extend([store, harness]);
-        let findings = evaluate(&packages, &map);
+        let findings = check(&packages, &map);
         assert!(
             findings
                 .iter()
@@ -191,7 +249,7 @@ mod tests {
         let mut packages = crates(&[]);
         packages.retain(|p| p.name != "bb-store");
         packages.extend([store, package("bb-testing", &[])]);
-        let findings = evaluate(&packages, &map);
+        let findings = check(&packages, &map);
         assert!(
             findings
                 .iter()
@@ -213,7 +271,7 @@ mod tests {
 
     #[test]
     fn bad_example_a_shipped_crate_switches_the_testing_hooks_on() {
-        let findings = evaluate(&with_testing("bb-app", None), &parse_map(MAP).unwrap());
+        let findings = check(&with_testing("bb-app", None), &parse_map(MAP).unwrap());
         assert!(
             findings
                 .iter()
@@ -226,10 +284,10 @@ mod tests {
     #[test]
     fn good_example_the_testing_hooks_in_dev_dependencies_and_in_tools() {
         let map = parse_map(MAP).unwrap();
-        let in_dev = evaluate(&with_testing("bb-app", Some("dev")), &map);
+        let in_dev = check(&with_testing("bb-app", Some("dev")), &map);
         assert!(in_dev.iter().all(|f| !f.message.contains("switches on")));
         // A tool is not in this small map, so only the one rule is looked at.
-        let tool = evaluate(&with_testing("bb-sample", None), &map);
+        let tool = check(&with_testing("bb-sample", None), &map);
         assert!(tool.iter().all(|f| !f.message.contains("switches on")));
     }
 
@@ -247,7 +305,7 @@ mod tests {
     fn bad_example_a_crate_other_than_the_sample_switches_the_dataset_write_on() {
         let map = parse_map(MAP).unwrap();
         for kind in [None, Some("dev")] {
-            let findings = evaluate(&with_dataset("bb-app", kind), &map);
+            let findings = check(&with_dataset("bb-app", kind), &map);
             assert!(
                 findings
                     .iter()
@@ -260,7 +318,7 @@ mod tests {
 
     #[test]
     fn good_example_the_sample_switches_the_dataset_write_on() {
-        let findings = evaluate(&with_dataset("bb-sample", None), &parse_map(MAP).unwrap());
+        let findings = check(&with_dataset("bb-sample", None), &parse_map(MAP).unwrap());
         assert!(findings.iter().all(|f| !f.message.contains("switches on")));
     }
 
@@ -279,7 +337,11 @@ mod tests {
             .parent()
             .unwrap();
         let text = std::fs::read_to_string(root.join(MAP_DOC)).unwrap();
-        let findings = evaluate(&metadata::load(root).unwrap(), &parse_map(&text).unwrap());
+        let findings = evaluate(
+            &metadata::load(root).unwrap(),
+            &parse_map(&text).unwrap(),
+            &tests_only_edges(&text).unwrap(),
+        );
         let messages: Vec<&String> = findings.iter().map(|f| &f.message).collect();
         assert!(findings.is_empty(), "{messages:?}");
     }
@@ -290,13 +352,13 @@ mod tests {
             ("bb-app", &["bb-core"]),
             ("bb-store", &["bb-app", "bb-core"]),
         ]);
-        assert!(evaluate(&packages, &parse_map(MAP).unwrap()).is_empty());
+        assert!(check(&packages, &parse_map(MAP).unwrap()).is_empty());
     }
 
     #[test]
     fn bad_example_app_must_not_import_an_adapter() {
         let packages = crates(&[("bb-app", &["bb-core", "bb-store"])]);
-        let findings = evaluate(&packages, &parse_map(MAP).unwrap());
+        let findings = check(&packages, &parse_map(MAP).unwrap());
         assert_eq!(findings.len(), 1);
         assert!(findings[0].message.contains("bb-store"));
     }
@@ -305,9 +367,9 @@ mod tests {
     fn bad_example_unknown_crate_and_missing_crate() {
         let mut packages = crates(&[]);
         packages.push(package("bb-extra", &[]));
-        assert_eq!(evaluate(&packages, &parse_map(MAP).unwrap()).len(), 1);
+        assert_eq!(check(&packages, &parse_map(MAP).unwrap()).len(), 1);
         packages.retain(|p| p.name != "bb-macros" && p.name != "bb-extra");
-        assert_eq!(evaluate(&packages, &parse_map(MAP).unwrap()).len(), 1);
+        assert_eq!(check(&packages, &parse_map(MAP).unwrap()).len(), 1);
     }
 
     #[test]
@@ -317,13 +379,13 @@ mod tests {
         let mut packages = crates(&[]);
         packages.retain(|p| p.name != "bb-app");
         packages.push(own);
-        assert!(evaluate(&packages, &parse_map(MAP).unwrap()).is_empty());
+        assert!(check(&packages, &parse_map(MAP).unwrap()).is_empty());
     }
 
     #[test]
     fn bad_example_a_crate_depending_on_itself_outside_dev_dependencies() {
         let packages = crates(&[("bb-app", &["bb-app"])]);
-        let findings = evaluate(&packages, &parse_map(MAP).unwrap());
+        let findings = check(&packages, &parse_map(MAP).unwrap());
         assert_eq!(findings.len(), 1);
         assert!(findings[0].message.contains("bb-app"));
     }
@@ -331,7 +393,7 @@ mod tests {
     #[test]
     fn external_crates_named_bb_are_ignored() {
         let packages = crates(&[("bb-app", &["bb-from-crates-io"])]);
-        assert!(evaluate(&packages, &parse_map(MAP).unwrap()).is_empty());
+        assert!(check(&packages, &parse_map(MAP).unwrap()).is_empty());
     }
 
     #[test]
