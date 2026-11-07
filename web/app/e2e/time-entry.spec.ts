@@ -8,7 +8,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
-import { choiceNamed, setTimeDefault, starterField } from "./support/time.ts";
+import { giveDefaults } from "./support/time.ts";
 
 // Booking time by hand (TIME-02): the window of *Add time* on the issue page takes a date, a length
 // and a note, the fields of time entries start with the defaults of the issue, and what is saved is
@@ -73,15 +73,7 @@ test("time_02 the history says the fields of booked time in the sentence of the 
 }) => {
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Toner is low");
-  const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
-  await setTimeDefault(
-    admin,
-    issue,
-    costCenter,
-    await choiceNamed(admin, costCenter, "Product development", "4100"),
-  );
+  await giveDefaults(admin, issue);
   await admin.dispose();
   await signIn(page, ada);
   await openIssueWithDetails(page, issue.key);

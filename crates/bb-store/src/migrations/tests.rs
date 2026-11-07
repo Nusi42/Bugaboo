@@ -230,12 +230,14 @@ async fn priv_09_rows_of_the_history_that_were_there_get_their_shown_moment_and_
         let booked = r#"[{"field":"issue","before":null,"after":"x"},{"field":"date","before":null,"after":"2027-01-10"}]"#;
         let moved = r#"[{"field":"date","before":"2027-01-10","after":"2027-01-09"},{"field":"minutes","before":30,"after":45}]"#;
         let deleted = r#"[{"field":"date","before":"2027-01-08","after":null}]"#;
+        let garbled = r#"[{"field":"date","before":null,"after":"last Tuesday"}]"#;
         let rows = [
             (1_u8, "time_entry", "[]"),
             (2, "issue", "[]"),
             (3, "time_entry", booked),
             (4, "time_entry", moved),
             (5, "time_entry", deleted),
+            (6, "time_entry", garbled),
         ];
         for (event, kind, changes) in rows {
             old_rows::old_history_row(&database, event, kind, written, changes).await?;
@@ -249,7 +251,8 @@ async fn priv_09_rows_of_the_history_that_were_there_get_their_shown_moment_and_
         assert_eq!(found.len(), rows.len());
         let expected = |event: u8| match event {
             // A time entry that names no date is shown on the day it was written on.
-            1 => start_of("2027-01-15"),
+            // The same for a value that is no date.
+            1 | 6 => start_of("2027-01-15"),
             // The date of the entry, the last one the changes say, also for a deletion.
             3 => start_of("2027-01-10"),
             4 => start_of("2027-01-09"),

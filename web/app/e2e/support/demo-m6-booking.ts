@@ -3,9 +3,9 @@ import { dataOf } from "@bugaboo/api-client";
 import { signInThroughApi } from "./accounts.ts";
 import { ana, days } from "./demo-m6-common.ts";
 import { createIssue } from "./issues.ts";
-import { sampleAdministrator } from "./sample.ts";
+import { sampleAdministrator, type SamplePerson } from "./sample.ts";
 import { type Instance } from "./server.ts";
-import { choiceNamed, setTimeDefault, starterField } from "./time.ts";
+import { clearTimer, giveDefaults } from "./time.ts";
 
 /** The issue that was booked on in step 8, which step 9 reads as another person. */
 let booked = "";
@@ -22,15 +22,7 @@ export function bookedIssueOf(server: Instance): Promise<string> {
 export async function bookedByAna(server: Instance): Promise<string> {
   const admin = await signInThroughApi(server, sampleAdministrator());
   const issue = await createIssue(admin, "WEB", "Toner is low");
-  const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
-  await setTimeDefault(
-    admin,
-    issue,
-    costCenter,
-    await choiceNamed(admin, costCenter, "Product development", "4100"),
-  );
+  await giveDefaults(admin, issue);
   await admin.dispose();
   const session = await signInThroughApi(server, ana());
   dataOf(
@@ -41,4 +33,11 @@ export async function bookedByAna(server: Instance): Promise<string> {
   await session.dispose();
   booked = issue.key;
   return issue.key;
+}
+
+/** Throws away the running timer of a person, whose toast would cover the history. */
+export async function withoutTimer(server: Instance, person: SamplePerson): Promise<void> {
+  const session = await signInThroughApi(server, person);
+  await clearTimer(session);
+  await session.dispose();
 }

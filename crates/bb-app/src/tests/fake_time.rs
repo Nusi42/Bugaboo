@@ -9,8 +9,7 @@ use bb_core::version::Version;
 use jiff::civil::Date;
 use jiff::{SignedDuration, Timestamp};
 
-use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::hashed_key::fake_page;
+use super::fake::{FakeError, FakeStore, State, Tx, fake_page};
 use crate::history::opaque_id;
 use crate::search::{SearchFailure, SearchRequest};
 use crate::time::spent::TimeSpentStore;

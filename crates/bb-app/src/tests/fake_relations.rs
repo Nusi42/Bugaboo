@@ -10,10 +10,9 @@ use bb_core::relation::{IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
 use jiff::Timestamp;
 
-use super::fake::{FakeError, FakeStore, State, Tx};
+use super::fake::{FakeError, FakeStore, State, Tx, fake_page};
 use crate::comments::CommentStore;
 use crate::follow::FollowStore;
-use crate::hashed_key::fake_page;
 use crate::history::{HistoryStore, ShownKey, opaque_id, shown_moment};
 use crate::relations::RelationStore;
 use crate::text_index::{TextIndexStore, Touched};

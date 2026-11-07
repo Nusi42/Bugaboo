@@ -90,14 +90,20 @@ async fn priv_09_a_time_row_is_placed_by_its_date_and_paging_loses_and_repeats_n
         let (site, mut ada) = Site::start(&rig, &app).await?;
         long_sessions(&rig).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        // An event at 09:00, a time entry at 10:00 for yesterday, and an event at 11:00.
+        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
+        // Events of Ada at 09:00 and 11:00 with a time entry at 10:00 for yesterday between them,
+        // and a comment of Tom's half an hour after the first and the second, so that Tom has rows
+        // of his own as well as the rows of others.
         rig.clock.advance(3600);
         comment(&mut ada, &issue, "first").await?;
-        rig.clock.advance(3600);
+        rig.clock.advance(1800);
+        comment(&mut tom, &issue, "Tom one").await?;
+        rig.clock.advance(1800);
         book_on(&mut ada, &issue, "2027-01-14").await?;
-        rig.clock.advance(3600);
+        rig.clock.advance(1800);
+        comment(&mut tom, &issue, "Tom two").await?;
+        rig.clock.advance(1800);
         comment(&mut ada, &issue, "second").await?;
-        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
         // The booker sees the order things happened in.
         let own = walked(&mut ada, &issue, 100).await?;
         let kinds_of = |rows: &[String]| -> Vec<String> {
@@ -107,7 +113,13 @@ async fn priv_09_a_time_row_is_placed_by_its_date_and_paging_loses_and_repeats_n
         };
         assert_eq!(
             kinds_of(&own),
-            [r#""comment""#, r#""time""#, r#""comment""#],
+            [
+                r#""comment""#,
+                r#""comment""#,
+                r#""time""#,
+                r#""comment""#,
+                r#""comment""#
+            ],
             "{own:?}"
         );
         // Another reader gets the time row where its date puts it, after both events of the later
@@ -115,10 +127,17 @@ async fn priv_09_a_time_row_is_placed_by_its_date_and_paging_loses_and_repeats_n
         let other = walked(&mut tom, &issue, 100).await?;
         assert_eq!(
             kinds_of(&other),
-            [r#""comment""#, r#""comment""#, r#""time""#],
+            [
+                r#""comment""#,
+                r#""comment""#,
+                r#""comment""#,
+                r#""comment""#,
+                r#""time""#
+            ],
             "{other:?}"
         );
-        // Pages of any length give the same rows once each, whatever the boundary falls on.
+        // Pages of any length give the same rows once each, whatever the boundary falls on, with
+        // Tom's own rows and the rows of others both in the pages.
         for limit in 1..=3 {
             assert_eq!(
                 walked(&mut tom, &issue, limit).await?,

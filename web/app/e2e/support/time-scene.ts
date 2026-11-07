@@ -2,15 +2,12 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
-import type { ApiSession } from "./api.ts";
-import { createIssue, type MadeIssue } from "./issues.ts";
+import { createIssue } from "./issues.ts";
 import {
-  choiceNamed,
   clearTimer,
-  setTimeDefault,
+  giveDefaults,
   startedMinutesAgo,
   timerRunsLong,
-  starterField,
   startTimerOn,
 } from "./time.ts";
 import { endWorkDayIfRunning, workDayRuns } from "./work-day.ts";
@@ -20,19 +17,6 @@ export function chipOf(page: Page, issue: string) {
   return page.getByRole("button", {
     name: new RegExp(`^${t("time.timer.running-on")} ${issue}`, "u"),
   });
-}
-
-/** Gives the issue an Activity and a Cost center for its time, so the entry of a stop is filled in. */
-async function giveDefaults(admin: ApiSession, issue: MadeIssue): Promise<void> {
-  const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
-  await setTimeDefault(
-    admin,
-    issue,
-    costCenter,
-    await choiceNamed(admin, costCenter, "Product development", "4100"),
-  );
 }
 
 /** An issue with defaults for its time, a timer that ran 42 minutes on it, and a work day that runs. */

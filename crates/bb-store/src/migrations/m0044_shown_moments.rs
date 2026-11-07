@@ -21,10 +21,11 @@ use crate::db::FixedSql;
 use crate::schema::{HistoryEntryRow, TimeEntryRow};
 
 /// The rows of time entries: shown at midnight UTC of the date of the entry (microseconds), else of the
-/// day the row was written on (a day is 86 400 000 000 microseconds).
+/// day the row was written on (a day is 86 400 000 000 microseconds). A value that is not a date
+/// (checked by its shape before the cast on PostgreSQL) counts as no date.
 const SQLITE_TIME_ROWS: &str = "UPDATE history_entry SET shown_at = COALESCE((    SELECT CAST(strftime('%s', COALESCE(json_extract(change.value, '$.after'),                                         json_extract(change.value, '$.before'))) AS INTEGER) * 1000000     FROM json_each(history_entry.changes) AS change     WHERE json_extract(change.value, '$.field') = 'date'     ORDER BY change.key DESC LIMIT 1), at - at % 86400000000)     WHERE record_kind = 'time_entry'";
 
-const POSTGRES_TIME_ROWS: &str = "UPDATE history_entry SET shown_at = COALESCE((    SELECT (extract(epoch FROM COALESCE(change.value ->> 'after', change.value ->> 'before')::date::timestamp)             * 1000000)::bigint     FROM jsonb_array_elements(history_entry.changes::jsonb) WITH ORDINALITY AS change(value, place)     WHERE change.value ->> 'field' = 'date'     ORDER BY change.place DESC LIMIT 1), at - at % 86400000000)     WHERE record_kind = 'time_entry'";
+const POSTGRES_TIME_ROWS: &str = "UPDATE history_entry SET shown_at = COALESCE((    SELECT (extract(epoch FROM CASE WHEN COALESCE(change.value ->> 'after', change.value ->> 'before') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN COALESCE(change.value ->> 'after', change.value ->> 'before')::date::timestamp END)             * 1000000)::bigint     FROM jsonb_array_elements(history_entry.changes::jsonb) WITH ORDINALITY AS change(value, place)     WHERE change.value ->> 'field' = 'date'     ORDER BY change.place DESC LIMIT 1), at - at % 86400000000)     WHERE record_kind = 'time_entry'";
 
 pub(super) fn steps() -> Vec<Step> {
     vec![

@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signInThroughApi } from "./accounts.ts";
-import { bookedByAna, bookedIssueOf } from "./demo-m6-booking.ts";
+import { bookedByAna, bookedIssueOf, withoutTimer } from "./demo-m6-booking.ts";
 import { ana, good } from "./demo-m6-common.ts";
 import { timerOn } from "./demo-m6.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
@@ -77,12 +77,9 @@ export async function aTimeEntryInTheHistoryOfAnotherReader(
   page: Page,
   server: Instance,
 ): Promise<void> {
-  await historyAs(
-    page,
-    await bookedIssueOf(server),
-    sampleNamed("Ben Hale"),
-    "08-b-history-as-another-reader",
-  );
+  const key = await bookedIssueOf(server);
+  await withoutTimer(server, sampleNamed("Ben Hale"));
+  await historyAs(page, key, sampleNamed("Ben Hale"), "08-b-history-as-another-reader");
 }
 
 /** Step 10: the names of the permissions of working hours on the page of the role *HR*. */

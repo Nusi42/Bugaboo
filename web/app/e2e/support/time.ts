@@ -59,6 +59,19 @@ export async function setTimeDefault(
   );
 }
 
+/** Gives the issue an Activity (Testing) and a Cost center (4100 Product development) for its time, so the entry of a stop or a booking is filled in. */
+export async function giveDefaults(admin: ApiSession, issue: MadeIssue): Promise<void> {
+  const activity = await starterField(admin, "activity");
+  const costCenter = await starterField(admin, "cost-center");
+  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
+  await setTimeDefault(
+    admin,
+    issue,
+    costCenter,
+    await choiceNamed(admin, costCenter, "Product development", "4100"),
+  );
+}
+
 /** A little over a second: the server lets a person start or switch the timer once a second. */
 const TIMER_PAUSE_MS = 1100;
 
