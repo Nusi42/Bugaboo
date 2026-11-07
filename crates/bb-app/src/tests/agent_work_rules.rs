@@ -485,3 +485,39 @@ async fn ai_32_a_change_to_an_issue_where_a_rule_works_queues_the_job_of_the_mat
     assert_eq!(waiting(&world), after_one + 1);
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_32_applying_a_proposed_tag_puts_it_on_the_issue_as_the_person() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    found_by_search(&world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await?;
+    let proposed = propose_change(
+        &world.ctx(),
+        ProposeChange {
+            session_token: given.key.clone(),
+            rule: rule.id,
+            issue: given.issue.to_string(),
+            field: RuleField::Tags,
+            after: json!("needs-triage"),
+        },
+    )
+    .await?
+    .into_value();
+    assert!(world.store.lock().state.issue_tags.is_empty());
+    decide_proposal(
+        &world.ctx(),
+        DecideProposal {
+            session_token: given.team.session_token.clone(),
+            proposal: proposed.id,
+            apply: true,
+        },
+    )
+    .await?;
+    assert_eq!(world.store.lock().state.issue_tags.len(), 1);
+    Ok(())
+}

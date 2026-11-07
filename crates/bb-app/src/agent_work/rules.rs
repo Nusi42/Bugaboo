@@ -26,6 +26,7 @@ use crate::input::cursor_or_invalid;
 use crate::issues::{ChangeIssue, change_issue};
 use crate::jobs::{JobKind, QueuedJob};
 use crate::search::SearchScope;
+use crate::tags::{AddLabel, AddTag, add_label, add_tag};
 
 /// How many issues one look at a rule reads at once.
 const MATCH_PAGE: u32 = 100;
@@ -433,8 +434,8 @@ pub async fn decide_proposal<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Applies a proposal as the person, through the one change of an issue. Only the type of an
-    /// issue can be applied yet; the others of the list wait for the one path of *Apply*.
+    /// Applies a proposal as the person, through the use case that changes that part of an issue
+    /// (the one the assistant's *Apply* ends in, too).
     async fn apply_proposal(&self, token: &str, proposal: &Proposal) -> Result<(), AppError> {
         match proposal.field {
             RuleField::Type => {
@@ -466,10 +467,45 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map(|_| ())
             }
-            RuleField::Labels
-            | RuleField::Tags
-            | RuleField::DuplicateOf
-            | RuleField::FoundInRelease => Err(ErrorCode::InvalidRequest.into()),
+            // The use cases of the labels and tags of an issue, as the person.
+            RuleField::Labels => {
+                let label = proposal
+                    .after
+                    .as_str()
+                    .and_then(|text| text.parse().ok())
+                    .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+                add_label(
+                    self,
+                    AddLabel {
+                        session_token: token.to_owned(),
+                        issue: proposal.issue.to_string(),
+                        label,
+                    },
+                )
+                .await
+                .map(|_| ())
+            }
+            RuleField::Tags => {
+                let name = proposal
+                    .after
+                    .as_str()
+                    .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+                add_tag(
+                    self,
+                    AddTag {
+                        session_token: token.to_owned(),
+                        issue: proposal.issue.to_string(),
+                        name: name.to_owned(),
+                    },
+                )
+                .await
+                .map(|_| ())
+            }
+            // *Found in release* is not stored on an issue yet, and *Duplicate of* is a relation of
+            // a kind the organization names: neither is applied before they are (M7-F72).
+            RuleField::DuplicateOf | RuleField::FoundInRelease => {
+                Err(ErrorCode::InvalidRequest.into())
+            }
         }
     }
 
