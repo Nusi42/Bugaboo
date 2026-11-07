@@ -410,7 +410,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         let changed_by = match last.as_ref().map(|event| event.actor) {
-            Some(EventActor::Person(person)) => Some(
+            Some(EventActor::Person(person) | EventActor::Agent { person, .. }) => Some(
                 self.person_ref(&viewer, PeopleKind::LastChangedBy, context, person)
                     .await?,
             ),

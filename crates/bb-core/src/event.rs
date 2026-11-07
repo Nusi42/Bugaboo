@@ -10,7 +10,7 @@ use std::fmt;
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
-use crate::id::{EntityId, EventId, UserId};
+use crate::id::{AgentId, EntityId, EventId, UserId};
 use crate::personal::Entity;
 
 /// Who did it.
@@ -19,8 +19,37 @@ use crate::personal::Entity;
 pub enum Actor {
     /// A person.
     Person(UserId),
+    /// An agent and the person responsible for it (AI-30, ADR-0029): the history says *"Fixer,
+    /// agent of Ada Brandt"*.
+    Agent {
+        /// The agent.
+        agent: AgentId,
+        /// The person responsible for it.
+        person: UserId,
+    },
     /// Bugaboo itself, for example a background job.
     System,
+}
+
+impl Actor {
+    /// The person who answers for the change: the person, or the person responsible for the
+    /// agent; none for Bugaboo itself. The one place that reads a person out of an actor.
+    #[must_use]
+    pub const fn person(self) -> Option<UserId> {
+        match self {
+            Self::Person(person) | Self::Agent { person, .. } => Some(person),
+            Self::System => None,
+        }
+    }
+
+    /// The agent, if an agent did it.
+    #[must_use]
+    pub const fn agent(self) -> Option<AgentId> {
+        match self {
+            Self::Agent { agent, .. } => Some(agent),
+            Self::Person(_) | Self::System => None,
+        }
+    }
 }
 
 words! {
@@ -363,6 +392,21 @@ mod tests {
             serde_json::to_value(Actor::Person(person)).unwrap(),
             json!({"kind": "person", "id": person.to_string()})
         );
+    }
+
+    #[test]
+    fn ai_30_an_agent_actor_names_the_agent_and_its_person() {
+        let mut ids = SequentialIds::default();
+        let (agent, person) = (AgentId::generate(&mut ids), UserId::generate(&mut ids));
+        let actor = Actor::Agent { agent, person };
+        let json = serde_json::to_value(actor).unwrap();
+        assert_eq!(
+            json,
+            json!({"kind": "agent", "id": {"agent": agent.to_string(), "person": person.to_string()}})
+        );
+        assert_eq!(serde_json::from_value::<Actor>(json).unwrap(), actor);
+        assert_eq!(actor.person(), Some(person));
+        assert_eq!(Actor::System.person(), None);
     }
 
     #[test]

@@ -113,6 +113,11 @@ impl Labels {
     fn actor(&mut self, actor: &Actor) -> String {
         match actor {
             Actor::Person(person) => self.label("person", person.to_bytes()),
+            Actor::Agent { agent, person } => format!(
+                "{} of {}",
+                self.label("agent", agent.to_bytes()),
+                self.label("person", person.to_bytes())
+            ),
             Actor::System => "system".to_owned(),
         }
     }

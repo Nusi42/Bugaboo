@@ -2,10 +2,11 @@
 //! databases. Split from `db.rs`, which holds the pools, the transactions and the statements.
 
 use bb_core::id::{
-    AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
-    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
-    LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
-    RelationKindId, RoleId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId, UploadId,
+    AccessKeyId, AgentId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId,
+    EventId, FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId,
+    LabelId, LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId,
+    RelationId, RelationKindId, RoleId, SavedSearchId, SessionId, TagId, TimeEntryId, ToolCallId,
+    UploadId,
     UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
@@ -116,6 +117,7 @@ macro_rules! stored_ids {
 
 stored_ids!(
     AccessKeyId => "an access key ID",
+    AgentId => "an agent ID",
     AssignmentId => "an assignment ID",
     AttachmentId => "an attachment ID",
     UploadId => "an upload ID",

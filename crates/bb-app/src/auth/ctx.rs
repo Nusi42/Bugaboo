@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
-use bb_core::id::{EventId, IdSource, SessionId, UserId};
+use bb_core::id::{AgentId, EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::notification::mail_batch;
 use bb_core::sign_in::SecurityAction;
@@ -188,6 +188,7 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             policies: Mutex::default(),
             via_key: AtomicBool::new(false),
+            acting_agent: Mutex::default(),
             image_hosts: Mutex::default(),
             known: Known::default(),
             acting: None,
@@ -308,6 +309,10 @@ pub struct Ctx<'a, S> {
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,
+    /// The request came with the key of an agent: the agent and the person responsible for it.
+    /// What the request changes is recorded as made by the agent (AI-30), in the one place that
+    /// makes events ([`Self::event_maker`]), so no use case can record the agent as its person.
+    pub(crate) acting_agent: Mutex<Option<(AgentId, UserId)>>,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
@@ -473,6 +478,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What makes events of this request by `actor` inside a change, which cannot borrow the
     /// context (a change that does more than its own event says, one event for each thing).
     pub(crate) fn event_maker(&self, actor: Actor) -> EventMaker {
+        let actor = match (actor, *locked(&self.acting_agent)) {
+            (Actor::Person(person), Some((agent, owner))) if person == owner => {
+                Actor::Agent { agent, person }
+            }
+            (actor, _) => actor,
+        };
         EventMaker {
             clock: Arc::clone(&self.services.clock),
             actor,

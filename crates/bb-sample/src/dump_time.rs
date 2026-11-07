@@ -78,7 +78,8 @@ impl Sample {
                     bb_core::event::Actor::Person(person) => {
                         roles.get(&person).is_some_and(|role| role == hr)
                     }
-                    bb_core::event::Actor::System => false,
+                    // An agent never holds the permissions of working hours.
+                    bb_core::event::Actor::System | bb_core::event::Actor::Agent { .. } => false,
                 };
                 if by_hr {
                     time.changed_by_hr += 1;

@@ -16,7 +16,7 @@
 //! What a reader may see of the changes in a row is decided when the history is read, with the
 //! mask of the reader, never here.
 
-use bb_core::event::{Actor, DomainEvent, EntityKind, FieldChange, RecordKind};
+use bb_core::event::{DomainEvent, EntityKind, FieldChange, RecordKind};
 use bb_core::history::{HistoryEntry, HistoryKind};
 use bb_core::id::IssueId;
 use bb_core::technical::TechnicalName;
@@ -71,10 +71,7 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         issue,
         position,
         at: event.time,
-        by: match event.actor {
-            Actor::Person(person) => Some(person),
-            Actor::System => None,
-        },
+        by: event.actor.person(),
         kind,
         record: event.entity.id,
         record_kind: record_kind.clone(),
@@ -171,7 +168,7 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
 
 #[cfg(test)]
 mod tests {
-    use bb_core::event::{Channel, EntityRef};
+    use bb_core::event::{Actor, Channel, EntityRef};
     use bb_core::id::{EventId, SequentialIds, UserId};
     use serde_json::json;
 

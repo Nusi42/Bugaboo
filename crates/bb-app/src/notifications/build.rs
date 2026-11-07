@@ -124,10 +124,7 @@ fn may_hear(
 
 /// The person who did it, if a person did.
 const fn doer(event: &DomainEvent) -> Option<UserId> {
-    match event.actor {
-        EventActor::Person(person) => Some(person),
-        EventActor::System => None,
-    }
+    event.actor.person()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

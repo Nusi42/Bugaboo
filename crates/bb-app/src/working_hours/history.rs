@@ -45,7 +45,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .find(|change| change.field == member::TIMES);
         let by = match event.actor {
-            EventActor::Person(person) => {
+            EventActor::Person(person) | EventActor::Agent { person, .. } => {
                 self.person_ref(
                     &whose.evaluation,
                     PeopleKind::LastChangedBy,
