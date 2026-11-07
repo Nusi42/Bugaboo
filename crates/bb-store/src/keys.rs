@@ -622,7 +622,7 @@ mod tests {
         });
         // A patience of its own: a computer that is busy may run the writer late, which is not
         // what the test is about.
-        let text = wait_for_within(&master, Duration::from_secs(60)).unwrap();
+        let text = wait_for_within(&master, Duration::from_mins(1)).unwrap();
         writer.join().unwrap();
         let keys = parse_master(&text).unwrap();
         assert_eq!(*keys[0].bytes(), expected);

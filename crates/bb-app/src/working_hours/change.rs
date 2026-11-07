@@ -91,11 +91,6 @@ fn zone_of(name: &str) -> TimeZone {
     zone::named(name).unwrap_or(TimeZone::UTC)
 }
 
-/// The zone of a name of the zone data, and the name; `None` for one the server does not know.
-fn named(name: &str) -> Option<(String, TimeZone)> {
-    zone::named(name).map(|zone| (name.to_owned(), zone))
-}
-
 /// The reason as it is kept: trimmed, at most [`REASON_CHARS_MAX`] characters, none when empty.
 fn reason_of(text: Option<&str>) -> Result<Option<String>, AppError> {
     match text.map(str::trim) {
