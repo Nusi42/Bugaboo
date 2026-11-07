@@ -271,6 +271,23 @@ Rules:
 | **Create**               | The verb for bringing something new into Bugaboo, on every button and form. A button that opens a form says *Create an issue*, *Create a project*; the button that sends the form says *Create the issue*, *Create the project*, *Create the issue and start another* | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
+| **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
+| **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
+| **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
+| **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
+| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns | subscription settings (in UI) |
+| **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
+| **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
+| **E-mail and notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
+| **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
+| **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account); never the connection between two issues, which is a *Relation* (so *link* stays in the Don't-say column of *Relation*, and TXT-TERMS allows the web sense by entries in `tools/checks/terms-exemptions.toml`) | address (for a link) |
+| **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
+| **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
+
+## AI
+
+| Say                      | Meaning                                                            | Don't say                          |
+|--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |
 | **Suggestions**          | Values the assistant proposes, shown for you to accept or reject   | triage                             |
 | **AI apps (MCP)**        | Outside AI tools connected through MCP                             | —                                  |
@@ -290,18 +307,28 @@ Rules:
 | **Run** (of an app, an agent or a change to many issues) | Everything one session of an AI app, one attempt of an agent or one *Change many issues* changed; shown with its progress and as a list, and undone in one step | batch, transaction (in UI) |
 | **Written by an AI app / Written by an agent** | Labels on text written through MCP, stored with the text like *Written with the assistant* | AI-generated content (as label) |
 | **Written with the assistant** | Label on text the assistant wrote or proposed; also stored with the text | AI-generated content (as label) |
-| **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
-| **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
-| **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
-| **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
-| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns | subscription settings (in UI) |
-| **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
-| **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
-| **E-mail and notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
-| **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
-| **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account); never the connection between two issues, which is a *Relation* (so *link* stays in the Don't-say column of *Relation*, and TXT-TERMS allows the web sense by entries in `tools/checks/terms-exemptions.toml`) | address (for a link) |
-| **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
-| **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
+| **Set up the assistant** | The step in *Organization settings › AI* where an administrator chooses the AI provider, the model, its address and key, and switches AI on | configure LLM, AI integration (in UI) |
+| **AI provider**          | The service that writes the assistant's answers: *Anthropic*, or any *OpenAI-compatible* service, which can be a *Local model* | LLM, model vendor, LLM provider (in UI) |
+| **Local model**          | An AI model that runs on the organization's own server, so nothing leaves it; the private choice | self-hosted LLM, on-prem model (in UI) |
+| **Data processing agreement** | The contract with an outside AI provider about personal data (GDPR Art. 28); an administrator confirms it is in place before an outside provider is switched on | DPA, AVV (in UI) |
+| **What goes where**      | The list of what may be sent to AI, to which provider and in which country | data flow, egress (in UI) |
+| **Never sent to AI**     | A mark on a field or a project: kept from the assistant, AI apps and agents, even for people who can read it | AI exclusion, redact, mask (in UI) |
+| **Send names of people** | An organization choice, off at the start: people go to an outside AI provider by name, not as their role (*"a Team member"*) | share PII, include identities (in UI) |
+| **Looking at**           | The top of the assistant panel: what the assistant may read for this question (an issue, a list, a project); each can be removed | context window (on screens) |
+| **Proposed change**      | A change the assistant or a standing rule suggests, shown before and after; nothing is saved until *Apply* | suggestion card, diff (in UI) |
+| **Apply / Discard**      | The two answers to a proposed change: save it as yourself, or drop it | accept the proposal (on screens) |
+| **Allow**                | The answer on the page where an AI app asks to work with your account; it shows what the app may do | authorize, grant, consent (as button, in UI) |
+| **Take back** (an app's access, an agent key) | End what an app or a key may do, at once | revoke, deauthorize (in UI) |
+| **See only / See and change** (for apps) | What an AI app may do with your account; the same words as for access keys, and never more than you | read-write access, OAuth scopes (on screens) |
+| **Pause / Resume** (an agent) | Hold an agent so it starts nothing new, and let it go on; a limit pauses an agent too | suspend, throttle (in UI) |
+| **Limits** (of an agent) | How much an agent may do: changes a minute, issues at once, attempts on one issue; at most the organization's maximum | quota (in UI) |
+| **Budget** (of a hand-over) | How much an agent may spend on a handed-over issue: attempts, time and the cost it reports | quota (in UI) |
+| **Plan needs approval**  | A choice of a hand-over: each attempt waits for *Approve plan* before the agent works | gated, human in the loop (in UI) |
+| **Check** (a result)     | A result an agent attaches with *passed* or *failed*, such as its tests; Bugaboo does not run or verify it | CI status, build status (in UI) |
+| **Accepted by itself**   | The list in *My agents* of attempts that were accepted because every check passed, until a person looked at them | auto-merged (in UI) |
+| **Undo the run**         | Put back everything one run changed, in one step; a change somebody made afterwards is skipped and named | rollback, revert (in UI) |
+
+On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *bot*, *copilot*, *auto-pilot* or a vendor's word, and a credential is never a *token*. These words fail TXT-TERMS through the rows above and the row of *Agent*.
 
 ## Internal terms (docs and code only, never in the UI)
 
@@ -331,3 +358,9 @@ Rules:
 | Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`); how work days and time entries use it is ADR-0035, decision 5 |
 | Starter fields      | Own fields that Bugaboo makes at the first start and on upgrade, like *Activity* and *Cost center* of time entries; found by a stable mark, never by their name, and changed by administrators like any own field |
 | Time spent port     | `TimeSpentStore`: how code outside the module of time entries reads minutes booked on issues, for the issues the caller passes or a compiled search finds, and one person's minutes per date (ADR-0035, decision 4) |
+| Tool registry       | The one table of what AI may call, in `bb-app` (`ai/tools/`): each tool with its name, *reads* or *changes*, its use case, its scope and its preview; shared by the assistant, MCP and agents (ADR-0013) |
+| Context builder     | The part of `bb-app` (`ai/context/`) that turns what the person looks at into text for the AI provider, as the actor, without hidden fields or anything *Never sent to AI* |
+| Fenced text         | Text a person wrote, sent to AI inside a fence it cannot close, so it is read as data and never as instructions (AI-05) |
+| Author mark         | The words on fenced text that say who wrote it: *someone in the project*, *a Guest*, *someone outside*, *an agent*, *the assistant* |
+| Actor kind          | Who a request runs as: a *person*, a *person via app* (an OAuth grant or a key used by an AI app) or an *agent* (`bb-policy`) |
+| Grant (of an app)   | What *Allow* makes: an AI app may act for one person with *See only* or *See and change*, until it is taken back (ADR-0042). Screens say *Connected apps* |
