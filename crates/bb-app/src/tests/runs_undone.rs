@@ -400,3 +400,49 @@ async fn ai_38_what_an_interrupted_undo_did_not_reach_gets_its_reason_when_it_ca
     )));
     Ok(())
 }
+
+/// An undo that stopped half way and is written last, after another undo put everything back, does
+/// not make the run wait: it is not interrupted, and no field reads "not yet undone".
+#[tokio::test]
+async fn ai_38_an_interrupted_undo_written_last_does_not_hold_a_finished_run() -> Outcome {
+    use crate::auth::{by, entity, set_to};
+    use crate::ports::ChangeStore as _;
+    use crate::runs::{FieldOutcome, get_run};
+    use bb_core::event::RecordKind;
+    let (world, admin, run, _) = a_run_of_two().await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    undo(&world, &admin, run, preview).await?;
+    // The interrupted undo of another request commits its fact after the finished one.
+    let ctx = world.ctx();
+    let actor = ctx.session_actor(&admin).await?;
+    let event = ctx.event(
+        by(actor.person.id),
+        entity(RecordKind::ChangeRun, run),
+        vec![
+            set_to("undone", serde_json::json!(1)),
+            set_to("interrupted", serde_json::json!(true)),
+        ],
+    )?;
+    ctx.store()
+        .record_change(&event, |_transaction| Box::pin(async { Ok(()) }))
+        .await
+        .map_err(|error| error.to_string())?;
+    let seen = get_run(
+        &world.ctx(),
+        RunQuery {
+            session_token: admin.clone(),
+            run,
+        },
+    )
+    .await?
+    .into_value();
+    assert!(seen.undone.is_some_and(|done| !done.interrupted));
+    let outcomes = outcomes_of(&world, &admin, run).await?;
+    assert!(!outcomes.contains(&Some(FieldOutcome::NotYet)));
+    assert!(
+        outcomes
+            .iter()
+            .all(|outcome| *outcome == Some(FieldOutcome::WentBack))
+    );
+    Ok(())
+}

@@ -225,7 +225,7 @@ pub(crate) struct Plan {
 }
 
 impl Plan {
-    fn goes_back(&self) -> u64 {
+    pub(crate) fn goes_back(&self) -> u64 {
         self.by_issue.values().map(|nets| nets.len() as u64).sum()
     }
 

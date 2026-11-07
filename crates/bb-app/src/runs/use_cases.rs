@@ -169,7 +169,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 found.person,
             )
             .await?;
-        let facts = self.undo_facts(held, run).await?;
+        let mut facts = self.undo_facts(held, run).await?;
+        // The last undo stopped half way, but another one may have put back what it did not reach
+        // (and the interrupted one written last): the run waits only while something can still go
+        // back, which is what the preview counts.
+        if let Some(done) = facts.undone.as_mut().filter(|done| done.interrupted) {
+            let runs = RunsOf::new(self, actor, "");
+            done.interrupted = runs.plan_for_reader(run).await?.goes_back() > 0;
+        }
         Ok(RunView {
             person,
             undone: facts.undone,
