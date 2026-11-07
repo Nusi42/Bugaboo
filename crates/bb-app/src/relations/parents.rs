@@ -12,7 +12,9 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::IssueId;
 use bb_core::issue::Issue;
-use bb_core::relation::{IssueParent, SUB_ISSUE_DEPTH_MAX, SUB_ISSUES_MAX, check_parent};
+use bb_core::relation::{
+    IssueParent, ParentRefusal, SUB_ISSUE_DEPTH_MAX, SUB_ISSUES_MAX, check_parent,
+};
 use bb_policy::{Authorized, Place};
 
 use super::types::{IssueRelations, SetParent};
@@ -36,8 +38,10 @@ pub(crate) async fn ensure_fits_under<S: AuthStore>(
         return Err(stopped.stop::<S>(ErrorCode::LimitReached));
     }
     let chain = chain_above::<S>(transaction, parent).await?;
-    if check_parent(child, parent, |issue| chain.get(&issue).copied()).is_err() {
-        return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
+    match check_parent(child, parent, |issue| chain.get(&issue).copied()) {
+        Ok(()) => {}
+        Err(ParentRefusal::Circle) => return Err(stopped.stop::<S>(ErrorCode::ParentCircle)),
+        Err(ParentRefusal::TooDeep) => return Err(stopped.stop::<S>(ErrorCode::ParentTooDeep)),
     }
     Ok(())
 }

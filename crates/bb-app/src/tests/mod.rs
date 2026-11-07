@@ -5,6 +5,7 @@
 mod agent_work;
 mod agent_work_narrowing;
 mod agent_work_notices;
+mod agent_work_proposals;
 mod agent_work_review;
 mod agent_work_rules;
 mod agent_work_runs;

@@ -128,9 +128,10 @@ error_codes! {
     /// A workflow breaks a rule: no status, too many, a name that is empty or too long, a status
     /// change between statuses it does not have (WF-02).
     WorkflowInvalid => ("workflow.invalid", 400),
-    /// An issue would sit under itself or under one of its own sub-issues, or the chain of
-    /// sub-issues would get too long (ISS-03).
+    /// An issue would sit under itself or under one of its own sub-issues (ISS-03).
     ParentCircle => ("issue.parent-circle", 409),
+    /// The chain of sub-issues would get longer than a chain may be (ISS-03).
+    ParentTooDeep => ("issue.parent-too-deep", 409),
     /// Those two issues are related in that way already (ISS-04).
     RelationExists => ("relation.exists", 409),
     /// Something holds as many as it may: an issue its relations or sub-issues, the organization

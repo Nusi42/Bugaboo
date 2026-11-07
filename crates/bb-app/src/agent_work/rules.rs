@@ -458,25 +458,12 @@ pub async fn decide_proposal<S: AuthStore>(
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Opens a proposal again that was claimed by `person` and could not be carried out.
-    async fn reopen_proposal(
+    pub(crate) async fn reopen_proposal(
         &self,
         rule: &RuleRecord,
         proposal: &Proposal,
         person: bb_core::id::UserId,
     ) -> Result<(), AppError> {
-        // Only a proposal that is still claimed by this person is opened, and only then it is told:
-        // no event for a write that changes nothing.
-        let claimed = self
-            .store()
-            .proposal(proposal.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .is_some_and(|found| {
-                found.state != ProposalState::Open && found.decided_by == Some(person)
-            });
-        if !claimed {
-            return Ok(());
-        }
         let event = self.event(
             crate::auth::by(person),
             entity(RecordKind::StandingRule, rule.id),
@@ -487,15 +474,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             ],
         )?;
         let id = proposal.id;
-        self.store()
+        // The event is written with the change, and only when a proposal that this person claimed
+        // was opened: a proposal that is not (any more) claimed by them aborts the change and
+        // writes nothing.
+        let result = self
+            .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    S::reopen_proposal(transaction, id, person).await?;
-                    Ok(())
+                    if S::reopen_proposal(transaction, id, person).await? {
+                        Ok(())
+                    } else {
+                        Err(S::aborted())
+                    }
                 })
             })
-            .await
-            .map_err(|error| internal::<S>(&error))
+            .await;
+        match result {
+            Err(error) if S::is_aborted(&error) => Ok(()),
+            other => other.map_err(|error| internal::<S>(&error)),
+        }
     }
 
     /// Applies a proposal as the person, through the use case that changes that part of an issue

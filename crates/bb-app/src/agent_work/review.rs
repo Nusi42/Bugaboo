@@ -12,7 +12,7 @@ use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
 use super::members::member;
-use super::stop::{Closing, close_work_of};
+use super::stop::{Closing, close_work_of, closing_again};
 use super::types::{AnswerQuestion, ApprovePlan, LookAtWork, ReviewWork, WorkView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
@@ -328,8 +328,11 @@ pub async fn review_work<S: AuthStore>(
         ],
     )?;
     let work = acting.work.clone();
-    ctx.store()
-        .record_change(&event, move |transaction| {
+    // What changes the issue is done; the answer is written, and the work closed with the
+    // hand-over, again if another piece of the hand-over closed at the same moment.
+    closing_again::<S, _, _>(|| {
+        let (review, work, hand_over) = (review.clone(), work.clone(), hand_over.id);
+        ctx.store().record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::insert_review(transaction, &review).await?;
                 if !S::set_work_state(transaction, work.id, next, None, false, version).await? {
@@ -342,13 +345,13 @@ pub async fn review_work<S: AuthStore>(
                         accepted_by_itself: false,
                         status_pending: false,
                     };
-                    close_work_of::<S>(transaction, hand_over.id, closing).await?;
+                    close_work_of::<S>(transaction, hand_over, closing).await?;
                 }
                 Ok(())
             })
         })
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+    })
+    .await?;
     ctx.after_review(&acting).await
 }
 

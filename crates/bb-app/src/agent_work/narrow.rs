@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::agent_work::Allowance;
+use bb_core::agent_work::{Allowance, issue_member as key};
 use bb_core::id::{AgentId, IssueId};
 
 use crate::access::Actor;
@@ -26,42 +26,67 @@ pub(crate) mod issue_member {
 
 use issue_member::STATUS;
 
-/// The members of an issue a request can set, by their keys, in the order [`members_named`] reads
-/// its flags in: the one list, for a change of an issue and for the input of a new one.
-const SETTABLE: [&str; 7] = [
-    bb_core::agent_work::issue_member::ISSUE_TYPE,
-    bb_core::agent_work::issue_member::TITLE,
-    STATUS,
-    bb_core::agent_work::issue_member::PRIORITY,
-    bb_core::agent_work::issue_member::ESTIMATED_TIME,
-    bb_core::agent_work::issue_member::TIME_LEFT,
-    bb_core::agent_work::issue_member::ASSIGNED_TO,
-];
+/// Whether a request sets a member.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum Is {
+    /// It is left out.
+    #[default]
+    Left,
+    /// It is set.
+    Set,
+}
 
-/// The members a request names, by their keys: those of [`SETTABLE`] whose flag is set, and the own
-/// fields.
-fn members_named<'a>(set: [bool; 7], fields: impl Iterator<Item = &'a String>) -> Vec<String> {
-    SETTABLE
+impl Is {
+    const fn of(set: bool) -> Self {
+        if set { Self::Set } else { Self::Left }
+    }
+}
+
+/// Which members of an issue a request sets: the one list, for a change of an issue and for the
+/// input of a new one (which leaves out the type and the title, always its own, and the time left).
+#[derive(Default)]
+struct Sets {
+    issue_type: Is,
+    title: Is,
+    status: Is,
+    priority: Is,
+    estimated_time: Is,
+    time_left: Is,
+    assigned_to: Is,
+}
+
+impl Sets {
+    /// The keys of the members set, and the own fields.
+    fn members<'a>(&self, fields: impl Iterator<Item = &'a String>) -> Vec<String> {
+        [
+            (self.issue_type, key::ISSUE_TYPE),
+            (self.title, key::TITLE),
+            (self.status, STATUS),
+            (self.priority, key::PRIORITY),
+            (self.estimated_time, key::ESTIMATED_TIME),
+            (self.time_left, key::TIME_LEFT),
+            (self.assigned_to, key::ASSIGNED_TO),
+        ]
         .into_iter()
-        .zip(set)
-        .filter(|(_, set)| *set)
-        .map(|(key, _)| key.to_owned())
+        .filter(|(set, _)| *set == Is::Set)
+        .map(|(_, key)| key.to_owned())
         .chain(fields.cloned())
         .collect()
+    }
 }
 
 /// The members of the issue a change names.
 fn members_of(input: &ChangeIssue) -> Vec<String> {
-    let set = [
-        input.issue_type.is_some(),
-        input.title.is_some(),
-        input.status.is_some(),
-        input.priority.is_some(),
-        input.estimated_time.is_some(),
-        input.time_left.is_some(),
-        input.assigned_to.is_some(),
-    ];
-    members_named(set, input.fields.keys())
+    Sets {
+        issue_type: Is::of(input.issue_type.is_some()),
+        title: Is::of(input.title.is_some()),
+        status: Is::of(input.status.is_some()),
+        priority: Is::of(input.priority.is_some()),
+        estimated_time: Is::of(input.estimated_time.is_some()),
+        time_left: Is::of(input.time_left.is_some()),
+        assigned_to: Is::of(input.assigned_to.is_some()),
+    }
+    .members(input.fields.keys())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -213,17 +238,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             None if work.creates_in.contains(&project) => Allowance::default(),
             None => return Err(ErrorCode::Forbidden.into()),
         };
-        // The type and the title of a new issue are always its own; the rest is a member.
-        let set = [
-            false,
-            false,
-            input.status.is_some(),
-            input.priority.is_some(),
-            input.estimated_time.is_some(),
-            false,
-            input.assigned_to.is_some(),
-        ];
-        let members = members_named(set, input.fields.keys());
+        let members = Sets {
+            status: Is::of(input.status.is_some()),
+            priority: Is::of(input.priority.is_some()),
+            estimated_time: Is::of(input.estimated_time.is_some()),
+            assigned_to: Is::of(input.assigned_to.is_some()),
+            ..Sets::default()
+        }
+        .members(input.fields.keys());
         self.ensure_allowance_covers(&allowance, &members).await?;
         Ok(parent)
     }

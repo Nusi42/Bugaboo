@@ -1102,6 +1102,9 @@ pub const ERROR_HANDLE_CHANGED_LATELY: MessageKey = MessageKey::new("error.handl
 /// The message `error.issue.parent-circle`.
 pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
 
+/// The message `error.issue.parent-too-deep`.
+pub const ERROR_ISSUE_PARENT_TOO_DEEP: MessageKey = MessageKey::new("error.issue.parent-too-deep");
+
 /// The message `error.issue.type-not-offered`.
 pub const ERROR_ISSUE_TYPE_NOT_OFFERED: MessageKey =
     MessageKey::new("error.issue.type-not-offered");
@@ -15100,7 +15103,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.parent-circle",
-        "That would create a circle of issues or a chain that is too long. Choose another issue.",
+        "That would put an issue under itself or under one of its own sub-issues. Choose another issue.",
+    ),
+    (
+        "error.issue.parent-too-deep",
+        "That chain of sub-issues would be too long. Choose another issue.",
     ),
     (
         "error.issue.type-not-offered",

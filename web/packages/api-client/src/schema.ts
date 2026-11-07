@@ -5930,6 +5930,7 @@ export interface components {
       | "workflow.status-in-use"
       | "workflow.invalid"
       | "issue.parent-circle"
+      | "issue.parent-too-deep"
       | "relation.exists"
       | "limit.reached"
       | "timer.running"

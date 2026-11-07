@@ -18,7 +18,7 @@ use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
 use super::members::{member, waiting_for};
-use super::stop::{Closing, close_work_of};
+use super::stop::{Closing, close_work_of, closing_again};
 use super::types::{AskQuestion, AttachResult, EndAttempt, ReportAttempt, WorkView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
@@ -522,14 +522,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             accepted_by_itself: true,
             status_pending,
         };
-        self.store()
-            .record_change(&event, move |transaction| {
-                Box::pin(
-                    async move { close_work_of::<S>(transaction, hand_over.id, closing).await },
-                )
+        closing_again::<S, _, _>(|| {
+            let hand_over = hand_over.id;
+            self.store().record_change(&event, move |transaction| {
+                Box::pin(async move { close_work_of::<S>(transaction, hand_over, closing).await })
             })
-            .await
-            .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))
+        })
+        .await
     }
 
     /// Whether the attempt is accepted by itself (M7-Q8): the project allows it, the hand-over did

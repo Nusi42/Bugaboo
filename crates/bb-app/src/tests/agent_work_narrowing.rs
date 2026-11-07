@@ -4,7 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::GivingState;
-use bb_core::agent_work::{AgentWorkState, HandOverPower, ReviewAnswer};
+use bb_core::agent_work::{AgentWorkState, CheckResult, HandOverPower, ReviewAnswer};
 use bb_core::event::RecordKind;
 use bb_core::id::{AssignmentId, IssueId};
 use bb_core::notification::NotificationKind;
@@ -678,7 +678,49 @@ async fn ai_31_a_new_issue_under_a_parent_is_judged_like_the_change_of_a_parent(
             Err(error) => break error,
         }
     };
-    assert!(refused(&refusal, ErrorCode::ParentCircle), "{refusal:?}");
+    assert!(
+        refused(&refusal, ErrorCode::ParentTooDeep),
+        "a chain too long is its own refusal: {refusal:?}"
+    );
     assert!(levels >= 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_35_two_accepts_by_itself_on_two_pieces_of_one_hand_over_close_both_and_end_it()
+-> Outcome {
+    use super::agent_work::{Ground, ground};
+    use super::agent_work_review::check;
+    use super::agent_work_runs::allow_accepting;
+    use crate::agent_work::attach_result;
+    let world = World::new().await?;
+    let Ground {
+        project,
+        team,
+        agent,
+        key,
+        issue: first,
+    } = ground(&world).await?;
+    let second = an_issue(&world, project)
+        .await
+        .map_err(AppError::Internal)?;
+    allow_accepting(&world, project).await?;
+    let mut asked = plain_hand_over(&team.session_token, agent, &[first, second]);
+    asked.accept_by_itself = true;
+    hand_over(&world.ctx(), asked).await?;
+    for issue in [first, second] {
+        report_attempt(&world.ctx(), report(&key, issue, None, 1)).await?;
+        attach_result(&world.ctx(), check(&key, issue, CheckResult::Passed)).await?;
+    }
+    let (one, two) = (world.ctx(), world.ctx());
+    let (a, b) = tokio::join!(
+        end_attempt(&one, ready(&key, first)),
+        end_attempt(&two, ready(&key, second))
+    );
+    a?;
+    b?;
+    let stored = world.store.lock().state.work.clone();
+    assert!(stored.works.iter().all(|work| work.closed));
+    assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }

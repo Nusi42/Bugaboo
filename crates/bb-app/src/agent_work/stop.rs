@@ -9,9 +9,10 @@ use bb_core::id::{AgentId, HandOverId};
 use serde_json::{Value, json};
 
 use super::members::{member, payload};
-use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 
 /// Which work a review or an accept by itself closes, and how.
+#[derive(Clone, Copy)]
 pub struct Closing {
     /// The work.
     pub work: bb_core::id::AgentWorkId,
@@ -101,8 +102,43 @@ pub async fn close_work_of<S: AuthStore>(
     Ok(())
 }
 
-/// How often the end of a hand-over is tried when it changes meanwhile.
+/// How often a change that closes work, or ends a hand-over, is tried when the hand-over changes
+/// meanwhile.
 const TRIES: usize = 3;
+
+/// Runs a change that closes work again when it finds the hand-over changed meanwhile (another
+/// piece of the same hand-over closed at the same moment, [`close_work_of`]): `once` makes the
+/// whole change each time and reads what it needs inside it, so a try judges what is stored now.
+/// After the last try the person is told the work changed.
+///
+/// # Errors
+/// `edit.version-changed` when it still found the hand-over changed after the last try, the errors
+/// of the store otherwise.
+pub(super) async fn closing_again<S, F, Fut>(mut once: F) -> Result<(), AppError>
+where
+    S: AuthStore,
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<(), S::Error>>,
+{
+    let mut last = None;
+    for _ in 0..TRIES {
+        match once().await {
+            Ok(()) => return Ok(()),
+            Err(error) if S::is_aborted(&error) => last = Some(error),
+            Err(error) => {
+                return Err(change_failed::<S>(
+                    &error,
+                    Stops::both(ErrorCode::VersionChanged),
+                ));
+            }
+        }
+    }
+    Err(
+        last.map_or(AppError::Refused(ErrorCode::VersionChanged), |error| {
+            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged))
+        }),
+    )
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The work of the job of a hand-over that ran out: ends the hand-over and stops its open

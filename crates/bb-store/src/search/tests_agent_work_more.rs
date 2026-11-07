@@ -5,7 +5,11 @@ use bb_app::agent_work::{AgentWorkRecords as _, Closing, GrantStore as _, close_
 use bb_core::agent_records::{GivingState, Proposal, ProposalState};
 use bb_core::agent_work::{AgentWorkState, RuleField};
 use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, HandOverId, IssueId};
-use bb_testing::{TestResult, each_database};
+use std::sync::Arc;
+use std::time::Duration;
+
+use bb_testing::{DatabaseKind, TestResult, each_database};
+use tokio::sync::Notify;
 
 use super::tests::request_with;
 use super::tests_agent::{agent_fields, an_agent};
@@ -195,12 +199,14 @@ async fn ai_32_the_proposals_on_an_issue_are_cut_in_the_statement_by_state_agent
     .await
 }
 
-/// Closes a piece of work as a review does, in a change of its own; whether it went through.
+/// Closes a piece of work as a review does, in a change of its own; whether it went through. With
+/// `hold`, the change stays open after the close until it is told to go on.
 async fn close_piece(
     storage: &AuthStorage,
     at: bb_core::event::DomainEvent,
     hand_over: HandOverId,
     work: AgentWorkId,
+    hold: Option<(Arc<Notify>, Arc<Notify>)>,
 ) -> bool {
     storage
         .record_change(&at, move |transaction| {
@@ -214,7 +220,12 @@ async fn close_piece(
                     accepted_by_itself: false,
                     status_pending: false,
                 };
-                close_work_of::<AuthStorage>(transaction, hand_over, closing).await
+                close_work_of::<AuthStorage>(transaction, hand_over, closing).await?;
+                if let Some((entered, release)) = hold {
+                    entered.notify_one();
+                    release.notified().await;
+                }
+                Ok(())
             })
         })
         .await
@@ -241,23 +252,34 @@ async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open
             (Vec::new(), Vec::new()),
         )
         .await?;
-        // Both closes start from what was read before either ran; the one that finds the
-        // hand-over changed is told so and tries again, as the person does.
         let (first, second) = (works[0].id, works[1].id);
-        let events = [1, 2, 3, 4].map(|step| {
+        let [a, b, c] = [1, 2, 3].map(|step| {
             made.step += 1;
             event(&mut made.source, made.step + step)
         });
-        let [a, b, c, d] = events;
-        let (one, two) = tokio::join!(
-            close_piece(storage, a, record.id, first),
-            close_piece(storage, b, record.id, second)
-        );
-        if !one {
-            assert!(close_piece(storage, c, record.id, first).await);
-        }
-        if !two {
-            assert!(close_piece(storage, d, record.id, second).await);
+        // The first close stays open after its work until the second has begun: the second reads
+        // the hand-over as it was, and must not end up with both pieces closed and no end.
+        let (entered, release) = (Arc::new(Notify::new()), Arc::new(Notify::new()));
+        let hold = Some((Arc::clone(&entered), Arc::clone(&release)));
+        let begun = Arc::new(Notify::new());
+        let go_on = async {
+            begun.notified().await;
+            tokio::time::sleep(Duration::from_millis(400)).await;
+            release.notify_one();
+        };
+        let late = async {
+            entered.notified().await;
+            begun.notify_one();
+            close_piece(storage, b, record.id, second, None).await
+        };
+        let (one, two, ()) =
+            tokio::join!(close_piece(storage, a, record.id, first, hold), late, go_on);
+        assert!(one, "the first close goes through");
+        if db.kind() == DatabaseKind::Postgres {
+            assert!(!two, "the second finds the hand-over changed under it");
+            assert!(close_piece(storage, c, record.id, second, None).await);
+        } else {
+            assert!(two, "SQLite makes the second wait, and it sees the first");
         }
         let ended = storage.hand_over(record.id).await?.ok_or("no hand-over")?;
         assert_eq!(ended.state, GivingState::Ended, "the last close ended it");

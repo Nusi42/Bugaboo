@@ -161,6 +161,7 @@ const UNWORDED: [ErrorCode; 86] = [
     ErrorCode::ProjectTooDeep,
     ErrorCode::MovePreviewChanged,
     ErrorCode::ParentCircle,
+    ErrorCode::ParentTooDeep,
     ErrorCode::IssueTypeRetired,
     ErrorCode::IssueTypeNotOffered,
     ErrorCode::PickOneConflict,

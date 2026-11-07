@@ -48,7 +48,7 @@ async fn titled(world: &World, issue_id: IssueId, project: ProjectId) -> Result<
     })
 }
 
-async fn allow_accepting(world: &World, project: ProjectId) -> Outcome {
+pub(super) async fn allow_accepting(world: &World, project: ProjectId) -> Outcome {
     change_setting(
         &world.ctx(),
         ChangeSetting {
