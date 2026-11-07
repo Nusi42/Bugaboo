@@ -187,7 +187,7 @@ pub async fn clean_old_grants<S: AuthStore>(
                 if apps_on {
                     S::clean_oauth(transaction, now, ended_before, registered_before).await
                 } else {
-                    S::pause_unused_tokens(transaction, now, 24 * 60 * 60)
+                    S::pause_unused_tokens(transaction, now)
                         .await
                         .map(|_| super::oauth_store::OAuthCleaned::default())
                 }

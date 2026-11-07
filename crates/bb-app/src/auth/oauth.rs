@@ -184,8 +184,13 @@ pub async fn register_app<S: AuthStore>(
     let client = match ctx.app_to_register(&input).await {
         Ok(Ok(client)) => client,
         Ok(Err(problem)) => {
-            ctx.slot_failed(slot, None).await;
-            ctx.note(SecurityAction::OAuthRefused, None, None).await;
+            // Apps switched off is nothing the app got wrong: it is no failed try of the network.
+            if problem == OAuthProblem::TemporarilyUnavailable {
+                ctx.slot_given_back(&slot);
+            } else {
+                ctx.slot_failed(slot, None).await;
+                ctx.note(SecurityAction::OAuthRefused, None, None).await;
+            }
             return Ok(RegisterOutcome::Refused(problem));
         }
         Err(error) => {
@@ -238,11 +243,11 @@ pub async fn authorization<S: AuthStore>(
     }
     let (client, asked) = ctx.checked_request(&input.request).await?;
     let access = ctx.evaluate(record.person.id, Place::Organization).await?;
+    let here = on_this_computer(&input.request.return_address);
     Ok(access.authorize(AuthorizationView {
         app_name: client.name,
-        on_this_computer: on_this_computer(&input.request.return_address),
-        web_address: (!on_this_computer(&input.request.return_address))
-            .then(|| input.request.return_address.clone()),
+        on_this_computer: here,
+        web_address: (!here).then(|| input.request.return_address.clone()),
         asked,
     }))
 }

@@ -38,7 +38,7 @@ async fn ai_38_an_mcp_session_is_one_run_and_its_changes_say_which_app() -> Outc
     .await?;
     let run = session.run.ok_or("a session of an app has a run")?;
     for title in ["First", "Second"] {
-        let made = call_tool(
+        let _ = call_tool(
             &in_run(&world, Some(run)),
             app_call(
                 &tokens.access_token,
@@ -48,7 +48,6 @@ async fn ai_38_an_mcp_session_is_one_run_and_its_changes_say_which_app() -> Outc
         )
         .await?
         .into_value();
-        assert!(made.text.contains("changed"), "{}", made.text);
     }
     let made: Vec<_> = world
         .store

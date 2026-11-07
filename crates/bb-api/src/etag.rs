@@ -45,7 +45,7 @@ use crate::seal;
 /// The cache rule of an answer a browser may keep and ask about again.
 const REVALIDATE: &str = "private, no-cache";
 /// The cache rule of everything that must not be stored.
-const NEVER_STORE: &str = "no-store";
+const NEVER_STORE: &str = crate::errors::NO_STORE;
 /// What tells a browser to drop what it cached for this website.
 const CLEAR_CACHE: HeaderName = HeaderName::from_static("clear-site-data");
 /// The biggest answer that is read into memory to make its `ETag`; a bigger one, or one of

@@ -13,7 +13,7 @@ use bb_core::oauth::{
 };
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, Func, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
@@ -248,6 +248,7 @@ impl OAuthStore for AuthStorage {
                 OAuthTokenRow::CreatedAt,
                 OAuthTokenRow::ExpiresAt,
                 OAuthTokenRow::UsedAt,
+                OAuthTokenRow::PausedAt,
             ])
             .from(OAuthTokenRow::Table)
             .and_where(Expr::col(OAuthTokenRow::SecretHash).eq(hash.as_bytes().to_vec()));
@@ -262,6 +263,7 @@ impl OAuthStore for AuthStorage {
             created_at: row.time(OAuthTokenRow::CreatedAt)?,
             expires_at: row.time(OAuthTokenRow::ExpiresAt)?,
             used_at: row.optional_time(OAuthTokenRow::UsedAt)?,
+            paused_at: row.optional_time(OAuthTokenRow::PausedAt)?,
         }))
     }
 
@@ -444,6 +446,7 @@ impl OAuthStore for AuthStorage {
                 OAuthTokenRow::CreatedAt,
                 OAuthTokenRow::ExpiresAt,
                 OAuthTokenRow::UsedAt,
+                OAuthTokenRow::PausedAt,
             ])
             .values([
                 Expr::val(token.secret_hash.as_bytes().to_vec()),
@@ -452,6 +455,7 @@ impl OAuthStore for AuthStorage {
                 Expr::val(to_micros(token.created_at)),
                 Expr::val(to_micros(token.expires_at)),
                 Expr::val(token.used_at.map(to_micros)),
+                Expr::val(token.paused_at.map(to_micros)),
             ])
             .map_err(|_| StoreError::Corrupt("a token"))?;
         transaction.execute(&insert).await?;
@@ -566,15 +570,22 @@ impl OAuthStore for AuthStorage {
     async fn pause_unused_tokens(
         transaction: &mut Transaction,
         now: Timestamp,
-        seconds: i64,
     ) -> Result<u64, StoreError> {
+        // The end moves by the time since the last pause, so a clean-up that runs twice in a day, or
+        // at every start of the server, adds only the time that passed. The first pause of a token
+        // only marks the moment.
+        let now_micros = to_micros(now);
+        let since: Expr =
+            Func::coalesce([Expr::col(OAuthTokenRow::PausedAt), Expr::val(now_micros)]).into();
+        let waited = Expr::val(now_micros).sub(since);
         let mut update = Query::update();
         update
             .table(OAuthTokenRow::Table)
             .value(
                 OAuthTokenRow::ExpiresAt,
-                Expr::col(OAuthTokenRow::ExpiresAt).add(seconds.saturating_mul(1_000_000)),
+                Expr::col(OAuthTokenRow::ExpiresAt).add(waited),
             )
+            .value(OAuthTokenRow::PausedAt, now_micros)
             .and_where(Expr::col(OAuthTokenRow::Kind).eq(TokenKind::Refresh.code()))
             .and_where(Expr::col(OAuthTokenRow::UsedAt).is_null())
             .and_where(Expr::col(OAuthTokenRow::ExpiresAt).gt(to_micros(now)));
@@ -587,6 +598,13 @@ impl OAuthStore for AuthStorage {
         ended_before: Timestamp,
         registered_before: Timestamp,
     ) -> Result<OAuthCleaned, StoreError> {
+        // Apps are on: what waited has stopped waiting.
+        let mut resume = Query::update();
+        resume
+            .table(OAuthTokenRow::Table)
+            .value(OAuthTokenRow::PausedAt, Option::<i64>::None)
+            .and_where(Expr::col(OAuthTokenRow::PausedAt).is_not_null());
+        transaction.execute(&resume).await?;
         let mut codes = Query::delete();
         codes
             .from_table(OAuthCodeRow::Table)

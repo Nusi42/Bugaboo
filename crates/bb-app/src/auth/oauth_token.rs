@@ -110,6 +110,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             created_at: now,
             expires_at: soon(access_token_life())?,
             used_at: None,
+            paused_at: None,
         };
         let refresh_row = OAuthToken {
             secret_hash: refresh.hash(),
@@ -118,6 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             created_at: now,
             expires_at: soon(days(REFRESH_UNUSED_DAYS))?,
             used_at: None,
+            paused_at: None,
         };
         let answer = TokenAnswer {
             access_token: access.encode().into(),
@@ -259,7 +261,12 @@ pub async fn exchange_token<S: AuthStore>(
     let verified = match ctx.verified_swap(&input, now).await {
         Ok(Ok(verified)) => verified,
         Ok(Err(problem)) => {
-            ctx.slot_failed(slot, None).await;
+            // Apps switched off is nothing the app got wrong: it is no failed try of the network.
+            if problem == OAuthProblem::TemporarilyUnavailable {
+                ctx.slot_given_back(&slot);
+            } else {
+                ctx.slot_failed(slot, None).await;
+            }
             return Ok(TokenOutcome::Refused(problem));
         }
         Err(error) => {

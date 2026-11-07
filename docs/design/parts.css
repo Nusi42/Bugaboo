@@ -3977,6 +3977,26 @@ textarea,
   }
 }
 
+[data-part="apps.cell"][data-variant~="name"] {
+  white-space: nowrap;
+}
+
+@media (max-width: calc(768px - 1px)) {
+  [data-part="apps.cell"][data-variant~="name"] {
+    white-space: normal;
+  }
+}
+
+[data-part="apps.cell"][data-variant~="date"] {
+  white-space: nowrap;
+}
+
+@media (max-width: calc(768px - 1px)) {
+  [data-part="apps.cell"][data-variant~="date"] {
+    white-space: normal;
+  }
+}
+
 [data-part="apps.cell"][data-variant~="action"] {
   text-align: end;
   white-space: nowrap;

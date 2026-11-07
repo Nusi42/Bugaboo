@@ -49,6 +49,7 @@ pub(crate) enum OAuthTokenRow {
     CreatedAt,
     ExpiresAt,
     UsedAt,
+    PausedAt,
 }
 
 /// The codes apps got after *Allow*, by the hash of their secret.
@@ -103,6 +104,7 @@ stored_tables! {
         CreatedAt => created_at,
         ExpiresAt => expires_at,
         UsedAt => used_at,
+        PausedAt => paused_at,
     },
     OAuthCodeRow => bb_core::oauth::OAuthCode {
         SecretHash => secret_hash,

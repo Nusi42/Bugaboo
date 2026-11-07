@@ -233,19 +233,17 @@ impl OAuthStore for FakeStore {
         Ok(tx.state.oauth.web_addresses.len() < before)
     }
 
-    async fn pause_unused_tokens(
-        tx: &mut Tx,
-        now: Timestamp,
-        seconds: i64,
-    ) -> Result<u64, FakeError> {
+    async fn pause_unused_tokens(tx: &mut Tx, now: Timestamp) -> Result<u64, FakeError> {
         let mut moved = 0;
         for token in &mut tx.state.oauth.tokens {
             if token.kind == TokenKind::Refresh && token.used_at.is_none() && token.expires_at > now
             {
+                let waited = now.duration_since(token.paused_at.unwrap_or(now));
                 token.expires_at = token
                     .expires_at
-                    .checked_add(jiff::SignedDuration::from_secs(seconds))
+                    .checked_add(waited)
                     .unwrap_or(token.expires_at);
+                token.paused_at = Some(now);
                 moved += 1;
             }
         }
@@ -260,6 +258,9 @@ impl OAuthStore for FakeStore {
     ) -> Result<OAuthCleaned, FakeError> {
         let count = |before: usize, after: usize| u64::try_from(before - after).unwrap_or(0);
         let oauth = &mut tx.state.oauth;
+        for token in &mut oauth.tokens {
+            token.paused_at = None;
+        }
         let secrets = oauth.codes.len() + oauth.tokens.len();
         oauth.codes.retain(|code| code.expires_at > now);
         oauth.tokens.retain(|token| token.expires_at > now);

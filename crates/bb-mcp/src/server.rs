@@ -206,7 +206,7 @@ impl Asked<'_> {
             let text = format!(
                 "{} {}",
                 sentence(ErrorCode::TooManyRequests.message()),
-                message::mcp_wait(wait).render()
+                message::mcp_wait(i64::try_from(wait).unwrap_or(i64::MAX)).render()
             );
             let mut response = json_no_store(
                 StatusCode::OK,

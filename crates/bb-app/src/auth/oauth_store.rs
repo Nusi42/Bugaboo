@@ -87,9 +87,10 @@ pub trait OAuthStore: ChangeStore + 'static {
         fn insert_oauth_web_address(address: &OAuthWebAddress) -> bool;
         /// Takes a web address away (`false` when it was not there).
         fn delete_oauth_web_address(address: &str) -> bool;
-        /// Moves the end of every renewing token that was not used by `seconds`, so the days an app was
-        /// not used while AI apps were off do not count (ADR-0042). Says how many moved.
-        fn pause_unused_tokens(now: Timestamp, seconds: i64) -> u64;
+        /// Moves the end of every renewing token that was not used by the time since its last pause
+        /// (the first pause only marks the moment), so the days an app was not used while AI apps
+        /// were off do not count (ADR-0042). Says how many moved.
+        fn pause_unused_tokens(now: Timestamp) -> u64;
         /// Deletes what ran out: codes and tokens past their time, grants that ended or ran out
         /// `ended_before` or earlier, and apps registered before `registered_before` that no grant belongs to.
         fn clean_oauth(

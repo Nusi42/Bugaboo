@@ -294,10 +294,7 @@ pub(crate) fn signed_in(started: &Started) -> Result<Response, ApiError> {
 /// The answer for "done, nothing to say": `204`. Never cached.
 pub(crate) fn done() -> Response {
     let mut response = StatusCode::NO_CONTENT.into_response();
-    response.headers_mut().insert(
-        header::CACHE_CONTROL,
-        header::HeaderValue::from_static("no-store"),
-    );
+    crate::errors::no_store(&mut response);
     response
 }
 

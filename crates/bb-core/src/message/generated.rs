@@ -9908,10 +9908,10 @@ pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message
 
 /// The message `mcp.wait`.
 #[must_use]
-pub fn mcp_wait(seconds: impl std::fmt::Display) -> Message {
+pub fn mcp_wait(seconds: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("mcp.wait"),
-        vec![("seconds", Value::Text(seconds.to_string()))],
+        vec![("seconds", Value::Number(seconds))],
     )
 }
 
@@ -16448,14 +16448,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The server could not answer this call.",
     ),
     ("mcp.error.method", "This server does not know that method."),
-    ("mcp.error.no-prompt", "There is no such brief."),
+    ("mcp.error.no-prompt", "There is no such starting text."),
     ("mcp.error.not-a-request", "That is not a request."),
     (
         "mcp.error.not-an-address",
         "That is not an address of this server.",
     ),
     ("mcp.error.not-json", "The message is not JSON."),
-    ("mcp.error.prompt-issue", "This brief needs the issue."),
+    (
+        "mcp.error.prompt-issue",
+        "This starting text needs the issue.",
+    ),
     ("mcp.error.resource-address", "A read names its address."),
     ("mcp.error.too-big", "The message is too big."),
     ("mcp.error.tool-name", "A tool call names its tool."),
@@ -16490,7 +16493,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mcp.resource.projects-help",
         "The list of projects the person may see.",
     ),
-    ("mcp.wait", "Wait {seconds} seconds and call again."),
+    (
+        "mcp.wait",
+        "Wait {seconds, plural, one {# second} other {# seconds}} and call again.",
+    ),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),

@@ -14,7 +14,9 @@ use bb_policy::{Permission, Place};
 
 pub use bb_core::ai::AuthorKind;
 pub use build::{Part, PeopleAs, drop_withheld, people_in, render};
-pub use fence::{READ_AS_DATA, fence, fenced_lines, only_inside_a_fence};
+pub use fence::{READ_AS_DATA, fence};
+#[cfg(any(test, feature = "testing"))]
+pub use fence::{fenced_lines, only_inside_a_fence};
 
 use crate::auth::{AppError, AuthStore, Ctx};
 

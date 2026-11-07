@@ -4881,6 +4881,21 @@ part "apps.body" {
     }
 }
 
+// The name of an app and a date stay on one line; a phone has the room.
+part "apps.cell[variant=name]" {
+    white-space nowrap
+    media "(max-width: calc($bp-tablet - 1px))" {
+        white-space normal
+    }
+}
+
+part "apps.cell[variant=date]" {
+    white-space nowrap
+    media "(max-width: calc($bp-tablet - 1px))" {
+        white-space normal
+    }
+}
+
 part "apps.cell[variant=action]" {
     text-align end
     white-space nowrap

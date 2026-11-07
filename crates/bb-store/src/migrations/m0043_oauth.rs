@@ -123,6 +123,7 @@ fn token_steps() -> Vec<Step> {
                         .not_null(),
                 )
                 .col(ColumnDef::new(OAuthTokenRow::UsedAt).big_integer())
+                .col(ColumnDef::new(OAuthTokenRow::PausedAt).big_integer())
                 .foreign_key(
                     ForeignKey::create()
                         .from(OAuthTokenRow::Table, OAuthTokenRow::Grant)

@@ -410,3 +410,129 @@ async fn ai_22_the_days_without_use_do_not_count_while_apps_are_off_on_both_data
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_23_two_first_calls_at_once_start_one_run() -> TestResult {
+    each_database("ai_23_first_calls_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let signed = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        let first = json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}});
+        let (one, two) = tokio::join!(
+            mcp.post(Some(&signed.access), first.clone()),
+            mcp.call_tool(
+                &signed,
+                "create_issue",
+                json!({"project": "ACME", "issue_type": site.kind, "title": "At once"}),
+            )
+        );
+        assert_eq!(one?.status, StatusCode::OK);
+        assert_eq!(two?.status, StatusCode::OK);
+        let runs = rig.database.runs_with_events(RunKind::AppSession).await?;
+        assert_eq!(runs.len(), 1, "one run for two calls at once");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_02_a_project_with_ai_off_and_the_organization_with_ai_off_are_kept_from_an_app()
+-> TestResult {
+    each_database("ai_02_withheld_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let beta = ada
+            .send(
+                "POST",
+                "/api/v1/projects",
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?
+            .body["id"]
+            .as_str()
+            .ok_or("no project ID")?
+            .to_owned();
+        let secret = ada
+            .send(
+                "POST",
+                &format!("/api/v1/projects/{beta}/issues"),
+                Some(json!({"issue_type": site.kind, "title": "Kept from AI"})),
+            )
+            .await?;
+        let key = secret.body["readable_id"].as_str().ok_or("no key")?.to_owned();
+        let signed =
+            sign_in_app(&mcp, &mut ada, "Claude Code", "see-and-change", "see-and-change").await?;
+        // Before the switch the app reads the issue.
+        let read = mcp
+            .call_tool(&signed, "get_issue", json!({"issue": key}))
+            .await?;
+        assert_eq!(read.json["result"]["isError"], json!(false), "{}", read.json);
+        let off = ada
+            .send(
+                "PUT",
+                &format!("/api/v1/projects/{beta}/ai"),
+                Some(json!({"enabled": false})),
+            )
+            .await?;
+        assert!(off.status.is_success(), "{}", off.body);
+        // Now the project is as if it were not there, for every read and for a change.
+        let projects = text_of(&mcp.call_tool(&signed, "list_projects", json!({})).await?);
+        assert!(!projects.contains("BETA"), "{projects}");
+        for (tool, input) in [
+            ("get_issue", json!({"issue": key})),
+            (
+                "change_status",
+                json!({"issue": key, "status": "done", "version": 1}),
+            ),
+            (
+                "create_issue",
+                json!({"project": "BETA", "issue_type": site.kind, "title": "Not through an app"}),
+            ),
+        ] {
+            let refused = mcp.call_tool(&signed, tool, input).await?;
+            assert_eq!(refused.json["result"]["isError"], json!(true), "{tool}: {}", refused.json);
+        }
+        let resource = mcp
+            .post(
+                Some(&signed.access),
+                json!({"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri": format!("bugaboo://issue/{key}")}}),
+            )
+            .await?;
+        let text = resource.json["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap_or_default();
+        assert!(!text.contains("Kept from AI"), "{text}");
+        let after = ada
+            .send("GET", &format!("/api/v1/issues/{key}"), None)
+            .await?;
+        assert_ne!(after.body["status"]["key"], json!("done"), "{}", after.body);
+        // The project that still counts works as before.
+        let fine = mcp
+            .call_tool(
+                &signed,
+                "create_issue",
+                json!({"project": "ACME", "issue_type": site.kind, "title": "Still fine"}),
+            )
+            .await?;
+        assert_eq!(fine.json["result"]["isError"], json!(false), "{}", fine.json);
+        // With AI off for the organization the app is turned away at the door.
+        rig.set_organization_switch("ai.enabled", false).await?;
+        let door = mcp
+            .post(Some(&signed.access), json!({"jsonrpc":"2.0","id":5,"method":"ping"}))
+            .await?;
+        assert_eq!(door.status, StatusCode::UNAUTHORIZED);
+        Ok(())
+    })
+    .await
+}

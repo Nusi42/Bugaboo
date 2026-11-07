@@ -238,6 +238,10 @@ pub struct OAuthToken {
     /// When it was used (a renewing token is used once).
     #[not_personal]
     pub used_at: Option<Timestamp>,
+    /// The moment of the last pause of a renewing token that was not used while AI apps were off:
+    /// the days since then moved its end (ADR-0042). None for a token that never waited.
+    #[not_personal]
+    pub paused_at: Option<Timestamp>,
 }
 
 /// A code an app got after *Allow*, as stored: only its hash. It works once.

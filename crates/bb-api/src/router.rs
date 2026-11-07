@@ -362,16 +362,15 @@ async fn health_ready(State(state): State<AppState>) -> Response {
 }
 
 fn json(status: StatusCode, body: &str) -> Response {
-    (
+    let mut response = (
         status,
-        [
-            (header::CONTENT_TYPE, "application/json"),
-            // A health answer must always be fresh.
-            (header::CACHE_CONTROL, "no-store"),
-        ],
+        [(header::CONTENT_TYPE, "application/json")],
         body.to_owned(),
     )
-        .into_response()
+        .into_response();
+    // A health answer must always be fresh.
+    crate::errors::no_store(&mut response);
+    response
 }
 
 /// Everything that is not a route: files of the app for GET and HEAD, problem+json 404 below

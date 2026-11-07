@@ -133,6 +133,11 @@ pub(crate) async fn wire(
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), keys, seal.clone());
     let name = Message::from(message::APP_NAME).render();
+    if settings.public_url.is_empty() {
+        // Without it an AI app is told the address the request came to, which a name pointed at this
+        // machine can choose, and the page of another site is judged by that address too (ADR-0042).
+        tracing::warn!("no public address is set: AI apps are told the address a request came to");
+    }
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
     let passkeys = RelyingParty::from_public_url(&settings.public_url, &name)
         .and_then(|party| Passkeys::new(&party))

@@ -31,10 +31,14 @@ struct Open {
     seen: Instant,
 }
 
+/// What one grant (or key) has open: the slot is locked while a call finds or starts its run, so
+/// two first calls at once start one run and not two.
+type Slot = Arc<tokio::sync::Mutex<Option<Open>>>;
+
 /// The open runs of the sessions of apps, by what the session is counted under.
 pub(crate) struct Sessions {
     api: Arc<dyn AuthApi>,
-    open: Mutex<HashMap<String, Open>>,
+    open: Mutex<HashMap<String, Slot>>,
 }
 
 impl Sessions {
@@ -60,6 +64,11 @@ impl Sessions {
         sessions
     }
 
+    /// The slot of a grant or key, made when there is none.
+    fn slot_of(&self, credential: &str) -> Slot {
+        Arc::clone(locked(&self.open).entry(credential.to_owned()).or_default())
+    }
+
     /// The run the calls of this session belong to: the open one when it was called within
     /// [`IDLE`], else a new one.
     ///
@@ -74,20 +83,18 @@ impl Sessions {
         if who.agent.is_some() {
             return Ok(None);
         }
+        let slot = self.slot_of(&who.credential);
+        let mut held = slot.lock().await;
         let now = Instant::now();
-        let mut to_close = Vec::new();
-        {
-            let mut open = locked(&self.open);
-            if let Some(found) = open.get_mut(&who.credential) {
-                if now.duration_since(found.seen) < IDLE {
-                    found.seen = now;
-                    return Ok(Some(found.run));
-                }
-                to_close.push(found.run);
-                open.remove(&who.credential);
+        if let Some(found) = held.as_mut() {
+            if now.duration_since(found.seen) < IDLE {
+                found.seen = now;
+                return Ok(Some(found.run));
             }
+            let old = found.run;
+            *held = None;
+            self.close(info, vec![old], RunEnd::Done).await;
         }
-        self.close(info, to_close, RunEnd::Done).await;
         let started = self
             .api
             .start_app_session(
@@ -98,14 +105,15 @@ impl Sessions {
             )
             .await?;
         if let Some(run) = started.run {
-            locked(&self.open).insert(who.credential.clone(), Open { run, seen: now });
+            *held = Some(Open { run, seen: now });
         }
         Ok(started.run)
     }
 
     /// Ends the session of this grant or key now (the app said goodbye).
     pub(crate) async fn end(&self, info: &RequestInfo, who: &McpIdentity) {
-        let found = locked(&self.open).remove(&who.credential);
+        let slot = self.slot_of(&who.credential);
+        let found = slot.lock().await.take();
         self.close(
             info,
             found.into_iter().map(|each| each.run).collect(),
@@ -114,21 +122,24 @@ impl Sessions {
         .await;
     }
 
-    /// Closes the runs of the sessions that have been idle for [`IDLE`].
+    /// Closes the runs of the sessions that have been idle for [`IDLE`]. A slot that is being
+    /// used right now is not idle.
     pub(crate) async fn close_idle(&self) {
         let now = Instant::now();
-        let idle: Vec<RunId> = {
-            let mut open = locked(&self.open);
-            let gone: Vec<String> = open
-                .iter()
-                .filter(|(_, each)| now.duration_since(each.seen) >= IDLE)
-                .map(|(credential, _)| credential.clone())
-                .collect();
-            gone.iter()
-                .filter_map(|credential| open.remove(credential))
-                .map(|each| each.run)
-                .collect()
-        };
+        let slots: Vec<Slot> = locked(&self.open).values().cloned().collect();
+        let mut idle = Vec::new();
+        for slot in slots {
+            let Ok(mut held) = slot.try_lock() else {
+                continue;
+            };
+            if held
+                .as_ref()
+                .is_some_and(|open| now.duration_since(open.seen) >= IDLE)
+                && let Some(open) = held.take()
+            {
+                idle.push(open.run);
+            }
+        }
         self.close(&RequestInfo::default(), idle, RunEnd::Done)
             .await;
     }

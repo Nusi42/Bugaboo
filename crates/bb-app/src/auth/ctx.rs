@@ -76,6 +76,8 @@ pub struct AuthServices<S> {
     pub(crate) test_mail_at: Mutex<HashMap<UserId, Timestamp>>,
     /// When each person last tried the AI provider, for the same reason.
     pub(crate) test_ai_at: Mutex<HashMap<UserId, Timestamp>>,
+    /// The calls of AI apps in the last minute, for the limits of a grant and of a person.
+    pub(crate) call_rate: super::oauth_rate::CallRate,
 }
 
 impl<S> AuthServices<S> {
@@ -112,6 +114,7 @@ impl<S> AuthServices<S> {
             mail_batch: mail_batch(),
             test_mail_at: Mutex::default(),
             test_ai_at: Mutex::default(),
+            call_rate: super::oauth_rate::CallRate::default(),
         }
     }
 

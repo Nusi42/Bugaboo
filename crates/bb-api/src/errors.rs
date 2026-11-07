@@ -188,11 +188,14 @@ fn problem_response(problem: &Problem, extras: &Extras) -> Response {
     response
 }
 
+/// The cache rule of everything that must not be stored: the one place that writes it.
+pub(crate) const NO_STORE: &str = "no-store";
+
 /// Tells every cache to keep nothing of this answer.
-fn no_store(response: &mut Response) {
+pub(crate) fn no_store(response: &mut Response) {
     response
         .headers_mut()
-        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static(NO_STORE));
 }
 
 /// A JSON answer that no cache keeps, for the routes that answer in the words of another
