@@ -55,6 +55,12 @@ impl AiState {
         counts_here(self.organization_on, self.place_on)
     }
 
+    /// Whether the names of people go to the provider: always to a model on the organization's
+    /// own network, to an outside provider only when an administrator switched them on (M7-Q5).
+    pub(crate) fn names_sent(&self, destination: Destination) -> bool {
+        !destination.is_outside() || self.send_names
+    }
+
     /// The address of the model, when the kind of provider has one and it is a good one.
     pub(crate) fn model_address(&self) -> Result<Option<ModelAddress>, ErrorCode> {
         match self.kind {

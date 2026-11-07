@@ -140,6 +140,7 @@ table! {
     "confirm_ai_agreement" => sai::confirm_ai_agreement_scenario,
     "change_project_ai" => sai::change_project_ai_scenario,
     "try_ai_provider" => sai::try_ai_provider_scenario,
+    "apply_proposal" => super::assistant::apply_proposal_scenario,
     "follow_issue" => sr::follow_issue_scenario,
     "unfollow_issue" => sr::unfollow_issue_scenario,
     "create_field" => sf::create_field_scenario,

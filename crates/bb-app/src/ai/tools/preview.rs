@@ -12,7 +12,7 @@ use bb_core::ai::{AuthorKind, ToolCaller};
 use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
 use bb_core::id::IssueId;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::registry::{Boxed, Run};
@@ -198,7 +198,7 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
 
 /// One field a proposal would change, with the value now and the value after, as the person may
 /// read them. It is made from the parts of the preview, which are the one account of a preview.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProposedChange {
     /// The field (`title`, `priority`, `status`, `comment`, …).
     pub field: String,

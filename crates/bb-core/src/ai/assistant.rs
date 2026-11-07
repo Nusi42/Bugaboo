@@ -28,7 +28,39 @@ pub const ROUNDS_MAX: usize = TOOL_CALLS_MAX + 1;
 pub const PROPOSALS_MAX: usize = 10;
 
 /// How long a proposal can be applied, in seconds. A person who is away longer asks again.
-pub const PROPOSAL_LIFETIME_SECONDS: i64 = 30 * 60;
+pub const PROPOSAL_LIFETIME_SECONDS: i64 = 10 * 60;
 
 /// The most bytes of the input of a proposal that *Apply* takes back.
 pub const PROPOSAL_INPUT_BYTES_MAX: usize = 64 * 1024;
+
+words! {
+    /// Who said a turn of the conversation the browser keeps.
+    pub enum ChatFrom {
+        /// The person who types into the panel.
+        Person => "person",
+        /// The assistant.
+        Assistant => "assistant",
+    }
+}
+
+words_in_api!(
+    ChatFrom,
+    "Who said a turn of the conversation: the person, or the assistant."
+);
+
+words! {
+    /// What the panel looks at when a question is asked.
+    pub enum LookingAtKind {
+        /// An issue, by its readable ID.
+        Issue => "issue",
+        /// The search of a list, in the search language.
+        Search => "search",
+        /// A project, by its short name.
+        Project => "project",
+    }
+}
+
+words_in_api!(
+    LookingAtKind,
+    "What the panel looks at: an issue, the search of a list, or a project."
+);

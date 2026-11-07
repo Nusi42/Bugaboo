@@ -1,0 +1,88 @@
+//! Nothing about people is decided by the assistant (COMP-10, ADR-0029 decision 9).
+//!
+//! A proposal that would change *Assigned to* is shown only when the question of the person asked
+//! for it and named exactly these people, as the person sees them. The model is told never to
+//! choose, and this is the rule that holds when it does anyway. It fails closed: a question that
+//! does not use the word, or does not name every person, gets no such proposal.
+
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field};
+use bb_core::id::UserId;
+use bb_policy::{PeopleContext, PersonRef, Place};
+use serde_json::Value;
+
+use crate::access::Actor;
+use crate::ai::tools::ProposedChange;
+use crate::auth::{AppError, AuthStore, Ctx};
+
+/// The word of the question that asks for an assignment. It is a stem, so *assign*, *assigned* and
+/// *assignment* all count. A question in another language that does not hold it gets no such
+/// proposal (M7-F51).
+const ASSIGN_STEM: &str = "assign";
+
+/// The change of *Assigned to* among the changes, if there is one.
+fn assignment(changes: &[ProposedChange]) -> Option<&ProposedChange> {
+    changes
+        .iter()
+        .find(|change| change.field == Field::AssignedTo.code())
+}
+
+/// The people an after-value names by ID.
+fn people_in(value: &Value, found: &mut Vec<UserId>) {
+    match value {
+        Value::String(text) => found.extend(text.parse::<UserId>()),
+        Value::Array(items) => items.iter().for_each(|item| people_in(item, found)),
+        Value::Object(members) => members.values().for_each(|item| people_in(item, found)),
+        _ => {}
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether the proposal may be shown: it changes nobody's *Assigned to*, or the question asked
+    /// for it and wrote the name of every person it puts there, as the person sees that name at
+    /// the place of the issue.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(super) async fn assignment_was_asked_for(
+        &self,
+        actor: &Actor,
+        question: &str,
+        place: Place,
+        changes: &[ProposedChange],
+    ) -> Result<bool, AppError> {
+        let Some(change) = assignment(changes) else {
+            return Ok(true);
+        };
+        let question = question.to_lowercase();
+        if !question.contains(ASSIGN_STEM) {
+            return Ok(false);
+        }
+        let mut people = Vec::new();
+        if let Some(after) = &change.after {
+            people_in(after, &mut people);
+        }
+        // A value that puts someone there but names nobody we can read is not trusted. An empty
+        // value takes the people away: the question asked for it with the word, and there is no
+        // one to name.
+        let puts_someone = change
+            .after
+            .as_ref()
+            .is_some_and(|after| !(after.is_null() || after.as_array().is_some_and(Vec::is_empty)));
+        if puts_someone && people.is_empty() {
+            return Ok(false);
+        }
+        let viewer = self.evaluation_of(actor, place).await?;
+        for person in people {
+            let shown = self
+                .person_ref(&viewer, ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary, person)
+                .await?;
+            let PersonRef::Name { name, .. } = shown else {
+                return Ok(false);
+            };
+            if name.is_empty() || !question.contains(&name.to_lowercase()) {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+}

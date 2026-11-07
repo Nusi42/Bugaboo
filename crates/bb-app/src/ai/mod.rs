@@ -7,6 +7,7 @@
 //! fake of `bb-ai`. A failure names a class of problem and never what the provider sent back, which
 //! can repeat the text of the request (DATA-LOGS).
 
+pub mod assistant;
 mod call;
 pub mod context;
 #[cfg(any(test, feature = "testing"))]

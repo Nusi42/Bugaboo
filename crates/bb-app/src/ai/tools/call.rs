@@ -12,7 +12,7 @@ use bb_core::ai::{ToolCaller, ToolEffect, ToolOutcome, ToolScope};
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Place};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::log::Called;
@@ -58,13 +58,13 @@ pub struct ToolCallQuery {
 }
 
 /// What the AI reads back from a tool.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ToolAnswer {
     /// The text, with the fences of the texts people wrote.
     pub text: String,
     /// For a preview or an *Apply*: what the tool changes, as the person may read it. Empty for a
-    /// tool that reads. The AI reads `text`; this is for the person.
-    #[serde(skip)]
+    /// tool that reads. The AI reads `text`; this is for the person, and the assistant
+    /// reads it back from the masked answer.
     pub changes: Vec<ProposedChange>,
 }
 

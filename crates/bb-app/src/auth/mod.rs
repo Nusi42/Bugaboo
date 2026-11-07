@@ -34,6 +34,9 @@ use crate::agents::{
     HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,
     hand_agent, my_agents, organization_agents, rename_agent, stop_all_agents,
 };
+use crate::ai::assistant::{
+    Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, apply_proposal, ask_assistant,
+};
 use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{
     AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, ProjectAi,
@@ -479,6 +482,10 @@ use_cases! {
     list_tools(ToolListQuery) -> Authorized<ToolList>;
     /// Calls a tool as the person behind the session or key.
     call_tool(ToolCallQuery) -> Authorized<ToolAnswer>;
+    /// Asks the assistant a question; it answers and proposes changes, and saves nothing.
+    ask_assistant(AskAssistantQuery) -> Authorized<AssistantAnswer>;
+    /// Saves a change the assistant proposed, as the person.
+    apply_proposal(ApplyProposal) -> Authorized<Applied>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<SearchPage>;
     /// A page of the issues a search finds, in the projects the person sees.

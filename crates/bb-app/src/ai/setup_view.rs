@@ -230,6 +230,7 @@ pub async fn what_goes_where<S: AuthStore>(
             });
         }
     }
+    let names_sent = state.names_sent(destination);
     Ok(access.authorize(WhatGoesWhere {
         destination,
         model: state.model,
@@ -238,7 +239,7 @@ pub async fn what_goes_where<S: AuthStore>(
         truncated,
         // A model on the organization's own network gets the names each person may see
         // (M7-Q5); an outside provider gets roles unless an administrator chose otherwise.
-        names_sent: !destination.is_outside() || state.send_names,
+        names_sent,
         agreement_status: AgreementStatus::of(destination, agreement.as_ref()),
         agreement: ctx.agreement_view(&access, agreement).await?,
     }))
