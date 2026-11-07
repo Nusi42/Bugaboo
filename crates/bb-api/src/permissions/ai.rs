@@ -52,6 +52,14 @@ pub(super) const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("listNeverSentToAi", Declared::SignedIn, Answer::Ordinary),
+    // The assistant lets in whoever is signed in: it reads and changes only as the person, through
+    // the tools (AI-10). A change is never kept by a cache anyway.
+    route("askAssistant", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "applyAssistantProposal",
+        Declared::SignedIn,
+        Answer::Ordinary,
+    ),
     route(
         "setFieldNeverSentToAi",
         Declared::Permission(Permission::ChangeOrganizationSettings),

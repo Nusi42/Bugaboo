@@ -46,6 +46,7 @@ mod admin;
 mod agents;
 mod ai_setup;
 mod assignments;
+mod assistant;
 mod auth;
 mod auth_factors;
 mod auth_people;
@@ -192,6 +193,7 @@ where
         .merge(working_hours::routes())
         .merge(notifications::routes())
         .merge(ai_setup::routes())
+        .merge(assistant::routes())
         .merge(handles::routes())
         .merge(people::routes())
         .merge(groups::routes())

@@ -253,3 +253,11 @@ reason = "Making an agent or a key makes a new record, renewing a key is the mak
 [[exempt]]
 routes = ["POST /api/v1/runs/{run}/undo"]
 reason = "Undoing a run is judged on the run and on what the person looked at, not on a version of one record: the body carries `preview_version`, the version of the preview, and an undo with a preview that is no longer the current one writes nothing and answers with the newer preview (M7 WP-07, AI-38)."
+
+[[exempt]]
+routes = ["POST /api/v1/assistant/questions"]
+reason = "A question reads and saves nothing; a change it proposes carries the version it read inside its own input."
+
+[[exempt]]
+routes = ["POST /api/v1/assistant/apply"]
+reason = "The version is inside the input of the proposal, which a signed reference ties to what was shown; a version that moved on is refused with the newer value like any change."

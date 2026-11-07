@@ -1411,6 +1411,134 @@
         "x-permission": "decide-roles"
       }
     },
+    "/api/v1/assistant/apply": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "Saves a change the assistant proposed, exactly as it was shown, as the person and with the\nmark that the assistant wrote it. A version that moved on is refused with the newer value, as for\na person.",
+        "operationId": "applyAssistantProposal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantApplyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppliedProposalBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/assistant/questions": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "Asks the assistant a question about what the person looks at. It reads as the person, may\npropose changes, and saves nothing. While AI does not count at the place it answers *AI is off*\nand sends nothing.",
+        "operationId": "askAssistant",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantAskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The answer and the changes it proposes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantAnswerBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "AI is off here (ai.off), or the provider is not ready (ai.agreement-needed, ai.not-set-up).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The AI provider did not answer (ai.unavailable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/attachments/{attachment}": {
       "delete": {
         "tags": ["files"],
@@ -16818,6 +16946,20 @@
           }
         }
       },
+      "AppliedProposalBody": {
+        "type": "object",
+        "description": "What *Apply* saved.",
+        "required": ["changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposedChangeBody"
+            },
+            "description": "The fields that were changed, with the value before and after."
+          }
+        }
+      },
       "AppliesTo": {
         "type": "string",
         "description": "Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.",
@@ -16912,6 +17054,129 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "AssistantAnswerBody": {
+        "type": "object",
+        "description": "The answer of the assistant.",
+        "required": ["text", "html", "proposals"],
+        "properties": {
+          "html": {
+            "type": "string",
+            "description": "The same, written by the one Markdown writer with the option for AI answers: no picture, and\nevery link with its full address.",
+            "x-safe-html": true
+          },
+          "proposals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantProposalBody"
+            },
+            "description": "The changes it proposes."
+          },
+          "text": {
+            "type": "string",
+            "description": "The answer in Markdown."
+          }
+        }
+      },
+      "AssistantApplyBody": {
+        "type": "object",
+        "description": "A proposal to apply, as the assistant gave it.",
+        "required": ["reference", "tool", "input"],
+        "properties": {
+          "input": {
+            "type": "object",
+            "description": "Its input, unchanged."
+          },
+          "reference": {
+            "type": "string",
+            "description": "The reference of the proposal."
+          },
+          "tool": {
+            "type": "string",
+            "description": "The tool of the proposal."
+          }
+        }
+      },
+      "AssistantAskBody": {
+        "type": "object",
+        "description": "A question to the assistant.",
+        "required": ["text"],
+        "properties": {
+          "looking_at": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantLookingAtBody"
+            },
+            "description": "What the panel looks at, at most five things; the person can take each away."
+          },
+          "text": {
+            "type": "string",
+            "description": "What the person typed."
+          },
+          "turns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantTurnBody"
+            },
+            "description": "The conversation so far, at most twenty turns. The server keeps none of it."
+          }
+        }
+      },
+      "AssistantLookingAtBody": {
+        "type": "object",
+        "description": "One thing the panel looks at.",
+        "required": ["kind", "value"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LookingAtKind",
+            "description": "What kind of thing it is."
+          },
+          "value": {
+            "type": "string",
+            "description": "An issue by its readable ID, a project by its short name, or the search of a list."
+          }
+        }
+      },
+      "AssistantProposalBody": {
+        "type": "object",
+        "description": "A change the assistant proposes. Nothing is saved until the person applies it.",
+        "required": ["reference", "tool", "input", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposedChangeBody"
+            },
+            "description": "The fields it would change, with the value now and the value after."
+          },
+          "input": {
+            "type": "object",
+            "description": "The input of the tool, exactly as it was previewed. Send it back unchanged."
+          },
+          "reference": {
+            "type": "string",
+            "description": "The signed reference that *Apply* takes back with the tool and the input."
+          },
+          "tool": {
+            "type": "string",
+            "description": "The name of the tool."
+          }
+        }
+      },
+      "AssistantTurnBody": {
+        "type": "object",
+        "description": "One turn of the conversation so far.",
+        "required": ["from", "text"],
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/ChatFrom",
+            "description": "Who said it."
+          },
+          "text": {
+            "type": "string",
+            "description": "What was said."
           }
         }
       },
@@ -17908,6 +18173,11 @@
           }
         }
       },
+      "ChatFrom": {
+        "type": "string",
+        "description": "Who said a turn of the conversation: the person, or the assistant.",
+        "enum": ["person", "assistant"]
+      },
       "CheckAccessBody": {
         "type": "object",
         "description": "What a person can do in a place, and why.",
@@ -18824,6 +19094,7 @@
           "ai.agreement-needed",
           "ai.address-invalid",
           "ai.address-not-encrypted",
+          "ai.proposal-invalid",
           "handle.changed-lately",
           "request.wrong-origin",
           "request.wrong-token",
@@ -21136,6 +21407,11 @@
         "type": "string",
         "description": "How the value of an own field is shown.",
         "enum": ["badge", "pill", "plain-text", "progress-bar", "avatar"]
+      },
+      "LookingAtKind": {
+        "type": "string",
+        "description": "What the panel looks at: an issue, the search of a list, or a project.",
+        "enum": ["issue", "search", "project"]
       },
       "MailPasswordBody": {
         "type": "object",
@@ -24586,6 +24862,25 @@
               "$ref": "#/components/schemas/ProjectStatusChangeBody"
             },
             "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
+          }
+        }
+      },
+      "ProposedChangeBody": {
+        "type": "object",
+        "description": "One field a proposed or applied change touches.",
+        "required": ["field"],
+        "properties": {
+          "after": {
+            "type": ["object", "null"],
+            "description": "The value after; absent when the change takes the value away."
+          },
+          "before": {
+            "type": ["object", "null"],
+            "description": "The value now; absent when the field is new."
+          },
+          "field": {
+            "type": "string",
+            "description": "The field, like `title`, `priority` or `status`."
           }
         }
       },

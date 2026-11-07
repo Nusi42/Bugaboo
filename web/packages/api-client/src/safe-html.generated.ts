@@ -6,6 +6,7 @@ export const safeHtmlPaths: Readonly<Record<string, readonly (readonly string[])
   "GET /api/v1/issues/{issue}": [["description_html"], ["own_fields_html", "*", "html"]],
   "GET /api/v1/issues/{issue}/history": [["items", "*", "html"]],
   "GET /api/v1/notifications": [["items", "*", "html"]],
+  "POST /api/v1/assistant/questions": [["html"]],
   "POST /api/v1/comments/{comment}/restore": [["html"]],
   "POST /api/v1/issues/{issue}/comments": [["html"]],
   "PUT /api/v1/comments/{comment}": [["html"]],

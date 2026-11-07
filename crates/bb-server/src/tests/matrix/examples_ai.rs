@@ -50,6 +50,18 @@ pub(super) async fn ai_request(
 ) -> Result<Option<Request>, Failure> {
     let target = fixture.project(Project::Target).to_string();
     Ok(Some(match operation {
+        // AI is off in the matrix, so a question is answered "AI is off" and sent nowhere; a
+        // reference that was not made by this server for this person is no reference.
+        "askAssistant" => (
+            "POST",
+            "/api/v1/assistant/questions".to_owned(),
+            Some(json!({"text": "What is open?"})),
+        ),
+        "applyAssistantProposal" => (
+            "POST",
+            "/api/v1/assistant/apply".to_owned(),
+            Some(json!({"reference": "AAAA", "tool": "update_issue", "input": {}})),
+        ),
         "listNeverSentToAi" => ("GET", "/api/v1/never-sent-to-ai".to_owned(), None),
         "setFieldNeverSentToAi" => (
             "PUT",

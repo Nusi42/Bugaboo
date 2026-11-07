@@ -386,6 +386,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assistant/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Saves a change the assistant proposed, exactly as it was shown, as the person and with the
+     *     mark that the assistant wrote it. A version that moved on is refused with the newer value, as for
+     *     a person.
+     */
+    post: operations["applyAssistantProposal"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assistant/questions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asks the assistant a question about what the person looks at. It reads as the person, may
+     *     propose changes, and saves nothing. While AI does not count at the place it answers *AI is off*
+     *     and sends nothing.
+     */
+    post: operations["askAssistant"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/attachments/{attachment}": {
     parameters: {
       query?: never;
@@ -4643,6 +4685,11 @@ export interface components {
       /** @description Whether names of people go to an outside provider (otherwise the role of each person). */
       send_names: boolean;
     };
+    /** @description What *Apply* saved. */
+    AppliedProposalBody: {
+      /** @description The fields that were changed, with the value before and after. */
+      changes: components["schemas"]["ProposedChangeBody"][];
+    };
     /**
      * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.
      * @enum {string}
@@ -4674,6 +4721,61 @@ export interface components {
       person?: components["schemas"]["PersonRef"] | null;
       place?: components["schemas"]["PlaceRef"] | null;
       role?: components["schemas"]["NamedRef"] | null;
+    };
+    /** @description The answer of the assistant. */
+    AssistantAnswerBody: {
+      /**
+       * @description The same, written by the one Markdown writer with the option for AI answers: no picture, and
+       *     every link with its full address.
+       */
+      html: SafeHtml;
+      /** @description The changes it proposes. */
+      proposals: components["schemas"]["AssistantProposalBody"][];
+      /** @description The answer in Markdown. */
+      text: string;
+    };
+    /** @description A proposal to apply, as the assistant gave it. */
+    AssistantApplyBody: {
+      /** @description Its input, unchanged. */
+      input: Record<string, unknown>;
+      /** @description The reference of the proposal. */
+      reference: string;
+      /** @description The tool of the proposal. */
+      tool: string;
+    };
+    /** @description A question to the assistant. */
+    AssistantAskBody: {
+      /** @description What the panel looks at, at most five things; the person can take each away. */
+      looking_at?: components["schemas"]["AssistantLookingAtBody"][];
+      /** @description What the person typed. */
+      text: string;
+      /** @description The conversation so far, at most twenty turns. The server keeps none of it. */
+      turns?: components["schemas"]["AssistantTurnBody"][];
+    };
+    /** @description One thing the panel looks at. */
+    AssistantLookingAtBody: {
+      /** @description What kind of thing it is. */
+      kind: components["schemas"]["LookingAtKind"];
+      /** @description An issue by its readable ID, a project by its short name, or the search of a list. */
+      value: string;
+    };
+    /** @description A change the assistant proposes. Nothing is saved until the person applies it. */
+    AssistantProposalBody: {
+      /** @description The fields it would change, with the value now and the value after. */
+      changes: components["schemas"]["ProposedChangeBody"][];
+      /** @description The input of the tool, exactly as it was previewed. Send it back unchanged. */
+      input: Record<string, unknown>;
+      /** @description The signed reference that *Apply* takes back with the tool and the input. */
+      reference: string;
+      /** @description The name of the tool. */
+      tool: string;
+    };
+    /** @description One turn of the conversation so far. */
+    AssistantTurnBody: {
+      /** @description Who said it. */
+      from: components["schemas"]["ChatFrom"];
+      /** @description What was said. */
+      text: string;
     };
     /** @description A file on an issue or a comment, as the reader sees it. */
     AttachmentItem: {
@@ -5169,6 +5271,11 @@ export interface components {
       /** @description Whether it may change the field only in the issues its holders reported. */
       own_only: boolean;
     };
+    /**
+     * @description Who said a turn of the conversation: the person, or the assistant.
+     * @enum {string}
+     */
+    ChatFrom: "person" | "assistant";
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
       /**
@@ -5701,6 +5808,7 @@ export interface components {
       | "ai.agreement-needed"
       | "ai.address-invalid"
       | "ai.address-not-encrypted"
+      | "ai.proposal-invalid"
       | "handle.changed-lately"
       | "request.wrong-origin"
       | "request.wrong-token"
@@ -6787,6 +6895,11 @@ export interface components {
      * @enum {string}
      */
     Look: "badge" | "pill" | "plain-text" | "progress-bar" | "avatar";
+    /**
+     * @description What the panel looks at: an issue, the search of a list, or a project.
+     * @enum {string}
+     */
+    LookingAtKind: "issue" | "search" | "project";
     /** @description The password of the mail server. */
     MailPasswordBody: {
       /**
@@ -8431,6 +8544,15 @@ export interface components {
        *     workflows list them: what a choice of a status change for many issues offers.
        */
       changes: components["schemas"]["ProjectStatusChangeBody"][];
+    };
+    /** @description One field a proposed or applied change touches. */
+    ProposedChangeBody: {
+      /** @description The value after; absent when the change takes the value away. */
+      after?: Record<string, unknown> | null;
+      /** @description The value now; absent when the field is new. */
+      before?: Record<string, unknown> | null;
+      /** @description The field, like `title`, `priority` or `status`. */
+      field: string;
     };
     /**
      * @description The kind of AI provider: anthropic, or openai-compatible (any service with the chat shape of OpenAI, also a model on the organization's own network).
@@ -11156,6 +11278,88 @@ export interface operations {
       409: components["responses"]["Conflict"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  applyAssistantProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssistantApplyBody"];
+      };
+    };
+    responses: {
+      /** @description What was saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppliedProposalBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  askAssistant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssistantAskBody"];
+      };
+    };
+    responses: {
+      /** @description The answer and the changes it proposes. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssistantAnswerBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      /** @description AI is off here (ai.off), or the provider is not ready (ai.agreement-needed, ai.not-set-up). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      /** @description The AI provider did not answer (ai.unavailable). */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
       503: components["responses"]["Unavailable"];
     };
   };
