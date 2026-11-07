@@ -216,41 +216,57 @@ async fn priv_09_rows_of_the_history_that_were_there_get_their_shown_moment_and_
 -> TestResult {
     each_database("migration_44_shown_moments", async |db| {
         use crate::schema::HistoryEntryRow as History;
-        const DAY: i64 = 86_400_000_000;
+        /// The start of a date in UTC, in microseconds.
+        fn start_of(day: &str) -> i64 {
+            day.parse::<jiff::civil::Date>()
+                .and_then(|day| day.to_zoned(jiff::tz::TimeZone::UTC))
+                .map_or(0, |start| start.timestamp().as_microsecond())
+        }
         let database = Database::connect(db.url()).await?;
         database.migrate_until(39, at(0)).await?;
-        // Written at 2027-01-15 08:30 UTC, a time entry and something else.
-        let written = 1_800_000_000_000_000 + 3 * DAY / 4 / 2 * 2;
-        old_rows::old_history_row(&database, 1, "time_entry", written).await?;
-        old_rows::old_history_row(&database, 2, "issue", written).await?;
+        // Written at 2027-01-15 08:30 UTC. Rows of time entries whose date is not the day they were
+        // written on, and one that names no date; and something that is no time entry.
+        let written = 1_800_000_000_000_000 + 1_800_000_000;
+        let booked = r#"[{"field":"issue","before":null,"after":"x"},{"field":"date","before":null,"after":"2027-01-10"}]"#;
+        let moved = r#"[{"field":"date","before":"2027-01-10","after":"2027-01-09"},{"field":"minutes","before":30,"after":45}]"#;
+        let deleted = r#"[{"field":"date","before":"2027-01-08","after":null}]"#;
+        let rows = [
+            (1_u8, "time_entry", "[]"),
+            (2, "issue", "[]"),
+            (3, "time_entry", booked),
+            (4, "time_entry", moved),
+            (5, "time_entry", deleted),
+        ];
+        for (event, kind, changes) in rows {
+            old_rows::old_history_row(&database, event, kind, written, changes).await?;
+        }
         database.migrate(at(1)).await?;
         let mut select = Query::select();
         select
-            .columns([
-                History::Event,
-                History::At,
-                History::ShownAt,
-                History::ShownHash,
-            ])
+            .columns([History::Event, History::ShownAt, History::ShownHash])
             .from(History::Table);
-        let rows = database.fetch_all(&select).await?;
-        assert_eq!(rows.len(), 2);
+        let found = database.fetch_all(&select).await?;
+        assert_eq!(found.len(), rows.len());
+        let expected = |event: u8| match event {
+            // A time entry that names no date is shown on the day it was written on.
+            1 => start_of("2027-01-15"),
+            // The date of the entry, the last one the changes say, also for a deletion.
+            3 => start_of("2027-01-10"),
+            4 => start_of("2027-01-09"),
+            5 => start_of("2027-01-08"),
+            _ => written,
+        };
         let mut hashes = Vec::new();
-        for row in &rows {
+        for row in &found {
             let event = row.get::<Vec<u8>>(History::Event)?[0];
-            let shown = row.get::<i64>(History::ShownAt)?;
-            // A time entry is shown at the start of the day it was written on, the rest at its moment.
-            let expected = if event == 1 {
-                written - written % DAY
-            } else {
-                written
-            };
-            assert_eq!(shown, expected, "event {event}");
+            assert_eq!(row.get::<i64>(History::ShownAt)?, expected(event), "event {event}");
             let hash = row.get::<String>(History::ShownHash)?;
             assert_eq!(hash.len(), 32, "{hash}");
             hashes.push(hash);
         }
-        assert_ne!(hashes[0], hashes[1]);
+        hashes.sort();
+        hashes.dedup();
+        assert_eq!(hashes.len(), rows.len(), "every row has a hash of its own");
         Ok(())
     })
     .await

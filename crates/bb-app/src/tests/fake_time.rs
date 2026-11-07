@@ -185,7 +185,7 @@ impl TimeStore for FakeStore {
                 .filter(|entry| entry.issue == issue)
                 .map(|entry| {
                     let key = DayKey {
-                        day: entry.date,
+                        at: entry.date,
                         hash: opaque_id(&entry.id.to_string()),
                     };
                     (entry.clone(), key)
@@ -193,12 +193,10 @@ impl TimeStore for FakeStore {
                 .filter(|(_, key)| {
                     after
                         .as_ref()
-                        .is_none_or(|after| (key.day, &key.hash) < (after.day, &after.hash))
+                        .is_none_or(|after| (key.at, &key.hash) < (after.at, &after.hash))
                 })
                 .collect();
-            found.sort_by(|(_, one), (_, other)| {
-                (other.day, &other.hash).cmp(&(one.day, &one.hash))
-            });
+            found.sort_by(|(_, one), (_, other)| (other.at, &other.hash).cmp(&(one.at, &one.hash)));
             found
                 .into_iter()
                 .take(usize::try_from(limit).unwrap_or(usize::MAX))

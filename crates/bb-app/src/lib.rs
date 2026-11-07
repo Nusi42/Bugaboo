@@ -14,6 +14,7 @@ pub mod fields;
 pub mod files;
 pub mod first_start;
 pub mod follow;
+mod hashed_key;
 pub mod history;
 mod input;
 pub mod issues;

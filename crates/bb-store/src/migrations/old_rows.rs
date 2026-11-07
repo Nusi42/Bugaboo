@@ -157,12 +157,13 @@ pub(super) async fn old_layout(
 }
 
 /// A row of the history as it was before the moment it is shown at was stored (migration 44): of
-/// the kind of record `record_kind`, written at `at` microseconds.
+/// the kind of record `record_kind`, written at `at` microseconds, with these `changes` (JSON).
 pub(super) async fn old_history_row(
     database: &Database,
     event: u8,
     record_kind: &str,
     at: i64,
+    changes: &str,
 ) -> TestResult {
     use crate::schema::HistoryEntryRow as Row;
     insert(
@@ -186,7 +187,7 @@ pub(super) async fn old_history_row(
             Expr::val("change"),
             Expr::val(vec![8_u8; 16]),
             Expr::val(record_kind),
-            Expr::val("[]"),
+            Expr::val(changes),
         ],
     )
     .await

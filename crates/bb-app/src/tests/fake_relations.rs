@@ -437,7 +437,7 @@ impl HistoryStore for FakeStore {
                         shown_moment(entry)
                     };
                     let key = ShownKey {
-                        micros: shown.as_microsecond(),
+                        at: shown.as_microsecond(),
                         hash: opaque_id(&entry.event.to_string()),
                     };
                     (entry.clone(), key)
@@ -445,12 +445,10 @@ impl HistoryStore for FakeStore {
                 .filter(|(_, key)| {
                     after
                         .as_ref()
-                        .is_none_or(|after| (key.micros, &key.hash) < (after.micros, &after.hash))
+                        .is_none_or(|after| (key.at, &key.hash) < (after.at, &after.hash))
                 })
                 .collect();
-            found.sort_by(|(_, one), (_, other)| {
-                (other.micros, &other.hash).cmp(&(one.micros, &one.hash))
-            });
+            found.sort_by(|(_, one), (_, other)| (other.at, &other.hash).cmp(&(one.at, &one.hash)));
             found
                 .into_iter()
                 .skip(usize::try_from(skip).unwrap_or(usize::MAX))

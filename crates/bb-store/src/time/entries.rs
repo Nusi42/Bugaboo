@@ -215,7 +215,7 @@ impl TimeStore for AuthStorage {
             .column((TimeEntryRow::Table, TimeEntryRow::ShownHash))
             .and_where(column(TimeEntryRow::Issue).eq(issue.stored()));
         if let Some(after) = after {
-            let day = stored_day(after.day)?;
+            let day = stored_day(after.at)?;
             select.and_where(
                 column(TimeEntryRow::Day)
                     .lt(day)
@@ -236,7 +236,7 @@ impl TimeStore for AuthStorage {
             .map(|row| {
                 let entry = read_entry(row)?;
                 let key = DayKey {
-                    day: entry.date,
+                    at: entry.date,
                     hash: row.get(TimeEntryRow::ShownHash)?,
                 };
                 Ok((entry, key))

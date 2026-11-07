@@ -13,7 +13,10 @@ use bb_core::history::{CONSUMER, HistoryEntry, HistoryKind};
 use bb_core::id::{AgentId, EntityId, EventId, IssueId, RunId, UserId};
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Iden, OnConflict, Order, Query, SelectStatement};
+use sea_query::{
+    Alias, Asterisk, Expr, ExprTrait as _, Iden, OnConflict, Order, Query, SelectStatement,
+    UnionType,
+};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, to_micros};
@@ -43,46 +46,90 @@ const ENTRY_COLUMNS: [HistoryEntryRow; 12] = [
     HistoryEntryRow::Changes,
 ];
 
-/// The moment a row is shown at to `reader`: the moment it happened for a row they made, and the
-/// stored moment (the start of the date for a time entry) for every other row.
-fn shown_for(reader: UserId) -> sea_query::CaseStatement {
-    Expr::case(
-        Expr::col(HistoryEntryRow::By).eq(reader.stored()),
-        Expr::col(HistoryEntryRow::At),
-    )
-    .finally(Expr::col(HistoryEntryRow::ShownAt))
-}
-
-/// The rows of one issue for a reader, after `after` in the order of shown moments.
-fn shown_select(
+/// The rows of one issue that `reader` made (`own`: shown at the moment they happened) or that
+/// somebody else made (shown at the stored moment, the start of the date for a time entry), after
+/// `after`, in the order of shown moments, at most `reach`. Each part is read by an index of its own
+/// (`history_entry_by_author`, `history_entry_by_shown`), so a long history is not read whole.
+fn shown_part(
     issue: IssueId,
     kind: Option<HistoryKind>,
     reader: UserId,
+    own: bool,
     after: Option<&ShownKey>,
+    reach: u64,
 ) -> SelectStatement {
+    let moment = if own {
+        HistoryEntryRow::At
+    } else {
+        HistoryEntryRow::ShownAt
+    };
     let mut select = Query::select();
     select
         .columns(ENTRY_COLUMNS)
         .column(HistoryEntryRow::ShownHash)
-        .expr_as(shown_for(reader), Shown::Moment)
+        .expr_as(Expr::col(moment), Shown::Moment)
         .from(HistoryEntryRow::Table)
         .and_where(Expr::col(HistoryEntryRow::Issue).eq(issue.stored()));
+    select.and_where(if own {
+        Expr::col(HistoryEntryRow::By).eq(reader.stored())
+    } else {
+        Expr::col(HistoryEntryRow::By)
+            .is_null()
+            .or(Expr::col(HistoryEntryRow::By).ne(reader.stored()))
+    });
     if let Some(kind) = kind {
         select.and_where(Expr::col(HistoryEntryRow::Kind).eq(kind.code()));
     }
     if let Some(after) = after {
         select.and_where(
-            Expr::expr(shown_for(reader))
-                .lt(after.micros)
-                .or(Expr::expr(shown_for(reader))
-                    .eq(after.micros)
-                    .and(Expr::col(HistoryEntryRow::ShownHash).lt(after.hash.clone()))),
+            Expr::col(moment).lt(after.at).or(Expr::col(moment)
+                .eq(after.at)
+                .and(Expr::col(HistoryEntryRow::ShownHash).lt(after.hash.clone()))),
         );
     }
     select
-        .order_by_expr(Expr::col(Shown::Moment), Order::Desc)
+        .order_by(moment, Order::Desc)
         .order_by(HistoryEntryRow::ShownHash, Order::Desc)
-        .order_by(HistoryEntryRow::Event, Order::Desc);
+        .order_by(HistoryEntryRow::Event, Order::Desc)
+        .limit(reach);
+    select
+}
+
+/// The rows of one issue for a reader, after `after` in the order of shown moments: the two parts
+/// of [`shown_part`] put together and cut to the page.
+///
+/// Rows of one moment are tied by the hash of their events, which follows no order of making. Where
+/// that order is wanted among rows of one instant (changes of one request share the moment they were
+/// written at), the way out is a sequence number of the batch the rows were written in, kept with the
+/// row: never the place in the outbox, which a cursor would tell.
+fn shown_select(
+    issue: IssueId,
+    kind: Option<HistoryKind>,
+    reader: UserId,
+    after: Option<&ShownKey>,
+    skip: u64,
+    limit: u64,
+) -> SelectStatement {
+    let reach = skip.saturating_add(limit);
+    let part = |own: bool, name: &'static str| {
+        let mut all = Query::select();
+        all.column(Asterisk).from_subquery(
+            shown_part(issue, kind, reader, own, after, reach),
+            Alias::new(name),
+        );
+        all
+    };
+    let mut both = part(true, "own_rows");
+    both.union(UnionType::All, part(false, "other_rows"));
+    let mut select = Query::select();
+    select
+        .column(Asterisk)
+        .from_subquery(both, Alias::new("shown_rows"))
+        .order_by(Shown::Moment, Order::Desc)
+        .order_by(HistoryEntryRow::ShownHash, Order::Desc)
+        .order_by(HistoryEntryRow::Event, Order::Desc)
+        .limit(limit)
+        .offset(skip);
     select
 }
 
@@ -249,15 +296,14 @@ impl HistoryStore for AuthStorage {
         skip: u64,
         limit: u64,
     ) -> Result<Vec<(HistoryEntry, ShownKey)>, StoreError> {
-        let mut select = shown_select(issue, kind, reader, after.as_ref());
-        select.limit(limit).offset(skip);
+        let select = shown_select(issue, kind, reader, after.as_ref(), skip, limit);
         self.database()
             .fetch_all(&select)
             .await?
             .iter()
             .map(|row| {
                 let key = ShownKey {
-                    micros: row.get(Shown::Moment)?,
+                    at: row.get(Shown::Moment)?,
                     hash: row.get(HistoryEntryRow::ShownHash)?,
                 };
                 Ok((read_entry(row)?, key))
