@@ -381,3 +381,18 @@ reason = "The built-in fields are the catalogue, fourteen of them; the list is t
 route = "GET /api/v1/never-sent-to-ai"
 property = "projects"
 reason = "The projects with a mark are few; the list has a hard cap (NEVER_SENT_PROJECTS_MAX) and says when it was cut (M7-F28)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/agent-work"
+property = "worked_on_by"
+reason = "The agents with open work on one issue are few, because an agent has one open hand-over for an issue; the answer shows at most 50 and says `truncated` (M7-F73)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/agent-work"
+property = "work"
+reason = "The work on one issue is its hand-overs with their attempts, read whole as one record of the issue; the answer shows at most 50 and says `truncated` (M7-F73)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/agent-work"
+property = "proposals"
+reason = "The proposals that wait for a person on one issue are few and those decided are not listed; the answer shows at most 50 and says `truncated` (M7-F73)."

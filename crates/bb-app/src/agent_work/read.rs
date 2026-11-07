@@ -6,8 +6,8 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext};
 
 use super::types::{
-    AgentWorkQuery, AttemptView, IssueAgentWork, ProposalView, QuestionView, ResultView,
-    ReviewView, WorkView, WorkedOnBy,
+    AgentWorkQuery, AttemptView, IssueAgentWork, MOST_SHOWN_ON_AN_ISSUE, ProposalView,
+    QuestionView, ResultView, ReviewView, WorkView, WorkedOnBy,
 };
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
@@ -120,7 +120,9 @@ pub async fn issue_agent_work<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     let failed = |error| internal::<S>(&error);
-    let all = ctx.store().work_on_issue(issue.id).await.map_err(failed)?;
+    let mut all = ctx.store().work_on_issue(issue.id).await.map_err(failed)?;
+    let mut truncated = all.len() > MOST_SHOWN_ON_AN_ISSUE;
+    all.truncate(MOST_SHOWN_ON_AN_ISSUE);
     let mut work = Vec::with_capacity(all.len());
     let mut worked_on_by: Vec<WorkedOnBy> = Vec::new();
     for found in &all {
@@ -147,11 +149,14 @@ pub async fn issue_agent_work<S: AuthStore>(
         }
         work.push(view);
     }
-    let proposals = ctx
+    let mut waiting = ctx
         .store()
         .proposals_on(issue.id, Some(ProposalState::Open))
         .await
-        .map_err(failed)?
+        .map_err(failed)?;
+    truncated |= waiting.len() > MOST_SHOWN_ON_AN_ISSUE;
+    waiting.truncate(MOST_SHOWN_ON_AN_ISSUE);
+    let proposals = waiting
         .into_iter()
         .map(|proposal| ProposalView {
             id: proposal.id,
@@ -168,5 +173,6 @@ pub async fn issue_agent_work<S: AuthStore>(
         worked_on_by,
         work,
         proposals,
+        truncated,
     }))
 }

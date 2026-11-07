@@ -190,7 +190,12 @@ pub struct IssueAgentWork {
     pub work: Vec<WorkView>,
     /// The proposals of standing rules that wait for a person.
     pub proposals: Vec<ProposalView>,
+    /// Whether the lists were cut at the most an issue shows ([`MOST_SHOWN_ON_AN_ISSUE`]).
+    pub truncated: bool,
 }
+
+/// The most pieces of work, and the most proposals, the agent work of one issue shows.
+pub const MOST_SHOWN_ON_AN_ISSUE: usize = 50;
 
 /// A change a standing rule proposes.
 #[derive(Clone, Debug, PartialEq, Eq)]

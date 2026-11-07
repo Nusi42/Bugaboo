@@ -336,6 +336,8 @@ pub(crate) struct IssueAgentWorkBody {
     pub(super) work: Vec<WorkBody>,
     /// The proposals of standing rules that wait for a person.
     pub(super) proposals: Vec<ProposalBody>,
+    /// Whether the lists were cut at the most an issue shows.
+    pub(super) truncated: bool,
 }
 
 impl Masked for IssueAgentWorkBody {}
@@ -346,6 +348,7 @@ impl From<&IssueAgentWork> for IssueAgentWorkBody {
             worked_on_by: all.worked_on_by.iter().map(WorkedOnByBody::from).collect(),
             work: all.work.iter().map(WorkBody::from).collect(),
             proposals: all.proposals.iter().map(ProposalBody::from).collect(),
+            truncated: all.truncated,
         }
     }
 }
