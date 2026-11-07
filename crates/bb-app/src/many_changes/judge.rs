@@ -91,12 +91,9 @@ pub(super) struct Selection<'a> {
 /// The error, when it is no reason to skip one issue.
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     let reason = match &error {
-        // A busy database is a fact of the moment and not of the issue: the step fails and the
-        // queue tries it again.
-        _ if error.is_busy() => None,
         AppError::Stale(_) => Some(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.
-        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Some(reason_of(*code)),
+        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => reason_of(*code),
         _ => None,
     };
     reason.ok_or(error)
@@ -123,7 +120,7 @@ const WORDED: [(ErrorCode, SkipReason); 13] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 83] = [
+const UNWORDED: [ErrorCode; 82] = [
     ErrorCode::WrongCredentials,
     ErrorCode::ChoiceNumberTaken,
     ErrorCode::WrongSecondStepCode,
@@ -205,21 +202,26 @@ const UNWORDED: [ErrorCode; 83] = [
     ErrorCode::ReasonNeeded,
     ErrorCode::TotalsOnly,
     ErrorCode::Internal,
-    ErrorCode::Unavailable,
     ErrorCode::KeepYearsTooShort,
 ];
 
-/// The reason an issue is left alone for a refusal of the single change; a busy database
-/// ([`AppError::is_busy`]) is caught before by [`skip_of`].
-fn reason_of(code: ErrorCode) -> SkipReason {
+/// The code of a busy database ([`AppError::is_busy`]): a fact of the moment and not of the issue.
+/// It is no reason to leave an issue alone; the step fails and the queue tries it again.
+const BUSY: ErrorCode = ErrorCode::Unavailable;
+
+/// The reason an issue is left alone for a refusal of the single change; none for a busy database.
+fn reason_of(code: ErrorCode) -> Option<SkipReason> {
+    if code == BUSY {
+        return None;
+    }
     if let Some((_, reason)) = WORDED.iter().find(|(worded, _)| *worded == code) {
-        return *reason;
+        return Some(*reason);
     }
     if code.is_field_rule() {
-        return SkipReason::FieldRule;
+        return Some(SkipReason::FieldRule);
     }
     debug_assert!(UNWORDED.contains(&code), "{code:?} has no decision here");
-    SkipReason::NotValid
+    Some(SkipReason::NotValid)
 }
 
 /// A judged change turned into a reason to skip the issue, when the single change would have
@@ -425,6 +427,7 @@ mod tests {
         for code in ErrorCode::ALL {
             let places = usize::from(WORDED.iter().any(|(worded, _)| worded == code))
                 + usize::from(code.is_field_rule())
+                + usize::from(*code == BUSY)
                 + usize::from(UNWORDED.contains(code));
             assert_eq!(places, 1, "{code:?} is decided in {places} places");
         }

@@ -175,6 +175,8 @@ pub(crate) struct Shared {
     pub(crate) changes_fail: bool,
     /// How many more changes find the database busy past the last try of a write (ADR-0017).
     pub(crate) busy_changes: usize,
+    /// After how many more changes one change finds the database busy, once (the middle of a step).
+    pub(crate) busy_after: Option<usize>,
     /// The reads of what the engine decides with fail as the database does when it breaks.
     pub(crate) policy_reads_fail: bool,
     /// How many more times the saving of the progress of a run fails.
@@ -237,6 +239,12 @@ impl FakeStore {
         self.lock().busy_changes = times;
     }
 
+    /// Lets the next `passing` changes through and makes the one after them find the database
+    /// busy, once: an issue in the middle of a step.
+    pub(crate) fn keep_a_change_busy_after(&self, passing: usize) {
+        self.lock().busy_after = Some(passing);
+    }
+
     /// Makes the reads of what the engine decides with fail (or work again): the store breaks
     /// while a request asks who may do what.
     pub(crate) fn fail_policy_reads(&self, fails: bool) {
@@ -289,6 +297,14 @@ impl ChangeStore for FakeStore {
             if shared.busy_changes > 0 {
                 shared.busy_changes -= 1;
                 return Err(FakeError::Busy);
+            }
+            match shared.busy_after {
+                Some(0) => {
+                    shared.busy_after = None;
+                    return Err(FakeError::Busy);
+                }
+                Some(left) => shared.busy_after = Some(left - 1),
+                None => {}
             }
             shared.state.clone()
         };

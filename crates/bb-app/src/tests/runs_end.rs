@@ -188,3 +188,46 @@ async fn adr_0017_a_step_that_finds_the_database_busy_is_tried_again_and_changes
     }
     Ok(())
 }
+
+/// The same when the issue in the middle of a step is the one that finds the database busy (M6-F35):
+/// the issues before it are counted, the step is tried again from the busy one, and each issue is
+/// changed once.
+#[tokio::test]
+async fn m6_f35_a_step_that_finds_the_database_busy_in_the_middle_is_tried_again_from_that_issue()
+-> Outcome {
+    use bb_core::id::EntityId;
+    use bb_core::many_changes::ManyChangeStatus;
+
+    let world = World::new().await?;
+    let run = run_with_a_step_waiting(&world).await?;
+    let events_of = |issue: EntityId| {
+        world
+            .store
+            .lock()
+            .events
+            .iter()
+            .filter(|event| event.entity.id == issue)
+            .count()
+    };
+    let issues: Vec<EntityId> = run.items.iter().map(|item| item.issue.into()).collect();
+    let before: Vec<usize> = issues.iter().map(|issue| events_of(*issue)).collect();
+    // Only the change of the second issue finds it busy; the first one is made and counted.
+    world.store.keep_a_change_busy_after(1);
+    assert_eq!(world.ctx().run_due_jobs().await?, 1);
+    assert!(
+        !world.store.lock().state.many_changes_runs[0]
+            .status
+            .is_over(),
+        "not ended"
+    );
+    // The failed start waits before the next one, as the store makes it.
+    world.clock.advance(60);
+    while world.ctx().run_due_jobs().await? > 0 {}
+    let ended = world.store.lock().state.many_changes_runs[0].clone();
+    assert_eq!(ended.status, ManyChangeStatus::Done);
+    assert_eq!(ended.changed, 3);
+    for (issue, was) in issues.iter().zip(before) {
+        assert_eq!(events_of(*issue), was + 1, "one event for each issue");
+    }
+    Ok(())
+}
