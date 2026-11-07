@@ -5,6 +5,9 @@
 //! through the port [`AuthStore`]. [`AuthApi`] lists them once for the HTTP layer: it is what
 //! `bb-api` holds, with the store behind it erased, so `bb-api` never names an adapter.
 
+#[macro_use]
+mod use_cases_macro;
+
 mod access_keys;
 mod account;
 mod ctx;
@@ -39,12 +42,12 @@ use crate::ai::assistant::{
 };
 use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{
-    AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, ProjectAi,
-    ProjectAiQuery, SetAiKey, TryAiProvider, WhatGoesWhere, WhatGoesWhereQuery, ai_setup,
-    change_ai_setup, change_project_ai, confirm_ai_agreement, project_ai, set_ai_key,
-    try_ai_provider, what_goes_where,
+    AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, NeverSentList,
+    NeverSentQuery, ProjectAi, ProjectAiQuery, SetAiKey, SetNeverSent, TryAiProvider,
+    WhatGoesWhere, WhatGoesWhereQuery, ai_setup, change_ai_setup, change_project_ai,
+    confirm_ai_agreement, never_sent_list, project_ai, set_ai_key, set_never_sent, try_ai_provider,
+    what_goes_where,
 };
-use crate::ai::{NeverSentList, NeverSentQuery, SetNeverSent, never_sent_list, set_never_sent};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
@@ -222,66 +225,6 @@ pub use types::*;
 
 /// A future that can move between threads, which is what an HTTP handler needs to wait for.
 pub type Answer<'a, T> = Pin<Box<dyn Future<Output = Result<T, AppError>> + Send + 'a>>;
-
-/// Declares [`AuthApi`] and implements it for [`AuthServices`]: one line per use case, the
-/// name of the function above, its input and its output.
-macro_rules! use_cases {
-    ($($(#[$meta:meta])* $name:ident($input:ty) -> $output:ty $(= $via:ident)?;)+) => {
-        /// Every use case of [`AuthApi`] by the name of the function that does it, with the name
-        /// of its input type: what tests read to make sure none is left out (a use case whose
-        /// input ends in `Query` only reads). Two requests may share one function (`= via`).
-        pub const USE_CASES: &[(&str, &str)] =
-            &[$((function_name!($name $($via)?), stringify!($input))),+];
-
-        /// Every use case the HTTP layer calls, with the store behind it erased.
-        pub trait AuthApi: Send + Sync {
-            /// Whether `presented` (the `x-csrf-token` header) is the token of the session
-            /// behind `session_token` (the cookie).
-            fn csrf_matches(&self, session_token: &str, presented: &str) -> bool;
-
-            $($(#[$meta])*
-            fn $name(&self, request: RequestInfo, input: $input) -> Answer<'_, $output>;)+
-        }
-
-        impl<S: AuthStore + 'static> AuthApi for AuthServices<S> {
-            fn csrf_matches(&self, session_token: &str, presented: &str) -> bool {
-                Self::csrf_matches(self, session_token, presented)
-            }
-
-            $(fn $name(&self, request: RequestInfo, input: $input) -> Answer<'_, $output>
-            {
-                Box::pin(async move {
-                    let ctx = self.ctx(request);
-                    match function!($name $($via)?)(&ctx, input).await {
-                        // The one place where a stale version becomes the structured answer.
-                        Err(AppError::Stale(stale)) => Err(ctx.conflict_of(&stale).await),
-                        answer => answer,
-                    }
-                })
-            })+
-        }
-    };
-}
-
-/// The name of the function that does a use case: its own name, or the one it shares.
-macro_rules! function_name {
-    ($name:ident) => {
-        stringify!($name)
-    };
-    ($name:ident $via:ident) => {
-        stringify!($via)
-    };
-}
-
-/// The function that does a use case, as a path to call.
-macro_rules! function {
-    ($name:ident) => {
-        $name
-    };
-    ($name:ident $via:ident) => {
-        $via
-    };
-}
 
 use_cases! {
     /// Whether setup is open and whether people may sign up.
