@@ -12,6 +12,7 @@ use bb_core::agent_records::{Attempt, AttemptResult, HandOver, IssueWork, Questi
 use bb_core::agent_work::{AgentWorkState, CheckResult};
 use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AgentNoteId, AgentWorkId, AttemptId};
+use bb_core::run::RunEnd;
 use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
@@ -31,11 +32,11 @@ const LABEL_MAX: usize = 200;
 const LINK_MAX: usize = 2000;
 
 /// The work an agent asks about: its open work on the issue, with the hand-over that gave it.
-struct Mine {
-    actor: Actor,
-    held: Arc<Evaluation>,
-    work: IssueWork,
-    hand_over: HandOver,
+pub(super) struct Mine {
+    pub(super) actor: Actor,
+    pub(super) held: Arc<Evaluation>,
+    pub(super) work: IssueWork,
+    pub(super) hand_over: HandOver,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -142,6 +143,7 @@ fn attempt_to_report<S: AuthStore>(
             reported_cost: 0,
             started_at: ctx.now(),
             ended_at: None,
+            run: None,
         },
         true,
     ))
@@ -197,6 +199,9 @@ pub async fn report_attempt<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     let (mut attempt, is_new) = attempt_to_report(ctx, &mine, &attempts)?;
+    if is_new {
+        attempt.run = Some(ctx.open_attempt_run(&input.session_token, &mine).await?);
+    }
     ensure_within_budget(&mine.hand_over, &attempts, attempt.id, &input)?;
     if plan.is_some() {
         attempt.plan = plan;
@@ -397,12 +402,20 @@ pub async fn end_attempt<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let checks: Vec<CheckResult> = results.iter().filter_map(|result| result.outcome).collect();
     let by_itself = reason.is_none() && ctx.accepts_by_itself_in(&mine, &checks).await?;
+    let status_pending = by_itself && !ctx.move_after_accept(&input.session_token, &mine).await?;
+    if reason.is_none() {
+        // Before the work ends: an agent whose hand-over ended sees the issue no more.
+        ctx.write_summary(&input.session_token, &mine, &attempt)
+            .await?;
+    }
     let event = ctx.work_event(mine.actor.person.id, &mine.work, next)?;
     let works = ctx
         .store()
         .works_of_hand_over(mine.hand_over.id)
         .await
         .map_err(|error| internal::<S>(&error))?;
+    let gave_up = reason.is_some();
+    let closed = attempt.clone();
     let (work, hand_over, stored) = (mine.work.clone(), mine.hand_over.clone(), attempt);
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -421,13 +434,28 @@ pub async fn end_attempt<S: AuthStore>(
                     return Err(S::aborted());
                 }
                 if by_itself {
-                    close_work_of::<S>(transaction, &hand_over, &works, work.id, true).await?;
+                    close_work_of::<S>(
+                        transaction,
+                        &hand_over,
+                        &works,
+                        work.id,
+                        true,
+                        status_pending,
+                    )
+                    .await?;
                 }
                 Ok(())
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+    let ended = if gave_up {
+        RunEnd::Failed
+    } else {
+        RunEnd::Done
+    };
+    ctx.close_attempt_run(&input.session_token, &mine, &closed, ended)
+        .await?;
     ctx.work_after(&mine, mine.work.id).await
 }
 

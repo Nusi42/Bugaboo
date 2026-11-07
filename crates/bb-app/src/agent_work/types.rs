@@ -165,6 +165,9 @@ pub struct WorkView {
     pub gave_up: Option<String>,
     /// Whether it was accepted by itself and nobody looked yet.
     pub accepted_by_itself: bool,
+    /// Whether the issue keeps its status after an accept by itself and a person chooses the next
+    /// one (*Accepted; choose the next status*).
+    pub choose_next_status: bool,
     /// The version of the work.
     pub version: i64,
 }

@@ -45,8 +45,9 @@ pub(crate) async fn close_work_of<S: AuthStore>(
     works: &[IssueWork],
     work: bb_core::id::AgentWorkId,
     accepted_by_itself: bool,
+    status_pending: bool,
 ) -> Result<(), S::Error> {
-    S::close_work(transaction, work, accepted_by_itself).await?;
+    S::close_work(transaction, work, accepted_by_itself, status_pending).await?;
     let others_open = works
         .iter()
         .any(|other| other.id != work && !other.closed && other.state.is_open());

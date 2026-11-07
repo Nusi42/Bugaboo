@@ -240,6 +240,9 @@ pub(crate) struct WorkBody {
     pub(super) gave_up: Option<String>,
     /// Whether it was accepted by itself and nobody looked yet.
     pub(super) accepted_by_itself: bool,
+    /// Whether the issue keeps its status after an accept by itself and a person chooses the next
+    /// one.
+    pub(super) choose_next_status: bool,
     /// The version of the work; send it back with an answer.
     pub(super) version: i64,
 }
@@ -260,6 +263,7 @@ impl From<&WorkView> for WorkBody {
             reviews: work.reviews.iter().map(ReviewAnswerBody::from).collect(),
             gave_up: work.gave_up.clone(),
             accepted_by_itself: work.accepted_by_itself,
+            choose_next_status: work.choose_next_status,
             version: work.version,
         }
     }

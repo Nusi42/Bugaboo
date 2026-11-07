@@ -104,7 +104,7 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         ) -> bool;
         /// Ends the work with a review; whether it was accepted by itself and still waits for a
         /// person to look at it.
-        fn close_work(id: AgentWorkId, accepted_by_itself: bool) -> ();
+        fn close_work(id: AgentWorkId, accepted_by_itself: bool, status_pending: bool) -> ();
         /// Marks that a person looked at work that was accepted by itself.
         fn mark_work_seen(id: AgentWorkId) -> ();
         /// Adds an attempt.

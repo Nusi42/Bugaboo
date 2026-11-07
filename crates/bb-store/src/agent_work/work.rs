@@ -218,6 +218,7 @@ impl AgentWorkRecords for AuthStorage {
                 IssueWorkRow::GaveUp,
                 IssueWorkRow::Closed,
                 IssueWorkRow::AcceptedByItself,
+                IssueWorkRow::StatusPending,
                 IssueWorkRow::MadeAt,
                 IssueWorkRow::Version,
             ])
@@ -231,6 +232,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(work.gave_up.clone()),
                 Expr::val(work.closed),
                 Expr::val(work.accepted_by_itself),
+                Expr::val(work.status_pending),
                 Expr::val(to_micros(work.made_at)),
                 Expr::val(work.version),
             ])
@@ -269,12 +271,14 @@ impl AgentWorkRecords for AuthStorage {
         transaction: &mut Transaction,
         id: AgentWorkId,
         accepted_by_itself: bool,
+        status_pending: bool,
     ) -> Result<(), StoreError> {
         let mut update = Query::update();
         update
             .table(IssueWorkRow::Table)
             .value(IssueWorkRow::Closed, true)
             .value(IssueWorkRow::AcceptedByItself, accepted_by_itself)
+            .value(IssueWorkRow::StatusPending, status_pending)
             .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
         transaction.execute(&update).await?;
         Ok(())
@@ -288,6 +292,7 @@ impl AgentWorkRecords for AuthStorage {
         update
             .table(IssueWorkRow::Table)
             .value(IssueWorkRow::AcceptedByItself, false)
+            .value(IssueWorkRow::StatusPending, false)
             .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
         transaction.execute(&update).await?;
         Ok(())
@@ -310,6 +315,7 @@ impl AgentWorkRecords for AuthStorage {
                 AttemptRow::ReportedCost,
                 AttemptRow::StartedAt,
                 AttemptRow::EndedAt,
+                AttemptRow::Run,
             ])
             .values([
                 Expr::val(attempt.id.stored()),
@@ -321,6 +327,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(attempt.reported_cost),
                 Expr::val(to_micros(attempt.started_at)),
                 Expr::val(attempt.ended_at.map(to_micros)),
+                Expr::val(attempt.run.map(StoredId::stored)),
             ])
             .map_err(|_| StoreError::Corrupt("an attempt"))?;
         transaction.execute(&insert).await?;

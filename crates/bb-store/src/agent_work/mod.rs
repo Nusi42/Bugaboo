@@ -143,6 +143,7 @@ pub(super) fn work_select() -> SelectStatement {
             IssueWorkRow::GaveUp,
             IssueWorkRow::Closed,
             IssueWorkRow::AcceptedByItself,
+            IssueWorkRow::StatusPending,
             IssueWorkRow::MadeAt,
             IssueWorkRow::Version,
         ])
@@ -161,6 +162,7 @@ pub(super) fn read_work(row: &Row) -> Result<IssueWork, StoreError> {
         gave_up: row.get(IssueWorkRow::GaveUp)?,
         closed: row.get(IssueWorkRow::Closed)?,
         accepted_by_itself: row.get(IssueWorkRow::AcceptedByItself)?,
+        status_pending: row.get(IssueWorkRow::StatusPending)?,
         made_at: row.time(IssueWorkRow::MadeAt)?,
         version: row.get(IssueWorkRow::Version)?,
     })
@@ -179,6 +181,7 @@ pub(super) fn attempt_select() -> SelectStatement {
             AttemptRow::ReportedCost,
             AttemptRow::StartedAt,
             AttemptRow::EndedAt,
+            AttemptRow::Run,
         ])
         .from(AttemptRow::Table);
     select
@@ -195,6 +198,7 @@ pub(super) fn read_attempt(row: &Row) -> Result<Attempt, StoreError> {
         reported_cost: row.get(AttemptRow::ReportedCost)?,
         started_at: row.time(AttemptRow::StartedAt)?,
         ended_at: row.optional_time(AttemptRow::EndedAt)?,
+        run: row.optional_id(AttemptRow::Run)?,
     })
 }
 

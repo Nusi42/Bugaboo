@@ -3,6 +3,7 @@
 //! `bb_core::agent_work`; this module has the port and the use cases.
 
 mod attempt;
+mod finish;
 mod hand_over;
 mod members;
 mod narrow;

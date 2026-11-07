@@ -176,6 +176,10 @@ pub struct IssueWork {
     /// Whether the work was accepted by itself and nobody has looked at it yet.
     #[not_personal]
     pub accepted_by_itself: bool,
+    /// Whether a person still has to choose the next status of the issue: the work was accepted
+    /// by itself and the workflow did not name one status to move to.
+    #[not_personal]
+    pub status_pending: bool,
     /// When it was given.
     #[not_personal]
     pub made_at: Timestamp,
@@ -214,6 +218,9 @@ pub struct Attempt {
     /// When it ended.
     #[not_personal]
     pub ended_at: Option<Timestamp>,
+    /// The run of the attempt: everything it changed, undone in one step by *Throw away*.
+    #[not_personal]
+    pub run: Option<crate::id::RunId>,
 }
 
 /// A result an agent attached to an attempt: a link, or a check.

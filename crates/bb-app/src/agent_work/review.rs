@@ -6,6 +6,7 @@ use bb_core::agent_records::{IssueWork, Question, Review};
 use bb_core::agent_work::{AgentWorkState, ReviewAnswer};
 use bb_core::event::RecordKind;
 use bb_core::id::AgentNoteId;
+use bb_core::run::{RunActor, UndoOutcome};
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
@@ -17,6 +18,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 use crate::input::{clean_long_text, clean_text};
 use crate::issues::{ChangeIssue, change_issue};
+use crate::runs::{RunStore, RunsOf};
 
 /// The longest an answer or a note may be.
 const TEXT_MAX: usize = bb_core::text::LONG_TEXT_MAX;
@@ -278,11 +280,14 @@ pub async fn review_work<S: AuthStore>(
     let (next, ends) = match input.verdict {
         ReviewAnswer::Accept => (AgentWorkState::ReadyForReview, true),
         ReviewAnswer::SendBack if note.is_some() => (AgentWorkState::WaitingForTheAgent, false),
-        ReviewAnswer::SendBack | ReviewAnswer::ThrowAway => {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
+        ReviewAnswer::SendBack => return Err(ErrorCode::InvalidRequest.into()),
+        ReviewAnswer::ThrowAway => (AgentWorkState::Stopped, true),
     };
-    if ends {
+    if input.verdict == ReviewAnswer::ThrowAway {
+        ctx.throw_away_attempts(&input.session_token, &acting)
+            .await?;
+    }
+    if input.verdict == ReviewAnswer::Accept {
         ctx.move_status(&input.session_token, &acting, input.status)
             .await?;
     }
@@ -327,7 +332,8 @@ pub async fn review_work<S: AuthStore>(
                     return Err(S::aborted());
                 }
                 if ends {
-                    close_work_of::<S>(transaction, &hand_over, &works, work.id, false).await?;
+                    close_work_of::<S>(transaction, &hand_over, &works, work.id, false, false)
+                        .await?;
                 }
                 Ok(())
             })
@@ -349,6 +355,34 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .is_some_and(|found| found.plan_needs_approval))
+    }
+
+    /// *Throw away*: undoes the run of every attempt in one step each, newest first, as the
+    /// reviewer. What somebody changed since is skipped by the undo itself and named in its answer.
+    /// A branch outside Bugaboo is the agent's business.
+    async fn throw_away_attempts(&self, token: &str, acting: &Acting) -> Result<(), AppError> {
+        let attempts = self
+            .store()
+            .attempts_of(acting.work.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let runs = RunsOf::new(self, &acting.actor, token);
+        let by = RunActor {
+            person: acting.actor.person.id,
+            app: None,
+            agent: None,
+        };
+        for run in attempts.iter().rev().filter_map(|attempt| attempt.run) {
+            let mut version = runs.preview_undo(run).await?.version;
+            // Something may change between the preview and the undo: the newer preview is used once.
+            for _ in 0..2 {
+                match runs.undo_run(run, &version, &by, self.now()).await? {
+                    UndoOutcome::Undone(_) => break,
+                    UndoOutcome::Changed(newer) => version = newer.version,
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Moves the status of the issue to the one the reviewer picked, as the reviewer, through the

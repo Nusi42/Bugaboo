@@ -131,6 +131,7 @@ fn work_steps() -> Vec<Step> {
                 .col(maybe_text(IssueWorkRow::GaveUp))
                 .col(flag(IssueWorkRow::Closed))
                 .col(flag(IssueWorkRow::AcceptedByItself))
+                .col(flag(IssueWorkRow::StatusPending))
                 .col(number(IssueWorkRow::MadeAt))
                 .col(number(IssueWorkRow::Version))
                 .to_owned(),
@@ -162,6 +163,7 @@ fn work_steps() -> Vec<Step> {
                 .col(number(AttemptRow::ReportedCost))
                 .col(number(AttemptRow::StartedAt))
                 .col(maybe_number(AttemptRow::EndedAt))
+                .col(maybe_id(AttemptRow::Run))
                 .to_owned(),
         ),
         Step::Index(

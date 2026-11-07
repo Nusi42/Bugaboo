@@ -107,6 +107,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 gave_up: None,
                 closed: false,
                 accepted_by_itself: false,
+                status_pending: false,
                 made_at: now,
                 version: 1,
             };

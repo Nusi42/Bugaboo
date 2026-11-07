@@ -200,6 +200,7 @@ impl<S> AuthServices<S> {
             via_key: AtomicBool::new(false),
             channel: Mutex::default(),
             acting_agent: Mutex::default(),
+            accepting: Mutex::default(),
             run: Mutex::new(run),
             marks: Mutex::default(),
             image_hosts: Mutex::default(),
@@ -329,6 +330,9 @@ pub struct Ctx<'a, S> {
     /// What the request changes is recorded as made by the agent (AI-30), in the one place that
     /// makes events ([`Self::event_maker`]), so no use case can record the agent as its person.
     pub(crate) acting_agent: Mutex<Option<(AgentId, UserId)>>,
+    /// The issue whose status the system moves because an attempt was accepted by itself (ADR-0029,
+    /// decision 6): the one change an agent makes without having ticked *change the status*.
+    pub(crate) accepting: Mutex<Option<bb_core::id::IssueId>>,
     /// The run the request works inside (a session of an AI app, an attempt of an agent, a change
     /// to many issues): every event of the request carries it, made in the one place that makes
     /// events ([`Self::event_maker`]).

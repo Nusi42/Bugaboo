@@ -6983,6 +6983,21 @@ pub fn access_reset_label(
     )
 }
 
+/// The message `agent-work.summary`.
+#[must_use]
+pub fn agent_work_summary(
+    address: impl std::fmt::Display,
+    number: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.summary"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("number", Value::Text(number.to_string())),
+        ],
+    )
+}
+
 /// The message `assignments.change-here-name`.
 #[must_use]
 pub fn assignments_change_here_name(who: impl std::fmt::Display) -> Message {
@@ -14029,6 +14044,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "There are more roles than fit in this table. The first ones are shown.",
     ),
     ("access.scrolls", "Scroll sideways to see the other roles."),
+    (
+        "agent-work.summary",
+        "Attempt {number} is ready for review: {address}",
+    ),
     ("ai-author.agent", "an agent"),
     ("ai-author.assistant", "the assistant"),
     ("ai-author.guest", "a Guest"),

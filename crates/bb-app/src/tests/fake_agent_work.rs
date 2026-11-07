@@ -415,10 +415,12 @@ impl AgentWorkRecords for super::fake::FakeStore {
         tx: &mut Tx,
         id: AgentWorkId,
         accepted_by_itself: bool,
+        status_pending: bool,
     ) -> Result<(), FakeError> {
         if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
             w.closed = true;
             w.accepted_by_itself = accepted_by_itself;
+            w.status_pending = status_pending;
         }
         Ok(())
     }
@@ -426,6 +428,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
     async fn mark_work_seen(tx: &mut Tx, id: AgentWorkId) -> Result<(), FakeError> {
         if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
             w.accepted_by_itself = false;
+            w.status_pending = false;
         }
         Ok(())
     }

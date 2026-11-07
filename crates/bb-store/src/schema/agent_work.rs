@@ -57,6 +57,7 @@ pub(crate) enum IssueWorkRow {
     GaveUp,
     Closed,
     AcceptedByItself,
+    StatusPending,
     MadeAt,
     Version,
 }
@@ -75,6 +76,7 @@ pub(crate) enum AttemptRow {
     ReportedCost,
     StartedAt,
     EndedAt,
+    Run,
 }
 
 /// What an attempt attached: links and checks.
@@ -184,6 +186,7 @@ stored_tables! {
         GaveUp => gave_up,
         Closed => closed,
         AcceptedByItself => accepted_by_itself,
+        StatusPending => status_pending,
         MadeAt => made_at,
         Version => version,
     },
@@ -197,6 +200,7 @@ stored_tables! {
         ReportedCost => reported_cost,
         StartedAt => started_at,
         EndedAt => ended_at,
+        Run => run,
     },
     AttemptResultRow => bb_core::agent_records::AttemptResult {
         Id => id,

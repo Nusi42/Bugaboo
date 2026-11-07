@@ -102,6 +102,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             reviews,
             gave_up: work.gave_up.clone(),
             accepted_by_itself: work.accepted_by_itself,
+            choose_next_status: work.status_pending,
             version: work.version,
         })
     }
