@@ -308,13 +308,7 @@ pub async fn many_changes_run<S: AuthStore>(
 ) -> Result<Authorized<ManyChangeRunView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let run = ctx
-        .store()
-        .many_changes_run(input.run)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .filter(|run| run.person == actor.person.id)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let run = ctx.own_run(&actor, input.run).await?;
     Ok(held.authorize(ctx.run_view(&actor, &run).await?))
 }
 

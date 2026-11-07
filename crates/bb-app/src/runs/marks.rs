@@ -7,6 +7,8 @@ use std::collections::{HashMap, HashSet};
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::EntityId;
 use bb_core::mark::{TextMark, WrittenBy};
+use bb_core::people_kinds::PeopleKind;
+use bb_policy::{PeopleContext, PersonRef};
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -27,6 +29,9 @@ pub struct WrittenByView {
 pub(crate) struct Marks {
     asked: HashSet<(String, EntityId)>,
     found: HashMap<(String, EntityId, String), TextMark>,
+    /// The names of the agents a request named, so each is read once (PERF-N1): the name and the
+    /// person responsible, none for an agent that is gone.
+    agents: HashMap<bb_core::id::AgentId, Option<(String, bb_core::id::UserId)>>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -88,6 +93,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// How the text `part` of a record was written, when AI wrote it.
     pub(crate) async fn written_by(
         &self,
+        held: &bb_policy::Evaluation,
         kind: RecordKind,
         id: impl Into<EntityId>,
         part: &str,
@@ -107,13 +113,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(mark) = mark else {
             return Ok(None);
         };
+        // The agent is named only to a reader who is told who the person responsible for it is
+        // (*Who sees people*, ADR-0035): otherwise the mark would say which of someone's agents
+        // wrote the text.
         let agent = match mark.agent {
-            Some(agent) => self
-                .store()
-                .agent(agent)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .map(|found| found.name),
+            Some(agent) => match self.agent_of_mark(agent).await? {
+                Some((name, person)) => {
+                    let told = self
+                        .person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
+                        .await?;
+                    matches!(told, PersonRef::Name { .. }).then_some(name)
+                }
+                None => None,
+            },
             None => None,
         };
         Ok(Some(WrittenByView {
@@ -121,5 +133,34 @@ impl<S: AuthStore> Ctx<'_, S> {
             app: mark.app,
             agent,
         }))
+    }
+
+    /// The name of the agent and the person responsible for it, read once for a request.
+    async fn agent_of_mark(
+        &self,
+        agent: bb_core::id::AgentId,
+    ) -> Result<Option<(String, bb_core::id::UserId)>, AppError> {
+        let known = self
+            .marks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .agents
+            .get(&agent)
+            .cloned();
+        if let Some(known) = known {
+            return Ok(known);
+        }
+        let found = self
+            .store()
+            .agent(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|found| (found.name, found.person));
+        self.marks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .agents
+            .insert(agent, found.clone());
+        Ok(found)
     }
 }

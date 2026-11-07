@@ -561,11 +561,11 @@ pub(crate) async fn append_events(
         let mut insert = Query::insert();
         insert
             .into_table(Event::Table)
-            .columns(
-                event_columns()
-                    .into_iter()
-                    .take(if with_run { 10 } else { 9 }),
-            );
+            .columns(event_columns().into_iter().take(if with_run {
+                event_columns().len()
+            } else {
+                WITHOUT_RUN
+            }));
         let mut outbox = Query::insert();
         outbox.into_table(Outbox::Table).columns([
             Outbox::Position,

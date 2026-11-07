@@ -4,8 +4,8 @@
 use std::collections::BTreeMap;
 
 use bb_core::given::SetTo;
-use bb_core::id::{IssueTypeId, UserId};
-use bb_core::issue::{Issue, Priority};
+use bb_core::id::{IssueId, IssueTypeId, UserId};
+use bb_core::issue::Priority;
 use bb_core::time::length::Minutes;
 use bb_core::workflow::StatusKey;
 use serde_json::Value;
@@ -29,13 +29,19 @@ pub(super) fn restorable(net: &Net) -> bool {
     (known.contains(&net.field.as_str()) && net.before.is_some()) || own
 }
 
-/// The change of `issue` that puts `nets` back, on the version the issue has now. `None` when a
-/// value cannot be read as what the field holds.
-pub(super) fn issue_change(token: &str, issue: &Issue, nets: &[Net]) -> Option<ChangeIssue> {
+/// The change of the issue `issue` that puts `nets` back, on `version`: the version the plan looked
+/// at, so a change made after the plan is a conflict and not overwritten. `None` when a value cannot
+/// be read as what the field holds.
+pub(super) fn issue_change(
+    token: &str,
+    issue: IssueId,
+    version: i64,
+    nets: &[Net],
+) -> Option<ChangeIssue> {
     let mut input = ChangeIssue {
         session_token: token.to_owned(),
-        issue: issue.id.to_string(),
-        version: issue.version,
+        issue: issue.to_string(),
+        version,
         issue_type: None,
         title: None,
         status: None,

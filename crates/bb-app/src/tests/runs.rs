@@ -7,6 +7,7 @@ use bb_core::issue::Priority;
 use bb_core::run::{RunActor, RunKind, UndoSkipKind};
 use bb_policy::StartingRole;
 
+use super::agents::a_team_agent;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::member;
@@ -375,5 +376,95 @@ async fn comp_09_a_comment_written_by_an_agent_carries_the_mark_in_the_api_and_t
     assert_eq!(marks.len(), 2);
     assert!(marks.contains(&Some(WrittenBy::Agent)));
     assert!(marks.contains(&None));
+    Ok(())
+}
+
+/// An agent that holds work reads neither the runs of its person nor undoes them; its own attempt
+/// is its own (AI-30).
+#[tokio::test]
+async fn ai_30_an_agent_key_reads_its_own_attempt_and_never_the_runs_of_its_person() -> Outcome {
+    let world = World::new().await?;
+    let (project, team, fixer, key) = a_team_agent(&world).await?;
+    let id = an_issue(&world, project).await?;
+    let person = world
+        .ctx()
+        .session_actor(&team.session_token)
+        .await?
+        .person
+        .id;
+    let run = open(&world, &team.session_token, person).await?;
+    change_in_run(&world, &team.session_token, run, id, 1, Priority::Critical).await?;
+    let read = |session: &str, run: RunId| RunQuery {
+        session_token: session.to_owned(),
+        run,
+    };
+    let refusal = crate::runs::get_run(&world.ctx(), read(&key, run)).await;
+    assert!(matches!(
+        refusal,
+        Err(AppError::Refused(bb_core::ErrorCode::NotFound))
+    ));
+    let refusal = preview_undo_run(&world.ctx(), read(&key, run)).await;
+    assert!(refusal.is_err());
+    // The attempt of the agent itself is the agent's.
+    let ctx = world.ctx();
+    let actor = ctx.actor(&key).await?;
+    let attempt = RunId::generate(&mut ctx.ids())?;
+    let who = RunActor {
+        person,
+        app: None,
+        agent: Some(fixer),
+    };
+    RunsOf::new(&ctx, &actor, &key)
+        .open_run(attempt, RunKind::Attempt, &who, ctx.now())
+        .await?;
+    crate::runs::get_run(&world.ctx(), read(&key, attempt)).await?;
+    // The person reads the attempt of their agent too.
+    crate::runs::get_run(&world.ctx(), read(&team.session_token, attempt)).await?;
+    Ok(())
+}
+
+/// Two undos with the same preview put the values back once, and only one records the undo.
+#[tokio::test]
+async fn ai_38_two_undos_with_one_preview_put_back_once_and_record_one_undo() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    let was = priority_of(&world, &admin, id).await?;
+    change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    let again = |version: bb_core::run::UndoVersion| UndoRun {
+        session_token: admin.clone(),
+        run,
+        version,
+    };
+    let (first, second) = (world.ctx(), world.ctx());
+    let (one, two) = tokio::join!(
+        undo_run(&first, again(preview.version.clone())),
+        undo_run(&second, again(preview.version.clone()))
+    );
+    let put_back = [one?.into_value(), two?.into_value()]
+        .iter()
+        .map(|view| {
+            if view.changed_since_preview {
+                0
+            } else {
+                view.goes_back
+            }
+        })
+        .sum::<u64>();
+    assert_eq!(put_back, 1);
+    assert_eq!(priority_of(&world, &admin, id).await?, was);
+    let recorded = world
+        .store
+        .lock()
+        .events
+        .iter()
+        .filter(|event| event.entity.id == bb_core::id::EntityId::from(run))
+        .filter(|event| event.changes.iter().any(|change| change.field == "undone"))
+        .count();
+    assert_eq!(recorded, 1);
     Ok(())
 }

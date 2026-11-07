@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use bb_core::ErrorCode;
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{EventId, IssueId, RunId};
-use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus};
+use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus, SkipReason};
 use bb_core::run::{
     RunActor, RunChange, RunEnd, RunKind, RunSummary, UndoOutcome, UndoPreview, UndoResult,
     UndoSkip, UndoSkipKind, UndoVersion,
@@ -24,6 +24,7 @@ use super::weigh::{Evaluation, Net, NetOfRun, weigh};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
 use crate::issues::change_issue;
+use crate::many_changes::skip_of;
 
 /// How many events of a run are read at once.
 const PAGE: u64 = 500;
@@ -41,17 +42,6 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
     /// The runs, for the person who is `actor`; `token` is the secret of the session they undo with.
     pub(crate) const fn new(ctx: &'a Ctx<'c, S>, actor: &'a Actor, token: &'a str) -> Self {
         Self { ctx, actor, token }
-    }
-
-    /// The run, when it is this person's.
-    async fn own_run(&self, run: RunId) -> Result<ManyChangeRun, AppError> {
-        self.ctx
-            .store()
-            .many_changes_run(run)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|found| found.person == self.actor.person.id)
-            .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
     /// Everything the run did, field by field, and the events outside it that came after.
@@ -96,18 +86,28 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
     async fn plan_for_reader(&self, run: RunId) -> Result<Plan, AppError> {
         let mut plan = Self::plan(self.evaluation(run).await?);
         let mut seen: BTreeMap<IssueId, bool> = BTreeMap::new();
+        let mut versions: BTreeMap<IssueId, i64> = BTreeMap::new();
         let mut candidates: Vec<IssueId> = plan.by_issue.keys().copied().collect();
-        candidates.extend(plan.skips.iter().filter_map(|skip| issue_of(&skip.entity)));
+        candidates.extend(
+            plan.skips
+                .iter()
+                .filter_map(|skip| super::issue_of(&skip.entity)),
+        );
         for issue in candidates {
             if let std::collections::btree_map::Entry::Vacant(slot) = seen.entry(issue) {
                 let found = self.ctx.seen_issue_by_id(self.actor, issue).await?;
+                if let Some((issue, _)) = &found {
+                    versions.insert(issue.id, issue.version);
+                }
                 slot.insert(found.is_some());
             }
         }
+        plan.versions = versions;
         plan.by_issue
             .retain(|issue, _| seen.get(issue).copied().unwrap_or(false));
         plan.skips.retain(|skip| {
-            issue_of(&skip.entity).is_some_and(|issue| seen.get(&issue).copied().unwrap_or(false))
+            super::issue_of(&skip.entity)
+                .is_some_and(|issue| seen.get(&issue).copied().unwrap_or(false))
         });
         Ok(plan)
     }
@@ -134,22 +134,18 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
         }
         Plan {
             by_issue,
+            versions: BTreeMap::new(),
             skips,
             version: evaluation.version,
         }
     }
 }
 
-/// The issue a record is, when it is one.
-fn issue_of(entity: &bb_core::event::EntityRef) -> Option<IssueId> {
-    (entity.kind.as_str() == RecordKind::Issue.code())
-        .then(|| IssueId::from_bytes(entity.id.to_bytes()).ok())
-        .flatten()
-}
-
 /// What an undo would do, by issue.
 struct Plan {
     by_issue: BTreeMap<IssueId, Vec<Net>>,
+    /// The version each issue had when the plan looked at it: the undo writes on it.
+    versions: BTreeMap<IssueId, i64>,
     skips: Vec<UndoSkip>,
     version: UndoVersion,
 }
@@ -276,7 +272,7 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
     }
 
     async fn preview_undo(&self, run: RunId) -> Result<UndoPreview, AppError> {
-        self.own_run(run).await?;
+        self.ctx.own_run(self.actor, run).await?;
         Ok(self.plan_for_reader(run).await?.preview())
     }
 
@@ -290,7 +286,7 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
         if by.person != self.actor.person.id {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
-        self.own_run(run).await?;
+        self.ctx.own_run(self.actor, run).await?;
         let plan = self.plan_for_reader(run).await?;
         if plan.version != *version {
             return Ok(UndoOutcome::Changed(plan.preview()));
@@ -299,16 +295,21 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
         let mut undone = 0;
         self.ctx.set_reason(Some(format!("undo-run:{run}")));
         for (issue, nets) in &plan.by_issue {
-            let outcome = self.restore(*issue, nets).await;
+            let version = plan.versions.get(issue).copied().unwrap_or_default();
+            let outcome = self.restore(*issue, version, nets).await;
             match outcome {
                 Ok(()) => undone += nets.len() as u64,
-                Err(kind) => skips.extend(nets.iter().map(|net| UndoSkip {
+                Err(Failed::Kept(kind)) => skips.extend(nets.iter().map(|net| UndoSkip {
                     entity: net.entity.clone(),
                     field: net.field.clone(),
                     kind,
                     by: None,
                     at: None,
                 })),
+                Err(Failed::Error(error)) => {
+                    self.ctx.set_reason(None);
+                    return Err(error);
+                }
             }
         }
         self.ctx.set_reason(None);
@@ -322,24 +323,35 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
     }
 }
 
+/// Why the fields of an issue were not put back: a reason to keep them as they are, or an error
+/// that is no reason (the database was busy, something broke), which goes up and is no skip.
+enum Failed {
+    Kept(UndoSkipKind),
+    Error(AppError),
+}
+
+/// The skip a reason of the judgment of a change is, in the words of an undo.
+fn kept(reason: SkipReason) -> UndoSkipKind {
+    match reason {
+        SkipReason::ChangedSince => UndoSkipKind::ChangedSince,
+        SkipReason::NotFound => UndoSkipKind::Gone,
+        SkipReason::NotAllowed => UndoSkipKind::NotAllowed,
+        _ => UndoSkipKind::NotUndoable,
+    }
+}
+
 impl<S: AuthStore> RunsOf<'_, '_, S> {
     /// Puts the fields of one issue back by the use case of a single change, as the person who
-    /// undoes; the reason it did not is the kind of skip.
-    async fn restore(&self, issue: IssueId, nets: &[Net]) -> Result<(), UndoSkipKind> {
-        let seen = self
-            .ctx
-            .seen_issue_by_id(self.actor, issue)
-            .await
-            .map_err(|_| UndoSkipKind::Gone)?;
-        let Some((current, _)) = seen else {
-            return Err(UndoSkipKind::Gone);
-        };
-        let input = issue_change(self.token, &current, nets).ok_or(UndoSkipKind::NotUndoable)?;
+    /// undoes, on the version the plan saw; the reason it did not is the kind of skip.
+    async fn restore(&self, issue: IssueId, version: i64, nets: &[Net]) -> Result<(), Failed> {
+        let input = issue_change(self.token, issue, version, nets)
+            .ok_or(Failed::Kept(UndoSkipKind::NotUndoable))?;
         match change_issue(self.ctx, input).await {
             Ok(_) => Ok(()),
-            Err(AppError::Refused(ErrorCode::NotFound)) => Err(UndoSkipKind::Gone),
-            Err(AppError::Refused(ErrorCode::VersionChanged)) => Err(UndoSkipKind::ChangedSince),
-            Err(_) => Err(UndoSkipKind::NotAllowed),
+            Err(error) => match skip_of(error) {
+                Ok(reason) => Err(Failed::Kept(kept(reason))),
+                Err(error) => Err(Failed::Error(error)),
+            },
         }
     }
 }

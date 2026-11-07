@@ -89,7 +89,7 @@ pub(super) struct Selection<'a> {
 ///
 /// # Errors
 /// The error, when it is no reason to skip one issue.
-pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
+pub(crate) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     let reason = match &error {
         AppError::Stale(_) => Some(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.

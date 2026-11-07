@@ -142,7 +142,7 @@ pub async fn issue<S: AuthStore>(
         .await?;
     let own_fields_html = ctx.long_texts_html(&actor, &held, &issue, &view).await?;
     let description_written_by = ctx
-        .written_by(RecordKind::Issue, issue.id, "description")
+        .written_by(&held, RecordKind::Issue, issue.id, "description")
         .await?;
     Ok(held.authorize(IssueDetail {
         issue: view,

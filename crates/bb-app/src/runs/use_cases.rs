@@ -5,8 +5,7 @@
 
 use std::collections::HashMap;
 
-use bb_core::ErrorCode;
-use bb_core::event::{Actor as EventActor, EntityKind, RecordKind};
+use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{EventId, IssueId, RunId};
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::run::{RunActor, RunKind, UndoOutcome, UndoSkip, UndoSkipKind, UndoVersion};
@@ -134,13 +133,7 @@ impl Masked for UndoView {}
 impl<S: AuthStore> Ctx<'_, S> {
     /// The run, when it is the actor's own; for anybody else it is not there.
     async fn run_of(&self, actor: &crate::access::Actor, run: RunId) -> Result<RunView, AppError> {
-        let found = self
-            .store()
-            .many_changes_run(run)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|found| found.person == actor.person.id)
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let found = self.own_run(actor, run).await?;
         Ok(RunView {
             id: found.id,
             kind: found.kind,
@@ -160,16 +153,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut maker = self.line_maker().await?;
         let mut views = Vec::new();
         for skip in skips {
-            let issue = if skip.entity.kind == EntityKind::from(RecordKind::Issue) {
-                match IssueId::from_bytes(skip.entity.id.to_bytes()) {
-                    Ok(id) => match self.seen_issue_by_id(actor, id).await? {
-                        Some((issue, _)) => self.line_of(actor, &mut maker, &issue).await?,
-                        None => None,
-                    },
-                    Err(_) => None,
-                }
-            } else {
-                None
+            let issue = match super::issue_of(&skip.entity) {
+                Some(id) => match self.seen_issue_by_id(actor, id).await? {
+                    Some((issue, _)) => self.line_of(actor, &mut maker, &issue).await?,
+                    None => None,
+                },
+                None => None,
             };
             views.push(UndoSkipView {
                 issue,
@@ -222,10 +211,7 @@ pub async fn run_changes<S: AuthStore>(
     let mut seen: HashMap<IssueId, Option<(bb_core::issue::Issue, _)>> = HashMap::new();
     let mut items = Vec::new();
     for (_, event) in events {
-        if event.entity.kind != EntityKind::from(RecordKind::Issue) {
-            continue;
-        }
-        let Ok(id) = IssueId::from_bytes(event.entity.id.to_bytes()) else {
+        let Some(id) = super::issue_of(&event.entity) else {
             continue;
         };
         if let std::collections::hash_map::Entry::Vacant(place) = seen.entry(id) {
@@ -288,6 +274,8 @@ pub async fn undo_run<S: AuthStore>(
     input: UndoRun,
 ) -> Result<Authorized<UndoView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    // A key that may only look undoes nothing, and an agent never undoes (it is not the person).
+    actor.may_change_own()?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let by = RunActor {
         person: actor.person.id,
@@ -299,19 +287,22 @@ pub async fn undo_run<S: AuthStore>(
         .await?;
     let view = match outcome {
         UndoOutcome::Undone(done) => {
-            // The undo is a fact of the run too: the run says it was undone and how far.
-            let event = ctx.event(
-                by_person(actor.person.id),
-                entity(RecordKind::ChangeRun, input.run),
-                vec![
-                    set_to("undone", serde_json::json!(done.undone)),
-                    set_to("kept", serde_json::json!(done.skipped)),
-                ],
-            )?;
-            ctx.store()
-                .record_change(&event, |_transaction| Box::pin(async { Ok(()) }))
-                .await
-                .map_err(|error| internal::<S>(&error))?;
+            // The undo is a fact of the run too: the run says it was undone and how far. An undo
+            // that put nothing back (another one was first) is no fact.
+            if done.undone > 0 {
+                let event = ctx.event(
+                    by_person(actor.person.id),
+                    entity(RecordKind::ChangeRun, input.run),
+                    vec![
+                        set_to("undone", serde_json::json!(done.undone)),
+                        set_to("kept", serde_json::json!(done.skipped)),
+                    ],
+                )?;
+                ctx.store()
+                    .record_change(&event, |_transaction| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(|error| internal::<S>(&error))?;
+            }
             UndoView {
                 version: input.version,
                 goes_back: done.undone,

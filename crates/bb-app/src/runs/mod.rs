@@ -11,6 +11,7 @@ use bb_core::run::{
 use jiff::Timestamp;
 
 mod marks;
+mod own;
 mod records;
 mod restore;
 mod service;
@@ -22,6 +23,7 @@ mod fake;
 
 pub(crate) use marks::Marks;
 pub use marks::WrittenByView;
+pub(crate) use own::issue_of;
 pub use records::RunRecordStore;
 pub use service::RunsOf;
 pub use use_cases::{

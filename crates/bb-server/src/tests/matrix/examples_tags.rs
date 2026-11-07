@@ -336,7 +336,7 @@ async fn many_changes_request(
         "undoRun" => (
             "POST",
             format!("/api/v1/runs/{NOBODYS_ID}/undo"),
-            Some(json!({"version": "0"})),
+            Some(json!({"preview_version": "0"})),
         ),
         _ => return Ok(None),
     }))

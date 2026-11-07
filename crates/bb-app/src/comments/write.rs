@@ -54,7 +54,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?;
         let mine = comment.author == actor.person.id;
         let written_by = self
-            .written_by(RecordKind::Comment, comment.id, "text")
+            .written_by(held, RecordKind::Comment, comment.id, "text")
             .await?;
         Ok(CommentView {
             id: comment.id,
