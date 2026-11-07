@@ -2,7 +2,7 @@
 //! (ADR-0013, COMP-10, ADR-0035 decision 9).
 //!
 //! The registry is the table in `crates/bb-app/src/ai/tools/registry.rs`; the names of the tools
-//! are the words of `Tool` in `crates/bb-core/src/ai.rs`. The rules:
+//! are the words of `Tool` in `crates/bb-core/src/ai/tools.rs`. The rules:
 //!
 //! - **Every tool is in the table once**, as `reads(Tool::X, "use_case", …)` or
 //!   `changes(Tool::X, "use_case", …)`: it declares whether it reads or changes (which fixes the
@@ -27,7 +27,7 @@ use crate::rust_source::{strip, strip_comments, without_tests};
 use crate::source::Source;
 
 const REGISTRY: &str = "crates/bb-app/src/ai/tools/registry.rs";
-const TOOL_WORDS: &str = "crates/bb-core/src/ai.rs";
+const TOOL_WORDS: &str = "crates/bb-core/src/ai/tools.rs";
 const TOOLS_FOLDER: &str = "crates/bb-app/src/ai/tools/";
 const TESTS_FOLDER: &str = "crates/bb-app/src/tests/";
 const APP_FOLDER: &str = "crates/bb-app/src/";
@@ -409,6 +409,13 @@ fn dispatch_findings(sources: &[Source], entries: &[Entry]) -> Vec<Finding> {
     found
 }
 
+/// Whether code writes a `ToolSpec { … }` of its own (a name that only ends in `ToolSpec`, like the
+/// description of a tool for the provider, is another type).
+fn builds_a_spec(code: &str) -> bool {
+    code.match_indices("ToolSpec {")
+        .any(|(at, _)| !code[..at].chars().next_back().is_some_and(is_ident))
+}
+
 /// No file but the registry and the words builds a tool.
 fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> {
     let mut found = Vec::new();
@@ -417,7 +424,7 @@ fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> 
             continue;
         }
         let code = strip_comments(&without_tests(text));
-        if code.contains("ToolSpec {") {
+        if builds_a_spec(&code) {
             found.push(Finding::at(
                 path,
                 "A tool is built here. Tools are made only in the registry (`registry.rs`); add an entry there.",
@@ -580,6 +587,17 @@ mod tests {
         let found = messages(&sources);
         assert!(has(&found, "A tool is built here"));
         assert!(has(&found, "`search_issues` is written"));
+    }
+
+    #[test]
+    fn good_example_another_type_that_ends_in_the_same_word_is_no_tool() {
+        let mut sources = good();
+        sources.push(source(
+            "crates/bb-app/src/ai/mod.rs",
+            "pub struct AiToolSpec { pub name: String }
+fn x() { AiToolSpec { name: a } }",
+        ));
+        assert_eq!(messages(&sources), Vec::<String>::new());
     }
 
     #[test]

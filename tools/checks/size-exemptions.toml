@@ -4,6 +4,11 @@
 # A file that a tool writes is listed under `generated` and needs no follow-up.
 
 [[exempt]]
+path = "crates/bb-store/src/schema.rs"
+lines = 802
+reason = "The list of the stored tables (`stored_tables!`) is one list that DATA-MARKS reads; the tables of AI brought it over the ceiling. Split by area in M7-F29."
+
+[[exempt]]
 path = "crates/bb-api/src/permissions.rs"
 lines = 836
 reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."

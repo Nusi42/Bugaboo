@@ -442,9 +442,14 @@ status = "active"
 id = "ARCH-AI-TOOLS"
 title = "AI tools exist only in the one registry and never reach people-ranking, assignment or working-hours use cases"
 rule = "ADR-0013, COMP-10"
-tool = "xtask (reads the table of crates/bb-app/src/ai/tools/registry.rs against the words of Tool in crates/bb-core/src/ai.rs: every tool once, as reads or changes, with a use case that exists in bb-app and that the function the table runs the tool with calls (the table is the dispatch: nothing else chooses a function by the tool); every tool that changes has a test named ai_21_preview_<tool>; no ToolSpec and no tool name as a string outside the registry; no tool, no bb-mcp and no bb-ai code calls a use case of the list DESIGNED_OUT of the registry or of working_hours/ and roles/, or imports their modules; comments and test code do not count)"
+tool = "xtask (reads the table of crates/bb-app/src/ai/tools/registry.rs against the words of Tool in crates/bb-core/src/ai/tools.rs: every tool once, as reads or changes, with a use case that exists in bb-app and that the function the table runs the tool with calls (the table is the dispatch: nothing else chooses a function by the tool); every tool that changes has a test named ai_21_preview_<tool>; no ToolSpec and no tool name as a string outside the registry; no tool, no bb-mcp and no bb-ai code calls a use case of the list DESIGNED_OUT of the registry or of working_hours/ and roles/, or imports their modules; comments and test code do not count)"
 when = ["edit", "commit", "ci"]
-files = ["crates/bb-app/**", "crates/bb-core/src/ai.rs", "crates/bb-mcp/**", "crates/bb-ai/**"]
+files = [
+  "crates/bb-app/**",
+  "crates/bb-core/src/ai/tools.rs",
+  "crates/bb-mcp/**",
+  "crates/bb-ai/**",
+]
 status = "active"
 
 [[check]]
