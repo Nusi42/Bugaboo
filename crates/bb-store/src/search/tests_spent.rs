@@ -75,6 +75,15 @@ async fn arch_db_parity_time_spent_is_the_same_sum_through_the_list_the_search_a
                 (nowhere, Minutes::default()),
             ]
         );
+        // The order asked is the order given, and an issue asked twice is answered twice.
+        assert_eq!(
+            storage.spent_on_issues(&[second, first, second]).await?,
+            vec![
+                (second, Minutes::new(15)),
+                (first, Minutes::new(120)),
+                (second, Minutes::new(15)),
+            ]
+        );
         // The sum over a search counts only the issues the sight lets it find.
         let everything = request(&data, "", None, 1);
         assert_eq!(

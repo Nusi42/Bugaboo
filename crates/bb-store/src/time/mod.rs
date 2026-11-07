@@ -8,6 +8,8 @@
 mod entries;
 mod timer;
 
+use std::collections::HashMap;
+
 use bb_app::search::{SearchFailure, SearchRequest};
 use bb_app::time::spent::TimeSpentStore;
 use bb_core::id::{IssueId, UserId};
@@ -69,18 +71,12 @@ impl TimeSpentStore for AuthStorage {
                     read_minutes(row.get(Answered)?)?,
                 ))
             })
-            .collect::<Result<Vec<_>, StoreError>>()?;
+            .collect::<Result<HashMap<IssueId, Minutes>, StoreError>>()?;
         // One row for each issue asked about, in the order asked; one the store does not have
         // has no entries either.
         Ok(issues
             .iter()
-            .map(|issue| {
-                let minutes = found
-                    .iter()
-                    .find(|(id, _)| id == issue)
-                    .map_or_else(Minutes::default, |(_, minutes)| *minutes);
-                (*issue, minutes)
-            })
+            .map(|issue| (*issue, found.get(issue).copied().unwrap_or_default()))
             .collect())
     }
 
