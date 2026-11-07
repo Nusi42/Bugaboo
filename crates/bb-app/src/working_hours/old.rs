@@ -26,11 +26,13 @@ use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, in
 use crate::member::work_day as member;
 
 /// The first date that is still inside the keep period: a day with an earlier date is older than
-/// it. Counted in whole years from today in the organization's zone.
+/// it. Counted in whole years and one day from today in the organization's zone: the keep period
+/// is a minimum, and the day of a person in another zone has another date for the same moment, so
+/// a day is deleted a day late rather than a day early.
 fn kept_from(layers: &Layers, now: Timestamp) -> Result<Date, AppError> {
     let today = date_of(now, Region::of(layers).zone());
     today
-        .checked_sub(Span::new().years(keep_years(layers)))
+        .checked_sub(Span::new().years(keep_years(layers)).days(1))
         .map_err(|_| ErrorCode::InvalidRequest.into())
 }
 

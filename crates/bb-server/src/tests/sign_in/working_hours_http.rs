@@ -474,21 +474,44 @@ async fn time_12_totals_only_answers_week_totals_and_nothing_else() -> TestResul
         rig.set_organization_switch("working-hours.totals-only", true)
             .await?;
         let base = format!("/api/v1/people/{bob_id}/work-days");
-        let read = hana
+        // The week that runs shows no total, even though Bob's day of yesterday has ended.
+        let running_week = hana
             .send("GET", &format!("{base}?from={YESTERDAY}&to={TODAY}"), None)
             .await?;
-        let body = ok(&read)?;
+        let body = ok(&running_week)?;
         assert_eq!(body["days"], json!([]));
         assert_eq!(body["totals"], Value::Null);
         assert_eq!(body["totals_only"], true);
         assert_eq!(body["may_change"], false);
-        assert_eq!(body["weeks"][0]["worked"], 480);
-        assert!(body["weeks"][0].get("breaks").is_none());
-        // A stretch of one day reads the whole week: no day is told apart from its week.
-        let today_only = hana
-            .send("GET", &format!("{base}?from={TODAY}&to={TODAY}"), None)
+        assert_eq!(body["weeks"], json!([]));
+        // The week before is over, so its total shows and nothing else of it.
+        let mut earlier = bob
+            .send(
+                "PATCH",
+                &format!("{MINE}/{EARLIER}"),
+                Some(times(
+                    EARLIER,
+                    "07:00",
+                    "15:00",
+                    0,
+                    Some("Typed in afterwards"),
+                )),
+            )
             .await?;
-        assert_eq!(ok(&today_only)?["weeks"], body["weeks"]);
+        ok(&earlier)?;
+        earlier = hana
+            .send("GET", &format!("{base}?from={EARLIER}&to={TODAY}"), None)
+            .await?;
+        let last_week = ok(&earlier)?;
+        assert_eq!(last_week["days"], json!([]));
+        assert_eq!(last_week["weeks"].as_array().map(Vec::len), Some(1));
+        assert_eq!(last_week["weeks"][0]["worked"], 480);
+        assert!(last_week["weeks"][0].get("breaks").is_none());
+        // A stretch of one day reads the whole week: no day is told apart from its week.
+        let one_day = hana
+            .send("GET", &format!("{base}?from={EARLIER}&to={EARLIER}"), None)
+            .await?;
+        assert_eq!(ok(&one_day)?["weeks"], last_week["weeks"]);
         // A day that runs counts as nothing until it ends, so nobody learns that Bob works now.
         rig.clock.advance(HOUR);
         ok(&start(&mut bob).await?)?;
@@ -496,7 +519,7 @@ async fn time_12_totals_only_answers_week_totals_and_nothing_else() -> TestResul
         let running = hana
             .send("GET", &format!("{base}?from={TODAY}&to={TODAY}"), None)
             .await?;
-        assert_eq!(ok(&running)?["weeks"], body["weeks"]);
+        assert_eq!(ok(&running)?["weeks"], json!([]));
         let change = hana
             .send(
                 "PATCH",
@@ -567,10 +590,29 @@ async fn priv_09_old_working_hours_are_deleted_only_when_an_administrator_says_s
             )
             .await?;
         ok(&made)?;
+        // A day exactly two years and a day back is not old yet: the keep period is a minimum, and
+        // a person in another zone has another date for the same moment.
+        let border = "2025-01-14";
+        rig.clock.advance(1);
+        let at_the_border = bob
+            .send(
+                "PATCH",
+                &format!("{MINE}/{border}"),
+                Some(times(
+                    border,
+                    "07:00",
+                    "15:00",
+                    0,
+                    Some("From the paper list"),
+                )),
+            )
+            .await?;
+        ok(&at_the_border)?;
         // Nothing deletes it by itself.
         rig.run_jobs().await?;
         let counted = ok(&ada.send("GET", OLD, None).await?)?.clone();
         assert_eq!(counted["total"], 1);
+        assert_eq!(counted["before"], border);
         assert_eq!(counted["keep_years"], 2);
         assert_eq!(counted["people"][0]["person"]["name"], "Bob Baker");
         // Only who may change organization settings counts or deletes them.
@@ -590,6 +632,7 @@ async fn priv_09_old_working_hours_are_deleted_only_when_an_administrator_says_s
         // The day younger than the keep period stays; the old one is gone with its history.
         let kept = mine(&mut bob, YESTERDAY, YESTERDAY).await?;
         assert_eq!(days(&kept).len(), 1);
+        assert_eq!(days(&mine(&mut bob, border, border).await?).len(), 1);
         let history = bob
             .send("GET", &format!("{MINE}/{old}/history"), None)
             .await?;

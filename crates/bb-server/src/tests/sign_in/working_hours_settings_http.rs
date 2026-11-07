@@ -98,7 +98,8 @@ async fn time_12_turning_on_totals_only_is_in_the_security_log_and_others_see_to
         let after = ok(&hana.send("GET", &base, None).await?)?.clone();
         assert_eq!(after["totals_only"], true);
         assert_eq!(after["days"], json!([]));
-        assert_eq!(after["weeks"][0]["worked"], 480);
+        // The week that runs shows no total, even for a day that has ended.
+        assert_eq!(after["weeks"], json!([]));
         // Turning it off again is in the log too.
         let off = ada
             .send("DELETE", "/api/v1/settings/working-hours.totals-only", None)

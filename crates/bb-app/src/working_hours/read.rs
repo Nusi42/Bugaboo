@@ -5,6 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
+use bb_core::time::day::date_of;
 use bb_core::wording::Region;
 use bb_core::working_time::Totals;
 use bb_core::working_time::record::StoredDay;
@@ -126,7 +127,15 @@ pub async fn work_days<S: AuthStore>(
             (day.day.date, totals)
         })
         .collect();
-    let weeks = weeks_of(&counted, first, last, &region);
+    let mut weeks = weeks_of(&counted, first, last, &region);
+    if totals_only {
+        // A week that runs says how much somebody has worked so far this week, so only weeks
+        // that are over are shown (ADR-0035, decision 8).
+        let running = region
+            .week_of(date_of(now, region.zone()))
+            .map(|week| week.first());
+        weeks.retain(|week| running.is_some_and(|running| week.first < running));
+    }
     let views: Vec<WorkDayView> = if totals_only {
         Vec::new()
     } else {

@@ -3,6 +3,7 @@
 //! entries*, the lengths only to a reader of *Time spent*, and no route of time orders or ranks
 //! people.
 
+use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
 use bb_core::access::FieldLevel;
 use bb_testing::{TestResult, each_database};
@@ -12,6 +13,7 @@ use super::fields_http::reader_of;
 use super::http::rig_and_app;
 use super::issues_site::{ISSUES, Site, key_of, ok};
 use super::time_http::MY_ENTRIES;
+use super::working_hours_http::{YESTERDAY, hana_and_bob, times};
 
 /// The name the administrator of the tests goes by.
 const ADA: &str = "Ada Admin";
@@ -82,6 +84,52 @@ async fn priv_09_the_history_shows_others_the_date_of_an_entry_and_never_the_mom
         assert_eq!(other["day"], "2027-01-14", "{other}");
         assert_eq!(other["at"], "2027-01-14T00:00:00Z", "{other}");
         assert!(!other.to_string().contains("08:00"), "{other}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_09_changing_working_hours_of_others_counts_only_together_with_seeing_them()
+-> TestResult {
+    each_database("priv_09_change_needs_see", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (_hana, _bob, bob_id) = hana_and_bob(&rig, &site).await?;
+        let mut changer = reader_of(
+            &site,
+            &rig,
+            "changer@example.test",
+            &[Permission::ChangeWorkingHoursOfOthers],
+            &[],
+        )
+        .await?;
+        let day = format!("/api/v1/people/{bob_id}/work-days/{YESTERDAY}");
+        let change = changer
+            .send(
+                "PATCH",
+                &day,
+                Some(times(YESTERDAY, "07:00", "16:00", 1, Some("Badge log"))),
+            )
+            .await?;
+        assert_eq!(
+            (change.status, change.code()),
+            (StatusCode::NOT_FOUND, "resource.not-found"),
+            "{}",
+            change.body
+        );
+        // The day is what it was.
+        let (mut hana_again, _) = site
+            .person_called(StartingRole::Hr, "hana2", "Hana Two")
+            .await?;
+        let read = hana_again
+            .send(
+                "GET",
+                &format!("/api/v1/people/{bob_id}/work-days?from={YESTERDAY}&to={YESTERDAY}"),
+                None,
+            )
+            .await?;
+        assert_eq!(ok(&read)?["days"][0]["version"], 1);
         Ok(())
     })
     .await

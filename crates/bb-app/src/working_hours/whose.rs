@@ -2,9 +2,10 @@
 //! sees and who changes another person's working hours (ADR-0035, decision 8).
 //!
 //! - One's own days, always.
-//! - Another person's only with *See working hours of others* (to read) or *Change working hours of
-//!   others* (to change), both for the whole organization. Without either, another person's days
-//!   answer exactly like a person that does not exist, so nobody learns who has days.
+//! - Another person's only with *See working hours of others* (to read), and to change them only
+//!   with *Change working hours of others* as well, both for the whole organization. Without
+//!   *See*, another person's days answer exactly like a person that does not exist, so nobody
+//!   learns who has days.
 //! - *Totals only* shows week totals and nothing else, for every reader of another person's days,
 //!   and turns changes of them off.
 
@@ -41,9 +42,10 @@ impl Whose {
     /// Whether the reader may change the days.
     pub(super) fn may_change(&self) -> bool {
         self.own
-            || (self
-                .evaluation
-                .allows(Permission::ChangeWorkingHoursOfOthers)
+            || (self.evaluation.allows(Permission::SeeWorkingHoursOfOthers)
+                && self
+                    .evaluation
+                    .allows(Permission::ChangeWorkingHoursOfOthers)
                 && !self.totals_only())
     }
 
@@ -109,15 +111,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         if whose.own {
             return Ok(whose);
         }
-        let sees = whose.evaluation.allows(Permission::SeeWorkingHoursOfOthers);
-        let changes = whose
-            .evaluation
-            .allows(Permission::ChangeWorkingHoursOfOthers);
-        if !sees && !changes {
+        // Changing counts only together with seeing: a role with *Change* alone is told what a
+        // person is told who may do neither.
+        if !whose.evaluation.allows(Permission::SeeWorkingHoursOfOthers) {
             return Err(ErrorCode::NotFound.into());
         }
         self.known_person(&whose).await?;
-        if !changes {
+        if !whose
+            .evaluation
+            .allows(Permission::ChangeWorkingHoursOfOthers)
+        {
             return Err(ErrorCode::Forbidden.into());
         }
         if whose.totals_only() {
