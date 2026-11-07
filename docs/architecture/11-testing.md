@@ -174,7 +174,7 @@ Enforced by: TEST-SAMPLE-DATA (the agents, hand-overs and standing rules hold th
 
 ### Speed on 1 M issues
 
-M7 adds three scenarios to the nightly run (budgets in `tools/checks/perf-bench.toml`, PERF-BENCH, WP-13): *changes since* of an agent that may see a big project, the search `agent-state:waiting-for-you`, and *My agents* of a person with two agents and many hand-overs, each on 1 M issues with agent work on part of them (`dataset large`).
+M7 adds three scenarios to the nightly run (budgets in `tools/checks/perf-bench.toml`, PERF-BENCH, WP-13): *changes since* of an agent that may see a big project, the search `agent state is "waiting-for-you"`, and *My agents* of a person with two agents and many hand-overs, each on 1 M issues with agent work on part of them (`dataset large`).
 
 The first numbers, on this computer, in a release build, at the 95th percentile (p50 and p99 in the file of the run), against the budget of 100 ms (PERF-01):
 

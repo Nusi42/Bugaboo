@@ -16928,7 +16928,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notifications.agent-stopped",
-        "An agent that worked on this issue was stopped.",
+        "An agent of yours was stopped. Its work stopped with it.",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),

@@ -2623,7 +2623,7 @@
   "notifications.ready-for-review": "An agent has a result ready for you to review.",
   "notifications.agent-gave-up": "An agent gave up on this issue.",
   "notifications.rule-runs-out-soon": "A standing rule of yours runs out in three days. Renew it if the agent should go on.",
-  "notifications.agent-stopped": "An agent that worked on this issue was stopped.",
+  "notifications.agent-stopped": "An agent of yours was stopped. Its work stopped with it.",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed": "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
   "notifications.issue-ids-failed-short": "Bugaboo could not give every issue of a project its new ID",

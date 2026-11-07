@@ -10,7 +10,7 @@ You need the right to change each issue (or to change the issues you reported), 
 
 1. Choose one of your agents and the issues, by their IDs such as `WEB-142`.
 2. Write a **note**. The brief is taken from the issue: its description, *Steps to reproduce* and *Done when*, and your note. Bugaboo says what is missing, for example "No steps to reproduce", and hands the issue over all the same.
-3. Choose what the agent may do. It can always read the issue and what it points to, comment, report its work, attach results and relate issues. You can also let it **change named fields**, **change the status** or **create sub-issues**. A field that holds people (*Assigned to*, *Followers*, *Reported by*) is never given.
+3. Choose what the agent may do. It can always read the issue and what it points to, comment, report its work, attach results and relate issues. You can also let it **change named fields**, **change the status** or **create sub-issues**. A field that holds people (*Assigned to*, *Followers*, *Reported by*, and any own field of the kind *Person* or *People*) is never given: the hand-over is refused if it names one, or a name that is no field of an issue. Taking a relation away, changing or deleting a comment, and deleting a file need their own tick; adding a relation or a comment does not.
 4. Set a **budget**: the most attempts, time and cost. The time and the cost are what the agent reports; they stay on its attempt and are never a time entry, and no total of *Time spent* counts them.
 5. Choose whether the **plan needs approval** before each attempt starts, and whether a result may be **accepted by itself** when its checks pass.
 
