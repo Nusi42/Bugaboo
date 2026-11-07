@@ -10,7 +10,10 @@
 //! the transaction found, such as the version a count-up gave) or `save_text` (the save of a long
 //! text under its lock, which calls `record_change` itself), or the method `record_change` of the
 //! context of the fields (`fields/definitions.rs`), which calls the port and then drops what the
-//! request kept of the field definitions. Comments and
+//! request kept of the field definitions, or *Apply* of the registry of AI tools: a command whose
+//! body calls `call_tool(` in the mode `ToolMode::Apply` saves through the use case of the tool,
+//! which writes through the port itself (the assistant, AI-05); ARCH-AI-TOOLS holds every tool that
+//! changes something to an `apply` function of the registry. Comments and
 //! string literals are removed before the code is read, so a mention of the call does not count.
 //! Calling a command a query is a way around the rule; review looks at the names (the type of the
 //! input is part of the signature, not just a parameter name). This check reads the code; the
@@ -35,6 +38,9 @@ const RECORD_MANY: &str = "record_changes";
 /// The other call that writes a change with its event: it checks the edit lock and calls
 /// `record_change` inside (`editing/save.rs`).
 const SAVE_TEXT: &str = "save_text";
+/// The call of the registry and the mode that runs the use case of a tool that changes something.
+const APPLY_CALL: &str = "call_tool(";
+const APPLY_MODE: &str = "ToolMode::Apply";
 /// The file with the table of the test that runs every command.
 const TABLE_FILE: &str = "crates/bb-app/src/tests/events.rs";
 /// The ending of the input type of a use case that only reads.
@@ -147,9 +153,11 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{') else {
                 continue;
             };
-            if [RECORD, RECORD_MANY, SAVE_TEXT]
-                .iter()
-                .any(|call| body.contains(&format!("{call}(")))
+            let applies_a_tool = body.contains(APPLY_CALL) && body.contains(APPLY_MODE);
+            if applies_a_tool
+                || [RECORD, RECORD_MANY, SAVE_TEXT]
+                    .iter()
+                    .any(|call| body.contains(&format!("{call}(")))
             {
                 let line_start = code[..at].rfind('\n').map_or(0, |newline| newline + 1);
                 let is_public = code[line_start..at].trim_start().starts_with("pub");
@@ -230,6 +238,28 @@ mod tests {
 }
 ";
         assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn good_example_a_command_that_applies_a_tool_of_the_registry() {
+        let text =
+            "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
+    call_tool(ctx, ToolCallQuery { mode: ToolMode::Apply, ..query }).await?;
+    Ok(())
+}
+";
+        assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_command_that_calls_a_tool_without_applying_it() {
+        let text =
+            "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
+    call_tool(ctx, ToolCallQuery { mode: ToolMode::Preview, ..query }).await?;
+    Ok(())
+}
+";
+        assert_eq!(found(text).len(), 1);
     }
 
     #[test]
