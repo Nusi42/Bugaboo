@@ -285,7 +285,7 @@ What each means in practice:
 - **AI-04 (M)** — The AI always acts **as the current user**, with that user's permissions. It never gets a service-level view of the data.
 - **AI-05 (M)** — Prompt-injection safeguards:
   - issue content is treated as untrusted data;
-  - every write proposed by the AI needs explicit user confirmation, shown as a diff;
+  - every write the assistant or a standing rule proposes needs explicit user confirmation, shown as a before and after; an AI app with *See and change* and an agent within its work act as ADR-0042 and ADR-0029 decide;
   - AI output is rendered with no remote images or auto-loaded links (this blocks data exfiltration);
   - each tool call is audit-logged.
 - **AI-06 (V1)** — Usage limits and cost budgets per user and per instance.
@@ -319,7 +319,7 @@ What each means in practice:
 - **AI-33 (M)** — **Agent work** on the issue page, apart from the comments: the brief, attempts with plan, steps, results (links, test reports) and the time and cost the agent reports; the states *Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped*, shown on list rows and searchable.
 - **AI-34 (M)** — **Questions and plans**: an agent asks instead of guessing; its work waits and its person gets a notification; the answer joins the brief. An optional plan approval before each attempt.
 - **AI-35 (M)** — **Review**: *Accept* (the reviewer picks the next status), *Send back* with a note (a new attempt), *Throw away* (everything the attempts changed in Bugaboo is undone in one step). Per project, *Accept by itself when its checks pass* (off at the start).
-- **AI-36 (M)** — **MCP tools for agents**: take a handed-over issue (all or nothing), report a step, ask, attach a result, give up, and *changes since*; `preview` on every write tool; each tool says whether it changes something; no edit-lock takeover; texts marked with who wrote them (person in the project, Guest, outside, agent).
+- **AI-36 (M)** — **MCP tools for agents**: take a handed-over issue (all or nothing), report a step, ask, attach a result, give up, and *changes since*; `preview` on every write tool; each tool says whether it changes something; no edit-lock takeover; texts marked with who wrote them (the author marks of ADR-0013, amendment M7).
 - **AI-37 (M)** — **My agents**: all of a person's agents and their work in one place, *Waiting for you* first (questions, plans, reviews, rules about to run out); pause or stop one, or *Stop all my agents*; limits per agent (changes per minute, issues at once, attempts). On a phone, *Waiting for you* first.
 - **AI-38 (M)** — **Runs**: every session of an AI app acting for a person and every attempt of an agent is one run, shown as its list of changes and undone in one step; text written through MCP is marked *Written by an AI app* or *Written by an agent*.
 

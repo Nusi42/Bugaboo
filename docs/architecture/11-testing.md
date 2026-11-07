@@ -139,7 +139,7 @@ Enforced by: TEST-SAMPLE-DATA (the agents, hand-overs and standing rules hold th
 `web/app/e2e/m7-exit-demo.spec.ts` runs the exit demo of [04-milestones](../04-milestones.md) (M7) with an MCP client inside the test and the fake provider, with pictures in the four themes on a computer and a phone. By hand (M7-Q9), the review page shows how to try it with the real things:
 
 - **A real AI app:** `cargo xtask dev --sample` starts the server on the sample; one command adds it to Claude Code as an MCP server (`claude mcp add` with the address `cargo xtask dev` prints). Claude Code registers itself (its return address is on the computer), the browser shows the consent step, and the app works as the person who allowed it.
-- **A real provider:** in *Organization settings › AI*, *Set up the assistant* with the maintainer's own Anthropic key (typed in the page, stored as a secret in the local data folder under `target/`, never in Git) after the agreement step, or a local model through the *OpenAI-compatible* choice.
+- **A real provider:** in *Organization settings › Connections › AI*, *Set up the assistant* with the maintainer's own Anthropic key (typed in the page, stored as a secret in the local data folder under `target/`, never in Git) after the agreement step, or a local model through the *OpenAI-compatible* choice.
 - The sample starts with AI on and the fake provider, so nothing leaves the computer until the maintainer changes the provider.
 
 ### Speed on the sample
