@@ -9,6 +9,7 @@ import {
   SettingsFrame,
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
+import { rememberReturn } from "../shared/return-to.ts";
 import { loadMySettings } from "../shared/my-settings.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
 import { OnlyWith } from "./OnlyWith.tsx";
@@ -123,9 +124,16 @@ async function joinIssues(): Promise<void> {
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "app",
-  beforeLoad: async (): Promise<{ readonly person: Person }> => {
+  beforeLoad: async ({
+    location,
+  }: {
+    readonly location: { readonly href: string };
+  }): Promise<{ readonly person: Person }> => {
     const person = await currentPerson();
     if (person === null) {
+      // The page asked for is kept when it is the consent step of an AI app: after signing in the
+      // person comes back to it.
+      rememberReturn(location.href);
       throw redirect({ to: await startPath() });
     }
     if (person.second_step_setup_required) {

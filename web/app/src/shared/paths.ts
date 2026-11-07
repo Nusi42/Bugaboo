@@ -27,6 +27,8 @@ export const paths = {
   security: "/me/security",
   sessions: "/me/sessions",
   accessKeys: "/me/access-keys",
+  connectedApps: "/me/connected-apps",
+  connect: "/connect",
   organizationSettings: "/settings",
   people: "/settings/people",
   person: "/settings/people/$person",

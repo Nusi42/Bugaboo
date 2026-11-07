@@ -3,6 +3,7 @@
 import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
+import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
 import type { messages as follow } from "./follow.ts";
@@ -36,6 +37,7 @@ export type MessageKey =
   | keyof typeof access
   | keyof typeof account
   | keyof typeof admin
+  | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
   | keyof typeof follow
@@ -138,6 +140,10 @@ export interface MessageArguments {
     who: string | number;
   };
   "conflict.sentence-plain": { ago: string | number; timed: string; who: string | number };
+  "connect.title": { app: string | number };
+  "connected-apps.row.allowed": { when: string | number };
+  "connected-apps.row.last-used": { when: string | number };
+  "connected-apps.take-back-name": { name: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };

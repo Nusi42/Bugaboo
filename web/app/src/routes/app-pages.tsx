@@ -96,6 +96,22 @@ export const accessKeysRoute = createRoute({
   component: lazyRouteComponent(() => import("../features/my-settings/index.ts"), "AccessKeysPage"),
 });
 
+export const connectedAppsRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.connectedApps,
+  component: lazyRouteComponent(
+    () => import("../features/my-settings/index.ts"),
+    "ConnectedAppsPage",
+  ),
+});
+
+/** *Connect an app*: where an AI app sends the person to say *Allow* or *Cancel* (AI-22). */
+export const connectRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.connect,
+  component: lazyRouteComponent(() => import("../features/connect/index.ts"), "ConnectScreen"),
+});
+
 /** Where *Organization settings* starts. */
 export const organizationSettingsIndexRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,

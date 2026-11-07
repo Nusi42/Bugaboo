@@ -118,4 +118,12 @@ export const ownPlaces: readonly Place[] = [
     group: "nav.group.sign-in",
     listed: true,
   },
+  {
+    path: paths.connectedApps,
+    name: "nav.connected-apps",
+    icon: iconName["access-keys"],
+    parent: paths.mySettings,
+    group: "nav.group.sign-in",
+    listed: true,
+  },
 ];

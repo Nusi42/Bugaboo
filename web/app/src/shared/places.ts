@@ -32,6 +32,14 @@ export const places: readonly Place[] = [
     listed: false,
   },
   {
+    // An AI app sends the person here to say *Allow* or *Cancel*; it is reached by that address only.
+    path: paths.connect,
+    name: "connect.page",
+    icon: iconName["access-keys"],
+    parent: paths.home,
+    listed: false,
+  },
+  {
     // The search over every project, and a saved search: reached from the menu's *Saved searches*.
     path: paths.search,
     name: "search.page.title",

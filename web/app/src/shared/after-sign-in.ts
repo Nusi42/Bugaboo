@@ -4,6 +4,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { loadStartPage } from "./start-page-setting.ts";
 import { paths } from "./paths.ts";
 import { forgetDeviceChoices } from "./personal-sources.ts";
+import { takeReturn } from "./return-to.ts";
 import { forgetPerson } from "./session.ts";
 
 /** What the server answers when somebody signed in or made an account. */
@@ -30,7 +31,13 @@ export function useAfterSignIn(): (answer: SignedIn) => void {
       forgetPerson();
       // From now on the person's choices live on the server: what the device kept before is gone.
       forgetDeviceChoices();
-      // The person's start page, which the server keeps with their other settings.
+      // An AI app that sent the person here is waiting for the consent step: back to it. Else the
+      // person's start page, which the server keeps with their other settings.
+      const waiting = takeReturn();
+      if (waiting !== null) {
+        router.history.push(waiting);
+        return;
+      }
       void loadStartPage().then((start) => {
         router.history.push(start);
       });

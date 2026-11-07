@@ -108,6 +108,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.security,
       paths.sessions,
       paths.accessKeys,
+      paths.connectedApps,
     ]);
     expect(topicGroups(paths.organizationSettings, [])).toEqual([]);
     expect(

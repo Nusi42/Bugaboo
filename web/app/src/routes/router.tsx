@@ -41,6 +41,8 @@ import {
 import {
   accessKeysRoute,
   appearanceRoute,
+  connectedAppsRoute,
+  connectRoute,
   handleRoute,
   homeRoute,
   mailServerRoute,
@@ -78,6 +80,7 @@ const routeTree = rootRoute.addChildren([
   setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
     homeRoute,
+    connectRoute,
     notificationsRoute,
     timeRoute,
     timeOthersRoute,
@@ -108,6 +111,7 @@ const routeTree = rootRoute.addChildren([
       securityRoute,
       sessionsRoute,
       accessKeysRoute,
+      connectedAppsRoute,
     ]),
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,

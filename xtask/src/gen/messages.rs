@@ -70,10 +70,11 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 31] = [
+const PARTS: [Part; 32] = [
     part!("access"),
     part!("account"),
     part!("admin"),
+    part!("connect"),
     part!("fields"),
     part!("files"),
     part!("follow"),
@@ -107,7 +108,7 @@ const PARTS: [Part; 31] = [
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 99] = [
+const BROWSER_AREAS: [&str; 101] = [
     "access",
     "access-keys",
     "app",
@@ -119,6 +120,8 @@ const BROWSER_AREAS: [&str; 99] = [
     "code-app",
     "comments",
     "common",
+    "connect",
+    "connected-apps",
     "conflict",
     "data-folder",
     "editing",
