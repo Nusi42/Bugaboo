@@ -19,6 +19,7 @@ mod oauth;
 mod oauth_actor;
 mod oauth_admin;
 mod oauth_rate;
+mod oauth_session;
 mod oauth_store;
 mod oauth_token;
 mod oauth_types;
@@ -214,6 +215,7 @@ pub(crate) use oauth_admin::clean_old_grants;
 pub use oauth_admin::{
     add_web_address, mcp_identity, oauth_metadata, remove_web_address, web_addresses,
 };
+pub use oauth_session::{end_app_runs, start_app_session};
 pub use oauth_store::{GrantRecord, OAuthCleaned, OAuthStore};
 pub use oauth_token::exchange_token;
 pub use oauth_types::*;
@@ -731,6 +733,10 @@ use_cases! {
     hand_agent(HandAgent) -> Done;
     /// Accepts an agent that was handed over.
     accept_agent(AcceptAgent) -> Done;
+    /// Opens the run of a session of an AI app.
+    start_app_session(StartAppSession) -> AppSession;
+    /// Closes the runs of sessions of AI apps that ended or were idle too long.
+    end_app_runs(EndAppRuns) -> Done;
     /// Says where the sign-in of AI apps is.
     oauth_metadata(OAuthMetadataQuery) -> OAuthMetadata;
     /// Says who a call to the MCP server is from.

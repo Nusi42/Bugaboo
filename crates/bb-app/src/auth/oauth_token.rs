@@ -49,7 +49,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let now = self.now();
         let event = self.event(
             by(person),
-            entity(RecordKind::OAuthGrant, grant),
+            entity(RecordKind::ConnectedApp, grant),
             vec![set_to("ended", json!(how.code()))],
         )?;
         let ended = self
@@ -63,7 +63,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.note(
                 SecurityAction::OAuthGrantEndedByReuse,
                 Some(person),
-                Some(entity(RecordKind::OAuthGrant, grant)),
+                Some(entity(RecordKind::ConnectedApp, grant)),
             )
             .await;
         }
@@ -169,7 +169,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.note(
                 SecurityAction::OAuthRefused,
                 Some(found.grant.person),
-                Some(entity(RecordKind::OAuthGrant, found.grant.id)),
+                Some(entity(RecordKind::ConnectedApp, found.grant.id)),
             )
             .await;
             return Ok(Err(InvalidGrant));

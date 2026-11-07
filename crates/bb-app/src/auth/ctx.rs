@@ -517,6 +517,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// The request comes through MCP: what it changes is recorded with the channel `mcp` (and in
+    /// the run of the session of the app, which the request brings: `RequestInfo::run`).
+    pub(crate) fn enter_mcp(&self) {
+        self.act_through(Some(Channel::Mcp));
+    }
+
     /// Makes the events of the changes that follow carry `run`, until it is set again or taken
     /// away with `None`.
     pub(crate) fn set_run(&self, run: Option<RunId>) {

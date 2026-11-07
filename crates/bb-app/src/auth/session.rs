@@ -583,7 +583,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
         ctx.note(
             SecurityAction::OAuthGrantEndedBySignOut,
             Some(person),
-            Some(entity(RecordKind::OAuthGrant, grant)),
+            Some(entity(RecordKind::ConnectedApp, grant)),
         )
         .await;
     }

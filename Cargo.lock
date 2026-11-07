@@ -572,6 +572,14 @@ dependencies = [
 [[package]]
 name = "bb-mcp"
 version = "0.3.0"
+dependencies = [
+ "axum",
+ "bb-app",
+ "bb-core",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "bb-notify"
@@ -652,6 +660,7 @@ dependencies = [
  "bb-files",
  "bb-jobs",
  "bb-load-check",
+ "bb-mcp",
  "bb-notify",
  "bb-policy",
  "bb-store",

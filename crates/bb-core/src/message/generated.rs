@@ -2966,6 +2966,43 @@ pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
 /// The message `markdown.write`.
 pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
 
+/// The message `mcp.instructions`.
+pub const MCP_INSTRUCTIONS: MessageKey = MessageKey::new("mcp.instructions");
+
+/// The message `mcp.prompt.issue-argument`.
+pub const MCP_PROMPT_ISSUE_ARGUMENT: MessageKey = MessageKey::new("mcp.prompt.issue-argument");
+
+/// The message `mcp.prompt.my-work`.
+pub const MCP_PROMPT_MY_WORK: MessageKey = MessageKey::new("mcp.prompt.my-work");
+
+/// The message `mcp.prompt.my-work-text`.
+pub const MCP_PROMPT_MY_WORK_TEXT: MessageKey = MessageKey::new("mcp.prompt.my-work-text");
+
+/// The message `mcp.prompt.summarize-issue`.
+pub const MCP_PROMPT_SUMMARIZE_ISSUE: MessageKey = MessageKey::new("mcp.prompt.summarize-issue");
+
+/// The message `mcp.prompt.summarize-issue-text`.
+pub const MCP_PROMPT_SUMMARIZE_ISSUE_TEXT: MessageKey =
+    MessageKey::new("mcp.prompt.summarize-issue-text");
+
+/// The message `mcp.resource.issue`.
+pub const MCP_RESOURCE_ISSUE: MessageKey = MessageKey::new("mcp.resource.issue");
+
+/// The message `mcp.resource.issue-help`.
+pub const MCP_RESOURCE_ISSUE_HELP: MessageKey = MessageKey::new("mcp.resource.issue-help");
+
+/// The message `mcp.resource.my-work`.
+pub const MCP_RESOURCE_MY_WORK: MessageKey = MessageKey::new("mcp.resource.my-work");
+
+/// The message `mcp.resource.my-work-help`.
+pub const MCP_RESOURCE_MY_WORK_HELP: MessageKey = MessageKey::new("mcp.resource.my-work-help");
+
+/// The message `mcp.resource.projects`.
+pub const MCP_RESOURCE_PROJECTS: MessageKey = MessageKey::new("mcp.resource.projects");
+
+/// The message `mcp.resource.projects-help`.
+pub const MCP_RESOURCE_PROJECTS_HELP: MessageKey = MessageKey::new("mcp.resource.projects-help");
+
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -16074,6 +16111,36 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.quote", "Quote"),
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
+    (
+        "mcp.instructions",
+        "Bugaboo keeps issues for teams. You work as the person who allowed you and can never do more than they can. Use the tools to look at issues, and to change them if the person allowed that.",
+    ),
+    ("mcp.prompt.issue-argument", "The issue, such as WEB-142."),
+    ("mcp.prompt.my-work", "What is on my plate"),
+    (
+        "mcp.prompt.my-work-text",
+        "Read the issues that are assigned to me with the tools and tell me in a few lines what is most urgent and why.",
+    ),
+    ("mcp.prompt.summarize-issue", "Summarize an issue"),
+    (
+        "mcp.prompt.summarize-issue-text",
+        "Read this issue with the tools and summarize where it stands and what is open. Say nothing about what you could not read. The issue is:",
+    ),
+    ("mcp.resource.issue", "An issue"),
+    (
+        "mcp.resource.issue-help",
+        "One issue the person may see, with its fields and comments. Write the address with the ID of the issue, such as WEB-142.",
+    ),
+    ("mcp.resource.my-work", "My work"),
+    (
+        "mcp.resource.my-work-help",
+        "The issues that are assigned to the person.",
+    ),
+    ("mcp.resource.projects", "The projects you may see"),
+    (
+        "mcp.resource.projects-help",
+        "The list of projects the person may see.",
+    ),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),

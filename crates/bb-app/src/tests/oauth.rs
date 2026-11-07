@@ -152,7 +152,11 @@ pub(super) async fn signed_in(
     Ok((client, tokens))
 }
 
-fn app_call(access: &str, tool: &str, input: serde_json::Value) -> crate::ai::tools::ToolCallQuery {
+pub(super) fn app_call(
+    access: &str,
+    tool: &str,
+    input: serde_json::Value,
+) -> crate::ai::tools::ToolCallQuery {
     crate::ai::tools::ToolCallQuery {
         caller: ToolCaller::AiApp,
         app: Some("Claude Code".to_owned()),

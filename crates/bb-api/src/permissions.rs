@@ -804,6 +804,7 @@ mod ai;
 mod comments;
 mod lookup;
 mod mail;
+mod oauth;
 mod saved_searches;
 mod search_routes;
 #[cfg(test)]

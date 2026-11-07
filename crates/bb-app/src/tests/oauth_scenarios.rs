@@ -116,3 +116,50 @@ pub(crate) async fn remove_web_address_scenario(world: &World) -> Added {
 pub(crate) async fn clean_old_grants_scenario(world: &World) -> Added {
     measured(&world.store, crate::auth::clean_old_grants(&world.ctx())).await
 }
+
+/// A session of an app opens its run: the port writes the event of the run and the use case the
+/// fact that the session began.
+pub(crate) async fn start_app_session_scenario(world: &World) -> Added {
+    ai_on(world).await?;
+    let (_, tokens) = signed_in(world, KeyChoice::SeeAndChange)
+        .await
+        .map_err(text)?;
+    measured(
+        &world.store,
+        crate::auth::start_app_session(
+            &world.ctx(),
+            crate::auth::StartAppSession {
+                token: tokens.access_token,
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn end_app_runs_scenario(world: &World) -> Added {
+    ai_on(world).await?;
+    let (_, tokens) = signed_in(world, KeyChoice::SeeAndChange)
+        .await
+        .map_err(text)?;
+    let run = crate::auth::start_app_session(
+        &world.ctx(),
+        crate::auth::StartAppSession {
+            token: tokens.access_token,
+        },
+    )
+    .await
+    .map_err(text)?
+    .run
+    .ok_or("no run")?;
+    measured(
+        &world.store,
+        crate::auth::end_app_runs(
+            &world.ctx(),
+            crate::auth::EndAppRuns {
+                runs: vec![run],
+                how: bb_core::run::RunEnd::Done,
+            },
+        ),
+    )
+    .await
+}

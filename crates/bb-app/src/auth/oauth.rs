@@ -339,7 +339,7 @@ pub async fn decide_authorization<S: AuthStore>(
     };
     let event = ctx.event(
         by(person),
-        entity(RecordKind::OAuthGrant, grant.id),
+        entity(RecordKind::ConnectedApp, grant.id),
         vec![
             set_to("app", json!(client.name)),
             set_to("scope", json!(grant.scope.code())),
@@ -362,7 +362,7 @@ pub async fn decide_authorization<S: AuthStore>(
     ctx.note(
         SecurityAction::OAuthGrantCreated,
         Some(person),
-        Some(entity(RecordKind::OAuthGrant, grant.id)),
+        Some(entity(RecordKind::ConnectedApp, grant.id)),
     )
     .await;
     let mut pairs = vec![("code", code.encode())];
@@ -442,7 +442,7 @@ pub async fn take_back<S: AuthStore>(ctx: &Ctx<'_, S>, input: TakeBack) -> Resul
     let now = ctx.now();
     let event = ctx.event(
         by(person),
-        entity(RecordKind::OAuthGrant, found.grant.id),
+        entity(RecordKind::ConnectedApp, found.grant.id),
         vec![set_to("ended", json!(GrantEnd::TakenBack.code()))],
     )?;
     ctx.store()
@@ -462,7 +462,7 @@ pub async fn take_back<S: AuthStore>(ctx: &Ctx<'_, S>, input: TakeBack) -> Resul
     ctx.note(
         SecurityAction::OAuthGrantTakenBack,
         Some(person),
-        Some(entity(RecordKind::OAuthGrant, id)),
+        Some(entity(RecordKind::ConnectedApp, id)),
     )
     .await;
     Ok(Done)

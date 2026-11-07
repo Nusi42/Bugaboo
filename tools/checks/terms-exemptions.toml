@@ -129,3 +129,18 @@ reason = "The Link button of the Markdown editor and the web addresses it writes
 term = "state"
 at = ["api:property AgentItem.state", "api:schema AgentState"]
 reason = "The state of an agent (active, paused, stopped) is the word of ADR-0029 and of the glossary's own entry for the states of agent work; it is not the status of an issue, which the glossary means."
+
+[[allow]]
+term = "challenge"
+at = [
+  "api:parameter code_challenge",
+  "api:parameter code_challenge_method",
+  "api:property AuthorizationParams.code_challenge",
+  "api:property AuthorizationParams.code_challenge_method",
+]
+reason = "The names of the parameters of PKCE (RFC 7636), which AI apps send and which no screen shows. Not the second step of signing in."
+
+[[allow]]
+term = "state"
+at = ["api:parameter state", "api:property AuthorizationParams.state"]
+reason = "The name of the parameter of OAuth (RFC 6749) that an app wants back unchanged, which no screen shows. Not the status of an issue."

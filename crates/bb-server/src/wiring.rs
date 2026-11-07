@@ -45,6 +45,8 @@ pub(crate) struct Wired {
     pub(crate) auth: AuthHandle,
     /// How the status page and `/health/ready` measure the server.
     pub(crate) probe: ProbeHandle,
+    /// The MCP server for outside AI apps (AI-20).
+    pub(crate) mcp: bb_mcp::McpService,
     /// The setup code of the first start, to print once. `None` when an administrator exists.
     pub(crate) setup_code: Option<String>,
     /// The services the background job worker runs with (`bb-jobs`).
@@ -184,9 +186,17 @@ pub(crate) async fn wire(
         .await
         .map_err(|error| anyhow!(error.to_string()))?;
     let services = Arc::new(services);
+    let mcp = bb_mcp::router(bb_mcp::McpOptions {
+        api: services.clone(),
+        seen: Arc::new(|parts| bb_mcp::Seen {
+            info: bb_api::request_info(parts),
+            origin: bb_api::origin_of(parts),
+        }),
+    });
     Ok(Wired {
         jobs: Arc::clone(&services),
         auth: AuthHandle::new(services),
+        mcp,
         probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,
     })

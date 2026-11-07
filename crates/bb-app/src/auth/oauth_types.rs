@@ -277,6 +277,9 @@ pub struct McpIdentity {
     pub person: bb_core::id::UserId,
     /// The name the app gave itself; none for an access key.
     pub app: Option<String>,
+    /// What the session is counted under: the grant of the app or the access key, so one app is one
+    /// session however its calls come. Not a secret.
+    pub credential: String,
     /// The agent, when an agent key signed in: its calls belong to the run of its attempt, not to
     /// a run of the session.
     pub agent: Option<bb_core::id::AgentId>,
@@ -297,4 +300,33 @@ pub struct OAuthMetadata {
     pub origin: String,
     /// The address of the MCP server, the one resource a token is for.
     pub resource: String,
+}
+
+/// A session of an AI app begins: its run is opened.
+#[derive(Clone)]
+pub struct StartAppSession {
+    /// The access token of the app, or an access key.
+    pub token: String,
+}
+
+impl fmt::Debug for StartAppSession {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("StartAppSession(<hidden>)")
+    }
+}
+
+/// The run of a session of an app.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AppSession {
+    /// The run; none for an agent, whose calls belong to the run of its attempt.
+    pub run: Option<bb_core::id::RunId>,
+}
+
+/// Sessions of apps end: their runs are closed.
+#[derive(Clone, Debug)]
+pub struct EndAppRuns {
+    /// The runs.
+    pub runs: Vec<bb_core::id::RunId>,
+    /// How they ended.
+    pub how: bb_core::run::RunEnd,
 }

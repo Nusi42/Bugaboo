@@ -10720,6 +10720,431 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/oauth/apps": {
+      "get": {
+        "tags": ["oauth"],
+        "summary": "The AI apps the person allowed, newest first.",
+        "operationId": "listConnectedApps",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The apps the person allowed.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ConnectedAppItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/oauth/apps/{app}": {
+      "delete": {
+        "tags": ["oauth"],
+        "summary": "*Take back*: ends what the person allowed an app, at once.",
+        "operationId": "takeBackApp",
+        "parameters": [
+          {
+            "name": "app",
+            "in": "path",
+            "description": "The ID of the app, as the list of connected apps gives it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken back."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/oauth/authorization": {
+      "get": {
+        "tags": ["oauth"],
+        "summary": "What the consent step shows: the app, where it comes back to and what it asks. Only a session\nopens it.",
+        "operationId": "getAuthorization",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "description": "The ID of the app (`client_id`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "path",
+            "description": "`code`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "path",
+            "description": "The address to come back to (`redirect_uri`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge",
+            "in": "path",
+            "description": "The PKCE challenge.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "path",
+            "description": "`S256`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "path",
+            "description": "What the app asks to be allowed: `see-only` or `see-and-change`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resource",
+            "in": "path",
+            "description": "The resource the token is for.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "path",
+            "description": "What the app wants back unchanged.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The app and what it asks.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      },
+      "post": {
+        "tags": ["oauth"],
+        "summary": "*Allow* or *Cancel*: makes the grant and a code, or sends the app away. The answer is where the\nbrowser goes next.",
+        "operationId": "decideAuthorization",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Where the browser goes next.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionAnswerBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account",
+        "x-secret": true
+      }
+    },
+    "/api/v1/oauth/web-addresses": {
+      "get": {
+        "tags": ["oauth"],
+        "summary": "The web addresses an administrator allowed (*Apps that may sign in*).",
+        "operationId": "listAppAddresses",
+        "responses": {
+          "200": {
+            "description": "The allowed addresses.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAddressesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      },
+      "post": {
+        "tags": ["oauth"],
+        "summary": "Allows a web address for AI apps.",
+        "operationId": "addAppAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The allowed addresses.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAddressesBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/oauth/web-addresses/remove": {
+      "post": {
+        "tags": ["oauth"],
+        "summary": "Takes a web address away: apps that registered with it are refused at their next sign-in.",
+        "operationId": "removeAppAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Taken away."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/openapi.json": {
       "get": {
         "tags": ["server"],
@@ -17274,6 +17699,70 @@
           }
         }
       },
+      "AuthorizationBody": {
+        "type": "object",
+        "description": "What the consent step shows before the person decides.",
+        "required": ["app_name", "on_this_computer", "asked"],
+        "properties": {
+          "app_name": {
+            "type": "string",
+            "description": "The name the app gave itself. Bugaboo cannot check it."
+          },
+          "asked": {
+            "$ref": "#/components/schemas/KeyChoice",
+            "description": "What the app asked for: the person may narrow it, never widen it."
+          },
+          "on_this_computer": {
+            "type": "boolean",
+            "description": "Whether the app comes back to the person's own computer."
+          }
+        }
+      },
+      "AuthorizationParams": {
+        "type": "object",
+        "description": "What an app asked for when it sent the person to the consent step.",
+        "required": [
+          "client_id",
+          "response_type",
+          "redirect_uri",
+          "code_challenge",
+          "code_challenge_method"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "The ID of the app (`client_id`)."
+          },
+          "code_challenge": {
+            "type": "string",
+            "description": "The PKCE challenge."
+          },
+          "code_challenge_method": {
+            "type": "string",
+            "description": "`S256`."
+          },
+          "redirect_uri": {
+            "type": "string",
+            "description": "The address to come back to (`redirect_uri`)."
+          },
+          "resource": {
+            "type": "string",
+            "description": "The resource the token is for."
+          },
+          "response_type": {
+            "type": "string",
+            "description": "`code`."
+          },
+          "scope": {
+            "type": "string",
+            "description": "What the app asks to be allowed: `see-only` or `see-and-change`."
+          },
+          "state": {
+            "type": "string",
+            "description": "What the app wants back unchanged."
+          }
+        }
+      },
       "BackupCodesBody": {
         "type": "object",
         "description": "Backup codes, shown once.",
@@ -18590,6 +19079,52 @@
         ],
         "description": "The answer to a change that found the record at another version, or to any other refused\nchange: the usual problem, and for `edit.version-changed` the `conflict` member."
       },
+      "ConnectedAppItem": {
+        "type": "object",
+        "description": "An app a person allowed, in a list: the fields that can be asked for.",
+        "properties": {
+          "allowed_at": {
+            "type": ["string", "null"],
+            "description": "When the person allowed it.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID to take it back with."
+          },
+          "last_used_at": {
+            "type": ["string", "null"],
+            "description": "The last time it made a call, to the minute. Left out when it never did.",
+            "format": "date-time"
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name the app gave itself."
+          },
+          "on_this_computer": {
+            "type": ["boolean", "null"],
+            "description": "Whether the app is on the person's own computer."
+          },
+          "projects": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/ProjectLabelBody"
+            },
+            "description": "The projects it is limited to; empty for every project."
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyChoice",
+                "description": "What it may do."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "CopyBody": {
         "type": "object",
         "description": "The name of a copy.",
@@ -18734,6 +19269,43 @@
         "type": "string",
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
+      },
+      "DecisionAnswerBody": {
+        "type": "object",
+        "description": "Where the browser goes next.",
+        "required": ["redirect_to"],
+        "properties": {
+          "redirect_to": {
+            "type": "string",
+            "description": "The address of the app with the code or the refusal in it."
+          }
+        }
+      },
+      "DecisionBody": {
+        "type": "object",
+        "description": "The person's answer to the consent step.",
+        "required": ["request", "allow", "scope"],
+        "properties": {
+          "allow": {
+            "type": "boolean",
+            "description": "`true` for *Allow*, `false` for *Cancel*."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The projects the app is limited to; leave empty for every project the person can see. The\napp counts in them and in their sub-projects."
+          },
+          "request": {
+            "$ref": "#/components/schemas/AuthorizationParams",
+            "description": "What the app asked."
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyChoice",
+            "description": "What the person allows: `see-only` or `see-and-change`, at most what the app asked."
+          }
+        }
       },
       "DeletedBody": {
         "type": "object",
@@ -20036,6 +20608,10 @@
                 "type": "null"
               }
             ]
+          },
+          "app": {
+            "type": ["string", "null"],
+            "description": "The name of the AI app the person worked through, when an app made the change: the item\nreads \"Ada Brandt via Claude Code\". The name is the app's own; Bugaboo cannot check it."
           },
           "at": {
             "type": "string",
@@ -23350,6 +23926,24 @@
           }
         }
       },
+      "Page_ConnectedAppItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectedAppItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_FieldItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -25207,6 +25801,8 @@
           "issue-type",
           "label",
           "label-group",
+          "oauth-client",
+          "connected-app",
           "passkey",
           "person",
           "project",
@@ -27878,6 +28474,47 @@
           "words": {
             "type": "object",
             "description": "The sentence, as message keys with their words, which the screen writes from its catalog."
+          }
+        }
+      },
+      "WebAddressBody": {
+        "type": "object",
+        "description": "A web address apps may come back to.",
+        "required": ["address", "added_at"],
+        "properties": {
+          "added_at": {
+            "type": "string",
+            "description": "When an administrator allowed it.",
+            "format": "date-time"
+          },
+          "address": {
+            "type": "string",
+            "description": "The address, as an app has to write it."
+          }
+        }
+      },
+      "WebAddressRequest": {
+        "type": "object",
+        "description": "A web address to allow or to take away.",
+        "required": ["address"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The return address, such as `https://app.example.com/callback`."
+          }
+        }
+      },
+      "WebAddressesBody": {
+        "type": "object",
+        "description": "The web addresses apps may come back to.",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebAddressBody"
+            },
+            "description": "The addresses, by address."
           }
         }
       },

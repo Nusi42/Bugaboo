@@ -17,6 +17,7 @@ use bb_auth as _;
 use bb_dev_words as _;
 use bb_jobs as _;
 use bb_load_check as _;
+use bb_mcp as _;
 use bb_notify as _;
 use bb_policy as _;
 use bb_store as _;

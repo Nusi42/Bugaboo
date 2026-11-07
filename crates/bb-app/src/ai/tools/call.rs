@@ -9,7 +9,6 @@
 
 use bb_core::ErrorCode;
 use bb_core::ai::{ToolCaller, ToolEffect, ToolOutcome, ToolScope};
-use bb_core::id::RunId;
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Place};
@@ -56,8 +55,6 @@ pub struct ToolCallQuery {
     pub input: Value,
     /// Run it or preview it.
     pub mode: ToolMode,
-    /// The run the call belongs to: the session of an AI app. What the call changes carries it.
-    pub run: Option<RunId>,
 }
 
 /// What the AI reads back from a tool.
@@ -167,7 +164,7 @@ pub async fn call_tool<S: AuthStore>(
                 .await;
             return Err(error);
         }
-        ctx.enter_mcp(request.run);
+        ctx.enter_mcp();
     }
     let bytes_in = request.input.to_string().len();
     let tools = registry::<S>();

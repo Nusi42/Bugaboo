@@ -162,8 +162,8 @@ words! {
         LabelGroup => "label_group",
         /// An AI app that registered itself (AI-22).
         OAuthClient => "oauth_client",
-        /// What a person allowed an AI app (AI-22).
-        OAuthGrant => "oauth_grant",
+        /// What a person allowed an AI app, listed as *Connected apps* (AI-22).
+        ConnectedApp => "connected_app",
         /// A passkey.
         Passkey => "passkey",
         /// A person.

@@ -38,7 +38,7 @@ const IMMUTABLE_PREFIX: &str = "assets/";
 const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
 /// Addresses below these are never browser pages: when missing they are plain 404s.
-const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
+const NO_PAGE_FALLBACK: [&str; 6] = ["assets", "health", "api", "mcp", "oauth", ".well-known"];
 /// Smaller files are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
 /// A JSON answer is compressed only when it is bigger than this (1 KiB, M2-Q2): below it the
@@ -77,6 +77,8 @@ pub struct Options {
     /// How the server measures itself, for the status page and `/health/ready`;
     /// `ProbeHandle::none()` when there is no database yet.
     pub probe: ProbeHandle,
+    /// The MCP server, answering at `/mcp` (AI-20); none while there is no database yet.
+    pub mcp: Option<Router>,
 }
 
 #[cfg(feature = "testing")]
@@ -95,6 +97,7 @@ impl Options {
             limits: LimitsConfig::default(),
             auth: AuthHandle::none(),
             probe: ProbeHandle::none(),
+            mcp: None,
         }
     }
 
@@ -145,9 +148,15 @@ pub fn router(options: Options) -> Router {
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
         .merge(api::routes(&limits).split_for_parts().0)
+        .merge(api::oauth_app_routes())
         .fallback(fallback)
         .method_not_allowed_fallback(api::method_not_allowed)
         .with_state(state);
+    // The MCP server answers its own address; its token is checked there, not by the rules of the API.
+    let app = match options.mcp {
+        Some(mcp) => app.merge(mcp),
+        None => app,
+    };
     let app = api::rules(app, limits, auth)
         .layer(compression_layer())
         .layer(from_fn_with_state(

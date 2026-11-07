@@ -7,6 +7,8 @@
 //! hash only. What a grant may do is the words of access keys (*See only*, *See and change*) and a
 //! list of projects; it never widens the person (ADR-0025, decision 8).
 
+use std::fmt::Write as _;
+
 use jiff::{SignedDuration, Timestamp};
 
 use crate::access_key::KeyChoice;
@@ -21,7 +23,7 @@ pub const CODE_SECONDS: i64 = 60;
 /// Days a renewing token can go unused before it runs out.
 pub const REFRESH_UNUSED_DAYS: i64 = 30;
 /// Minutes without a call after which a session of an app ends and its run is closed.
-pub const SESSION_IDLE_MINUTES: i64 = 30;
+pub const SESSION_IDLE_MINUTES: u64 = 30;
 /// The most calls one grant (or one access key) may make in a minute.
 pub const CALLS_A_MINUTE_FOR_A_GRANT: u32 = 120;
 /// The most calls one person may make in a minute over all their grants and keys.
@@ -461,7 +463,7 @@ pub fn percent_encode(text: &str) -> String {
         if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
             out.push(char::from(byte));
         } else {
-            out.push_str(&format!("%{byte:02X}"));
+            let _ = write!(out, "%{byte:02X}");
         }
     }
     out

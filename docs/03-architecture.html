@@ -213,9 +213,9 @@
   sample["bb-sample&lt;br/&gt;sample organization"]
   loadcheck["bb-load-check&lt;br/&gt;invariants after a run"]
 
-  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; app &amp; core
-  api --&gt; app &amp; auth &amp; mcp &amp; core &amp; policy &amp; words
-  mcp --&gt; app
+  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; app &amp; core &amp; mcp
+  api --&gt; app &amp; auth &amp; core &amp; policy &amp; words
+  mcp --&gt; app &amp; core
   jobs --&gt; app
   app --&gt; policy &amp; core &amp; search &amp; md &amp; auth
   auth --&gt; core
@@ -319,7 +319,7 @@
 <ul>
 <li><strong>The tool registry and the context builder live in <code>bb-app</code></strong> (<code>crates/bb-app/src/ai/</code>), next to the use cases they call, and do no I/O of their own. The registry is one table (<code>ai/tools/</code>): each tool has its name, <em>reads</em> or <em>changes</em>, the use case it calls, the scope it needs, the schema of its input (generated from the Rust type) and, when it changes something, a preview from the use case's own evaluation. The assistant, MCP and agents list and call tools only through it. The context builder (<code>ai/context/</code>) reads as the actor, leaves out hidden fields and everything <em>Never sent to AI</em>, and fences people's text with its author mark (§7, <em>AI</em>).</li>
 <li><strong><code>bb-ai</code> holds the provider adapters</strong> (Anthropic and OpenAI-compatible, which covers a local model) behind the port <code>AiProvider</code> of <code>bb-app</code>, and, behind its feature <code>testing</code>, offers again the test fake that is defined with the port in <code>bb-app</code> (like <code>FakeMailer</code>), so the tests of <code>bb-app</code> and of the server use the same one. One adapter serves both kinds of provider and is chosen for every call by the settings, so <code>bb-server</code> wires it once. The outgoing call is <code>ureq</code> run on a thread of its own (ARCH-HTTP-EDGE).</li>
-<li><strong><code>bb-mcp</code> turns the registry into MCP</strong> with <code>rmcp</code> over streamable HTTP at <code>/mcp</code>, and depends on <code>bb-app</code> only; the sign-in of apps is in <code>bb-auth</code>, <code>bb-app/src/auth/</code> and <code>bb-api</code> (<a href="#adr-0042">ADR-0042</a>). There is no edge <code>mcp --&gt; ai</code> (M4-F133).</li>
+<li><strong><code>bb-mcp</code> turns the registry into MCP</strong> over streamable HTTP at <code>/mcp</code> (it speaks the few messages of the protocol itself, ADR-0042 amendment), and depends on <code>bb-app</code> and the words of <code>bb-core</code> only; <code>bb-server</code> wires it into the router of <code>bb-api</code>; the sign-in of apps is in <code>bb-auth</code>, <code>bb-app/src/auth/</code> and <code>bb-api</code> (<a href="#adr-0042">ADR-0042</a>). There is no edge <code>mcp --&gt; ai</code> (M4-F133).</li>
 </ul>
 <p>Enforced by: ARCH-DEPS (the edges), ARCH-AI-TOOLS (it reads <code>crates/bb-app/src/ai/tools/**</code> and <code>crates/bb-mcp/**</code>).</p>
 <h4>The port of runs (<code>RunStore</code>, M7)</h4>

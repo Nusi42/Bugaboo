@@ -3005,6 +3005,99 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/oauth/apps": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The AI apps the person allowed, newest first. */
+    get: operations["listConnectedApps"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/oauth/apps/{app}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** *Take back*: ends what the person allowed an app, at once. */
+    delete: operations["takeBackApp"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/oauth/authorization": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the consent step shows: the app, where it comes back to and what it asks. Only a session
+     *     opens it.
+     */
+    get: operations["getAuthorization"];
+    put?: never;
+    /**
+     * *Allow* or *Cancel*: makes the grant and a code, or sends the app away. The answer is where the
+     *     browser goes next.
+     */
+    post: operations["decideAuthorization"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/oauth/web-addresses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The web addresses an administrator allowed (*Apps that may sign in*). */
+    get: operations["listAppAddresses"];
+    put?: never;
+    /** Allows a web address for AI apps. */
+    post: operations["addAppAddress"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/oauth/web-addresses/remove": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Takes a web address away: apps that registered with it are refused at their next sign-in. */
+    post: operations["removeAppAddress"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/openapi.json": {
     parameters: {
       query?: never;
@@ -4831,6 +4924,34 @@ export interface components {
       /** @description People may sign up on their own. */
       sign_up_open: boolean;
     };
+    /** @description What the consent step shows before the person decides. */
+    AuthorizationBody: {
+      /** @description The name the app gave itself. Bugaboo cannot check it. */
+      app_name: string;
+      /** @description What the app asked for: the person may narrow it, never widen it. */
+      asked: components["schemas"]["KeyChoice"];
+      /** @description Whether the app comes back to the person's own computer. */
+      on_this_computer: boolean;
+    };
+    /** @description What an app asked for when it sent the person to the consent step. */
+    AuthorizationParams: {
+      /** @description The ID of the app (`client_id`). */
+      client_id: string;
+      /** @description The PKCE challenge. */
+      code_challenge: string;
+      /** @description `S256`. */
+      code_challenge_method: string;
+      /** @description The address to come back to (`redirect_uri`). */
+      redirect_uri: string;
+      /** @description The resource the token is for. */
+      resource?: string;
+      /** @description `code`. */
+      response_type: string;
+      /** @description What the app asks to be allowed: `see-only` or `see-and-change`. */
+      scope?: string;
+      /** @description What the app wants back unchanged. */
+      state?: string;
+    };
     /** @description Backup codes, shown once. */
     BackupCodesBody: {
       /** @description The codes. They are not stored in this form and cannot be shown again. */
@@ -5479,6 +5600,28 @@ export interface components {
       open_day?: string | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
+    /** @description An app a person allowed, in a list: the fields that can be asked for. */
+    ConnectedAppItem: {
+      /**
+       * Format: date-time
+       * @description When the person allowed it.
+       */
+      allowed_at?: string | null;
+      /** @description The ID to take it back with. */
+      id?: string | null;
+      /**
+       * Format: date-time
+       * @description The last time it made a call, to the minute. Left out when it never did.
+       */
+      last_used_at?: string | null;
+      /** @description The name the app gave itself. */
+      name?: string | null;
+      /** @description Whether the app is on the person's own computer. */
+      on_this_computer?: boolean | null;
+      /** @description The projects it is limited to; empty for every project. */
+      projects?: components["schemas"]["ProjectLabelBody"][] | null;
+      scope?: components["schemas"]["KeyChoice"] | null;
+    };
     /** @description The name of a copy. */
     CopyBody: {
       /** @description What the copy is called; the name of the original when left out. */
@@ -5567,6 +5710,25 @@ export interface components {
      * @enum {string}
      */
     DatabaseKind: "built-in" | "sqlite" | "postgres";
+    /** @description Where the browser goes next. */
+    DecisionAnswerBody: {
+      /** @description The address of the app with the code or the refusal in it. */
+      redirect_to: string;
+    };
+    /** @description The person's answer to the consent step. */
+    DecisionBody: {
+      /** @description `true` for *Allow*, `false` for *Cancel*. */
+      allow: boolean;
+      /**
+       * @description The projects the app is limited to; leave empty for every project the person can see. The
+       *     app counts in them and in their sub-projects.
+       */
+      projects?: string[];
+      /** @description What the app asked. */
+      request: components["schemas"]["AuthorizationParams"];
+      /** @description What the person allows: `see-only` or `see-and-change`, at most what the app asked. */
+      scope: components["schemas"]["KeyChoice"];
+    };
     /** @description How many work days were deleted. */
     DeletedBody: {
       /**
@@ -6253,6 +6415,11 @@ export interface components {
     /** @description One item of the history of an issue. */
     HistoryEntryItem: {
       agent?: components["schemas"]["NamedRef"] | null;
+      /**
+       * @description The name of the AI app the person worked through, when an app made the change: the item
+       *     reads "Ada Brandt via Claude Code". The name is the app's own; Bugaboo cannot check it.
+       */
+      app?: string | null;
       /**
        * Format: date-time
        * @description When it happened.
@@ -7799,6 +7966,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_ConnectedAppItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["ConnectedAppItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_FieldItem: {
       /** @description The items of this page. */
       items: components["schemas"]["FieldItem"][];
@@ -8707,6 +8881,8 @@ export interface components {
       | "issue-type"
       | "label"
       | "label-group"
+      | "oauth-client"
+      | "connected-app"
       | "passkey"
       | "person"
       | "project"
@@ -10115,6 +10291,26 @@ export interface components {
       warning: Record<string, unknown>;
       /** @description The sentence, as message keys with their words, which the screen writes from its catalog. */
       words: Record<string, unknown>;
+    };
+    /** @description A web address apps may come back to. */
+    WebAddressBody: {
+      /**
+       * Format: date-time
+       * @description When an administrator allowed it.
+       */
+      added_at: string;
+      /** @description The address, as an app has to write it. */
+      address: string;
+    };
+    /** @description A web address to allow or to take away. */
+    WebAddressRequest: {
+      /** @description The return address, such as `https://app.example.com/callback`. */
+      address: string;
+    };
+    /** @description The web addresses apps may come back to. */
+    WebAddressesBody: {
+      /** @description The addresses, by address. */
+      items: components["schemas"]["WebAddressBody"][];
     };
     /** @description The time worked in one week. */
     WeekBody: {
@@ -16563,6 +16759,234 @@ export interface operations {
       };
       304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listConnectedApps: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The apps the person allowed. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ConnectedAppItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  takeBackApp: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the app, as the list of connected apps gives it. */
+        app: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Taken back. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getAuthorization: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the app (`client_id`). */
+        client_id: string;
+        /** @description `code`. */
+        response_type: string;
+        /** @description The address to come back to (`redirect_uri`). */
+        redirect_uri: string;
+        /** @description The PKCE challenge. */
+        code_challenge: string;
+        /** @description `S256`. */
+        code_challenge_method: string;
+        /** @description What the app asks to be allowed: `see-only` or `see-and-change`. */
+        scope: string;
+        /** @description The resource the token is for. */
+        resource: string;
+        /** @description What the app wants back unchanged. */
+        state: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The app and what it asks. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthorizationBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  decideAuthorization: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DecisionBody"];
+      };
+    };
+    responses: {
+      /** @description Where the browser goes next. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DecisionAnswerBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listAppAddresses: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The allowed addresses. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebAddressesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  addAppAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebAddressRequest"];
+      };
+    };
+    responses: {
+      /** @description The allowed addresses. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebAddressesBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  removeAppAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebAddressRequest"];
+      };
+    };
+    responses: {
+      /** @description Taken away. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

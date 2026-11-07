@@ -69,6 +69,7 @@ mod layouts;
 mod many_changes;
 mod never_sent;
 mod notifications;
+mod oauth;
 mod offers;
 mod own_access;
 mod people;
@@ -91,7 +92,9 @@ mod workflows;
 mod working_hours;
 
 pub use admin::ProbeHandle;
-pub use auth::AuthHandle;
+pub use auth::{AuthHandle, request_info};
+pub(crate) use oauth::app_routes as oauth_app_routes;
+pub use oauth::origin_of;
 
 /// The first part of every API address.
 pub(crate) const API_PREFIX: &str = "api";
@@ -176,6 +179,7 @@ where
         .merge(fields::routes())
         .merge(issue_types::routes())
         .merge(never_sent::routes())
+        .merge(oauth::routes())
         .merge(offers::routes())
         .merge(layouts::routes())
         .merge(workflows::routes())

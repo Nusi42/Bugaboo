@@ -133,30 +133,37 @@ impl From<AppError> for ApiError {
 /// The client network and the browser of the request.
 pub(crate) struct Info(pub(crate) RequestInfo);
 
+/// The client network and the browser of a request, written once for every route and for the MCP
+/// server.
+#[must_use]
+pub fn request_info(parts: &Parts) -> RequestInfo {
+    let network = parts
+        .extensions
+        .get::<ClientIp>()
+        .map(|ClientIp(address)| NetworkPrefix::from_address(*address));
+    let device = parts
+        .headers
+        .get(header::USER_AGENT)
+        .and_then(|value| value.to_str().ok())
+        .map(Device::from_user_agent)
+        .unwrap_or_default();
+    let background = parts.headers.contains_key(BACKGROUND_HEADER)
+        && parts.extensions.get::<MatchedPath>().is_some_and(|route| {
+            crate::openapi::may_be_background_read(&parts.method, route.as_str())
+        });
+    RequestInfo {
+        network,
+        device,
+        background,
+        run: None,
+    }
+}
+
 impl<S: Send + Sync> FromRequestParts<S> for Info {
     type Rejection = ApiError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
-        let network = parts
-            .extensions
-            .get::<ClientIp>()
-            .map(|ClientIp(address)| NetworkPrefix::from_address(*address));
-        let device = parts
-            .headers
-            .get(header::USER_AGENT)
-            .and_then(|value| value.to_str().ok())
-            .map(Device::from_user_agent)
-            .unwrap_or_default();
-        let background = parts.headers.contains_key(BACKGROUND_HEADER)
-            && parts.extensions.get::<MatchedPath>().is_some_and(|route| {
-                crate::openapi::may_be_background_read(&parts.method, route.as_str())
-            });
-        Ok(Self(RequestInfo {
-            network,
-            device,
-            background,
-            run: None,
-        }))
+        Ok(Self(request_info(parts)))
     }
 }
 
@@ -171,8 +178,10 @@ impl<S: Send + Sync> FromRequestParts<S> for Session {
     type Rejection = ApiError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
+        // The token of an AI app is no session, also when it is put in the cookie.
         Cookie::Session
             .read(&parts.headers)
+            .filter(|secret| !bb_auth::looks_like_oauth_secret(secret))
             .or_else(|| super::presented_key(&parts.headers).map(str::to_owned))
             .map(Self)
             .ok_or_else(|| ApiError::new(ErrorCode::NotSignedIn))

@@ -62,6 +62,7 @@ mod notifications_files;
 mod notifications_order;
 mod notifications_projects;
 mod oauth;
+mod oauth_calls;
 mod oauth_scenarios;
 mod offers;
 mod offers_known_uses;

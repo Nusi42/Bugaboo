@@ -297,7 +297,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             // of an issue hears of it.
             RecordKind::AccessKey
             | RecordKind::OAuthClient
-            | RecordKind::OAuthGrant
+            | RecordKind::ConnectedApp
             | RecordKind::Agent
             | RecordKind::Field
             | RecordKind::Assignment

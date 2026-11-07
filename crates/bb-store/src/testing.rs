@@ -3,7 +3,7 @@
 
 use bb_core::id::UserId;
 use jiff::Timestamp;
-use sea_query::{Expr, IntoIden as _, Query};
+use sea_query::{Expr, ExprTrait as _, IntoIden as _, Query};
 
 use crate::db::{Database, StoredId, to_micros};
 use crate::error::StoreError;
@@ -71,5 +71,37 @@ impl Database {
             self.execute(&login).await?;
         }
         Ok(())
+    }
+}
+
+impl Database {
+    /// The runs of one kind with the events each holds, oldest run first: what the tests of AI apps
+    /// ask to show that a session is one run (AI-38).
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn runs_with_events(
+        &self,
+        kind: bb_core::run::RunKind,
+    ) -> Result<Vec<(bb_core::id::RunId, Vec<bb_core::event::DomainEvent>)>, StoreError> {
+        use crate::schema::ManyChangeRunRow;
+        let mut select = Query::select();
+        select
+            .column(ManyChangeRunRow::Id)
+            .from(ManyChangeRunRow::Table)
+            .and_where(Expr::col(ManyChangeRunRow::Kind).eq(kind.code()))
+            .order_by(ManyChangeRunRow::Id, sea_query::Order::Asc);
+        let mut runs = Vec::new();
+        for row in self.fetch_all(&select).await? {
+            let run = row.id::<bb_core::id::RunId>(ManyChangeRunRow::Id)?;
+            let events = self
+                .run_events(run, None, 1_000)
+                .await?
+                .into_iter()
+                .map(|(_, event)| event)
+                .collect();
+            runs.push((run, events));
+        }
+        Ok(runs)
     }
 }

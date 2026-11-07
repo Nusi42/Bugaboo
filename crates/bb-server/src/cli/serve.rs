@@ -89,6 +89,7 @@ pub(super) async fn serve_settings(
         limits: settings.limits,
         auth: wired.auth,
         probe: wired.probe,
+        mcp: Some(wired.mcp),
     };
     // A certificate that runs out while the server runs is renewed without a restart (M1-F03).
     let renewal = certificate.map(|served| {

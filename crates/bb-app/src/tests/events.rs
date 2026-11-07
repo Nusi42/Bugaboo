@@ -101,6 +101,8 @@ table! {
     "stop_all_agents" => super::agents::stop_all_agents_scenario,
     "hand_agent" => super::agents::hand_agent_scenario,
     "accept_agent" => super::agents::accept_agent_scenario,
+    "start_app_session" => super::oauth_scenarios::start_app_session_scenario,
+    "end_app_runs" => super::oauth_scenarios::end_app_runs_scenario,
     "register_app" => super::oauth_scenarios::register_app_scenario,
     "decide_authorization" => super::oauth_scenarios::decide_authorization_scenario,
     "exchange_token" => super::oauth_scenarios::exchange_token_scenario,
@@ -241,8 +243,11 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             "create_starting_roles" => {}
             // A move also writes the event of the new readable ID; the starter fields of time
             // entries are one change for each of the two fields; an undo of a run is the event of
-            // the undo on the run and the event of the one issue it puts back.
-            "move_issue" | "create_starter_time_fields" | "undo_run" => {
+            // the undo on the run and the event of the one issue it puts back. A session of an app
+            // also writes the event of the run, and ending one the event that ends the run: the use
+            // case adds the fact that the session began or ended.
+            "move_issue" | "create_starter_time_fields" | "undo_run" | "start_app_session"
+            | "end_app_runs" => {
                 assert_eq!(added, 2, "{name} appended {added} events");
             }
             _ => assert_eq!(added, 1, "{name} appended {added} events"),

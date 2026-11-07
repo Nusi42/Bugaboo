@@ -179,7 +179,7 @@ pub(crate) async fn clean_old_grants<S: AuthStore>(
     );
     let event = ctx.event(
         bb_core::event::Actor::System,
-        crate::auth::events::fixed_entity(RecordKind::OAuthGrant, "clean")?,
+        crate::auth::events::fixed_entity(RecordKind::ConnectedApp, "clean")?,
         vec![changed("cleaned")],
     )?;
     ctx.store()
@@ -206,8 +206,14 @@ pub async fn mcp_identity<S: AuthStore>(
         Some(CredentialSource::App { name, .. }) => Some(name.clone()),
         _ => None,
     };
+    let credential = match actor.key.as_ref().map(|key| &key.source) {
+        Some(CredentialSource::App { grant, .. }) => grant.to_string(),
+        Some(CredentialSource::Key(key)) => key.to_string(),
+        None => actor.person.id.to_string(),
+    };
     Ok(McpIdentity {
         person: actor.person.id,
+        credential,
         app,
         agent: actor.agent(),
     })

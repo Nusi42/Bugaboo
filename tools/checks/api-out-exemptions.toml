@@ -110,3 +110,24 @@ reason = "The wrapper of an Authorized view: it takes an Authorized<T> only, so 
 function = "add_standard_answers"
 file = "crates/bb-api/src/openapi.rs"
 reason = "Builds the description of the API: its `answer(code)` makes a response object of the description, not an answer of the server."
+
+[[exempt]]
+function = "json_no_store"
+file = "crates/bb-api/src/api/oauth.rs"
+reason = "The answer of an app route in the words of OAuth (RFC 6749): it holds an error word or tokens the app is given once, nothing of anybody else."
+
+[[exempt]]
+function = "protected_resource_metadata"
+file = "crates/bb-api/src/api/oauth.rs"
+reason = "The metadata document of RFC 9728: the address of this server and the words of its scopes, public by the standard."
+
+[[exempt]]
+function = "authorization_server_metadata"
+file = "crates/bb-api/src/api/oauth.rs"
+reason = "The metadata document of RFC 8414: the addresses of the sign-in of apps and the words it supports, public by the standard."
+
+
+[[exempt]]
+function = "json_response"
+file = "crates/bb-mcp/src/server.rs"
+reason = "The answer of the MCP server in the words of the protocol: an error word or a JSON-RPC message. Whatever a tool read comes from the registry as an Authorized answer."
