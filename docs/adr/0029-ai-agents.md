@@ -31,7 +31,7 @@ One person may also drive several agents at the same time, each on its own issue
 
 ### 2. Agents
 
-- **Every agent has one responsible person**, normally the person who made it; handing an agent to another person needs that person's acceptance. Creating agents takes the new permission *Create agents that work for you* (organization, kind *Change*; at the start Administrator, Project lead and Team member have it). Administrators see every agent of the organization in *Organization settings › Agents* and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests `ai_30_an_agent_needs_a_responsible_person` and `ai_30_an_administrator_stops_any_agent` (M7).
+- **Every agent has one responsible person**, normally the person who made it; handing an agent to another person needs that person's acceptance. Creating agents takes the new permission *Create agents that work for you*, a **project** permission of kind *Change* that *Administrator*, *Project lead* and *Team member* hold at the start (M7-Q1, amendment M7): a person who holds it in at least one project may create agents, and an agent may be handed issues or given a standing rule only in the projects where its person holds it, so a project lead decides where agents work. Administrators see every agent of the organization in *Organization settings › Agents* and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests `ai_30_an_agent_needs_a_responsible_person` and `ai_30_an_administrator_stops_any_agent` (M7).
 - **What an agent can do at a place is at most what its responsible person can do there**, narrowed by its work (decision 3) and its limits (decision 9). When the person loses that access, is switched off or leaves, the agent loses it at the next request, and its open work becomes *Stopped*. Enforced by: the tests `ai_30_an_agent_never_does_more_than_its_person` and `ai_30_an_agent_stops_when_its_person_loses_access` (M7).
 - **An agent is not a member:** it has no role, is in no group, never appears in *Who has which role*, and is never *Assigned to* an issue. The issue keeps its person; while an agent works on it the issue shows *"worked on by Fixer"*. This keeps a person answerable for every issue and keeps COMP-10 simple. Enforced by: the tests `ai_30_an_agent_cannot_be_assigned` and `ai_30_an_agent_has_no_role` (M7).
 - **Shown as** its name with an agent mark and its person: *"Fixer, agent of Ada Brandt"*. Its own name is always shown (it is not a person); its person follows *Who sees people* for the viewer (*"agent of Someone (Team member)"*).
@@ -45,11 +45,11 @@ There are two ways, and no third one (a project-wide permission would be a stand
 - **Hand over** (AI-31): a person hands one or several issues, by their IDs, to one of their agents in the *Hand over to an agent* window. They choose:
   - the agent;
   - **the brief**: taken from the issue (description, *Steps to reproduce*, *Done when*), plus a note; the window says what is missing (*"No steps to reproduce"*) but does not stop the hand-over;
-  - **what the agent may do in Bugaboo**: always read the issue and what it links to, comment, report its work, log its time, attach results and link related issues; ticked on request: change named fields, change the status, make sub-issues;
+  - **what the agent may do in Bugaboo**: always read the issue and what it links to, comment, report its work and the time and cost it spent (on its attempt, never as a time entry: decision 4), attach results and link related issues; ticked on request: change named fields, change the status, make sub-issues;
   - **a budget**: attempts, time, and the cost the agent reports;
   - **whether its plan needs approval** before it starts.
 
-  The hand-over ends at *Accept*, *Throw away*, *Stop*, or when it runs out (14 days unless set otherwise). The person handing over needs *Change issues* (or *Change the issues they reported*) on each issue. Enforced by: the tests `ai_31_a_handed_over_agent_sees_only_its_issues` and `ai_31_a_hand_over_ends_at_accept` (M7).
+  The hand-over ends at *Accept*, *Throw away*, *Stop*, or when it runs out (14 days unless set otherwise). The person handing over needs *Change issues* (or *Change the issues they reported*) on each issue, and *Create agents that work for you* in its project (M7-Q1). Enforced by: the tests `ai_31_a_handed_over_agent_sees_only_its_issues` and `ai_31_a_hand_over_ends_at_accept` (M7).
 - **Standing rule** (AI-32): a person lets one of their agents work on everything a saved search finds, for example *"every new bug in Website"*. Because anybody who changes an issue so that it matches gives the agent that issue, a standing rule is narrower than a hand-over:
   - it may **propose** (default: nothing changes until a person clicks *Apply*, as with the assistant), or **change only the fields named in the rule** from a short list (*Labels, Tags, Type, Duplicate of, Found in release*); it may create issues in one named project when the rule says so (for an agent that reports failing tests);
   - it never changes a field that holds people (*Assigned to*, *Followers*, *Reported by*) and never the status; Enforced by: the test `ai_32_a_standing_rule_never_changes_people_fields` (M7), and COMP-10 in review;
@@ -60,6 +60,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 ### 4. Agent work: the record of what the agent does on an issue
 
 - **Agent work** (AI-33) is a record of its own on the issue, apart from the comments, so the conversation stays readable for people. It holds the brief, the **attempts** (each with the agent's plan, its steps, its results as links such as a branch, a pull request or a test report, and the time and cost the agent reports, marked as reported by the agent), the questions and their answers, and the review.
+- **An agent's time is not working time (M7-Q7).** The time and cost an agent reports stay on its attempt, marked as reported by the agent. An agent never makes a time entry, and no total of *Time spent* counts what it reports (ADR-0035, decisions 4 and 9). An AI app acting for a person may book that person's own time (`log_time`, AI-21), with the person's *Book time*. Enforced by: the test `ai_33_an_agent_never_makes_a_time_entry` (WP-08) and SEC-MATRIX.
 - **States**, shown on the issue page, as a mark on list rows (the row keeps its status color) and searchable (`agent:Fixer`, `agent-state:waiting-for-you`): *Waiting for the agent*, *Agent working*, *Waiting for you* (a question or a plan to approve), *Ready for review*, *Agent gave up*, *Stopped*.
 - When an attempt is ready, one short comment marked *Written by an agent* says so and links to the agent work.
 - The issue's own status is not an agent state. It moves only through the review (decision 6).
@@ -72,7 +73,8 @@ There are two ways, and no third one (a project-wide permission would be a stand
 ### 6. Review
 
 - At *Ready for review* a person chooses **Accept** (the hand-over ends; the status moves to the one the reviewer picks, proposed by the workflow), **Send back** with a note (a new attempt with the note in the brief) or **Throw away** (everything the attempts changed in Bugaboo is undone in one step; results outside Bugaboo, such as a branch, are the agent's business, and the window says so).
-- A project can allow **Accept by itself when its checks pass** for handed-over issues (off at the start). Issues accepted that way are listed under *Accepted by itself* in *My agents* until a person has looked at them. Enforced by: the test `ai_35_accept_by_itself_is_off_at_the_start` (M7).
+- A project can allow **Accept by itself when its checks pass** for handed-over issues (off at the start). Issues accepted that way are listed under *Accepted by itself* in *My agents* until a person has looked at them.
+- **What "its checks pass" means (M7-Q8).** An agent attaches results of the kind ***Check*** with *passed* or *failed* (MCP tool `attach`). An attempt is accepted by itself only when the project allows it, the hand-over did not turn it off, the attempt has at least one check, and every check of the attempt passed. Bugaboo does not run or verify outside checks, and the hand-over window says so. The status after such an accept is the one the workflow proposes. Enforced by: the tests `ai_35_accept_by_itself_is_off_at_the_start` and `ai_35_an_attempt_without_a_check_or_with_a_failed_one_waits_for_a_person` (WP-08).
 
 ### 7. Runs: everything an app or an agent did, undone together
 
@@ -88,13 +90,24 @@ There are two ways, and no third one (a project-wide permission would be a stand
 
 - **MCP tools for agents** (AI-36), in the one tool registry: *take* an issue that is handed over (all or nothing, with the issue's version, so two agents never start the same work), *report* a step, *ask*, *attach* a result, *give up* with a reason, and *changes since* (what changed in the issues it may see since a mark it got before). Every write tool takes `preview` and then answers what would happen, from the same one evaluation as the preview of *Change many issues*. Each tool says whether it only reads or changes something. Enforced by: ARCH-AI-TOOLS (every tool declares read or change and has a preview test).
 - **Long texts:** agents never hold an edit lock for longer than one save and never take over a person's text; a save against an older version is refused with the newer text, as for people (*Compare and save*). Enforced by: the test `ai_36_an_agent_never_takes_over_a_lock` (M7).
-- **Limits per agent and per key:** changes per minute, issues at once, attempts per issue. Reaching a limit pauses the agent with a sentence; it never drops a change halfway.
+- **Limits per agent and per key:** changes per minute, issues at once, attempts per issue; the defaults are in the amendment M7. Reaching a limit pauses the agent with a sentence; it never drops a change halfway.
 - **Untrusted text:** tool answers mark every text with who wrote it (*someone in the project*, *a Guest*, *someone outside*, *an agent*), so the agent's own safeguards can treat it as data, not as instructions (AI-05). The prompt-injection test set covers agents and standing rules.
 - **COMP-10:** no tool ranks, evaluates or picks people. An app acting for a person may assign issues because the person told it to; an agent working on its own never changes a field that holds people (decision 3).
 
 ### 10. Agents of the organization (V1)
 
 - *AUTH-08* (V1, M12) becomes **agents of the organization**: the same model, with the organization as the responsible party and a role instead of a person's rights, for webhooks (NTF-03) and imports. It is built on this decision, not beside it.
+
+## Amendment (M7, the maintainer's answers M7-Q1, Q7 and Q8, and the defaults)
+
+The maintainer accepted every recommendation of M7-Q1 to Q10 on 2026-11-07. Decisions 2, 3, 4 and 6 above are written with the answers; what they add:
+
+- **Who may create agents (M7-Q1):** *Create agents that work for you* is a project permission (decision 2), not an organization one: an organization permission counts only from a role given for the whole organization (ADR-0025, decision 1), and *Project lead* and *Team member* are given on projects, so nearly nobody would have held it. The catalogue entry is in ADR-0025, amendment M7. Enforced by: ARCH-PERMS, and the test `ai_30_an_agent_works_only_where_its_person_may_create_agents` (WP-04).
+- **What an agent never holds:** every permission of kind *Manage*, and *Take over text someone else is editing*, whatever its person holds. The list is defined once beside `NOT_FOR_KEYS` in `bb-policy` (`NOT_FOR_AGENTS`). Enforced by: ARCH-PERMS and the test `ai_30_an_agent_never_holds_a_manage_permission` (WP-04).
+- **The limits of an agent** (decision 9) start at **60 changes a minute**, **5 issues at once** and **5 attempts on one issue**. Each is a value of the agent (on its page), at most the organization's maximum, which is a setting under *Agents* (ADR-0018, amendment M7) and starts at the same numbers; an agent key counts toward its agent's limits. Enforced by: ARCH-SETTINGS, and the tests of WP-09.
+- **Proposals of a standing rule** are records on the issue's agent work (before and after, the agent, the rule), which a person applies or discards through the same path as the assistant's *Apply*; nothing changes until then. Enforced by: TEST-PROMPT-INJECTION (the standing-rule cases) and the tests of WP-08.
+- **The time of an agent (M7-Q7)** and **its checks (M7-Q8)** are decisions 4 and 6.
+- **Agents of the organization** (decision 10, AUTH-08) stay in M12, and Bugaboo runs no agents (M7-Q10).
 
 ## Consequences
 

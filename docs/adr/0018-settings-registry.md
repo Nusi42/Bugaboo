@@ -29,6 +29,15 @@ Define each setting once with the `settings!` macro, which is used only in the r
 - `PUT /api/v1/me/settings/{key}` takes an optional, nullable `version` in its body, the one the person read (ARCH-VERSIONED waives `required` for it with the `[[optional]]` list, because the freeze of the API forbids a new required member). A change made from another version is refused with `edit.version-changed` and the structured conflict (`409`) and the value stays; the refusal carries the value and the version the server holds, and the browser applies only its own change to that value (it reads the setting again only when a refusal does not carry them) (for `window.sizes`, its one form's size into the fresh map). Without a `version` the last write still wins, so an old client keeps working (an addition after the freeze, ADR-0008). `DELETE` (*Reset to default*) takes none; because the counter of the person is not reset with the value, a value that was taken away and set again has a version no earlier read had, and a tab that read the old one is refused.
 - The organization's and the projects' settings have no version: administrators change them from the settings page one at a time.
 
+## Update (M7, the settings of AI and of agents)
+
+Two topics join the registry, each on its own page of *Organization settings* (UX §5.1); the keys, types and defaults are declared once in the registry and nowhere else:
+
+- **AI** (`ai.*`, *Connections › AI*): AI on or off (organization and project; a project follows the one above until it has its own), the AI provider, the model, the address, the API key (a stored secret, written and never read back), the confirmation of the data processing agreement, *Send names of people*, whether AI apps may sign in, and the web return addresses of apps an administrator allows ([ADR-0013](0013-ai.md) and [ADR-0042](0042-mcp-server-and-how-ai-apps-sign-in.md), amendments M7). A change of the provider, the address or the key asks for the password again; every change is in the security log.
+- **Agents** (`agents.*`, *Connections › Agents*): agents on or off (organization and project, like AI), the organization's maximum of each limit of an agent (changes a minute, issues at once, attempts on one issue; 60, 5 and 5 at the start), *Accept by itself when its checks pass* (project, off), the end of a hand-over (14 days) and of a standing rule (30 days, at most 90) ([ADR-0029](0029-ai-agents.md), amendment M7). An agent's own limits are values of the agent, not settings: they are kept with the agent and checked against the maximum.
+
+Enforced by: ARCH-SETTINGS.
+
 ## Alternatives considered
 
 - **Hand-written forms per setting:** slow and inconsistent. Rejected.

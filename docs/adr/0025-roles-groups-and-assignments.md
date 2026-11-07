@@ -112,6 +112,21 @@ The maintainer decided M6-Q4 and M6-Q10 by taking the recommendations as written
 - **Keys.** *See working hours of others* and *Change working hours of others* join the list of what no key holds (decision 8, `NOT_FOR_KEYS`), which grows from twelve entries to fourteen: reading or changing other people's working hours stays in the app, where the person is signed in.
 - **The security log.** A gift or a removal of *HR* is a change of permissions like any other (decision 9); what else of time goes into the security log is in ADR-0035, decision 8.
 
+## Amendment (M7, agents)
+
+The maintainer decided M7-Q1 by taking the recommendation as written; [ADR-0029](0029-ai-agents.md) (decision 2 and its amendment M7) says why. What changes here:
+
+- **The topic *Agents*** joins the catalogue (decision 1) with one permission, with its sentence, kind and starting values in the same change as its routes:
+
+  | Permission | Counts | Kind | Starting roles that have it |
+  |------------|--------|------|-----------------------------|
+  | *Create agents that work for you*: create agents of one's own; an agent may be handed issues, or given a standing rule, only in the projects where its person holds it | project | *Change* | *Administrator, Project lead, Team member* |
+
+  A person who holds it in at least one project may create agents. The starting roles get it on the upgrade of an existing server like any new permission of a starting role (decision 4). Enforced by: ARCH-PERMS, SEC-MATRIX.
+- **An agent is no member.** It is never a person or a group of an assignment (decision 2), is in no group, never appears in *Who has which role* or *Check access*, and never holds a role; *Who sees people* never lists it among people. Its rights are worked out from its responsible person's evaluation (decision 3), never from a row of its own. Enforced by: the tests `ai_30_an_agent_has_no_role` and `ai_30_an_agent_cannot_be_assigned` (WP-04).
+- **Agent keys narrow like access keys** (decision 8): an agent key's permissions are the agent's rights (its person's evaluation intersected with its work and limits, ADR-0029) intersected with the key's choice and projects; what no key holds an agent key never holds, and an agent never holds a permission of kind *Manage* or *Take over text someone else is editing* (`NOT_FOR_AGENTS`). Agent keys always run out, at most the organization's longest time, and end when the agent is stopped. An OAuth grant of an AI app narrows the same way ([ADR-0042](0042-mcp-server-and-how-ai-apps-sign-in.md), decision 3). Enforced by: the property test `ai_30_an_agent_never_does_more_than_its_person` (WP-04), SEC-MATRIX.
+- **The security log** (decision 9) also records every agent made, handed to another person, paused, stopped or deleted, and every agent key made, renewed or taken back.
+
 ## Consequences
 
 - WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, *No access* and two access keys.

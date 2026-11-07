@@ -138,7 +138,8 @@ The maintainer answered M6-Q3 to M6-Q11 by taking every recommendation of the [M
 
 - **No route, export, search or list orders, ranks or compares people by a number of time**: not by working hours, not by time booked, not by warnings, not by *Time spent*. A list of people is in the order of their names, and a total of a person is shown for that person alone. Grouping by person in the search language never gives a length per person.
 - **No AI tool reads working hours.** The tool registry has no tool that reads work days, breaks, warnings or the totals of a person, and none that reads another person's time entries (ADR-0013, COMP-10).
-- Enforced by: SEC-MATRIX (no route of time takes an order by person or by a total), ARCH-AI-TOOLS (no tool reaches the use cases of working hours), and the tests `priv_09_…` of WP-05 and WP-06.
+- **No time entry by an agent (M7-Q7).** An agent never makes a time entry and never starts a timer; the time and cost it reports stay on its attempt, marked as reported by the agent, and no total of *Time spent* counts them ([ADR-0029](0029-ai-agents.md), decision 4). An AI app acting for a person books only that person's own time, with the person's *Book time*.
+- Enforced by: SEC-MATRIX (no route of time takes an order by person or by a total), ARCH-AI-TOOLS (no tool reaches the use cases of working hours), the tests `priv_09_…` of WP-05 and WP-06, and `ai_33_an_agent_never_makes_a_time_entry` (M7).
 
 ## Amendment (WP-05): *Activity* and *Cost center* leave the catalogue, the API keeps their words
 

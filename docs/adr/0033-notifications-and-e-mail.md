@@ -118,6 +118,23 @@ The maintainer decided M6-Q2 (M5-F137) by taking the recommendation as written. 
 - **One writer for each kind of value.** A date, a moment (a date and a time of day), a time of day and a length of time are written from the person's *Region* by one helper each: `bb_core::wording` for e-mails and the lazy parts, and the synchronous helpers of `web/app/src/shared/` for the screens that cannot wait for the module. So a date written day first never stands beside a 12-hour clock unless the person chose both, and the timer and the timesheet write their times the same way. The writer of lengths has three forms, written here only: the grid form `1:30` (a grid and a running timer), the short form `1h 30m` (a field, a list column, a short status line, a history line) and the words `1 hour 30 minutes` (a sentence: a warning, a window, a notification, an e-mail), for people who do not read abbreviations. UX §4.9 lists which screen uses which. The rule for the screens is written in coding-standards §4 (TXT-DATES); the two implementations are held together by DOC-GENERATED and the browser test of the vectors, as before.
 - **What the vectors hold from M6:** both clocks with every fixed date order (day first, month first, year first), the moments around midnight and noon in each, and the lengths of time that the one reader of `bb_core::time` reads (`1:30`, `1.5`, `1,5` with a decimal comma, `90m`) with what the writer gives back for each. `cargo xtask gen word-vectors` writes them from Rust, as before.
 
+## Amendment (M7, agents)
+
+Agent work ([ADR-0029](0029-ai-agents.md)) adds six kinds of notification, built by the same reader and checked again in the same way (decision 2). Each person changes them under *Customize*; the starting values:
+
+| Event | In the app | By e-mail |
+|---|---|---|
+| *An agent asks you* (a question of an agent of yours, or on an issue you handed over) | on | on |
+| *A plan waits for you* (*Plan needs approval*) | on | on |
+| *Ready for review* | on | on |
+| *An agent gave up* | on | off |
+| *A standing rule runs out soon* (3 days before its end) | on | off |
+| *An agent was stopped* (by an administrator, by a limit, or because its person lost access) | on | off |
+
+- The first three wait for the person, so they are on by e-mail at the start: a question can be answered from the phone (the M7 exit demo).
+- The text of a question, a plan or a note is people's text and is written like a comment (decision 3: quoted, plain text, after the link). An agent is shown as *"Fixer, agent of Ada Brandt"*, its person by *Who sees people* (ADR-0022).
+- The responsible person and the person who handed the issue over both hear of the first four; an issue they no longer see is skipped like any other (decision 2). Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-08.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).
