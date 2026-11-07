@@ -168,8 +168,10 @@ async fn a_type_and_a_label_group(ada: &mut Browser) -> Result<(String, String),
 
 /// The address of a route that is about something named in its query: the draft and lock routes
 /// name a record (the example project), the layout routes the project and a kind of form.
-fn with_query(template: &str, filled: &str, project: &str, project_id: &str) -> String {
+fn with_query(template: &str, filled: &str, ids: (&str, &str), app_query: &str) -> String {
+    let (project, project_id) = ids;
     match template {
+        "/api/v1/oauth/authorization" => format!("{filled}?{app_query}"),
         "/api/v1/drafts" | "/api/v1/edit-locks" => {
             format!("{filled}?record_kind=project&record_id={project_id}&part=description")
         }
@@ -230,6 +232,13 @@ async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
     )
 }
 
+/// A work day and an app that registered: what the routes that name a date or ask the consent step
+/// need. The answer is the query of the consent step.
+async fn a_work_day_and_an_app(rig: &Rig, ada: &mut Browser) -> Result<String, Failure> {
+    a_work_day(ada).await?;
+    a_registered_app_query(rig, ada).await
+}
+
 /// The query of the consent step for an app that registered itself (AI is on, so apps may).
 async fn a_registered_app_query(rig: &Rig, ada: &mut Browser) -> Result<String, Failure> {
     rig.set_organization_switch("ai.enabled", true).await?;
@@ -287,9 +296,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let search_id = a_saved_search(&mut ada).await?;
         let agent_id = an_agent(&mut ada).await?;
-        // A work day of the person, for the routes that name a date.
-        a_work_day(&mut ada).await?;
-        let app_query = a_registered_app_query(&rig, &mut ada).await?;
+        // A work day of the person, for the routes that name a date, and an app.
+        let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -317,12 +325,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{agent}", &agent_id)
                 .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
-            let filled = with_query(template, &filled, project, &project_id);
-            let filled = if template == "/api/v1/oauth/authorization" {
-                format!("{filled}?{app_query}")
-            } else {
-                filled
-            };
+            let filled = with_query(template, &filled, (project, &project_id), &app_query);
             let filled = if template.ends_with("/status-changes") {
                 format!("{filled}?person={person_id}")
             } else {
