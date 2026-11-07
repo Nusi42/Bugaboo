@@ -4,8 +4,9 @@
 //! The codes are the enum `ErrorCode` in `crates/bb-core/src/error_code.rs`: a line per code with
 //! its text and its HTTP status; its message is `error.<area>.<name>` (the text with `-` for `_`),
 //! made from the text. This check reads the enum itself and the catalog: codes and messages are
-//! unique, shaped right, and the message exists and has no placeholder (an error may never carry
-//! a name or a number that the person is not allowed to see). It also finds
+//! unique, shaped right, and the message exists and has a placeholder only for a limit of the
+//! product that the code names (`ErrorCode::arguments`, filled in from the constants that hold it;
+//! an error may never carry a name or a number that the person is not allowed to see). It also finds
 //! error answers built from a text instead of an `ErrorCode`, in the code of the HTTP crates: a
 //! tuple `(StatusCode::X, …)` (also across lines) with a text, `format!`, `to_string()` or JSON
 //! written in the code, or a bare error status turned into an answer. Last, it reads the generated
@@ -156,11 +157,14 @@ fn check_table(table: &[Entry], messages: &[(String, String)]) -> Vec<Finding> {
                 ),
             )),
             Some(text) => {
-                if placeholders(text).is_ok_and(|found| !found.is_empty()) {
+                let found: BTreeSet<String> = placeholders(text)
+                    .map(|found| found.into_keys().collect())
+                    .unwrap_or_default();
+                if found != argument_names(&entry.code) {
                     findings.push(Finding::at(
                         &place,
                         format!(
-                            "The message `{}` has a placeholder; an error message must not carry a value that may be hidden.",
+                            "The message `{}` has placeholders that are not the limits of the product that `ErrorCode::arguments` names; an error message must not carry a value that may be hidden.",
                             entry.key
                         ),
                     ));
@@ -169,6 +173,19 @@ fn check_table(table: &[Entry], messages: &[(String, String)]) -> Vec<Finding> {
         }
     }
     findings
+}
+
+/// The placeholders the message of a code may have: the names of the limits of the product that
+/// `ErrorCode::arguments` fills in from constants, none for a code that names no limit.
+fn argument_names(code: &str) -> BTreeSet<String> {
+    code.parse::<ErrorCode>()
+        .map(|code| {
+            code.arguments()
+                .iter()
+                .map(|(name, _)| (*name).to_owned())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn is_code(code: &str) -> bool {
@@ -456,6 +473,45 @@ mod tests {
     }
 
     #[test]
+    fn a_placeholder_is_allowed_only_for_the_limit_a_code_names() {
+        let table = vec![
+            entry(
+                "TimeEntryTooShort",
+                "time.entry-too-short",
+                400,
+                "error.time.entry-too-short",
+            ),
+            entry(
+                "NotFound",
+                "resource.not-found",
+                404,
+                "error.resource.not-found",
+            ),
+        ];
+        let spec = GOOD_SPEC.replace("auth.wrong-credentials", "time.entry-too-short");
+        let ok = run_with_spec(
+            &table,
+            &[
+                ("error.time.entry-too-short", "At least {minutes}."),
+                ("error.resource.not-found", "Not here."),
+            ],
+            "",
+            &spec,
+        );
+        assert!(ok.is_empty(), "{ok:?}");
+        let found = run_with_spec(
+            &table,
+            &[
+                ("error.time.entry-too-short", "At least {hours}."),
+                ("error.resource.not-found", "Not {name} here."),
+            ],
+            "",
+            &spec,
+        );
+        assert_eq!(found.len(), 2, "{found:?}");
+    }
+
+    #[test]
     fn bad_example() {
         let table = vec![
             entry("A", "auth.x", 401, "error.a"),
@@ -474,7 +530,10 @@ mod tests {
         assert!(found.contains("is not a code"), "{found}");
         assert!(found.contains("message of two codes"), "{found}");
         assert!(found.contains("`error.missing`"), "{found}");
-        assert!(found.contains("has a placeholder"), "{found}");
+        assert!(
+            found.contains("placeholders that are not the limits"),
+            "{found}"
+        );
         assert!(found.contains("text written in the code"), "{found}");
     }
 

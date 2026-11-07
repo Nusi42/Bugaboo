@@ -101,10 +101,10 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `manage-roles` | People | organization | Manage | Create, change and delete roles |
 | `change-organization-settings` | Settings | organization | Manage | Change organization settings |
 | `see-status` | Settings | organization | See | See how the server is doing |
-| `book-time` | Time | project | Change | Book their own time on the issues they see, and change and delete their own time entries |
+| `book-time` | Time | project | Change | Book time on the issues they see, and change and delete their own time entries |
 | `create-agents` | Agents | project | Change | Create agents that work for you, and hand them work in the project |
-| `see-working-hours-of-others` | Time | organization | See | See other people's working hours |
-| `change-working-hours-of-others` | Time | organization | Manage | Change other people's work days, always with a reason |
+| `see-working-hours-of-others` | Time | organization | See | See working hours of others |
+| `change-working-hours-of-others` | Time | organization | Manage | Change working hours of others, always with a reason |
 
 <!-- END GENERATED permission-catalogue -->
 
@@ -176,10 +176,10 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Create, change and delete roles | ✓ | – | – | – | – | – | – |
 | Change organization settings | ✓ | – | – | – | – | – | – |
 | See how the server is doing | ✓ | – | – | – | – | – | – |
-| Book their own time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – | – |
+| Book time on the issues they see, and change and delete their own time entries | ✓ | ✓ | ✓ | ✓ | – | – | – |
 | Create agents that work for you, and hand them work in the project | ✓ | ✓ | ✓ | – | – | – | – |
-| See other people's working hours | – | – | – | – | – | – | ✓ |
-| Change other people's work days, always with a reason | – | – | – | – | – | – | ✓ |
+| See working hours of others | – | – | – | – | – | – | ✓ |
+| Change working hours of others, always with a reason | – | – | – | – | – | – | ✓ |
 | Two-step sign-in for everyone with this role | off | off | off | off | off | off | off |
 
 <!-- END GENERATED starting-permissions -->
@@ -447,7 +447,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"
 - The `Display` texts of error types such as `TlsError` are English in code and reach only the log or the terminal; a person reads catalogue messages. Enforced by: ARCH-ERRORS (an error answer cannot be made from a text).
 - **A stale version has an answer of its own** (`edit.version-changed`, ADR-0019 amendment M3): the problem body also holds `conflict` with the version the record has now, who changed it last (a `PersonRef` for the reader, of the kind *Last changed by*), when, which fields, and the values those fields have now. The values are left out for a field the reader's role hides. A use case only answers `AppError::Stale` (the record, where it sits, who asks); `AuthApi` makes the `Conflict` from the last event of the record in one place, and `bb-api` writes it into the answer and documents it as the `409` of every route that takes a `version`, so a route carries it without code of its own. The browser writes the sentence from it ("Not saved: Ben changed Priority to Critical 2 minutes ago."): the message itself has no placeholder. Enforced by: ARCH-VERSIONED (a route that takes a version documents the conflict), TEST-EDIT-LOCKS (`iss_17_a_stale_version_answers_who_changed_what`).
 - The TypeScript client gets the codes as a union type; the UI shows the message from the catalog.
-- An error message in the catalog has no placeholder, so an error cannot carry a name or number the person may not see; anything hidden answers with `resource.not-found`, exactly as if it did not exist. Enforced by: ARCH-ERRORS.
+- An error message in the catalog has a placeholder only for a limit of the product (the shortest and longest time entry, the years work days are kept with the rules of Germany), which `ErrorCode::arguments` fills in from the constants that hold the limit and the answer sends as `params`, so an error cannot carry a name or number the person may not see; anything hidden answers with `resource.not-found`, exactly as if it did not exist. Enforced by: ARCH-ERRORS.
 
 ## Observability
 
