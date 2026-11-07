@@ -27,7 +27,7 @@ export function MoreOptions({ draft, rules, onSwitched }: MoreOptionsProps) {
           }}
         />
         {draft.single ? <PermissionPicker choices={rules.permissions} draft={draft} /> : null}
-        <ProjectPicker draft={draft} />
+        <ProjectPicker picked={draft.projects} onPick={draft.limitTo} />
       </div>
     </details>
   );

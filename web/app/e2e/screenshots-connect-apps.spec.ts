@@ -45,7 +45,7 @@ test("the consent step, for an app that asks to see and change and for one that 
   );
   await inFourChosenThemes(page, "consent-see-only", MILESTONE, paths.appearance, async () => {
     await page.goto(asksLess.address);
-    await expect(page.getByText(t("connect.only-see"))).toBeVisible();
+    await expect(page.getByText(t("connect.may-only"))).toBeVisible();
   });
 });
 
@@ -67,6 +67,6 @@ test("a request nobody registered, and the list of connected apps", async ({ pag
   );
   await inFourChosenThemes(page, "connected-apps", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.connectedApps);
-    await expect(page.getByRole("listitem").filter({ hasText: "Claude Code" })).toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: "Claude Code" })).toBeVisible();
   });
 });

@@ -14,21 +14,23 @@ export interface ConnectRequest {
   readonly state: string;
 }
 
-/** A member of the address, as a text; none is an empty text. */
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-/** Reads the address of the consent step into the request of the app. */
-export function connectRequestOf(search: Readonly<Record<string, unknown>>): ConnectRequest {
+/**
+ * Reads the address of the consent step into the request of the app. The members are read from the
+ * text of the address as they were written: the router would turn `123` into a number and `{}` into
+ * an object, and a code challenge or a state of an app is a text whatever it looks like. A member
+ * that is not there is an empty text, and the server judges the request.
+ */
+export function connectRequestOf(search: string): ConnectRequest {
+  const members = new URLSearchParams(search);
+  const text = (name: string): string => members.get(name) ?? "";
   return {
-    client: text(search["client_id"]),
-    response_type: text(search["response_type"]),
-    redirect_uri: text(search["redirect_uri"]),
-    code_challenge: text(search["code_challenge"]),
-    code_challenge_method: text(search["code_challenge_method"]),
-    scope: text(search["scope"]),
-    resource: text(search["resource"]),
-    state: text(search["state"]),
+    client: text("client_id"),
+    response_type: text("response_type"),
+    redirect_uri: text("redirect_uri"),
+    code_challenge: text("code_challenge"),
+    code_challenge_method: text("code_challenge_method"),
+    scope: text("scope"),
+    resource: text("resource"),
+    state: text("state"),
   };
 }

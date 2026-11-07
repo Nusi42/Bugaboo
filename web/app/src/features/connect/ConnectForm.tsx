@@ -1,20 +1,18 @@
 import type { Schema } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
+import { t, type MessageKey } from "@bugaboo/messages";
 import {
   Alert,
   alertTone,
   Button,
-  Checkbox,
   ChoiceGroup,
   Form,
   SubmitButton,
   partOf,
   part,
 } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { choiceName, projectChoicesOptions } from "../my-settings/index.ts";
+import { choiceName, ProjectLimitPicker } from "../my-settings/index.ts";
 import type { ConnectRequest } from "./request.ts";
 import { useDecision } from "./use-decision.ts";
 
@@ -22,14 +20,20 @@ export interface ConnectFormProps {
   readonly request: ConnectRequest;
   /** What the app asked for. The person may allow less, never more. */
   readonly asked: Schema<"KeyChoice">;
-  readonly onThisComputer: boolean;
+  /** The web address the app comes back to; none when it comes back to this computer. */
+  readonly webAddress: string | null;
+  /** The name the app gave itself; on a phone the heading of the card is not shown. */
+  readonly app: string;
 }
 
 /** What an app can be given: the two plain choices of an access key. */
 type Scope = "see-only" | "see-and-change";
 
-/** The two ways an app can be limited. */
-type Where = "all" | "some";
+/** The sentence that says what each choice means for an app. */
+const helps: Readonly<Record<Scope, MessageKey>> = {
+  "see-only": "connect.help.see-only",
+  "see-and-change": "connect.help.see-and-change",
+};
 
 /**
  * The scopes the form offers, what the app asked first and *See only* below it. An app that asked
@@ -39,79 +43,66 @@ function offered(asked: Schema<"KeyChoice">): readonly Scope[] {
   return asked === "see-and-change" ? ["see-and-change", "see-only"] : ["see-only"];
 }
 
-interface ProjectsProps {
-  readonly picked: readonly string[];
-  readonly onPick: (picked: readonly string[]) => void;
-  readonly where: Where;
-  readonly onWhere: (where: Where) => void;
+/** The projects with one taken in or out. */
+function withProject(list: readonly string[], project: string, on: boolean): readonly string[] {
+  const without = list.filter((each) => each !== project);
+  return on ? [...without, project] : without;
 }
 
-/** *In which projects*: every project the person sees, or only some, each with a box. */
-function Projects({ picked, onPick, where, onWhere }: ProjectsProps) {
-  const projects: readonly Schema<"ProjectChoiceItem">[] =
-    useQuery(projectChoicesOptions()).data?.items ?? [];
-  if (projects.length === 0) {
-    return null;
+interface MayProps {
+  readonly choices: readonly Scope[];
+  readonly scope: Scope;
+  readonly onScope: (scope: Scope) => void;
+}
+
+/** *What it may do*: both choices, each with what it means, or one plain statement when only one is offered. */
+function May({ choices, scope, onScope }: MayProps) {
+  if (choices.length === 1) {
+    return <p>{t("connect.may-only")}</p>;
   }
   return (
-    <>
-      <ChoiceGroup
-        legend={t("connect.projects")}
-        choices={[
-          { value: "all", label: t("connect.projects-all") },
-          { value: "some", label: t("connect.projects-some") },
-        ]}
-        value={where}
-        onChange={onWhere}
-      />
-      {where === "some" ? (
-        <fieldset {...partOf(part.accessKeysGroup)}>
-          <legend {...partOf(part.accessKeysLegend)}>{t("connect.projects-some")}</legend>
-          {projects.map((project) => (
-            <Checkbox
-              key={project.id}
-              label={t("access-keys.project-label", {
-                short_name: project.short_name ?? "",
-                name: project.name ?? "",
-              })}
-              isSelected={picked.includes(project.id ?? "")}
-              onChange={(on) => {
-                const id = project.id ?? "";
-                onPick(on ? [...picked, id] : picked.filter((each) => each !== id));
-              }}
-            />
-          ))}
-        </fieldset>
-      ) : null}
-    </>
+    <ChoiceGroup
+      legend={t("access-keys.may")}
+      choices={choices.map((value) => ({ value, label: t(choiceName(value)) }))}
+      value={scope}
+      onChange={onScope}
+      renderLabel={(choice) => (
+        <span {...partOf(part.choiceGroupLabel)}>
+          {choice.label}
+          <span {...partOf(part.muted)}>{t(helps[choice.value])}</span>
+        </span>
+      )}
+    />
   );
 }
 
 /** *Allow* and *Cancel*, with what the app may do and in which projects. */
-export function ConnectForm({ request, asked, onThisComputer }: ConnectFormProps) {
+export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProps) {
   const choices = offered(asked);
   const [scope, setScope] = useState<Scope>(choices[0] ?? "see-only");
-  const [where, setWhere] = useState<Where>("all");
   const [picked, setPicked] = useState<readonly string[]>([]);
   const deciding = useDecision(request);
   return (
     <Form
       onSubmit={() => {
-        deciding.send({ allow: true, scope, projects: where === "some" ? picked : [] });
+        deciding.send({ allow: true, scope, projects: [...picked] });
       }}
     >
-      <p>{t("connect.acts-as")}</p>
-      <ChoiceGroup
-        legend={t("access-keys.may")}
-        choices={choices.map((value) => ({ value, label: t(choiceName(value)) }))}
-        value={scope}
-        onChange={setScope}
+      <p>{t("connect.acts-as", { app })}</p>
+      <May choices={choices} scope={scope} onScope={setScope} />
+      <ProjectLimitPicker
+        picked={picked}
+        onPick={(project, on) => {
+          setPicked((now) => withProject(now, project, on));
+        }}
       />
-      {asked === "see-only" ? <p {...partOf(part.muted)}>{t("connect.only-see")}</p> : null}
-      <Projects picked={picked} onPick={setPicked} where={where} onWhere={setWhere} />
       <p {...partOf(part.muted)}>
-        {onThisComputer ? t("connect.where-computer") : t("connect.where-web")}
+        {webAddress === null
+          ? t("connect.where-computer")
+          : t("connect.where-web", { address: webAddress })}
       </p>
+      <p {...partOf(part.muted)}>{t("connect.name-unchecked")}</p>
+      <p {...partOf(part.muted)}>{t("connect.take-back-note")}</p>
       {deciding.problem === null ? null : <Alert tone={alertTone.danger}>{deciding.problem}</Alert>}
       {deciding.leaving ? (
         <Alert tone={alertTone.success}>

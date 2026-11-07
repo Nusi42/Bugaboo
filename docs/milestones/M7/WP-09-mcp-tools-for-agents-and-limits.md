@@ -35,6 +35,13 @@ An agent that connects through MCP has the tools to do its work well and safely:
 4. **The author mark** in tool answers.
 5. **TEST-PROMPT-INJECTION** grows: an issue whose text tells the agent to take other issues, to change *Assigned to*, or to give its key away; a standing rule that is fed an issue made to look like an instruction; each proves the agent's rights, the rule's narrow powers and the fence hold.
 
+## Carried over from WP-05 (the sign-in of AI apps)
+
+- **M7-F41:** the entry point `mcp` of SEC-MATRIX (a row for every tool, every role and both kinds of actor in `tools/checks/sec-matrix-record.txt`; the words `ENTRY_POINTS` and the check know only `api`). This package adds the tools of agents to the same table.
+- **M7-F43:** the runs of sessions of apps are kept open in memory; a restart leaves them as *Running*. A job closes the runs of app sessions older than the idle time.
+- **M7-F44:** an agent signs in at `/mcp` with its agent key only; the consent step does not offer *work as an agent* (ADR-0042, decision 4), and a grant has no agent.
+- **M7-F45:** the resource *a saved search* of AI-21 is not offered through MCP; it comes with a tool that reads a saved search (ARCH-AI-TOOLS holds `bb-mcp` to the registry).
+
 ## Acceptance tests (write first)
 
 - `ai_36_two_agents_take_the_same_issue_and_only_one_gets_it`.

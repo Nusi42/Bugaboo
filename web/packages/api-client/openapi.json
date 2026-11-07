@@ -17730,6 +17730,10 @@
           "on_this_computer": {
             "type": "boolean",
             "description": "Whether the app comes back to the person's own computer."
+          },
+          "web_address": {
+            "type": ["string", "null"],
+            "description": "The web address the app comes back to, when it is not this computer."
           }
         }
       },

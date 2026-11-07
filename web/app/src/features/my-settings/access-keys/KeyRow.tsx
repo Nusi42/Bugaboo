@@ -2,42 +2,13 @@ import { t } from "@bugaboo/messages";
 import { buttonLook, ConfirmDialog, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { formatDate, formatDateTime } from "../../../shared/format.ts";
-import { listText } from "../../../shared/list-text.ts";
 import type { AccessKey } from "./access-keys.ts";
-import { choiceName } from "./choice.ts";
+import { mayText, whereText } from "./key-words.ts";
 
 export interface KeyRowProps {
   readonly item: AccessKey;
   /** Delete this key: it leaves the list at once and the server is asked in the background. */
   readonly onDelete: () => void;
-}
-
-/** What the key may do, in words: the choice, or how many single permissions. */
-function mayText(item: AccessKey): string {
-  const { choice, permissions } = item;
-  if (choice === undefined || choice === null) {
-    return "";
-  }
-  return choice === "permissions"
-    ? t("access-keys.row.permissions", { count: permissions?.length ?? 0 })
-    : t(choiceName(choice));
-}
-
-/** Where the key works, in words. */
-function whereText(item: AccessKey): string {
-  const projects = item.projects ?? [];
-  if (projects.length === 0) {
-    return t("access-keys.row.projects-all");
-  }
-  const names = projects.map((project) =>
-    project.shown === "visible"
-      ? t("access-keys.project-label", {
-          short_name: project.short_name ?? "",
-          name: project.name ?? "",
-        })
-      : t("access-keys.row.hidden-project"),
-  );
-  return t("access-keys.row.projects-some", { names: listText(names) });
 }
 
 /** When the key runs out, or ran out. */
@@ -67,8 +38,8 @@ export function KeyRow({ item, onDelete }: KeyRowProps) {
         <SentenceWithValue sentence={t("access-keys.row.prefix", { prefix: start })} value={start}>
           {(value) => <span {...partOf(part.accessKeysPrefix)}>{value}</span>}
         </SentenceWithValue>
-        <span {...partOf(part.muted)}>{mayText(item)}</span>
-        <span {...partOf(part.muted)}>{whereText(item)}</span>
+        <span {...partOf(part.muted)}>{mayText(item.choice, item.permissions?.length ?? 0)}</span>
+        <span {...partOf(part.muted)}>{whereText(item.projects)}</span>
         <RunsOut item={item} />
         <span {...partOf(part.muted)}>
           {used === undefined || used === null

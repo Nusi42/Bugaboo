@@ -1,7 +1,7 @@
 import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Card, Skeleton, partOf, part } from "@bugaboo/ui";
-import { useSearch } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -55,7 +55,8 @@ export function ConnectPage({ request }: ConnectPageProps) {
           <ConnectForm
             request={request}
             asked={seen.data.asked}
-            onThisComputer={seen.data.on_this_computer}
+            webAddress={seen.data.web_address ?? null}
+            app={seen.data.app_name}
           />
         )}
       </Card>
@@ -65,6 +66,6 @@ export function ConnectPage({ request }: ConnectPageProps) {
 
 /** The page at its address: what the app put in the address is the request. */
 export function ConnectScreen() {
-  const search: Readonly<Record<string, unknown>> = useSearch({ strict: false });
+  const search = useLocation().searchStr;
   return <ConnectPage request={connectRequestOf(search)} />;
 }

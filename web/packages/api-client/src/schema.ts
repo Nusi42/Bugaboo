@@ -4932,6 +4932,8 @@ export interface components {
       asked: components["schemas"]["KeyChoice"];
       /** @description Whether the app comes back to the person's own computer. */
       on_this_computer: boolean;
+      /** @description The web address the app comes back to, when it is not this computer. */
+      web_address?: string | null;
     };
     /** @description What an app asked for when it sent the person to the consent step. */
     AuthorizationParams: {

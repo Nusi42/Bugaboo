@@ -38,11 +38,14 @@ export function PermissionPicker({ choices, draft }: PermissionPickerProps) {
 }
 
 export interface ProjectPickerProps {
-  readonly draft: Draft;
+  /** The IDs of the projects ticked; none means every project. */
+  readonly picked: readonly string[];
+  /** A project was ticked or unticked. */
+  readonly onPick: (project: string, on: boolean) => void;
 }
 
-/** The projects a key can be limited to, one box for each. */
-export function ProjectPicker({ draft }: ProjectPickerProps) {
+/** The projects a key or an app can be limited to, one box for each: the one picker of both. */
+export function ProjectPicker({ picked, onPick }: ProjectPickerProps) {
   const projects: readonly Schema<"ProjectChoiceItem">[] =
     useQuery(projectsOptions()).data?.items ?? [];
   if (projects.length === 0) {
@@ -59,9 +62,9 @@ export function ProjectPicker({ draft }: ProjectPickerProps) {
             short_name: project.short_name ?? "",
             name: project.name ?? "",
           })}
-          isSelected={draft.projects.includes(project.id ?? "")}
+          isSelected={picked.includes(project.id ?? "")}
           onChange={(on) => {
-            draft.limitTo(project.id ?? "", on);
+            onPick(project.id ?? "", on);
           }}
         />
       ))}

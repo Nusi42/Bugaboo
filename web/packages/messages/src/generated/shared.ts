@@ -317,7 +317,6 @@ export const messages = {
   "access-keys.more": "More options",
   "nav.connected-apps": "Connected apps",
   "connect.page": "Connect an app",
-  "access-keys.project-label": "{short_name}: {name}",
   "permission.see-projects": "See the project and what is in it",
   "permission.see-issues": "See every issue of the project, not only the ones they reported",
   "permission.create-issues": "Create issues",
@@ -797,6 +796,8 @@ export const messages = {
     "Bugaboo could not reach the mail server. Check the mail server, its port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
   "person.bugaboo": "Bugaboo",
+  "person.via-app": "{who} via {app}",
+  "person.agent-of": "{agent}, agent of {person}",
   "issue-type.only-for": "It is only for {type}.",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":

@@ -75,7 +75,7 @@ export const messages = {
   "sessions.everywhere": "Sign out everywhere",
   "sessions.everywhere-title": "Sign out everywhere?",
   "sessions.everywhere-text":
-    "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and stop working too.",
+    "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and the apps you allowed are taken back; they stop working too.",
   "sessions.cut-off": "Only the newest places are shown.",
 } as const;
 

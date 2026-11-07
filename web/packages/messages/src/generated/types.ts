@@ -140,9 +140,9 @@ export interface MessageArguments {
     who: string | number;
   };
   "conflict.sentence-plain": { ago: string | number; timed: string; who: string | number };
+  "connect.acts-as": { app: string | number };
   "connect.title": { app: string | number };
-  "connected-apps.row.allowed": { when: string | number };
-  "connected-apps.row.last-used": { when: string | number };
+  "connect.where-web": { address: string | number };
   "connected-apps.take-back-name": { name: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
@@ -390,12 +390,14 @@ export interface MessageArguments {
   "people-visibility.preview-role-only": { example: string | number; kinds: string | number };
   "people-visibility.project-title": { project: string | number };
   "people.in-groups": { count: number; groups: string | number };
+  "person.agent-of": { agent: string | number; person: string | number };
   "person.former": { label: string | number };
   "person.former-inside": { label: string | number };
   "person.groups-none": { name: string | number };
   "person.role": { role: string | number };
   "person.role-inside": { role: string | number };
   "person.roles-none": { name: string | number };
+  "person.via-app": { app: string | number; who: string | number };
   "preview.line-changes": { after: string | number; field: string | number };
   "preview.summary": { changed: number; skipped: number };
   "projects.created": { name: string | number };

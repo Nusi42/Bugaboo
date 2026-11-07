@@ -6,7 +6,7 @@ import { renderSaid } from "./said.ts";
 
 /** What the sentence of time needs of an item that says one: who did it, what happened and how long. */
 export type TimeWords = {
-  readonly [Field in "by" | "time_event" | "minutes"]?:
+  readonly [Field in "by" | "app" | "agent" | "time_event" | "minutes"]?:
     | Schema<"HistoryEntryItem">[Field]
     | undefined;
 };

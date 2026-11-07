@@ -798,26 +798,29 @@ pub const CONNECT_GOING_BACK: MessageKey = MessageKey::new("connect.going-back")
 /// The message `connect.going-back-help`.
 pub const CONNECT_GOING_BACK_HELP: MessageKey = MessageKey::new("connect.going-back-help");
 
+/// The message `connect.help.see-and-change`.
+pub const CONNECT_HELP_SEE_AND_CHANGE: MessageKey = MessageKey::new("connect.help.see-and-change");
+
+/// The message `connect.help.see-only`.
+pub const CONNECT_HELP_SEE_ONLY: MessageKey = MessageKey::new("connect.help.see-only");
+
 /// The message `connect.invalid`.
 pub const CONNECT_INVALID: MessageKey = MessageKey::new("connect.invalid");
+
+/// The message `connect.may-only`.
+pub const CONNECT_MAY_ONLY: MessageKey = MessageKey::new("connect.may-only");
+
+/// The message `connect.name-unchecked`.
+pub const CONNECT_NAME_UNCHECKED: MessageKey = MessageKey::new("connect.name-unchecked");
 
 /// The message `connect.off`.
 pub const CONNECT_OFF: MessageKey = MessageKey::new("connect.off");
 
-/// The message `connect.only-see`.
-pub const CONNECT_ONLY_SEE: MessageKey = MessageKey::new("connect.only-see");
-
 /// The message `connect.page`.
 pub const CONNECT_PAGE: MessageKey = MessageKey::new("connect.page");
 
-/// The message `connect.projects`.
-pub const CONNECT_PROJECTS: MessageKey = MessageKey::new("connect.projects");
-
-/// The message `connect.projects-all`.
-pub const CONNECT_PROJECTS_ALL: MessageKey = MessageKey::new("connect.projects-all");
-
-/// The message `connect.projects-some`.
-pub const CONNECT_PROJECTS_SOME: MessageKey = MessageKey::new("connect.projects-some");
+/// The message `connect.take-back-note`.
+pub const CONNECT_TAKE_BACK_NOTE: MessageKey = MessageKey::new("connect.take-back-note");
 
 /// The message `connect.unknown`.
 pub const CONNECT_UNKNOWN: MessageKey = MessageKey::new("connect.unknown");
@@ -825,8 +828,24 @@ pub const CONNECT_UNKNOWN: MessageKey = MessageKey::new("connect.unknown");
 /// The message `connect.where-computer`.
 pub const CONNECT_WHERE_COMPUTER: MessageKey = MessageKey::new("connect.where-computer");
 
-/// The message `connect.where-web`.
-pub const CONNECT_WHERE_WEB: MessageKey = MessageKey::new("connect.where-web");
+/// The message `connected-apps.col.actions`.
+pub const CONNECTED_APPS_COL_ACTIONS: MessageKey = MessageKey::new("connected-apps.col.actions");
+
+/// The message `connected-apps.col.allowed`.
+pub const CONNECTED_APPS_COL_ALLOWED: MessageKey = MessageKey::new("connected-apps.col.allowed");
+
+/// The message `connected-apps.col.app`.
+pub const CONNECTED_APPS_COL_APP: MessageKey = MessageKey::new("connected-apps.col.app");
+
+/// The message `connected-apps.col.last-used`.
+pub const CONNECTED_APPS_COL_LAST_USED: MessageKey =
+    MessageKey::new("connected-apps.col.last-used");
+
+/// The message `connected-apps.col.may`.
+pub const CONNECTED_APPS_COL_MAY: MessageKey = MessageKey::new("connected-apps.col.may");
+
+/// The message `connected-apps.col.projects`.
+pub const CONNECTED_APPS_COL_PROJECTS: MessageKey = MessageKey::new("connected-apps.col.projects");
 
 /// The message `connected-apps.empty`.
 pub const CONNECTED_APPS_EMPTY: MessageKey = MessageKey::new("connected-apps.empty");
@@ -836,9 +855,6 @@ pub const CONNECTED_APPS_INTRO: MessageKey = MessageKey::new("connected-apps.int
 
 /// The message `connected-apps.list`.
 pub const CONNECTED_APPS_LIST: MessageKey = MessageKey::new("connected-apps.list");
-
-/// The message `connected-apps.note`.
-pub const CONNECTED_APPS_NOTE: MessageKey = MessageKey::new("connected-apps.note");
 
 /// The message `connected-apps.row.never-used`.
 pub const CONNECTED_APPS_ROW_NEVER_USED: MessageKey =
@@ -3085,9 +3101,6 @@ pub const MCP_ERROR_PROMPT_ISSUE: MessageKey = MessageKey::new("mcp.error.prompt
 
 /// The message `mcp.error.resource-address`.
 pub const MCP_ERROR_RESOURCE_ADDRESS: MessageKey = MessageKey::new("mcp.error.resource-address");
-
-/// The message `mcp.error.session`.
-pub const MCP_ERROR_SESSION: MessageKey = MessageKey::new("mcp.error.session");
 
 /// The message `mcp.error.too-big`.
 pub const MCP_ERROR_TOO_BIG: MessageKey = MessageKey::new("mcp.error.too-big");
@@ -7559,21 +7572,12 @@ pub fn connect_title(app: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `connected-apps.row.allowed`.
+/// The message `connect.where-web`.
 #[must_use]
-pub fn connected_apps_row_allowed(when: impl std::fmt::Display) -> Message {
+pub fn connect_where_web(address: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("connected-apps.row.allowed"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `connected-apps.row.last-used`.
-#[must_use]
-pub fn connected_apps_row_last_used(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("connected-apps.row.last-used"),
-        vec![("when", Value::Text(when.to_string()))],
+        MessageKey::new("connect.where-web"),
+        vec![("address", Value::Text(address.to_string()))],
     )
 }
 
@@ -10251,6 +10255,18 @@ pub fn people_in_groups(count: i64, groups: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `person.agent-of`.
+#[must_use]
+pub fn person_agent_of(agent: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.agent-of"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
 /// The message `person.former`.
 #[must_use]
 pub fn person_former(label: impl std::fmt::Display) -> Message {
@@ -10302,6 +10318,18 @@ pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.roles-none"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.via-app`.
+#[must_use]
+pub fn person_via_app(app: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.via-app"),
+        vec![
+            ("app", Value::Text(app.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
     )
 }
 
@@ -13777,7 +13805,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.projects", "Only for these projects"),
     (
         "access-keys.projects-help",
-        "Tick none for every project. A key for some projects works in them and in the projects inside them, and gives nothing for the whole organization.",
+        "Tick none for every project. Limited to some projects, it works in them and in the projects inside them, and gives nothing for the whole organization.",
     ),
     (
         "access-keys.projects-none",
@@ -14398,34 +14426,50 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "If nothing happens, you can close this page.",
     ),
     (
+        "connect.help.see-and-change",
+        "The app can also change what you may change, but it cannot manage people, roles or settings.",
+    ),
+    (
+        "connect.help.see-only",
+        "The app can look at what you can look at, and it can change nothing.",
+    ),
+    (
         "connect.invalid",
         "The request of the app is not one Bugaboo can answer. Go back to the app and start again.",
+    ),
+    (
+        "connect.may-only",
+        "It asked to see only, so it may only look: it can see what you can see and change nothing.",
+    ),
+    (
+        "connect.name-unchecked",
+        "The name is the app’s own; Bugaboo can’t check it.",
     ),
     (
         "connect.off",
         "AI apps are switched off in this organization, so nothing was allowed.",
     ),
-    (
-        "connect.only-see",
-        "See and change is offered only when the app asks for it. This app asked to see only.",
-    ),
     ("connect.page", "Connect an app"),
-    ("connect.projects", "In which projects"),
-    ("connect.projects-all", "All projects I can see"),
-    ("connect.projects-some", "Only some projects"),
+    (
+        "connect.take-back-note",
+        "You can take this back at any time in My settings, under Connected apps.",
+    ),
     ("connect.title", "{app} wants to work with your account"),
     (
         "connect.unknown",
         "This request does not come from an app Bugaboo knows, so nothing was allowed. Go back to the app and start again.",
     ),
-    (
-        "connect.where-computer",
-        "It comes back to this computer. The name is the app’s own; Bugaboo can’t check it.",
-    ),
+    ("connect.where-computer", "The app runs on this computer."),
     (
         "connect.where-web",
-        "It comes back to a web address your administrator allowed. The name is the app’s own; Bugaboo can’t check it.",
+        "The app comes back to {address}, a web address your administrator allowed.",
     ),
+    ("connected-apps.col.actions", "Actions"),
+    ("connected-apps.col.allowed", "Allowed"),
+    ("connected-apps.col.app", "App"),
+    ("connected-apps.col.last-used", "Last used"),
+    ("connected-apps.col.may", "What it may do"),
+    ("connected-apps.col.projects", "Projects"),
     (
         "connected-apps.empty",
         "No app is connected to your account.",
@@ -14435,12 +14479,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "AI apps that work with your account. Each does at most what you can do, and only what you allowed.",
     ),
     ("connected-apps.list", "Your connected apps"),
-    (
-        "connected-apps.note",
-        "Taking back ends what the app may do at once, and it must ask you again. Remembering your answer for each app, and the details of what an app did, come later.",
-    ),
-    ("connected-apps.row.allowed", "Allowed {when}"),
-    ("connected-apps.row.last-used", "Last used {when}"),
     ("connected-apps.row.never-used", "Never used"),
     ("connected-apps.row.where-computer", "On this computer"),
     ("connected-apps.row.where-web", "On a web address"),
@@ -14458,7 +14496,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "connected-apps.take-back-title",
         "Take back what this app may do?",
     ),
-    ("connected-apps.taken-back", "The app was taken back."),
+    (
+        "connected-apps.taken-back",
+        "What the app may do was taken back.",
+    ),
     ("connected-apps.title", "Connected apps"),
     (
         "cookie.csrf.purpose",
@@ -16400,7 +16441,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("mcp.error.not-json", "The message is not JSON."),
     ("mcp.error.prompt-issue", "This brief needs the issue."),
     ("mcp.error.resource-address", "A read names its address."),
-    ("mcp.error.session", "The session could not begin."),
     ("mcp.error.too-big", "The message is too big."),
     ("mcp.error.tool-name", "A tool call names its tool."),
     ("mcp.error.tools-unreadable", "The tools could not be read."),
@@ -16873,6 +16913,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.share-searches",
         "Share saved searches with the project, or with a group they are in",
     ),
+    ("person.agent-of", "{agent}, agent of {person}"),
     ("person.back", "All people"),
     ("person.bugaboo", "Bugaboo"),
     ("person.email", "E-mail address"),
@@ -16894,6 +16935,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.since", "Account created"),
     ("person.someone", "Someone"),
     ("person.someone-inside", "someone"),
+    ("person.via-app", "{who} via {app}"),
     ("preview.label", "Issues in this change"),
     ("preview.line-changes", "{field}: {after}"),
     (
@@ -18277,7 +18319,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.everywhere", "Sign out everywhere"),
     (
         "sessions.everywhere-text",
-        "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and stop working too.",
+        "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and the apps you allowed are taken back; they stop working too.",
     ),
     ("sessions.everywhere-title", "Sign out everywhere?"),
     (

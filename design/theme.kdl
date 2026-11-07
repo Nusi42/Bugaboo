@@ -4819,6 +4819,81 @@ part "theme-preview.line[variant=short]" {
     width "$size-sample-short"
 }
 
+// The table of the apps a person allowed (Connected apps): one row for each app, the columns side by side from a
+// tablet on; on a phone each row is a block under the other and each cell says what it is itself, so the head is not
+// shown.
+part "apps.table" {
+    width "100%"
+    border-collapse collapse
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display block
+    }
+}
+
+part "apps.head" {
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display none
+    }
+}
+
+part "apps.row" {
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display block
+        padding "$space-2 0"
+        border-bottom "$border-width solid $divider"
+    }
+}
+
+part "apps.row:last-child" {
+    media "(max-width: calc($bp-tablet - 1px))" {
+        border-bottom 0
+    }
+}
+
+part "apps.cell" {
+    padding "$space-2 $space-3"
+    text-align start
+    vertical-align middle
+    border-bottom "$border-width solid $divider"
+    color "$fg"
+    font-size "$fs-ui"
+    line-height "$lh-body"
+    font-weight "$weight-regular"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display block
+        padding "$space-1 0"
+        border-bottom 0
+    }
+}
+
+part "apps.row:last-child apps.cell" {
+    border-bottom 0
+}
+
+part "apps.cell[variant=head]" {
+    color "$fg-muted"
+}
+
+part "apps.cell[variant=name] > span" {
+    display block
+}
+
+part "apps.cell[variant=action]" {
+    text-align end
+    media "(max-width: calc($bp-tablet - 1px))" {
+        text-align start
+    }
+}
+
+// What a cell is, said beside its words where the head of the table is not shown.
+part "apps.label" {
+    display none
+    color "$fg-muted"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        display inline
+    }
+}
+
 part "access-keys.item-text" {
     use "column-wrap"
     flex "1 1 $size-list"

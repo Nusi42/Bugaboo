@@ -7,4 +7,5 @@ export const appPaths = {
   invitation: "/invitation",
   signIn: "/sign-in",
   notifications: "/notifications",
+  connect: "/connect",
 } as const;

@@ -16,7 +16,6 @@ export function ConnectedAppsPage() {
         intro={t("connected-apps.intro")}
       />
       <AppList />
-      <p {...partOf(part.muted)}>{t("connected-apps.note")}</p>
     </div>
   );
 }

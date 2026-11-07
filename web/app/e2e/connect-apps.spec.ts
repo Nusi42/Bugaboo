@@ -42,7 +42,7 @@ test("ai_22 the person sees which app asks, allows it, and the app gets its code
   await signIn(page, ada);
   await page.goto(app.address);
   await expect(page.getByRole("heading", { level: 1, name: titleOf("Claude Code") })).toBeVisible();
-  await expect(page.getByText(t("connect.acts-as"))).toBeVisible();
+  await expect(page.getByText(t("connect.acts-as", { app: "Claude Code" }))).toBeVisible();
   await expect(page.getByText(t("connect.where-computer"))).toBeVisible();
   // The app asked for more, so both choices are offered, with what it asked first.
   await expect(
@@ -71,7 +71,7 @@ test("ai_22 taking an app back ends what it may do at once", async ({ page, serv
   await expect(
     page.getByRole("heading", { level: 1, name: t("connected-apps.title") }),
   ).toBeVisible();
-  const row = page.getByRole("listitem").filter({ hasText: "Cursor" });
+  const row = page.getByRole("row").filter({ hasText: "Cursor" });
   await expect(row).toBeVisible();
   await expect(row.getByText(t("access-keys.choice.see-and-change"))).toBeVisible();
   await expectGoodInEveryTheme(page);
@@ -113,7 +113,7 @@ test("ai_22 the person may allow less than the app asked, and cancel sends the a
   // Cancel: the app is sent back with the refusal, and nothing is allowed.
   const another = await appAtTheDoor(server, "Claude Code", "see-only");
   await page.goto(another.address);
-  await expect(page.getByText(t("connect.only-see"))).toBeVisible();
+  await expect(page.getByText(t("connect.may-only"))).toBeVisible();
   const refused = await catchTheAnswer(page, async () => {
     await page.getByRole("button", { name: t("connect.cancel"), exact: true }).click();
   });

@@ -19,7 +19,7 @@ use crate::schema::{
     OAuthWebAddressRow, PersonRow, ProjectRow,
 };
 
-/// The tables of the apps and the grants.
+/// The apps, the grants and the projects of a grant.
 fn grant_steps() -> Vec<Step> {
     vec![
         Step::Table(
@@ -103,7 +103,7 @@ fn grant_steps() -> Vec<Step> {
     ]
 }
 
-/// The tables of the projects of a grant, the tokens, the codes and the web addresses.
+/// The tokens, the codes and the web addresses.
 fn token_steps() -> Vec<Step> {
     vec![
         Step::Table(

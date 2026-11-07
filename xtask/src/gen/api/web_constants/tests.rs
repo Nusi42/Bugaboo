@@ -31,12 +31,14 @@ pub const PROJECT_SETTINGS: &str = \"/p/$project/settings\";
 pub const INVITATION: &str = \"/invitation\";
 pub const NOTIFICATIONS: &str = \"/n\";
 pub const SIGN_IN: &str = \"/in\";
+pub const CONNECT: &str = \"/c\";
 "
         .to_owned(),
     );
     let written = app_paths(&[source]).unwrap();
     assert!(written.contains("issue: \"/issues/$issue\","), "{written}");
     assert!(written.contains("signIn: \"/in\","), "{written}");
+    assert!(written.contains("connect: \"/c\","), "{written}");
     assert!(app_paths(&[]).is_err());
 }
 

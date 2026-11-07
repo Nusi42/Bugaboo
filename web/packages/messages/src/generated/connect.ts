@@ -4,16 +4,17 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "connect.title": "{app} wants to work with your account",
-  "connect.acts-as": "It will act as you and can never do more than you can.",
-  "connect.only-see":
-    "See and change is offered only when the app asks for it. This app asked to see only.",
-  "connect.projects": "In which projects",
-  "connect.projects-all": "All projects I can see",
-  "connect.projects-some": "Only some projects",
-  "connect.where-computer":
-    "It comes back to this computer. The name is the app’s own; Bugaboo can’t check it.",
-  "connect.where-web":
-    "It comes back to a web address your administrator allowed. The name is the app’s own; Bugaboo can’t check it.",
+  "connect.acts-as": "{app} will act as you and can never do more than you can.",
+  "connect.where-computer": "The app runs on this computer.",
+  "connect.where-web": "The app comes back to {address}, a web address your administrator allowed.",
+  "connect.name-unchecked": "The name is the app’s own; Bugaboo can’t check it.",
+  "connect.take-back-note":
+    "You can take this back at any time in My settings, under Connected apps.",
+  "connect.may-only":
+    "It asked to see only, so it may only look: it can see what you can see and change nothing.",
+  "connect.help.see-only": "The app can look at what you can look at, and it can change nothing.",
+  "connect.help.see-and-change":
+    "The app can also change what you may change, but it cannot manage people, roles or settings.",
   "connect.allow": "Allow",
   "connect.cancel": "Cancel",
   "connect.going-back": "Going back to the app…",

@@ -6,7 +6,7 @@ import { renderSaid } from "./said.ts";
 
 /** What the sentence of a file needs of an item that says one: the history and a notification. */
 export type FileWords = {
-  readonly [Field in "by" | "file_event" | "file_name"]?:
+  readonly [Field in "by" | "app" | "agent" | "file_event" | "file_name"]?:
     | Schema<"HistoryEntryItem">[Field]
     | undefined;
 };

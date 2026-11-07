@@ -9,7 +9,36 @@ import { AppRow } from "./AppRow.tsx";
 import { appsOptions, type ConnectedApp } from "./connected-apps.ts";
 import { useTakeBack } from "./use-take-back.ts";
 
-/** *Your connected apps*: each with what it may do and where, and a way to take it back. */
+/** Words of the HTML standard, not text for people. */
+const column = "col";
+
+/** The names of the columns: on a phone they are said in the cells and the head is not shown. */
+function Head() {
+  return (
+    <thead {...partOf(part.appsHead)}>
+      <tr {...partOf(part.appsRow)}>
+        {(
+          [
+            "connected-apps.col.app",
+            "connected-apps.col.may",
+            "connected-apps.col.projects",
+            "connected-apps.col.allowed",
+            "connected-apps.col.last-used",
+          ] as const
+        ).map((key) => (
+          <th key={key} scope={column} {...partOf(part.appsCell, { variants: ["head"] })}>
+            {t(key)}
+          </th>
+        ))}
+        <th scope={column} {...partOf(part.appsCell, { variants: ["head"] })}>
+          <span {...partOf(part.visuallyHidden)}>{t("connected-apps.col.actions")}</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+/** *Your connected apps*: a table with each app, what it may do and where, and a way to take it back. */
 export function AppList() {
   const apps = useQuery(appsOptions());
   const shapes = useAfterDelay(apps.isPending);
@@ -22,17 +51,22 @@ export function AppList() {
         {apps.isSuccess && items.length === 0 ? (
           <p {...partOf(part.muted)}>{t("connected-apps.empty")}</p>
         ) : null}
-        <ul {...partOf(part.list)} aria-label={t("connected-apps.list")}>
-          {items.map((item) => (
-            <AppRow
-              key={item.id}
-              item={item}
-              onTakeBack={() => {
-                takeBack.remove({ id: item.id ?? "" });
-              }}
-            />
-          ))}
-        </ul>
+        {items.length === 0 ? null : (
+          <table {...partOf(part.appsTable)} aria-label={t("connected-apps.list")}>
+            <Head />
+            <tbody>
+              {items.map((item) => (
+                <AppRow
+                  key={item.id}
+                  item={item}
+                  onTakeBack={() => {
+                    takeBack.remove({ id: item.id ?? "" });
+                  }}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
         {shapes ? <Skeleton /> : null}
       </div>
       <SaveStatus state={takeBack.saveState} labels={saveLabels()} />

@@ -36,7 +36,7 @@ export const messages = {
   "access-keys.single": "Choose single permissions instead",
   "access-keys.projects": "Only for these projects",
   "access-keys.projects-help":
-    "Tick none for every project. A key for some projects works in them and in the projects inside them, and gives nothing for the whole organization.",
+    "Tick none for every project. Limited to some projects, it works in them and in the projects inside them, and gives nothing for the whole organization.",
   "access-keys.projects-none": "You have no projects to choose from yet.",
   "access-keys.expires": "Runs out on",
   "access-keys.expires-help":
@@ -70,11 +70,15 @@ export const messages = {
   "connected-apps.intro":
     "AI apps that work with your account. Each does at most what you can do, and only what you allowed.",
   "connected-apps.list": "Your connected apps",
+  "connected-apps.col.app": "App",
+  "connected-apps.col.may": "What it may do",
+  "connected-apps.col.projects": "Projects",
+  "connected-apps.col.allowed": "Allowed",
+  "connected-apps.col.last-used": "Last used",
+  "connected-apps.col.actions": "Actions",
   "connected-apps.empty": "No app is connected to your account.",
   "connected-apps.row.where-computer": "On this computer",
   "connected-apps.row.where-web": "On a web address",
-  "connected-apps.row.allowed": "Allowed {when}",
-  "connected-apps.row.last-used": "Last used {when}",
   "connected-apps.row.never-used": "Never used",
   "connected-apps.take-back": "Take back",
   "connected-apps.take-back-name": "Take back what {name} may do",
@@ -82,10 +86,9 @@ export const messages = {
   "connected-apps.take-back-text":
     "The app stops working at once and has to ask you again. Nothing it already did is undone.",
   "connected-apps.take-back-confirm": "Take back",
-  "connected-apps.taken-back": "The app was taken back.",
-  "connected-apps.note":
-    "Taking back ends what the app may do at once, and it must ask you again. Remembering your answer for each app, and the details of what an app did, come later.",
+  "connected-apps.taken-back": "What the app may do was taken back.",
   "access-keys.pick-one": "Tick at least one permission, or switch single permissions off.",
+  "access-keys.project-label": "{short_name}: {name}",
   "handle.title": "Handle",
   "handle.intro":
     "Your handle is the short name people type after @ to mention you, like @ana.brandt.",

@@ -13,12 +13,29 @@ import { renderSaid } from "./said.ts";
  */
 export interface ChangeWords {
   readonly by?: Schema<"HistoryEntryItem">["by"];
+  /** The AI app the person worked through, when one made the change. */
+  readonly app?: string | null | undefined;
+  /** The agent that did it, when one did; `by` is then the person responsible for it. */
+  readonly agent?: Schema<"HistoryEntryItem">["agent"];
   readonly change?: Schema<"FieldChangeBody"> | null | undefined;
 }
 
-/** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
-export function whoOf(entry: { readonly by?: ChangeWords["by"] | undefined }): string {
-  return entry.by === undefined || entry.by === null ? t("person.bugaboo") : personName(entry.by);
+/**
+ * Who did it, at the start of a sentence; Bugaboo itself when nobody is named. A change an agent made
+ * reads "Fixer, agent of Ada Brandt", and only for a reader who is told the person behind it (ADR-0035:
+ * otherwise the agent is not named and the sentence says what it says of the person); a change made
+ * through an AI app reads "Ada Brandt via Claude Code" (AI-23). The one place that words it, for the
+ * history, the notices and the sentences of files and time.
+ */
+export function whoOf(entry: Pick<ChangeWords, "by" | "app" | "agent">): string {
+  const person =
+    entry.by === undefined || entry.by === null ? t("person.bugaboo") : personName(entry.by);
+  if (entry.agent !== undefined && entry.agent !== null && entry.by?.shown === "name") {
+    return t("person.agent-of", { agent: entry.agent.name, person });
+  }
+  return entry.app === undefined || entry.app === null || entry.app === ""
+    ? person
+    : t("person.via-app", { who: person, app: entry.app });
 }
 
 /**

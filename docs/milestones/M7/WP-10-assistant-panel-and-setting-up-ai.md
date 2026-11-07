@@ -30,6 +30,10 @@ The assistant is one click away wherever a person is, and always says that it is
 4. ***Never sent to AI*** on fields and projects.
 5. **Pictures** of every changed screen in four themes on computer and phone, looked at against UX §1.1 and §7 before the push; the report names them.
 
+## Carried over from WP-05 (the sign-in of AI apps)
+
+- **M7-F42:** *Apps that may sign in* (the web addresses an administrator allows, `/api/v1/oauth/web-addresses`) has routes and a use case but no screen, and the setting `ai-apps.enabled` is shown only by the generic list of settings. The page *Organization settings › Connections › AI* shows both.
+
 ## Acceptance tests (write first)
 
 - `ai_10_the_assistant_opens_from_the_top_bar_and_shows_what_it_looks_at`.
