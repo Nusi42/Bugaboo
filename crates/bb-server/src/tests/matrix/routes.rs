@@ -21,6 +21,7 @@ use std::collections::BTreeMap;
 use axum::Router;
 use axum::http::Method;
 use axum::http::StatusCode;
+use bb_api::LimitsConfig;
 use bb_api::openapi::{Operation, operations};
 use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
@@ -39,7 +40,7 @@ use super::record::Record;
 use crate::sign_in_tests::http::{Browser, Reply, called};
 use crate::sign_in_tests::policy_rig::{Member, Org};
 use crate::sign_in_tests::rig::{PASSWORD, Rig, Tries};
-use crate::sign_in_tests::status::app_with_probe;
+use crate::sign_in_tests::status::app_with_probe_and_limits;
 
 /// What the server must answer.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -347,8 +348,14 @@ impl<'a> Fixture<'a> {
             }
             people.push((actor, email));
         }
-        // With a probe, so the status page of the administrators answers.
-        let app = app_with_probe(rig, None);
+        // With a probe, so the status page of the administrators answers. The matrix asks about
+        // permissions, not about limits: one key runs every route of the description, and there
+        // are more of them than a key may ask for in a minute.
+        let limits = LimitsConfig {
+            access_key_requests_per_minute: u32::MAX,
+            ..LimitsConfig::default()
+        };
+        let app = app_with_probe_and_limits(rig, None, limits);
         Ok(Self {
             org,
             app,
