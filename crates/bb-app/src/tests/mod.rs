@@ -64,6 +64,7 @@ mod offers;
 mod offers_known_uses;
 mod offers_secrecy;
 mod prompt_injection;
+mod prompt_injection_assistant;
 mod recurring_jobs;
 mod rights_once;
 mod runs;
