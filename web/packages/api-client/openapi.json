@@ -23537,7 +23537,13 @@
           "run-ended",
           "edit-notice",
           "long-timer",
-          "work-day-changed"
+          "work-day-changed",
+          "agent-asks",
+          "plan-waits",
+          "ready-for-review",
+          "agent-gave-up",
+          "rule-runs-out-soon",
+          "agent-stopped"
         ]
       },
       "NotificationTab": {

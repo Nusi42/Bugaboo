@@ -17,7 +17,7 @@ use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
-use super::members::member;
+use super::members::{member, waiting_for};
 use super::stop::close_work_of;
 use super::types::{AskQuestion, AttachResult, EndAttempt, ReportAttempt, WorkView};
 use crate::access::Actor;
@@ -74,16 +74,32 @@ impl<S: AuthStore> Ctx<'_, S> {
         work: &IssueWork,
         state: AgentWorkState,
     ) -> Result<DomainEvent, AppError> {
+        self.work_event_waiting(by, work, state, None)
+    }
+
+    /// The same, saying what the work waits for when it waits for a person: a question or a plan
+    /// (the reader of notifications tells them apart by it).
+    pub(super) fn work_event_waiting(
+        &self,
+        by: bb_core::id::UserId,
+        work: &IssueWork,
+        state: AgentWorkState,
+        waiting: Option<&str>,
+    ) -> Result<DomainEvent, AppError> {
+        let mut changes = vec![
+            set_to(member::ISSUE, json!(work.issue.to_string())),
+            set_to(member::AGENT, json!(work.agent.to_string())),
+            set_to(member::HAND_OVER, json!(work.hand_over.to_string())),
+            set_to(member::WORK_STATE, json!(state.code())),
+            counted_up(work.version),
+        ];
+        if let Some(waiting) = waiting {
+            changes.push(set_to(member::WAITING_FOR, json!(waiting)));
+        }
         self.event(
             crate::auth::by(by),
             entity(RecordKind::AgentWork, work.id),
-            vec![
-                set_to(member::ISSUE, json!(work.issue.to_string())),
-                set_to(member::AGENT, json!(work.agent.to_string())),
-                set_to(member::HAND_OVER, json!(work.hand_over.to_string())),
-                set_to(member::WORK_STATE, json!(state.code())),
-                counted_up(work.version),
-            ],
+            changes,
         )
     }
 
@@ -218,7 +234,8 @@ pub async fn report_attempt<S: AuthStore>(
     } else {
         AgentWorkState::AgentWorking
     };
-    let event = ctx.work_event(mine.actor.person.id, &mine.work, next)?;
+    let waiting = needs_plan.then_some(waiting_for::PLAN);
+    let event = ctx.work_event_waiting(mine.actor.person.id, &mine.work, next, waiting)?;
     let (work, stored) = (mine.work.clone(), attempt);
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -265,10 +282,11 @@ pub async fn ask_question<S: AuthStore>(
         answered_by: None,
         asked_at: ctx.now(),
     };
-    let event = ctx.work_event(
+    let event = ctx.work_event_waiting(
         mine.actor.person.id,
         &mine.work,
         mine.work.state.after_question(),
+        Some(waiting_for::QUESTION),
     )?;
     let (work, stored) = (mine.work.clone(), question);
     ctx.store()

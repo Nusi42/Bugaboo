@@ -31,6 +31,12 @@ const kindName = {
   "edit-notice": "notification.kind.edit-notice",
   "long-timer": "notification.kind.long-timer",
   "work-day-changed": "notification.kind.work-day-changed",
+  "agent-asks": "notification.kind.agent-asks",
+  "plan-waits": "notification.kind.plan-waits",
+  "ready-for-review": "notification.kind.ready-for-review",
+  "agent-gave-up": "notification.kind.agent-gave-up",
+  "rule-runs-out-soon": "notification.kind.rule-runs-out-soon",
+  "agent-stopped": "notification.kind.agent-stopped",
 } as const satisfies Record<Kind, MessageKey>;
 
 /** The two ways of hearing of an event, with the words the column of each has. */

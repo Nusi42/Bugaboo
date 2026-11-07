@@ -3281,6 +3281,18 @@ pub const NAV_TIMESHEET: MessageKey = MessageKey::new("nav.timesheet");
 /// The message `nav.working-hours`.
 pub const NAV_WORKING_HOURS: MessageKey = MessageKey::new("nav.working-hours");
 
+/// The message `notification.kind.agent-asks`.
+pub const NOTIFICATION_KIND_AGENT_ASKS: MessageKey =
+    MessageKey::new("notification.kind.agent-asks");
+
+/// The message `notification.kind.agent-gave-up`.
+pub const NOTIFICATION_KIND_AGENT_GAVE_UP: MessageKey =
+    MessageKey::new("notification.kind.agent-gave-up");
+
+/// The message `notification.kind.agent-stopped`.
+pub const NOTIFICATION_KIND_AGENT_STOPPED: MessageKey =
+    MessageKey::new("notification.kind.agent-stopped");
+
 /// The message `notification.kind.assigned`.
 pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
 
@@ -3303,12 +3315,33 @@ pub const NOTIFICATION_KIND_LONG_TIMER: MessageKey =
 /// The message `notification.kind.mentioned`.
 pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notification.kind.mentioned");
 
+/// The message `notification.kind.plan-waits`.
+pub const NOTIFICATION_KIND_PLAN_WAITS: MessageKey =
+    MessageKey::new("notification.kind.plan-waits");
+
+/// The message `notification.kind.ready-for-review`.
+pub const NOTIFICATION_KIND_READY_FOR_REVIEW: MessageKey =
+    MessageKey::new("notification.kind.ready-for-review");
+
+/// The message `notification.kind.rule-runs-out-soon`.
+pub const NOTIFICATION_KIND_RULE_RUNS_OUT_SOON: MessageKey =
+    MessageKey::new("notification.kind.rule-runs-out-soon");
+
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
 
 /// The message `notification.kind.work-day-changed`.
 pub const NOTIFICATION_KIND_WORK_DAY_CHANGED: MessageKey =
     MessageKey::new("notification.kind.work-day-changed");
+
+/// The message `notifications.agent-asks`.
+pub const NOTIFICATIONS_AGENT_ASKS: MessageKey = MessageKey::new("notifications.agent-asks");
+
+/// The message `notifications.agent-gave-up`.
+pub const NOTIFICATIONS_AGENT_GAVE_UP: MessageKey = MessageKey::new("notifications.agent-gave-up");
+
+/// The message `notifications.agent-stopped`.
+pub const NOTIFICATIONS_AGENT_STOPPED: MessageKey = MessageKey::new("notifications.agent-stopped");
 
 /// The message `notifications.by-mail`.
 pub const NOTIFICATIONS_BY_MAIL: MessageKey = MessageKey::new("notifications.by-mail");
@@ -3385,6 +3418,17 @@ pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open")
 /// The message `notifications.open-project-settings`.
 pub const NOTIFICATIONS_OPEN_PROJECT_SETTINGS: MessageKey =
     MessageKey::new("notifications.open-project-settings");
+
+/// The message `notifications.plan-waits`.
+pub const NOTIFICATIONS_PLAN_WAITS: MessageKey = MessageKey::new("notifications.plan-waits");
+
+/// The message `notifications.ready-for-review`.
+pub const NOTIFICATIONS_READY_FOR_REVIEW: MessageKey =
+    MessageKey::new("notifications.ready-for-review");
+
+/// The message `notifications.rule-runs-out-soon`.
+pub const NOTIFICATIONS_RULE_RUNS_OUT_SOON: MessageKey =
+    MessageKey::new("notifications.rule-runs-out-soon");
 
 /// The message `notifications.run-done`.
 pub const NOTIFICATIONS_RUN_DONE: MessageKey = MessageKey::new("notifications.run-done");
@@ -5431,6 +5475,54 @@ pub const SETTING_MAIL_USERNAME_HELP: MessageKey = MessageKey::new("setting.mail
 /// The message `setting.mail.username.name`.
 pub const SETTING_MAIL_USERNAME_NAME: MessageKey = MessageKey::new("setting.mail.username.name");
 
+/// The message `setting.notifications.agent-asks-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_ASKS_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-asks-by-mail.help");
+
+/// The message `setting.notifications.agent-asks-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_ASKS_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-asks-by-mail.name");
+
+/// The message `setting.notifications.agent-asks-in-app.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_ASKS_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-asks-in-app.help");
+
+/// The message `setting.notifications.agent-asks-in-app.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_ASKS_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-asks-in-app.name");
+
+/// The message `setting.notifications.agent-gave-up-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-gave-up-by-mail.help");
+
+/// The message `setting.notifications.agent-gave-up-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-gave-up-by-mail.name");
+
+/// The message `setting.notifications.agent-gave-up-in-app.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_GAVE_UP_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-gave-up-in-app.help");
+
+/// The message `setting.notifications.agent-gave-up-in-app.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_GAVE_UP_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-gave-up-in-app.name");
+
+/// The message `setting.notifications.agent-stopped-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_STOPPED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-stopped-by-mail.help");
+
+/// The message `setting.notifications.agent-stopped-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_STOPPED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-stopped-by-mail.name");
+
+/// The message `setting.notifications.agent-stopped-in-app.help`.
+pub const SETTING_NOTIFICATIONS_AGENT_STOPPED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.agent-stopped-in-app.help");
+
+/// The message `setting.notifications.agent-stopped-in-app.name`.
+pub const SETTING_NOTIFICATIONS_AGENT_STOPPED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.agent-stopped-in-app.name");
+
 /// The message `setting.notifications.assigned-by-mail.help`.
 pub const SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_HELP: MessageKey =
     MessageKey::new("setting.notifications.assigned-by-mail.help");
@@ -5526,6 +5618,54 @@ pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_HELP: MessageKey =
 /// The message `setting.notifications.mentioned-in-app.name`.
 pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.mentioned-in-app.name");
+
+/// The message `setting.notifications.plan-waits-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_PLAN_WAITS_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.plan-waits-by-mail.help");
+
+/// The message `setting.notifications.plan-waits-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_PLAN_WAITS_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.plan-waits-by-mail.name");
+
+/// The message `setting.notifications.plan-waits-in-app.help`.
+pub const SETTING_NOTIFICATIONS_PLAN_WAITS_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.plan-waits-in-app.help");
+
+/// The message `setting.notifications.plan-waits-in-app.name`.
+pub const SETTING_NOTIFICATIONS_PLAN_WAITS_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.plan-waits-in-app.name");
+
+/// The message `setting.notifications.ready-for-review-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.ready-for-review-by-mail.help");
+
+/// The message `setting.notifications.ready-for-review-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.ready-for-review-by-mail.name");
+
+/// The message `setting.notifications.ready-for-review-in-app.help`.
+pub const SETTING_NOTIFICATIONS_READY_FOR_REVIEW_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.ready-for-review-in-app.help");
+
+/// The message `setting.notifications.ready-for-review-in-app.name`.
+pub const SETTING_NOTIFICATIONS_READY_FOR_REVIEW_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.ready-for-review-in-app.name");
+
+/// The message `setting.notifications.rule-runs-out-soon-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.rule-runs-out-soon-by-mail.help");
+
+/// The message `setting.notifications.rule-runs-out-soon-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.rule-runs-out-soon-by-mail.name");
+
+/// The message `setting.notifications.rule-runs-out-soon-in-app.help`.
+pub const SETTING_NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.rule-runs-out-soon-in-app.help");
+
+/// The message `setting.notifications.rule-runs-out-soon-in-app.name`.
+pub const SETTING_NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.rule-runs-out-soon-in-app.name");
 
 /// The message `setting.notifications.run-ended-by-mail.help`.
 pub const SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_HELP: MessageKey =
@@ -16746,6 +16886,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.themes", "Themes"),
     ("nav.timesheet", "Timesheet"),
     ("nav.working-hours", "Working hours"),
+    ("notification.kind.agent-asks", "An agent asks you"),
+    ("notification.kind.agent-gave-up", "An agent gave up"),
+    ("notification.kind.agent-stopped", "An agent was stopped"),
     ("notification.kind.assigned", "An issue is assigned to you"),
     (
         "notification.kind.edit-notice",
@@ -16761,6 +16904,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("notification.kind.long-timer", "Your timer runs long"),
     ("notification.kind.mentioned", "You are mentioned"),
+    ("notification.kind.plan-waits", "A plan waits for you"),
+    ("notification.kind.ready-for-review", "Ready for review"),
+    (
+        "notification.kind.rule-runs-out-soon",
+        "A standing rule runs out soon",
+    ),
     (
         "notification.kind.run-ended",
         "Your change to many issues has ended",
@@ -16768,6 +16917,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notification.kind.work-day-changed",
         "Your work day was changed",
+    ),
+    (
+        "notifications.agent-asks",
+        "An agent asked a question and waits for your answer.",
+    ),
+    (
+        "notifications.agent-gave-up",
+        "An agent gave up on this issue.",
+    ),
+    (
+        "notifications.agent-stopped",
+        "An agent that worked on this issue was stopped.",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
@@ -16835,6 +16996,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notifications.open-project-settings",
         "Open the project settings",
+    ),
+    (
+        "notifications.plan-waits",
+        "An agent has a plan and waits for you to approve it.",
+    ),
+    (
+        "notifications.ready-for-review",
+        "An agent has a result ready for you to review.",
+    ),
+    (
+        "notifications.rule-runs-out-soon",
+        "A standing rule of yours runs out in three days. Renew it if the agent should go on.",
     ),
     (
         "notifications.run-done",
@@ -18787,6 +18960,54 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("setting.mail.username.name", "Mail server user name"),
     (
+        "setting.notifications.agent-asks-by-mail.help",
+        "Sends you an e-mail when an agent of yours, or an agent working on an issue you handed over, asks a question.",
+    ),
+    (
+        "setting.notifications.agent-asks-by-mail.name",
+        "An agent asks you: by e-mail",
+    ),
+    (
+        "setting.notifications.agent-asks-in-app.help",
+        "Tells you when an agent of yours, or an agent working on an issue you handed over, asks a question.",
+    ),
+    (
+        "setting.notifications.agent-asks-in-app.name",
+        "An agent asks you: in the app",
+    ),
+    (
+        "setting.notifications.agent-gave-up-by-mail.help",
+        "Sends you an e-mail when an agent gives up on an issue you handed over.",
+    ),
+    (
+        "setting.notifications.agent-gave-up-by-mail.name",
+        "An agent gave up: by e-mail",
+    ),
+    (
+        "setting.notifications.agent-gave-up-in-app.help",
+        "Tells you when an agent gives up on an issue you handed over.",
+    ),
+    (
+        "setting.notifications.agent-gave-up-in-app.name",
+        "An agent gave up: in the app",
+    ),
+    (
+        "setting.notifications.agent-stopped-by-mail.help",
+        "Sends you an e-mail when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
+    ),
+    (
+        "setting.notifications.agent-stopped-by-mail.name",
+        "An agent was stopped: by e-mail",
+    ),
+    (
+        "setting.notifications.agent-stopped-in-app.help",
+        "Tells you when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
+    ),
+    (
+        "setting.notifications.agent-stopped-in-app.name",
+        "An agent was stopped: in the app",
+    ),
+    (
         "setting.notifications.assigned-by-mail.help",
         "Sends you an e-mail when an issue is assigned to you. E-mail goes only when your organization has switched it on.",
     ),
@@ -18881,6 +19102,54 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.notifications.mentioned-in-app.name",
         "You are mentioned: in the app",
+    ),
+    (
+        "setting.notifications.plan-waits-by-mail.help",
+        "Sends you an e-mail when the plan of an attempt waits for you to approve it.",
+    ),
+    (
+        "setting.notifications.plan-waits-by-mail.name",
+        "A plan waits for you: by e-mail",
+    ),
+    (
+        "setting.notifications.plan-waits-in-app.help",
+        "Tells you when the plan of an attempt waits for you to approve it.",
+    ),
+    (
+        "setting.notifications.plan-waits-in-app.name",
+        "A plan waits for you: in the app",
+    ),
+    (
+        "setting.notifications.ready-for-review-by-mail.help",
+        "Sends you an e-mail when an agent has a result ready for you to review.",
+    ),
+    (
+        "setting.notifications.ready-for-review-by-mail.name",
+        "Ready for review: by e-mail",
+    ),
+    (
+        "setting.notifications.ready-for-review-in-app.help",
+        "Tells you when an agent has a result ready for you to review.",
+    ),
+    (
+        "setting.notifications.ready-for-review-in-app.name",
+        "Ready for review: in the app",
+    ),
+    (
+        "setting.notifications.rule-runs-out-soon-by-mail.help",
+        "Sends you an e-mail three days before a standing rule of yours runs out.",
+    ),
+    (
+        "setting.notifications.rule-runs-out-soon-by-mail.name",
+        "A standing rule runs out soon: by e-mail",
+    ),
+    (
+        "setting.notifications.rule-runs-out-soon-in-app.help",
+        "Tells you three days before a standing rule of yours runs out.",
+    ),
+    (
+        "setting.notifications.rule-runs-out-soon-in-app.name",
+        "A standing rule runs out soon: in the app",
     ),
     (
         "setting.notifications.run-ended-by-mail.help",

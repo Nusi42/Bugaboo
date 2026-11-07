@@ -87,6 +87,19 @@ words! {
         LongTimer => "long-timer",
         /// Somebody else changed one of the person's work days (ADR-0035, decision 7).
         WorkDayChanged => "work-day-changed",
+        /// An agent of the person, or on an issue they handed over, asks a question (ADR-0029,
+        /// decision 5).
+        AgentAsks => "agent-asks",
+        /// The plan of an attempt waits for *Approve plan*.
+        PlanWaits => "plan-waits",
+        /// An agent has a result ready for review.
+        ReadyForReview => "ready-for-review",
+        /// An agent gave up.
+        AgentGaveUp => "agent-gave-up",
+        /// A standing rule runs out in three days.
+        RuleRunsOutSoon => "rule-runs-out-soon",
+        /// An agent was stopped.
+        AgentStopped => "agent-stopped",
     }
     messages label = "notification.kind."
 }
@@ -133,12 +146,18 @@ impl NotificationKind {
             NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL, NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
         };
         use settings::{
+            NOTIFICATIONS_AGENT_ASKS_BY_MAIL, NOTIFICATIONS_AGENT_ASKS_IN_APP,
+            NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL, NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
+            NOTIFICATIONS_AGENT_STOPPED_BY_MAIL, NOTIFICATIONS_AGENT_STOPPED_IN_APP,
             NOTIFICATIONS_ASSIGNED_BY_MAIL, NOTIFICATIONS_ASSIGNED_IN_APP,
             NOTIFICATIONS_EDIT_NOTICE_BY_MAIL, NOTIFICATIONS_EDIT_NOTICE_IN_APP,
             NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL, NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP,
             NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL, NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP,
             NOTIFICATIONS_LONG_TIMER_BY_MAIL, NOTIFICATIONS_LONG_TIMER_IN_APP,
             NOTIFICATIONS_MENTIONED_BY_MAIL, NOTIFICATIONS_MENTIONED_IN_APP,
+            NOTIFICATIONS_PLAN_WAITS_BY_MAIL, NOTIFICATIONS_PLAN_WAITS_IN_APP,
+            NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL, NOTIFICATIONS_READY_FOR_REVIEW_IN_APP,
+            NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL, NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP,
             NOTIFICATIONS_RUN_ENDED_BY_MAIL, NOTIFICATIONS_RUN_ENDED_IN_APP,
         };
         match (self, via) {
@@ -158,6 +177,18 @@ impl NotificationKind {
             (Self::LongTimer, Via::Mail) => &NOTIFICATIONS_LONG_TIMER_BY_MAIL,
             (Self::WorkDayChanged, Via::App) => &NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
             (Self::WorkDayChanged, Via::Mail) => &NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL,
+            (Self::AgentAsks, Via::App) => &NOTIFICATIONS_AGENT_ASKS_IN_APP,
+            (Self::AgentAsks, Via::Mail) => &NOTIFICATIONS_AGENT_ASKS_BY_MAIL,
+            (Self::PlanWaits, Via::App) => &NOTIFICATIONS_PLAN_WAITS_IN_APP,
+            (Self::PlanWaits, Via::Mail) => &NOTIFICATIONS_PLAN_WAITS_BY_MAIL,
+            (Self::ReadyForReview, Via::App) => &NOTIFICATIONS_READY_FOR_REVIEW_IN_APP,
+            (Self::ReadyForReview, Via::Mail) => &NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL,
+            (Self::AgentGaveUp, Via::App) => &NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
+            (Self::AgentGaveUp, Via::Mail) => &NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL,
+            (Self::RuleRunsOutSoon, Via::App) => &NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP,
+            (Self::RuleRunsOutSoon, Via::Mail) => &NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL,
+            (Self::AgentStopped, Via::App) => &NOTIFICATIONS_AGENT_STOPPED_IN_APP,
+            (Self::AgentStopped, Via::Mail) => &NOTIFICATIONS_AGENT_STOPPED_BY_MAIL,
         }
     }
 }
@@ -276,6 +307,12 @@ mod tests {
             (NotificationKind::EditNotice, (true, false)),
             (NotificationKind::LongTimer, (true, false)),
             (NotificationKind::WorkDayChanged, (true, true)),
+            (NotificationKind::AgentAsks, (true, true)),
+            (NotificationKind::PlanWaits, (true, true)),
+            (NotificationKind::ReadyForReview, (true, true)),
+            (NotificationKind::AgentGaveUp, (true, false)),
+            (NotificationKind::RuleRunsOutSoon, (true, false)),
+            (NotificationKind::AgentStopped, (true, false)),
         ];
         assert_eq!(expected.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {

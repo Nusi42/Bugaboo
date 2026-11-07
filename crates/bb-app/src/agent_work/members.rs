@@ -2,6 +2,8 @@
 
 /// The members of the events.
 pub(crate) mod member {
+    /// What the work waits for when it is *Waiting for you*: a question or a plan.
+    pub(crate) const WAITING_FOR: &str = "waiting_for";
     /// The agent.
     pub(crate) const AGENT: &str = "agent";
     /// The issues of a hand-over.
@@ -38,4 +40,20 @@ pub(crate) mod payload {
     pub(crate) const ENDS_AT: &str = "ends_at";
     /// The project a rule job looks at.
     pub(crate) const PROJECT: &str = "project";
+}
+
+/// What an event of agent work says for the reader of notifications.
+pub(crate) mod event_member {
+    pub(crate) use super::member::{ISSUE, STATE, WAITING_FOR, WORK_STATE};
+
+    /// The state of a standing rule three days before its end.
+    pub(crate) const ABOUT_TO_RUN_OUT: &str = "about-to-run-out";
+}
+
+/// The values of the member `waiting_for`.
+pub(crate) mod waiting_for {
+    /// The work waits for the answer to a question.
+    pub(crate) const QUESTION: &str = "question";
+    /// The work waits for *Approve plan*.
+    pub(crate) const PLAN: &str = "plan";
 }

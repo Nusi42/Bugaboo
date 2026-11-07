@@ -7777,7 +7777,13 @@ export interface components {
       | "run-ended"
       | "edit-notice"
       | "long-timer"
-      | "work-day-changed";
+      | "work-day-changed"
+      | "agent-asks"
+      | "plan-waits"
+      | "ready-for-review"
+      | "agent-gave-up"
+      | "rule-runs-out-soon"
+      | "agent-stopped";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}

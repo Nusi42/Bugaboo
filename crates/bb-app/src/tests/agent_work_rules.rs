@@ -117,16 +117,16 @@ async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked
 }
 
 /// A project, its team member with an agent, an issue and a saved search over the project.
-struct RuleWorld {
-    project: ProjectId,
-    team: Started,
-    agent: AgentId,
-    key: String,
-    issue: IssueId,
-    search: bb_core::id::SavedSearchId,
+pub(super) struct RuleWorld {
+    pub(super) project: ProjectId,
+    pub(super) team: Started,
+    pub(super) agent: AgentId,
+    pub(super) key: String,
+    pub(super) issue: IssueId,
+    pub(super) search: bb_core::id::SavedSearchId,
 }
 
-async fn rule_world(world: &World) -> Result<RuleWorld, AppError> {
+pub(super) async fn rule_world(world: &World) -> Result<RuleWorld, AppError> {
     let project = a_project(world, "WEB").await.map_err(AppError::Internal)?;
     let team = member(
         world,
@@ -161,7 +161,7 @@ fn rule_request(given: &RuleWorld, fields: Vec<RuleField>) -> CreateStandingRule
     }
 }
 
-async fn made(world: &World, given: &RuleWorld) -> Result<StandingRuleView, AppError> {
+pub(super) async fn made(world: &World, given: &RuleWorld) -> Result<StandingRuleView, AppError> {
     Ok(
         create_standing_rule(&world.ctx(), rule_request(given, Vec::new()))
             .await?
@@ -182,7 +182,7 @@ fn found_by_search(world: &World) {
     shared.search_hits = hits;
 }
 
-fn payload_of(rule: &StandingRuleView) -> serde_json::Value {
+pub(super) fn payload_of(rule: &StandingRuleView) -> serde_json::Value {
     json!({ "rule": rule.id.to_string(), "ends_at": rule.ends_at.to_string() })
 }
 

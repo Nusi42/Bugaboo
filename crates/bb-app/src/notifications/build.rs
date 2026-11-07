@@ -42,6 +42,7 @@ use crate::jobs::{JobKind, QueuedJob};
 use crate::member::{comment, follower, timer};
 use crate::outbox_reader::read_all;
 
+mod agent_work;
 mod work_days;
 
 /// What one batch of events looks up once: people, their settings, the followers that lost
@@ -125,6 +126,15 @@ fn may_hear(
 /// The person who did it, if a person did.
 const fn doer(event: &DomainEvent) -> Option<UserId> {
     event.actor.person()
+}
+
+/// The person who did it as themselves: an agent that acts for a person is not the person, so the
+/// person still hears of what it did (ADR-0029).
+const fn doer_in_person(event: &DomainEvent) -> Option<UserId> {
+    match event.actor {
+        bb_core::event::Actor::Person(person) => Some(person),
+        _ => None,
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -293,15 +303,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::Project => self.renewal_event(round, event).await,
             RecordKind::Attachment => self.file_event(round, event).await,
             RecordKind::WorkDay => self.work_day_event(round, event).await,
+            RecordKind::Agent => self.agent_event(round, event).await,
+            RecordKind::AgentWork => self.agent_work_event(round, event).await,
+            RecordKind::StandingRule => self.standing_rule_event(round, event).await,
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
-            | RecordKind::Agent
-            | RecordKind::AgentWork
             | RecordKind::HandOver
-            | RecordKind::StandingRule
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower
@@ -606,7 +616,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if !run_status_of(&event.changes).is_some_and(ManyChangeStatus::is_over) {
+        // Only a change to many issues tells its person: the end of a session of an app or of an
+        // attempt of an agent is told by the agent work, not as a run.
+        if run.kind != bb_core::run::RunKind::ManyChanges
+            || !run_status_of(&event.changes).is_some_and(ManyChangeStatus::is_over)
+        {
             return Ok(());
         }
         let subject = Subject {
@@ -633,7 +647,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         subject: &Subject<'_>,
         hears: Vec<Hears>,
     ) -> Result<(), AppError> {
-        let by = doer(subject.event);
+        let by = doer_in_person(subject.event);
         // What every follower chose is read together, before the first one is judged.
         let everyone: Vec<UserId> = hears.iter().map(|hear| hear.person).collect();
         self.preload_layers(round, &everyone).await?;

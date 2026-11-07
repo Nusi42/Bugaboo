@@ -18,6 +18,7 @@ mod types;
 
 pub use attempt::{ask_question, attach_result, end_attempt, report_attempt};
 pub use hand_over::hand_over;
+pub(crate) use members::{event_member, waiting_for};
 pub(crate) use narrow::issue_member;
 pub use read::issue_agent_work;
 pub use review::{answer_question, approve_plan, look_at_work, review_work};

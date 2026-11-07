@@ -277,7 +277,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }))
             }
             // The kind says it all; the row names the issue the timer runs on.
-            NotificationKind::LongTimer => Ok(issue.map(|_| NotificationWhat::Plain)),
+            NotificationKind::LongTimer
+            | NotificationKind::AgentAsks
+            | NotificationKind::PlanWaits
+            | NotificationKind::ReadyForReview
+            | NotificationKind::AgentGaveUp => Ok(issue.map(|_| NotificationWhat::Plain)),
+            // About an agent or a rule, not about an issue: the kind says it all.
+            NotificationKind::RuleRunsOutSoon | NotificationKind::AgentStopped => {
+                Ok(Some(NotificationWhat::Plain))
+            }
             NotificationKind::WorkDayChanged => Ok(work_day_change_of(&row.changes)),
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,

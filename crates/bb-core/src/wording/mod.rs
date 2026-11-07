@@ -545,6 +545,14 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
             }
         }),
         NotificationKind::LongTimer => one(Said::key(message::NOTIFICATIONS_LONG_TIMER)),
+        NotificationKind::AgentAsks => one(Said::key(message::NOTIFICATIONS_AGENT_ASKS)),
+        NotificationKind::PlanWaits => one(Said::key(message::NOTIFICATIONS_PLAN_WAITS)),
+        NotificationKind::ReadyForReview => one(Said::key(message::NOTIFICATIONS_READY_FOR_REVIEW)),
+        NotificationKind::AgentGaveUp => one(Said::key(message::NOTIFICATIONS_AGENT_GAVE_UP)),
+        NotificationKind::RuleRunsOutSoon => {
+            one(Said::key(message::NOTIFICATIONS_RULE_RUNS_OUT_SOON))
+        }
+        NotificationKind::AgentStopped => one(Said::key(message::NOTIFICATIONS_AGENT_STOPPED)),
         NotificationKind::RunEnded => one(match (&notice.renewal, notice.run_done) {
             (
                 Some(Renewal {

@@ -2,6 +2,18 @@
 
 /** The key of every setting of the registry (ADR-0018), by the name the app uses for it. */
 export const settingKeys = {
+  notificationsAgentAsksInApp: "notifications.agent-asks-in-app",
+  notificationsAgentAsksByMail: "notifications.agent-asks-by-mail",
+  notificationsPlanWaitsInApp: "notifications.plan-waits-in-app",
+  notificationsPlanWaitsByMail: "notifications.plan-waits-by-mail",
+  notificationsReadyForReviewInApp: "notifications.ready-for-review-in-app",
+  notificationsReadyForReviewByMail: "notifications.ready-for-review-by-mail",
+  notificationsAgentGaveUpInApp: "notifications.agent-gave-up-in-app",
+  notificationsAgentGaveUpByMail: "notifications.agent-gave-up-by-mail",
+  notificationsRuleRunsOutSoonInApp: "notifications.rule-runs-out-soon-in-app",
+  notificationsRuleRunsOutSoonByMail: "notifications.rule-runs-out-soon-by-mail",
+  notificationsAgentStoppedInApp: "notifications.agent-stopped-in-app",
+  notificationsAgentStoppedByMail: "notifications.agent-stopped-by-mail",
   appearanceMode: "appearance.mode",
   appearanceLightTheme: "appearance.light-theme",
   appearanceDarkTheme: "appearance.dark-theme",
@@ -90,6 +102,18 @@ export const settingChoices = {
 
 /** What a person who chose nothing gets, for every setting of the registry. */
 export const settingDefaults = {
+  notificationsAgentAsksInApp: true,
+  notificationsAgentAsksByMail: true,
+  notificationsPlanWaitsInApp: true,
+  notificationsPlanWaitsByMail: true,
+  notificationsReadyForReviewInApp: true,
+  notificationsReadyForReviewByMail: true,
+  notificationsAgentGaveUpInApp: true,
+  notificationsAgentGaveUpByMail: false,
+  notificationsRuleRunsOutSoonInApp: true,
+  notificationsRuleRunsOutSoonByMail: false,
+  notificationsAgentStoppedInApp: true,
+  notificationsAgentStoppedByMail: false,
   appearanceMode: "device",
   appearanceLightTheme: "daylight",
   appearanceDarkTheme: "dusk",

@@ -192,7 +192,7 @@ pub async fn approve_plan<S: AuthStore>(
     let (next, reply) = match note {
         // The plan is the question, the note its answer.
         Some(note) => (
-            AgentWorkState::WaitingForYou,
+            AgentWorkState::AgentWorking,
             Some(Question {
                 id: AgentNoteId::generate(&mut ctx.ids()),
                 work: acting.work.id,

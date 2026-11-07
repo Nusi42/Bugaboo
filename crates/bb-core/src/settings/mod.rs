@@ -24,7 +24,16 @@ pub mod working_hours;
 pub use ai::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, is_ai_setting};
 pub mod ai_apps;
 pub use ai_apps::AI_APPS_ENABLED;
+pub mod agent_notices;
 pub mod agents;
+pub use agent_notices::{
+    NOTIFICATIONS_AGENT_ASKS_BY_MAIL, NOTIFICATIONS_AGENT_ASKS_IN_APP,
+    NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL, NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
+    NOTIFICATIONS_AGENT_STOPPED_BY_MAIL, NOTIFICATIONS_AGENT_STOPPED_IN_APP,
+    NOTIFICATIONS_PLAN_WAITS_BY_MAIL, NOTIFICATIONS_PLAN_WAITS_IN_APP,
+    NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL, NOTIFICATIONS_READY_FOR_REVIEW_IN_APP,
+    NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL, NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP,
+};
 pub use agents::{
     AGENTS_ACCEPT_BY_ITSELF, AGENTS_ENABLED, AGENTS_HAND_OVER_DAYS,
     AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE, AGENTS_MAXIMUM_CHANGES_A_MINUTE,
@@ -638,6 +647,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
         .chain(working_hours::ALL)
         .chain(ai::ALL)
         .chain(ai_apps::ALL)
+        .chain(agent_notices::ALL)
         .chain(agents::ALL)
         .copied()
         .chain(extra.iter().copied())

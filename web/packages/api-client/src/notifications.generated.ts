@@ -25,6 +25,30 @@ export const notificationSettings = {
     app: "notifications.work-day-changed-in-app",
     mail: "notifications.work-day-changed-by-mail",
   },
+  "agent-asks": {
+    app: "notifications.agent-asks-in-app",
+    mail: "notifications.agent-asks-by-mail",
+  },
+  "plan-waits": {
+    app: "notifications.plan-waits-in-app",
+    mail: "notifications.plan-waits-by-mail",
+  },
+  "ready-for-review": {
+    app: "notifications.ready-for-review-in-app",
+    mail: "notifications.ready-for-review-by-mail",
+  },
+  "agent-gave-up": {
+    app: "notifications.agent-gave-up-in-app",
+    mail: "notifications.agent-gave-up-by-mail",
+  },
+  "rule-runs-out-soon": {
+    app: "notifications.rule-runs-out-soon-in-app",
+    mail: "notifications.rule-runs-out-soon-by-mail",
+  },
+  "agent-stopped": {
+    app: "notifications.agent-stopped-in-app",
+    mail: "notifications.agent-stopped-by-mail",
+  },
 } as const;
 
 /** How many days a notification is kept before it is deleted. */
