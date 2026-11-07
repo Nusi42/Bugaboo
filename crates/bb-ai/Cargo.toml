@@ -1,11 +1,32 @@
 [package]
 name = "bb-ai"
-description = "AI provider adapters, the context builder and the tool registry (ADR-0013)."
+description = "AI provider adapters (Anthropic and OpenAI-compatible) behind the port of bb-app, and the fake for tests (ADR-0013)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 license.workspace = true
+
+[features]
+# `FakeAiProvider` (defined with the port in `bb-app`): records every request and answers from a script. Every other crate switches it
+# on in `[dev-dependencies]` only (ARCH-DEPS); a build of the whole workspace has it here, because
+# cargo gives one crate the features that any member asks for. The program is built with
+# `cargo build -p bb-server` (`cargo xtask build`), which does not have it.
+testing = ["bb-app/testing"]
+
+[dependencies]
+bb-app = { path = "../bb-app" }
+bb-core = { path = "../bb-core" }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tracing = { workspace = true }
+zeroize = { workspace = true }
+# The one client for calls that leave the server (ARCH-HTTP-EDGE): rustls with the ring provider,
+# like the rest of the server, and nothing else switched on.
+ureq = { version = "3.5.1", default-features = false, features = ["rustls"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }
 
 [lints]
 workspace = true

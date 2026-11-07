@@ -1,0 +1,27 @@
+{
+  "model": "claude-test",
+  "max_tokens": 512,
+  "system": "You help with issues.",
+  "messages": [
+    { "role": "user", "content": [{ "type": "text", "text": "Find WEB-1" }] },
+    {
+      "role": "assistant",
+      "content": [
+        { "type": "tool_use", "id": "toolu_1", "name": "get_issue", "input": { "id": "WEB-1" } }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        { "type": "tool_result", "tool_use_id": "toolu_1", "content": "WEB-1: Fix login" }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_issue",
+      "description": "Reads one issue.",
+      "input_schema": { "type": "object", "properties": { "id": { "type": "string" } } }
+    }
+  ]
+}

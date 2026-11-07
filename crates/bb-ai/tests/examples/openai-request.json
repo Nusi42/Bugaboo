@@ -1,0 +1,30 @@
+{
+  "model": "local-test",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "system", "content": "You help with issues." },
+    { "role": "user", "content": "Find WEB-1" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": { "name": "get_issue", "arguments": "{\"id\":\"WEB-1\"}" }
+        }
+      ]
+    },
+    { "role": "tool", "tool_call_id": "call_1", "content": "WEB-1: Fix login" }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_issue",
+        "description": "Reads one issue.",
+        "parameters": { "type": "object", "properties": { "id": { "type": "string" } } }
+      }
+    }
+  ]
+}

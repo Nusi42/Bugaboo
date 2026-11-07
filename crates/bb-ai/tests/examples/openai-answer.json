@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-1",
+  "object": "chat.completion",
+  "model": "local-test",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": "I will look it up.",
+        "tool_calls": [
+          {
+            "id": "call_2",
+            "type": "function",
+            "function": { "name": "get_issue", "arguments": "{\"id\":\"WEB-2\"}" }
+          }
+        ]
+      }
+    }
+  ],
+  "usage": { "prompt_tokens": 98, "completion_tokens": 27, "total_tokens": 125 }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "msg_01",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-test",
+  "content": [
+    { "type": "text", "text": "I will look it up." },
+    { "type": "tool_use", "id": "toolu_2", "name": "get_issue", "input": { "id": "WEB-2" } }
+  ],
+  "stop_reason": "tool_use",
+  "usage": { "input_tokens": 120, "output_tokens": 31 }
+}

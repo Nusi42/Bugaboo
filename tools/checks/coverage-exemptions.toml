@@ -97,3 +97,7 @@ reason = "The animated banner of the front page, drawn by hand; its colors are t
 [[exempt]]
 path = "docs/media/roadmap.svg"
 reason = "The roadmap picture of the front page, drawn by hand; web/tooling/roadmap.test.ts keeps its colors the same as the tokens of the default themes and its milestones and feature counts the same as the table in docs/04-milestones.md, and checks that it stands still for people who ask for less motion."
+
+[[exempt]]
+path = "crates/bb-ai/tests/examples/*.json"
+reason = "Requests and answers of the providers as they were recorded; the adapters are tested against them byte for byte of meaning, and a formatter would only move them around."
