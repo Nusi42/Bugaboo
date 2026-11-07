@@ -8,6 +8,8 @@ import { part } from "./tokens.ts";
 export interface TabItem<Id extends string> {
   readonly id: Id;
   readonly label: string;
+  /** The name a screen reader says, when the label is drawn with a mark that has no words (a dot for today). */
+  readonly name?: string;
 }
 
 export interface TabsProps<Id extends string> {
@@ -44,7 +46,12 @@ export function Tabs<Id extends string>({
     >
       <TabList aria-label={label} {...partOf(part.tabs)}>
         {tabs.map((each) => (
-          <Tab key={each.id} id={each.id} {...partOf(part.tab)}>
+          <Tab
+            key={each.id}
+            id={each.id}
+            {...(each.name === undefined ? {} : { "aria-label": each.name })}
+            {...partOf(part.tab)}
+          >
             {each.label}
           </Tab>
         ))}

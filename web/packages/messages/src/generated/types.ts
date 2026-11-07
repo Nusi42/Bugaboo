@@ -648,6 +648,8 @@ export interface MessageArguments {
   "time.sheet.cell-label": { day: string | number; row: string | number };
   "time.sheet.day-heading": { day: string | number; weekday: string | number };
   "time.sheet.day-tab": { day: string | number; weekday: string | number };
+  "time.sheet.day-tab-name": { day: string | number; weekday: string | number };
+  "time.sheet.day-tab-name-today": { day: string | number; weekday: string | number };
   "time.sheet.day-tab-today": { day: string | number; weekday: string | number };
   "time.sheet.details-of": { issue: string | number };
   "time.sheet.history-after": { times: string | number };

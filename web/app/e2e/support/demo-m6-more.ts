@@ -30,12 +30,14 @@ export async function theWindowsOfTime(page: Page, server: Instance): Promise<vo
   await signIn(page, ana());
   await openIssueWithDetails(page, key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
+  // Starting a timer asks first whether to start the work day too; the answer clears the way.
+  await page.getByRole("button", { name: t("time.work-day.too-no"), exact: true }).click();
   await expect(timerOn(page, key)).toBeVisible();
   await timerOn(page, key).click();
   await page
     .getByRole("button", { name: t("time.timer.change-start"), exact: true })
     .last()
-    .click({ force: true });
+    .click();
   await expect(page.getByRole("dialog", { name: t("time.start-time.title") })).toBeVisible();
   await good(page, "07-b-change-start-time");
   await page.getByRole("button", { name: t("common.cancel"), exact: true }).click();

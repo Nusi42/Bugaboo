@@ -131,3 +131,15 @@ test("time_04 on a phone the footer shows working hours not booked on issues", a
   await expect(weekFigure(page, t("time.sheet.booked"))).toBeVisible();
   await expect(weekFigure(page, t("time.sheet.week-worked"))).toBeVisible();
 });
+
+test("a11y_time the tab of today says today to a screen reader, not the mark under it", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await openWeek(page, weekOf(today()));
+  await expect(dayTabs(page)).toHaveCount(DAYS);
+  // The mark under the day is a dot: what is said is the name of the day and that it is today.
+  await expect(page.getByRole("tab", { name: /, today$/u })).toHaveCount(1);
+  await expect(page.getByRole("tab", { name: /, today$/u })).toContainText("•");
+  await expect(page.getByRole("tab", { name: /^[A-Za-z]+ \d+$/u })).toHaveCount(DAYS - 1);
+});

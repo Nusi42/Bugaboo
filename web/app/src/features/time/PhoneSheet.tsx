@@ -54,6 +54,23 @@ function OneDay({ days, issues, date }: PhoneDay) {
   );
 }
 
+/** The tab of a day: the weekday over its number, and a mark under today that has its words for a screen reader. */
+function tabOf(date: string, today: string) {
+  const values = { weekday: weekdayName(date, "short"), day: dayOfMonth(date) };
+  const named = { weekday: weekdayName(date, "long"), day: dayOfMonth(date) };
+  return date === today
+    ? {
+        id: date,
+        label: t("time.sheet.day-tab-today", values),
+        name: t("time.sheet.day-tab-name-today", named),
+      }
+    : {
+        id: date,
+        label: t("time.sheet.day-tab", values),
+        name: t("time.sheet.day-tab-name", named),
+      };
+}
+
 /** The totals of the week, on top of the days. */
 function WeekTotals({ days, issues }: Pick<PhoneDay, "days" | "issues">) {
   return (
@@ -86,13 +103,7 @@ export function PhoneSheet({ days, issues }: Omit<PhoneDay, "date">) {
       <WeekTotals days={days} issues={issues} />
       <Tabs
         label={t("time.sheet.days")}
-        tabs={days.days.map((date) => ({
-          id: date,
-          label: t(date === days.today ? "time.sheet.day-tab-today" : "time.sheet.day-tab", {
-            weekday: weekdayName(date, "short"),
-            day: dayOfMonth(date),
-          }),
-        }))}
+        tabs={days.days.map((date) => tabOf(date, days.today))}
         selected={shown}
         onSelect={setShown}
       >

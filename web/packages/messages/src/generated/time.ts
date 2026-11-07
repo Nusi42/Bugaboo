@@ -139,6 +139,8 @@ export const messages = {
   "time.sheet.reason-save": "Save change",
   "time.sheet.day-tab": "{weekday}\n{day}",
   "time.sheet.day-tab-today": "{weekday}\n{day}\n•",
+  "time.sheet.day-tab-name": "{weekday} {day}",
+  "time.sheet.day-tab-name-today": "{weekday} {day}, today",
   "time.sheet.list-separator": ", ",
   "time.sheet.facts-separator": " · ",
   "time.sheet.negative-length": "−{length}",
