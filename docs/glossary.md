@@ -322,6 +322,7 @@ Rules:
 | **Take back** (an app's access, an agent key) | End what an app or a key may do, at once | revoke, deauthorize (in UI) |
 | **See only / See and change** (for apps) | What an AI app may do with your account; the same words as for access keys, and never more than you | read-write access, OAuth scopes (on screens) |
 | **Pause / Resume** (an agent) | Hold an agent so it starts nothing new, and let it go on; a limit pauses an agent too | suspend, throttle (in UI) |
+| **Take** (an issue) | An agent claims an issue that was handed over to it and starts an attempt; of two agents only one gets it | grab, claim, pick up |
 | **Limits** (of an agent) | How much an agent may do: changes a minute, issues at once, attempts on one issue; at most the organization's maximum | quota (in UI) |
 | **Budget** (of a hand-over) | How much an agent may spend on a handed-over issue: attempts, time and the cost it reports | quota (in UI) |
 | **Plan needs approval**  | A choice of a hand-over: each attempt waits for *Approve plan* before the agent works | gated, human in the loop (in UI) |
