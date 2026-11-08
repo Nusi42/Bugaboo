@@ -71,21 +71,44 @@ pub struct ToolAnswer {
     /// a time entry, an issue, a running timer).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub undo: Option<ToolUndo>,
+    /// For an *Apply* that changed an issue: the version the issue is at after the change, as the
+    /// write itself gave it back. *Undo* of fields is made on this version, so a change by
+    /// somebody else in between is never overwritten.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<i64>,
+}
+
+/// What an *Apply* made, and so what *Undo* takes away.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum UndoKind {
+    /// A comment.
+    Comment,
+    /// A time entry.
+    TimeEntry,
+    /// An issue.
+    Issue,
+    /// The running timer, which there is one of.
+    Timer,
 }
 
 /// What *Undo* of an applied change takes away.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ToolUndo {
-    /// What was made: `comment`, `time-entry`, `issue` or `timer`.
-    pub kind: String,
+    /// What was made.
+    pub kind: UndoKind,
     /// Its ID; empty for the timer, which there is one of.
     pub id: String,
-    /// The version it was made at: *Undo* takes it away only while it is still at this version.
+    /// The version it was made at, as the write gave it back: *Undo* takes it away only while it
+    /// is still at this version.
     pub version: i64,
 }
 
 /// The name of the part an *Apply* leaves for the way back.
 pub(super) const UNDO_PART: &str = "undo";
+
+/// The name of the part an *Apply* of a change to an issue leaves with the version the write gave.
+pub(super) const VERSION_PART: &str = "saved_version";
 
 impl Masked for ToolAnswer {}
 
@@ -221,39 +244,25 @@ pub async fn call_tool<S: AuthStore>(
         tool: found.map(|spec| spec.tool),
         effect: found.map(ToolSpec::effect),
         bytes_in,
-        bytes_out: result.as_ref().map_or(0, |(text, _, _)| text.len()),
+        bytes_out: result.as_ref().map_or(0, |answer| answer.text.len()),
         outcome,
     })
     .await;
-    let (text, changes, undo) = result?;
+    let answer = result?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(ToolAnswer {
-        text,
-        changes,
-        undo,
-    }))
+    Ok(held.authorize(answer))
 }
 
 /// The way back an *Apply* left among its parts, taken out so the AI never reads it.
 fn take_undo(parts: &mut Vec<Part>) -> Option<ToolUndo> {
     let at = parts.iter().position(|part| part.name == UNDO_PART)?;
-    let part = parts.remove(at);
-    let text = |member: &str| {
-        part.value
-            .get(member)
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_owned()
-    };
-    Some(ToolUndo {
-        kind: text("kind"),
-        id: text("id"),
-        version: part
-            .value
-            .get("version")
-            .and_then(Value::as_i64)
-            .unwrap_or_default(),
-    })
+    serde_json::from_value(parts.remove(at).value).ok()
+}
+
+/// The version the write of a change to an issue gave back, taken out of the parts like the way back.
+fn take_version(parts: &mut Vec<Part>) -> Option<i64> {
+    let at = parts.iter().position(|part| part.name == VERSION_PART)?;
+    parts.remove(at).value.as_i64()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -315,7 +324,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         spec: &ToolSpec<S>,
         request: &ToolCallQuery,
-    ) -> Result<(String, Vec<ProposedChange>, Option<ToolUndo>), AppError> {
+    ) -> Result<ToolAnswer, AppError> {
         // An AI app that was given the scope to change runs a tool that changes something at once, as
         // its own act: that is *Apply* for it. The assistant only proposes, and *Apply* is the
         // person's.
@@ -371,6 +380,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(error) => return Err(error),
         };
         let undo = take_undo(&mut parts);
+        let version = take_version(&mut parts);
         let changes = if spec.effect() == ToolEffect::Changes {
             proposed_changes(&parts)
         } else {
@@ -379,6 +389,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         let people = self
             .people_as(actor.person.id, request.people, &parts)
             .await?;
-        Ok((render(&parts, &people, &nonce()?), changes, undo))
+        Ok(ToolAnswer {
+            text: render(&parts, &people, &nonce()?),
+            changes,
+            undo,
+            version,
+        })
     }
 }

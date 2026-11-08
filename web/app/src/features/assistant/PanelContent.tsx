@@ -1,5 +1,16 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, IconButton, iconName, partOf, part, useLayout } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Icon,
+  IconButton,
+  iconName,
+  partOf,
+  part,
+  useLayout,
+} from "@bugaboo/ui";
 
 import type { AssistantStatus } from "./assistant.ts";
 import { AskBox } from "./AskBox.tsx";
@@ -43,8 +54,17 @@ export function PanelContent({
   return (
     <div {...partOf(part.assistantPanel)}>
       <div {...partOf(part.sidePanelHead)}>
+        {phone ? (
+          // A whole screen of a phone is left with Back, like every other screen of the phone (UX §6.3).
+          <Button look={buttonLook.quiet} onPress={onClose}>
+            <Icon name={iconName.back} />
+            {t("shell.back")}
+          </Button>
+        ) : null}
         <h2 {...partOf(part.sidePanelTitle)}>{t("assistant.title")}</h2>
-        <IconButton icon={iconName.close} label={t("assistant.close")} onPress={onClose} />
+        {phone ? null : (
+          <IconButton icon={iconName.close} label={t("assistant.close")} onPress={onClose} />
+        )}
       </div>
       {phone ? null : top}
       {here ? null : <Alert tone={alertTone.warning}>{t("assistant.off-here")}</Alert>}

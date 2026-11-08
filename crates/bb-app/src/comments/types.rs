@@ -42,6 +42,9 @@ pub struct DeleteComment {
     pub session_token: String,
     /// The comment.
     pub comment: CommentId,
+    /// The version the person looked at: when given, the comment goes into the trash only while
+    /// it is still at this version (*Undo* of a comment the assistant made).
+    pub version: Option<i64>,
 }
 
 /// Take a comment out of the trash.

@@ -14,6 +14,16 @@ pub(crate) struct VersionBody {
     pub(crate) version: i64,
 }
 
+/// The version of the record a removal may be made on, in the query, where the removal also works
+/// without it: given, a change made meanwhile stops the removal (409), as for time entries.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct OptionalVersionParams {
+    /// The version of the record the person looked at; a change made meanwhile stops this one.
+    /// Without it, the record is removed whatever its version.
+    pub(crate) version: Option<i64>,
+}
+
 /// The version of the record a removal is made on, in the query: a `DELETE` has no body.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]

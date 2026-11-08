@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 
@@ -18,6 +18,8 @@ export function useAssistantStatus(project: string | undefined): EntryStatus | u
       params: { query: project === undefined ? {} : { project } },
     }),
     retry: false,
+    // The new place is asked while the one before is still shown: unknown is never taken for off.
+    placeholderData: keepPreviousData,
   });
   return query.data;
 }

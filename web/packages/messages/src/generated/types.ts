@@ -90,6 +90,7 @@ export interface MessageArguments {
   "ai-setup.agreement-confirmed": { at: string | number; person: string | number };
   "ai-setup.agreement-sentence": { provider: string | number };
   "ai-setup.agreement-text": { provider: string | number };
+  "ai-setup.agreement-text-confirmed": { provider: string | number };
   "ai-setup.agreement-title": { provider: string | number };
   "ai-setup.where-off-more": { names: string | number };
   "assignments.change-here-name": { who: string | number };

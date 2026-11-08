@@ -13,18 +13,20 @@ function ProjectSwitch({ project }: { readonly project: string }) {
     <QueryGate error={found.error} data={found.data} loading={null}>
       {(shown) => (
         <div {...partOf(part.box)}>
-          <Switch
-            label={t("ai-setup.project-switch")}
-            isSelected={shown.works_here}
-            onChange={(enabled) => {
-              change.mutate({ params: { path: { project } }, body: { enabled } });
-            }}
-          />
-          <p {...partOf(part.muted)}>
-            {shown.organization_on
-              ? t("ai-setup.project-help")
-              : t("ai-setup.project-organization-off")}
-          </p>
+          <div {...partOf(part.settingsControl)}>
+            <Switch
+              label={t("ai-setup.project-switch")}
+              isSelected={shown.works_here}
+              onChange={(enabled) => {
+                change.mutate({ params: { path: { project } }, body: { enabled } });
+              }}
+            />
+            <p {...partOf(part.settingsHelp)}>
+              {shown.organization_on
+                ? t("ai-setup.project-help")
+                : t("ai-setup.project-organization-off")}
+            </p>
+          </div>
           {shown.own === undefined || shown.own === null ? null : (
             <div {...partOf(part.row)}>
               <Button
@@ -51,17 +53,19 @@ function ProjectMark({ project }: { readonly project: string }) {
   const found = marks.data?.projects.find((each) => each.project.short_name === project);
   return (
     <div {...partOf(part.box)}>
-      <Switch
-        label={t("ai-setup.never-sent")}
-        isSelected={found?.marked === true}
-        onChange={(marked) => {
-          mark.mutate({
-            params: { path: { project } },
-            body: { marked, version: found?.version ?? 0 },
-          });
-        }}
-      />
-      <p {...partOf(part.muted)}>{t("ai-setup.never-sent-project-help")}</p>
+      <div {...partOf(part.settingsControl)}>
+        <Switch
+          label={t("ai-setup.never-sent")}
+          isSelected={found?.marked === true}
+          onChange={(marked) => {
+            mark.mutate({
+              params: { path: { project } },
+              body: { marked, version: found?.version ?? 0 },
+            });
+          }}
+        />
+        <p {...partOf(part.settingsHelp)}>{t("ai-setup.never-sent-project-help")}</p>
+      </div>
       {mark.isError ? <Alert tone={alertTone.danger}>{messageOf(mark.error)}</Alert> : null}
     </div>
   );

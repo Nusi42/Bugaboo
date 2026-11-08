@@ -221,6 +221,12 @@ pub const AI_SETUP_APPS: MessageKey = MessageKey::new("ai-setup.apps");
 /// The message `ai-setup.apps-intro`.
 pub const AI_SETUP_APPS_INTRO: MessageKey = MessageKey::new("ai-setup.apps-intro");
 
+/// The message `ai-setup.apps-off`.
+pub const AI_SETUP_APPS_OFF: MessageKey = MessageKey::new("ai-setup.apps-off");
+
+/// The message `ai-setup.apps-on`.
+pub const AI_SETUP_APPS_ON: MessageKey = MessageKey::new("ai-setup.apps-on");
+
 /// The message `ai-setup.intro`.
 pub const AI_SETUP_INTRO: MessageKey = MessageKey::new("ai-setup.intro");
 
@@ -244,6 +250,9 @@ pub const AI_SETUP_NEVER_SENT_HELP: MessageKey = MessageKey::new("ai-setup.never
 
 /// The message `ai-setup.never-sent-intro`.
 pub const AI_SETUP_NEVER_SENT_INTRO: MessageKey = MessageKey::new("ai-setup.never-sent-intro");
+
+/// The message `ai-setup.never-sent-own`.
+pub const AI_SETUP_NEVER_SENT_OWN: MessageKey = MessageKey::new("ai-setup.never-sent-own");
 
 /// The message `ai-setup.never-sent-project-help`.
 pub const AI_SETUP_NEVER_SENT_PROJECT_HELP: MessageKey =
@@ -7579,6 +7588,15 @@ pub fn ai_setup_agreement_text(provider: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `ai-setup.agreement-text-confirmed`.
+#[must_use]
+pub fn ai_setup_agreement_text_confirmed(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-text-confirmed"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
 /// The message `ai-setup.agreement-title`.
 #[must_use]
 pub fn ai_setup_agreement_title(provider: impl std::fmt::Display) -> Message {
@@ -14800,6 +14818,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your data goes to {provider}. Before AI is switched on, confirm that a data processing agreement with {provider} is in place.",
     ),
     (
+        "ai-setup.agreement-text-confirmed",
+        "Your data goes to {provider}. You confirmed that a data processing agreement with {provider} is in place.",
+    ),
+    (
         "ai-setup.agreement-title",
         "Is the agreement with {provider} in place?",
     ),
@@ -14808,6 +14830,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "ai-setup.apps-intro",
         "Outside AI apps that people connect to their accounts.",
+    ),
+    (
+        "ai-setup.apps-off",
+        "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
+    ),
+    (
+        "ai-setup.apps-on",
+        "People can connect AI apps to their accounts, and each app does at most what its person may do.",
     ),
     (
         "ai-setup.intro",
@@ -14830,8 +14860,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-setup.never-sent-intro",
-        "Fields and projects that AI never gets.",
+        "Fields that AI never gets. A project has the same switch in its settings.",
     ),
+    ("ai-setup.never-sent-own", "Own fields"),
     (
         "ai-setup.never-sent-project-help",
         "Kept from the assistant, AI apps and agents, with every project inside this one, even for people who can read it.",

@@ -6,10 +6,12 @@ import {
   ask,
   assistantButton,
   assistantPanel,
+  closePanelButton,
   changeTitleBehindTheScenes,
   lowerToNormal,
   openAssistant,
   priorityAndVersion,
+  proposalCard,
   proposeCritical,
   setUpAssistant,
 } from "./support/assistant.ts";
@@ -25,10 +27,7 @@ import { prepareWeb } from "./support/issues.ts";
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
 
-/** The card of a proposed change in the open panel. */
-function card(page: Parameters<typeof assistantPanel>[0]) {
-  return assistantPanel(page).getByRole("region", { name: t("assistant.card.title") });
-}
+const card = proposalCard;
 
 test("ai_10 the assistant opens from the top bar and shows what it looks at", async ({
   page,
@@ -193,17 +192,17 @@ test("ai_10 closing the panel with a conversation asks first", async ({ page, se
   await page.goto(issueAddress("WEB-1"));
   const panel = await openAssistant(page);
   // Nothing to lose yet: the panel closes at once.
-  await panel.getByRole("button", { name: t("assistant.close") }).click();
+  await closePanelButton(page).click();
   await expect(panel).toBeHidden();
   await openAssistant(page);
   await ask(page, "Hello?");
   await expect(panel.getByText("An answer.")).toBeVisible();
-  await panel.getByRole("button", { name: t("assistant.close") }).click();
+  await closePanelButton(page).click();
   const question = page.getByRole("alertdialog");
   await expect(question.getByText(t("assistant.close-text"))).toBeVisible();
   await question.getByRole("button", { name: t("assistant.close-keep") }).click();
   await expect(panel.getByText("An answer.")).toBeVisible();
-  await panel.getByRole("button", { name: t("assistant.close") }).click();
+  await closePanelButton(page).click();
   await page.getByRole("button", { name: t("assistant.close-yes") }).click();
   await expect(panel).toBeHidden();
   // The conversation is gone: a new panel starts empty.
@@ -233,7 +232,7 @@ test("ai_05 undo of a change is refused when somebody changed the issue since, a
   await card(page)
     .getByRole("button", { name: t("common.undo") })
     .click();
-  await expect(card(page).getByRole("alert")).toContainText(t("error.edit.version-changed"));
+  await expect(card(page).getByRole("alert")).toContainText(t("assistant.card.undo-changed"));
   expect((await priorityAndVersion(server, "WEB-2")).priority).toBe("critical");
   await model.close();
 });

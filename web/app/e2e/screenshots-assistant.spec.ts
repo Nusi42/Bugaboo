@@ -6,10 +6,12 @@ import {
   ask,
   assistantButton,
   assistantPanel,
+  closePanelButton,
   lowerToNormal,
   markFieldNeverSent,
   openAssistant,
   proposeCritical,
+  saveOutsideProvider,
   setUpAssistant,
   setUpOutsideProvider,
 } from "./support/assistant.ts";
@@ -52,13 +54,7 @@ test("the page to set up the assistant, and the agreement for an outside provide
     await expect(page.getByRole("heading", { level: 1, name: t("ai-setup.title") })).toBeVisible();
   });
   await page.goto(paths.ai);
-  await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
-    label: t("ai.provider.anthropic"),
-  });
-  await page.getByLabel(t("setting.ai.model.name")).fill("claude-test");
-  await page.getByLabel(t("ai-setup.password")).fill(ada.password);
-  await page.getByRole("button", { name: t("ai-setup.save") }).click();
-  await expect(page.getByText(t("ai-setup.saved"))).toBeVisible();
+  await saveOutsideProvider(page);
   await inFourChosenThemes(page, "agreement", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.ai);
     await expect(
@@ -71,18 +67,24 @@ test("the set-up page with a provider of your own, and the confirmed agreement",
   page,
 }) => {
   await signIn(page, ada);
+  // A model of your own, saved with its address: What goes where names the own server, and no agreement is needed.
   await page.goto(paths.ai);
   await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
     label: t("ai.provider.openai-compatible"),
   });
+  await page.getByLabel(t("setting.ai.model.name"), { exact: true }).fill("local-test");
+  await page.getByLabel(t("setting.ai.address.name")).fill("http://models.lan/v1");
+  await page.getByLabel(t("ai-setup.password")).fill(ada.password);
+  await page.getByRole("button", { name: t("ai-setup.save") }).click();
+  await expect(page.getByText(t("ai-setup.saved"))).toBeVisible();
   await inFourChosenThemes(page, "set-up-own-model", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.ai);
-    await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
-      label: t("ai.provider.openai-compatible"),
-    });
-    await expect(page.getByLabel(t("setting.ai.address.name"))).toBeVisible();
+    await expect(page.getByText(t("ai-setup.agreement-not-needed"))).toBeVisible();
+    await expect(page.getByText(t("ai.provider.local-model"), { exact: true })).toBeVisible();
   });
+  // An outside provider, and its agreement confirmed.
   await page.goto(paths.ai);
+  await saveOutsideProvider(page);
   await page.getByRole("button", { name: t("ai-setup.agreement-confirm") }).click();
   await page.getByRole("button", { name: t("ai-setup.agreement-yes") }).click();
   await expect(page.getByText(/^Confirmed by Ada Admin, /u)).toBeVisible();
@@ -153,7 +155,7 @@ test("the panel: empty, with an answer, with a card, after Apply, and the close 
     const panel = await openAssistant(page);
     await ask(page, "Hello?");
     await expect(panel.getByText("An answer.")).toBeVisible();
-    await panel.getByRole("button", { name: t("assistant.close") }).click();
+    await closePanelButton(page).click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
   });
   // After Apply the card says what was saved and offers Undo; the last theme leaves the priority raised.

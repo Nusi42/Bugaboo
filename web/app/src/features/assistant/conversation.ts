@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { limits, type AssistantAnswer } from "./assistant.ts";
+import { cutToCodePoints } from "./code-points.ts";
 
 /** One turn of the conversation, kept in the open panel only (M7-Q6). */
 export type Turn =
@@ -11,7 +12,7 @@ export type Turn =
 export function sentTurn(turn: Turn): { readonly from: Turn["from"]; readonly text: string } {
   return {
     from: turn.from,
-    text: (turn.from === "person" ? turn.text : turn.answer.text).slice(0, limits.turn),
+    text: cutToCodePoints(turn.from === "person" ? turn.text : turn.answer.text, limits.turn),
   };
 }
 

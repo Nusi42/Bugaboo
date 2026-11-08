@@ -61,15 +61,19 @@ function priorityOf(value: unknown): (typeof PRIORITIES)[number] | undefined {
   return PRIORITIES.find((each) => each === value);
 }
 
-/** A change of priority drawn with the priority component of the app: the old one, then the new one. */
+/** A change of priority drawn with the priority component of the app: the old one, then the new one; after *Apply* only what it is now. */
 function PriorityChange({ before, after }: { readonly before: unknown; readonly after: unknown }) {
   const was = priorityOf(before);
   const now = priorityOf(after);
   return (
     <>
       <span>{fieldNameOf({ code: "priority" })}</span>
-      {was === undefined ? null : <Priority priority={was} label={t(`priority.${was}`)} />}
-      <Icon name={iconName.next} size={iconSize.small} />
+      {was === undefined ? null : (
+        <>
+          <Priority priority={was} label={t(`priority.${was}`)} />
+          <Icon name={iconName.next} size={iconSize.small} />
+        </>
+      )}
       {now === undefined ? null : <Priority priority={now} label={t(`priority.${now}`)} />}
     </>
   );
@@ -78,10 +82,10 @@ function PriorityChange({ before, after }: { readonly before: unknown; readonly 
 /** One line of the change: *Priority: Normal → High*, or after *Apply* what it is now. */
 function ChangeLine({ change, saved }: { readonly change: CardChange; readonly saved: boolean }) {
   const words = change.words;
-  if (change.field === "priority" && !saved && priorityOf(change.after) !== undefined) {
+  if (change.field === "priority" && priorityOf(change.after) !== undefined) {
     return (
       <li {...partOf(part.proposalChange, { variants: ["values"] })}>
-        <PriorityChange before={change.before} after={change.after} />
+        <PriorityChange before={saved ? undefined : change.before} after={change.after} />
       </li>
     );
   }

@@ -17,7 +17,8 @@ export function OwnNeverSent({ fields }: { readonly fields: readonly OwnField[] 
   }
   return (
     <div {...partOf(part.stack)}>
-      <ul {...partOf(part.list, { variants: ["tight"] })} aria-label={t("fields.list")}>
+      <p {...partOf(part.muted)}>{t("ai-setup.never-sent-own")}</p>
+      <ul {...partOf(part.list, { variants: ["tight"] })} aria-label={t("ai-setup.never-sent")}>
         {fields.map((field) => (
           <li key={field.id}>
             <Switch

@@ -3,14 +3,17 @@ import { inOrder } from "../../shared/in-order.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
-import { isDetail, type IssueEdit } from "./issue-values.ts";
+import { isDetail, type IssueEdit, type IssueRequestValues } from "./issue-values.ts";
 
 /**
  * Asks the server for the change, after the changes that were asked for before it. Answers with the
  * version the change made: *Undo* is sent on that one, so a change that somebody else made after it
  * is not overwritten but comes back as a conflict.
  */
-export async function sendChange(id: string, edit: IssueEdit): Promise<number | undefined> {
+export async function sendChange(
+  id: string,
+  edit: Pick<IssueEdit, "version"> & { readonly values: IssueRequestValues },
+): Promise<number | undefined> {
   const { values, version } = edit;
   const body = {
     version,

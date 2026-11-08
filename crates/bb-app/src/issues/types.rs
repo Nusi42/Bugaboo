@@ -160,6 +160,9 @@ pub struct DeleteIssue {
     pub session_token: String,
     /// The issue, by its readable ID (also an old one) or its internal ID.
     pub issue: String,
+    /// The version the person looked at: when given, the issue goes into the trash only while it
+    /// is still at this version (*Undo* of an issue the assistant made).
+    pub version: Option<i64>,
 }
 
 /// Take an issue out of the trash.

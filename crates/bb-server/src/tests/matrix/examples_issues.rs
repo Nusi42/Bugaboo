@@ -220,6 +220,7 @@ pub(super) async fn issue_request(
                     DeleteIssue {
                         session_token: fixture.admin_session().to_owned(),
                         issue: key.clone(),
+                        version: None,
                     },
                 )
                 .await

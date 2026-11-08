@@ -242,6 +242,7 @@ async fn text_request(
                     bb_app::comments::DeleteComment {
                         session_token: fixture.admin_session().to_owned(),
                         comment: comment.parse().map_err(|_| "no comment ID")?,
+                        version: None,
                     },
                 )
                 .await

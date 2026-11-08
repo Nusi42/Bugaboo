@@ -180,6 +180,7 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_cost_the_same_rea
             DeleteComment {
                 session_token: bob.clone(),
                 comment,
+                version: None,
             },
         )
         .await

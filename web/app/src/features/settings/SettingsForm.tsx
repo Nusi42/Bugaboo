@@ -29,6 +29,8 @@ export interface SettingsFormProps {
   readonly searchable?: boolean;
   /** Controls a page draws for some settings itself, by key (a theme with its sample). */
   readonly controls?: Readonly<Record<string, ControlRenderer>>;
+  /** The explanation a page words itself for some settings, by key: one sentence for the state the setting is in. */
+  readonly helps?: Readonly<Record<string, (setting: Setting) => string>>;
 }
 
 /** Whether the page draws the control of a setting itself (a theme with its sample). */
@@ -71,6 +73,7 @@ export function SettingsForm({
   problem,
   searchable = true,
   controls,
+  helps,
 }: SettingsFormProps) {
   const [query, setQuery] = useState("");
   const drawn = settings.filter((setting) => isDrawn(setting, controls));
@@ -101,6 +104,7 @@ export function SettingsForm({
               setting={setting}
               actions={actions}
               control={controls?.[setting.key]}
+              help={helps?.[setting.key]?.(setting)}
             />
           ))}
         </ul>

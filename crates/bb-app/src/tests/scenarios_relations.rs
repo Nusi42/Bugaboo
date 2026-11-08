@@ -246,6 +246,7 @@ pub(crate) async fn delete_comment_scenario(world: &World) -> Added {
             DeleteComment {
                 session_token: token(world),
                 comment,
+                version: None,
             },
         ),
     )
@@ -261,6 +262,7 @@ pub(crate) async fn restore_comment_scenario(world: &World) -> Added {
         DeleteComment {
             session_token: token(world),
             comment,
+            version: None,
         },
     )
     .await

@@ -120,6 +120,8 @@ export const messages = {
     "The model runs on your own computers, so nothing leaves your organization and no agreement is needed.",
   "ai-setup.agreement-text":
     "Your data goes to {provider}. Before AI is switched on, confirm that a data processing agreement with {provider} is in place.",
+  "ai-setup.agreement-text-confirmed":
+    "Your data goes to {provider}. You confirmed that a data processing agreement with {provider} is in place.",
   "ai-setup.agreement-confirm": "Confirm the agreement",
   "ai-setup.agreement-title": "Is the agreement with {provider} in place?",
   "ai-setup.agreement-sentence":
@@ -146,6 +148,10 @@ export const messages = {
   "ai-setup.switch-needs-agreement": "Confirm the agreement above before AI is switched on.",
   "ai-setup.apps": "AI apps",
   "ai-setup.apps-intro": "Outside AI apps that people connect to their accounts.",
+  "ai-setup.apps-on":
+    "People can connect AI apps to their accounts, and each app does at most what its person may do.",
+  "ai-setup.apps-off":
+    "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
   "ai-setup.addresses-intro":
     "Apps that run on the web sign in only from the web addresses you allow here. An app on a person’s own computer needs none.",
   "ai-setup.addresses-list": "Allowed web addresses",

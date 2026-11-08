@@ -59,7 +59,7 @@ async fn ai_05_an_applied_comment_says_which_comment_undo_takes_away() -> Outcom
         .await?
         .into_value();
     let undo = applied.undo.ok_or("no way back")?;
-    assert_eq!(undo.kind, "comment");
+    assert_eq!(undo.kind, crate::ai::tools::UndoKind::Comment);
     assert!(!undo.id.is_empty());
     Ok(())
 }

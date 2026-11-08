@@ -332,6 +332,7 @@ async fn ai_38_a_field_of_an_issue_deleted_after_the_plan_stays_as_gone() -> Out
         DeleteIssue {
             session_token: admin.clone(),
             issue: second.to_string(),
+            version: None,
         },
     )
     .await?;

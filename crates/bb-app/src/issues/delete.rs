@@ -6,7 +6,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
 use bb_core::issue::Issue;
 use bb_core::version::counted_up;
-use bb_policy::Authorized;
+use bb_policy::{Authorized, Place};
 use serde_json::json;
 
 use super::fields::member;
@@ -42,7 +42,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `resource.not-found` for an issue that does not exist, is in the trash already or that the
-/// person may not see, `access.forbidden` without *Delete issues*.
+/// person may not see, `access.forbidden` without *Delete issues*, `edit.version-changed` when a
+/// version is given and somebody changed the issue since (checked in the same transaction).
 pub async fn delete_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteIssue,
@@ -67,9 +68,16 @@ pub async fn delete_issue<S: AuthStore>(
     )?;
     let why = Why::default();
     let stopped = why.clone();
+    let (expected, project, editor) = (input.version, issue.project, actor.person.id);
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                if let Some(expected) = expected {
+                    let stored = S::issue_in(transaction, id).await?;
+                    if stored.is_some_and(|stored| stored.version != expected) {
+                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                    }
+                }
                 if S::set_issue_deleted(transaction, id, Some(now), now).await? {
                     Ok(())
                 } else {
@@ -78,7 +86,13 @@ pub async fn delete_issue<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::NotFound).about(
+                &entity(RecordKind::Issue, id),
+                Place::Project(project),
+                editor,
+            )
+        })?;
     Ok(Done)
 }
 

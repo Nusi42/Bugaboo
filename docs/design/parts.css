@@ -909,8 +909,7 @@ textarea,
   [data-part="bottom-sheet"] [data-part="search-bar"]::before,
   [data-part="search-suggestions"]::before,
   [data-part="side-panel.body"]::before,
-  [data-part="list-panel"]::before,
-  [data-part="assistant-body"]::before {
+  [data-part="list-panel"]::before {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -940,8 +939,7 @@ textarea,
   [data-part="bottom-sheet"] [data-part="search-bar"]::after,
   [data-part="search-suggestions"]::after,
   [data-part="side-panel.body"]::after,
-  [data-part="list-panel"]::after,
-  [data-part="assistant-body"]::after {
+  [data-part="list-panel"]::after {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -8098,6 +8096,48 @@ textarea,
   padding-top: var(--space-2);
 }
 
+@supports (animation-timeline: scroll()) {
+  [data-part="assistant-body"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    height: var(--space-4);
+    opacity: 0;
+    pointer-events: none;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-timeline: scroll(nearest block);
+    top: 0;
+    margin-bottom: calc(-1 * (var(--space-4) + var(--space-3)));
+    background: linear-gradient(to bottom, var(--bg-raised), transparent);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="assistant-body"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    height: var(--space-4);
+    opacity: 0;
+    pointer-events: none;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-timeline: scroll(nearest block);
+    bottom: 0;
+    margin-top: calc(-1 * (var(--space-4) + var(--space-3)));
+    background: linear-gradient(to top, var(--bg-raised), transparent);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+  }
+}
+
 [data-part="assistant-ask"] {
   display: flex;
   flex: none;
@@ -8199,4 +8239,22 @@ textarea,
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  font-size: var(--fs-ui);
+}
+
+[data-part="ai-page"] [data-part="alert"] {
+  font-size: var(--fs-base);
+}
+
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="ai-page"]
+  [data-part="row"]
+  > [data-part="button"],
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="ai-page"]
+  [data-part="row"]
+  > [data-part="row.end"]
+  > [data-part="button"] {
+  flex: 1 1 100%;
+  width: 100%;
 }

@@ -9,7 +9,7 @@
 use bb_policy::{Authorized, Masked};
 use serde_json::{Value, json};
 
-use super::call::UNDO_PART;
+use super::call::{ToolUndo, UNDO_PART, UndoKind, VERSION_PART};
 use super::registry::{Boxed, Run};
 use super::{preview, requests};
 use crate::access::Actor;
@@ -23,18 +23,37 @@ use crate::time::{
 
 /// What undoes an *Apply*: the part that tells where the thing it made is. It is not text for the
 /// AI; the call takes it out of the answer.
-fn undo_part<T: Masked + serde::Serialize>(kind: &str, made: &Authorized<T>, at: &[&str]) -> Part {
+fn undo_part<T: Masked + serde::Serialize>(kind: UndoKind, made: &Authorized<T>) -> Part {
     let value = made.masked_value().unwrap_or(Value::Null);
-    let found = at
-        .iter()
-        .try_fold(&value, |found, member| found.get(*member));
-    let id = found.and_then(|one| one.get("id")).and_then(Value::as_str);
-    let version = found
-        .and_then(|one| one.get("version"))
-        .and_then(Value::as_i64);
+    let id = value.get("id").and_then(Value::as_str);
+    let undo = ToolUndo {
+        kind,
+        id: id.unwrap_or_default().to_owned(),
+        version: version_in(&value).unwrap_or_default(),
+    };
     Part {
         name: UNDO_PART,
-        value: json!({ "kind": kind, "id": id.unwrap_or_default(), "version": version.unwrap_or_default() }),
+        value: json!(undo),
+        author: AuthorKind::Assistant,
+        project: None,
+    }
+}
+
+/// The version of the thing a write gave back.
+fn version_in(value: &Value) -> Option<i64> {
+    value.get("version").and_then(Value::as_i64)
+}
+
+/// The version an issue is at after a change, as the write gave it back: not read again, so it is
+/// the version of this change and never one a later change by somebody else made.
+fn version_part(changed: &Authorized<IssueView>) -> Part {
+    let version = changed
+        .masked_value()
+        .ok()
+        .and_then(|value| version_in(&value));
+    Part {
+        name: VERSION_PART,
+        value: json!(version),
         author: AuthorKind::Assistant,
         project: None,
     }
@@ -65,7 +84,7 @@ pub(super) fn create_issue<'a, S: AuthStore>(
         let made = create_issue_as_person(ctx, requests::create_issue(&run)?).await?;
         // *Undo* of a new issue sends it to the trash: only for a person who may delete it.
         if ctx.may_delete_made(run.actor, &made).await {
-            shown.push(undo_part("issue", &made, &[]));
+            shown.push(undo_part(UndoKind::Issue, &made));
         }
         Ok(shown)
     })
@@ -77,8 +96,9 @@ pub(super) fn update_issue<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let shown = preview::update_issue(ctx, run).await?;
-        change_issue(ctx, requests::update_issue(&run)?).await?;
+        let mut shown = preview::update_issue(ctx, run).await?;
+        let changed = change_issue(ctx, requests::update_issue(&run)?).await?;
+        shown.push(version_part(&changed));
         Ok(shown)
     })
 }
@@ -89,8 +109,9 @@ pub(super) fn change_status<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let shown = preview::change_status(ctx, run).await?;
-        change_issue(ctx, requests::change_status(&run)?).await?;
+        let mut shown = preview::change_status(ctx, run).await?;
+        let changed = change_issue(ctx, requests::change_status(&run)?).await?;
+        shown.push(version_part(&changed));
         Ok(shown)
     })
 }
@@ -103,7 +124,7 @@ pub(super) fn add_comment<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::add_comment(ctx, run).await?;
         let made = add_comment_as_person(ctx, requests::add_comment(&run)?).await?;
-        shown.push(undo_part("comment", &made, &[]));
+        shown.push(undo_part(UndoKind::Comment, &made));
         Ok(shown)
     })
 }
@@ -116,7 +137,7 @@ pub(super) fn log_time<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::log_time(ctx, run).await?;
         let made = add_time(ctx, requests::log_time(&run)?).await?;
-        shown.push(undo_part("time-entry", &made, &[]));
+        shown.push(undo_part(UndoKind::TimeEntry, &made));
         Ok(shown)
     })
 }
@@ -129,7 +150,7 @@ pub(super) fn start_timer<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::start_timer(ctx, run).await?;
         let made = start_timer_as_person(ctx, requests::start_timer(&run)?).await?;
-        shown.push(undo_part("timer", &made, &[]));
+        shown.push(undo_part(UndoKind::Timer, &made));
         Ok(shown)
     })
 }

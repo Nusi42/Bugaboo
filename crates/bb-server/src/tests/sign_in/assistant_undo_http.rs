@@ -13,10 +13,10 @@ use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, id_of, key_of, version_of};
 use super::rig::{PASSWORD, Rig};
 
-const AI: &str = "/api/v1/ai";
+pub(super) const AI: &str = "/api/v1/ai";
 
 /// A model on the organization's own network, switched on.
-fn local_model_on() -> Value {
+pub(super) fn local_model_on() -> Value {
     json!({
         "enabled": true,
         "provider": "openai-compatible",
@@ -43,7 +43,7 @@ fn will_propose(rig: &Rig, tool: &str, arguments: Value) {
 }
 
 /// Asks the question as `who` and applies the first proposal; the answer of *Apply*.
-async fn ask_and_apply(
+pub(super) async fn ask_and_apply(
     rig: &Rig,
     who: &mut Browser,
     text: &str,
@@ -249,7 +249,8 @@ async fn ai_05_a_new_issue_has_a_way_back_exactly_when_the_person_may_delete_it(
 }
 
 #[tokio::test]
-async fn comp_10_a_default_assigned_to_of_the_project_is_not_the_ais_choice() -> TestResult {
+async fn comp_10_a_new_issue_the_assistant_proposes_names_nobody_and_gets_what_a_person_gets()
+-> TestResult {
     each_database("comp_10_default_assigned_to_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -261,7 +262,8 @@ async fn comp_10_a_default_assigned_to_of_the_project_is_not_the_ais_choice() ->
             .send("GET", &format!("/api/v1/issues/{theirs}"), None)
             .await?;
         let default = by_person.body["issue"]["assigned_to"].clone();
-        // The question names nobody; the proposal is shown and the new issue gets the same default.
+        // The question names nobody and the proposal asks for nobody; the new issue gets the same
+        // default as the one a person made, whoever that is (or nobody).
         let made = ask_and_apply(
             &rig,
             &mut ada,

@@ -37,6 +37,7 @@ export { addOverlayHost, type OverlayHost } from "./overlay-hosts.ts";
 export {
   closeAssistantPanel,
   openAssistantPanel,
+  useAssistantDocked,
   useAssistantPanelOpen,
 } from "./assistant-open.ts";
 export { useEscape } from "./use-escape.ts";

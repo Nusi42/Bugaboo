@@ -171,6 +171,7 @@ async fn ai_31_an_agent_never_saves_a_long_text_or_restores_an_issue() -> Outcom
         DeleteIssue {
             session_token: token(&world),
             issue: given.issue.to_string(),
+            version: None,
         },
     )
     .await?;

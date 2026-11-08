@@ -14,6 +14,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { limits } from "./assistant.ts";
+import { codePointsOf } from "./code-points.ts";
 
 export interface AskBoxProps {
   /** Sends the question. */
@@ -35,7 +36,12 @@ export function AskBox({ onAsk, isPending, isDisabled, error, answeredCount }: A
   const phone = useLayout() === "phone";
   // A question that was answered leaves the box empty; one that failed stays, to be sent again.
   const text = typed.after === answeredCount ? typed.text : "";
-  const tooLong = text.trim().length > limits.question;
+  const tooLong = codePointsOf(text.trim()) > limits.question;
+  const send = (
+    <SubmitButton isPending={isPending} isDisabled={isDisabled || tooLong} wide={phone}>
+      {t("assistant.ask")}
+    </SubmitButton>
+  );
   return (
     <Form
       onSubmit={() => {
@@ -62,9 +68,8 @@ export function AskBox({ onAsk, isPending, isDisabled, error, answeredCount }: A
           }}
         />
         <div {...partOf(part.row)}>
-          <SubmitButton isPending={isPending} isDisabled={isDisabled || tooLong} wide={phone}>
-            {t("assistant.ask")}
-          </SubmitButton>
+          {/* On a computer the button that sends stands at the end (R6); on a phone it fills the width. */}
+          {phone ? send : <span {...partOf(part.rowEnd)}>{send}</span>}
         </div>
       </div>
     </Form>

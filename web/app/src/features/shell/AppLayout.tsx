@@ -2,14 +2,13 @@ import { t } from "@bugaboo/messages";
 import {
   appLayoutLook,
   useAppearance,
-  useRoomForDock,
   useLayout,
   partOf,
   part,
   type LayoutMode,
 } from "@bugaboo/ui";
 
-import { useAssistantPanelOpen } from "./assistant-open.ts";
+import { useAssistantDocked } from "./assistant-open.ts";
 import { CONTENT_HREF } from "./content-id.ts";
 import { ShellColumn } from "./ShellColumn.tsx";
 import { ShellOverlays } from "./ShellOverlays.tsx";
@@ -39,15 +38,11 @@ export function AppLayout() {
   const { person, signOutProblem } = useShell();
   useAppearance();
   const computer = layout === "computer";
-  const assistantOpen = useAssistantPanelOpen();
-  const room = useRoomForDock();
+  const docked = useAssistantDocked();
   return (
     <div
       {...partOf(part.appLayout, {
-        variants: [
-          variantOf(layout, narrow),
-          assistantOpen && computer && room && appLayoutLook.assistantOpen,
-        ],
+        variants: [variantOf(layout, narrow), docked && appLayoutLook.assistantOpen],
       })}
     >
       <a {...partOf(part.skip)} href={CONTENT_HREF}>

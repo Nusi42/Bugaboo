@@ -25,6 +25,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::bodies::OptionalVersionParams;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -280,12 +281,13 @@ async fn save_comment(
     path = "/api/v1/comments/{comment}",
     operation_id = "deleteComment",
     tag = "comments",
-    params(("comment" = String, Path, description = "The ID of the comment.")),
+    params(("comment" = String, Path, description = "The ID of the comment."), OptionalVersionParams),
     responses(
         (status = 204, description = "The comment is in the trash."),
         NotSignedInAnswer,
         ForbiddenAnswer,
-        NotFoundAnswer
+        NotFoundAnswer,
+        ConflictAnswer
     )
 )]
 async fn delete_comment(
@@ -293,6 +295,7 @@ async fn delete_comment(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(comment): ApiPath<String>,
+    ApiQuery(params): ApiQuery<OptionalVersionParams>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .delete_comment(
@@ -300,6 +303,7 @@ async fn delete_comment(
             DeleteComment {
                 session_token,
                 comment: path_id::<CommentId>(&comment)?,
+                version: params.version,
             },
         )
         .await?;

@@ -32,6 +32,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::bodies::OptionalVersionParams;
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::workflows::status_in;
@@ -473,12 +474,13 @@ async fn save_issue_description(
     path = "/api/v1/issues/{issue}",
     operation_id = "deleteIssue",
     tag = "issues",
-    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
+    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue."), OptionalVersionParams),
     responses(
         (status = 204, description = "The issue is in the trash."),
         NotSignedInAnswer,
         ForbiddenAnswer,
-        NotFoundAnswer
+        NotFoundAnswer,
+        ConflictAnswer
     )
 )]
 async fn delete_issue(
@@ -486,6 +488,7 @@ async fn delete_issue(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(issue): ApiPath<String>,
+    ApiQuery(params): ApiQuery<OptionalVersionParams>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .delete_issue(
@@ -493,6 +496,7 @@ async fn delete_issue(
             DeleteIssue {
                 session_token,
                 issue,
+                version: params.version,
             },
         )
         .await?;

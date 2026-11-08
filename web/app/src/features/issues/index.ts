@@ -33,4 +33,4 @@ export {
   type IssueView,
 } from "./slots.ts";
 export { sendChange } from "./issue-requests.ts";
-export type { IssueValues } from "./issue-values.ts";
+export type { IssueRequestValues, IssueValues } from "./issue-values.ts";

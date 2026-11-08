@@ -16,8 +16,8 @@ mod registry;
 mod requests;
 
 pub use call::{
-    ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, ToolListing, ToolMode, ToolUndo, call_tool,
-    list_tools,
+    ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, ToolListing, ToolMode, ToolUndo, UndoKind,
+    call_tool, list_tools,
 };
 pub use inputs::*;
 pub use log::ToolCallStore;

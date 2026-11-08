@@ -22,18 +22,16 @@ export function AiAgreement({ setup }: { readonly setup: AiSetup }) {
     return <p {...partOf(part.muted)}>{t("ai-setup.agreement-not-needed")}</p>;
   }
   const provider = providerName(destination);
-  const confirmed = setup.agreement;
+  const confirmed =
+    setup.agreement_status === "confirmed" ? (setup.agreement ?? undefined) : undefined;
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.muted)}>{t("ai-setup.agreement-text", { provider })}</p>
-      {setup.agreement_status === "confirmed" && confirmed !== undefined && confirmed !== null ? (
-        <Alert tone={alertTone.success}>
-          {t("ai-setup.agreement-confirmed", {
-            person: personName(confirmed.confirmed_by),
-            at: formatDateTime(confirmed.confirmed_at),
-          })}
-        </Alert>
-      ) : (
+      <p {...partOf(part.muted)}>
+        {confirmed === undefined
+          ? t("ai-setup.agreement-text", { provider })
+          : t("ai-setup.agreement-text-confirmed", { provider })}
+      </p>
+      {confirmed === undefined ? (
         <div {...partOf(part.row)}>
           <ConfirmDialog
             triggerLabel={t("ai-setup.agreement-confirm")}
@@ -46,6 +44,13 @@ export function AiAgreement({ setup }: { readonly setup: AiSetup }) {
             }}
           />
         </div>
+      ) : (
+        <Alert tone={alertTone.success}>
+          {t("ai-setup.agreement-confirmed", {
+            person: personName(confirmed.confirmed_by),
+            at: formatDateTime(confirmed.confirmed_at),
+          })}
+        </Alert>
       )}
       {confirm.isError ? <Alert tone={alertTone.danger}>{messageOf(confirm.error)}</Alert> : null}
     </div>

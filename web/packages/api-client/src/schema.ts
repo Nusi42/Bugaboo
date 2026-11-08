@@ -5009,8 +5009,8 @@ export interface components {
       undo?: components["schemas"]["AppliedUndoBody"] | null;
       /**
        * Format: int64
-       * @description The version the issue is at after the change, when it is on an issue. *Undo* of fields is
-       *     made on this version.
+       * @description The version the issue is at after the change, as the write gave it back, when it is on an
+       *     issue. *Undo* of fields is made on this version.
        */
       version?: number | null;
       /** @description The same fields in the words of the history. */
@@ -5020,11 +5020,12 @@ export interface components {
     AppliedUndoBody: {
       /** @description Its ID; empty for the timer. */
       id: string;
-      /** @description What was made: `comment`, `time-entry`, `issue` or `timer`. */
-      kind: string;
+      /** @description What was made. */
+      kind: components["schemas"]["UndoKind"];
       /**
        * Format: int64
-       * @description The version it was made at: it is taken away only while it is still at this version.
+       * @description The version it was made at, as the write gave it back: it is taken away only while it is
+       *     still at this version (the delete routes and the timer take it as `version`).
        */
       version: number;
     };
@@ -10816,6 +10817,11 @@ export interface components {
        */
       skipped_count: number;
     };
+    /**
+     * @description What an *Apply* made, and so what *Undo* takes away.
+     * @enum {string}
+     */
+    UndoKind: "comment" | "time-entry" | "issue" | "timer";
     /** @description What *Undo the run* is applied with. */
     UndoRunBody: {
       /** @description The version of the preview the person looked at. */
@@ -13498,7 +13504,13 @@ export interface operations {
   };
   deleteComment: {
     parameters: {
-      query?: never;
+      query?: {
+        /**
+         * @description The version of the record the person looked at; a change made meanwhile stops this one.
+         *     Without it, the record is removed whatever its version.
+         */
+        version?: number;
+      };
       header?: never;
       path: {
         /** @description The ID of the comment. */
@@ -13518,6 +13530,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -14937,7 +14950,13 @@ export interface operations {
   };
   deleteIssue: {
     parameters: {
-      query?: never;
+      query?: {
+        /**
+         * @description The version of the record the person looked at; a change made meanwhile stops this one.
+         *     Without it, the record is removed whatever its version.
+         */
+        version?: number;
+      };
       header?: never;
       path: {
         /** @description The readable ID (WEB-142) or the internal ID of the issue. */
@@ -14957,6 +14976,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

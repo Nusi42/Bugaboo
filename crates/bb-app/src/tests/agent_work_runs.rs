@@ -272,6 +272,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
         DeleteIssue {
             session_token: given.key.clone(),
             issue: issue_id.to_string(),
+            version: None,
         },
     )
     .await;

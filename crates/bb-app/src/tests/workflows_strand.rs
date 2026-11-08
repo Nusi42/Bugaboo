@@ -144,6 +144,7 @@ async fn wf_03_an_issue_back_from_the_trash_starts_again_in_the_starting_status(
         DeleteIssue {
             session_token: admin.clone(),
             issue: address.clone(),
+            version: None,
         },
     )
     .await?;

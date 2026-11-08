@@ -15,29 +15,33 @@ export function AiSwitches({ setup }: { readonly setup: AiSetup }) {
   const outside = setup.agreement_status !== "not-needed";
   return (
     <div {...partOf(part.stack)}>
-      <div {...partOf(part.column)}>
-        <Switch
-          label={t("setting.ai.enabled.name")}
-          isSelected={setup.enabled}
-          onChange={(enabled) => {
-            change.mutate({ body: { enabled } });
-          }}
-        />
-        <p {...partOf(part.muted)}>{t("setting.ai.enabled.help")}</p>
+      <div {...partOf(part.box)}>
+        <div {...partOf(part.settingsControl)}>
+          <Switch
+            label={t("setting.ai.enabled.name")}
+            isSelected={setup.enabled}
+            onChange={(enabled) => {
+              change.mutate({ body: { enabled } });
+            }}
+          />
+          <p {...partOf(part.settingsHelp)}>{t("setting.ai.enabled.help")}</p>
+        </div>
         {waitsForAgreement ? (
           <Alert tone={alertTone.warning}>{t("ai-setup.switch-needs-agreement")}</Alert>
         ) : null}
       </div>
       {outside ? (
-        <div {...partOf(part.column)}>
-          <Switch
-            label={t("setting.ai.send-names.name")}
-            isSelected={setup.send_names}
-            onChange={(sendNames) => {
-              change.mutate({ body: { send_names: sendNames } });
-            }}
-          />
-          <p {...partOf(part.muted)}>{t("setting.ai.send-names.help")}</p>
+        <div {...partOf(part.box)}>
+          <div {...partOf(part.settingsControl)}>
+            <Switch
+              label={t("setting.ai.send-names.name")}
+              isSelected={setup.send_names}
+              onChange={(sendNames) => {
+                change.mutate({ body: { send_names: sendNames } });
+              }}
+            />
+            <p {...partOf(part.settingsHelp)}>{t("setting.ai.send-names.help")}</p>
+          </div>
         </div>
       ) : null}
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}

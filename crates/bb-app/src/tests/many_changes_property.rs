@@ -168,6 +168,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
                 DeleteIssue {
                     session_token: admin.clone(),
                     issue: issue.to_string(),
+                    version: None,
                 },
             )
             .await

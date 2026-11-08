@@ -25,6 +25,15 @@ export interface IssueValues {
 }
 
 /**
+ * What the request of a change names: a status by its key and people by their IDs only, so a caller
+ * that holds no more (the way back of the assistant) never has to make up a name or a group.
+ */
+export interface IssueRequestValues extends Omit<IssueValues, "status" | "assignedTo"> {
+  readonly status?: Pick<Schema<"StatusRef">, "key">;
+  readonly assignedTo?: readonly Pick<NamedPerson, "id">[];
+}
+
+/**
  * The name of a row of the Details that saves in place with *Saved* and *Undo* in its own row (R7):
  * the word of a built-in field (`priority`, `assigned-to`) or the ID of an own field. The title and
  * the status say it elsewhere.

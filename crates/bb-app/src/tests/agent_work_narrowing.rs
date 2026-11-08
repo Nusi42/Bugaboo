@@ -118,6 +118,7 @@ async fn ai_31_an_agent_edits_and_deletes_a_comment_only_when_it_was_given_comme
         DeleteComment {
             session_token: without.key.clone(),
             comment: comment.id,
+            version: None,
         },
     )
     .await;
@@ -147,6 +148,7 @@ async fn ai_31_an_agent_with_comments_given_deletes_the_comment() -> Outcome {
         DeleteComment {
             session_token: given.key.clone(),
             comment: comment.id,
+            version: None,
         },
     )
     .await?;

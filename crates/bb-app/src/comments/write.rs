@@ -367,7 +367,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// # Errors
 /// `resource.not-found` for a comment that does not exist, is in the trash already or whose issue
 /// the person may not see, `access.forbidden` for a comment of someone else without the right to
-/// change issues.
+/// change issues, `edit.version-changed` when a version is given and somebody changed the comment
+/// since (checked in the same transaction).
 pub async fn delete_comment<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteComment,
@@ -377,9 +378,16 @@ pub async fn delete_comment<S: AuthStore>(
         .await?;
     let (id, now, why) = (plan.comment.id, ctx.now(), Why::default());
     let stopped = why.clone();
+    let expected = input.version;
     ctx.store()
         .record_change(&plan.event, move |transaction| {
             Box::pin(async move {
+                if let Some(expected) = expected {
+                    let stored = S::comment_in(transaction, id).await?;
+                    if stored.is_some_and(|stored| stored.version != expected) {
+                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                    }
+                }
                 if S::set_comment_deleted(transaction, id, Some(now)).await? {
                     Ok(())
                 } else {
@@ -388,7 +396,13 @@ pub async fn delete_comment<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::NotFound).about(
+                &entity(RecordKind::Comment, id),
+                Place::Project(plan.issue.project),
+                plan.actor.person.id,
+            )
+        })?;
     Ok(Done)
 }
 

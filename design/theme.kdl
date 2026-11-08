@@ -1952,7 +1952,7 @@ part "overlay.modal[variant=top]" {
 // of a window or of a question, the list of people, the help of the search, the body of a sheet of a phone and the offers
 // of Advanced search and the body of the side panel (L6, L7). The scroll position drives them, where the browser has scroll timelines.
 // A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
-part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" "assistant-body::before" {
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -1960,7 +1960,7 @@ part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scrol
     }
 }
 
-part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" "assistant-body::after" {
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
@@ -15298,6 +15298,45 @@ part "assistant-body" {
     padding-top "$space-2"
 }
 
+// The turns fade out at an edge that has more behind it: from the color of the panel to nothing, there only while the turns are
+// scrolled away from that edge (the scroll position drives it, as for every edge shadow). The line of no height stays at the edge and the
+// fade hangs from it over the turns; the gap of the column is taken back, so the fade adds no room.
+mixin "edge-fade" {
+    content "\"\""
+    position sticky
+    z-index "$z-raised"
+    display block
+    flex none
+    height "$space-4"
+    opacity 0
+    pointer-events none
+    animation-fill-mode both
+    animation-timing-function linear
+    animation-timeline "scroll(nearest block)"
+}
+
+part "assistant-body::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-fade"
+        top 0
+        margin-bottom "calc(-1 * ($space-4 + $space-3))"
+        background "linear-gradient(to bottom, $bg-raised, transparent)"
+        animation-name "cue-in"
+        animation-range "0% $space-3"
+    }
+}
+
+part "assistant-body::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-fade"
+        bottom 0
+        margin-top "calc(-1 * ($space-4 + $space-3))"
+        background "linear-gradient(to top, $bg-raised, transparent)"
+        animation-name "cue-out"
+        animation-range "calc(100% - $space-3) 100%"
+    }
+}
+
 part "assistant-ask" {
     display flex
     flex none
@@ -15398,4 +15437,20 @@ part "proposal-change[variant=values]" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+    // The name of the field and both values are one size.
+    font-size "$fs-ui"
+}
+
+// ───────────── The page that sets AI up (comes last, after the rules of alert and button it overrides) ─────────────
+
+// One text size for every note on the page: the notes of a card, the agreement and the warning of the switch are all the size of a
+// hint (14 on a computer), not one of them larger than the others.
+part "ai-page alert" {
+    font-size "$fs-base"
+}
+
+// On a phone every button of a row of the page is as wide as the screen (the main one and the way out beside it), one rule for the page.
+part "app-layout[variant=phone] ai-page row > button" "app-layout[variant=phone] ai-page row > row.end > button" {
+    flex "1 1 100%"
+    width "100%"
 }

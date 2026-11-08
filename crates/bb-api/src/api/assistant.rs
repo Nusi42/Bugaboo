@@ -8,7 +8,7 @@ use bb_app::ai::assistant::{
     Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,
     AssistantStatusQuery, ChatTurn, LookingAt, Proposal,
 };
-use bb_app::ai::tools::ProposedChange;
+use bb_app::ai::tools::{ProposedChange, UndoKind};
 use bb_core::ai::{ChatFrom, Destination, LookingAtKind};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -160,8 +160,8 @@ pub(crate) struct AppliedProposalBody {
     /// issue or the running timer.
     #[serde(skip_serializing_if = "Option::is_none")]
     undo: Option<AppliedUndoBody>,
-    /// The version the issue is at after the change, when it is on an issue. *Undo* of fields is
-    /// made on this version.
+    /// The version the issue is at after the change, as the write gave it back, when it is on an
+    /// issue. *Undo* of fields is made on this version.
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<i64>,
 }
@@ -169,11 +169,12 @@ pub(crate) struct AppliedProposalBody {
 /// What *Undo* of an applied change takes away.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AppliedUndoBody {
-    /// What was made: `comment`, `time-entry`, `issue` or `timer`.
-    kind: String,
+    /// What was made.
+    kind: UndoKind,
     /// Its ID; empty for the timer.
     id: String,
-    /// The version it was made at: it is taken away only while it is still at this version.
+    /// The version it was made at, as the write gave it back: it is taken away only while it is
+    /// still at this version (the delete routes and the timer take it as `version`).
     version: i64,
 }
 
@@ -189,7 +190,7 @@ impl From<&Applied> for AppliedProposalBody {
                 .collect(),
             words: applied.words.iter().map(FieldChangeBody::from).collect(),
             undo: applied.undo.as_ref().map(|undo| AppliedUndoBody {
-                kind: undo.kind.clone(),
+                kind: undo.kind,
                 id: undo.id.clone(),
                 version: undo.version,
             }),

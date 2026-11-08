@@ -3634,6 +3634,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version of the record the person looked at; a change made meanwhile stops this one.\nWithout it, the record is removed whatever its version.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -3648,6 +3658,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -6249,6 +6262,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version of the record the person looked at; a change made meanwhile stops this one.\nWithout it, the record is removed whatever its version.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -6263,6 +6286,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -18126,7 +18152,7 @@
           "version": {
             "type": ["integer", "null"],
             "format": "int64",
-            "description": "The version the issue is at after the change, when it is on an issue. *Undo* of fields is\nmade on this version."
+            "description": "The version the issue is at after the change, as the write gave it back, when it is on an\nissue. *Undo* of fields is made on this version."
           },
           "words": {
             "type": "array",
@@ -18147,13 +18173,13 @@
             "description": "Its ID; empty for the timer."
           },
           "kind": {
-            "type": "string",
-            "description": "What was made: `comment`, `time-entry`, `issue` or `timer`."
+            "$ref": "#/components/schemas/UndoKind",
+            "description": "What was made."
           },
           "version": {
             "type": "integer",
             "format": "int64",
-            "description": "The version it was made at: it is taken away only while it is still at this version."
+            "description": "The version it was made at, as the write gave it back: it is taken away only while it is\nstill at this version (the delete routes and the timer take it as `version`)."
           }
         }
       },
@@ -29689,6 +29715,11 @@
             "minimum": 0
           }
         }
+      },
+      "UndoKind": {
+        "type": "string",
+        "description": "What an *Apply* made, and so what *Undo* takes away.",
+        "enum": ["comment", "time-entry", "issue", "timer"]
       },
       "UndoRunBody": {
         "type": "object",

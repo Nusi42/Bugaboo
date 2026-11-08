@@ -1,3 +1,4 @@
+import { useLayout, useRoomForDock } from "@bugaboo/ui";
 import { useSyncExternalStore } from "react";
 
 import { createStore } from "../../shared/store.ts";
@@ -22,4 +23,16 @@ export function closeAssistantPanel(): void {
 /** Whether the assistant panel is open. */
 export function useAssistantPanelOpen(): boolean {
   return useSyncExternalStore(open.subscribe, open.snapshot);
+}
+
+/**
+ * Whether the assistant panel is open and docked beside the page: on a computer with room for it.
+ * Narrower, it is a layer over the page; on a phone, a whole screen. The one answer for the frame of
+ * the page, the panel and the button that opens it.
+ */
+export function useAssistantDocked(): boolean {
+  const isOpen = useAssistantPanelOpen();
+  const computer = useLayout() === "computer";
+  const room = useRoomForDock();
+  return isOpen && computer && room;
 }

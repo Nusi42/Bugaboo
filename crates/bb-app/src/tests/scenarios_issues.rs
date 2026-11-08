@@ -187,6 +187,7 @@ pub(crate) async fn delete_issue_scenario(world: &World) -> Added {
             DeleteIssue {
                 session_token: token(world),
                 issue: issue.to_string(),
+                version: None,
             },
         ),
     )
@@ -201,6 +202,7 @@ pub(crate) async fn restore_issue_scenario(world: &World) -> Added {
         DeleteIssue {
             session_token: token(world),
             issue: issue.to_string(),
+            version: None,
         },
     )
     .await

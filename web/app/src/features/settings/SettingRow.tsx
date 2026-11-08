@@ -18,6 +18,8 @@ export interface SettingRowProps {
   readonly actions: SettingActions;
   /** The page's own control for this setting, if it has one. */
   readonly control?: ControlRenderer | undefined;
+  /** The page's own explanation of the setting, for the state it is in, instead of the registry's. */
+  readonly help?: string | undefined;
 }
 
 /** The value in words, for a setting that cannot be changed here. */
@@ -49,16 +51,18 @@ function Locked({ setting }: { readonly setting: Setting }) {
  */
 function WithHint({
   setting,
+  help,
   children,
 }: {
   readonly setting: Setting;
+  readonly help?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
     <div {...partOf(part.stack)}>
       <div {...partOf(part.settingsControl)}>
         {children}
-        <p {...partOf(part.settingsHelp)}>{wordsOf(setting.help_key)}</p>
+        <p {...partOf(part.settingsHelp)}>{help ?? wordsOf(setting.help_key)}</p>
       </div>
       {sourceNote(setting) === undefined ? null : (
         <p {...partOf(part.settingsSource)}>{sourceNote(setting)}</p>
@@ -112,7 +116,7 @@ function RowActions({
  * administrator on the organization's level, the lock. A setting the organization locked is
  * shown read only and says so.
  */
-export function SettingRow({ setting, actions, control }: SettingRowProps) {
+export function SettingRow({ setting, actions, control, help }: SettingRowProps) {
   const lockedBelow = isLockedBelow(setting, actions);
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
@@ -130,7 +134,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
           source={sourceNote(setting)}
         />
       ) : (
-        <WithHint setting={setting}>
+        <WithHint setting={setting} help={help}>
           {lockedBelow ? (
             <Locked setting={setting} />
           ) : (

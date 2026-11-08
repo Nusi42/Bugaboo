@@ -5,6 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { ada } from "./accounts.ts";
 import { openSession } from "./api.ts";
 import { type FakeModel } from "./fake-model.ts";
+import { layoutOf } from "./layout.ts";
 import { box, dialog } from "./quick-search.ts";
 import { type Instance } from "./server.ts";
 
@@ -177,4 +178,58 @@ export async function markFieldNeverSent(server: Instance, field: string): Promi
     body: { marked: true, version: 0 },
   });
   await admin.dispose();
+}
+
+/** An administrator switches AI off for one project, so the project has no assistant while the organization has it. */
+export async function switchProjectAiOff(server: Instance, project: string): Promise<void> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PUT("/api/v1/projects/{project}/ai", {
+    params: { path: { project } },
+    body: { enabled: false },
+  });
+  await admin.dispose();
+}
+
+/** The comments of an issue as safe HTML, as the history has them now (a comment in the trash is not in it). */
+export async function commentTexts(server: Instance, key: string): Promise<readonly string[]> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  const found = dataOf(
+    await admin.client.GET("/api/v1/issues/{issue}/history", {
+      params: { path: { issue: key }, query: { tab: "comments", fields: "comment,html" } },
+    }),
+  );
+  await admin.dispose();
+  const texts: string[] = [];
+  for (const each of found.items) {
+    texts.push(JSON.stringify(each.html ?? ""));
+  }
+  return texts;
+}
+
+/** The button that closes the open panel: *Close* on a computer and a tablet, *Back* on a phone (UX §6.3). */
+export function closePanelButton(page: Page) {
+  const name = layoutOf(page) === "phone" ? t("shell.back") : t("assistant.close");
+  return assistantPanel(page).getByRole("button", { name, exact: true });
+}
+
+/** The card of a proposed change in the open panel. */
+export function proposalCard(page: Page) {
+  return assistantPanel(page).getByRole("region", { name: t("assistant.card.title") });
+}
+
+/** Chooses the outside provider on the set-up page and saves it. */
+export async function saveOutsideProvider(page: Page): Promise<void> {
+  await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
+    label: t("ai.provider.anthropic"),
+  });
+  await page.getByLabel(t("setting.ai.model.name"), { exact: true }).fill("claude-test");
+  await page.getByLabel(t("ai-setup.password")).fill(ada.password);
+  await page.getByRole("button", { name: t("ai-setup.save") }).click();
+  await expect(page.getByText(t("ai-setup.saved"))).toBeVisible();
 }

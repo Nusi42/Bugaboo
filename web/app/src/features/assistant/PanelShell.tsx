@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Overlay, overlayEdge, partOf, part, useLayout, useRoomForDock } from "@bugaboo/ui";
+import { Overlay, overlayEdge, partOf, part, useLayout } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Dialog } from "react-aria-components";
 
-import { useEscape } from "../shell/index.ts";
+import { useAssistantDocked, useEscape } from "../shell/index.ts";
 
 /**
  * Where the panel stands: beside the page on a computer, which the page does not dim and which stays
@@ -18,9 +18,9 @@ export function PanelShell({
   readonly children: ReactNode;
 }) {
   const layout = useLayout();
-  const room = useRoomForDock();
+  const docked = useAssistantDocked();
   const dock = useEscape<HTMLDivElement>(onClose);
-  if (layout === "computer" && room) {
+  if (docked) {
     return (
       <div ref={dock} {...partOf(part.assistantDock)}>
         <Dialog aria-label={t("assistant.title")} {...partOf(part.assistantDockBody)}>

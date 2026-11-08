@@ -115,6 +115,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 DeleteIssue {
                     session_token: token,
                     issue: target.issue.clone(),
+                    version: None,
                 },
             )
             .await
