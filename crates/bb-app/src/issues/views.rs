@@ -16,7 +16,7 @@ use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_core::workflow::WorkflowContent;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
-use super::types::{IssueTypeRef, IssueView};
+use super::types::{AgentMark, IssueTypeRef, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
@@ -45,6 +45,9 @@ pub(crate) struct IssueViews {
     /// for the page; an issue not in it has none.
     /// `None` when the labels were not asked for.
     labels: Option<Arc<HashMap<IssueId, Vec<LabelRef>>>>,
+    /// The agent that works on each issue of the page, when the page asked for it; an issue not
+    /// in it has none.
+    agents: Option<Arc<HashMap<IssueId, AgentMark>>>,
     /// The minutes spent on the issues of the page, by issue, when the page asked for them; an
     /// issue not in it has none. The issue page reads them with its time (`time/totals.rs`).
     spent: Option<Arc<HashMap<IssueId, Minutes>>>,
@@ -58,6 +61,8 @@ pub(crate) struct ReadOnRequest {
     pub(crate) people: bool,
     /// The labels of each issue.
     pub(crate) labels: bool,
+    /// The agent that works on each issue.
+    pub(crate) agent: bool,
     /// The minutes spent on each issue.
     pub(crate) time: bool,
 }
@@ -90,6 +95,12 @@ impl IssueViews {
     /// Gives the views the minutes spent on the issues of the page, when they were asked for.
     fn with_spent(mut self, spent: Option<&Arc<HashMap<IssueId, Minutes>>>) -> Self {
         self.spent = spent.map(Arc::clone);
+        self
+    }
+
+    /// Gives the views the agents that work on the issues of the page.
+    pub(crate) fn with_agents(mut self, agents: Arc<HashMap<IssueId, AgentMark>>) -> Self {
+        self.agents = Some(agents);
         self
     }
 
@@ -130,6 +141,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             None
         };
+        // One statement for the open work of the whole page, one for the names of its agents.
+        let agents = if extras.agent {
+            Some(Arc::new(self.agent_marks_of_page(actor, &ids).await?))
+        } else {
+            None
+        };
         // One statement for the minutes spent on the whole page, when they are asked for.
         let spent = if extras.time {
             Some(Arc::new(
@@ -158,6 +175,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .with_spent(spent.as_ref());
             if let Some(labels) = &labels {
                 made = made.with_labels(Arc::clone(labels));
+            }
+            if let Some(agents) = &agents {
+                made = made.with_agents(Arc::clone(agents));
             }
             if !extras.people {
                 made = made.without_people();
@@ -212,8 +232,54 @@ impl<S: AuthStore> Ctx<'_, S> {
             workflows: HashMap::new(),
             show_people: true,
             labels: None,
+            agents: None,
             spent: None,
         })
+    }
+
+    /// The agent that works on each of these issues and where its work is, the newest open work
+    /// of each: the work of all of them in one statement and the agents in another (PERF-N1). An
+    /// agent sees its own work only.
+    ///
+    /// # Errors
+    /// When the store fails.
+    pub(crate) async fn agent_marks_of_page(
+        &self,
+        actor: &Actor,
+        ids: &[IssueId],
+    ) -> Result<HashMap<IssueId, AgentMark>, AppError> {
+        let internal = |error| internal::<S>(&error);
+        let only = actor.agent();
+        let works: Vec<_> = self
+            .store()
+            .open_work_on_issues(ids.to_vec())
+            .await
+            .map_err(internal)?
+            .into_iter()
+            .filter(|work| only.is_none_or(|agent| work.agent == agent))
+            .collect();
+        let mut found = HashMap::new();
+        if works.is_empty() {
+            return Ok(found);
+        }
+        let mut agent_ids: Vec<_> = works.iter().map(|work| work.agent).collect();
+        agent_ids.sort_unstable();
+        agent_ids.dedup();
+        let agents = self
+            .store()
+            .agents_by_ids(agent_ids)
+            .await
+            .map_err(internal)?;
+        for work in &works {
+            if let Some(agent) = agents.iter().find(|agent| agent.id == work.agent) {
+                // Newest first: the first one of an issue is the one shown.
+                found.entry(work.issue).or_insert_with(|| AgentMark {
+                    name: agent.name.clone(),
+                    state: work.state,
+                });
+            }
+        }
+        Ok(found)
     }
 
     /// The labels on each of these issues, in the order they were put there: the links of all of
@@ -389,6 +455,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .labels
                 .as_ref()
                 .map(|page| page.get(&issue.id).cloned().unwrap_or_default()),
+            agent_work: views
+                .agents
+                .as_ref()
+                .and_then(|page| page.get(&issue.id).cloned()),
             version: issue.version,
         })
     }

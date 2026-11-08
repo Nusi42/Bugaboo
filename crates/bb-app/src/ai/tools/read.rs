@@ -118,6 +118,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             cursor: None,
             limit: limit.unwrap_or(ISSUES_DEFAULT),
             labels: false,
+            agent: false,
             time: false,
         };
         let page = search_page_within(self, actor, &query, true, Some(withheld)).await?;

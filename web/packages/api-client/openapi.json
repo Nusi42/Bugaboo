@@ -17973,6 +17973,21 @@
           }
         }
       },
+      "AgentMarkBody": {
+        "type": "object",
+        "description": "The agent that works on an issue and where its work is: the mark of a row of a list.",
+        "required": ["name", "state"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the agent."
+          },
+          "state": {
+            "$ref": "#/components/schemas/AgentWorkState",
+            "description": "Where its work is. It is not the status of the issue."
+          }
+        }
+      },
       "AgentState": {
         "type": "string",
         "description": "Whether an agent may act.",
@@ -18578,6 +18593,10 @@
               "$ref": "#/components/schemas/ResultBody"
             },
             "description": "What it attached."
+          },
+          "run": {
+            "type": ["string", "null"],
+            "description": "The run of its changes; a person who may open runs reads and undoes it there."
           },
           "started_at": {
             "type": "string",
@@ -21984,8 +22003,15 @@
       "IssueAgentWorkBody": {
         "type": "object",
         "description": "The agent work on an issue.",
-        "required": ["worked_on_by", "work", "proposals", "truncated"],
+        "required": ["worked_on_by", "work", "proposals", "truncated", "brief_missing"],
         "properties": {
+          "brief_missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BriefPart"
+            },
+            "description": "The parts of a brief the issue lacks now, so a hand-over can say it before it is made."
+          },
           "proposals": {
             "type": "array",
             "items": {
@@ -22088,6 +22114,17 @@
         "type": "object",
         "description": "An issue: the fields that can be asked for. An answer holds only those that were asked for (a\nlist holds a few by default; one issue holds all) and that the person may see: a field that is\nhidden from them is left out, and asking for it fails like asking for one that does not exist.",
         "properties": {
+          "agent_work": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentMarkBody",
+                "description": "The agent that works on it now and where its work is; left out while no agent works on it.\nOnly a list that asks for it reads it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "assigned_to": {
             "type": ["array", "null"],
             "items": {
@@ -30110,6 +30147,13 @@
           "id",
           "hand_over",
           "agent",
+          "agent_name",
+          "agent_person",
+          "handed_over_by",
+          "handed_over_at",
+          "ends_at",
+          "budget_attempts",
+          "plan_needs_approval",
           "state",
           "open",
           "brief",
@@ -30129,6 +30173,14 @@
             "type": "string",
             "description": "The agent."
           },
+          "agent_name": {
+            "type": "string",
+            "description": "The name of the agent."
+          },
+          "agent_person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person responsible for the agent, as *Who sees people* says for the reader."
+          },
           "attempts": {
             "type": "array",
             "items": {
@@ -30143,9 +30195,29 @@
             },
             "description": "The note of the brief, then the answers to the questions."
           },
+          "budget_attempts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most attempts on the issue."
+          },
+          "budget_cost": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most cost in cents the agent may report, when limited."
+          },
+          "budget_minutes": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most minutes the agent may report, when limited."
+          },
           "choose_next_status": {
             "type": "boolean",
             "description": "Whether the issue keeps its status after an accept by itself and a person chooses the next\none."
+          },
+          "ends_at": {
+            "type": "string",
+            "description": "When the hand-over ends.",
+            "format": "date-time"
           },
           "gave_up": {
             "type": ["string", "null"],
@@ -30155,6 +30227,15 @@
             "type": "string",
             "description": "The hand-over."
           },
+          "handed_over_at": {
+            "type": "string",
+            "description": "When the issue was handed over.",
+            "format": "date-time"
+          },
+          "handed_over_by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who handed the issue over, as *Who sees people* says for the reader."
+          },
           "id": {
             "type": "string",
             "description": "The ID of the work."
@@ -30162,6 +30243,10 @@
           "open": {
             "type": "boolean",
             "description": "Whether the hand-over still gives work."
+          },
+          "plan_needs_approval": {
+            "type": "boolean",
+            "description": "Whether each attempt waits for *Approve plan*."
           },
           "questions": {
             "type": "array",

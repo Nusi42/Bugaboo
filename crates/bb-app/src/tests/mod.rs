@@ -14,6 +14,7 @@ mod agent_work_review;
 mod agent_work_rules;
 mod agent_work_runs;
 mod agent_work_scenarios;
+mod agent_work_screen;
 mod agent_work_writes;
 mod agents;
 mod agents_more;

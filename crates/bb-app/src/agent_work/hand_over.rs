@@ -62,7 +62,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What the brief lacks for each issue: the description, *Steps to reproduce* and *Done when*,
     /// each when it is empty and the reader may see it. It is told and never stops a hand-over.
     /// The values of all the issues are read together (PERF-N1).
-    async fn briefs_missing(
+    pub(super) async fn briefs_missing(
         &self,
         issues: &[(Issue, std::sync::Arc<bb_policy::Evaluation>)],
     ) -> Result<Vec<Vec<BriefPart>>, AppError> {

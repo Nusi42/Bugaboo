@@ -135,6 +135,8 @@ pub(crate) struct AttemptBody {
     pub(super) ended_at: Option<String>,
     /// What it attached.
     pub(super) results: Vec<ResultBody>,
+    /// The run of its changes; a person who may open runs reads and undoes it there.
+    pub(super) run: Option<String>,
 }
 
 impl From<&AttemptView> for AttemptBody {
@@ -149,6 +151,7 @@ impl From<&AttemptView> for AttemptBody {
             started_at: attempt.started_at.to_string(),
             ended_at: attempt.ended_at.map(|at| at.to_string()),
             results: attempt.results.iter().map(ResultBody::from).collect(),
+            run: attempt.run.map(|run| run.to_string()),
         }
     }
 }
@@ -224,6 +227,24 @@ pub(crate) struct WorkBody {
     pub(super) hand_over: String,
     /// The agent.
     pub(super) agent: String,
+    /// The name of the agent.
+    pub(super) agent_name: String,
+    /// The person responsible for the agent, as *Who sees people* says for the reader.
+    pub(super) agent_person: PersonRef,
+    /// Who handed the issue over, as *Who sees people* says for the reader.
+    pub(super) handed_over_by: PersonRef,
+    /// When the issue was handed over.
+    pub(super) handed_over_at: String,
+    /// When the hand-over ends.
+    pub(super) ends_at: String,
+    /// The most attempts on the issue.
+    pub(super) budget_attempts: i64,
+    /// The most minutes the agent may report, when limited.
+    pub(super) budget_minutes: Option<i64>,
+    /// The most cost in cents the agent may report, when limited.
+    pub(super) budget_cost: Option<i64>,
+    /// Whether each attempt waits for *Approve plan*.
+    pub(super) plan_needs_approval: bool,
     /// Where the work is. It is not the status of the issue.
     pub(super) state: AgentWorkState,
     /// Whether the hand-over still gives work.
@@ -255,6 +276,15 @@ impl From<&WorkView> for WorkBody {
             id: work.id.to_string(),
             hand_over: work.hand_over.to_string(),
             agent: work.agent.to_string(),
+            agent_name: work.agent_name.clone(),
+            agent_person: work.agent_person.clone(),
+            handed_over_by: work.handed_over_by.clone(),
+            handed_over_at: work.handed_over_at.to_string(),
+            ends_at: work.ends_at.to_string(),
+            budget_attempts: work.budget_attempts,
+            budget_minutes: work.budget_minutes,
+            budget_cost: work.budget_cost,
+            plan_needs_approval: work.plan_needs_approval,
             state: work.state,
             open: work.open,
             brief: work.brief.clone(),
@@ -342,6 +372,8 @@ pub(crate) struct IssueAgentWorkBody {
     pub(super) proposals: Vec<ProposalBody>,
     /// Whether the lists were cut at the most an issue shows.
     pub(super) truncated: bool,
+    /// The parts of a brief the issue lacks now, so a hand-over can say it before it is made.
+    pub(super) brief_missing: Vec<BriefPart>,
 }
 
 impl Masked for IssueAgentWorkBody {}
@@ -353,6 +385,7 @@ impl From<&IssueAgentWork> for IssueAgentWorkBody {
             work: all.work.iter().map(WorkBody::from).collect(),
             proposals: all.proposals.iter().map(ProposalBody::from).collect(),
             truncated: all.truncated,
+            brief_missing: all.brief_missing.clone(),
         }
     }
 }

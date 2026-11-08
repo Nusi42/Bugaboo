@@ -191,6 +191,8 @@ pub struct IssuesQuery {
     pub assigned_to: bool,
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
+    /// Whether the agent that works on each issue is wanted: read only then, once for the page.
+    pub agent: bool,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
     /// spent is read only then, once for the page.
     pub time: bool,
@@ -198,6 +200,17 @@ pub struct IssuesQuery {
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
     pub limit: u32,
+}
+
+/// The agent that works on an issue and where its work is, for the mark of a row of a list.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
+pub struct AgentMark {
+    /// The name of the agent.
+    #[masked(open)]
+    pub name: String,
+    /// Where its work is.
+    #[masked(open)]
+    pub state: bb_core::agent_work::AgentWorkState,
 }
 
 /// An issue type as a small reference: what the line of an issue needs.
@@ -297,6 +310,10 @@ pub struct IssueView {
     /// whose level for *Labels* is *Hidden* is not shown them.
     #[masked(field = "labels")]
     pub labels: Option<Vec<LabelRef>>,
+    /// The agent that works on it now and where its work is; `None` when it was not read (only a
+    /// list or a search that asks for it reads it) or when no agent works on it (AI-33).
+    #[masked(nested)]
+    pub agent_work: Option<AgentMark>,
     /// Counts up with every change; a change is made on the version that was looked at.
     #[masked(open)]
     pub version: i64,

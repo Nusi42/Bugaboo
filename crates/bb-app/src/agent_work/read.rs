@@ -1,6 +1,8 @@
 //! Reading the agent work on an issue (AI-33): who works on it, what the brief says, the attempts,
 //! the questions and the reviews.
 
+use std::sync::Arc;
+
 use bb_core::agent_records::{HandOver, IssueWork, ProposalState};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext};
@@ -37,9 +39,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             .details_of_works(works.to_vec())
             .await
             .map_err(|error| internal::<S>(&error))?;
+        let mut agent_ids: Vec<bb_core::id::AgentId> =
+            works.iter().map(|work| work.agent).collect();
+        agent_ids.sort_unstable();
+        agent_ids.dedup();
+        let agents = self
+            .store()
+            .agents_by_ids(agent_ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
         let mut views = Vec::with_capacity(works.len());
         for work in works {
-            views.push(self.work_view_in(viewer, work, &details).await?);
+            views.push(self.work_view_in(viewer, work, &details, &agents).await?);
         }
         Ok(views)
     }
@@ -49,12 +60,27 @@ impl<S: AuthStore> Ctx<'_, S> {
         viewer: &Evaluation,
         work: &IssueWork,
         details: &WorkDetails,
+        agents: &[bb_core::agent::Agent],
     ) -> Result<WorkView, AppError> {
         let hand_over: &HandOver = details
             .hand_overs
             .iter()
             .find(|found| found.id == work.hand_over)
             .ok_or_else(|| AppError::Internal("a piece of work without a hand-over".to_owned()))?;
+        let agent = agents
+            .iter()
+            .find(|found| found.id == work.agent)
+            .ok_or_else(|| AppError::Internal("a piece of work without an agent".to_owned()))?;
+        let person_of = |person| {
+            self.person_ref(
+                viewer,
+                PeopleKind::ProjectMembers,
+                PeopleContext::Ordinary,
+                person,
+            )
+        };
+        let agent_person = person_of(agent.person).await?;
+        let handed_over_by = person_of(hand_over.person).await?;
         let questions: Vec<_> = details
             .questions
             .iter()
@@ -82,6 +108,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reported_cost: attempt.reported_cost,
                 started_at: attempt.started_at,
                 ended_at: attempt.ended_at,
+                run: attempt.run,
                 results: details
                     .results
                     .iter()
@@ -124,6 +151,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: work.id,
             hand_over: work.hand_over,
             agent: work.agent,
+            agent_name: agent.name.clone(),
+            agent_person,
+            handed_over_by,
+            handed_over_at: hand_over.made_at,
+            ends_at: hand_over.ends_at,
+            budget_attempts: hand_over.budget_attempts,
+            budget_minutes: hand_over.budget_minutes,
+            budget_cost: hand_over.budget_cost,
+            plan_needs_approval: hand_over.plan_needs_approval,
             state: work.state,
             open: work.is_open_under(hand_over, self.now()),
             brief,
@@ -230,5 +266,10 @@ pub async fn issue_agent_work<S: AuthStore>(
         work,
         proposals,
         truncated,
+        brief_missing: ctx
+            .briefs_missing(&[(issue.clone(), Arc::clone(&held))])
+            .await?
+            .pop()
+            .unwrap_or_default(),
     }))
 }

@@ -113,6 +113,8 @@ pub struct AttemptView {
     pub ended_at: Option<Timestamp>,
     /// What it attached.
     pub results: Vec<ResultView>,
+    /// The run of its changes, which a person may open and undo.
+    pub run: Option<bb_core::id::RunId>,
 }
 
 /// A question with its answer.
@@ -150,6 +152,24 @@ pub struct WorkView {
     pub hand_over: HandOverId,
     /// The agent.
     pub agent: AgentId,
+    /// The name of the agent.
+    pub agent_name: String,
+    /// The person responsible for the agent, as the reader may see them.
+    pub agent_person: PersonRef,
+    /// Who handed the issue over, as the reader may see them.
+    pub handed_over_by: PersonRef,
+    /// When the issue was handed over.
+    pub handed_over_at: Timestamp,
+    /// When the hand-over ends.
+    pub ends_at: Timestamp,
+    /// The most attempts on the issue.
+    pub budget_attempts: i64,
+    /// The most minutes the agent may report, if limited.
+    pub budget_minutes: Option<i64>,
+    /// The most cost in cents the agent may report, if limited.
+    pub budget_cost: Option<i64>,
+    /// Whether each attempt waits for *Approve plan*.
+    pub plan_needs_approval: bool,
     /// Where the work is.
     pub state: AgentWorkState,
     /// Whether the hand-over still gives work.
@@ -198,6 +218,8 @@ pub struct IssueAgentWork {
     pub proposals: Vec<ProposalView>,
     /// Whether the lists were cut at the most an issue shows ([`MOST_SHOWN_ON_AN_ISSUE`]).
     pub truncated: bool,
+    /// The parts of a brief the issue lacks now, so a hand-over window can say it before it is made.
+    pub brief_missing: Vec<BriefPart>,
 }
 
 /// The most pieces of work, and the most proposals, the agent work of one issue shows.

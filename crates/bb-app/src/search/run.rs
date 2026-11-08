@@ -43,6 +43,8 @@ pub struct SearchQuery {
     pub limit: u32,
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
+    /// Whether the agent that works on each issue is wanted: read only then, once for the page.
+    pub agent: bool,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
     /// spent is read only then, once for the page.
     pub time: bool,
@@ -322,6 +324,7 @@ pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
             ReadOnRequest {
                 people: with_people,
                 labels: query.labels,
+                agent: query.agent,
                 time: query.time,
             },
         )

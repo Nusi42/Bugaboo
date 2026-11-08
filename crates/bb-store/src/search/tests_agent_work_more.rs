@@ -133,6 +133,49 @@ async fn ai_33_the_work_on_an_issue_is_cut_in_the_statement_and_to_the_agent() -
 }
 
 #[tokio::test]
+async fn ai_33_the_open_work_of_a_page_is_read_in_one_statement_and_leaves_out_work_that_ended()
+-> TestResult {
+    each_database("ai_33_open_work_on_issues", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let (first, second) = (data.issues[0].id, data.issues[1].id);
+        hand_over(
+            storage,
+            &mut made,
+            (owner, fixer),
+            &[first],
+            (Vec::new(), Vec::new()),
+        )
+        .await?;
+        // One issue has open work, the other has none, and none at all is asked for no statement.
+        let found = storage.open_work_on_issues(vec![first, second]).await?;
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].issue, first);
+        assert!(storage.open_work_on_issues(Vec::new()).await?.is_empty());
+        // Work that ended is not on the page any more.
+        made.step += 1;
+        let step = made.step;
+        storage
+            .record_change(&event(&mut made.source, step), move |transaction| {
+                Box::pin(async move {
+                    AuthStorage::stop_work_of_agent(transaction, fixer).await?;
+                    Ok(())
+                })
+            })
+            .await?;
+        assert!(storage.open_work_on_issues(vec![first]).await?.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_32_the_proposals_on_an_issue_are_cut_in_the_statement_by_state_agent_and_number()
 -> TestResult {
     each_database("ai_32_proposals_on", async |db| {

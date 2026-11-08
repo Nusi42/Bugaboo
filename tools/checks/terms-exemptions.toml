@@ -148,6 +148,7 @@ reason = "The name of the parameter of OAuth (RFC 6749) that an app wants back u
 [[allow]]
 term = "state"
 at = [
+  "api:property AgentMarkBody.state",
   "api:property HandOverAnswer.state",
   "api:property ProposalBody.state",
   "api:property StandingRuleItem.state",

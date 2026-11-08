@@ -232,6 +232,28 @@ impl AgentWorkRecords for AuthStorage {
         all(transaction, &select, read_work).await
     }
 
+    async fn open_work_on_issues_in(
+        transaction: &mut Transaction,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueWork>, StoreError> {
+        if issues.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = work_select();
+        select
+            .and_where(
+                Expr::col(IssueWorkRow::Issue).is_in(
+                    issues
+                        .iter()
+                        .map(|issue| issue.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .order_by(IssueWorkRow::Id, Order::Desc);
+        only_open_work(&mut select);
+        all(transaction, &select, read_work).await
+    }
+
     async fn details_of_works_in(
         transaction: &mut Transaction,
         works: Vec<IssueWork>,

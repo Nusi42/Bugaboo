@@ -538,6 +538,21 @@ impl AgentWorkRecords for super::fake::FakeStore {
         Ok(found)
     }
 
+    async fn open_work_on_issues_in(
+        tx: &mut Tx,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueWork>, FakeError> {
+        let state = &tx.state.work;
+        let mut found: Vec<IssueWork> = state
+            .works
+            .iter()
+            .filter(|w| issues.contains(&w.issue) && state.is_open(w))
+            .cloned()
+            .collect();
+        found.reverse();
+        Ok(found)
+    }
+
     async fn work_of_agent_in(
         tx: &mut Tx,
         agent: AgentId,

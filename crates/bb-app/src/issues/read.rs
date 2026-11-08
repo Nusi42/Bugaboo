@@ -183,6 +183,7 @@ pub async fn issues<S: AuthStore>(
         cursor: input.cursor,
         limit: input.limit,
         labels: input.labels,
+        agent: input.agent,
         time: input.time,
     };
     // Always read: a status change may name the person assigned. The people are in the answer only

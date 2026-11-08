@@ -4920,6 +4920,13 @@ export interface components {
        */
       version?: number | null;
     };
+    /** @description The agent that works on an issue and where its work is: the mark of a row of a list. */
+    AgentMarkBody: {
+      /** @description The name of the agent. */
+      name: string;
+      /** @description Where its work is. It is not the status of the issue. */
+      state: components["schemas"]["AgentWorkState"];
+    };
     /**
      * @description Whether an agent may act.
      * @enum {string}
@@ -5217,6 +5224,8 @@ export interface components {
       reported_minutes: number;
       /** @description What it attached. */
       results: components["schemas"]["ResultBody"][];
+      /** @description The run of its changes; a person who may open runs reads and undoes it there. */
+      run?: string | null;
       /**
        * Format: date-time
        * @description When it started.
@@ -6959,6 +6968,8 @@ export interface components {
     };
     /** @description The agent work on an issue. */
     IssueAgentWorkBody: {
+      /** @description The parts of a brief the issue lacks now, so a hand-over can say it before it is made. */
+      brief_missing: components["schemas"]["BriefPart"][];
       /** @description The proposals of standing rules that wait for a person. */
       proposals: components["schemas"]["ProposalBody"][];
       /** @description Whether the lists were cut at the most an issue shows. */
@@ -7020,6 +7031,7 @@ export interface components {
      *     hidden from them is left out, and asking for it fails like asking for one that does not exist.
      */
     IssueItem: {
+      agent_work?: components["schemas"]["AgentMarkBody"] | null;
       /** @description Who works on it, as the viewer may see people of this kind. */
       assigned_to?: components["schemas"]["PersonRef"][] | null;
       /**
@@ -11013,23 +11025,56 @@ export interface components {
       accepted_by_itself: boolean;
       /** @description The agent. */
       agent: string;
+      /** @description The name of the agent. */
+      agent_name: string;
+      /** @description The person responsible for the agent, as *Who sees people* says for the reader. */
+      agent_person: components["schemas"]["PersonRef"];
       /** @description The attempts, oldest first. */
       attempts: components["schemas"]["AttemptBody"][];
       /** @description The note of the brief, then the answers to the questions. */
       brief: string[];
       /**
+       * Format: int64
+       * @description The most attempts on the issue.
+       */
+      budget_attempts: number;
+      /**
+       * Format: int64
+       * @description The most cost in cents the agent may report, when limited.
+       */
+      budget_cost?: number | null;
+      /**
+       * Format: int64
+       * @description The most minutes the agent may report, when limited.
+       */
+      budget_minutes?: number | null;
+      /**
        * @description Whether the issue keeps its status after an accept by itself and a person chooses the next
        *     one.
        */
       choose_next_status: boolean;
+      /**
+       * Format: date-time
+       * @description When the hand-over ends.
+       */
+      ends_at: string;
       /** @description Why the agent gave up. */
       gave_up?: string | null;
       /** @description The hand-over. */
       hand_over: string;
+      /**
+       * Format: date-time
+       * @description When the issue was handed over.
+       */
+      handed_over_at: string;
+      /** @description Who handed the issue over, as *Who sees people* says for the reader. */
+      handed_over_by: components["schemas"]["PersonRef"];
       /** @description The ID of the work. */
       id: string;
       /** @description Whether the hand-over still gives work. */
       open: boolean;
+      /** @description Whether each attempt waits for *Approve plan*. */
+      plan_needs_approval: boolean;
       /** @description The questions, oldest first. */
       questions: components["schemas"]["QuestionBody"][];
       /** @description The reviews, oldest first. */

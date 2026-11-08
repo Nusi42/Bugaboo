@@ -1,7 +1,8 @@
 //! An issue as an answer holds it (ISS-01, PERF-02): the fields a list can ask for and the item
 //! with every field the person may see, shared by the issue routes, the search and the fields.
 
-use bb_app::issues::{IssueTypeRef as AppIssueTypeRef, IssueView};
+use bb_app::issues::{AgentMark, IssueTypeRef as AppIssueTypeRef, IssueView};
+use bb_core::agent_work::AgentWorkState;
 use bb_core::issue::{IssueIcon, Priority};
 use bb_core::own_fields_value::OwnValues;
 use bb_core::time::{Minutes, TimeLeft};
@@ -16,7 +17,7 @@ use crate::lean::{FieldSpec, ListParams};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(crate) const ISSUE_FIELDS: [FieldSpec; 21] = [
+pub(crate) const ISSUE_FIELDS: [FieldSpec; 22] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -37,6 +38,7 @@ pub(crate) const ISSUE_FIELDS: [FieldSpec; 21] = [
     FieldSpec::on_request("closed_at"),
     FieldSpec::on_request("own_fields"),
     FieldSpec::on_request("labels"),
+    FieldSpec::on_request("agent_work"),
     FieldSpec::on_request("version"),
 ];
 /// An issue type as a small reference: what the line of an issue needs.
@@ -63,6 +65,26 @@ impl From<&AppIssueTypeRef> for IssueTypeRef {
             name: issue_type.name.clone(),
             icon: issue_type.icon,
             retired: issue_type.retired,
+        }
+    }
+}
+
+/// The agent that works on an issue and where its work is: the mark of a row of a list.
+#[derive(Serialize, ToSchema, Masked)]
+pub(crate) struct AgentMarkBody {
+    /// The name of the agent.
+    #[masked(open)]
+    pub(crate) name: String,
+    /// Where its work is. It is not the status of the issue.
+    #[masked(open)]
+    pub(crate) state: AgentWorkState,
+}
+
+impl From<&AgentMark> for AgentMarkBody {
+    fn from(mark: &AgentMark) -> Self {
+        Self {
+            name: mark.name.clone(),
+            state: mark.state,
         }
     }
 }
@@ -162,6 +184,11 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "labels")]
     labels: Option<Vec<LabelRefBody>>,
+    /// The agent that works on it now and where its work is; left out while no agent works on it.
+    /// Only a list that asks for it reads it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(nested, item_type)]
+    agent_work: Option<AgentMarkBody>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
@@ -202,6 +229,7 @@ impl From<&IssueView> for IssueItem {
                 .labels
                 .as_ref()
                 .map(|labels| labels.iter().map(LabelRefBody::from).collect()),
+            agent_work: issue.agent_work.as_ref().map(AgentMarkBody::from),
             version: Some(issue.version),
         }
     }
@@ -265,6 +293,10 @@ mod tests {
             closed_at: Some(String::new()),
             own_fields: Some(OwnValues::default()),
             labels: Some(Vec::new()),
+            agent_work: Some(AgentMarkBody {
+                name: String::new(),
+                state: AgentWorkState::AgentWorking,
+            }),
             version: Some(1),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_FIELDS, &item);
