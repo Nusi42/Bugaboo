@@ -175,7 +175,10 @@ test("ai_34 a question is answered on the phone and the answer joins the brief",
   await expect(page.getByText("Which browser is it?", { exact: false })).toBeVisible();
   await page.getByLabel(t("agent-work.question-answer"), { exact: true }).fill("Firefox");
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  await expect(page.getByText("Firefox", { exact: true })).toBeVisible();
+  // The answer stands in its own bubble that names who answered; the text typed in the box is no proof.
+  await expect(
+    page.getByText(t("agent-work.answered-by", { person: ada.name }), { exact: false }),
+  ).toBeVisible();
   expect((await firstWorkOf(admin, issue.key)).brief).toContain("Firefox");
 });
 
@@ -277,5 +280,7 @@ test("ai_34 an answer to work that changed meanwhile reads the work again and ca
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(answer).toHaveValue("An old one");
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  await expect(page.getByText("An old one", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(t("agent-work.answered-by", { person: ada.name }), { exact: false }),
+  ).toBeVisible();
 });
