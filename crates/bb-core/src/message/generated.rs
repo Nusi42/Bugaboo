@@ -16610,10 +16610,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A saved search you can no longer open",
     ),
     ("agents.rule-stop", "Stop the rule"),
-    (
-        "agents.rule-stop-name",
-        "Stop the standing rule {search} of {agent}",
-    ),
+    ("agents.rule-stop-name", "Stop the rule {search} of {agent}"),
     (
         "agents.rule-stop-text",
         "The agent stops working on what the saved search finds. This cannot be undone; create a new rule to go on.",

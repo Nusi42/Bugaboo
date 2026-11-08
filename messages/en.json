@@ -3258,7 +3258,7 @@
   "agents.rule-ends-in": "{count, plural, one {Runs out in # day} other {Runs out in # days}}",
   "agents.rule-ends-today": "Runs out today",
   "agents.rule-stop": "Stop the rule",
-  "agents.rule-stop-name": "Stop the standing rule {search} of {agent}",
+  "agents.rule-stop-name": "Stop the rule {search} of {agent}",
   "agents.rule-stop-title": "Stop this standing rule?",
   "agents.rule-stop-text": "The agent stops working on what the saved search finds. This cannot be undone; create a new rule to go on.",
   "agents.person-unknown": "Agent of someone",

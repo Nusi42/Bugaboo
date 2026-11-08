@@ -69,6 +69,20 @@ export const placeCurrent = { page: "page", trail: "trail" } as const;
 export type PlaceCurrent = (typeof placeCurrent)[keyof typeof placeCurrent];
 
 /**
+ * Whether the open address is a screen of its own that only shares the start of `path` (*My agents* at `/me/agents`
+ * is not a topic of *My settings* at `/me`): a screen deeper in the address that does not belong under `path`.
+ */
+function isAnotherScreenUnder(path: string, pathname: string): boolean {
+  return places.some(
+    (other) =>
+      other.path.length > path.length &&
+      isAtOrUnder(path, other.path) &&
+      partsOfAddress(other.path, pathname) !== undefined &&
+      !trailTo(other.path).some((place) => place.path === path),
+  );
+}
+
+/**
  * How the screen at `path` is current at the open address, or not at all. Home is current only at its own address,
  * since every address is under it. A menu marks only the page (one link of a nav is the open page); the bar of a phone,
  * which has no tab for a saved search, marks *Search* by the trail too (UX §3.3).
@@ -77,7 +91,7 @@ export function howCurrent(path: string, pathname: string): PlaceCurrent | undef
   if (path === paths.home) {
     return pathname === path ? placeCurrent.page : undefined;
   }
-  if (isAtOrUnder(path, pathname)) {
+  if (isAtOrUnder(path, pathname) && !isAnotherScreenUnder(path, pathname)) {
     return placeCurrent.page;
   }
   const open = places.find((place) => partsOfAddress(place.path, pathname) !== undefined);

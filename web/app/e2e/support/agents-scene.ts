@@ -4,8 +4,8 @@ import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { webIssues } from "./issues.ts";
 
-/** The names of the agents of the scene. */
-export const agentNames = { fixer: "Fixer", sorter: "Sorter" } as const;
+/** How many scenes this server has had: agent names are taken for good, so each scene has names of its own. */
+let scenesMade = 0;
 
 /** The saved search of the standing rule of the scene. */
 export const ruleSearchName = "New bugs in Website";
@@ -13,6 +13,10 @@ export const ruleSearchName = "New bugs in Website";
 /** What a scene of agents holds, by ID. */
 export interface AgentsScene {
   readonly admin: ApiSession;
+  /** The names of the two agents of this scene. */
+  readonly names: { readonly fixer: string; readonly sorter: string };
+  /** Stops every agent of the administrator, so the next scene starts without work, and signs out. */
+  readonly dispose: () => Promise<void>;
   readonly fixer: string;
   readonly sorter: string;
   readonly search: string;
@@ -58,8 +62,11 @@ export async function agentsScene(
       body: { name: ruleSearchName, search_text: "" },
     }),
   ).id;
-  const fixer = await createAgent(admin, agentNames.fixer);
-  const sorter = await createAgent(admin, agentNames.sorter);
+  scenesMade += 1;
+  const suffix = scenesMade === 1 ? "" : ` ${String(scenesMade)}`;
+  const names = { fixer: `Fixer${suffix}`, sorter: `Sorter${suffix}` };
+  const fixer = await createAgent(admin, names.fixer);
+  const sorter = await createAgent(admin, names.sorter);
   dataOf(
     await admin.client.POST("/api/v1/hand-overs", {
       body: {
@@ -73,7 +80,11 @@ export async function agentsScene(
       },
     }),
   );
-  const scene = { admin, fixer, sorter, search, project };
+  const dispose = async (): Promise<void> => {
+    await admin.client.POST("/api/v1/me/agents/stop-all");
+    await admin.dispose();
+  };
+  const scene = { admin, names, dispose, fixer, sorter, search, project };
   await createRule(admin, scene, sorter, 2);
   return scene;
 }
@@ -88,4 +99,13 @@ export async function createAgentsInOrder(
     await createAgent(session, first);
     await createAgentsInOrder(session, rest);
   }
+}
+
+/** The administrator with one agent and nothing else (no saved search): the sidebar as low as it gets with *My agents*. */
+export async function adminWithOneAgent(
+  server: Parameters<typeof signedInAdmin>[0],
+): Promise<ApiSession> {
+  const admin = await signedInAdmin(server);
+  await createAgent(admin, "Sidebar helper");
+  return admin;
 }

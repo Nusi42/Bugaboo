@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentNames, agentsScene } from "./support/agents-scene.ts";
+import { agentsScene } from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
@@ -23,10 +23,10 @@ test("My agents", async ({ page, server }) => {
     await page.goto(paths.myAgents);
     await expect(page.getByRole("heading", { level: 1, name: t("agents.title") })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: t("agents.pause-name", { agent: agentNames.fixer }) }),
+      page.getByRole("button", { name: t("agents.pause-name", { agent: scene.names.fixer }) }),
     ).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("My agents with an agent paused", async ({ page, server }) => {
@@ -34,18 +34,18 @@ test("My agents with an agent paused", async ({ page, server }) => {
   await signIn(page, ada);
   await page.goto(paths.myAgents);
   await page
-    .getByRole("button", { name: t("agents.pause-name", { agent: agentNames.fixer }) })
+    .getByRole("button", { name: t("agents.pause-name", { agent: scene.names.fixer }) })
     .click();
   await expect(
-    page.getByRole("button", { name: t("agents.resume-name", { agent: agentNames.fixer }) }),
+    page.getByRole("button", { name: t("agents.resume-name", { agent: scene.names.fixer }) }),
   ).toBeVisible();
   await inFourChosenThemes(page, "my-agents-paused", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
     await expect(
-      page.getByRole("button", { name: t("agents.resume-name", { agent: agentNames.fixer }) }),
+      page.getByRole("button", { name: t("agents.resume-name", { agent: scene.names.fixer }) }),
     ).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("Stop all my agents asks first", async ({ page, server }) => {
@@ -56,7 +56,7 @@ test("Stop all my agents asks first", async ({ page, server }) => {
     await page.getByRole("button", { name: t("agents.stop-all"), exact: true }).click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("The window of a standing rule", async ({ page, server }) => {
@@ -67,7 +67,7 @@ test("The window of a standing rule", async ({ page, server }) => {
     await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
     await page.getByRole("alertdialog").getByLabel(t("agents.rule-change")).check();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("Create an agent", async ({ page, server }) => {
@@ -78,7 +78,7 @@ test("Create an agent", async ({ page, server }) => {
     await page.getByRole("button", { name: t("agents.create"), exact: true }).click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("The page of an agent", async ({ page, server }) => {
@@ -86,10 +86,10 @@ test("The page of an agent", async ({ page, server }) => {
   await signIn(page, ada);
   await inFourChosenThemes(page, "agent-page", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
-    await page.getByRole("link", { name: agentNames.fixer, exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1, name: agentNames.fixer })).toBeVisible();
+    await page.getByRole("link", { name: scene.names.fixer, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: scene.names.fixer })).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("The key of an agent is shown once", async ({ page, server }) => {
@@ -97,7 +97,7 @@ test("The key of an agent is shown once", async ({ page, server }) => {
   await signIn(page, ada);
   await inFourChosenThemes(page, "agent-key-shown", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
-    await page.getByRole("link", { name: agentNames.sorter, exact: true }).click();
+    await page.getByRole("link", { name: scene.names.sorter, exact: true }).click();
     await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
     const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
     await form.getByLabel(t("agents.key-name")).fill("Build server");
@@ -105,7 +105,7 @@ test("The key of an agent is shown once", async ({ page, server }) => {
     await form.getByRole("button", { name: t("agents.key-create-confirm") }).click();
     await expect(page.getByRole("region", { name: t("agents.key-shown-title") })).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("Organization settings, Connections, Agents", async ({ page, server }) => {
@@ -117,5 +117,5 @@ test("Organization settings, Connections, Agents", async ({ page, server }) => {
       page.getByRole("heading", { level: 1, name: t("nav.organization-agents") }),
     ).toBeVisible();
   });
-  await scene.admin.dispose();
+  await scene.dispose();
 });

@@ -4,7 +4,6 @@ import { t } from "@bugaboo/messages";
 import { paths } from "../src/shared/paths.ts";
 import { ada, bob, signInThroughApi } from "./support/accounts.ts";
 import {
-  agentNames,
   agentsScene,
   createAgent,
   createAgentsInOrder,
@@ -30,7 +29,10 @@ test("ai_37_my_agents_shows_waiting_for_you_first", async ({ page, server }) => 
   await signIn(page, ada);
   await page.goto(paths.myAgents);
   await expect(page.getByRole("heading", { level: 1, name: t("agents.title") })).toBeVisible();
-  const order = await page.getByRole("heading", { level: 2 }).allTextContents();
+  await expect(
+    page.getByRole("heading", { level: 2, name: new RegExp(t("agents.list"), "u") }),
+  ).toBeVisible();
+  const order = await page.getByRole("main").getByRole("heading", { level: 2 }).allTextContents();
   expect(order[0]).toContain(t("agents.waiting"));
   expect(order.findIndex((name) => name.includes(t("agents.list")))).toBeGreaterThan(0);
   // The standing rule that runs out in two days waits for a person, with *Renew* right there.
@@ -38,7 +40,7 @@ test("ai_37_my_agents_shows_waiting_for_you_first", async ({ page, server }) => 
   await expect(waiting.getByText(ruleSearchName, { exact: false })).toBeVisible();
   await expect(waiting.getByRole("button", { name: /Renew/u })).toBeVisible();
   await expectGoodInEveryLook(page);
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_37_on_a_phone_my_agents_shows_waiting_for_you_first", async ({ page, server }) => {
@@ -46,16 +48,19 @@ test("ai_37_on_a_phone_my_agents_shows_waiting_for_you_first", async ({ page, se
   const scene = await agentsScene(server);
   await signIn(page, ada);
   await page.goto(paths.myAgents);
-  const order = await page.getByRole("heading", { level: 2 }).allTextContents();
+  await expect(
+    page.getByRole("heading", { level: 2, name: new RegExp(t("agents.list"), "u") }),
+  ).toBeVisible();
+  const order = await page.getByRole("main").getByRole("heading", { level: 2 }).allTextContents();
   expect(order[0]).toContain(t("agents.waiting"));
   // The buttons are as high as a touch needs.
   const stop = page.getByRole("button", {
-    name: t("agents.stop-name", { agent: agentNames.fixer }),
+    name: t("agents.stop-name", { agent: scene.names.fixer }),
   });
   const height = await stop.evaluate((button) => button.getBoundingClientRect().height);
   expect(height).toBeGreaterThanOrEqual(44);
   await expectGoodInEveryLook(page);
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_37_pause_and_resume_an_agent", async ({ page, server }) => {
@@ -63,17 +68,17 @@ test("ai_37_pause_and_resume_an_agent", async ({ page, server }) => {
   await signIn(page, ada);
   await page.goto(paths.myAgents);
   await page
-    .getByRole("button", { name: t("agents.pause-name", { agent: agentNames.fixer }) })
+    .getByRole("button", { name: t("agents.pause-name", { agent: scene.names.fixer }) })
     .click();
   const resume = page.getByRole("button", {
-    name: t("agents.resume-name", { agent: agentNames.fixer }),
+    name: t("agents.resume-name", { agent: scene.names.fixer }),
   });
   await expect(resume).toBeVisible();
   await resume.click();
   await expect(
-    page.getByRole("button", { name: t("agents.pause-name", { agent: agentNames.fixer }) }),
+    page.getByRole("button", { name: t("agents.pause-name", { agent: scene.names.fixer }) }),
   ).toBeVisible();
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_37_stop_all_my_agents_asks_first_and_stops_every_one", async ({ page, server }) => {
@@ -85,8 +90,9 @@ test("ai_37_stop_all_my_agents_asks_first_and_stops_every_one", async ({ page, s
   await expect(question.getByText(t("agents.stop-all-title"))).toBeVisible();
   // Cancel stops nothing.
   await question.getByRole("button", { name: t("common.cancel") }).click();
+  await expect(question).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: t("agents.pause-name", { agent: agentNames.sorter }) }),
+    page.getByRole("button", { name: t("agents.pause-name", { agent: scene.names.sorter }) }),
   ).toBeVisible();
   await page.getByRole("button", { name: t("agents.stop-all"), exact: true }).click();
   await page
@@ -96,15 +102,15 @@ test("ai_37_stop_all_my_agents_asks_first_and_stops_every_one", async ({ page, s
   // Every agent is stopped: nothing can be paused any more.
   await expect(page.getByRole("button", { name: /^Pause /u })).toHaveCount(0);
   const list = dataOf(await scene.admin.client.GET("/api/v1/agents"));
-  expect(list.items.map((agent) => agent.state)).toEqual(["stopped", "stopped"]);
-  await scene.admin.dispose();
+  expect(list.items.every((agent) => agent.state === "stopped")).toBe(true);
+  await scene.dispose();
 });
 
 test("ai_30_an_agent_key_is_shown_once_and_can_be_taken_back", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
   await page.goto(paths.myAgents);
-  await page.getByRole("link", { name: agentNames.fixer, exact: true }).click();
+  await page.getByRole("link", { name: scene.names.fixer, exact: true }).click();
   await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
   const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
   await form.getByLabel(t("agents.key-name")).fill("Build server");
@@ -125,7 +131,7 @@ test("ai_30_an_agent_key_is_shown_once_and_can_be_taken_back", async ({ page, se
     .getByRole("button", { name: t("agents.key-take-back"), exact: true })
     .click();
   await expect(row).toHaveCount(0);
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_32_a_standing_rule_offers_only_the_fields_of_the_short_list_and_never_people_or_the_status", async ({
@@ -145,7 +151,7 @@ test("ai_32_a_standing_rule_offers_only_the_fields_of_the_short_list_and_never_p
     expect(names).not.toContain(forbidden);
   }
   await expect(window.getByText(t("agents.rule-never"))).toBeVisible();
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_32_a_standing_rule_ends_at_most_90_days_ahead", async ({ page, server }) => {
@@ -160,7 +166,7 @@ test("ai_32_a_standing_rule_ends_at_most_90_days_ahead", async ({ page, server }
     window.getByText(t("agents.rule-days-wrong", { most: agentRuleDaysMost })),
   ).toBeVisible();
   await expect(window.getByRole("button", { name: t("agents.rule-confirm") })).toBeDisabled();
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_30_an_administrator_stops_any_agent_from_organization_settings", async ({
@@ -196,15 +202,15 @@ test("ai_37_the_keyboard_alone_pauses_stops_and_opens_the_window_of_a_rule", asy
   await signIn(page, ada);
   await page.goto(paths.myAgents);
   const pause = page.getByRole("button", {
-    name: t("agents.pause-name", { agent: agentNames.fixer }),
+    name: t("agents.pause-name", { agent: scene.names.fixer }),
   });
   await pause.focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("button", { name: t("agents.resume-name", { agent: agentNames.fixer }) }),
+    page.getByRole("button", { name: t("agents.resume-name", { agent: scene.names.fixer }) }),
   ).toBeVisible();
   const stop = page.getByRole("button", {
-    name: t("agents.stop-name", { agent: agentNames.sorter }),
+    name: t("agents.stop-name", { agent: scene.names.sorter }),
   });
   await stop.focus();
   await page.keyboard.press("Enter");
@@ -220,30 +226,7 @@ test("ai_37_the_keyboard_alone_pauses_stops_and_opens_the_window_of_a_rule", asy
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
-  await scene.admin.dispose();
-});
-
-test("ux_01_the_sidebar_with_my_agents_fits_a_window_600_px_high", async ({ page, server }) => {
-  test.skip(layoutOf(page) === "phone", "the sidebar is a computer's");
-  const scene = await agentsScene(server);
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await signIn(page, ada);
-  await page.goto(paths.home);
-  const menu = page.getByRole("navigation", { name: t("shell.menu") });
-  const sizes = await menu.evaluate((nav) => ({
-    content: nav.scrollHeight,
-    shown: nav.clientHeight,
-  }));
-  expect(sizes.content).toBeLessThanOrEqual(sizes.shown);
-  // In a window this low the group at the bottom is one button; *My agents* is in its menu.
-  await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
-  const opened = page.getByRole("dialog", { name: t("shell.group-fold") });
-  await expect(opened.getByRole("link", { name: t("nav.my-agents"), exact: true })).toBeVisible();
-  const bottom = await page
-    .getByRole("button", { name: t("nav.sign-out"), exact: true })
-    .evaluate((button) => button.getBoundingClientRect().bottom);
-  expect(bottom).toBeLessThanOrEqual(600);
-  await scene.admin.dispose();
+  await scene.dispose();
 });
 
 test("ai_30_an_administrator_reaches_and_stops_every_agent_however_many_there_are", async ({
@@ -259,10 +242,11 @@ test("ai_30_an_administrator_reaches_and_stops_every_agent_however_many_there_ar
   await createAgentsInOrder(bobsSession, names);
   await signIn(page, ada);
   await page.goto(paths.organizationAgents);
-  const rows = page.getByRole("list", { name: t("agents.org-list") }).getByRole("listitem");
+  const every = page.getByRole("list", { name: t("agents.org-list") }).getByRole("listitem");
+  const rows = every.filter({ hasText: /Helper \d\d/u });
   const more = page.getByRole("button", { name: t("agents.org-more") });
   await expect(more).toBeVisible();
-  await expect(rows).toHaveCount(20);
+  await expect(every).toHaveCount(20);
   await more.click();
   // Every agent is reached, and there is nothing more to show.
   await expect(rows).toHaveCount(names.length);

@@ -124,6 +124,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.workingHours,
       paths.mailServer,
       paths.ai,
+      paths.organizationAgents,
       paths.organizationSecurity,
       paths.status,
     ]);
@@ -163,5 +164,13 @@ describe("ux_5 the screen that is open, for the sidebar and the bar of a phone a
     expect(howCurrent(paths.search, saved)).toBe(placeCurrent.trail);
     expect(howCurrent(saved, saved)).toBe(placeCurrent.page);
     expect(howCurrent(paths.search, paths.notifications)).toBeUndefined();
+  });
+});
+
+describe("ux_01 My agents is a screen of its own beside My settings", () => {
+  it("does not mark My settings at /me/agents, and still marks it at its own topics", () => {
+    expect(howCurrent(paths.mySettings, paths.myAgents)).toBeUndefined();
+    expect(howCurrent(paths.myAgents, paths.myAgents)).toBe(placeCurrent.page);
+    expect(howCurrent(paths.mySettings, paths.appearance)).toBe(placeCurrent.page);
   });
 });
