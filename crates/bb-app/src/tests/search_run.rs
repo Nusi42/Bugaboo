@@ -27,7 +27,7 @@ pub(super) fn asked(session: &str, text: &str) -> SearchQuery {
         cursor: None,
         limit: 1,
         labels: false,
-        agent: false,
+        agent: crate::issues::WithAgent::No,
         time: false,
     }
 }
@@ -257,7 +257,7 @@ async fn reads_for_a_page_over(projects: usize) -> Result<usize, String> {
     let query = SearchQuery {
         limit: 100,
         labels: false,
-        agent: false,
+        agent: crate::issues::WithAgent::No,
         ..asked(&admin, "")
     };
     let page = search(&world.ctx(), query)
@@ -464,7 +464,7 @@ async fn reads_for_a_page_of(issues: usize) -> Result<usize, String> {
     let query = SearchQuery {
         limit: 100,
         labels: false,
-        agent: false,
+        agent: crate::issues::WithAgent::No,
         ..asked(&token(&world), "")
     };
     let page = search(&world.ctx(), query)
@@ -567,7 +567,7 @@ async fn qry_05_the_list_of_a_project_is_the_search_within_it() -> Outcome {
         project: g.acme.to_string(),
         assigned_to,
         labels: false,
-        agent: false,
+        agent: crate::issues::WithAgent::No,
         time: false,
         cursor: None,
         limit: 10,

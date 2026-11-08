@@ -143,6 +143,19 @@ pub struct ReviewView {
     pub at: Timestamp,
 }
 
+/// What a hand-over lets the agent spend, and whether its plan waits for a person.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorkBudget {
+    /// The most attempts on the issue.
+    pub attempts: i64,
+    /// The most minutes the agent may report, if limited.
+    pub minutes: Option<i64>,
+    /// The most cost in cents the agent may report, if limited.
+    pub cost: Option<i64>,
+    /// Whether each attempt waits for *Approve plan*.
+    pub plan_needs_approval: bool,
+}
+
 /// The agent work on one issue of one hand-over.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WorkView {
@@ -162,14 +175,8 @@ pub struct WorkView {
     pub handed_over_at: Timestamp,
     /// When the hand-over ends.
     pub ends_at: Timestamp,
-    /// The most attempts on the issue.
-    pub budget_attempts: i64,
-    /// The most minutes the agent may report, if limited.
-    pub budget_minutes: Option<i64>,
-    /// The most cost in cents the agent may report, if limited.
-    pub budget_cost: Option<i64>,
-    /// Whether each attempt waits for *Approve plan*.
-    pub plan_needs_approval: bool,
+    /// What the hand-over lets the agent spend.
+    pub budget: WorkBudget,
     /// Where the work is.
     pub state: AgentWorkState,
     /// Whether the hand-over still gives work.

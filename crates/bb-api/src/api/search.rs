@@ -313,7 +313,7 @@ async fn search_issues(
                 cursor,
                 limit: params.limit(),
                 labels: params.asks_for(&ISSUE_FIELDS, "labels"),
-                agent: params.asks_for(&ISSUE_FIELDS, "agent_work"),
+                agent: params.asks_for(&ISSUE_FIELDS, "agent_work").into(),
                 time: super::issues::asks_for_time(&params),
             },
         )

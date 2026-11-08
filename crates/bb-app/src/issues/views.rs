@@ -16,7 +16,7 @@ use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_core::workflow::WorkflowContent;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
-use super::types::{AgentMark, IssueTypeRef, IssueView};
+use super::types::{AgentMark, IssueTypeRef, IssueView, WithAgent};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
@@ -62,7 +62,7 @@ pub(crate) struct ReadOnRequest {
     /// The labels of each issue.
     pub(crate) labels: bool,
     /// The agent that works on each issue.
-    pub(crate) agent: bool,
+    pub(crate) agent: WithAgent,
     /// The minutes spent on each issue.
     pub(crate) time: bool,
 }
@@ -142,7 +142,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             None
         };
         // One statement for the open work of the whole page, one for the names of its agents.
-        let agents = if extras.agent {
+        let agents = if extras.agent == WithAgent::Yes {
             Some(Arc::new(self.agent_marks_of_page(actor, &ids).await?))
         } else {
             None

@@ -30152,8 +30152,7 @@
           "handed_over_by",
           "handed_over_at",
           "ends_at",
-          "budget_attempts",
-          "plan_needs_approval",
+          "budget",
           "state",
           "open",
           "brief",
@@ -30195,20 +30194,9 @@
             },
             "description": "The note of the brief, then the answers to the questions."
           },
-          "budget_attempts": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The most attempts on the issue."
-          },
-          "budget_cost": {
-            "type": ["integer", "null"],
-            "format": "int64",
-            "description": "The most cost in cents the agent may report, when limited."
-          },
-          "budget_minutes": {
-            "type": ["integer", "null"],
-            "format": "int64",
-            "description": "The most minutes the agent may report, when limited."
+          "budget": {
+            "$ref": "#/components/schemas/WorkBudgetBody",
+            "description": "What the hand-over lets the agent spend."
           },
           "choose_next_status": {
             "type": "boolean",
@@ -30244,10 +30232,6 @@
             "type": "boolean",
             "description": "Whether the hand-over still gives work."
           },
-          "plan_needs_approval": {
-            "type": "boolean",
-            "description": "Whether each attempt waits for *Approve plan*."
-          },
           "questions": {
             "type": "array",
             "items": {
@@ -30270,6 +30254,32 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the work; send it back with an answer."
+          }
+        }
+      },
+      "WorkBudgetBody": {
+        "type": "object",
+        "description": "What a hand-over lets the agent spend, and whether its plan waits for a person.",
+        "required": ["attempts", "plan_needs_approval"],
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most attempts on the issue."
+          },
+          "cost": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most cost in cents the agent may report, when limited."
+          },
+          "minutes": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most minutes the agent may report, when limited."
+          },
+          "plan_needs_approval": {
+            "type": "boolean",
+            "description": "Whether each attempt waits for *Approve plan*."
           }
         }
       },

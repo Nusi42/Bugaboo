@@ -19,6 +19,19 @@ use bb_core::time::entry::StarterField;
 use bb_core::working_time::Preset;
 use bb_policy::{Permission, StartingRole, Topic};
 
+/// The messages of the words of agent work: where the work is, and what a brief lacks.
+fn agent_work_keys() -> Vec<Made> {
+    let states = AgentWorkState::ALL.iter().map(|state| Made {
+        key: state.name(),
+        word: format!("the state of agent work `{}`", state.code()),
+    });
+    let lacks = BriefPart::ALL.iter().map(|lack| Made {
+        key: lack.name(),
+        word: format!("the part of a brief `{}`", lack.code()),
+    });
+    states.chain(lacks).collect()
+}
+
 /// A message that the word of an enum makes, and the word.
 pub(crate) struct Made {
     pub(crate) key: MessageKey,
@@ -67,12 +80,7 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));
     }
-    for state in AgentWorkState::ALL {
-        keys.push(made("the state of agent work", state.code(), state.name()));
-    }
-    for lack in BriefPart::ALL {
-        keys.push(made("the part of a brief", lack.code(), lack.name()));
-    }
+    keys.extend(agent_work_keys());
     for group in StatusGroup::ALL {
         keys.push(made("the status group", group.code(), group.name()));
     }

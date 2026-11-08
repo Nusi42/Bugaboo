@@ -192,7 +192,7 @@ pub struct IssuesQuery {
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
     /// Whether the agent that works on each issue is wanted: read only then, once for the page.
-    pub agent: bool,
+    pub agent: WithAgent,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
     /// spent is read only then, once for the page.
     pub time: bool,
@@ -200,6 +200,22 @@ pub struct IssuesQuery {
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
     pub limit: u32,
+}
+
+/// Whether a page of issues reads the agent that works on each issue.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WithAgent {
+    /// Left out.
+    #[default]
+    No,
+    /// Read once for the page.
+    Yes,
+}
+
+impl From<bool> for WithAgent {
+    fn from(asked: bool) -> Self {
+        if asked { Self::Yes } else { Self::No }
+    }
 }
 
 /// The agent that works on an issue and where its work is, for the mark of a row of a list.

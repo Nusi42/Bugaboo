@@ -211,7 +211,7 @@ async fn list_issues(
                 project,
                 assigned_to: params.asks_for(&ISSUE_FIELDS, "assigned_to"),
                 labels: params.asks_for(&ISSUE_FIELDS, "labels"),
-                agent: params.asks_for(&ISSUE_FIELDS, "agent_work"),
+                agent: params.asks_for(&ISSUE_FIELDS, "agent_work").into(),
                 time: asks_for_time(&params),
                 cursor,
                 limit: params.limit(),

@@ -10,7 +10,7 @@ import { Results } from "./Results.tsx";
 
 /** Whether the plan of the attempt is still waiting for a person (the hand-over asks for approval). */
 function planWaits(work: Work, attempt: Attempt): boolean {
-  return work.plan_needs_approval && attempt.plan !== null && !attempt.plan_approved;
+  return work.budget.plan_needs_approval && attempt.plan !== null && !attempt.plan_approved;
 }
 
 /** The plan the agent reported and whether a person approved it. */

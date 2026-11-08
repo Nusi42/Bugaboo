@@ -129,7 +129,7 @@ export function planWaitsForYou(work: Work): boolean {
   );
   return (
     work.open &&
-    work.plan_needs_approval &&
+    work.budget.plan_needs_approval &&
     !asking &&
     attempt !== undefined &&
     attempt.plan !== null &&

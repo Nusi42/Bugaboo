@@ -10,9 +10,40 @@ use bb_policy::{Authorized, Evaluation, PeopleContext};
 use super::store::WorkDetails;
 use super::types::{
     AgentWorkQuery, AttemptView, IssueAgentWork, MOST_SHOWN_ON_AN_ISSUE, ProposalView,
-    QuestionView, ResultView, ReviewView, WorkView, WorkedOnBy,
+    QuestionView, ResultView, ReviewView, WorkBudget, WorkView, WorkedOnBy,
 };
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+
+/// The attempts of a piece of work with what each attached, oldest first.
+fn attempts_of(work: &IssueWork, details: &WorkDetails) -> Vec<AttemptView> {
+    details
+        .attempts
+        .iter()
+        .filter(|attempt| attempt.work == work.id)
+        .map(|attempt| AttemptView {
+            id: attempt.id,
+            number: attempt.number,
+            plan: attempt.plan.clone(),
+            plan_approved: attempt.plan_approved,
+            reported_minutes: attempt.reported_minutes,
+            reported_cost: attempt.reported_cost,
+            started_at: attempt.started_at,
+            ended_at: attempt.ended_at,
+            run: attempt.run,
+            results: details
+                .results
+                .iter()
+                .filter(|result| result.attempt == attempt.id)
+                .map(|result| ResultView {
+                    kind: result.kind,
+                    label: result.label.clone(),
+                    link: result.link.clone(),
+                    outcome: result.outcome,
+                })
+                .collect(),
+        })
+        .collect()
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// One piece of work as the viewer may see it.
@@ -95,33 +126,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .iter()
                 .filter_map(|question| question.answer.clone()),
         );
-        let attempts = details
-            .attempts
-            .iter()
-            .filter(|attempt| attempt.work == work.id)
-            .map(|attempt| AttemptView {
-                id: attempt.id,
-                number: attempt.number,
-                plan: attempt.plan.clone(),
-                plan_approved: attempt.plan_approved,
-                reported_minutes: attempt.reported_minutes,
-                reported_cost: attempt.reported_cost,
-                started_at: attempt.started_at,
-                ended_at: attempt.ended_at,
-                run: attempt.run,
-                results: details
-                    .results
-                    .iter()
-                    .filter(|result| result.attempt == attempt.id)
-                    .map(|result| ResultView {
-                        kind: result.kind,
-                        label: result.label.clone(),
-                        link: result.link.clone(),
-                        outcome: result.outcome,
-                    })
-                    .collect(),
-            })
-            .collect();
+        let attempts = attempts_of(work, details);
         let mut reviews = Vec::new();
         for review in details
             .reviews
@@ -156,10 +161,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             handed_over_by,
             handed_over_at: hand_over.made_at,
             ends_at: hand_over.ends_at,
-            budget_attempts: hand_over.budget_attempts,
-            budget_minutes: hand_over.budget_minutes,
-            budget_cost: hand_over.budget_cost,
-            plan_needs_approval: hand_over.plan_needs_approval,
+            budget: WorkBudget {
+                attempts: hand_over.budget_attempts,
+                minutes: hand_over.budget_minutes,
+                cost: hand_over.budget_cost,
+                plan_needs_approval: hand_over.plan_needs_approval,
+            },
             state: work.state,
             open: work.is_open_under(hand_over, self.now()),
             brief,

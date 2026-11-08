@@ -11033,21 +11033,8 @@ export interface components {
       attempts: components["schemas"]["AttemptBody"][];
       /** @description The note of the brief, then the answers to the questions. */
       brief: string[];
-      /**
-       * Format: int64
-       * @description The most attempts on the issue.
-       */
-      budget_attempts: number;
-      /**
-       * Format: int64
-       * @description The most cost in cents the agent may report, when limited.
-       */
-      budget_cost?: number | null;
-      /**
-       * Format: int64
-       * @description The most minutes the agent may report, when limited.
-       */
-      budget_minutes?: number | null;
+      /** @description What the hand-over lets the agent spend. */
+      budget: components["schemas"]["WorkBudgetBody"];
       /**
        * @description Whether the issue keeps its status after an accept by itself and a person chooses the next
        *     one.
@@ -11073,8 +11060,6 @@ export interface components {
       id: string;
       /** @description Whether the hand-over still gives work. */
       open: boolean;
-      /** @description Whether each attempt waits for *Approve plan*. */
-      plan_needs_approval: boolean;
       /** @description The questions, oldest first. */
       questions: components["schemas"]["QuestionBody"][];
       /** @description The reviews, oldest first. */
@@ -11086,6 +11071,26 @@ export interface components {
        * @description The version of the work; send it back with an answer.
        */
       version: number;
+    };
+    /** @description What a hand-over lets the agent spend, and whether its plan waits for a person. */
+    WorkBudgetBody: {
+      /**
+       * Format: int64
+       * @description The most attempts on the issue.
+       */
+      attempts: number;
+      /**
+       * Format: int64
+       * @description The most cost in cents the agent may report, when limited.
+       */
+      cost?: number | null;
+      /**
+       * Format: int64
+       * @description The most minutes the agent may report, when limited.
+       */
+      minutes?: number | null;
+      /** @description Whether each attempt waits for *Approve plan*. */
+      plan_needs_approval: boolean;
     };
     /** @description A work day. */
     WorkDayBody: {

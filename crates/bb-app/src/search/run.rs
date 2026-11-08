@@ -27,7 +27,7 @@ use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
-use crate::issues::{IssueView, PagePlace, ReadOnRequest};
+use crate::issues::{IssueView, PagePlace, ReadOnRequest, WithAgent};
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -44,7 +44,7 @@ pub struct SearchQuery {
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
     /// Whether the agent that works on each issue is wanted: read only then, once for the page.
-    pub agent: bool,
+    pub agent: WithAgent,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
     /// spent is read only then, once for the page.
     pub time: bool,

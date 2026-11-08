@@ -14,31 +14,31 @@ function factsOf(work: Work): readonly Fact[] {
       key: "attempts",
       node: t("agent-work.fact-attempts", {
         number: work.attempts.length,
-        most: work.budget_attempts,
+        most: work.budget.attempts,
       }),
     },
   ];
-  if (minutes > 0 || work.budget_minutes !== null) {
+  if (minutes > 0 || work.budget.minutes !== null) {
     facts.push({
       key: "time",
       node:
-        work.budget_minutes === null || work.budget_minutes === undefined
+        work.budget.minutes === null || work.budget.minutes === undefined
           ? t("agent-work.fact-time", { time: minutesText(minutes) })
           : t("agent-work.fact-time-of", {
               time: minutesText(minutes),
-              most: minutesText(work.budget_minutes),
+              most: minutesText(work.budget.minutes),
             }),
     });
   }
-  if (cost > 0 || work.budget_cost !== null) {
+  if (cost > 0 || work.budget.cost !== null) {
     facts.push({
       key: "cost",
       node:
-        work.budget_cost === null || work.budget_cost === undefined
+        work.budget.cost === null || work.budget.cost === undefined
           ? t("agent-work.fact-cost", { amount: centsText(cost) })
           : t("agent-work.fact-cost-of", {
               amount: centsText(cost),
-              most: centsText(work.budget_cost),
+              most: centsText(work.budget.cost),
             }),
     });
   }

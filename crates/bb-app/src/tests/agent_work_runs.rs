@@ -312,7 +312,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
                 cursor: None,
                 limit: 10,
                 labels: false,
-                agent: false,
+                agent: crate::issues::WithAgent::No,
                 time: false,
             },
         )

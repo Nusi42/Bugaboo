@@ -2,7 +2,7 @@
 
 use bb_app::agent_work::{
     AttemptView, HandOverView, HandedIssue, IssueAgentWork, ProposalView, QuestionView, ResultView,
-    ReviewView, StandingRuleView, WorkView, WorkedOnBy,
+    ReviewView, StandingRuleView, WorkBudget, WorkView, WorkedOnBy,
 };
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
@@ -218,6 +218,30 @@ impl From<&ReviewView> for ReviewAnswerBody {
     }
 }
 
+/// What a hand-over lets the agent spend, and whether its plan waits for a person.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct WorkBudgetBody {
+    /// The most attempts on the issue.
+    pub(super) attempts: i64,
+    /// The most minutes the agent may report, when limited.
+    pub(super) minutes: Option<i64>,
+    /// The most cost in cents the agent may report, when limited.
+    pub(super) cost: Option<i64>,
+    /// Whether each attempt waits for *Approve plan*.
+    pub(super) plan_needs_approval: bool,
+}
+
+impl From<&WorkBudget> for WorkBudgetBody {
+    fn from(budget: &WorkBudget) -> Self {
+        Self {
+            attempts: budget.attempts,
+            minutes: budget.minutes,
+            cost: budget.cost,
+            plan_needs_approval: budget.plan_needs_approval,
+        }
+    }
+}
+
 /// The agent work on one issue of one hand-over.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WorkBody {
@@ -237,14 +261,8 @@ pub(crate) struct WorkBody {
     pub(super) handed_over_at: String,
     /// When the hand-over ends.
     pub(super) ends_at: String,
-    /// The most attempts on the issue.
-    pub(super) budget_attempts: i64,
-    /// The most minutes the agent may report, when limited.
-    pub(super) budget_minutes: Option<i64>,
-    /// The most cost in cents the agent may report, when limited.
-    pub(super) budget_cost: Option<i64>,
-    /// Whether each attempt waits for *Approve plan*.
-    pub(super) plan_needs_approval: bool,
+    /// What the hand-over lets the agent spend.
+    pub(super) budget: WorkBudgetBody,
     /// Where the work is. It is not the status of the issue.
     pub(super) state: AgentWorkState,
     /// Whether the hand-over still gives work.
@@ -281,10 +299,7 @@ impl From<&WorkView> for WorkBody {
             handed_over_by: work.handed_over_by.clone(),
             handed_over_at: work.handed_over_at.to_string(),
             ends_at: work.ends_at.to_string(),
-            budget_attempts: work.budget_attempts,
-            budget_minutes: work.budget_minutes,
-            budget_cost: work.budget_cost,
-            plan_needs_approval: work.plan_needs_approval,
+            budget: WorkBudgetBody::from(&work.budget),
             state: work.state,
             open: work.open,
             brief: work.brief.clone(),
