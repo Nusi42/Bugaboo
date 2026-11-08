@@ -16,11 +16,17 @@ function MissingOf({ issue, single }: { readonly issue: string; readonly single:
   const words = lacking.map((lack) => missingText(lack));
   return (
     <>
-      <p {...partOf(part.text)}>
-        {single
-          ? `${words.join(". ")}.`
-          : t("agent-work.missing-many", { issue, parts: words.join(", ") })}
-      </p>
+      {single ? (
+        words.map((word) => (
+          <p key={word} {...partOf(part.text)}>
+            {word}
+          </p>
+        ))
+      ) : (
+        <p {...partOf(part.text)}>
+          {t("agent-work.missing-many", { issue, parts: words.join(", ") })}
+        </p>
+      )}
       {single ? <p {...partOf(part.muted)}>{t("agent-work.missing-ends")}</p> : null}
     </>
   );

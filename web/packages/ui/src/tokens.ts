@@ -1644,7 +1644,7 @@ export const partWords = {
   "agent-work.result": { variant: ["failed"], state: [] },
   "agent-work.question": { variant: [], state: [] },
   "agent-work.actions": { variant: [], state: [] },
-  "agent-work.group": { variant: [], state: [] },
+  "agent-work.group": { variant: ["nested"], state: [] },
   "agent-work.group-name": { variant: [], state: [] },
   "agent-work.numbers": { variant: [], state: [] },
   "agent-work.missing": { variant: [], state: [] },

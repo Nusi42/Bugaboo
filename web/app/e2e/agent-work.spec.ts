@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { issueAddress } from "../src/shared/paths.ts";
+import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import {
@@ -8,16 +8,18 @@ import {
   firstWorkOf,
   handOverOne,
   createAgent,
+  openDetails,
   openHandOver,
   openWindow,
   putScene,
-  readyForReview,
+  tickTwo,
   topOf,
+  workByAgent,
 } from "./support/agent-work.ts";
+import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb, readIssue } from "./support/issues.ts";
-import { tickTwo } from "./support/labels.ts";
 import { partIn } from "./support/parts.ts";
 
 // Agent work on screen (AI-31, AI-33, AI-34, AI-35, M7 WP-11): the window of a hand-over, the block
@@ -69,8 +71,8 @@ test("ai_31 hand over from ticked issues gives each issue to the agent", async (
     .getByRole("button", { name: t("agent-work.hand-over-confirm"), exact: true })
     .click();
   await expect(page.getByText(t("agent-work.handed", { count: 2 }))).toBeVisible();
-  expect((await firstWorkOf(admin, "WEB-1")).agent_name).toBe("Sorter");
-  expect((await firstWorkOf(admin, "WEB-2")).agent_name).toBe("Sorter");
+  expect((await workByAgent(admin, "WEB-1", "Sorter")).open).toBe(true);
+  expect((await workByAgent(admin, "WEB-2", "Sorter")).open).toBe(true);
 });
 
 test("ai_33 agent work shows under the description apart from the comments", async ({
@@ -86,21 +88,22 @@ test("ai_33 agent work shows under the description apart from the comments", asy
   const block = page.getByRole("heading", { level: 2, name: t("agent-work.title"), exact: true });
   await expect(block).toBeVisible();
   await expect(
-    page.getByText(t("agent-work.agent-of", { agent: "Under", person: ada.name })),
+    page.getByText(t("agent-work.agent-of", { agent: "Under", person: ada.name })).first(),
   ).toBeVisible();
   // Apart from the comments: the history section does not hold the agent work.
-  const history = page.getByRole("region", { name: t("history.title") });
+  const history = page.getByRole("region", { name: t("history.title") }).first();
   await expect(history.getByText(t("agent-work.title"))).toHaveCount(0);
   expect(await topOf(block)).toBeLessThan(await topOf(history));
 });
 
 test("ai_33 the issue shows worked on by and keeps its person", async ({ page, server }) => {
   const admin = await signedInAdmin(server);
-  const issue = await createIssue(admin, "WEB", "Worked on by");
+  const issue = await createIssue(admin, "WEB", "Issue with an agent");
   const agent = await createAgent(admin, "Third");
   await handOverOne(admin, agent, issue);
   await signIn(page, ada);
   await page.goto(issueAddress(issue.key));
+  await openDetails(page);
   const row = partIn(page, "name-value").filter({
     has: page.getByText(t("agent-work.worked-on-by"), { exact: true }),
   });
@@ -119,13 +122,13 @@ test("ai_33 a list row shows the agent mark and keeps its status color", async (
   const agent = await createAgent(admin, "Marker");
   await handOverOne(admin, agent, issue);
   await signIn(page, ada);
-  await page.goto("/p/WEB");
-  const mark = page.getByText(
-    t("agent-work.mark", {
+  await page.goto(projectIssuesAddress("WEB"));
+  const mark = partIn(page, "agent-mark").filter({
+    hasText: t("agent-work.mark", {
       agent: "Marker",
       state: t("agent-work.state.waiting-for-the-agent"),
     }),
-  );
+  });
   await expect(mark.first()).toBeVisible();
   // The row keeps the tint of its status group: the same as the row of another issue in that group.
   const tint = (key: string) =>
@@ -187,9 +190,11 @@ test("ai_35 send back needs a note and starts a new attempt", async ({ page, ser
   await window.getByLabel(t("agent-work.review-note-label")).fill("Also cover the passkey");
   await confirm.click();
   await expect(window).toBeHidden();
-  const work = await firstWorkOf(admin, issue.key);
-  expect(work.state).toBe("waiting-for-the-agent");
-  expect(work.brief).toContain("Also cover the passkey");
+  // The window is gone at once; the answer of the server comes after.
+  await expect
+    .poll(async () => (await firstWorkOf(admin, issue.key)).state, { timeout: 20_000 })
+    .toBe("waiting-for-the-agent");
+  expect((await firstWorkOf(admin, issue.key)).brief).toContain("Also cover the passkey");
 });
 
 test("ai_35 throw away shows what goes back and undoes it", async ({ page, server }) => {
@@ -207,7 +212,9 @@ test("ai_35 throw away shows what goes back and undoes it", async ({ page, serve
     .getByRole("button", { name: t("agent-work.review-confirm-throw-away"), exact: true })
     .click();
   await expect(window).toBeHidden();
-  expect((await firstWorkOf(admin, issue.key)).state).toBe("stopped");
+  await expect
+    .poll(async () => (await firstWorkOf(admin, issue.key)).state, { timeout: 20_000 })
+    .toBe("stopped");
   expect((await readIssue(admin, issue)).issue.priority).not.toBe("critical");
 });
 
@@ -224,6 +231,8 @@ test("ai_35 accept moves the issue to the chosen status", async ({ page, server 
     .getByRole("button", { name: t("agent-work.review-confirm-accept"), exact: true })
     .click();
   await expect(window).toBeHidden();
+  await expect
+    .poll(async () => (await firstWorkOf(admin, issue.key)).open, { timeout: 20_000 })
+    .toBe(false);
   expect((await readIssue(admin, issue)).issue.status?.key).toBe(chosen);
-  expect((await firstWorkOf(admin, issue.key)).open).toBe(false);
 });

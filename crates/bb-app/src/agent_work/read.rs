@@ -126,6 +126,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .iter()
                 .filter_map(|question| question.answer.clone()),
         );
+        // What a person wrote when they sent a result back joins the brief too, after the answers.
+        brief.extend(
+            details
+                .reviews
+                .iter()
+                .filter(|review| {
+                    review.work == work.id
+                        && review.answer == bb_core::agent_work::ReviewAnswer::SendBack
+                })
+                .filter_map(|review| review.note.clone()),
+        );
         let attempts = attempts_of(work, details);
         let mut reviews = Vec::new();
         for review in details

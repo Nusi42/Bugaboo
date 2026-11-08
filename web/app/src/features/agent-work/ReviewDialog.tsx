@@ -1,8 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, AskDialog, buttonLook, partOf, part } from "@bugaboo/ui";
+import { AskDialog, buttonLook, partOf, part } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
 import { lastAttempt, useReviewWork, type Verdict, type Work } from "./agent-work.ts";
 import { Results } from "./Results.tsx";
 import { ReviewFields } from "./ReviewFields.tsx";
@@ -16,6 +15,8 @@ export interface ReviewDialogProps {
   readonly statusChanges: readonly Schema<"StatusChangeRef">[] | null | undefined;
   readonly isOpen: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  /** Called with what refused the review; the window is gone by then, the button that opened it says it. */
+  readonly onFailed: (error: unknown) => void;
 }
 
 const confirmOf = {
@@ -32,7 +33,7 @@ const confirmOf = {
 export function ReviewDialog(props: ReviewDialogProps) {
   const { work, issue, isOpen, onOpenChange } = props;
   const draft = useReviewDraft(props.statusChanges);
-  const send = useReviewWork();
+  const send = useReviewWork(props.onFailed);
   const attempt = lastAttempt(work);
   return (
     <AskDialog
@@ -68,7 +69,6 @@ export function ReviewDialog(props: ReviewDialogProps) {
         <p {...partOf(part.muted)}>{t("agent-work.review-no-results")}</p>
       )}
       <ReviewFields work={work} draft={draft} />
-      {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
     </AskDialog>
   );
 }

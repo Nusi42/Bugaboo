@@ -9,9 +9,9 @@ import {
   openHandOver,
   openWindow,
   putScene,
-  readyForReview,
 } from "./support/agent-work.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
+import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";

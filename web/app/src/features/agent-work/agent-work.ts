@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 
 import { agentWorkKeys } from "../../shared/agent-work-keys.ts";
 import { api } from "../../shared/api.ts";
-import { formatNumber } from "../../shared/format.ts";
+import { formatDecimal } from "../../shared/format-decimal.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
 import { refreshHistory, refreshIssues, refreshRoutes } from "../../shared/query-keys.ts";
 
@@ -45,8 +45,18 @@ export function useMyAgents() {
 }
 
 /** Hands issues over to an agent. */
-export function useHandOver() {
-  return api.query.useMutation("post", "/api/v1/hand-overs", { onSuccess: refreshAgentWork });
+export function useHandOver(onHandedOver?: () => void, onFailed?: (error: unknown) => void) {
+  // The window closes when it is confirmed, so what is done afterwards is told to the mutation
+  // itself: the callbacks of one call go with the window.
+  return api.query.useMutation("post", "/api/v1/hand-overs", {
+    onSuccess: () => {
+      refreshAgentWork();
+      onHandedOver?.();
+    },
+    onError: (error: unknown) => {
+      onFailed?.(error);
+    },
+  });
 }
 
 /** Answers a question of an agent. */
@@ -64,9 +74,13 @@ export function useApprovePlan() {
 }
 
 /** The review of a result: accept, send back, throw away. */
-export function useReviewWork() {
+export function useReviewWork(onFailed?: (error: unknown) => void) {
+  // The window closes when it is confirmed, so a refusal is told to the mutation itself.
   return api.query.useMutation("post", "/api/v1/agent-work/{work}/review", {
     onSuccess: refreshAgentWork,
+    onError: (error: unknown) => {
+      onFailed?.(error);
+    },
   });
 }
 
@@ -101,7 +115,7 @@ export function lastAttempt(work: Work): Attempt | undefined {
 
 /** Cents as a number with two places, in the person's way of writing numbers. */
 export function centsText(cents: number): string {
-  return formatNumber(cents / 100);
+  return formatDecimal(cents / 100, 2);
 }
 
 /** An attempt that has a run: its number and the run, which lists what the attempt changed. */

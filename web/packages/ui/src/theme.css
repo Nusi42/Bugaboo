@@ -9372,6 +9372,10 @@ textarea,
   gap: var(--space-2);
 }
 
+[data-part="agent-work.group"][data-variant~="nested"] {
+  padding-inline-start: var(--space-5);
+}
+
 [data-part="agent-work.group-name"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);

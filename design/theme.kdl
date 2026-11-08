@@ -15587,6 +15587,11 @@ part "agent-work.group" {
     gap "$space-2"
 }
 
+// The boxes of the fields stand under the tick that asks for them, one step in.
+part "agent-work.group[variant=nested]" {
+    padding-inline-start "$space-5"
+}
+
 part "agent-work.group-name" {
     use "control-label"
     padding 0

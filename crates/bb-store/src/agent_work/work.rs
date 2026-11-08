@@ -224,6 +224,8 @@ impl AgentWorkRecords for AuthStorage {
         let mut select = work_select();
         select
             .and_where(Expr::col(IssueWorkRow::Issue).eq(issue.stored()))
+            // Newest first by the moment of the hand-over: the IDs are random and tell nothing of time.
+            .order_by(IssueWorkRow::MadeAt, Order::Desc)
             .order_by(IssueWorkRow::Id, Order::Desc)
             .limit(limit);
         if let Some(agent) = agent {

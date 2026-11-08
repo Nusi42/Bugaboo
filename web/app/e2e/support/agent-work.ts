@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -5,15 +6,15 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { signedInAdmin } from "./access.ts";
 import type { ApiSession } from "./api.ts";
-import { createIssue } from "./issues.ts";
-import { createAppSession, newId, stored } from "./runs.ts";
+import { stored } from "./runs.ts";
 import type { Instance } from "./server.ts";
 
 /** The file the program keeps its data in. */
 const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
+
+export { tickTwo } from "./labels.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */
 export async function createAgent(admin: ApiSession, name: string): Promise<string> {
@@ -81,13 +82,13 @@ export interface WorkScene {
  * throwaway server: the agent reports through MCP tools that come later, so a screen that shows
  * what an agent reported needs the rows.
  *
- * It assumes the tables `issue_work`, `agent_attempt`, `agent_result` and `agent_question`
+ * The IDs of these records are random (version 4), not the time-ordered kind of a run. It assumes the tables `issue_work`, `agent_attempt`, `agent_result` and `agent_question`
  * (`crates/bb-store/src/schema/`).
  */
 export function putScene(server: Instance, work: string, scene: WorkScene): void {
   const database = new DatabaseSync(join(server.dataDir, databaseFile));
   try {
-    database.exec("PRAGMA busy_timeout = 5000");
+    database.exec("PRAGMA busy_timeout = 30000");
     const now = Date.now() * MICROSECONDS;
     database.prepare("UPDATE issue_work SET state = ? WHERE id = ?").run(scene.state, stored(work));
     if (scene.question !== undefined) {
@@ -95,10 +96,10 @@ export function putScene(server: Instance, work: string, scene: WorkScene): void
         .prepare(
           "INSERT INTO agent_question (id, work, text, answer, answered_by, asked_at) VALUES (?, ?, ?, NULL, NULL, ?)",
         )
-        .run(stored(newId()), stored(work), scene.question, now);
+        .run(stored(randomUUID()), stored(work), scene.question, now);
     }
     if (scene.attempt !== undefined) {
-      const attempt = newId();
+      const attempt = randomUUID();
       database
         .prepare(
           "INSERT INTO agent_attempt (id, work, number, plan, plan_approved, reported_minutes, reported_cost, started_at, ended_at, run) VALUES (?, ?, 1, ?, 0, ?, ?, ?, NULL, ?)",
@@ -118,7 +119,7 @@ export function putScene(server: Instance, work: string, scene: WorkScene): void
             "INSERT INTO agent_result (id, attempt, kind, label, link, outcome) VALUES (?, ?, ?, ?, ?, ?)",
           )
           .run(
-            stored(newId()),
+            stored(randomUUID()),
             stored(attempt),
             result.kind,
             result.label,
@@ -162,7 +163,7 @@ export async function topOf(element: Locator): Promise<number> {
 /** Opens *More* of the issue page and chooses *Hand over to an agent*; the window it opens. */
 export async function openHandOver(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: t("issues.more"), exact: true }).click();
-  await page.getByRole("menuitem", { name: t("agent-work.hand-over"), exact: true }).click();
+  await page.getByRole("button", { name: t("agent-work.hand-over"), exact: true }).click();
   const window = page.getByRole("alertdialog");
   await expect(window).toBeVisible();
   return window;
@@ -175,31 +176,23 @@ export async function openWindow(page: Page): Promise<Locator> {
   return window;
 }
 
-/** A new issue handed over to a new agent, with an attempt that is ready for review, one link and one check. */
-export async function readyForReview(
-  server: Instance,
-  title: string,
-  name: string,
-  withRun: boolean,
-): Promise<{
-  readonly admin: ApiSession;
-  readonly issue: { readonly key: string; readonly id: string };
-}> {
-  const admin = await signedInAdmin(server);
-  const issue = await createIssue(admin, "WEB", title);
-  const agent = await createAgent(admin, name);
-  const work = await handOverOne(admin, agent, issue);
-  const run = withRun ? await createAppSession(server, admin, [{ issue, version: 1 }]) : undefined;
-  putScene(server, work, {
-    state: "ready-for-review",
-    attempt: {
-      plan: "Fix it",
-      ...(run === undefined ? {} : { run }),
-      results: [
-        { kind: "link", label: "Pull request 91", link: "https://example.test/pull/91" },
-        { kind: "check", label: "Tests", outcome: "passed" },
-      ],
-    },
-  });
-  return { admin, issue };
+/** The piece of work of the agent of this name on an issue. */
+export async function workByAgent(admin: ApiSession, issue: string, name: string) {
+  const all = await agentWorkOf(admin, issue);
+  const found = all.work.find((each) => each.agent_name === name);
+  if (found === undefined) {
+    throw new Error(`${name} has no work on ${issue}.`);
+  }
+  return found;
 }
+
+/** Opens the Details where they are behind a button (a phone); they stand open on a computer. */
+export async function openDetails(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const toggle = page.getByRole("button", { name: t("issues.all-details"), exact: true });
+  if ((await toggle.count()) > 0) {
+    await toggle.click();
+  }
+}
+
+export { readyForReview } from "./agent-work-ready.ts";

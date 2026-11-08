@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, AskDialog } from "@bugaboo/ui";
+import { AskDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
 import { useHandOver } from "./agent-work.ts";
 import {
   emptyDraft,
@@ -21,6 +20,8 @@ export interface HandOverDialogProps {
   readonly onOpenChange: (open: boolean) => void;
   /** Called once the issues were handed over. */
   readonly onHandedOver?: () => void;
+  /** Called with what refused the hand-over; the window is gone by then, so the place it was opened from says it. */
+  readonly onFailed?: (error: unknown) => void;
 }
 
 /**
@@ -29,9 +30,9 @@ export interface HandOverDialogProps {
  * *Hand over* stays possible with something missing.
  */
 export function HandOverDialog(props: HandOverDialogProps) {
-  const { issues, issue, isOpen, onOpenChange, onHandedOver } = props;
+  const { issues, issue, isOpen, onOpenChange, onHandedOver, onFailed } = props;
   const [draft, setDraft] = useState<HandOverDraft>(emptyDraft);
-  const send = useHandOver();
+  const send = useHandOver(onHandedOver, onFailed);
   return (
     <AskDialog
       isOpen={isOpen}
@@ -46,15 +47,7 @@ export function HandOverDialog(props: HandOverDialogProps) {
       cancelLabel={t("common.cancel")}
       confirmDisabled={draft.agent === "" || !numbersAreRight(draft) || send.isPending}
       onConfirm={() => {
-        send.mutate(
-          { body: handOverBody(draft, issues) },
-          {
-            onSuccess: () => {
-              onOpenChange(false);
-              onHandedOver?.();
-            },
-          },
-        );
+        send.mutate({ body: handOverBody(draft, issues) });
       }}
     >
       <HandOverFields
@@ -64,7 +57,6 @@ export function HandOverDialog(props: HandOverDialogProps) {
           setDraft((was) => ({ ...was, ...next }));
         }}
       />
-      {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
     </AskDialog>
   );
 }

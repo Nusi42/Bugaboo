@@ -216,6 +216,10 @@ async fn ai_35_send_back_starts_another_attempt_with_the_note_in_the_brief() -> 
     let sent = review_work(&world.ctx(), back).await?.into_value();
     assert_eq!(sent.state, AgentWorkState::WaitingForTheAgent);
     assert!(sent.open);
+    assert_eq!(
+        sent.brief.last().map(String::as_str),
+        Some("Also check Safari")
+    );
     let again = report_attempt(&world.ctx(), report(&given.key, given.issue, None, 7))
         .await?
         .into_value();

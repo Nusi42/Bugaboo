@@ -7,7 +7,7 @@ import { nameableFields, type DraftProps } from "./hand-over-draft.ts";
 /** The fields an agent can be given to change, one box each. */
 function FieldBoxes({ draft, onChange }: DraftProps) {
   return (
-    <div {...partOf(part.agentWorkGroup)}>
+    <div {...partOf(part.agentWorkGroup, { variants: ["nested"] })}>
       {nameableFields.map((code) => (
         <Checkbox
           key={code}
