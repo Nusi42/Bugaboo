@@ -131,6 +131,32 @@ fn a_key_that_no_code_names_is_on_the_first_page() {
     assert_eq!(parts["error.resource.not-found"], "shared");
 }
 
+/// The name and the help of a setting are sent by the server by key and shown by the forms of the
+/// settings feature, which every page of settings goes through; so they come with that feature and
+/// the first page does not carry them.
+#[test]
+fn the_words_of_a_setting_that_no_code_names_come_with_the_settings_feature() {
+    let sources = [code(
+        "web/app/src/features/settings/A.tsx",
+        r#"t("setting.ui.reset")"#,
+    )];
+    let parts = parts_of(
+        [
+            "setting.ui.reset",
+            "setting.region.time-zone.name",
+            "setting.region.time-zone.help",
+            "error.resource.not-found",
+        ],
+        &sources,
+        &[],
+    );
+    assert_eq!(parts["setting.region.time-zone.name"], "settings");
+    assert_eq!(parts["setting.region.time-zone.help"], "settings");
+    // What code names stays where the rule puts it, and other server words stay on the first page.
+    assert_eq!(parts["setting.ui.reset"], "settings");
+    assert_eq!(parts["error.resource.not-found"], "shared");
+}
+
 /// The texts of a search's mistakes are named by a template in the search feature only (the search
 /// module makes the keys), and the rule that already reads templates puts them in its part.
 #[test]

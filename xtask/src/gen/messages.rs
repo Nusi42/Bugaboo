@@ -36,6 +36,15 @@ pub(crate) const ALL_OUTPUT: &str = generated_folder!("all.ts");
 /// names on its own (for instance the ones the server sends by key, or an enum makes).
 pub(crate) const SHARED: &str = "shared";
 
+/// The beginning of the keys of the words of a setting (its name and its help): the server sends
+/// them by key and the forms of the settings feature show them, so a key of them that no code names
+/// comes with that feature (`wordsOf` and the forms are exported from it, so every page that shows a
+/// setting loads its part) and not with the first page.
+const SETTING_WORDS: &str = "setting.";
+
+/// The feature that shows the words of the settings.
+const SETTINGS_FEATURE: &str = "settings";
+
 /// How an area names its part when it imports it (the package export of `@bugaboo/messages`).
 pub(crate) const PART_IMPORT: &str = "@bugaboo/messages/parts/";
 
@@ -368,6 +377,7 @@ pub(crate) fn parts_of_files<'a, 'f: 'g, 'g>(
         .map(|key| {
             let part = match users.get(key) {
                 Some(Users::Feature(feature)) if !made.contains(&key) => feature,
+                None if key.starts_with(SETTING_WORDS) && !made.contains(&key) => SETTINGS_FEATURE,
                 _ => SHARED,
             };
             (key, part)

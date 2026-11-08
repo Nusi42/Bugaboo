@@ -55,23 +55,6 @@ export const messages = {
   "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
-  "setting.security.session-idle-minutes.help":
-    "How many minutes without activity pass before people are signed out automatically.",
-  "setting.security.two-step-required.help":
-    "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
-  "setting.security.session-absolute-hours.help":
-    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again.",
-  "setting.auth.access-key-default-days.help":
-    "How many days a new access key lives when the person picks no other date.",
-  "setting.auth.access-key-longest-days.help":
-    "The most days an access key can live, whatever date the person picks.",
-  "setting.auth.sign-up-enabled.help":
-    "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
-  "setting.content.image-hosts.name": "Hosts that images may come from",
-  "setting.content.image-hosts.help":
-    "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
-  "setting.auth.sign-up-domains.help":
-    "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
   "setting.ui.reset": "Reset to default",
   "setting.ui.reset-name": "Reset to default: {name}",
   "setting.ui.between": "Whole numbers from {least} to {most}.",
@@ -83,61 +66,10 @@ export const messages = {
   "nav.working-hours": "Working hours",
   "nav.themes": "Themes",
   "nav.group.look-org": "Look",
-  "setting.appearance.mode.help":
-    "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
-  "setting.appearance.light-theme.help":
-    "The theme Bugaboo shows when your device is light. It counts when you choose Match my device.",
-  "setting.appearance.dark-theme.help":
-    "The theme Bugaboo shows when your device is dark. It counts when you choose Match my device.",
-  "setting.appearance.spacing.help": "How close together things are. Compact fits more on a page.",
-  "setting.appearance.larger-text.help": "Enlarges all text by a step.",
-  "setting.appearance.less-motion.help":
-    "Fewer moving effects. Bugaboo also follows the setting of your device.",
-  "setting.appearance.issue-view.name": "Open issues in",
-  "setting.appearance.issue-view.help":
-    "Where an issue opens: in the focus view, which gives it most of the page, or in a side panel next to the list.",
   "appearance.mode.light": "Always light",
   "appearance.mode.dark": "Always dark",
   "appearance.issue-view.focus": "Focus view",
   "appearance.issue-view.panel": "Side panel",
-  "setting.region.time-zone.name": "Time zone",
-  "setting.region.time-zone.help":
-    "The time zone for the times you see. Match my device uses the time zone of your device.",
-  "setting.region.date-format.name": "Date format",
-  "setting.region.date-format.help": "How dates are written.",
-  "setting.region.date-format.day-month-year": "Day, month, year (31.12.2026)",
-  "setting.region.date-format.month-day-year": "Month, day, year (12/31/2026)",
-  "setting.region.date-format.year-month-day": "Year, month, day (2026-12-31)",
-  "setting.region.time-of-day.name": "Time of day",
-  "setting.region.time-of-day.help":
-    "How times of day are written. Match my device follows the date format: with the date format Match my device, the clock of your device; with any other date format, 24-hour.",
-  "setting.region.time-of-day.twenty-four-hours": "24-hour (14:30)",
-  "setting.region.time-of-day.twelve-hours": "12-hour (2:30 PM)",
-  "setting.region.number-format.name": "Number format",
-  "setting.region.number-format.help": "How big numbers and decimals are written.",
-  "setting.region.number-format.point": "1,234.5",
-  "setting.region.number-format.comma": "1.234,5",
-  "setting.region.number-format.space": "1 234,5",
-  "setting.region.first-day.name": "First day of the week",
-  "setting.region.first-day.help": "The day a week starts on in calendars.",
-  "setting.region.first-day.monday": "Monday",
-  "setting.region.first-day.sunday": "Sunday",
-  "setting.region.first-day.saturday": "Saturday",
-  "setting.start.page.name": "Start page",
-  "setting.start.page.help": "The page Bugaboo opens after you sign in.",
-  "setting.shortcuts.keys.name": "Your own keys",
-  "setting.shortcuts.keys.help":
-    "The keys you chose for keyboard shortcuts. A shortcut you did not change keeps its usual keys.",
-  "setting.window.sizes.name": "Your window sizes",
-  "setting.window.sizes.help":
-    "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
-  "setting.security.session-idle-minutes.name": "Sign out after no activity (minutes)",
-  "setting.security.session-absolute-hours.name": "Longest sign-in (hours)",
-  "setting.security.two-step-required.name": "Two-step sign-in for everybody",
-  "setting.auth.sign-up-enabled.name": "Sign up without an invitation",
-  "setting.auth.sign-up-domains.name": "E-mail domains that may sign up",
-  "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
-  "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
     "The data folder {path} could not be restricted to its owner: {reason}",
@@ -521,39 +453,6 @@ export const messages = {
     "That issue type is retired, so no new issues can be created with it. Choose another type.",
   "error.issue.type-not-offered":
     "This project does not offer that issue type. Choose another type, or ask the project lead.",
-  "setting.agents.enabled.name": "Agents may work",
-  "setting.agents.enabled.help":
-    "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
-  "setting.agents.maximum-changes-a-minute.name": "Most changes a minute for an agent",
-  "setting.agents.maximum-changes-a-minute.help":
-    "The most changes a minute that any agent can be given as its limit.",
-  "setting.agents.maximum-issues-at-once.name": "Most issues at once for an agent",
-  "setting.agents.maximum-issues-at-once.help":
-    "The most issues that any agent can be given to work on at the same time.",
-  "setting.agents.maximum-attempts-on-one-issue.name": "Most attempts on one issue for an agent",
-  "setting.agents.maximum-attempts-on-one-issue.help":
-    "The most attempts on one issue that any agent can be given as its limit.",
-  "setting.agents.accept-by-itself.name": "Accept an agent's result by itself when its checks pass",
-  "setting.agents.accept-by-itself.help":
-    "Off: a person looks at every result of an agent. On: when the hand-over allows it, a result is accepted by itself if it has at least one check and every check passed. Bugaboo does not run or verify the checks; the agent says whether they passed. Accepted results wait under Accepted by itself until a person has looked at them.",
-  "setting.agents.hand-over-days.name": "Days until a hand-over ends",
-  "setting.agents.hand-over-days.help":
-    "When a person hands issues to an agent and sets no end, the hand-over ends after this many days.",
-  "setting.agents.rule-days.name": "Days until a standing rule ends",
-  "setting.agents.rule-days.help":
-    "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed.",
-  "setting.files.max-megabytes.name": "Biggest file",
-  "setting.files.max-megabytes.help":
-    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
-  "setting.files.blocked-types.name": "Types of file that are never accepted",
-  "setting.files.blocked-types.help":
-    "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
-  "setting.issues.id-mode.name": "Issue IDs",
-  "setting.issues.id-mode.help":
-    "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
-  "setting.issues.id-length.name": "Length of random issue IDs",
-  "setting.issues.id-length.help":
-    "How many letters and digits a random issue ID has after the dash. It grows by itself when the short ones run out.",
   "nav.issue-types": "Issue types",
   "issue-icon.bug": "Bug",
   "issue-icon.square-check": "Box with a tick",
@@ -736,119 +635,6 @@ export const messages = {
   "notification.kind.agent-stopped": "An agent was stopped",
   "notification.kind.edit-notice":
     "Somebody asks you to finish editing, or takes your editing over",
-  "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
-  "setting.notifications.mentioned-in-app.help":
-    "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
-  "setting.notifications.mentioned-by-mail.name": "You are mentioned: by e-mail",
-  "setting.notifications.mentioned-by-mail.help":
-    "Sends you an e-mail when a comment mentions you, or a group or role you are in. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.assigned-in-app.name": "An issue is assigned to you: in the app",
-  "setting.notifications.assigned-in-app.help":
-    "Tells you under Notifications when an issue is assigned to you.",
-  "setting.notifications.assigned-by-mail.name": "An issue is assigned to you: by e-mail",
-  "setting.notifications.assigned-by-mail.help":
-    "Sends you an e-mail when an issue is assigned to you. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.followed-activity-in-app.name":
-    "Status changes, comments and files on issues you follow: in the app",
-  "setting.notifications.followed-activity-in-app.help":
-    "Tells you under Notifications when somebody else changes the status of an issue you follow, or comments on it or adds a file to it.",
-  "setting.notifications.followed-activity-by-mail.name":
-    "Status changes, comments and files on issues you follow: by e-mail",
-  "setting.notifications.followed-activity-by-mail.help":
-    "Sends you an e-mail when somebody else changes the status of an issue you follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.followed-fields-in-app.name":
-    "Other changes to issues you follow: in the app",
-  "setting.notifications.followed-fields-in-app.help":
-    "Tells you under Notifications when somebody else changes other fields of an issue you follow.",
-  "setting.notifications.followed-fields-by-mail.name":
-    "Other changes to issues you follow: by e-mail",
-  "setting.notifications.followed-fields-by-mail.help":
-    "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.run-ended-in-app.name": "Your change to many issues has ended: in the app",
-  "setting.notifications.run-ended-in-app.help":
-    "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
-  "setting.notifications.run-ended-by-mail.name": "Your change to many issues has ended: by e-mail",
-  "setting.notifications.long-timer-in-app.name": "Your timer runs long: in the app",
-  "setting.notifications.long-timer-in-app.help":
-    "Tells you under Notifications when your timer has run longer than the longest work day of your organization's working-time rules.",
-  "setting.notifications.long-timer-by-mail.name": "Your timer runs long: by e-mail",
-  "setting.notifications.long-timer-by-mail.help":
-    "Sends you an e-mail when your timer has run longer than the longest work day of your organization's working-time rules. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.agent-asks-in-app.name": "An agent asks you: in the app",
-  "setting.notifications.agent-asks-in-app.help":
-    "Tells you when an agent of yours, or an agent working on an issue you handed over, asks a question.",
-  "setting.notifications.agent-asks-by-mail.name": "An agent asks you: by e-mail",
-  "setting.notifications.agent-asks-by-mail.help":
-    "Sends you an e-mail when an agent of yours, or an agent working on an issue you handed over, asks a question.",
-  "setting.notifications.plan-waits-in-app.name": "A plan waits for you: in the app",
-  "setting.notifications.plan-waits-in-app.help":
-    "Tells you when the plan of an attempt waits for you to approve it.",
-  "setting.notifications.plan-waits-by-mail.name": "A plan waits for you: by e-mail",
-  "setting.notifications.plan-waits-by-mail.help":
-    "Sends you an e-mail when the plan of an attempt waits for you to approve it.",
-  "setting.notifications.ready-for-review-in-app.name": "Ready for review: in the app",
-  "setting.notifications.ready-for-review-in-app.help":
-    "Tells you when an agent has a result ready for you to review.",
-  "setting.notifications.ready-for-review-by-mail.name": "Ready for review: by e-mail",
-  "setting.notifications.ready-for-review-by-mail.help":
-    "Sends you an e-mail when an agent has a result ready for you to review.",
-  "setting.notifications.agent-gave-up-in-app.name": "An agent gave up: in the app",
-  "setting.notifications.agent-gave-up-in-app.help":
-    "Tells you when an agent gives up on an issue you handed over.",
-  "setting.notifications.agent-gave-up-by-mail.name": "An agent gave up: by e-mail",
-  "setting.notifications.agent-gave-up-by-mail.help":
-    "Sends you an e-mail when an agent gives up on an issue you handed over.",
-  "setting.notifications.rule-runs-out-soon-in-app.name":
-    "A standing rule runs out soon: in the app",
-  "setting.notifications.rule-runs-out-soon-in-app.help":
-    "Tells you three days before a standing rule of yours runs out.",
-  "setting.notifications.rule-runs-out-soon-by-mail.name":
-    "A standing rule runs out soon: by e-mail",
-  "setting.notifications.rule-runs-out-soon-by-mail.help":
-    "Sends you an e-mail three days before a standing rule of yours runs out.",
-  "setting.notifications.agent-stopped-in-app.name": "An agent was stopped: in the app",
-  "setting.notifications.agent-stopped-in-app.help":
-    "Tells you when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
-  "setting.notifications.agent-stopped-by-mail.name": "An agent was stopped: by e-mail",
-  "setting.notifications.agent-stopped-by-mail.help":
-    "Sends you an e-mail when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
-  "setting.time.billable.name": "Billable",
-  "setting.time.billable.help":
-    "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
-  "setting.notifications.run-ended-by-mail.help":
-    "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.edit-notice-in-app.name":
-    "Somebody asks you to finish editing: in the app",
-  "setting.notifications.edit-notice-in-app.help":
-    "Tells you under Notifications when somebody asks you to finish editing a text, or takes the editing over.",
-  "setting.notifications.edit-notice-by-mail.name":
-    "Somebody asks you to finish editing: by e-mail",
-  "setting.notifications.edit-notice-by-mail.help":
-    "Sends you an e-mail when somebody asks you to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
-  "setting.mail.enabled.name": "Send e-mail",
-  "setting.mail.enabled.help":
-    "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
-  "setting.mail.host.name": "Mail server",
-  "setting.mail.host.help":
-    "The name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only that name, without a path.",
-  "setting.mail.port.name": "Mail server port",
-  "setting.mail.port.help":
-    "The port of the mail server, as the provider of your mail server tells you. It depends on how the connection is protected.",
-  "setting.mail.security.name": "Protect the connection",
-  "setting.mail.security.help":
-    "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same computer or in a place you trust: the password and the e-mails could be read on the way.",
-  "setting.mail.security.starttls": "Switch to encryption (usual)",
-  "setting.mail.security.tls": "Encrypted from the start",
-  "setting.mail.security.off": "No encryption",
-  "setting.mail.username.name": "Mail server user name",
-  "setting.mail.username.help":
-    "The user name Bugaboo signs in to the mail server with. Leave it empty for a mail server that asks for none. The password is entered separately and is stored encrypted.",
-  "setting.mail.from.name": "Send e-mail from",
-  "setting.mail.from.help":
-    "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
-  "setting.mail.short.name": "Short e-mails",
-  "setting.mail.short.help":
-    "E-mails leave out all issue text (titles and comments) and the names of projects, and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
@@ -861,15 +647,6 @@ export const messages = {
   "common.time-24": "{hour}:{minute}",
   "common.time-am": "{hour}:{minute} AM",
   "common.time-pm": "{hour}:{minute} PM",
-  "setting.security.log-keep-days.name": "Days to keep the security log",
-  "setting.security.log-keep-days.help":
-    "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
-  "setting.logs.server-log-megabytes.name": "Size of the server log file",
-  "setting.logs.server-log-megabytes.help":
-    "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
-  "setting.logs.server-log-files.name": "Old server log files to keep",
-  "setting.logs.server-log-files.help":
-    "How many old files of the server log are kept next to the current one. Older ones are deleted.",
   "error.handle.changed-lately":
     "You changed your handle only a short time ago. You can change it again later.",
   "issue-types.project-title": "Issue types of {project}",
@@ -926,38 +703,6 @@ export const messages = {
     "{stretch} of work in a row. The rules allow {most} at most before a break of at least {shortest}.",
   "working-time.warning.short-rest":
     "Only {rest} of rest since the work day before. The rules ask for at least {needed}.",
-  "setting.working-hours.preset.name": "Working-time rules",
-  "setting.working-hours.preset.help":
-    "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",
-  "setting.working-hours.day-minutes-max.name": "Longest work day",
-  "setting.working-hours.day-minutes-max.help": "A day with more work gets a warning.",
-  "setting.working-hours.first-break-after-minutes.name": "First break is due after",
-  "setting.working-hours.first-break-after-minutes.help":
-    "A day with more work than this needs the first break.",
-  "setting.working-hours.first-break-minutes.name": "First break",
-  "setting.working-hours.first-break-minutes.help":
-    "How many minutes of break a day needs at least once its work passes the time above.",
-  "setting.working-hours.second-break-after-minutes.name": "Longer break is due after",
-  "setting.working-hours.second-break-after-minutes.help":
-    "A day with more work than this needs the longer break.",
-  "setting.working-hours.second-break-minutes.name": "Longer break",
-  "setting.working-hours.second-break-minutes.help":
-    "How many minutes of break a day needs at least once its work passes the longer-break time above.",
-  "setting.working-hours.shortest-break-minutes.name": "Shortest break that counts",
-  "setting.working-hours.shortest-break-minutes.help":
-    "A shorter break does not count for the rules.",
-  "setting.working-hours.in-a-row-minutes-max.name": "Longest stretch without a break",
-  "setting.working-hours.in-a-row-minutes-max.help":
-    "Work in a row longer than this, without a break that counts, gets a warning.",
-  "setting.working-hours.rest-minutes-min.name": "Rest between two work days",
-  "setting.working-hours.rest-minutes-min.help":
-    "Less rest between the end of one work day and the start of the next gets a warning.",
-  "setting.working-hours.keep-years.name": "Keep work days for",
-  "setting.working-hours.keep-years.help":
-    "Work days are kept at least this long from their date, then until an administrator deletes them. With the rules of Germany a lower number is refused.",
-  "setting.working-hours.totals-only.name": "Totals only",
-  "setting.working-hours.totals-only.help":
-    "Working hours of others shows each person's week total and nothing else. While it is on, nobody changes other people's work days.",
   "error.working-hours.day-left-open":
     "Your last work day was never ended. Say when it ended, then start the new one.",
   "error.working-hours.day-running": "Your work day is running already.",
@@ -970,35 +715,12 @@ export const messages = {
   "error.working-hours.week-totals-only":
     "Only the week totals of other people are shown, so their work days cannot be changed. An administrator can turn Totals only off.",
   "notification.kind.work-day-changed": "Your work day was changed",
-  "setting.notifications.work-day-changed-in-app.name": "Your work day was changed: in the app",
-  "setting.notifications.work-day-changed-in-app.help":
-    "Tells you under Notifications when somebody else changes one of your work days, with the reason they gave.",
-  "setting.notifications.work-day-changed-by-mail.name": "Your work day was changed: by e-mail",
-  "setting.notifications.work-day-changed-by-mail.help":
-    "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
   "notifications.work-day-changed": "{who} changed your work day of {date}",
   "notifications.work-day-reason": "Why: {reason}",
   "error.working-hours.in-the-future":
     "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
-  "setting.ai.enabled.name": "Use AI",
-  "setting.ai.enabled.help":
-    "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",
-  "setting.ai.provider.name": "Provider",
-  "setting.ai.provider.help":
-    "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model of your own is reached at the address you enter.",
-  "setting.ai.model.name": "Model",
-  "setting.ai.model.help": "The name of the model, as the provider writes it.",
-  "setting.ai.address.name": "Address of the model",
-  "setting.ai.address.help":
-    "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
-  "setting.ai-apps.enabled.name": "Let AI apps sign in",
-  "setting.ai-apps.enabled.help":
-    "Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
-  "setting.ai.send-names.name": "Send names of people",
-  "setting.ai.send-names.help":
-    "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
   "error.agent-work.already-open": "This agent already has this issue handed over.",
   "error.agent-work.not-ready": "The work is not waiting for that.",
   "error.agent-work.budget-reached": "The agent used all the attempts it was given on this issue.",
