@@ -572,7 +572,7 @@ async fn ai_02_the_assistant_answers_ai_is_off_and_sends_nothing_where_ai_is_off
 }
 
 /// An outside provider (Anthropic) with its agreement, AI on.
-async fn outside_provider(world: &World) -> Outcome {
+pub(super) async fn outside_provider(world: &World) -> Outcome {
     change_ai_setup(
         &world.ctx(),
         ChangeAiSetup {

@@ -1728,6 +1728,61 @@
         "x-permission": "decide-roles"
       }
     },
+    "/api/v1/assistant": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "Whether the assistant is there for the person at a place. It reads the settings and sends\nnothing; a project the person may not see, or that is kept from AI, answers *not found*.",
+        "operationId": "getAssistantStatus",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The project the person looks at: its ID or short name. Left out, the question is about the\norganization.",
+            "required": true,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether the assistant is there.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantStatusBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/assistant/apply": {
       "post": {
         "tags": ["ai"],
@@ -18277,6 +18332,32 @@
           "tool": {
             "type": "string",
             "description": "The name of the tool."
+          }
+        }
+      },
+      "AssistantStatusBody": {
+        "type": "object",
+        "description": "Whether the assistant is there at a place, and where its answers come from.",
+        "required": ["available", "names_sent"],
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "AI counts at the place: the organization and the project both have it on. When it is\n`false` the button, the panel and the entries of quick search are not shown."
+          },
+          "destination": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Destination",
+                "description": "Where the data goes; missing while the assistant is not there."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "names_sent": {
+            "type": "boolean",
+            "description": "Whether people go to the provider by name; otherwise as their role."
           }
         }
       },

@@ -52,6 +52,7 @@ pub(super) async fn ai_request(
     Ok(Some(match operation {
         // AI is off in the matrix, so a question is answered "AI is off" and sent nowhere; a
         // reference that was not made by this server for this person is no reference.
+        "getAssistantStatus" => ("GET", "/api/v1/assistant".to_owned(), None),
         "askAssistant" => (
             "POST",
             "/api/v1/assistant/questions".to_owned(),

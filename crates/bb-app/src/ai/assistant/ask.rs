@@ -105,7 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The projects the panel looks at, after each has been found as the person may find it: what
     /// the person cannot read, what does not exist and what is kept from AI answer the same
     /// `resource.not-found`. A search is checked when it runs, through the tool.
-    async fn projects_looked_at(
+    pub(super) async fn projects_looked_at(
         &self,
         actor: &Actor,
         looking_at: &[LookingAt],

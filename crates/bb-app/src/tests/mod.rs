@@ -20,6 +20,7 @@ mod agents_more;
 mod ai_setup;
 mod ai_tools;
 mod assistant;
+mod assistant_status;
 mod check_access_types;
 mod choice_numbers;
 mod editing;

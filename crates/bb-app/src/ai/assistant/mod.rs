@@ -17,6 +17,7 @@ mod apply;
 mod ask;
 mod people;
 mod reference;
+mod status;
 mod step;
 mod system;
 
@@ -29,6 +30,7 @@ use serde_json::Value;
 
 pub use apply::{Applied, ApplyProposal, apply_proposal};
 pub use ask::{AskAssistantQuery, ask_assistant};
+pub use status::{AssistantStatus, AssistantStatusQuery, assistant_status};
 
 use super::tools::ProposedChange;
 use crate::auth::AppError;

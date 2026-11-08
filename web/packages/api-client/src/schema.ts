@@ -474,6 +474,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assistant": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Whether the assistant is there for the person at a place. It reads the settings and sends
+     *     nothing; a project the person may not see, or that is kept from AI, answers *not found*.
+     */
+    get: operations["getAssistantStatus"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assistant/apply": {
     parameters: {
       query?: never;
@@ -5076,6 +5096,17 @@ export interface components {
       reference: string;
       /** @description The name of the tool. */
       tool: string;
+    };
+    /** @description Whether the assistant is there at a place, and where its answers come from. */
+    AssistantStatusBody: {
+      /**
+       * @description AI counts at the place: the organization and the project both have it on. When it is
+       *     `false` the button, the panel and the entries of quick search are not shown.
+       */
+      available: boolean;
+      destination?: components["schemas"]["Destination"] | null;
+      /** @description Whether people go to the provider by name; otherwise as their role. */
+      names_sent: boolean;
     };
     /** @description One turn of the conversation so far. */
     AssistantTurnBody: {
@@ -12243,6 +12274,39 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getAssistantStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The project the person looks at: its ID or short name. Left out, the question is about the
+         *     organization.
+         */
+        project: string | null;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether the assistant is there. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssistantStatusBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

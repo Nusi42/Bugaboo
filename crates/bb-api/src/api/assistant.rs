@@ -5,10 +5,11 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::ai::assistant::{
-    Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, ChatTurn, LookingAt, Proposal,
+    Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,
+    AssistantStatusQuery, ChatTurn, LookingAt, Proposal,
 };
 use bb_app::ai::tools::ProposedChange;
-use bb_core::ai::{ChatFrom, LookingAtKind};
+use bb_core::ai::{ChatFrom, Destination, LookingAtKind};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -18,7 +19,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
-use crate::errors::{ApiError, ApiJson};
+use crate::errors::{ApiError, ApiJson, ApiQuery};
 
 /// One thing the panel looks at.
 #[derive(Deserialize, ToSchema)]
@@ -257,12 +258,79 @@ async fn apply_assistant_proposal(
     answer_authorized(&applied.map(|applied| AppliedProposalBody::from(&applied)))
 }
 
+/// Where the person looks, for the question *is the assistant there*.
+#[derive(Deserialize, utoipa::IntoParams)]
+pub(crate) struct AssistantStatusParams {
+    /// The project the person looks at: its ID or short name. Left out, the question is about the
+    /// organization.
+    project: Option<String>,
+}
+
+/// Whether the assistant is there at a place, and where its answers come from.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct AssistantStatusBody {
+    /// AI counts at the place: the organization and the project both have it on. When it is
+    /// `false` the button, the panel and the entries of quick search are not shown.
+    available: bool,
+    /// Where the data goes; missing while the assistant is not there.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    destination: Option<Destination>,
+    /// Whether people go to the provider by name; otherwise as their role.
+    names_sent: bool,
+}
+
+impl bb_policy::Masked for AssistantStatusBody {}
+
+impl From<&AssistantStatus> for AssistantStatusBody {
+    fn from(status: &AssistantStatus) -> Self {
+        Self {
+            available: status.available,
+            destination: status.destination,
+            names_sent: status.names_sent,
+        }
+    }
+}
+
+/// Whether the assistant is there for the person at a place. It reads the settings and sends
+/// nothing; a project the person may not see, or that is kept from AI, answers *not found*.
+#[utoipa::path(
+    get,
+    path = "/api/v1/assistant",
+    operation_id = "getAssistantStatus",
+    tag = "ai",
+    params(AssistantStatusParams),
+    responses(
+        (status = 200, description = "Whether the assistant is there.", body = AssistantStatusBody),
+        NotSignedInAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn get_assistant_status(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<AssistantStatusParams>,
+) -> Result<Response, ApiError> {
+    let status = auth
+        .api()?
+        .assistant_status(
+            info,
+            AssistantStatusQuery {
+                session_token,
+                project: params.project,
+            },
+        )
+        .await?;
+    answer_authorized(&status.map(|status| AssistantStatusBody::from(&status)))
+}
+
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
+        .routes(routes!(get_assistant_status))
         .routes(routes!(ask_assistant))
         .routes(routes!(apply_assistant_proposal))
 }

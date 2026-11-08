@@ -59,7 +59,8 @@ use crate::agents::{
     hand_agent, my_agents, organization_agents, rename_agent, stop_all_agents,
 };
 use crate::ai::assistant::{
-    Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, apply_proposal, ask_assistant,
+    Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,
+    AssistantStatusQuery, apply_proposal, ask_assistant, assistant_status,
 };
 use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{

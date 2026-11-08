@@ -401,6 +401,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeLabelGroupOffers", &[Quirk::AtTheTargetProject]),
     Example::with("listNeverSentToAi", &[Quirk::KeysActAsThePerson]),
     // The assistant is the panel of a signed-in person: no key, also not the key of an AI app.
+    Example::route("getAssistantStatus"),
     Example::route("askAssistant"),
     Example::route("applyAssistantProposal"),
     Example::route("setFieldNeverSentToAi"),
