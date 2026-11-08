@@ -9,11 +9,6 @@ lines = 825
 reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
 
 [[exempt]]
-path = "crates/bb-app/src/auth/mod.rs"
-lines = 829
-reason = "The list of the use cases of AuthApi is one macro list that ARCH-EVENTS and the API read; agent work added eleven. Split by area in M7-F71."
-
-[[exempt]]
 path = "crates/bb-app/src/tests/notifications.rs"
 lines = 948
 reason = "The tests of the notifications reader; they move with the reader in WP-12. Split by feature in M4-F130."

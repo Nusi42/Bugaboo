@@ -321,6 +321,259 @@
         "x-permission": "see-status"
       }
     },
+    "/api/v1/agent-work/{work}/answer": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "Answers a question of an agent. The answer joins the brief.",
+        "operationId": "answerAgentQuestion",
+        "parameters": [
+          {
+            "name": "work",
+            "in": "path",
+            "description": "The ID of the work.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The work.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict2"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agent-work/{work}/approve-plan": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "*Approve plan*: the attempt may start. A note instead answers the plan.",
+        "operationId": "approveAgentPlan",
+        "parameters": [
+          {
+            "name": "work",
+            "in": "path",
+            "description": "The ID of the work.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovePlanBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The work.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict2"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agent-work/{work}/looked-at": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "Marks work that was accepted by itself as looked at.",
+        "operationId": "lookAtAgentWork",
+        "parameters": [
+          {
+            "name": "work",
+            "in": "path",
+            "description": "The ID of the work.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The work.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agent-work/{work}/review": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "The review of a result: *Accept* ends the hand-over, *Send back* starts another attempt with\nthe note in the brief.",
+        "operationId": "reviewAgentWork",
+        "parameters": [
+          {
+            "name": "work",
+            "in": "path",
+            "description": "The ID of the work.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The work.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict2"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/agents": {
       "get": {
         "tags": ["agents"],
@@ -542,14 +795,7 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "description": "Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConflictProblem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/Conflict2"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -652,14 +898,7 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "description": "Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConflictProblem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/Conflict2"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -867,6 +1106,84 @@
         },
         "x-permission": "own-account",
         "x-secret": true
+      }
+    },
+    "/api/v1/agents/{agent}/standing-rules": {
+      "get": {
+        "tags": ["agent-work"],
+        "summary": "The standing rules of one of the person's agents, a page at a time.",
+        "operationId": "listStandingRules",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rules, by ID.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_StandingRuleItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
       }
     },
     "/api/v1/ai": {
@@ -5422,6 +5739,60 @@
         "x-permission": "manage-groups"
       }
     },
+    "/api/v1/hand-overs": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "Hands one or several issues over to one of the person's agents. The person needs *Change\nissues* (or *Change the issues they reported*) on each issue and *Create agents that work for\nyou* in its project.",
+        "operationId": "handOver",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandOverBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The hand-over.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandOverAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/issue-types": {
       "get": {
         "tags": ["issue-types"],
@@ -5915,6 +6286,64 @@
           }
         },
         "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/agent-work": {
+      "get": {
+        "tags": ["agent-work"],
+        "summary": "The agent work on an issue: who works on it, the brief, the attempts, the questions, the\nreviews and the proposals that wait for a person.",
+        "operationId": "getIssueAgentWork",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable or internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agent work.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueAgentWorkBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
       }
     },
     "/api/v1/issues/{issue}/comments": {
@@ -13524,6 +13953,71 @@
         "x-permission": "see-issues"
       }
     },
+    "/api/v1/proposals/{proposal}/decision": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "Applies or discards a proposal of a standing rule. Nothing changes before a person applies it.",
+        "operationId": "decideProposal",
+        "parameters": [
+          {
+            "name": "proposal",
+            "in": "path",
+            "description": "The ID of the proposal.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The proposal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/relation-kinds": {
       "get": {
         "tags": ["relations"],
@@ -15732,6 +16226,128 @@
         "x-permission": "change-organization-settings"
       }
     },
+    "/api/v1/standing-rules": {
+      "post": {
+        "tags": ["agent-work"],
+        "summary": "Makes a standing rule for one of the person's agents over a saved search.",
+        "operationId": "createStandingRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StandingRuleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The rule.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingRuleItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/standing-rules/{rule}": {
+      "patch": {
+        "tags": ["agent-work"],
+        "summary": "Renews or stops a standing rule.",
+        "operationId": "changeStandingRule",
+        "parameters": [
+          {
+            "name": "rule",
+            "in": "path",
+            "description": "The ID of the rule.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRuleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The rule.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingRuleItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict2"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/status": {
       "get": {
         "tags": ["server"],
@@ -17270,6 +17886,18 @@
         "description": "Whether an agent may act.",
         "enum": ["active", "paused", "stopped"]
       },
+      "AgentWorkState": {
+        "type": "string",
+        "description": "The state of the agent work on an issue.",
+        "enum": [
+          "waiting-for-the-agent",
+          "agent-working",
+          "waiting-for-you",
+          "ready-for-review",
+          "agent-gave-up",
+          "stopped"
+        ]
+      },
       "AgreementBody": {
         "type": "object",
         "description": "Who confirmed the agreement, when, and for which provider.",
@@ -17386,6 +18014,26 @@
           }
         }
       },
+      "AnswerBody": {
+        "type": "object",
+        "description": "Answer a question of an agent.",
+        "required": ["question", "answer", "version"],
+        "properties": {
+          "answer": {
+            "type": "string",
+            "description": "The answer, which joins the brief."
+          },
+          "question": {
+            "type": "string",
+            "description": "The ID of the question."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the work the person saw."
+          }
+        }
+      },
       "AppliedProposalBody": {
         "type": "object",
         "description": "What *Apply* saved.",
@@ -17420,6 +18068,22 @@
               "$ref": "#/components/schemas/ManyChangeTargetBody"
             },
             "description": "The issues."
+          }
+        }
+      },
+      "ApprovePlanBody": {
+        "type": "object",
+        "description": "*Approve plan*, or a note instead.",
+        "required": ["version"],
+        "properties": {
+          "note": {
+            "type": ["string", "null"],
+            "description": "A note that answers the plan instead of approving it."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the work the person saw."
           }
         }
       },
@@ -17695,6 +18359,65 @@
           }
         }
       },
+      "AttemptBody": {
+        "type": "object",
+        "description": "One attempt. The minutes and the cost are what the agent reports, never a time entry.",
+        "required": [
+          "id",
+          "number",
+          "plan_approved",
+          "reported_minutes",
+          "reported_cost",
+          "started_at",
+          "results"
+        ],
+        "properties": {
+          "ended_at": {
+            "type": ["string", "null"],
+            "description": "When it ended.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the attempt."
+          },
+          "number": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Its number on the issue."
+          },
+          "plan": {
+            "type": ["string", "null"],
+            "description": "The plan the agent reported."
+          },
+          "plan_approved": {
+            "type": "boolean",
+            "description": "Whether a person approved the plan."
+          },
+          "reported_cost": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The cost in cents the agent reports."
+          },
+          "reported_minutes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The minutes the agent reports."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultBody"
+            },
+            "description": "What it attached."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "When it started.",
+            "format": "date-time"
+          }
+        }
+      },
       "AuthStatusBody": {
         "type": "object",
         "description": "What the app needs to know before anybody signs in.",
@@ -17884,6 +18607,11 @@
             "description": "The largest value."
           }
         }
+      },
+      "BriefPart": {
+        "type": "string",
+        "description": "A part of a brief taken from the issue.",
+        "enum": ["description", "steps-to-reproduce", "done-when"]
       },
       "CertificateBody": {
         "type": "object",
@@ -18401,6 +19129,27 @@
           }
         }
       },
+      "ChangeRuleBody": {
+        "type": "object",
+        "description": "*Renew* a standing rule, or stop it.",
+        "required": ["action", "version"],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RuleAction",
+            "description": "`renew` or `stop`."
+          },
+          "days": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "With `renew`: after how many days the rule ends (at most 90)."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person saw."
+          }
+        }
+      },
       "ChangeSavedSearchBody": {
         "type": "object",
         "description": "What to change in a saved search. What is left out stays as it is.",
@@ -18750,6 +19499,11 @@
             ]
           }
         }
+      },
+      "CheckResult": {
+        "type": "string",
+        "description": "The result of a check an agent attached to an attempt.",
+        "enum": ["passed", "failed"]
       },
       "CheckVersionsBody": {
         "type": "object",
@@ -20496,6 +21250,11 @@
           }
         }
       },
+      "GivingState": {
+        "type": "string",
+        "description": "Whether a hand-over or a standing rule still gives work.",
+        "enum": ["open", "ended"]
+      },
       "GroupBody": {
         "type": "object",
         "description": "A group after it was made or renamed.",
@@ -20578,6 +21337,133 @@
             "type": "integer",
             "format": "int64",
             "description": "The version the person saw."
+          }
+        }
+      },
+      "HandOverAnswer": {
+        "type": "object",
+        "description": "A hand-over as it was made.",
+        "required": ["id", "agent", "issues", "ends_at", "state", "version"],
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "The agent."
+          },
+          "ends_at": {
+            "type": "string",
+            "description": "When it ends.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the hand-over."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HandedIssueBody"
+            },
+            "description": "The issues."
+          },
+          "state": {
+            "$ref": "#/components/schemas/GivingState",
+            "description": "Whether it still gives work."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the hand-over."
+          }
+        }
+      },
+      "HandOverBody": {
+        "type": "object",
+        "description": "Hand issues over to one of the person's agents.",
+        "required": ["agent", "issues"],
+        "properties": {
+          "accept_by_itself": {
+            "type": "boolean",
+            "description": "Whether an attempt may be accepted by itself when the project allows it."
+          },
+          "agent": {
+            "type": "string",
+            "description": "The ID of the agent."
+          },
+          "budget_attempts": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most attempts on one issue; the agent's own limit when left out."
+          },
+          "budget_cost": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most cost, in cents, the agent reports."
+          },
+          "budget_minutes": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The most minutes the agent reports."
+          },
+          "days": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "After how many days the hand-over ends; the setting of the organization when left out."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The members of the issue the agent may change, when it may change fields."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The issues, by their IDs as people write them (`WEB-142`)."
+          },
+          "note": {
+            "type": "string",
+            "description": "The note of the brief."
+          },
+          "plan_needs_approval": {
+            "type": "boolean",
+            "description": "Whether each attempt waits for *Approve plan*."
+          },
+          "powers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HandOverPower"
+            },
+            "description": "What the agent may do besides reading, commenting, reporting and attaching."
+          }
+        }
+      },
+      "HandOverPower": {
+        "type": "string",
+        "description": "What a hand-over lets the agent do besides what it always may.",
+        "enum": ["change-fields", "change-status", "create-sub-issues"]
+      },
+      "HandedIssueBody": {
+        "type": "object",
+        "description": "One issue of a hand-over.",
+        "required": ["work", "issue", "missing"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The issue."
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BriefPart"
+            },
+            "description": "The parts of the brief the issue lacks. It does not stop the hand-over."
+          },
+          "work": {
+            "type": "string",
+            "description": "The ID of the work on the issue."
           }
         }
       },
@@ -20923,6 +21809,38 @@
           "id": {
             "type": ["string", "null"],
             "description": "The ID of the invitation."
+          }
+        }
+      },
+      "IssueAgentWorkBody": {
+        "type": "object",
+        "description": "The agent work on an issue.",
+        "required": ["worked_on_by", "work", "proposals", "truncated"],
+        "properties": {
+          "proposals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposalBody"
+            },
+            "description": "The proposals of standing rules that wait for a person."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the lists were cut at the most an issue shows."
+          },
+          "work": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkBody"
+            },
+            "description": "All the work, newest first."
+          },
+          "worked_on_by": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkedOnByBody"
+            },
+            "description": "The agents with open work on the issue. The issue keeps its person: an agent is never\n*Assigned to*."
           }
         }
       },
@@ -24409,6 +25327,24 @@
           }
         }
       },
+      "Page_StandingRuleItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StandingRuleItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_TagItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -25510,6 +26446,62 @@
           }
         }
       },
+      "ProposalBody": {
+        "type": "object",
+        "description": "A change a standing rule proposes.",
+        "required": ["id", "rule", "agent", "field", "before", "after", "state", "proposed_at"],
+        "properties": {
+          "after": {
+            "type": "object",
+            "description": "The value proposed."
+          },
+          "agent": {
+            "type": "string",
+            "description": "The agent."
+          },
+          "before": {
+            "type": "object",
+            "description": "The value now."
+          },
+          "field": {
+            "$ref": "#/components/schemas/RuleField",
+            "description": "The field."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the proposal."
+          },
+          "proposed_at": {
+            "type": "string",
+            "description": "When it was proposed.",
+            "format": "date-time"
+          },
+          "rule": {
+            "type": "string",
+            "description": "The rule."
+          },
+          "state": {
+            "$ref": "#/components/schemas/ProposalState",
+            "description": "What became of it."
+          }
+        }
+      },
+      "ProposalDecisionBody": {
+        "type": "object",
+        "description": "Apply or discard a proposal.",
+        "required": ["apply"],
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "`true` applies the proposal; `false` discards it."
+          }
+        }
+      },
+      "ProposalState": {
+        "type": "string",
+        "description": "What became of a proposal of a standing rule.",
+        "enum": ["open", "applied", "discarded"]
+      },
       "ProposedChangeBody": {
         "type": "object",
         "description": "One field a proposed or applied change touches.",
@@ -25627,6 +26619,30 @@
           "workflow": {
             "$ref": "#/components/schemas/SlotBody",
             "description": "The workflow, with its new version."
+          }
+        }
+      },
+      "QuestionBody": {
+        "type": "object",
+        "description": "A question of an agent with its answer.",
+        "required": ["id", "text", "asked_at"],
+        "properties": {
+          "answer": {
+            "type": ["string", "null"],
+            "description": "The answer, which joins the brief."
+          },
+          "asked_at": {
+            "type": "string",
+            "description": "When it was asked.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the question."
+          },
+          "text": {
+            "type": "string",
+            "description": "What the agent asks."
           }
         }
       },
@@ -26067,6 +27083,101 @@
           }
         }
       },
+      "ResultBody": {
+        "type": "object",
+        "description": "What an attempt attached.",
+        "required": ["kind", "label"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ResultKind",
+            "description": "A link or a check."
+          },
+          "label": {
+            "type": "string",
+            "description": "How the agent calls it."
+          },
+          "link": {
+            "type": ["string", "null"],
+            "description": "The link."
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CheckResult",
+                "description": "The outcome of a check. Bugaboo does not run or verify checks."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ResultKind": {
+        "type": "string",
+        "description": "What an agent attached to an attempt.",
+        "enum": ["link", "check"]
+      },
+      "ReviewAnswer": {
+        "type": "string",
+        "description": "How a person answers a result at the review.",
+        "enum": ["accept", "send-back", "throw-away"]
+      },
+      "ReviewAnswerBody": {
+        "type": "object",
+        "description": "A review.",
+        "required": ["answer", "at"],
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/ReviewAnswer",
+            "description": "The answer."
+          },
+          "at": {
+            "type": "string",
+            "description": "When.",
+            "format": "date-time"
+          },
+          "by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who reviewed, as *Who sees people* says for the reader; nobody when it was accepted by\nitself."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note."
+          }
+        }
+      },
+      "ReviewBody": {
+        "type": "object",
+        "description": "The review of a result.",
+        "required": ["answer", "version"],
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/ReviewAnswer",
+            "description": "`accept` or `send-back`."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note; with `send-back` it joins the brief and is needed."
+          },
+          "status": {
+            "type": ["string", "null"],
+            "description": "With `accept`: the status the issue moves to, by its key."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the work the person saw."
+          }
+        }
+      },
       "RoleAtRef": {
         "type": "object",
         "description": "A role (or *No access*) that somebody has, and where: what a sentence like \"Team member in\nWebsite\" needs.",
@@ -26219,6 +27330,16 @@
             "description": "Whether somebody has the role for the whole organization."
           }
         }
+      },
+      "RuleAction": {
+        "type": "string",
+        "description": "What to do to a standing rule.",
+        "enum": ["renew", "stop"]
+      },
+      "RuleField": {
+        "type": "string",
+        "description": "A field a standing rule may change.",
+        "enum": ["labels", "tags", "type", "duplicate-of", "found-in-release"]
       },
       "RuleFieldBody": {
         "type": "object",
@@ -27597,6 +28718,89 @@
           }
         }
       },
+      "StandingRuleBody": {
+        "type": "object",
+        "description": "Make a standing rule.",
+        "required": ["agent", "search", "project"],
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "The ID of the agent."
+          },
+          "creates_in": {
+            "type": ["string", "null"],
+            "description": "The project in which the rule may create issues."
+          },
+          "days": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "After how many days the rule ends (at most 90); the setting of the organization when left\nout."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleField"
+            },
+            "description": "The fields the rule may change; none means it only proposes."
+          },
+          "project": {
+            "type": "string",
+            "description": "The ID of the project the rule works in."
+          },
+          "search": {
+            "type": "string",
+            "description": "The ID of the saved search."
+          }
+        }
+      },
+      "StandingRuleItem": {
+        "type": "object",
+        "description": "A standing rule.",
+        "required": ["id", "agent", "search", "project", "fields", "state", "ends_at", "version"],
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "The agent."
+          },
+          "creates_in": {
+            "type": ["string", "null"],
+            "description": "The project in which it may create issues."
+          },
+          "ends_at": {
+            "type": "string",
+            "description": "When it ends.",
+            "format": "date-time"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleField"
+            },
+            "description": "The fields it may change."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the rule."
+          },
+          "project": {
+            "type": "string",
+            "description": "The project of the rule."
+          },
+          "search": {
+            "type": "string",
+            "description": "The saved search."
+          },
+          "state": {
+            "$ref": "#/components/schemas/GivingState",
+            "description": "Whether it still works."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the rule; send it back with a change."
+          }
+        }
+      },
       "StartBody": {
         "type": "object",
         "description": "What *Start work day* may say.",
@@ -28716,6 +29920,91 @@
           }
         }
       },
+      "WorkBody": {
+        "type": "object",
+        "description": "The agent work on one issue of one hand-over.",
+        "required": [
+          "id",
+          "hand_over",
+          "agent",
+          "state",
+          "open",
+          "brief",
+          "attempts",
+          "questions",
+          "reviews",
+          "accepted_by_itself",
+          "choose_next_status",
+          "version"
+        ],
+        "properties": {
+          "accepted_by_itself": {
+            "type": "boolean",
+            "description": "Whether it was accepted by itself and nobody looked yet."
+          },
+          "agent": {
+            "type": "string",
+            "description": "The agent."
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttemptBody"
+            },
+            "description": "The attempts, oldest first."
+          },
+          "brief": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The note of the brief, then the answers to the questions."
+          },
+          "choose_next_status": {
+            "type": "boolean",
+            "description": "Whether the issue keeps its status after an accept by itself and a person chooses the next\none."
+          },
+          "gave_up": {
+            "type": ["string", "null"],
+            "description": "Why the agent gave up."
+          },
+          "hand_over": {
+            "type": "string",
+            "description": "The hand-over."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the work."
+          },
+          "open": {
+            "type": "boolean",
+            "description": "Whether the hand-over still gives work."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBody"
+            },
+            "description": "The questions, oldest first."
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewAnswerBody"
+            },
+            "description": "The reviews, oldest first."
+          },
+          "state": {
+            "$ref": "#/components/schemas/AgentWorkState",
+            "description": "Where the work is. It is not the status of the issue."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the work; send it back with an answer."
+          }
+        }
+      },
       "WorkDayBody": {
         "type": "object",
         "description": "A work day.",
@@ -28874,6 +30163,25 @@
               "$ref": "#/components/schemas/WeekBody"
             },
             "description": "The time worked in each week of the stretch."
+          }
+        }
+      },
+      "WorkedOnByBody": {
+        "type": "object",
+        "description": "An agent shown on an issue as *worked on by*.",
+        "required": ["agent", "name", "person"],
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "The agent."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person responsible for it, as *Who sees people* says for the reader."
           }
         }
       },
@@ -29144,6 +30452,16 @@
           "application/problem+json": {
             "schema": {
               "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Conflict2": {
+        "description": "Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed)",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ConflictProblem"
             }
           }
         }

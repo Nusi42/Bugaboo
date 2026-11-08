@@ -19,8 +19,8 @@ use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
 use super::agent_work_bodies::{
-    AnswerBody, ApprovePlanBody, ChangeRuleBody, DecisionBody, HandOverAnswer, HandOverBody,
-    IssueAgentWorkBody, ProposalBody, ReviewBody, RuleAction, StandingRuleBody, StandingRuleItem,
+    AnswerBody, ApprovePlanBody, ChangeRuleBody, HandOverAnswer, HandOverBody, IssueAgentWorkBody,
+    ProposalBody, ProposalDecisionBody, ReviewBody, RuleAction, StandingRuleBody, StandingRuleItem,
     WorkBody,
 };
 use super::auth::{
@@ -444,7 +444,7 @@ fn answer_rules(
     operation_id = "decideProposal",
     tag = "agent-work",
     params(("proposal" = String, Path, description = "The ID of the proposal.")),
-    request_body = DecisionBody,
+    request_body = ProposalDecisionBody,
     responses(
         (status = 200, description = "The proposal.", body = ProposalBody),
         InvalidAnswer,
@@ -458,7 +458,7 @@ async fn decide_proposal(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(proposal_id): ApiPath<String>,
-    body: Result<ApiJson<DecisionBody>, ApiError>,
+    body: Result<ApiJson<ProposalDecisionBody>, ApiError>,
 ) -> Result<Response, ApiError> {
     let read = body.and_then(|ApiJson(body)| Ok((body, path_id::<AgentNoteId>(&proposal_id)?)));
     let (body, proposal) = auth.after_who_asks(&info, &session_token, read).await?;

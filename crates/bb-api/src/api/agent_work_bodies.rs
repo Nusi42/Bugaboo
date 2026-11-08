@@ -481,7 +481,7 @@ pub(crate) enum RuleAction {
 
 /// Apply or discard a proposal.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct DecisionBody {
+pub(crate) struct ProposalDecisionBody {
     /// `true` applies the proposal; `false` discards it.
     pub(super) apply: bool,
 }

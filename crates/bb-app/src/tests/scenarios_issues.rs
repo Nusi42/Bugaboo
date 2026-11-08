@@ -311,7 +311,7 @@ pub(crate) async fn apply_many_changes_scenario(world: &World) -> Added {
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        apply_many_changes(
+        Box::pin(apply_many_changes(
             &world.ctx(),
             ApplyManyChanges {
                 session_token: token(world),
@@ -326,7 +326,7 @@ pub(crate) async fn apply_many_changes_scenario(world: &World) -> Added {
                     },
                 },
             },
-        ),
+        )),
     )
     .await
 }

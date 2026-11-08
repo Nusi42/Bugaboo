@@ -519,7 +519,7 @@ async fn ai_04_the_mark_of_a_text_names_the_agent_only_to_a_reader_told_its_pers
     let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work(&world, fixer, project);
+    give_work_on(&world, fixer, project, issue_id);
     for text in ["First", "Second"] {
         add_comment(
             &world.ctx(),

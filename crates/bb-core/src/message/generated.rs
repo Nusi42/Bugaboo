@@ -5240,11 +5240,27 @@ pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-
 /// The message `set-up-second-step.why`.
 pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
 
+/// The message `setting.agents.accept-by-itself.help`.
+pub const SETTING_AGENTS_ACCEPT_BY_ITSELF_HELP: MessageKey =
+    MessageKey::new("setting.agents.accept-by-itself.help");
+
+/// The message `setting.agents.accept-by-itself.name`.
+pub const SETTING_AGENTS_ACCEPT_BY_ITSELF_NAME: MessageKey =
+    MessageKey::new("setting.agents.accept-by-itself.name");
+
 /// The message `setting.agents.enabled.help`.
 pub const SETTING_AGENTS_ENABLED_HELP: MessageKey = MessageKey::new("setting.agents.enabled.help");
 
 /// The message `setting.agents.enabled.name`.
 pub const SETTING_AGENTS_ENABLED_NAME: MessageKey = MessageKey::new("setting.agents.enabled.name");
+
+/// The message `setting.agents.hand-over-days.help`.
+pub const SETTING_AGENTS_HAND_OVER_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.agents.hand-over-days.help");
+
+/// The message `setting.agents.hand-over-days.name`.
+pub const SETTING_AGENTS_HAND_OVER_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.agents.hand-over-days.name");
 
 /// The message `setting.agents.maximum-attempts-on-one-issue.help`.
 pub const SETTING_AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE_HELP: MessageKey =
@@ -5269,6 +5285,14 @@ pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_HELP: MessageKey =
 /// The message `setting.agents.maximum-issues-at-once.name`.
 pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_NAME: MessageKey =
     MessageKey::new("setting.agents.maximum-issues-at-once.name");
+
+/// The message `setting.agents.rule-days.help`.
+pub const SETTING_AGENTS_RULE_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.agents.rule-days.help");
+
+/// The message `setting.agents.rule-days.name`.
+pub const SETTING_AGENTS_RULE_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.agents.rule-days.name");
 
 /// The message `setting.ai-apps.enabled.help`.
 pub const SETTING_AI_APPS_ENABLED_HELP: MessageKey =
@@ -18756,10 +18780,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
     ),
     (
+        "setting.agents.accept-by-itself.help",
+        "Off: a person looks at every result of an agent. On: when the hand-over allows it, a result is accepted by itself if it has at least one check and every check passed. Bugaboo does not run or verify the checks; the agent says whether they passed. Accepted results wait under Accepted by itself until a person has looked at them.",
+    ),
+    (
+        "setting.agents.accept-by-itself.name",
+        "Accept an agent's result by itself when its checks pass",
+    ),
+    (
         "setting.agents.enabled.help",
         "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
     ),
     ("setting.agents.enabled.name", "Agents may work"),
+    (
+        "setting.agents.hand-over-days.help",
+        "When a person hands issues to an agent and sets no end, the hand-over ends after this many days.",
+    ),
+    (
+        "setting.agents.hand-over-days.name",
+        "Days until a hand-over ends",
+    ),
     (
         "setting.agents.maximum-attempts-on-one-issue.help",
         "The most attempts on one issue that any agent can be given as its limit.",
@@ -18783,6 +18823,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.agents.maximum-issues-at-once.name",
         "Most issues at once for an agent",
+    ),
+    (
+        "setting.agents.rule-days.help",
+        "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed.",
+    ),
+    (
+        "setting.agents.rule-days.name",
+        "Days until a standing rule ends",
     ),
     (
         "setting.ai-apps.enabled.help",

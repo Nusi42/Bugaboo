@@ -94,6 +94,77 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/agent-work/{work}/answer": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answers a question of an agent. The answer joins the brief. */
+    post: operations["answerAgentQuestion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agent-work/{work}/approve-plan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *Approve plan*: the attempt may start. A note instead answers the plan. */
+    post: operations["approveAgentPlan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agent-work/{work}/looked-at": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marks work that was accepted by itself as looked at. */
+    post: operations["lookAtAgentWork"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agent-work/{work}/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The review of a result: *Accept* ends the hand-over, *Send back* starts another attempt with
+     *     the note in the brief.
+     */
+    post: operations["reviewAgentWork"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agents": {
     parameters: {
       query?: never;
@@ -215,6 +286,23 @@ export interface paths {
      *     change. The new key is shown once.
      */
     post: operations["renewAgentKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agents/{agent}/standing-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The standing rules of one of the person's agents, a page at a time. */
+    get: operations["listStandingRules"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1563,6 +1651,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/hand-overs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Hands one or several issues over to one of the person's agents. The person needs *Change
+     *     issues* (or *Change the issues they reported*) on each issue and *Create agents that work for
+     *     you* in its project.
+     */
+    post: operations["handOver"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issue-types": {
     parameters: {
       query?: never;
@@ -1659,6 +1768,26 @@ export interface paths {
      *     change.
      */
     patch: operations["changeIssue"];
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/agent-work": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The agent work on an issue: who works on it, the brief, the attempts, the questions, the
+     *     reviews and the proposals that wait for a person.
+     */
+    get: operations["getIssueAgentWork"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/issues/{issue}/comments": {
@@ -3695,6 +3824,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/proposals/{proposal}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Applies or discards a proposal of a standing rule. Nothing changes before a person applies it. */
+    post: operations["decideProposal"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/relation-kinds": {
     parameters: {
       query?: never;
@@ -4240,6 +4386,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/standing-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Makes a standing rule for one of the person's agents over a saved search. */
+    post: operations["createStandingRule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/standing-rules/{rule}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Renews or stops a standing rule. */
+    patch: operations["changeStandingRule"];
+    trace?: never;
+  };
   "/api/v1/status": {
     parameters: {
       query?: never;
@@ -4724,6 +4904,17 @@ export interface components {
      * @enum {string}
      */
     AgentState: "active" | "paused" | "stopped";
+    /**
+     * @description The state of the agent work on an issue.
+     * @enum {string}
+     */
+    AgentWorkState:
+      | "waiting-for-the-agent"
+      | "agent-working"
+      | "waiting-for-you"
+      | "ready-for-review"
+      | "agent-gave-up"
+      | "stopped";
     /** @description Who confirmed the agreement, when, and for which provider. */
     AgreementBody: {
       /**
@@ -4778,6 +4969,18 @@ export interface components {
       /** @description Whether names of people go to an outside provider (otherwise the role of each person). */
       send_names: boolean;
     };
+    /** @description Answer a question of an agent. */
+    AnswerBody: {
+      /** @description The answer, which joins the brief. */
+      answer: string;
+      /** @description The ID of the question. */
+      question: string;
+      /**
+       * Format: int64
+       * @description The version of the work the person saw.
+       */
+      version: number;
+    };
     /** @description What *Apply* saved. */
     AppliedProposalBody: {
       /** @description The fields that were changed, with the value before and after. */
@@ -4794,6 +4997,16 @@ export interface components {
       action: components["schemas"]["ManyChangeActionBody"];
       /** @description The issues. */
       issues: components["schemas"]["ManyChangeTargetBody"][];
+    };
+    /** @description *Approve plan*, or a note instead. */
+    ApprovePlanBody: {
+      /** @description A note that answers the plan instead of approving it. */
+      note?: string | null;
+      /**
+       * Format: int64
+       * @description The version of the work the person saw.
+       */
+      version: number;
     };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
@@ -4915,6 +5128,42 @@ export interface components {
        */
       version: number;
     };
+    /** @description One attempt. The minutes and the cost are what the agent reports, never a time entry. */
+    AttemptBody: {
+      /**
+       * Format: date-time
+       * @description When it ended.
+       */
+      ended_at?: string | null;
+      /** @description The ID of the attempt. */
+      id: string;
+      /**
+       * Format: int64
+       * @description Its number on the issue.
+       */
+      number: number;
+      /** @description The plan the agent reported. */
+      plan?: string | null;
+      /** @description Whether a person approved the plan. */
+      plan_approved: boolean;
+      /**
+       * Format: int64
+       * @description The cost in cents the agent reports.
+       */
+      reported_cost: number;
+      /**
+       * Format: int64
+       * @description The minutes the agent reports.
+       */
+      reported_minutes: number;
+      /** @description What it attached. */
+      results: components["schemas"]["ResultBody"][];
+      /**
+       * Format: date-time
+       * @description When it started.
+       */
+      started_at: string;
+    };
     /** @description What the app needs to know before anybody signs in. */
     AuthStatusBody: {
       /** @description Passkeys can be used: the public address of the server has a host name. */
@@ -5019,6 +5268,11 @@ export interface components {
        */
       most: number;
     };
+    /**
+     * @description A part of a brief taken from the issue.
+     * @enum {string}
+     */
+    BriefPart: "description" | "steps-to-reproduce" | "done-when";
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
       /**
@@ -5269,6 +5523,21 @@ export interface components {
        */
       version: number;
     };
+    /** @description *Renew* a standing rule, or stop it. */
+    ChangeRuleBody: {
+      /** @description `renew` or `stop`. */
+      action: components["schemas"]["RuleAction"];
+      /**
+       * Format: int64
+       * @description With `renew`: after how many days the rule ends (at most 90).
+       */
+      days?: number | null;
+      /**
+       * Format: int64
+       * @description The version the person saw.
+       */
+      version: number;
+    };
     /** @description What to change in a saved search. What is left out stays as it is. */
     ChangeSavedSearchBody: {
       /** @description A new name. */
@@ -5422,6 +5691,11 @@ export interface components {
       person: components["schemas"]["PersonRef"];
       project?: components["schemas"]["ProjectLabelBody"] | null;
     };
+    /**
+     * @description The result of a check an agent attached to an attempt.
+     * @enum {string}
+     */
+    CheckResult: "passed" | "failed";
     /** @description The records on the screen. */
     CheckVersionsBody: {
       /** @description The records, at most the number the generated client calls `versionsMax`. */
@@ -6343,6 +6617,11 @@ export interface components {
       /** @description Its title; may be empty. */
       title: string;
     };
+    /**
+     * @description Whether a hand-over or a standing rule still gives work.
+     * @enum {string}
+     */
+    GivingState: "open" | "ended";
     /** @description A group after it was made or renamed. */
     GroupBody: {
       /** @description The ID of the group. */
@@ -6394,6 +6673,78 @@ export interface components {
        * @description The version the person saw.
        */
       version: number;
+    };
+    /** @description A hand-over as it was made. */
+    HandOverAnswer: {
+      /** @description The agent. */
+      agent: string;
+      /**
+       * Format: date-time
+       * @description When it ends.
+       */
+      ends_at: string;
+      /** @description The ID of the hand-over. */
+      id: string;
+      /** @description The issues. */
+      issues: components["schemas"]["HandedIssueBody"][];
+      /** @description Whether it still gives work. */
+      state: components["schemas"]["GivingState"];
+      /**
+       * Format: int64
+       * @description The version of the hand-over.
+       */
+      version: number;
+    };
+    /** @description Hand issues over to one of the person's agents. */
+    HandOverBody: {
+      /** @description Whether an attempt may be accepted by itself when the project allows it. */
+      accept_by_itself?: boolean;
+      /** @description The ID of the agent. */
+      agent: string;
+      /**
+       * Format: int64
+       * @description The most attempts on one issue; the agent's own limit when left out.
+       */
+      budget_attempts?: number | null;
+      /**
+       * Format: int64
+       * @description The most cost, in cents, the agent reports.
+       */
+      budget_cost?: number | null;
+      /**
+       * Format: int64
+       * @description The most minutes the agent reports.
+       */
+      budget_minutes?: number | null;
+      /**
+       * Format: int64
+       * @description After how many days the hand-over ends; the setting of the organization when left out.
+       */
+      days?: number | null;
+      /** @description The members of the issue the agent may change, when it may change fields. */
+      fields?: string[];
+      /** @description The issues, by their IDs as people write them (`WEB-142`). */
+      issues: string[];
+      /** @description The note of the brief. */
+      note?: string;
+      /** @description Whether each attempt waits for *Approve plan*. */
+      plan_needs_approval?: boolean;
+      /** @description What the agent may do besides reading, commenting, reporting and attaching. */
+      powers?: components["schemas"]["HandOverPower"][];
+    };
+    /**
+     * @description What a hand-over lets the agent do besides what it always may.
+     * @enum {string}
+     */
+    HandOverPower: "change-fields" | "change-status" | "create-sub-issues";
+    /** @description One issue of a hand-over. */
+    HandedIssueBody: {
+      /** @description The issue. */
+      issue: string;
+      /** @description The parts of the brief the issue lacks. It does not stop the hand-over. */
+      missing: components["schemas"]["BriefPart"][];
+      /** @description The ID of the work on the issue. */
+      work: string;
     };
     /**
      * @description A handle: the one a person has, or the new one they ask for. Without the `@`: lower case or
@@ -6545,6 +6896,20 @@ export interface components {
       expires_at?: string | null;
       /** @description The ID of the invitation. */
       id?: string | null;
+    };
+    /** @description The agent work on an issue. */
+    IssueAgentWorkBody: {
+      /** @description The proposals of standing rules that wait for a person. */
+      proposals: components["schemas"]["ProposalBody"][];
+      /** @description Whether the lists were cut at the most an issue shows. */
+      truncated: boolean;
+      /** @description All the work, newest first. */
+      work: components["schemas"]["WorkBody"][];
+      /**
+       * @description The agents with open work on the issue. The issue keeps its person: an agent is never
+       *     *Assigned to*.
+       */
+      worked_on_by: components["schemas"]["WorkedOnByBody"][];
     };
     /** @description One issue with what the person may do with it. */
     IssueDetailBody: {
@@ -8158,6 +8523,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_StandingRuleItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["StandingRuleItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_TagItem: {
       /** @description The items of this page. */
       items: components["schemas"]["TagItem"][];
@@ -8746,6 +9118,38 @@ export interface components {
        */
       changes: components["schemas"]["ProjectStatusChangeBody"][];
     };
+    /** @description A change a standing rule proposes. */
+    ProposalBody: {
+      /** @description The value proposed. */
+      after: Record<string, unknown>;
+      /** @description The agent. */
+      agent: string;
+      /** @description The value now. */
+      before: Record<string, unknown>;
+      /** @description The field. */
+      field: components["schemas"]["RuleField"];
+      /** @description The ID of the proposal. */
+      id: string;
+      /**
+       * Format: date-time
+       * @description When it was proposed.
+       */
+      proposed_at: string;
+      /** @description The rule. */
+      rule: string;
+      /** @description What became of it. */
+      state: components["schemas"]["ProposalState"];
+    };
+    /** @description Apply or discard a proposal. */
+    ProposalDecisionBody: {
+      /** @description `true` applies the proposal; `false` discards it. */
+      apply: boolean;
+    };
+    /**
+     * @description What became of a proposal of a standing rule.
+     * @enum {string}
+     */
+    ProposalState: "open" | "applied" | "discarded";
     /** @description One field a proposed or applied change touches. */
     ProposedChangeBody: {
       /** @description The value after; absent when the change takes the value away. */
@@ -8804,6 +9208,20 @@ export interface components {
     PublishedBody: {
       /** @description The workflow, with its new version. */
       workflow: components["schemas"]["SlotBody"];
+    };
+    /** @description A question of an agent with its answer. */
+    QuestionBody: {
+      /** @description The answer, which joins the brief. */
+      answer?: string | null;
+      /**
+       * Format: date-time
+       * @description When it was asked.
+       */
+      asked_at: string;
+      /** @description The ID of the question. */
+      id: string;
+      /** @description What the agent asks. */
+      text: string;
     };
     /** @description The notifications to mark as read. */
     ReadNotificationsBody: {
@@ -9037,6 +9455,53 @@ export interface components {
        */
       version: number;
     };
+    /** @description What an attempt attached. */
+    ResultBody: {
+      /** @description A link or a check. */
+      kind: components["schemas"]["ResultKind"];
+      /** @description How the agent calls it. */
+      label: string;
+      /** @description The link. */
+      link?: string | null;
+      outcome?: components["schemas"]["CheckResult"] | null;
+    };
+    /**
+     * @description What an agent attached to an attempt.
+     * @enum {string}
+     */
+    ResultKind: "link" | "check";
+    /**
+     * @description How a person answers a result at the review.
+     * @enum {string}
+     */
+    ReviewAnswer: "accept" | "send-back" | "throw-away";
+    /** @description A review. */
+    ReviewAnswerBody: {
+      /** @description The answer. */
+      answer: components["schemas"]["ReviewAnswer"];
+      /**
+       * Format: date-time
+       * @description When.
+       */
+      at: string;
+      by?: components["schemas"]["PersonRef"] | null;
+      /** @description The note. */
+      note?: string | null;
+    };
+    /** @description The review of a result. */
+    ReviewBody: {
+      /** @description `accept` or `send-back`. */
+      answer: components["schemas"]["ReviewAnswer"];
+      /** @description The note; with `send-back` it joins the brief and is needed. */
+      note?: string | null;
+      /** @description With `accept`: the status the issue moves to, by its key. */
+      status?: string | null;
+      /**
+       * Format: int64
+       * @description The version of the work the person saw.
+       */
+      version: number;
+    };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
      *     Website" needs.
@@ -9125,6 +9590,16 @@ export interface components {
       /** @description Whether somebody has the role for the whole organization. */
       whole_organization: boolean;
     };
+    /**
+     * @description What to do to a standing rule.
+     * @enum {string}
+     */
+    RuleAction: "renew" | "stop";
+    /**
+     * @description A field a standing rule may change.
+     * @enum {string}
+     */
+    RuleField: "labels" | "tags" | "type" | "duplicate-of" | "found-in-release";
     /** @description A field a rule can name. */
     RuleFieldBody: {
       /**
@@ -9835,6 +10310,52 @@ export interface components {
       /** @description The person sees the project. */
       sees: boolean;
     };
+    /** @description Make a standing rule. */
+    StandingRuleBody: {
+      /** @description The ID of the agent. */
+      agent: string;
+      /** @description The project in which the rule may create issues. */
+      creates_in?: string | null;
+      /**
+       * Format: int64
+       * @description After how many days the rule ends (at most 90); the setting of the organization when left
+       *     out.
+       */
+      days?: number | null;
+      /** @description The fields the rule may change; none means it only proposes. */
+      fields?: components["schemas"]["RuleField"][];
+      /** @description The ID of the project the rule works in. */
+      project: string;
+      /** @description The ID of the saved search. */
+      search: string;
+    };
+    /** @description A standing rule. */
+    StandingRuleItem: {
+      /** @description The agent. */
+      agent: string;
+      /** @description The project in which it may create issues. */
+      creates_in?: string | null;
+      /**
+       * Format: date-time
+       * @description When it ends.
+       */
+      ends_at: string;
+      /** @description The fields it may change. */
+      fields: components["schemas"]["RuleField"][];
+      /** @description The ID of the rule. */
+      id: string;
+      /** @description The project of the rule. */
+      project: string;
+      /** @description The saved search. */
+      search: string;
+      /** @description Whether it still works. */
+      state: components["schemas"]["GivingState"];
+      /**
+       * Format: int64
+       * @description The version of the rule; send it back with a change.
+       */
+      version: number;
+    };
     /** @description What *Start work day* may say. */
     StartBody: {
       /**
@@ -10411,6 +10932,41 @@ export interface components {
       /** @description The key of the message that names it. */
       message_key: string;
     };
+    /** @description The agent work on one issue of one hand-over. */
+    WorkBody: {
+      /** @description Whether it was accepted by itself and nobody looked yet. */
+      accepted_by_itself: boolean;
+      /** @description The agent. */
+      agent: string;
+      /** @description The attempts, oldest first. */
+      attempts: components["schemas"]["AttemptBody"][];
+      /** @description The note of the brief, then the answers to the questions. */
+      brief: string[];
+      /**
+       * @description Whether the issue keeps its status after an accept by itself and a person chooses the next
+       *     one.
+       */
+      choose_next_status: boolean;
+      /** @description Why the agent gave up. */
+      gave_up?: string | null;
+      /** @description The hand-over. */
+      hand_over: string;
+      /** @description The ID of the work. */
+      id: string;
+      /** @description Whether the hand-over still gives work. */
+      open: boolean;
+      /** @description The questions, oldest first. */
+      questions: components["schemas"]["QuestionBody"][];
+      /** @description The reviews, oldest first. */
+      reviews: components["schemas"]["ReviewAnswerBody"][];
+      /** @description Where the work is. It is not the status of the issue. */
+      state: components["schemas"]["AgentWorkState"];
+      /**
+       * Format: int64
+       * @description The version of the work; send it back with an answer.
+       */
+      version: number;
+    };
     /** @description A work day. */
     WorkDayBody: {
       /** @description The breaks, in order. */
@@ -10477,6 +11033,15 @@ export interface components {
       truncated: boolean;
       /** @description The time worked in each week of the stretch. */
       weeks: components["schemas"]["WeekBody"][];
+    };
+    /** @description An agent shown on an issue as *worked on by*. */
+    WorkedOnByBody: {
+      /** @description The agent. */
+      agent: string;
+      /** @description Its name. */
+      name: string;
+      /** @description The person responsible for it, as *Who sees people* says for the reader. */
+      person: components["schemas"]["PersonRef"];
     };
     /** @description What the editor shows for a place. */
     WorkflowEditorBody: {
@@ -10604,6 +11169,15 @@ export interface components {
       };
       content: {
         "application/problem+json": components["schemas"]["Problem"];
+      };
+    };
+    /** @description Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed) */
+    Conflict2: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/problem+json": components["schemas"]["ConflictProblem"];
       };
     };
     /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
@@ -10861,6 +11435,143 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  answerAgentQuestion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the work. */
+        work: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnswerBody"];
+      };
+    };
+    responses: {
+      /** @description The work. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict2"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  approveAgentPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the work. */
+        work: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ApprovePlanBody"];
+      };
+    };
+    responses: {
+      /** @description The work. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict2"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  lookAtAgentWork: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the work. */
+        work: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkBody"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  reviewAgentWork: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the work. */
+        work: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewBody"];
+      };
+    };
+    responses: {
+      /** @description The work. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict2"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listMyAgents: {
     parameters: {
       query?: {
@@ -10987,15 +11698,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
-      /** @description Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ConflictProblem"];
-        };
-      };
+      409: components["responses"]["Conflict2"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
@@ -11056,15 +11759,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
-      /** @description Not saved yet: someone changed this after you started. Your text is still here. (edit.version-changed) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ConflictProblem"];
-        };
-      };
+      409: components["responses"]["Conflict2"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
@@ -11167,6 +11862,45 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listStandingRules: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rules, by ID. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_StandingRuleItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -13858,6 +14592,38 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  handOver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HandOverBody"];
+      };
+    };
+    responses: {
+      /** @description The hand-over. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HandOverAnswer"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listIssueTypes: {
     parameters: {
       query?: {
@@ -14125,6 +14891,37 @@ export interface operations {
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getIssueAgentWork: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable or internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The agent work. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueAgentWorkBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -18277,6 +19074,41 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  decideProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the proposal. */
+        proposal: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProposalDecisionBody"];
+      };
+    };
+    responses: {
+      /** @description The proposal. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProposalBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listRelationKinds: {
     parameters: {
       query?: {
@@ -19492,6 +20324,74 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createStandingRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StandingRuleBody"];
+      };
+    };
+    responses: {
+      /** @description The rule. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StandingRuleItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeStandingRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the rule. */
+        rule: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeRuleBody"];
+      };
+    };
+    responses: {
+      /** @description The rule. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StandingRuleItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict2"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

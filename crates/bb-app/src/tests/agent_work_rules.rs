@@ -446,14 +446,14 @@ pub(crate) async fn decide_proposal_scenario(world: &World) -> Added {
     .into_value();
     measured(
         &world.store,
-        decide_proposal(
+        Box::pin(decide_proposal(
             &world.ctx(),
             DecideProposal {
                 session_token: given.team.session_token.clone(),
                 proposal: proposed.id,
                 apply: false,
             },
-        ),
+        )),
     )
     .await
 }
