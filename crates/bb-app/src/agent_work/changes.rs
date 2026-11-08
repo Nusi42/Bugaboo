@@ -138,17 +138,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         seen: &'a mut Seen,
         id: bb_core::id::IssueId,
     ) -> Result<Option<&'a (Issue, std::sync::Arc<Evaluation>, String)>, AppError> {
-        if !seen.issues.contains_key(&id) {
-            let found = match self.seen_issue_by_id(actor, id).await? {
-                Some((issue, held)) => {
-                    let line: Option<IssueLine> = self.line_of(actor, maker, &issue).await?;
-                    line.map(|line| (issue, held, line.key))
-                }
-                None => None,
-            };
-            seen.issues.insert(id, found);
+        if seen.issues.contains_key(&id) {
+            return Ok(seen.issues.get(&id).and_then(Option::as_ref));
         }
-        Ok(seen.issues.get(&id).and_then(Option::as_ref))
+        let found = match self.seen_issue_by_id(actor, id).await? {
+            Some((issue, held)) => {
+                let line: Option<IssueLine> = self.line_of(actor, maker, &issue).await?;
+                line.map(|line| (issue, held, line.key))
+            }
+            None => None,
+        };
+        Ok(seen.issues.entry(id).or_insert(found).as_ref())
     }
 
     /// Who wrote what is new in an event, as the AI is told.

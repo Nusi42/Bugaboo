@@ -275,3 +275,37 @@ pub(super) async fn sign_in_app_in(
             .to_owned(),
     })
 }
+
+/// An agent of the person with a key, and the issue handed over to it when there is one: the secret
+/// of the key and the ID of the agent.
+pub(super) async fn an_agent_with_a_key(
+    person: &mut Browser,
+    name: &str,
+    handed: Option<&str>,
+) -> Result<(String, String), Failure> {
+    let made = person
+        .send("POST", "/api/v1/agents", Some(json!({"name": name})))
+        .await?;
+    let agent = made.body["id"].as_str().ok_or("no agent ID")?.to_owned();
+    let key = person
+        .send(
+            "POST",
+            &format!("/api/v1/agents/{agent}/keys"),
+            Some(json!({"password": super::rig::PASSWORD, "name": "Key"})),
+        )
+        .await?;
+    let secret = key.body["secret"].as_str().ok_or("no secret")?.to_owned();
+    if let Some(issue) = handed {
+        let given = person
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(json!({"agent": agent, "issues": [issue], "note": "Please look at it"})),
+            )
+            .await?;
+        if !given.status.is_success() {
+            return Err(format!("the hand-over was refused: {}", given.body).into());
+        }
+    }
+    Ok((agent, secret))
+}

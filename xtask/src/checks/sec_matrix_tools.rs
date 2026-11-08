@@ -119,10 +119,14 @@ pub(super) fn tool_findings(record: &str) -> Vec<Finding> {
         for actor in &actors {
             let is_agent = actor.starts_with("agent");
             let allowed = answer(actor) == Some(words::ALLOWED);
-            let wrong = (tool.is_for_agents() && !is_agent && allowed)
-                || (tool.is_for_people() && is_agent && allowed)
-                || (actor == words::AGENT_WITHOUT_WORK && line.effect == "changes" && allowed);
-            if wrong {
+            let not_for_them = if tool.is_for_agents() {
+                !is_agent
+            } else {
+                tool.is_for_people() && is_agent
+            };
+            let changes_with_no_work =
+                actor == words::AGENT_WITHOUT_WORK && line.effect == "changes";
+            if allowed && (not_for_them || changes_with_no_work) {
                 found.push(Finding::at(
                     RECORD_PATH,
                     format!("{place} was let in for `{actor}`, which it must not be."),
@@ -198,11 +202,11 @@ mod tests {
     #[test]
     fn bad_example_a_tool_without_a_line_or_let_in_where_it_must_not_be() {
         let text = tool_record();
-        let without: String = text
+        let without = text
             .lines()
             .filter(|line| !line.starts_with("tool take "))
-            .map(|line| format!("{line}\n"))
-            .collect();
+            .collect::<Vec<_>>()
+            .join("\n");
         assert!(
             messages_of_tools(&without)
                 .iter()

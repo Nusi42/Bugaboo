@@ -18,8 +18,7 @@ use bb_core::message::Message;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use crate::sign_in_tests::ai_mcp_rig::{Answer, Mcp, ai_on};
-use crate::sign_in_tests::http::Browser;
+use crate::sign_in_tests::ai_mcp_rig::{Answer, Mcp, ai_on, an_agent_with_a_key};
 use crate::sign_in_tests::issues_site::{Site, key_of, ok};
 use crate::sign_in_tests::rig::PASSWORD;
 
@@ -30,7 +29,6 @@ const REPOSITORY_ROOT: &str = "../..";
 fn example(tool: Tool, issue: &str, kind: &str) -> Value {
     match tool {
         Tool::SearchIssues => json!({"query": "status group is not Done"}),
-        Tool::GetIssue => json!({"issue": issue}),
         Tool::ListProjects | Tool::GetMyWork | Tool::ChangesSince => json!({}),
         Tool::CreateIssue => {
             json!({"project": "ACME", "issue_type": kind, "title": "From the matrix"})
@@ -41,9 +39,8 @@ fn example(tool: Tool, issue: &str, kind: &str) -> Value {
         Tool::ChangeStatus => json!({"issue": issue, "version": 1, "status": "done"}),
         Tool::AddComment => json!({"issue": issue, "text": "A comment of the matrix"}),
         Tool::LogTime => json!({"issue": issue, "date": "2027-01-15", "minutes": 5}),
-        Tool::StartTimer => json!({"issue": issue}),
         Tool::StopTimer => json!({"version": 1}),
-        Tool::Take | Tool::Submit => json!({"issue": issue}),
+        Tool::GetIssue | Tool::StartTimer | Tool::Take | Tool::Submit => json!({"issue": issue}),
         Tool::Report => json!({"issue": issue, "minutes": 1, "cost_cents": 0}),
         Tool::Ask => json!({"issue": issue, "question": "Which browser?"}),
         Tool::Attach => {
@@ -96,37 +93,6 @@ async fn call(
     .await
 }
 
-/// The key of an agent of the person, and whether it was handed `issue`.
-async fn agent_key(
-    person: &mut Browser,
-    name: &str,
-    handed: Option<&str>,
-) -> Result<String, Failure> {
-    let made = person
-        .send("POST", "/api/v1/agents", Some(json!({"name": name})))
-        .await?;
-    let agent = ok(&made)?["id"].as_str().ok_or("no agent ID")?.to_owned();
-    let key = person
-        .send(
-            "POST",
-            &format!("/api/v1/agents/{agent}/keys"),
-            Some(json!({"password": PASSWORD, "name": "Key"})),
-        )
-        .await?;
-    let secret = ok(&key)?["secret"].as_str().ok_or("no secret")?.to_owned();
-    if let Some(issue) = handed {
-        let given = person
-            .send(
-                "POST",
-                "/api/v1/hand-overs",
-                Some(json!({"agent": agent, "issues": [issue], "note": "Please look at it"})),
-            )
-            .await?;
-        ok(&given)?;
-    }
-    Ok(secret)
-}
-
 /// The lines of the tools: one for every tool of the registry, with the answer of every actor.
 async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
     let (rig, app) = Mcp::start(db).await?;
@@ -153,11 +119,15 @@ async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
     let (mut team, _) = site.person(StartingRole::TeamMember, "matrix-team").await?;
     keys.push((
         words::AGENT_WITHOUT_WORK.to_owned(),
-        Some(agent_key(&mut team, "Idle", None).await?),
+        Some(an_agent_with_a_key(&mut team, "Idle", None).await?.1),
     ));
     keys.push((
         words::AGENT_WITH_WORK.to_owned(),
-        Some(agent_key(&mut team, "Busy", Some(&issue)).await?),
+        Some(
+            an_agent_with_a_key(&mut team, "Busy", Some(&issue))
+                .await?
+                .1,
+        ),
     ));
     let names: Vec<String> = keys.iter().map(|(name, _)| name.clone()).collect();
     assert_eq!(

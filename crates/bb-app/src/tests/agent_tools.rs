@@ -95,18 +95,24 @@ fn stored(world: &World) -> String {
     )
 }
 
-#[tokio::test]
-async fn ai_36_two_agents_take_the_same_issue_and_only_one_gets_it() -> Outcome {
-    let world = World::new().await?;
-    let first = handed(&world).await?;
+/// A second agent of the same person, handed the issue the first one was handed: its key.
+async fn a_helper_with_the_same_issue(world: &World, first: &Handed) -> Result<String, AppError> {
     let session = first.team.session_token.clone();
-    let helper = an_agent(&world, &session, "Helper").await?;
-    let helper_key = key_of(&world, &session, helper).await?;
+    let helper = an_agent(world, &session, "Helper").await?;
+    let key = key_of(world, &session, helper).await?;
     hand_over(
         &world.ctx(),
         plain_hand_over(&session, helper, &[first.issue]),
     )
     .await?;
+    Ok(key)
+}
+
+#[tokio::test]
+async fn ai_36_two_agents_take_the_same_issue_and_only_one_gets_it() -> Outcome {
+    let world = World::new().await?;
+    let first = handed(&world).await?;
+    let helper_key = a_helper_with_the_same_issue(&world, &first).await?;
     let input = json!({"issue": first.issue.to_string()});
     let got = used(&world, &first.key, "take", input.clone()).await?;
     assert!(got.text.contains("agent-working"), "{}", got.text);
@@ -131,14 +137,7 @@ async fn ai_36_two_agents_take_the_same_issue_and_only_one_gets_it() -> Outcome 
 async fn ai_36_two_agents_who_take_at_the_same_moment_are_judged_one_after_the_other() -> Outcome {
     let world = World::new().await?;
     let first = handed(&world).await?;
-    let session = first.team.session_token.clone();
-    let helper = an_agent(&world, &session, "Helper").await?;
-    let helper_key = key_of(&world, &session, helper).await?;
-    hand_over(
-        &world.ctx(),
-        plain_hand_over(&session, helper, &[first.issue]),
-    )
-    .await?;
+    let helper_key = a_helper_with_the_same_issue(&world, &first).await?;
     let input = json!({"issue": first.issue.to_string()});
     let (one, other) = tokio::join!(
         used(&world, &first.key, "take", input.clone()),

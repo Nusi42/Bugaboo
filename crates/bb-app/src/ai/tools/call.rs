@@ -103,10 +103,10 @@ impl Masked for ToolList {}
 /// What the actor may do with tools: a key that may only look, or an app that may only look, lists
 /// and calls no tool that changes anything (AI-04).
 fn effective_scope(actor: &Actor, granted: ToolScope) -> ToolScope {
-    if !actor.key_may_change() {
-        ToolScope::SeeOnly
-    } else {
+    if actor.key_may_change() {
         granted
+    } else {
+        ToolScope::SeeOnly
     }
 }
 

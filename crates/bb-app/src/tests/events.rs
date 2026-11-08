@@ -266,14 +266,14 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             | "create_starter_time_fields"
             | "undo_run"
             | "start_app_session"
-            | "end_app_runs" => {
+            | "end_app_runs"
+            // Taking an issue and the first report of an attempt also open its run.
+            | "report_attempt"
+            | "take_work" => {
                 assert_eq!(added, 2, "{name} appended {added} events");
             }
-            // The first report of an attempt also opens its run; the end of an attempt closes the run
-            // and writes the one comment that says the result is ready.
-            "report_attempt" | "take_work" => {
-                assert_eq!(added, 2, "{name} appended {added} events");
-            }
+            // The end of an attempt closes the run and writes the one comment that says the result
+            // is ready.
             "end_attempt" => assert_eq!(added, 3, "{name} appended {added} events"),
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }

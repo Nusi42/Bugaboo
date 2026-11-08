@@ -100,8 +100,10 @@ impl Record {
             .iter()
             .flat_map(|stored| stored.lines())
             .filter(|line| line.starts_with(words::TOOL_LINE))
-            .map(|line| format!("{line}\n"))
-            .collect();
+            .fold(String::new(), |mut text, line| {
+                let _ = writeln!(text, "{line}");
+                text
+            });
         if std::env::var(words::WRITE_VARIABLE).as_deref() == Ok(words::WRITE_VALUE) {
             std::fs::write(&path, format!("{text}{tools}"))?;
             return Ok(());
@@ -110,8 +112,10 @@ impl Record {
             .map_err(|error| format!("could not read the record {file}: {error}"))?
             .lines()
             .filter(|line| !line.starts_with(words::TOOL_LINE))
-            .map(|line| format!("{line}\n"))
-            .collect();
+            .fold(String::new(), |mut text, line| {
+                let _ = writeln!(text, "{line}");
+                text
+            });
         if stored == text {
             return Ok(());
         }

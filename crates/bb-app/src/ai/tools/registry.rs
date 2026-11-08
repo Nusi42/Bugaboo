@@ -155,7 +155,14 @@ fn changes<S: AuthStore>(
 
 /// Every tool, in the order AI apps are shown them.
 #[must_use]
-pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 19] {
+pub fn registry<S: AuthStore>() -> Vec<ToolSpec<S>> {
+    let mut all = Vec::from(tools_of_people::<S>());
+    all.extend(tools_of_agents::<S>());
+    all
+}
+
+/// The tools every caller may be offered.
+fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
     [
         reads(
             Tool::SearchIssues,
@@ -230,6 +237,13 @@ pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 19] {
             preview::stop_timer::<S>,
             apply::stop_timer::<S>,
         ),
+    ]
+}
+
+/// The tools of agents (AI-36): the work they were handed, what changed, and the proposals of a
+/// standing rule.
+fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
+    [
         changes(
             Tool::Take,
             "take_work",

@@ -5,10 +5,9 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::ai_mcp_rig::{Answer, Mcp, ai_on};
+use super::ai_mcp_rig::{Answer, Mcp, ai_on, an_agent_with_a_key};
 use super::http::Browser;
 use super::issues_site::{Site, key_of, ok};
-use super::rig::PASSWORD;
 
 /// A team member, two agents of theirs with a key each, and an issue handed over to both.
 struct Team {
@@ -22,27 +21,7 @@ async fn team(site: &Site<'_>, ada: &mut Browser, names: &[&str]) -> Result<Team
     let issue = key_of(&site.create(ada, "Fix the login button").await?)?;
     let mut agents = Vec::new();
     for name in names {
-        let made = person
-            .send("POST", "/api/v1/agents", Some(json!({"name": name})))
-            .await?;
-        let agent = ok(&made)?["id"].as_str().ok_or("no agent ID")?.to_owned();
-        let key = person
-            .send(
-                "POST",
-                &format!("/api/v1/agents/{agent}/keys"),
-                Some(json!({"password": PASSWORD, "name": "Key"})),
-            )
-            .await?;
-        let secret = ok(&key)?["secret"].as_str().ok_or("no secret")?.to_owned();
-        let handed = person
-            .send(
-                "POST",
-                "/api/v1/hand-overs",
-                Some(json!({"agent": agent, "issues": [issue], "note": "Please fix it"})),
-            )
-            .await?;
-        ok(&handed)?;
-        agents.push((agent, secret));
+        agents.push(an_agent_with_a_key(&mut person, name, Some(&issue)).await?);
     }
     Ok(Team {
         person,

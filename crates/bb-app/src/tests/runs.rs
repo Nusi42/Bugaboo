@@ -333,14 +333,14 @@ pub(crate) async fn undo_run_scenario(world: &World) -> super::scenarios::Added 
         .map_err(|error| error.to_string())?;
     super::scenarios::measured(
         &world.store,
-        undo_run(
+        Box::pin(undo_run(
             &world.ctx(),
             UndoRun {
                 session_token: admin,
                 run,
                 version: preview.version,
             },
-        ),
+        )),
     )
     .await
 }
