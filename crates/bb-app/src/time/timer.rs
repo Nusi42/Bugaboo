@@ -31,6 +31,7 @@ use super::types::{
     TimerQuery, TimerSaved, TimerView,
 };
 use crate::access::Actor;
+use crate::auth::nothing_if_aborted;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::jobs::JobKind;
 use crate::member::{time_entry as entry_member, timer as member};
@@ -719,12 +720,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 })
             })
             .await;
-        match result {
-            // The person changed the timer at the same moment: the next run of a long timer is
-            // queued by that change, if it still runs.
-            Err(error) if S::is_aborted(&error) => Ok(()),
-            other => other.map_err(|error| internal::<S>(&error)),
-        }
+        nothing_if_aborted::<S>(result)
     }
 }
 

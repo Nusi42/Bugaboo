@@ -201,6 +201,18 @@ impl GrantStore for super::fake::FakeStore {
     }
 
     async fn touch_hand_over(tx: &mut Tx, id: HandOverId, version: i64) -> Result<bool, FakeError> {
+        let failing = tx
+            .state
+            .touches_fail
+            .fetch_update(
+                std::sync::atomic::Ordering::SeqCst,
+                std::sync::atomic::Ordering::SeqCst,
+                |left| left.checked_sub(1),
+            )
+            .is_ok();
+        if failing {
+            return Ok(false);
+        }
         Ok(tx
             .state
             .work

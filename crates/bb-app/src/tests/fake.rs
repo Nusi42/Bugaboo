@@ -68,6 +68,10 @@ impl fmt::Display for FakeError {
 /// Everything the store holds. Cloned for a change and put back when the change succeeded.
 #[derive(Clone, Default)]
 pub(crate) struct State {
+    /// A switch of the tests: how many more times counting the version of a hand-over up finds it
+    /// changed, as if another piece of it closed at the same moment. A count shared by every copy
+    /// of the state, so a change that is rolled back still uses a try up.
+    pub(crate) touches_fail: Arc<std::sync::atomic::AtomicU32>,
     /// A switch of the tests: a hand-over cannot be ended, as if it changed at every try.
     pub(crate) hand_overs_cannot_end: bool,
     /// A switch of the tests: every look for what came after a run finds one more change that no

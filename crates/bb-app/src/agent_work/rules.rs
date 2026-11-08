@@ -21,6 +21,7 @@ use super::types::{
     StandingRulePage, StandingRuleView, StandingRulesQuery,
 };
 use crate::access::Actor;
+use crate::auth::nothing_if_aborted;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 use crate::input::cursor_or_invalid;
 use crate::issues::{ChangeIssue, change_issue};
@@ -489,10 +490,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 })
             })
             .await;
-        match result {
-            Err(error) if S::is_aborted(&error) => Ok(()),
-            other => other.map_err(|error| internal::<S>(&error)),
-        }
+        nothing_if_aborted::<S>(result)
     }
 
     /// Applies a proposal as the person, through the use case that changes that part of an issue
@@ -596,10 +594,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 })
             })
             .await;
-        match result {
-            Err(error) if S::is_aborted(&error) => Ok(()),
-            other => other.map_err(|error| internal::<S>(&error)),
-        }
+        nothing_if_aborted::<S>(result)
     }
 
     /// The work of the job three days before a rule runs out: writes the event the notification

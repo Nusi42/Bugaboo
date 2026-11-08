@@ -215,7 +215,7 @@ pub use account::{accept_invitation, change_password, complete_setup, issue_setu
 pub use ctx::{AuthServices, Ctx, RequestInfo, locked};
 pub(crate) use ctx::{EventMaker, KnownProjects};
 pub use error::AppError;
-pub(crate) use error::{Stops, change_failed, if_there, internal};
+pub(crate) use error::{Stops, change_failed, if_there, internal, nothing_if_aborted};
 pub(crate) use events::{by, changed, entity, fixed_entity, set_to};
 pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,

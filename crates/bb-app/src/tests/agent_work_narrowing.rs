@@ -724,3 +724,64 @@ async fn ai_35_two_accepts_by_itself_on_two_pieces_of_one_hand_over_close_both_a
     assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }
+
+/// Tells the fake store that counting the version of a hand-over up finds it changed this many
+/// more times.
+fn touches_fail(world: &World, times: usize) {
+    let times = u32::try_from(times).unwrap_or(u32::MAX);
+    world
+        .store
+        .lock()
+        .state
+        .touches_fail
+        .store(times, std::sync::atomic::Ordering::SeqCst);
+}
+
+#[tokio::test]
+async fn ai_35_a_review_closes_again_when_a_sibling_closed_first_once() -> Outcome {
+    let world = World::new().await?;
+    let given = ready_for_review(&world).await?;
+    let work = show(&world, &given).await?;
+    touches_fail(&world, 1);
+    review_work(
+        &world.ctx(),
+        review(&given.team.session_token, &work, ReviewAnswer::Accept),
+    )
+    .await?;
+    let stored = world.store.lock().state.work.clone();
+    assert!(stored.works[0].closed);
+    assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
+    assert_eq!(stored.reviews.len(), 1, "one review, written once");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_35_a_review_that_always_finds_the_hand_over_changed_leaves_the_work_open() -> Outcome {
+    let world = World::new().await?;
+    let given = ready_for_review(&world).await?;
+    let work = show(&world, &given).await?;
+    touches_fail(&world, crate::agent_work::TRIES);
+    let lost = review_work(
+        &world.ctx(),
+        review(&given.team.session_token, &work, ReviewAnswer::Accept),
+    )
+    .await;
+    let error = lost.err().ok_or("the review went through")?;
+    assert!(
+        refused(&error, ErrorCode::VersionChanged) || matches!(error, AppError::Stale(_)),
+        "{error:?}"
+    );
+    let stored = world.store.lock().state.work.clone();
+    assert!(!stored.works[0].closed, "the work stays open");
+    assert!(stored.reviews.is_empty(), "no review was written");
+    assert_eq!(stored.hand_overs[0].state, GivingState::Open);
+    // The person asks again, and it goes through.
+    let again = show(&world, &given).await?;
+    review_work(
+        &world.ctx(),
+        review(&given.team.session_token, &again, ReviewAnswer::Accept),
+    )
+    .await?;
+    assert!(world.store.lock().state.work.works[0].closed);
+    Ok(())
+}

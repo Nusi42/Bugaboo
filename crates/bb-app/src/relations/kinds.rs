@@ -23,9 +23,8 @@ use super::types::{
     ChangeRelationKind, CreateRelationKind, CreateStartingRelationKinds, RelationKindPage,
     RelationKindView, RelationKindsQuery,
 };
-use crate::auth::{
-    AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
-};
+use crate::auth::nothing_if_aborted;
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, fixed_entity, internal, set_to};
 use crate::input::clean_name;
 use crate::member::relation_kind as member;
 use crate::projects::Why;
@@ -340,9 +339,5 @@ pub async fn create_starting_relation_kinds<S: AuthStore>(
             })
         })
         .await;
-    match result {
-        Err(error) if S::is_aborted(&error) => Ok(()),
-        Err(error) => Err(change_failed::<S>(&error, Stops::NONE)),
-        Ok(()) => Ok(()),
-    }
+    nothing_if_aborted::<S>(result)
 }

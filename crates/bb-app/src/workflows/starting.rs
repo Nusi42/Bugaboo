@@ -14,7 +14,8 @@ use bb_core::workflow::starter::{SIMPLE, STARTERS};
 use bb_core::workflow::{Workflow, WorkflowContent, WorkflowUse};
 use serde_json::json;
 
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, fixed_entity, internal, set_to};
+use crate::auth::nothing_if_aborted;
+use crate::auth::{AppError, AuthStore, Ctx, fixed_entity, internal, set_to};
 use crate::member::workflow as member;
 
 /// Creates the starter workflows if the organization is new: it has no workflow and no issue yet. It
@@ -105,9 +106,5 @@ pub async fn create_starting_workflows<S: AuthStore>(
         })
         .await;
     ctx.forget_workflows();
-    match result {
-        Err(error) if S::is_aborted(&error) => Ok(()),
-        Err(error) => Err(change_failed::<S>(&error, Stops::NONE)),
-        Ok(()) => Ok(()),
-    }
+    nothing_if_aborted::<S>(result)
 }

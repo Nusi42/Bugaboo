@@ -200,3 +200,16 @@ pub(crate) fn change_failed<S: AuthStore>(error: &S::Error, stops: Stops) -> App
     };
     code.map_or_else(|| internal::<S>(error), AppError::Refused)
 }
+
+/// The result of a change that wrote or stopped itself: a change that stopped itself (another request
+/// did the same work at the same moment, or the thing is gone) has nothing left to do and is no
+/// failure; any other failure is one. The one place that reads that for the changes of jobs and of
+/// housekeeping.
+pub(crate) fn nothing_if_aborted<S: AuthStore>(
+    result: Result<(), S::Error>,
+) -> Result<(), AppError> {
+    match result {
+        Err(error) if S::is_aborted(&error) => Ok(()),
+        other => other.map_err(|error| change_failed::<S>(&error, Stops::NONE)),
+    }
+}

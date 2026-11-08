@@ -26,9 +26,8 @@ use super::fields::member;
 use super::types::{
     ChangeIssueType, CreateIssueType, IssueTypePage, IssueTypeView, IssueTypesQuery,
 };
-use crate::auth::{
-    AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
-};
+use crate::auth::nothing_if_aborted;
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, fixed_entity, internal, set_to};
 use crate::input::clean_name;
 use crate::offers::{Standing, Subject};
 use crate::projects::{Why, tree_in};
@@ -436,9 +435,5 @@ pub async fn create_starting_issue_types<S: AuthStore>(
             })
         })
         .await;
-    match result {
-        Err(error) if S::is_aborted(&error) => Ok(()),
-        Err(error) => Err(change_failed::<S>(&error, Stops::NONE)),
-        Ok(()) => Ok(()),
-    }
+    nothing_if_aborted::<S>(result)
 }

@@ -104,7 +104,7 @@ pub async fn close_work_of<S: AuthStore>(
 
 /// How often a change that closes work, or ends a hand-over, is tried when the hand-over changes
 /// meanwhile.
-const TRIES: usize = 3;
+pub(crate) const TRIES: usize = 3;
 
 /// Runs a change that closes work again when it finds the hand-over changed meanwhile (another
 /// piece of the same hand-over closed at the same moment, [`close_work_of`]): `once` makes the

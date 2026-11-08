@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bb_testing::{DatabaseKind, TestResult, each_database};
+use sea_query::{Alias, Expr, ExprTrait as _, Query};
 use tokio::sync::Notify;
 
 use super::tests::request_with;
@@ -232,6 +233,28 @@ async fn close_piece(
         .is_ok()
 }
 
+/// Waits until the second change is really held up by the first: on PostgreSQL until a session
+/// waits for a lock (seen in `pg_stat_activity`), on SQLite, which gives no such view, for a moment
+/// longer than the second needs to begin.
+async fn wait_until_blocked(storage: &AuthStorage, kind: DatabaseKind) {
+    if kind != DatabaseKind::Postgres {
+        tokio::time::sleep(Duration::from_millis(400)).await;
+        return;
+    }
+    let mut waiting = Query::select();
+    waiting
+        .column(Alias::new("pid"))
+        .from(Alias::new("pg_stat_activity"))
+        .and_where(Expr::col(Alias::new("wait_event_type")).eq("Lock"));
+    for _ in 0..200 {
+        let rows = storage.database().fetch_all(&waiting).await;
+        if rows.is_ok_and(|found| !found.is_empty()) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
 #[tokio::test]
 async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open() -> TestResult {
     each_database("ai_35_parallel_close", async |db| {
@@ -264,7 +287,7 @@ async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open
         let begun = Arc::new(Notify::new());
         let go_on = async {
             begun.notified().await;
-            tokio::time::sleep(Duration::from_millis(400)).await;
+            wait_until_blocked(storage, db.kind()).await;
             release.notify_one();
         };
         let late = async {
