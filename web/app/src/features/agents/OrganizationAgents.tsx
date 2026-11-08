@@ -1,66 +1,60 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
-import { formatDateTime } from "../../shared/format.ts";
 import { itemsOf } from "../../shared/paged.ts";
-import { personName } from "../../shared/person.ts";
 import { QueryGate } from "../shell/index.ts";
-import { agentsInOrder } from "./agent-state.ts";
-import { listedAgents, useOrganizationAgents, type ListedAgent } from "./agents.ts";
-import { AgentStatePill } from "./AgentState.tsx";
+import { LastUsed } from "../my-settings/index.ts";
+import {
+  listedAgents,
+  mayAct,
+  useOrganizationAgents,
+  type AgentEntry,
+  type ListedAgent,
+} from "./agents.ts";
+import { AgentRow } from "./AgentRow.tsx";
+import { AgentStateLine } from "./AgentState.tsx";
 import { StateButtons } from "./StateButtons.tsx";
 
-interface RowProps {
+/** One agent of the organization: its name, its state and person, its last use, and *Stop*. */
+function Row({
+  agent,
+  lastUsed,
+}: {
   readonly agent: ListedAgent;
-  /** When it last signed in with a key; none while it never did. */
-  readonly lastUsed: string | undefined;
-}
-
-/** One agent of the organization: its name, its person, its state pill, its last use, and *Stop*. */
-function Row({ agent, lastUsed }: RowProps) {
+  readonly lastUsed: string | null | undefined;
+}) {
   return (
-    <li {...partOf(part.item)}>
+    <AgentRow stopped={!mayAct(agent)}>
       <span {...partOf(part.startColumn)}>
         <span {...partOf(part.itemTitle)}>{agent.name}</span>
-        <span {...partOf(part.muted)}>
-          {agent.person === undefined || agent.person === null
-            ? t("agents.person-unknown")
-            : t("agents.of", { person: personName(agent.person) })}
-        </span>
-        <span {...partOf(part.agentsStateLine)}>
-          <AgentStatePill agent={agent} />
-        </span>
-        <span {...partOf(part.muted)}>
-          {lastUsed === undefined
-            ? t("agents.never-used")
-            : t("agents.last-used", { when: formatDateTime(lastUsed) })}
-        </span>
+        <AgentStateLine agent={agent} withPerson />
+        <LastUsed at={lastUsed} />
       </span>
       <StateButtons agent={agent} stopOnly />
-    </li>
+    </AgentRow>
   );
+}
+
+/**
+ * The agents in the order the server pages them. An agent that changed its state between two
+ * pages can come twice (once under its old state); it is listed once, where it stands now.
+ */
+function oncePerAgent(items: readonly AgentEntry[]): readonly AgentEntry[] {
+  const last = new Map(items.map((item, at) => [item.id, at] as const));
+  return items.filter((item, at) => last.get(item.id) === at);
 }
 
 /**
  * Every agent of the organization (*Organization settings › Connections › Agents*, AI-30): its
  * person (by *Who sees people*; administrators see names), its state and last use, and *Stop*.
+ * The server sorts it, working agents first, then paused, then stopped, by name inside each
+ * (M7-F224), so a working agent is never behind the stopped ones.
  */
 export function OrganizationAgents() {
   const found = useOrganizationAgents();
-  const items = itemsOf(found.data?.pages);
-  const lastUsed = new Map<string, string>();
-  for (const item of items) {
-    if (
-      item.id !== undefined &&
-      item.id !== null &&
-      item.last_used_at !== undefined &&
-      item.last_used_at !== null
-    ) {
-      lastUsed.set(item.id, item.last_used_at);
-    }
-  }
-  // The one order of agents, over the pages read so far (M7-F224).
-  const agents = agentsInOrder(listedAgents(items));
+  const entries = oncePerAgent(itemsOf(found.data?.pages));
+  const lastUsed = new Map(entries.map((entry) => [entry.id, entry.last_used_at] as const));
+  const agents = listedAgents(entries);
   return (
     <QueryGate error={found.error} data={found.data === undefined ? undefined : agents}>
       {(all) =>

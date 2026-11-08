@@ -18,7 +18,12 @@ export function RuleButton({ search }: SavedSearchActionProps) {
         {t("agents.rule-new")}
       </Button>
       {open ? (
-        <StandingRuleDialog isOpen onOpenChange={setOpen} start={{ search: search.id }} />
+        <StandingRuleDialog
+          isOpen
+          onOpenChange={setOpen}
+          start={{ search: search.id }}
+          searchName={search.name}
+        />
       ) : null}
     </>
   );

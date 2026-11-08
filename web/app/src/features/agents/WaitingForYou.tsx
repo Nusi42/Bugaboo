@@ -1,111 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Button, IssueId, partOf, part, SentenceWithValue } from "@bugaboo/ui";
-import { useNavigate } from "@tanstack/react-router";
+import { partOf, part } from "@bugaboo/ui";
 
-import { issueAddress } from "../../shared/paths.ts";
 import { useNow } from "../../shared/use-now.ts";
-import {
-  agentNamed,
-  ruleDaysLeft,
-  runsOutSoon,
-  useChangeRule,
-  type ListedAgent,
-  type MyWorkItem,
-  type Rule,
-} from "./agents.ts";
+import { runsOutSoon, type ListedAgent, type MyWorkItem, type Rule } from "./agents.ts";
 import { waitingInOrder } from "./agent-state.ts";
 import { type RuleNames } from "./rule-names.ts";
-import { ActionError } from "./ActionError.tsx";
 import { Section } from "./Section.tsx";
-
-/** What a row of *Waiting for you* says and what its button is called, by what the work waits for. */
-const WAITS = {
-  question: { line: "agents.waiting-question", button: "agents.answer" },
-  plan: { line: "agents.waiting-plan", button: "agents.approve" },
-  review: { line: "agents.waiting-review", button: "agents.review" },
-} as const;
-
-/** One question, plan or result: the issue, the agent, what waits, and a button to where it is answered. */
-function WorkRow({
-  item,
-  agents,
-}: {
-  readonly item: MyWorkItem;
-  readonly agents: readonly ListedAgent[];
-}) {
-  const navigate = useNavigate();
-  const waits = item.waits_for;
-  if (waits === undefined || waits === null) {
-    return null;
-  }
-  const words = WAITS[waits];
-  const agent = agentNamed(agents, item.work.agent)?.name ?? item.work.agent_name;
-  const key = item.issue.readable_id;
-  return (
-    <li {...partOf(part.item)}>
-      <span {...partOf(part.startColumn)}>
-        <span {...partOf(part.itemTitle)}>
-          <IssueId id={key} /> {item.issue.title ?? ""}
-        </span>
-        <span {...partOf(part.muted)}>{t(words.line, { agent })}</span>
-      </span>
-      <Button
-        aria-label={t("agents.waiting-button-name", { action: t(words.button), issue: key })}
-        onPress={() => {
-          void navigate({ href: issueAddress(key) });
-        }}
-      >
-        {t(words.button)}
-      </Button>
-    </li>
-  );
-}
-
-/**
- * A standing rule about to run out, in one sentence with the name of its saved search set apart
- * (*Sorter's standing rule* New bugs in Website *runs out in 1 day*), and *Renew* right there.
- */
-function RuleRow({
-  rule,
-  agents,
-  names,
-}: {
-  readonly rule: Rule;
-  readonly agents: readonly ListedAgent[];
-  readonly names: RuleNames;
-}) {
-  const now = useNow();
-  const renew = useChangeRule();
-  const agent = agentNamed(agents, rule.agent)?.name ?? "";
-  const search = names.search(rule.search);
-  const sentence = t("agents.waiting-rule", {
-    agent,
-    search,
-    count: ruleDaysLeft(rule, now),
-  });
-  return (
-    <li {...partOf(part.item)}>
-      <span {...partOf(part.itemTitle)}>
-        <SentenceWithValue sentence={sentence} value={search}>
-          {(name) => <span {...partOf(part.agentsSearchName)}>{name}</span>}
-        </SentenceWithValue>
-      </span>
-      <Button
-        isPending={renew.isPending}
-        aria-label={t("agents.renew-name", { agent, search })}
-        onPress={() => {
-          renew.mutate({
-            params: { path: { rule: rule.id } },
-            body: { action: "renew", version: rule.version },
-          });
-        }}
-      >
-        {t("agents.renew")}
-      </Button>
-      <ActionError error={renew.error} />
-    </li>
-  );
-}
+import { WorkRow } from "./WaitingWork.tsx";
+import { RuleRow } from "./WaitingRule.tsx";
 
 export interface WaitingForYouProps {
   readonly work: readonly MyWorkItem[];
@@ -124,7 +26,7 @@ export function WaitingForYou({ work, rules, agents, names }: WaitingForYouProps
   const ending = rules.filter((rule) => runsOutSoon(rule, now));
   const count = waiting.length + ending.length;
   return (
-    <Section heading={t("agents.waiting")} count={count}>
+    <Section heading={t("agent-work.state.waiting-for-you")} count={count}>
       {count === 0 ? (
         <p {...partOf(part.muted)}>{t("agents.waiting-none")}</p>
       ) : (

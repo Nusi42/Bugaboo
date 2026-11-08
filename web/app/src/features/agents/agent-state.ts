@@ -1,19 +1,25 @@
 import { t, type MessageKey } from "@bugaboo/messages";
 
-import { agentStateText as workStateText } from "../../shared/agent-state.ts";
+import { agentStateText as workStateText, type WorkState } from "../../shared/agent-state.ts";
 import type { AgentStateWord, LimitWord, ListedAgent, MyWorkItem } from "./agents.ts";
 
 // The state of an agent on every screen: the pill, the one order of agents, and the limit that paused one.
 
-/** The look of the pill of agent work that shows the state of an agent. */
-export type AgentPillVariant = "agent-working" | "paused" | "stopped";
+/**
+ * The look of the pill of agent work that shows the state of an agent. A stopped agent has a look of
+ * its own, an outline only, quieter than *Paused* (the stopped *work* of an issue keeps its fill).
+ */
+export type AgentPillVariant = "agent-working" | "paused" | "agent-stopped";
 
-/** The look of the pill for each state of an agent. */
+/** The look of the pill for each state of an agent, and the word of agent work it says (*Paused* is the agent's own). */
 const PILL = {
-  active: "agent-working",
-  paused: "paused",
-  stopped: "stopped",
-} as const satisfies Record<AgentStateWord, AgentPillVariant>;
+  active: { variant: "agent-working", word: "agent-working" },
+  paused: { variant: "paused", word: undefined },
+  stopped: { variant: "agent-stopped", word: "stopped" },
+} as const satisfies Record<
+  AgentStateWord,
+  { readonly variant: AgentPillVariant; readonly word: WorkState | undefined }
+>;
 
 /**
  * Where an agent stands, as the pill of agent work shows it (UX §4.17): *Agent working* and
@@ -23,10 +29,10 @@ export function agentPill(state: AgentStateWord): {
   readonly variant: AgentPillVariant;
   readonly text: string;
 } {
-  const variant = PILL[state];
+  const { variant, word } = PILL[state];
   return {
     variant,
-    text: variant === "paused" ? t("agents.state.paused") : workStateText(variant),
+    text: word === undefined ? t("agents.state.paused") : workStateText(word),
   };
 }
 

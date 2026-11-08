@@ -12,6 +12,8 @@ import { isBox, sourceNote, wordsOf } from "./texts.ts";
 export type ControlRenderer = (
   setting: Setting,
   onChange: (value: SettingValue) => void,
+  /** Goes back to the value the level above gives (*Reset to default* on the organization's level). */
+  onReset: () => void,
 ) => ReactNode;
 
 export interface SettingRowProps {
@@ -119,6 +121,9 @@ export function SettingRow({ setting, actions, control, help }: SettingRowProps)
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
   };
+  const reset = (): void => {
+    actions.onReset(setting.key);
+  };
   // A box that is typed in has its explanation inside, with its field; every other control, and a setting that is
   // locked (no box), has it under it.
   const helpWithField = !lockedBelow && control === undefined && isBox(setting);
@@ -136,7 +141,9 @@ export function SettingRow({ setting, actions, control, help }: SettingRowProps)
           {lockedBelow ? (
             <Locked setting={setting} />
           ) : (
-            (control?.(setting, change) ?? <SettingControl setting={setting} onChange={change} />)
+            (control?.(setting, change, reset) ?? (
+              <SettingControl setting={setting} onChange={change} />
+            ))
           )}
         </WithHint>
       )}

@@ -1,7 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part, useLayout } from "@bugaboo/ui";
 
-import { type ListedAgent, type MyWorkItem, type OfferedAgent, type Rule } from "./agents.ts";
+import {
+  mayAct,
+  type ListedAgent,
+  type MyWorkItem,
+  type OfferedAgent,
+  type Rule,
+} from "./agents.ts";
 import { AcceptedByItself } from "./AcceptedByItself.tsx";
 import { AgentList } from "./AgentsSections.tsx";
 import { Offered } from "./Offered.tsx";
@@ -24,7 +30,7 @@ export interface MyAgentsBodyProps {
  * my agents* ends the page, apart from *Create an agent* (UX §4.17).
  */
 export function MyAgentsBody({ agents, work, offered, rules, cut }: MyAgentsBodyProps) {
-  const running = agents.filter((agent) => agent.state !== "stopped");
+  const running = agents.filter((agent) => mayAct(agent));
   const names = useRuleNames(rules);
   const phone = useLayout() === "phone";
   return (

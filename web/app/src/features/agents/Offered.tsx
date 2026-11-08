@@ -4,13 +4,14 @@ import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { personName } from "../../shared/person.ts";
 import { ActionError } from "./ActionError.tsx";
 import { useAcceptAgent, useTakeBackOffer, type OfferedAgent } from "./agents.ts";
+import { AgentRow } from "./AgentRow.tsx";
 
 /** One agent handed to the person: who hands it over, *Accept* and *Decline*, each with its own request. */
 function OfferedRow({ agent }: { readonly agent: OfferedAgent }) {
   const accept = useAcceptAgent();
   const decline = useTakeBackOffer();
   return (
-    <li {...partOf(part.item)}>
+    <AgentRow>
       <span {...partOf(part.startColumn)}>
         <span {...partOf(part.itemTitle)}>{agent.name}</span>
         <span {...partOf(part.muted)}>
@@ -37,7 +38,7 @@ function OfferedRow({ agent }: { readonly agent: OfferedAgent }) {
         {t("agents.decline")}
       </Button>
       <ActionError error={accept.error ?? decline.error} />
-    </li>
+    </AgentRow>
   );
 }
 

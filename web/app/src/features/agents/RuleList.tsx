@@ -6,6 +6,7 @@ import { ActionError } from "./ActionError.tsx";
 import { agentNamed, runsOutText, useChangeRule, type ListedAgent, type Rule } from "./agents.ts";
 import { type RuleNames } from "./rule-names.ts";
 import { ruleFieldText } from "./rule-draft.ts";
+import { AgentRow } from "./AgentRow.tsx";
 
 /** What a rule may do, in words: it proposes, or it changes these fields, and it may create issues in a project. */
 function powerText(rule: Rule, names: RuleNames): string {
@@ -78,7 +79,7 @@ function RuleRow({ rule, agents, names, withAgent, canChange }: RuleRowProps) {
   const agent = agentNamed(agents, rule.agent)?.name ?? "";
   const search = names.search(rule.search);
   return (
-    <li {...partOf(part.item)}>
+    <AgentRow>
       <span {...partOf(part.startColumn)}>
         <span {...partOf(part.itemTitle)}>
           {withAgent ? t("agents.rule-line", { search, agent }) : search}
@@ -91,7 +92,7 @@ function RuleRow({ rule, agents, names, withAgent, canChange }: RuleRowProps) {
       {rule.state === "ended" || !canChange ? null : (
         <RuleActions rule={rule} agent={agent} search={search} />
       )}
-    </li>
+    </AgentRow>
   );
 }
 

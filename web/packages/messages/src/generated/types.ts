@@ -152,7 +152,7 @@ export interface MessageArguments {
   "agents.key-renew-name": { name: string | number };
   "agents.key-renew-text": { name: string | number };
   "agents.key-take-back-name": { name: string | number };
-  "agents.last-used": { when: string | number };
+  "agents.key-taken-back": { name: string | number };
   "agents.limits-most": { most: number };
   "agents.limits-title": { agent: string | number };
   "agents.of": { person: string | number };
@@ -168,6 +168,7 @@ export interface MessageArguments {
   "agents.rule-line": { agent: string | number; search: string | number };
   "agents.rule-power-change": { fields: string | number };
   "agents.rule-power-creates": { project: string | number };
+  "agents.rule-search-named": { search: string | number };
   "agents.rule-stop-name": { agent: string | number; search: string | number };
   "agents.stop-name": { agent: string | number };
   "agents.stop-title": { agent: string | number };

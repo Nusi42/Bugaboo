@@ -7,7 +7,9 @@ import {
   agentsScene,
   createAgent,
   createAgentsInOrder,
+  createKeyOnPage,
   ruleSearchName,
+  takeKeyBackOnPage,
 } from "./support/agents-scene.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -33,10 +35,12 @@ test("ai_37_my_agents_shows_waiting_for_you_first", async ({ page, server }) => 
     page.getByRole("heading", { level: 2, name: new RegExp(t("agents.list"), "u") }),
   ).toBeVisible();
   const order = await page.getByRole("main").getByRole("heading", { level: 2 }).allTextContents();
-  expect(order[0]).toContain(t("agents.waiting"));
+  expect(order[0]).toContain(t("agent-work.state.waiting-for-you"));
   expect(order.findIndex((name) => name.includes(t("agents.list")))).toBeGreaterThan(0);
   // The standing rule that runs out in two days waits for a person, with *Renew* right there.
-  const waiting = page.getByRole("region", { name: new RegExp(t("agents.waiting"), "u") });
+  const waiting = page.getByRole("region", {
+    name: new RegExp(t("agent-work.state.waiting-for-you"), "u"),
+  });
   await expect(waiting.getByText(ruleSearchName, { exact: false })).toBeVisible();
   await expect(waiting.getByRole("button", { name: /Renew/u })).toBeVisible();
   await expectGoodInEveryLook(page);
@@ -52,7 +56,7 @@ test("ai_37_on_a_phone_my_agents_shows_waiting_for_you_first", async ({ page, se
     page.getByRole("heading", { level: 2, name: new RegExp(t("agents.list"), "u") }),
   ).toBeVisible();
   const order = await page.getByRole("main").getByRole("heading", { level: 2 }).allTextContents();
-  expect(order[0]).toContain(t("agents.waiting"));
+  expect(order[0]).toContain(t("agent-work.state.waiting-for-you"));
   // The buttons are as high as a touch needs.
   const stop = page.getByRole("button", {
     name: t("agents.stop-name", { agent: scene.names.fixer }),
@@ -109,13 +113,7 @@ test("ai_37_stop_all_my_agents_asks_first_and_stops_every_one", async ({ page, s
 test("ai_30_an_agent_key_is_shown_once_and_can_be_taken_back", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
-  await page.goto(paths.myAgents);
-  await page.getByRole("link", { name: scene.names.fixer, exact: true }).click();
-  await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
-  const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
-  await form.getByLabel(t("agents.key-name")).fill("Build server");
-  await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
-  await form.getByRole("button", { name: t("agents.key-create-confirm") }).click();
+  await createKeyOnPage(page, scene.names.fixer, "Build server", ada.password);
   const shown = page.getByRole("region", { name: t("agents.key-shown-title") });
   await expect(shown.locator("code")).toContainText("bb_");
   await shown.getByRole("button", { name: t("access-keys.done") }).click();
@@ -123,14 +121,13 @@ test("ai_30_an_agent_key_is_shown_once_and_can_be_taken_back", async ({ page, se
   await expect(shown).toHaveCount(0);
   const row = page.getByRole("listitem").filter({ hasText: "Build server" });
   await expect(row).toBeVisible();
-  await row
-    .getByRole("button", { name: t("agents.key-take-back-name", { name: "Build server" }) })
-    .click();
-  await page
-    .getByRole("alertdialog")
-    .getByRole("button", { name: t("agents.key-take-back"), exact: true })
-    .click();
+  await takeKeyBackOnPage(page, "Build server");
   await expect(row).toHaveCount(0);
+  // The card says which key was taken back, and no longer says "yet": the agent has no key that works.
+  await expect(page.getByRole("status").filter({ hasText: "Build server" })).toHaveText(
+    t("agents.key-taken-back", { name: "Build server" }),
+  );
+  await expect(page.getByText(t("agents.keys-none"))).toBeVisible();
   await scene.dispose();
 });
 
@@ -179,7 +176,7 @@ test("ai_30_an_administrator_stops_any_agent_from_organization_settings", async 
   await page.goto(paths.organizationAgents);
   const row = page.getByRole("listitem").filter({ hasText: helper });
   await expect(row).toBeVisible();
-  await expect(row.getByText(t("agents.never-used"))).toBeVisible();
+  await expect(row.getByText(t("access-keys.row.never-used"))).toBeVisible();
   await row.getByRole("button", { name: t("agents.stop-name", { agent: helper }) }).click();
   await page
     .getByRole("alertdialog")

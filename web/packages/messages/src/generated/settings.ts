@@ -171,6 +171,13 @@ export const messages = {
   "setting.agents.enabled.name": "Agents may work",
   "setting.agents.enabled.help":
     "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
+  "setting.agents.project-switch": "Agents in this project",
+  "setting.agents.project-follows": "As the organization",
+  "setting.agents.project-follows-on": "As the organization (on)",
+  "setting.agents.project-follows-off": "As the organization (off)",
+  "setting.agents.project-off": "Off",
+  "setting.agents.project-help":
+    "As the organization: the agents of people may work here while they may work for the organization. Off: no agent works in this project, whatever the organization says.",
   "setting.agents.maximum-changes-a-minute.name": "Most changes a minute for an agent",
   "setting.agents.maximum-changes-a-minute.help":
     "The most changes a minute that any agent can be given as its limit.",

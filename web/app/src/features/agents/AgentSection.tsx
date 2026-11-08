@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Link, partOf, part } from "@bugaboo/ui";
 
 import { agentAddress } from "./agent-address.ts";
-import { type ListedAgent, type MyWorkItem } from "./agents.ts";
+import { mayAct, type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentStateLine } from "./AgentState.tsx";
 import { StateButtons } from "./StateButtons.tsx";
 import { WorkLines } from "./WorkLines.tsx";
@@ -20,7 +20,7 @@ export interface AgentSectionProps {
 export function AgentSection({ agent, work }: AgentSectionProps) {
   const open = work.filter((item) => item.work.open);
   return (
-    <li {...partOf(part.agentsAgent)}>
+    <li {...partOf(part.agentsAgent, { variants: [!mayAct(agent) && "stopped"] })}>
       <div {...partOf(part.agentsAgentHead)}>
         <span {...partOf(part.startColumn)}>
           <span {...partOf(part.itemTitle)}>
@@ -30,13 +30,11 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
         </span>
         <StateButtons agent={agent} />
       </div>
-      {open.length === 0 ? (
-        <p {...partOf(part.muted)}>
-          {agent.state === "stopped" ? t("agents.work-none-stopped") : t("agents.work-none")}
-        </p>
-      ) : (
-        <WorkLines work={open} />
-      )}
+      {open.length > 0 ? <WorkLines work={open} /> : null}
+      {/* A stopped agent says nothing more than its state: the card is quiet. */}
+      {open.length === 0 && mayAct(agent) ? (
+        <p {...partOf(part.muted)}>{t("agents.work-none")}</p>
+      ) : null}
     </li>
   );
 }

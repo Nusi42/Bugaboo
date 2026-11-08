@@ -11,7 +11,7 @@ import { draftOf, limitsOf, type Limits, type LimitsDraft } from "./limits-draft
 const FIELDS = [
   ["agents.limit-changes", "changes"],
   ["agents.limit-issues", "issues"],
-  ["agents.limit-attempts", "attempts"],
+  ["agent-work.budget-attempts", "attempts"],
 ] as const;
 
 interface DialogProps {

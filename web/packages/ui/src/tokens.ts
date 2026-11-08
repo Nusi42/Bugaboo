@@ -386,6 +386,7 @@ export const part = {
   settingsHelp: "settings.help",
   aiPage: "ai-page",
   agentWorkWindow: "agent-work.window",
+  agentsRuleWindow: "agents.rule-window",
   fieldInput: "field.input",
   fieldInputRow: "field.input-row",
   fieldUnit: "field.unit",
@@ -956,6 +957,7 @@ export const part = {
   agentsFact: "agents.fact",
   agentsSearchName: "agents.search-name",
   agentsStateLine: "agents.state-line",
+  agentsLimitSentence: "agents.limit-sentence",
   agentsFactValue: "agents.fact-value",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
@@ -980,6 +982,7 @@ export const partWords = {
   "settings.help": { variant: [], state: [] },
   "ai-page": { variant: [], state: [] },
   "agent-work.window": { variant: [], state: [] },
+  "agents.rule-window": { variant: [], state: [] },
   "field.input": { variant: ["inline", "multiline"], state: ["busy"] },
   "field.input-row": { variant: [], state: [] },
   "field.unit": { variant: [], state: [] },
@@ -1152,7 +1155,7 @@ export const partWords = {
   row: { variant: ["note", "inline", "stretch"], state: [] },
   "row.end": { variant: [], state: [] },
   list: { variant: ["loose", "tight", "inset", "snug"], state: [] },
-  item: { variant: ["spread", "slim", "row", "wrap"], state: [] },
+  item: { variant: ["spread", "slim", "row", "wrap", "buttons-below", "stopped"], state: [] },
   "item.text": { variant: [], state: [] },
   "item.main": { variant: [], state: [] },
   "item.title": { variant: [], state: [] },
@@ -1650,6 +1653,7 @@ export const partWords = {
     variant: [
       "waiting-for-the-agent",
       "paused",
+      "agent-stopped",
       "agent-working",
       "waiting-for-you",
       "ready-for-review",
@@ -1679,7 +1683,7 @@ export const partWords = {
   "agent-work.steps": { variant: [], state: [] },
   "agent-work.parts": { variant: [], state: [] },
   "agents.heading": { variant: [], state: [] },
-  "agents.agent": { variant: [], state: [] },
+  "agents.agent": { variant: ["stopped"], state: [] },
   "agents.agent-head": { variant: [], state: [] },
   "agents.actions": { variant: [], state: [] },
   "agents.work": { variant: [], state: [] },
@@ -1688,6 +1692,7 @@ export const partWords = {
   "agents.fact": { variant: [], state: [] },
   "agents.search-name": { variant: [], state: [] },
   "agents.state-line": { variant: [], state: [] },
+  "agents.limit-sentence": { variant: [], state: [] },
   "agents.fact-value": { variant: [], state: [] },
 } as const;
 

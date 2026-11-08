@@ -2,7 +2,13 @@ import { t } from "@bugaboo/messages";
 
 import { addressInProject, paths, savedSearchAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene, openRuleOfSearch } from "./support/agents-scene.ts";
+import {
+  agentsScene,
+  createKeyOnPage,
+  openRuleOfSearch,
+  takeKeyBackOnPage,
+  takeKeysBack,
+} from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
@@ -21,25 +27,15 @@ const MILESTONE = "M7/my-agents";
 test("The key of an agent after Take back", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
-  await page.goto(paths.myAgents);
-  await page.getByRole("link", { name: scene.names.sorter, exact: true }).click();
-  await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
-  const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
-  await form.getByLabel(t("agents.key-name")).fill("Build server");
-  await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
-  await form.getByRole("button", { name: t("agents.key-create-confirm") }).click();
-  await page.getByRole("button", { name: t("access-keys.done") }).click();
-  await page
-    .getByRole("button", { name: t("agents.key-take-back-name", { name: "Build server" }) })
-    .click();
-  await page
-    .getByRole("alertdialog")
-    .getByRole("button", { name: t("agents.key-take-back"), exact: true })
-    .click();
   await inFourChosenThemes(page, "agent-key-taken-back", MILESTONE, paths.appearance, async () => {
-    await page.goto(paths.myAgents);
-    await page.getByRole("link", { name: scene.names.sorter, exact: true }).click();
-    await expect(page.getByRole("heading", { name: t("agents.keys") })).toBeVisible();
+    // Every theme starts from no key, makes one and takes it back: the card says so.
+    await takeKeysBack(scene.admin, scene.sorter);
+    await createKeyOnPage(page, scene.names.sorter, "Build server", ada.password);
+    await page.getByRole("button", { name: t("access-keys.done") }).click();
+    await takeKeyBackOnPage(page, "Build server");
+    await expect(
+      page.getByText(t("agents.key-taken-back", { name: "Build server" })),
+    ).toBeVisible();
   });
   await scene.dispose();
 });
@@ -53,7 +49,7 @@ test("Hand an agent to another person", async ({ page, server }) => {
     await page.getByRole("button", { name: t("agents.hand"), exact: true }).click();
     const window = page.getByRole("alertdialog");
     await window.getByLabel(t("agents.hand-project")).selectOption({ index: 1 });
-    await window.getByLabel(t("agents.hand-person")).selectOption({ index: 1 });
+    await window.getByRole("radio").first().check();
   });
   await scene.dispose();
 });
@@ -69,12 +65,14 @@ test("The window of a standing rule from a saved search", async ({ page, server 
   await scene.dispose();
 });
 
-test("The switch Agents may work of a project", async ({ page, server }) => {
+test("The switch Agents in this project of a project", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
   await inFourChosenThemes(page, "project-agents", MILESTONE, paths.appearance, async () => {
     await page.goto(addressInProject(paths.projectSettings, "WEB"));
-    await expect(page.getByText(t("setting.agents.enabled.name")).first()).toBeVisible();
+    await expect(
+      page.getByLabel(t("setting.agents.project-switch"), { exact: true }),
+    ).toBeVisible();
   });
   await scene.dispose();
 });

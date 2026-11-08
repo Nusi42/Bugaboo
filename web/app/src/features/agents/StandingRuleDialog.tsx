@@ -1,8 +1,6 @@
 import { agentRuleDaysDefault, agentRuleDaysMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
-  Alert,
-  alertTone,
   AskDialog,
   Checkbox,
   ChoiceGroup,
@@ -14,8 +12,8 @@ import {
 } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
 import { SavedSearchChoice } from "../search/index.ts";
+import { ActionError } from "./ActionError.tsx";
 import { listedAgents, useCreateRule, useMyAgentList } from "./agents.ts";
 import { projectKey } from "./project-choices.ts";
 import { ProjectSelect } from "./ProjectSelect.tsx";
@@ -110,10 +108,14 @@ function Powers({ draft, onChange }: DraftProps) {
 }
 
 /** The fields of the window. */
-function Fields({ draft, onChange, searchFixed }: DraftProps & { readonly searchFixed: boolean }) {
+function Fields({
+  draft,
+  onChange,
+  searchName,
+}: DraftProps & { readonly searchName: string | undefined }) {
   return (
-    <div {...partOf(part.stack)}>
-      {searchFixed ? null : (
+    <div {...partOf(part.agentsRuleWindow)}>
+      {searchName === undefined ? (
         <SavedSearchChoice
           label={t("agents.rule-search")}
           value={draft.search}
@@ -121,6 +123,8 @@ function Fields({ draft, onChange, searchFixed }: DraftProps & { readonly search
             onChange({ search });
           }}
         />
+      ) : (
+        <p {...partOf(part.text)}>{t("agents.rule-search-named", { search: searchName })}</p>
       )}
       <AgentSelect draft={draft} onChange={onChange} />
       <ProjectSelect
@@ -157,6 +161,8 @@ export interface StandingRuleDialogProps {
   readonly onOpenChange: (open: boolean) => void;
   /** Where the window starts: the saved search, the agent. */
   readonly start?: Partial<RuleDraft>;
+  /** The name of the saved search the window starts with: the window says which search it is for and does not ask. */
+  readonly searchName?: string;
 }
 
 /** The window starts empty. */
@@ -171,6 +177,7 @@ export function StandingRuleDialog({
   isOpen,
   onOpenChange,
   start = noStart,
+  searchName,
 }: StandingRuleDialogProps) {
   const [draft, setDraft] = useState<RuleDraft>(() => emptyRuleDraft(start));
   const create = useCreateRule();
@@ -192,13 +199,13 @@ export function StandingRuleDialog({
       >
         <Fields
           draft={draft}
-          searchFixed={start.search !== undefined}
+          searchName={searchName}
           onChange={(change) => {
             setDraft((was) => ({ ...was, ...change }));
           }}
         />
       </AskDialog>
-      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
+      <ActionError error={create.error} />
     </>
   );
 }

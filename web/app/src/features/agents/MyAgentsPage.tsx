@@ -4,7 +4,7 @@ import { Card, cardLook, partOf, part, useLayout } from "@bugaboo/ui";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { agentsInOrder, waitingAgentsOf } from "./agent-state.ts";
-import { listedAgents, useMyAgentList, useMyAgentWork, type MyWork } from "./agents.ts";
+import { listedAgents, mayAct, useMyAgentList, useMyAgentWork, type MyWork } from "./agents.ts";
 import { MyAgentsBody } from "./MyAgentsBody.tsx";
 import { StopAll } from "./StopAll.tsx";
 
@@ -24,7 +24,7 @@ export function MyAgentsPage() {
     agents.data === undefined
       ? undefined
       : agentsInOrder(listedAgents(agents.data.items), waitingAgentsOf(mine?.pieces ?? []));
-  const running = (listed ?? []).filter((agent) => agent.state !== "stopped");
+  const running = (listed ?? []).filter((agent) => mayAct(agent));
   return (
     <div {...partOf(part.stack)}>
       <Card

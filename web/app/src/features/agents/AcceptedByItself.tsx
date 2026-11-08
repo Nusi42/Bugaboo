@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { issueAddress } from "../../shared/paths.ts";
 import { type MyWorkItem } from "./agents.ts";
 import { Section } from "./Section.tsx";
+import { AgentRow } from "./AgentRow.tsx";
 
 /** How many checks the last attempt of the work passed. */
 function checksPassed(item: MyWorkItem): number {
@@ -26,10 +27,10 @@ export function AcceptedByItself({ work }: { readonly work: readonly MyWorkItem[
     return null;
   }
   return (
-    <Section heading={t("agents.accepted")} count={accepted.length}>
+    <Section heading={t("agent-work.outcome.accepted-by-itself")} count={accepted.length}>
       <ul {...partOf(part.list)}>
         {accepted.map((item) => (
-          <li key={item.work.id} {...partOf(part.item)}>
+          <AgentRow key={item.work.id}>
             <span {...partOf(part.startColumn)}>
               <span {...partOf(part.itemTitle)}>
                 <IssueId id={item.issue.readable_id} /> {item.issue.title ?? ""}
@@ -49,7 +50,7 @@ export function AcceptedByItself({ work }: { readonly work: readonly MyWorkItem[
             >
               {t("agents.open")}
             </Button>
-          </li>
+          </AgentRow>
         ))}
       </ul>
     </Section>

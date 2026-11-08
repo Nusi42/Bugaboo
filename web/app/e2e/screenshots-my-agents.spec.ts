@@ -2,7 +2,12 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene, ruleSearchName } from "./support/agents-scene.ts";
+import {
+  agentsScene,
+  createKeyOnPage,
+  ruleSearchName,
+  takeKeysBack,
+} from "./support/agents-scene.ts";
 import { giveWaitingWork, pauseByLimit, scrollToEnd } from "./support/my-agents-scenes.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
@@ -40,7 +45,9 @@ test("My agents with a question, a plan, a result and work accepted by itself", 
   await inFourChosenThemes(page, "my-agents-waiting", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
     await expect(page.getByRole("button", { name: /^Approve plan, /u })).toBeVisible();
-    await expect(page.getByRole("heading", { name: t("agents.accepted") })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: t("agent-work.outcome.accepted-by-itself") }),
+    ).toBeVisible();
   });
   await scene.dispose();
 });
@@ -105,7 +112,10 @@ test("The window of a standing rule that changes fields", async ({ page, server 
   await inFourChosenThemes(page, "standing-rule-change", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
     await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
-    await page.getByRole("alertdialog").getByLabel(t("agents.rule-change")).check();
+    const window = page.getByRole("alertdialog");
+    await window.getByLabel(t("agents.rule-change")).check();
+    // On a phone the list of fields is below the first screen of the window: it is in the picture.
+    await window.getByRole("group", { name: t("agents.rule-fields") }).scrollIntoViewIfNeeded();
   });
   await scene.dispose();
 });
@@ -167,13 +177,9 @@ test("The key of an agent is shown once", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
   await inFourChosenThemes(page, "agent-key-shown", MILESTONE, paths.appearance, async () => {
-    await page.goto(paths.myAgents);
-    await page.getByRole("link", { name: scene.names.sorter, exact: true }).click();
-    await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
-    const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
-    await form.getByLabel(t("agents.key-name")).fill("Build server");
-    await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
-    await form.getByRole("button", { name: t("agents.key-create-confirm") }).click();
+    // Every theme starts from the same keys: none.
+    await takeKeysBack(scene.admin, scene.sorter);
+    await createKeyOnPage(page, scene.names.sorter, "Build server", ada.password);
     await expect(page.getByRole("region", { name: t("agents.key-shown-title") })).toBeVisible();
   });
   await scene.dispose();

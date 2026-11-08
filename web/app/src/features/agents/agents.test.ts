@@ -95,7 +95,7 @@ describe("ai_37 the state of an agent", () => {
   it("says the state with the words and the looks of the pill of agent work", () => {
     expect(agentPill("active")).toEqual({ variant: "agent-working", text: "Agent working" });
     expect(agentPill("paused")).toEqual({ variant: "paused", text: "Paused" });
-    expect(agentPill("stopped")).toEqual({ variant: "stopped", text: "Stopped" });
+    expect(agentPill("stopped")).toEqual({ variant: "agent-stopped", text: "Stopped" });
   });
 
   it("says which limit paused an agent, with its number", () => {

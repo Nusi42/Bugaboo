@@ -5,7 +5,6 @@ import { register } from "../registry.ts";
 export const messages = {
   "agent-work.title": "Agent work",
   "agent-work.outcome.accepted": "Accepted",
-  "agent-work.outcome.accepted-by-itself": "Accepted by itself",
   "agent-work.outcome.thrown-away": "Thrown away",
   "agent-work.worked-on-by": "Worked on by",
   "agent-work.agent-of": "{agent}, agent of {person}",
@@ -59,7 +58,6 @@ export const messages = {
   "agent-work.plan-note": "Note on the plan (optional)",
   "agent-work.plan-note-help":
     "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another plan.",
-  "agent-work.plan-approve": "Approve plan",
   "agent-work.plan-answer": "Answer with the note",
   "agent-work.review": "Review",
   "agent-work.review-title": "Review attempt {number} of {agent} on {issue}",
@@ -116,7 +114,6 @@ export const messages = {
   "agent-work.power-change-fields": "Change these fields",
   "agent-work.power-create-sub-issues": "Create sub-issues",
   "agent-work.budget": "Budget",
-  "agent-work.budget-attempts": "Attempts on one issue",
   "agent-work.budget-minutes": "Time budget, in minutes (optional)",
   "agent-work.budget-cost": "Cost budget, in euros (optional)",
   "agent-work.plan-needs-approval": "Plan needs approval",

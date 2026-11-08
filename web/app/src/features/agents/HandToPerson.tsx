@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { AskDialog, Button, Card, SelectField } from "@bugaboo/ui";
+import { AskDialog, Button, Card, PickerOption, SearchPicker, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { useMe } from "../../shared/use-me.ts";
 import { peopleOf, useAssignablePeople } from "../issues/index.ts";
 import { useHandAgent, useTakeBackOffer, type ListedAgent } from "./agents.ts";
@@ -9,7 +10,7 @@ import { ActionError } from "./ActionError.tsx";
 import { projectKey } from "./project-choices.ts";
 import { ProjectSelect } from "./ProjectSelect.tsx";
 
-/** The people of a project that the person can name, but the person, as the choices of the window. */
+/** The people of a project that the person can name, found by name and read a page at a time, but the person: who can take the agent. */
 function PersonSelect({
   project,
   value,
@@ -21,19 +22,32 @@ function PersonSelect({
 }) {
   // The agent is the person's own already: only somebody else can take it.
   const me = useMe()?.id;
-  const people = peopleOf(useAssignablePeople(project, "").data?.pages).filter(
-    (person) => person.id !== me,
-  );
+  const { words, group, frame } = usePickerFrame();
+  const found = useAssignablePeople(project, words);
+  const people = peopleOf(found.data?.pages).filter((person) => person.id !== me);
   return (
-    <SelectField
-      label={t("agents.hand-person")}
-      value={value}
-      onChange={onChange}
-      choices={[
-        { value: "", label: t("agents.hand-choose-person") },
-        ...people.map((person) => ({ value: person.id, label: person.name })),
-      ]}
-    />
+    <SearchPicker
+      legend={t("agents.hand-person")}
+      searchLabel={t("agents.hand-person-search")}
+      listLabel={t("agents.hand-person-list")}
+      {...frame}
+      {...pickerStatus(found, people.length, {
+        nothing: t("agents.hand-person-nothing"),
+        more: t("agents.hand-person-more"),
+      })}
+    >
+      {people.map((person) => (
+        <PickerOption
+          key={person.id}
+          group={group}
+          checked={person.id === value}
+          label={person.name}
+          onPick={() => {
+            onChange(person.id);
+          }}
+        />
+      ))}
+    </SearchPicker>
   );
 }
 
@@ -69,14 +83,16 @@ function OfferNote({ agent }: { readonly agent: string }) {
   return (
     <>
       <p>{t("agents.hand-waiting")}</p>
-      <Button
-        isPending={takeBack.isPending}
-        onPress={() => {
-          takeBack.mutate({ params: { path: { agent } } });
-        }}
-      >
-        {t("agents.offer-take-back")}
-      </Button>
+      <div {...partOf(part.row)}>
+        <Button
+          isPending={takeBack.isPending}
+          onPress={() => {
+            takeBack.mutate({ params: { path: { agent } } });
+          }}
+        >
+          {t("agents.offer-take-back")}
+        </Button>
+      </div>
       <ActionError error={takeBack.error} />
     </>
   );
@@ -92,16 +108,18 @@ export function HandToPerson({ agent }: { readonly agent: ListedAgent }) {
   const hand = useHandAgent();
   return (
     <Card heading={t("agents.hand")} intro={t("agents.hand-intro")}>
-      <Button
-        isDisabled={agent.state === "stopped" || agent.offered}
-        onPress={() => {
-          setPerson("");
-          hand.reset();
-          setOpen(true);
-        }}
-      >
-        {t("agents.hand")}
-      </Button>
+      <div {...partOf(part.row)}>
+        <Button
+          isDisabled={agent.state === "stopped" || agent.offered}
+          onPress={() => {
+            setPerson("");
+            hand.reset();
+            setOpen(true);
+          }}
+        >
+          {t("agents.hand")}
+        </Button>
+      </div>
       <AskDialog
         isOpen={open}
         onOpenChange={setOpen}

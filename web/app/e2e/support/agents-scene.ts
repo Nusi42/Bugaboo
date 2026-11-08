@@ -1,7 +1,8 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
+import { paths } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { webIssues } from "./issues.ts";
@@ -33,6 +34,47 @@ export async function createAgent(session: ApiSession, name: string): Promise<st
     throw new TypeError("The server made an agent without an ID.");
   }
   return made.id;
+}
+
+/** Takes every key of an agent back, so a picture of its page starts from the same keys in every theme. */
+export async function takeKeysBack(session: ApiSession, agent: string): Promise<void> {
+  const record = dataOf(
+    await session.client.GET("/api/v1/agents/{agent}", { params: { path: { agent } } }),
+  );
+  await Promise.all(
+    record.keys.map((key: Schema<"AccessKeyBody">) =>
+      session.client.DELETE("/api/v1/agents/{agent}/keys/{access_key}", {
+        params: { path: { agent, access_key: key.id } },
+      }),
+    ),
+  );
+}
+
+/** Opens the page of an agent from *My agents*, makes a key with the form and stops at the key that is shown once. */
+export async function createKeyOnPage(
+  page: Page,
+  agentName: string,
+  keyName: string,
+  password: string,
+): Promise<void> {
+  await page.goto(paths.myAgents);
+  await page.getByRole("link", { name: agentName, exact: true }).click();
+  await page.getByRole("button", { name: t("agents.key-create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("agents.key-create"), exact: true });
+  await form.getByLabel(t("agents.key-name")).fill(keyName);
+  await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(password);
+  await form.getByRole("button", { name: t("agents.key-create-confirm") }).click();
+}
+
+/** Takes the key back on the page of its agent, answering the question. */
+export async function takeKeyBackOnPage(page: Page, keyName: string): Promise<void> {
+  await page
+    .getByRole("button", { name: t("agents.key-take-back-name", { name: keyName }) })
+    .click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("agents.key-take-back"), exact: true })
+    .click();
 }
 
 /** Creates a standing rule of an agent that runs out after `days`. */
@@ -85,6 +127,8 @@ export async function agentsScene(
   );
   const dispose = async (): Promise<void> => {
     await admin.client.POST("/api/v1/me/agents/stop-all");
+    // The saved search goes, so the next scene's sidebar and pictures do not show it twice.
+    await admin.client.DELETE("/api/v1/saved-searches/{search}", { params: { path: { search } } });
     await admin.dispose();
   };
   const scene = { admin, names, dispose, fixer, sorter, search, project };

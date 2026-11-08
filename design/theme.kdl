@@ -1445,8 +1445,8 @@ part "ai-page field.description" "ai-page settings.help" "ai-page card.intro" {
     text-wrap pretty
 }
 
-// The hint under a box in the windows of a hand-over and a review uses the whole width of the window, like the text around it.
-part "agent-work.window field.description" {
+// The hint under a box in the windows of a hand-over, a review and a standing rule uses the whole width of the window, like the text around it.
+part "agent-work.window field.description" "agents.rule-window field.description" {
     text-wrap wrap
 }
 
@@ -15580,6 +15580,13 @@ part "agent-work.pill[variant=waiting-for-the-agent]" "agent-work.pill[variant=p
     use "status-soft-not-started"
 }
 
+// A stopped agent is the quietest of the three: an outline and no fill, so *Paused* (a fill) is never mistaken for it.
+part "agent-work.pill[variant=agent-stopped]" {
+    background transparent
+    border "$border-width solid $border"
+    color "$fg-muted"
+}
+
 part "agent-work.pill[variant=agent-working]" {
     use "status-soft-in-progress"
 }
@@ -15812,12 +15819,38 @@ part "agents.agent" {
     padding "$space-3"
 }
 
+// A stopped agent is a quiet card: sunk into the page, less padding, nothing under its name but its state.
+part "agents.agent[variant=stopped]" {
+    background "$bg-sunken"
+    padding "$space-2 $space-3"
+}
+
 part "agents.agent-head" {
     display flex
     flex-wrap wrap
     align-items center
     justify-content space-between
     gap "$space-2" "$space-4"
+    min-width 0
+}
+
+// On a phone the buttons of a row always stand under its words, never beside them in one row and under them in the next:
+// the row of a list (a question, a key, an agent of the list) and the head of an agent.
+part "app-layout[variant=phone] item[variant=buttons-below]" "app-layout[variant=phone] agents.agent-head" {
+    flex-direction column
+    align-items flex-start
+}
+
+// A row of a stopped agent is as quiet as its card.
+part "item[variant=stopped]" {
+    background "$bg-sunken"
+}
+
+// The window of a standing rule: its parts stand under each other and its hints use the whole width of the window.
+part "agents.rule-window" {
+    display flex
+    flex-direction column
+    gap "$space-4"
     min-width 0
 }
 
@@ -15873,6 +15906,12 @@ part "agents.state-line" {
     align-items center
     gap "$space-1" "$space-2"
     min-width 0
+}
+
+// The sentence of the limit that paused an agent stands on a line of its own, under the state and the person.
+part "agents.limit-sentence" {
+    flex-basis "100%"
+    color "$fg-muted"
 }
 
 part "agents.fact-value" {

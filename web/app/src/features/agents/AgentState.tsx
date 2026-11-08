@@ -23,7 +23,7 @@ export function AgentStateLine({ agent, withPerson = false }: AgentStateLineProp
     <span {...partOf(part.agentsStateLine)}>
       <AgentStatePill agent={agent} />
       {whose === undefined ? null : <span {...partOf(part.muted)}>{whose}</span>}
-      {paused === undefined ? null : <span {...partOf(part.muted)}>{paused}</span>}
+      {paused === undefined ? null : <span {...partOf(part.agentsLimitSentence)}>{paused}</span>}
     </span>
   );
 }

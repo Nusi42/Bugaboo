@@ -23,6 +23,17 @@ function RunsOut({ item }: { readonly item: AccessKey }) {
   );
 }
 
+/** When a key, or an agent that signs in with one, was last used: *Never used* while it never was. */
+export function LastUsed({ at }: { readonly at: string | null | undefined }) {
+  return (
+    <span {...partOf(part.muted)}>
+      {at === undefined || at === null
+        ? t("access-keys.row.never-used")
+        : t("access-keys.row.last-used", { when: formatDateTime(at) })}
+    </span>
+  );
+}
+
 export interface KeyFactsProps {
   readonly item: AccessKey;
   /** What only this kind of key says, between the start of the key and when it runs out. */
@@ -34,7 +45,6 @@ export interface KeyFactsProps {
  * The one part of the rows of access keys and of agent keys, so a key reads the same in both.
  */
 export function KeyFacts({ item, children }: KeyFactsProps) {
-  const used = item.last_used_at;
   const start = keyStart(item.prefix ?? "");
   return (
     <span {...partOf(part.accessKeysItemText)}>
@@ -44,11 +54,7 @@ export function KeyFacts({ item, children }: KeyFactsProps) {
       </SentenceWithValue>
       {children}
       <RunsOut item={item} />
-      <span {...partOf(part.muted)}>
-        {used === undefined || used === null
-          ? t("access-keys.row.never-used")
-          : t("access-keys.row.last-used", { when: formatDateTime(used) })}
-      </span>
+      <LastUsed at={item.last_used_at} />
     </span>
   );
 }
