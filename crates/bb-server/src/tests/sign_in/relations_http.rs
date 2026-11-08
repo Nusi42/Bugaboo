@@ -291,6 +291,8 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
             )
             .await?;
         let relation = ok(&added)?["id"].as_str().ok_or("no ID")?.to_owned();
+        // A moment later, so the removal is the newer row.
+        rig.clock.advance(1);
         let removal = ada
             .send("DELETE", &format!("/api/v1/relations/{relation}"), None)
             .await?;
