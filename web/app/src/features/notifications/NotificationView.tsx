@@ -99,8 +99,11 @@ function NotificationActions({
         <Button
           aria-label={t("notifications.open-name", { what })}
           onPress={() => {
+            // An entry that Open names scrolls itself into view; the router must not put the page at
+            // its top after it, which it would if the entry were drawn before the router is done.
             void navigate({
               href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
+              resetScroll: target === undefined,
             });
           }}
         >

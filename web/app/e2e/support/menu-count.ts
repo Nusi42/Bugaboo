@@ -2,8 +2,6 @@ import { expect, type Page } from "@playwright/test";
 
 import { nothing, onThisLayout } from "./layout.ts";
 import { menuEntry } from "./notifications.ts";
-import { partIn } from "./parts.ts";
-import { boxOf } from "./windows.ts";
 
 /**
  * In the narrow menu the number stands under the bell, whatever its width ("100+" is wider than the
@@ -16,9 +14,19 @@ export function expectCountUnderTheBell(page: Page): Promise<void> {
     tablet: nothing,
     computer: async () => {
       const entry = menuEntry(page);
-      const count = await boxOf(partIn(entry, "nav-item.count"));
-      const bell = await boxOf(entry.locator("svg").first());
-      expect(count.y).toBeGreaterThanOrEqual(bell.y + bell.height);
+      // How far the number stands under the bell, read in one go so a menu that is drawn again between two
+      // readings cannot make them disagree; it is not a number while one of them is not drawn yet.
+      await expect
+        .poll(() =>
+          entry.evaluate((node) => {
+            const count = node.querySelector('[data-part="nav-item.count"]');
+            const bell = node.querySelector("svg");
+            return count === null || bell === null
+              ? Number.NaN
+              : count.getBoundingClientRect().top - bell.getBoundingClientRect().bottom;
+          }),
+        )
+        .toBeGreaterThanOrEqual(0);
     },
   });
 }

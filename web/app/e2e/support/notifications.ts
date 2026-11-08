@@ -96,8 +96,12 @@ export async function writeCommentOnThePage(
   text: string,
 ): Promise<void> {
   await page.goto(issueAddress(issue));
+  // The page is drawn again when the history arrives, and a box filled before that is empty again:
+  // the history is the sign that the page is done.
+  await expect(page.locator('[data-part="history.entry"]').first()).toBeVisible();
   const box = page.getByRole("textbox", { name: t("comments.write"), exact: true });
   await box.fill(text);
+  await expect(box).toHaveValue(text);
   await page
     .locator("form")
     .filter({ has: box })

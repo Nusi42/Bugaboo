@@ -125,18 +125,53 @@ export function useOpenedEntry(
   return found;
 }
 
+/** What a person does with the page by hand: from then on the page is theirs and nothing scrolls it. */
+const takesOverEvents = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+
+/** Whether the element is at least partly inside the window. */
+function isInView(node: HTMLElement): boolean {
+  const box = node.getBoundingClientRect();
+  return box.bottom > 0 && box.top < window.innerHeight;
+}
+
 /**
- * Brings the element into view once, when `wanted` becomes true: the entry *Open* of a
- * notification came to. Gives back the ref to put on the element.
+ * Brings the element into view when `wanted` becomes true: the entry *Open* of a notification came
+ * to. The page around it is still being drawn then: the parts above it arrive, the page can be
+ * shorter for a moment, and the router may put it at its top. So the element is brought back into
+ * view whenever the page changes its size or is scrolled away from it, until the person scrolls or
+ * presses a key. Gives back the ref to put on the element.
  */
 export function useScrollTo<Element extends HTMLElement>(
   wanted: boolean,
 ): RefObject<Element | null> {
   const element = useRef<Element>(null);
   useEffect(() => {
-    if (wanted) {
-      element.current?.scrollIntoView({ block: "center" });
+    const node = wanted ? element.current : null;
+    const bring = () => {
+      if (node !== null && !isInView(node)) {
+        node.scrollIntoView({ block: "center" });
+      }
+    };
+    const observer = new ResizeObserver(bring);
+    const stop = () => {
+      observer.disconnect();
+      document.removeEventListener("scroll", bring, true);
+    };
+    if (node !== null) {
+      node.scrollIntoView({ block: "center" });
+      // The part of the page the entry stands in: when it grows, whatever is above the entry moves it.
+      observer.observe(node.closest("main") ?? document.body);
+      document.addEventListener("scroll", bring, { capture: true, passive: true });
+      for (const event of takesOverEvents) {
+        document.addEventListener(event, stop, { passive: true, once: true });
+      }
     }
+    return () => {
+      stop();
+      for (const event of takesOverEvents) {
+        document.removeEventListener(event, stop);
+      }
+    };
   }, [wanted]);
   return element;
 }
