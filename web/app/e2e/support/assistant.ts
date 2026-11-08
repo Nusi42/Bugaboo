@@ -145,3 +145,36 @@ export async function changeTitleBehindTheScenes(
   });
   await admin.dispose();
 }
+
+/** An administrator sets up an outside provider, confirms the agreement and switches AI on; nothing is called. */
+export async function setUpOutsideProvider(server: Instance): Promise<void> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PUT("/api/v1/ai", {
+    body: {
+      enabled: false,
+      provider: "anthropic",
+      address: "",
+      model: "claude-test",
+      password: ada.password,
+    },
+  });
+  await admin.client.POST("/api/v1/ai/agreement", { body: { destination: "anthropic" } });
+  await admin.client.PUT("/api/v1/ai", { body: { enabled: true } });
+  await admin.dispose();
+}
+
+/** An administrator marks a built-in field Never sent to AI. */
+export async function markFieldNeverSent(server: Instance, field: string): Promise<void> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PUT("/api/v1/never-sent-to-ai/fields/{field}", {
+    params: { path: { field } },
+    body: { marked: true, version: 0 },
+  });
+  await admin.dispose();
+}

@@ -8,6 +8,7 @@ import {
   type LayoutMode,
 } from "@bugaboo/ui";
 
+import { useAssistantPanelOpen } from "./assistant-open.ts";
 import { CONTENT_HREF } from "./content-id.ts";
 import { ShellColumn } from "./ShellColumn.tsx";
 import { ShellOverlays } from "./ShellOverlays.tsx";
@@ -37,8 +38,16 @@ export function AppLayout() {
   const { person, signOutProblem } = useShell();
   useAppearance();
   const computer = layout === "computer";
+  const assistantOpen = useAssistantPanelOpen();
   return (
-    <div {...partOf(part.appLayout, { variants: [variantOf(layout, narrow)] })}>
+    <div
+      {...partOf(part.appLayout, {
+        variants: [
+          variantOf(layout, narrow),
+          assistantOpen && computer && appLayoutLook.assistantOpen,
+        ],
+      })}
+    >
       <a {...partOf(part.skip)} href={CONTENT_HREF}>
         {t("shell.skip")}
       </a>

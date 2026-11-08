@@ -14811,7 +14811,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-setup.intro",
-        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
+        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it. The guide for your people on what the assistant can and cannot do is linked here once it is published.",
     ),
     ("ai-setup.key", "Key of the provider"),
     (
@@ -14876,7 +14876,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-setup.where-country", "Country"),
     (
         "ai-setup.where-intro",
-        "What the assistant may send, to whom, and where that is.",
+        "Read this before you switch AI on: what the assistant may send, to whom, and where that is.",
     ),
     ("ai-setup.where-model", "Model"),
     ("ai-setup.where-names", "By name"),
@@ -19640,7 +19640,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.ai-apps.enabled.help",
-        "Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
+        "On: people can connect AI apps to their accounts, and each app does at most what its person may do. Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
     ),
     ("setting.ai-apps.enabled.name", "Let AI apps sign in"),
     (

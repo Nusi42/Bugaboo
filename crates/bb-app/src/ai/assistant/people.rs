@@ -48,9 +48,10 @@ fn names(text: &str, name: &str) -> bool {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether the proposal may be shown: it changes nobody's *Assigned to*, or the question asked
-    /// for it and wrote the name of every person it puts there, as the person sees that name at
-    /// the place of the issue.
+    /// Whether the proposal may be shown: the call names nobody for *Assigned to* (a person given
+    /// by the rule of the project, like the default assignee of a new issue, is the project's choice
+    /// and not the AI's), or the question asked for it and wrote the name of every person the call
+    /// puts there, as the person sees that name at the place of the issue.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -59,8 +60,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         question: &str,
         place: Place,
+        input: &Value,
         changes: &[ProposedChange],
     ) -> Result<bool, AppError> {
+        // Only a person the call itself names is the AI's choice.
+        if input.get("assigned_to").is_none_or(Value::is_null) {
+            return Ok(true);
+        }
         let Some(change) = assignment(changes) else {
             return Ok(true);
         };

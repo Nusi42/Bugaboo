@@ -15222,6 +15222,34 @@ part "sheet.history-entry" {
 // what it looks at, where the answers come from and what is never sent; the turns scroll between that and
 // the box to ask, which stays at the foot.
 
+// The assistant on a computer stands at the end of the screen beside the page, which is not dimmed and
+// stays usable while the person asks (UX §4.12). The page makes room for it.
+part "assistant-dock" {
+    position fixed
+    inset-block 0
+    inset-inline-end 0
+    z-index "$z-overlay"
+    display flex
+    flex-direction column
+    width "$size-side-panel"
+    max-width "100%"
+    use "floating-box"
+    border-radius "$r-card 0 0 $r-card"
+    outline none
+}
+
+part "assistant-dock.body" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+    outline none
+}
+
+part "app-layout[variant=assistant-open]" {
+    padding-inline-end "$size-side-panel"
+}
+
 part "assistant-panel" {
     display flex
     flex 1
@@ -15307,6 +15335,13 @@ part "assistant-turn[variant=person]" {
 part "assistant-turn[variant=assistant]" {
     border "$border-width solid $border"
     background "$bg-raised"
+}
+
+part "assistant-label" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    color "$fg-muted"
 }
 
 part "assistant-question" {

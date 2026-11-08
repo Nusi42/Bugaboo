@@ -25,7 +25,7 @@ export function AiAgreement({ setup }: { readonly setup: AiSetup }) {
   const confirmed = setup.agreement;
   return (
     <div {...partOf(part.stack)}>
-      <p>{t("ai-setup.agreement-text", { provider })}</p>
+      <p {...partOf(part.muted)}>{t("ai-setup.agreement-text", { provider })}</p>
       {setup.agreement_status === "confirmed" && confirmed !== undefined && confirmed !== null ? (
         <Alert tone={alertTone.success}>
           {t("ai-setup.agreement-confirmed", {

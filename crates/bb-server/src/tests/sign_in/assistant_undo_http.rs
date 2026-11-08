@@ -161,7 +161,7 @@ async fn ai_05_what_an_apply_made_says_how_to_take_it_away_and_stopping_the_time
         let made = ask_and_apply(
             &rig,
             &mut ada,
-            "Create an issue called Fresh and assign it to Ada Admin",
+            "Create an issue called Fresh",
             "create_issue",
             json!({"project": "ACME", "issue_type": site.kind, "title": "Fresh"}),
         )
@@ -236,7 +236,7 @@ async fn ai_05_a_new_issue_has_a_way_back_exactly_when_the_person_may_delete_it(
             let made = ask_and_apply(
                 &rig,
                 &mut person,
-                "Create an issue called Mine and assign it to Bob Builder",
+                "Create an issue called Mine",
                 "create_issue",
                 json!({"project": "ACME", "issue_type": site.kind, "title": "Mine"}),
             )

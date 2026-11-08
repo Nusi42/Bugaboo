@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, IconButton, iconName, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, IconButton, iconName, partOf, part, useLayout } from "@bugaboo/ui";
 
 import type { AssistantStatus } from "./assistant.ts";
 import { AskBox } from "./AskBox.tsx";
@@ -31,19 +31,25 @@ export function PanelContent({
   conversation,
   onClose,
 }: PanelContentProps) {
+  // On a phone what the panel looks at and where it answers from scroll with the turns, so the turns keep the screen.
+  const phone = useLayout() === "phone";
+  const top = (
+    <div {...partOf(part.assistantTop)}>
+      <LookingAt items={items} onLeaveOut={onLeaveOut} />
+      <WhereFrom status={status} />
+      <NeverSent />
+    </div>
+  );
   return (
     <div {...partOf(part.assistantPanel)}>
       <div {...partOf(part.sidePanelHead)}>
         <h2 {...partOf(part.sidePanelTitle)}>{t("assistant.title")}</h2>
         <IconButton icon={iconName.close} label={t("assistant.close")} onPress={onClose} />
       </div>
-      <div {...partOf(part.assistantTop)}>
-        <LookingAt items={items} onLeaveOut={onLeaveOut} />
-        <WhereFrom status={status} />
-        <NeverSent />
-      </div>
+      {phone ? null : top}
       {here ? null : <Alert tone={alertTone.warning}>{t("assistant.off-here")}</Alert>}
       <div {...partOf(part.assistantBody)}>
+        {phone ? top : null}
         <TurnList turns={conversation.turns} pending={conversation.pending} />
       </div>
       <AskBox
@@ -53,6 +59,7 @@ export function PanelContent({
         answeredCount={conversation.turns.length}
         onAsk={conversation.ask}
       />
+      {phone ? <p {...partOf(part.muted)}>{t("assistant.close-text")}</p> : null}
     </div>
   );
 }

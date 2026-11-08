@@ -98,7 +98,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "ai-setup.title": "Set up the assistant",
   "ai-setup.intro":
-    "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
+    "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it. The guide for your people on what the assistant can and cannot do is linked here once it is published.",
   "ai-setup.set-up": "Provider and key",
   "ai-setup.set-up-intro":
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",
@@ -127,7 +127,8 @@ export const messages = {
   "ai-setup.agreement-yes": "Yes, it is in place",
   "ai-setup.agreement-confirmed": "Confirmed by {person}, {at}.",
   "ai-setup.where": "What goes where",
-  "ai-setup.where-intro": "What the assistant may send, to whom, and where that is.",
+  "ai-setup.where-intro":
+    "Read this before you switch AI on: what the assistant may send, to whom, and where that is.",
   "ai-setup.where-provider": "Provider",
   "ai-setup.where-country": "Country",
   "ai-setup.where-model": "Model",
@@ -407,7 +408,7 @@ export const messages = {
     "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
   "setting.ai-apps.enabled.name": "Let AI apps sign in",
   "setting.ai-apps.enabled.help":
-    "Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
+    "On: people can connect AI apps to their accounts, and each app does at most what its person may do. Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help":
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",

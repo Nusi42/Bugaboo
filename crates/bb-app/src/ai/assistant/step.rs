@@ -110,7 +110,13 @@ impl<'a, S: AuthStore> Tools<'a, S> {
         let place = self.place_of(&call.arguments).await;
         match self
             .ctx
-            .assignment_was_asked_for(self.actor, self.question, place, &shown.changes)
+            .assignment_was_asked_for(
+                self.actor,
+                self.question,
+                place,
+                &call.arguments,
+                &shown.changes,
+            )
             .await
         {
             Ok(true) => {}

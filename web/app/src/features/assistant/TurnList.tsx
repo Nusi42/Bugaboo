@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Announce, MarkdownView, partOf, part } from "@bugaboo/ui";
+import { Announce, Icon, iconName, iconSize, MarkdownView, partOf, part } from "@bugaboo/ui";
 
 import { AssistantProposal } from "./AssistantProposal.tsx";
 import type { Turn } from "./conversation.ts";
@@ -16,7 +16,10 @@ function OneTurn({ turn }: { readonly turn: Turn }) {
   }
   return (
     <li {...partOf(part.assistantTurn, { variants: ["assistant"] })}>
-      <span {...partOf(part.muted)}>{t("assistant.label")}</span>
+      <span {...partOf(part.assistantLabel)}>
+        <Icon name={iconName.assistant} size={iconSize.small} />
+        {t("assistant.label")}
+      </span>
       <MarkdownView html={turn.answer.html} />
       {turn.answer.proposals.map((proposal) => (
         <AssistantProposal key={proposal.reference} proposal={proposal} />

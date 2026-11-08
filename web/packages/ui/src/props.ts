@@ -100,7 +100,12 @@ export const choiceGroupLook = { grid: "grid" } as const;
 export type ChoiceGroupLook = (typeof choiceGroupLook)[keyof typeof choiceGroupLook];
 
 /** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */
-export const appLayoutLook = { phone: "phone", side: "side", sideNarrow: "side-narrow" } as const;
+export const appLayoutLook = {
+  phone: "phone",
+  side: "side",
+  sideNarrow: "side-narrow",
+  assistantOpen: "assistant-open",
+} as const;
 
 /**
  * How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width; or the

@@ -6,8 +6,8 @@ import { projectOf } from "../../shared/assistant-place.ts";
 import {
   addQuickAction,
   addTopBarAction,
-  openOverlay,
-  useOverlayOpen,
+  openAssistantPanel,
+  useAssistantPanelOpen,
   type TopBarAction,
 } from "../shell/index.ts";
 import { AssistantButton } from "./AssistantButton.tsx";
@@ -28,7 +28,7 @@ const quickAsk = {
     return t("assistant.quick-ask");
   },
   run: () => {
-    openOverlay("assistant");
+    openAssistantPanel();
   },
 };
 
@@ -42,7 +42,7 @@ export function AssistantHost() {
   const location = useLocation();
   const status = useAssistantStatus(projectOf(location.pathname, location.search));
   const available = status?.available === true;
-  const open = useOverlayOpen("assistant");
+  const open = useAssistantPanelOpen();
   const [kept, setKept] = useState<EntryStatus>();
   if (available && status !== kept) {
     setKept(status);

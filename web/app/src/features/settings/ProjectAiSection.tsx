@@ -12,7 +12,7 @@ function ProjectSwitch({ project }: { readonly project: string }) {
   return (
     <QueryGate error={found.error} data={found.data} loading={null}>
       {(shown) => (
-        <div {...partOf(part.column)}>
+        <div {...partOf(part.box)}>
           <Switch
             label={t("ai-setup.project-switch")}
             isSelected={shown.works_here}
@@ -50,7 +50,7 @@ function ProjectMark({ project }: { readonly project: string }) {
   const mark = useMarkProject();
   const found = marks.data?.projects.find((each) => each.project.short_name === project);
   return (
-    <div {...partOf(part.column)}>
+    <div {...partOf(part.box)}>
       <Switch
         label={t("ai-setup.never-sent")}
         isSelected={found?.marked === true}

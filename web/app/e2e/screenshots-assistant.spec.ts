@@ -7,9 +7,11 @@ import {
   assistantButton,
   assistantPanel,
   lowerToNormal,
+  markFieldNeverSent,
   openAssistant,
   proposeCritical,
   setUpAssistant,
+  setUpOutsideProvider,
 } from "./support/assistant.ts";
 import { startFakeModel } from "./support/fake-model.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -63,6 +65,60 @@ test("the page to set up the assistant, and the agreement for an outside provide
       page.getByText(t("ai-setup.agreement-text", { provider: t("ai.provider.anthropic") })),
     ).toBeVisible();
   });
+});
+
+test("the set-up page with a provider of your own, and the confirmed agreement", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.ai);
+  await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
+    label: t("ai.provider.openai-compatible"),
+  });
+  await inFourChosenThemes(page, "set-up-own-model", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.ai);
+    await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
+      label: t("ai.provider.openai-compatible"),
+    });
+    await expect(page.getByLabel(t("setting.ai.address.name"))).toBeVisible();
+  });
+  await page.goto(paths.ai);
+  await page.getByRole("button", { name: t("ai-setup.agreement-confirm") }).click();
+  await page.getByRole("button", { name: t("ai-setup.agreement-yes") }).click();
+  await expect(page.getByText(/^Confirmed by Ada Admin, /u)).toBeVisible();
+  await inFourChosenThemes(page, "agreement-confirmed", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.ai);
+    await expect(page.getByText(/^Confirmed by Ada Admin, /u)).toBeVisible();
+  });
+});
+
+test("the panel with an outside provider and a field that is never sent", async ({
+  page,
+  server,
+}) => {
+  await setUpOutsideProvider(server);
+  await markFieldNeverSent(server, "description");
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "panel-outside", MILESTONE, paths.appearance, async () => {
+    await page.goto(issueAddress("WEB-1"));
+    const panel = await openAssistant(page);
+    await expect(panel.getByText(t("assistant.source-anthropic"))).toBeVisible();
+    await expect(panel.getByText(t("assistant.names-role"))).toBeVisible();
+    await expect(
+      panel.getByText(t("assistant.never-sent", { names: t("issue-field.description") })),
+    ).toBeVisible();
+  });
+});
+
+test("the issue page with AI on and the button", async ({ page, server }) => {
+  const model = await startFakeModel();
+  await setUpAssistant(server, model);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "issue-with-button", MILESTONE, paths.appearance, async () => {
+    await page.goto(issueAddress("WEB-1"));
+    await expect(assistantButton(page)).toBeVisible();
+  });
+  await model.close();
 });
 
 test("the panel: empty, with an answer, with a card, after Apply, and the close question", async ({
