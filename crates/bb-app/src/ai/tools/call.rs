@@ -20,7 +20,7 @@ use super::log::Called;
 use super::preview::{ProposedChange, proposed_changes};
 use super::registry::{Run, ToolSpec, registry};
 use crate::access::Actor;
-use crate::ai::context::{PeopleMode, render};
+use crate::ai::context::{Part, PeopleMode, render};
 use crate::auth::{AppError, AuthStore, Ctx};
 
 /// Whether a call runs the tool or only says what it would do.
@@ -67,7 +67,23 @@ pub struct ToolAnswer {
     /// tool that reads. The AI reads `text`; this is for the person, and the assistant
     /// reads it back from the masked answer.
     pub changes: Vec<ProposedChange>,
+    /// For an *Apply*: what makes it undone again, where the change made something new (a comment,
+    /// a time entry, an issue, a running timer).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub undo: Option<ToolUndo>,
 }
+
+/// What *Undo* of an applied change takes away.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ToolUndo {
+    /// What was made: `comment`, `time-entry`, `issue` or `timer`.
+    pub kind: String,
+    /// Its ID; empty for the timer, which there is one of.
+    pub id: String,
+}
+
+/// The name of the part an *Apply* leaves for the way back.
+pub(super) const UNDO_PART: &str = "undo";
 
 impl Masked for ToolAnswer {}
 
@@ -203,13 +219,34 @@ pub async fn call_tool<S: AuthStore>(
         tool: found.map(|spec| spec.tool),
         effect: found.map(ToolSpec::effect),
         bytes_in,
-        bytes_out: result.as_ref().map_or(0, |(text, _)| text.len()),
+        bytes_out: result.as_ref().map_or(0, |(text, _, _)| text.len()),
         outcome,
     })
     .await;
-    let (text, changes) = result?;
+    let (text, changes, undo) = result?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(ToolAnswer { text, changes }))
+    Ok(held.authorize(ToolAnswer {
+        text,
+        changes,
+        undo,
+    }))
+}
+
+/// The way back an *Apply* left among its parts, taken out so the AI never reads it.
+fn take_undo(parts: &mut Vec<Part>) -> Option<ToolUndo> {
+    let at = parts.iter().position(|part| part.name == UNDO_PART)?;
+    let part = parts.remove(at);
+    let text = |member: &str| {
+        part.value
+            .get(member)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned()
+    };
+    Some(ToolUndo {
+        kind: text("kind"),
+        id: text("id"),
+    })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -271,7 +308,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         spec: &ToolSpec<S>,
         request: &ToolCallQuery,
-    ) -> Result<(String, Vec<ProposedChange>), AppError> {
+    ) -> Result<(String, Vec<ProposedChange>, Option<ToolUndo>), AppError> {
         // An AI app that was given the scope to change runs a tool that changes something at once, as
         // its own act: that is *Apply* for it. The assistant only proposes, and *Apply* is the
         // person's.
@@ -317,7 +354,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             spec.run(self, run).await
         };
-        let parts = match outcome {
+        let mut parts = match outcome {
             Ok(parts) => parts,
             // A change made from an old version tells what changed, as the actor may read it and
             // without what is kept from AI.
@@ -326,6 +363,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Err(error) => return Err(error),
         };
+        let undo = take_undo(&mut parts);
         let changes = if spec.effect() == ToolEffect::Changes {
             proposed_changes(&parts)
         } else {
@@ -334,6 +372,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         let people = self
             .people_as(actor.person.id, request.people, &parts)
             .await?;
-        Ok((render(&parts, &people, &nonce()?), changes))
+        Ok((render(&parts, &people, &nonce()?), changes, undo))
     }
 }

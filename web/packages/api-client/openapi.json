@@ -18103,7 +18103,7 @@
       "AppliedProposalBody": {
         "type": "object",
         "description": "What *Apply* saved.",
-        "required": ["changes"],
+        "required": ["changes", "words"],
         "properties": {
           "changes": {
             "type": "array",
@@ -18111,6 +18111,39 @@
               "$ref": "#/components/schemas/ProposedChangeBody"
             },
             "description": "The fields that were changed, with the value before and after."
+          },
+          "undo": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AppliedUndoBody",
+                "description": "What *Undo* takes away where the change made something new: a comment, a time entry, an\nissue or the running timer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChangeBody"
+            },
+            "description": "The same fields in the words of the history."
+          }
+        }
+      },
+      "AppliedUndoBody": {
+        "type": "object",
+        "description": "What *Undo* of an applied change takes away.",
+        "required": ["kind", "id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Its ID; empty for the timer."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What was made: `comment`, `time-entry`, `issue` or `timer`."
           }
         }
       },
@@ -18312,7 +18345,7 @@
       "AssistantProposalBody": {
         "type": "object",
         "description": "A change the assistant proposes. Nothing is saved until the person applies it.",
-        "required": ["reference", "tool", "input", "changes"],
+        "required": ["reference", "tool", "input", "changes", "words"],
         "properties": {
           "changes": {
             "type": "array",
@@ -18332,6 +18365,13 @@
           "tool": {
             "type": "string",
             "description": "The name of the tool."
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChangeBody"
+            },
+            "description": "The same fields in the words of the history: status by its name, people as the reader may\nsee them. Empty for a change that is on no issue yet."
           }
         }
       },

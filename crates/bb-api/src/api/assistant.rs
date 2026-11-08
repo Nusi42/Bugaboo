@@ -19,6 +19,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
+use super::many_changes::FieldChangeBody;
 use crate::errors::{ApiError, ApiJson, ApiQuery};
 
 /// One thing the panel looks at.
@@ -87,6 +88,9 @@ pub(crate) struct AssistantProposalBody {
     input: serde_json::Value,
     /// The fields it would change, with the value now and the value after.
     changes: Vec<ProposedChangeBody>,
+    /// The same fields in the words of the history: status by its name, people as the reader may
+    /// see them. Empty for a change that is on no issue yet.
+    words: Vec<FieldChangeBody>,
 }
 
 impl From<&Proposal> for AssistantProposalBody {
@@ -100,6 +104,7 @@ impl From<&Proposal> for AssistantProposalBody {
                 .iter()
                 .map(ProposedChangeBody::from)
                 .collect(),
+            words: proposal.words.iter().map(FieldChangeBody::from).collect(),
         }
     }
 }
@@ -149,6 +154,21 @@ pub(crate) struct AssistantApplyBody {
 pub(crate) struct AppliedProposalBody {
     /// The fields that were changed, with the value before and after.
     changes: Vec<ProposedChangeBody>,
+    /// The same fields in the words of the history.
+    words: Vec<FieldChangeBody>,
+    /// What *Undo* takes away where the change made something new: a comment, a time entry, an
+    /// issue or the running timer.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    undo: Option<AppliedUndoBody>,
+}
+
+/// What *Undo* of an applied change takes away.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct AppliedUndoBody {
+    /// What was made: `comment`, `time-entry`, `issue` or `timer`.
+    kind: String,
+    /// Its ID; empty for the timer.
+    id: String,
 }
 
 impl bb_policy::Masked for AppliedProposalBody {}
@@ -161,6 +181,11 @@ impl From<&Applied> for AppliedProposalBody {
                 .iter()
                 .map(ProposedChangeBody::from)
                 .collect(),
+            words: applied.words.iter().map(FieldChangeBody::from).collect(),
+            undo: applied.undo.as_ref().map(|undo| AppliedUndoBody {
+                kind: undo.kind.clone(),
+                id: undo.id.clone(),
+            }),
         }
     }
 }

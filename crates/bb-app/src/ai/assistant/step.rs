@@ -134,11 +134,16 @@ impl<'a, S: AuthStore> Tools<'a, S> {
             ) else {
                 return COULD_NOT_RUN.to_owned();
             };
+            let words = self
+                .ctx
+                .words_of(self.actor, &call.arguments, &shown.changes)
+                .await;
             self.proposals.push(Proposal {
                 reference,
                 tool: call.name.clone(),
                 input: call.arguments.clone(),
                 changes: shown.changes,
+                words,
             });
         }
         format!("{}\n{PROPOSED}", shown.text)

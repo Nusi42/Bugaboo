@@ -20,6 +20,7 @@ mod reference;
 mod status;
 mod step;
 mod system;
+mod words;
 
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
@@ -34,6 +35,7 @@ pub use status::{AssistantStatus, AssistantStatusQuery, assistant_status};
 
 use super::tools::ProposedChange;
 use crate::auth::AppError;
+use crate::history::FieldChangeView;
 
 /// The assistant is the panel of a person who is signed in: an access key, also the key of an AI
 /// app, is turned away. AI apps work through MCP, with the scopes they were given (ADR-0042).
@@ -74,6 +76,10 @@ pub struct Proposal {
     pub input: Value,
     /// The fields it would change, with the value now and the value after.
     pub changes: Vec<ProposedChange>,
+    /// The same fields in the words of the history of the issue (status names, people as the
+    /// reader may see them), for the fields the reader may see; empty when the change is on no
+    /// issue yet.
+    pub words: Vec<FieldChangeView>,
 }
 
 /// What the assistant answers.

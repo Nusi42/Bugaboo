@@ -26,6 +26,8 @@
 //!   as `src/files.generated.ts`;
 //! - the most issues one change to many issues names (`crates/bb-core/src/many_changes.rs`) is
 //!   written as `src/many-changes.generated.ts`;
+//! - the limits of a question to the assistant (`crates/bb-core/src/ai/assistant.rs`) are written as
+//!   `src/assistant.generated.ts`;
 //! - the words a search names the fields of an issue by (`ID_WORD`, `Field::search_word`,
 //!   `IssueField::word`, from the linked crates) are written as `src/search-words.generated.ts`;
 //! - the words of the vocabularies the browser lists (the icons of issue types) are read from the
@@ -85,6 +87,8 @@ pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generat
 pub(crate) const FILES_PATH: &str = "web/packages/api-client/src/files.generated.ts";
 /// The most issues one change to many issues names, for the browser app.
 pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-changes.generated.ts";
+/// The limits of a question to the assistant, for the browser app.
+pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
 /// The words a search names the fields of an issue by, for the browser app.
 pub(crate) const SEARCH_WORDS_PATH: &str = "web/packages/api-client/src/search-words.generated.ts";
 /// The names of the properties the server renders as HTML (mark `x-safe-html`).
@@ -120,6 +124,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         EDITING_PATH,
         FILES_PATH,
         MANY_CHANGES_PATH,
+        ASSISTANT_PATH,
         SEARCH_WORDS_PATH,
         WORDS_PATH,
         SAFE_HTML_PATH,
@@ -189,6 +194,14 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
                 repo,
                 MANY_CHANGES_PATH,
                 &web_constants::many_changes(&sources)?,
+            )?,
+        ),
+        Generated::new(
+            ASSISTANT_PATH,
+            format_with_oxfmt(
+                repo,
+                ASSISTANT_PATH,
+                &web_constants::assistant_limits(&sources)?,
             )?,
         ),
         Generated::new(

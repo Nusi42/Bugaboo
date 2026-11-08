@@ -32,6 +32,7 @@ const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
 const MANY_CHANGES_SOURCE: &str = "crates/bb-core/src/many_changes.rs";
+const ASSISTANT_SOURCE: &str = "crates/bb-core/src/ai/assistant.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -624,6 +625,24 @@ pub(super) fn many_changes(sources: &[Source]) -> anyhow::Result<String> {
     Ok(format!(
         "{TS_HEADER}/** The most issues one change to many issues names (`MANY_CHANGES_ISSUES_MAX` of the server). */
 export const manyChangesIssuesMax = {most};
+"
+    ))
+}
+
+/// The limits of a question to the assistant, as constants for the browser client: how many turns
+/// and how long a question and a turn may be. The panel keeps within them and does not write them
+/// a second time.
+pub(super) fn assistant_limits(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == ASSISTANT_SOURCE) else {
+        bail!("{ASSISTANT_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{ASSISTANT_SOURCE} is not Rust"))?;
+    let turns = number_const(&file, ASSISTANT_SOURCE, "TURNS_MAX")?;
+    let question = number_const(&file, ASSISTANT_SOURCE, "QUESTION_CHARS_MAX")?;
+    let turn = number_const(&file, ASSISTANT_SOURCE, "TURN_CHARS_MAX")?;
+    Ok(format!(
+        "{TS_HEADER}/** The most turns, and the most characters of a question and of a turn, that a question to the assistant carries (`TURNS_MAX`, `QUESTION_CHARS_MAX` and `TURN_CHARS_MAX` of the server). */
+export const assistantLimits = {{ turns: {turns}, question: {question}, turn: {turn} }} as const;
 "
     ))
 }

@@ -5006,6 +5006,16 @@ export interface components {
     AppliedProposalBody: {
       /** @description The fields that were changed, with the value before and after. */
       changes: components["schemas"]["ProposedChangeBody"][];
+      undo?: components["schemas"]["AppliedUndoBody"] | null;
+      /** @description The same fields in the words of the history. */
+      words: components["schemas"]["FieldChangeBody"][];
+    };
+    /** @description What *Undo* of an applied change takes away. */
+    AppliedUndoBody: {
+      /** @description Its ID; empty for the timer. */
+      id: string;
+      /** @description What was made: `comment`, `time-entry`, `issue` or `timer`. */
+      kind: string;
     };
     /**
      * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.
@@ -5096,6 +5106,11 @@ export interface components {
       reference: string;
       /** @description The name of the tool. */
       tool: string;
+      /**
+       * @description The same fields in the words of the history: status by its name, people as the reader may
+       *     see them. Empty for a change that is on no issue yet.
+       */
+      words: components["schemas"]["FieldChangeBody"][];
     };
     /** @description Whether the assistant is there at a place, and where its answers come from. */
     AssistantStatusBody: {

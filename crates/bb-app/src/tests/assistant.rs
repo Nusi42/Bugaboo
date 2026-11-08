@@ -100,7 +100,7 @@ pub(super) fn tool_results(world: &World) -> String {
 }
 
 /// A project with an issue, AI on: the key of the issue.
-async fn with_an_issue() -> Result<(World, String), String> {
+pub(super) async fn with_an_issue() -> Result<(World, String), String> {
     let world = World::new().await?;
     a_project(&world, "WEB").await?;
     ai_on(&world).await.map_err(|error| error.to_string())?;
@@ -295,7 +295,7 @@ async fn a_proposal(world: &World, key: &str) -> Result<Proposal, AppError> {
         .ok_or(AppError::Refused(ErrorCode::NotFound))
 }
 
-fn apply_of(world: &World, proposal: &Proposal) -> ApplyProposal {
+pub(super) fn apply_of(world: &World, proposal: &Proposal) -> ApplyProposal {
     ApplyProposal {
         session_token: token(world),
         reference: proposal.reference.clone(),

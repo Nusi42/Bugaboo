@@ -8,8 +8,9 @@ use serde_json::Value;
 
 use super::{reference, session_only};
 use crate::ai::context::PeopleMode;
-use crate::ai::tools::{ProposedChange, ToolAnswer, ToolCallQuery, ToolMode, call_tool};
+use crate::ai::tools::{ProposedChange, ToolAnswer, ToolCallQuery, ToolMode, ToolUndo, call_tool};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::history::FieldChangeView;
 
 /// A proposal the person applies.
 pub struct ApplyProposal {
@@ -28,6 +29,10 @@ pub struct ApplyProposal {
 pub struct Applied {
     /// The fields it changed, with the value before and after.
     pub changes: Vec<ProposedChange>,
+    /// The same fields in the words of the history of the issue.
+    pub words: Vec<FieldChangeView>,
+    /// What *Undo* takes away, where the change made something new.
+    pub undo: Option<ToolUndo>,
 }
 
 impl Masked for Applied {}
@@ -69,6 +74,7 @@ pub async fn apply_proposal<S: AuthStore>(
     if !first {
         return Err(invalid());
     }
+    let input_for_words = input.input.clone();
     let applied = call_tool(
         ctx,
         ToolCallQuery {
@@ -90,7 +96,10 @@ pub async fn apply_proposal<S: AuthStore>(
     )
     .map_err(|error| AppError::Internal(error.to_string()))?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let words = ctx.words_of(&actor, &input_for_words, &saved.changes).await;
     Ok(held.authorize(Applied {
         changes: saved.changes,
+        words,
+        undo: saved.undo,
     }))
 }
