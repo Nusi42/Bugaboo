@@ -1305,8 +1305,7 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="field.description"],
-[data-part="settings.help"] {
+[data-part="field.description"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
   text-wrap: balance;
@@ -1314,12 +1313,10 @@ textarea,
 }
 
 [data-part="settings.help"] {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  line-height: var(--lh-body);
   margin: 0;
-}
-
-[data-part="settings.help"],
-[data-part="box"] [data-part="field.description"] {
-  text-wrap: pretty;
 }
 
 [data-part="field.input"]::placeholder {

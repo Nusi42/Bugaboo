@@ -20016,7 +20016,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.left-open-button", "Say when it ended"),
     (
         "time.work-day.on-break",
-        "On break since {start} · {worked}\u{a0}worked\u{a0}so\u{a0}far",
+        "On break since {start} · {worked} worked so far",
     ),
     ("time.work-day.open-reason", "Why was it not ended?"),
     ("time.work-day.open-save", "End that day"),
@@ -20032,7 +20032,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("time.work-day.region", "Work day"),
     (
         "time.work-day.since",
-        "Working since {start} · {worked}\u{a0}worked\u{a0}so\u{a0}far",
+        "Working since {start} · {worked} worked so far",
     ),
     ("time.work-day.start", "Start work day"),
     ("time.work-day.timer-no", "Keep it running"),

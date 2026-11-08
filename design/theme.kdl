@@ -795,9 +795,14 @@ mixin "control-box" {
 
 // The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
 // hints"). The hint of a field and of a picker are this one.
-mixin "control-hint" {
+mixin "hint-text" {
     font-size "$fs-sm"
     color "$fg-muted"
+}
+
+// The hint with a balanced wrap.
+mixin "control-hint" {
+    use "hint-text"
     // A hint or a label is one to three lines: balanced, so its last line is never one word alone ("a good password."),
     // where the `pretty` of the page still left one at some widths. The one wrap of every hint and label.
     text-wrap balance
@@ -1411,21 +1416,19 @@ part "field.label" {
     use "control-label"
 }
 
-// The hint under a control: of a box, and of a setting that is a switch or a group of choices, the same size, colour
-// and wrap (control-hint) everywhere.
-part "field.description" "settings.help" {
+// The hint under a box, in the hint look and balanced (control-hint).
+part "field.description" {
     use "control-hint"
     line-height "$lh-body"
 }
 
+// The hint of a setting is a sentence or three: it takes the width of its box and ends its lines where the words
+// end, so it has the look of a hint and the wrap of the page (`pretty`), where the balanced wrap of a short hint made
+// a long one narrower than its box (M6-F150).
 part "settings.help" {
+    use "hint-text"
+    line-height "$lh-body"
     margin 0
-}
-
-// The hint of a setting is a sentence or three: it takes the width of its box and ends its lines where the words end, where
-// the balanced wrap of a short hint made a long one narrower than its box (M6-F150).
-part "settings.help" "box field.description" {
-    text-wrap pretty
 }
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
