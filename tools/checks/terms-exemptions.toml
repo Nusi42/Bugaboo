@@ -172,3 +172,8 @@ reason = "The name of the field that finds agent work by its state (Waiting for 
 term = "state"
 at = ["userDocs/agents/README.md"]
 reason = "The states of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) are the words of ADR-0029 and of the glossary's own entry; they are not the status of an issue."
+
+[[allow]]
+term = "discard"
+at = ["messages/en.json#assistant.card.discard"]
+reason = "The glossary names Apply and Discard as the two answers to a proposed change (the entry Apply / Discard). Not the throwing away of a timer, which is Throw away."

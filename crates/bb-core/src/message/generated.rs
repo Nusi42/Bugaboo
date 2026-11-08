@@ -167,6 +167,180 @@ pub const AI_AUTHOR_MEMBER: MessageKey = MessageKey::new("ai-author.member");
 /// The message `ai-author.outsider`.
 pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider");
 
+/// The message `ai-setup.address-add`.
+pub const AI_SETUP_ADDRESS_ADD: MessageKey = MessageKey::new("ai-setup.address-add");
+
+/// The message `ai-setup.address-help`.
+pub const AI_SETUP_ADDRESS_HELP: MessageKey = MessageKey::new("ai-setup.address-help");
+
+/// The message `ai-setup.address-new`.
+pub const AI_SETUP_ADDRESS_NEW: MessageKey = MessageKey::new("ai-setup.address-new");
+
+/// The message `ai-setup.address-remove`.
+pub const AI_SETUP_ADDRESS_REMOVE: MessageKey = MessageKey::new("ai-setup.address-remove");
+
+/// The message `ai-setup.address-remove-text`.
+pub const AI_SETUP_ADDRESS_REMOVE_TEXT: MessageKey =
+    MessageKey::new("ai-setup.address-remove-text");
+
+/// The message `ai-setup.address-remove-title`.
+pub const AI_SETUP_ADDRESS_REMOVE_TITLE: MessageKey =
+    MessageKey::new("ai-setup.address-remove-title");
+
+/// The message `ai-setup.address-required`.
+pub const AI_SETUP_ADDRESS_REQUIRED: MessageKey = MessageKey::new("ai-setup.address-required");
+
+/// The message `ai-setup.addresses-intro`.
+pub const AI_SETUP_ADDRESSES_INTRO: MessageKey = MessageKey::new("ai-setup.addresses-intro");
+
+/// The message `ai-setup.addresses-list`.
+pub const AI_SETUP_ADDRESSES_LIST: MessageKey = MessageKey::new("ai-setup.addresses-list");
+
+/// The message `ai-setup.addresses-none`.
+pub const AI_SETUP_ADDRESSES_NONE: MessageKey = MessageKey::new("ai-setup.addresses-none");
+
+/// The message `ai-setup.agreement`.
+pub const AI_SETUP_AGREEMENT: MessageKey = MessageKey::new("ai-setup.agreement");
+
+/// The message `ai-setup.agreement-confirm`.
+pub const AI_SETUP_AGREEMENT_CONFIRM: MessageKey = MessageKey::new("ai-setup.agreement-confirm");
+
+/// The message `ai-setup.agreement-intro`.
+pub const AI_SETUP_AGREEMENT_INTRO: MessageKey = MessageKey::new("ai-setup.agreement-intro");
+
+/// The message `ai-setup.agreement-not-needed`.
+pub const AI_SETUP_AGREEMENT_NOT_NEEDED: MessageKey =
+    MessageKey::new("ai-setup.agreement-not-needed");
+
+/// The message `ai-setup.agreement-yes`.
+pub const AI_SETUP_AGREEMENT_YES: MessageKey = MessageKey::new("ai-setup.agreement-yes");
+
+/// The message `ai-setup.apps`.
+pub const AI_SETUP_APPS: MessageKey = MessageKey::new("ai-setup.apps");
+
+/// The message `ai-setup.apps-intro`.
+pub const AI_SETUP_APPS_INTRO: MessageKey = MessageKey::new("ai-setup.apps-intro");
+
+/// The message `ai-setup.intro`.
+pub const AI_SETUP_INTRO: MessageKey = MessageKey::new("ai-setup.intro");
+
+/// The message `ai-setup.key`.
+pub const AI_SETUP_KEY: MessageKey = MessageKey::new("ai-setup.key");
+
+/// The message `ai-setup.key-none`.
+pub const AI_SETUP_KEY_NONE: MessageKey = MessageKey::new("ai-setup.key-none");
+
+/// The message `ai-setup.key-remove`.
+pub const AI_SETUP_KEY_REMOVE: MessageKey = MessageKey::new("ai-setup.key-remove");
+
+/// The message `ai-setup.key-set`.
+pub const AI_SETUP_KEY_SET: MessageKey = MessageKey::new("ai-setup.key-set");
+
+/// The message `ai-setup.never-sent`.
+pub const AI_SETUP_NEVER_SENT: MessageKey = MessageKey::new("ai-setup.never-sent");
+
+/// The message `ai-setup.never-sent-help`.
+pub const AI_SETUP_NEVER_SENT_HELP: MessageKey = MessageKey::new("ai-setup.never-sent-help");
+
+/// The message `ai-setup.never-sent-intro`.
+pub const AI_SETUP_NEVER_SENT_INTRO: MessageKey = MessageKey::new("ai-setup.never-sent-intro");
+
+/// The message `ai-setup.never-sent-project-help`.
+pub const AI_SETUP_NEVER_SENT_PROJECT_HELP: MessageKey =
+    MessageKey::new("ai-setup.never-sent-project-help");
+
+/// The message `ai-setup.password`.
+pub const AI_SETUP_PASSWORD: MessageKey = MessageKey::new("ai-setup.password");
+
+/// The message `ai-setup.password-help`.
+pub const AI_SETUP_PASSWORD_HELP: MessageKey = MessageKey::new("ai-setup.password-help");
+
+/// The message `ai-setup.password-required`.
+pub const AI_SETUP_PASSWORD_REQUIRED: MessageKey = MessageKey::new("ai-setup.password-required");
+
+/// The message `ai-setup.project-follow`.
+pub const AI_SETUP_PROJECT_FOLLOW: MessageKey = MessageKey::new("ai-setup.project-follow");
+
+/// The message `ai-setup.project-help`.
+pub const AI_SETUP_PROJECT_HELP: MessageKey = MessageKey::new("ai-setup.project-help");
+
+/// The message `ai-setup.project-intro`.
+pub const AI_SETUP_PROJECT_INTRO: MessageKey = MessageKey::new("ai-setup.project-intro");
+
+/// The message `ai-setup.project-organization-off`.
+pub const AI_SETUP_PROJECT_ORGANIZATION_OFF: MessageKey =
+    MessageKey::new("ai-setup.project-organization-off");
+
+/// The message `ai-setup.project-switch`.
+pub const AI_SETUP_PROJECT_SWITCH: MessageKey = MessageKey::new("ai-setup.project-switch");
+
+/// The message `ai-setup.project-title`.
+pub const AI_SETUP_PROJECT_TITLE: MessageKey = MessageKey::new("ai-setup.project-title");
+
+/// The message `ai-setup.save`.
+pub const AI_SETUP_SAVE: MessageKey = MessageKey::new("ai-setup.save");
+
+/// The message `ai-setup.saved`.
+pub const AI_SETUP_SAVED: MessageKey = MessageKey::new("ai-setup.saved");
+
+/// The message `ai-setup.set-up`.
+pub const AI_SETUP_SET_UP: MessageKey = MessageKey::new("ai-setup.set-up");
+
+/// The message `ai-setup.set-up-intro`.
+pub const AI_SETUP_SET_UP_INTRO: MessageKey = MessageKey::new("ai-setup.set-up-intro");
+
+/// The message `ai-setup.switch`.
+pub const AI_SETUP_SWITCH: MessageKey = MessageKey::new("ai-setup.switch");
+
+/// The message `ai-setup.switch-needs-agreement`.
+pub const AI_SETUP_SWITCH_NEEDS_AGREEMENT: MessageKey =
+    MessageKey::new("ai-setup.switch-needs-agreement");
+
+/// The message `ai-setup.title`.
+pub const AI_SETUP_TITLE: MessageKey = MessageKey::new("ai-setup.title");
+
+/// The message `ai-setup.try`.
+pub const AI_SETUP_TRY: MessageKey = MessageKey::new("ai-setup.try");
+
+/// The message `ai-setup.try-done`.
+pub const AI_SETUP_TRY_DONE: MessageKey = MessageKey::new("ai-setup.try-done");
+
+/// The message `ai-setup.where`.
+pub const AI_SETUP_WHERE: MessageKey = MessageKey::new("ai-setup.where");
+
+/// The message `ai-setup.where-country`.
+pub const AI_SETUP_WHERE_COUNTRY: MessageKey = MessageKey::new("ai-setup.where-country");
+
+/// The message `ai-setup.where-intro`.
+pub const AI_SETUP_WHERE_INTRO: MessageKey = MessageKey::new("ai-setup.where-intro");
+
+/// The message `ai-setup.where-model`.
+pub const AI_SETUP_WHERE_MODEL: MessageKey = MessageKey::new("ai-setup.where-model");
+
+/// The message `ai-setup.where-names`.
+pub const AI_SETUP_WHERE_NAMES: MessageKey = MessageKey::new("ai-setup.where-names");
+
+/// The message `ai-setup.where-none-off`.
+pub const AI_SETUP_WHERE_NONE_OFF: MessageKey = MessageKey::new("ai-setup.where-none-off");
+
+/// The message `ai-setup.where-note`.
+pub const AI_SETUP_WHERE_NOTE: MessageKey = MessageKey::new("ai-setup.where-note");
+
+/// The message `ai-setup.where-off`.
+pub const AI_SETUP_WHERE_OFF: MessageKey = MessageKey::new("ai-setup.where-off");
+
+/// The message `ai-setup.where-people`.
+pub const AI_SETUP_WHERE_PEOPLE: MessageKey = MessageKey::new("ai-setup.where-people");
+
+/// The message `ai-setup.where-provider`.
+pub const AI_SETUP_WHERE_PROVIDER: MessageKey = MessageKey::new("ai-setup.where-provider");
+
+/// The message `ai-setup.where-roles`.
+pub const AI_SETUP_WHERE_ROLES: MessageKey = MessageKey::new("ai-setup.where-roles");
+
+/// The message `ai-setup.where-state`.
+pub const AI_SETUP_WHERE_STATE: MessageKey = MessageKey::new("ai-setup.where-state");
+
 /// The message `ai-tool.add-comment`.
 pub const AI_TOOL_ADD_COMMENT: MessageKey = MessageKey::new("ai-tool.add-comment");
 
@@ -373,6 +547,111 @@ pub const ASSIGNMENTS_TITLE_ORGANIZATION: MessageKey =
 
 /// The message `assignments.where`.
 pub const ASSIGNMENTS_WHERE: MessageKey = MessageKey::new("assignments.where");
+
+/// The message `assistant.ask`.
+pub const ASSISTANT_ASK: MessageKey = MessageKey::new("assistant.ask");
+
+/// The message `assistant.button`.
+pub const ASSISTANT_BUTTON: MessageKey = MessageKey::new("assistant.button");
+
+/// The message `assistant.card.apply`.
+pub const ASSISTANT_CARD_APPLY: MessageKey = MessageKey::new("assistant.card.apply");
+
+/// The message `assistant.card.discard`.
+pub const ASSISTANT_CARD_DISCARD: MessageKey = MessageKey::new("assistant.card.discard");
+
+/// The message `assistant.card.discarded`.
+pub const ASSISTANT_CARD_DISCARDED: MessageKey = MessageKey::new("assistant.card.discarded");
+
+/// The message `assistant.card.nothing-saved`.
+pub const ASSISTANT_CARD_NOTHING_SAVED: MessageKey =
+    MessageKey::new("assistant.card.nothing-saved");
+
+/// The message `assistant.card.other-value`.
+pub const ASSISTANT_CARD_OTHER_VALUE: MessageKey = MessageKey::new("assistant.card.other-value");
+
+/// The message `assistant.card.saved`.
+pub const ASSISTANT_CARD_SAVED: MessageKey = MessageKey::new("assistant.card.saved");
+
+/// The message `assistant.card.title`.
+pub const ASSISTANT_CARD_TITLE: MessageKey = MessageKey::new("assistant.card.title");
+
+/// The message `assistant.card.undone`.
+pub const ASSISTANT_CARD_UNDONE: MessageKey = MessageKey::new("assistant.card.undone");
+
+/// The message `assistant.card.undone-note`.
+pub const ASSISTANT_CARD_UNDONE_NOTE: MessageKey = MessageKey::new("assistant.card.undone-note");
+
+/// The message `assistant.close`.
+pub const ASSISTANT_CLOSE: MessageKey = MessageKey::new("assistant.close");
+
+/// The message `assistant.close-keep`.
+pub const ASSISTANT_CLOSE_KEEP: MessageKey = MessageKey::new("assistant.close-keep");
+
+/// The message `assistant.close-text`.
+pub const ASSISTANT_CLOSE_TEXT: MessageKey = MessageKey::new("assistant.close-text");
+
+/// The message `assistant.close-title`.
+pub const ASSISTANT_CLOSE_TITLE: MessageKey = MessageKey::new("assistant.close-title");
+
+/// The message `assistant.close-yes`.
+pub const ASSISTANT_CLOSE_YES: MessageKey = MessageKey::new("assistant.close-yes");
+
+/// The message `assistant.conversation`.
+pub const ASSISTANT_CONVERSATION: MessageKey = MessageKey::new("assistant.conversation");
+
+/// The message `assistant.empty`.
+pub const ASSISTANT_EMPTY: MessageKey = MessageKey::new("assistant.empty");
+
+/// The message `assistant.label`.
+pub const ASSISTANT_LABEL: MessageKey = MessageKey::new("assistant.label");
+
+/// The message `assistant.looking-at`.
+pub const ASSISTANT_LOOKING_AT: MessageKey = MessageKey::new("assistant.looking-at");
+
+/// The message `assistant.looking-list`.
+pub const ASSISTANT_LOOKING_LIST: MessageKey = MessageKey::new("assistant.looking-list");
+
+/// The message `assistant.looking-nothing`.
+pub const ASSISTANT_LOOKING_NOTHING: MessageKey = MessageKey::new("assistant.looking-nothing");
+
+/// The message `assistant.names-as-seen`.
+pub const ASSISTANT_NAMES_AS_SEEN: MessageKey = MessageKey::new("assistant.names-as-seen");
+
+/// The message `assistant.names-role`.
+pub const ASSISTANT_NAMES_ROLE: MessageKey = MessageKey::new("assistant.names-role");
+
+/// The message `assistant.names-sent`.
+pub const ASSISTANT_NAMES_SENT: MessageKey = MessageKey::new("assistant.names-sent");
+
+/// The message `assistant.never-sent-none`.
+pub const ASSISTANT_NEVER_SENT_NONE: MessageKey = MessageKey::new("assistant.never-sent-none");
+
+/// The message `assistant.question`.
+pub const ASSISTANT_QUESTION: MessageKey = MessageKey::new("assistant.question");
+
+/// The message `assistant.quick-ask`.
+pub const ASSISTANT_QUICK_ASK: MessageKey = MessageKey::new("assistant.quick-ask");
+
+/// The message `assistant.source-anthropic`.
+pub const ASSISTANT_SOURCE_ANTHROPIC: MessageKey = MessageKey::new("assistant.source-anthropic");
+
+/// The message `assistant.source-local-model`.
+pub const ASSISTANT_SOURCE_LOCAL_MODEL: MessageKey =
+    MessageKey::new("assistant.source-local-model");
+
+/// The message `assistant.source-other-provider`.
+pub const ASSISTANT_SOURCE_OTHER_PROVIDER: MessageKey =
+    MessageKey::new("assistant.source-other-provider");
+
+/// The message `assistant.title`.
+pub const ASSISTANT_TITLE: MessageKey = MessageKey::new("assistant.title");
+
+/// The message `assistant.working`.
+pub const ASSISTANT_WORKING: MessageKey = MessageKey::new("assistant.working");
+
+/// The message `assistant.you`.
+pub const ASSISTANT_YOU: MessageKey = MessageKey::new("assistant.you");
 
 /// The message `backup.copied`.
 pub const BACKUP_COPIED: MessageKey = MessageKey::new("backup.copied");
@@ -3193,6 +3472,9 @@ pub const MCP_RESOURCE_PROJECTS_HELP: MessageKey = MessageKey::new("mcp.resource
 
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
+
+/// The message `nav.ai`.
+pub const NAV_AI: MessageKey = MessageKey::new("nav.ai");
 
 /// The message `nav.appearance`.
 pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
@@ -7234,6 +7516,75 @@ pub fn agent_work_summary(
     )
 }
 
+/// The message `ai-setup.address-added`.
+#[must_use]
+pub fn ai_setup_address_added(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.address-added"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `ai-setup.address-remove-name`.
+#[must_use]
+pub fn ai_setup_address_remove_name(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.address-remove-name"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-confirmed`.
+#[must_use]
+pub fn ai_setup_agreement_confirmed(
+    at: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-confirmed"),
+        vec![
+            ("at", Value::Text(at.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `ai-setup.agreement-sentence`.
+#[must_use]
+pub fn ai_setup_agreement_sentence(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-sentence"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-text`.
+#[must_use]
+pub fn ai_setup_agreement_text(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-text"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-title`.
+#[must_use]
+pub fn ai_setup_agreement_title(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-title"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.where-off-more`.
+#[must_use]
+pub fn ai_setup_where_off_more(names: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.where-off-more"),
+        vec![("names", Value::Text(names.to_string()))],
+    )
+}
+
 /// The message `assignments.change-here-name`.
 #[must_use]
 pub fn assignments_change_here_name(who: impl std::fmt::Display) -> Message {
@@ -7294,6 +7645,68 @@ pub fn assignments_who_group(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("assignments.who-group"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `assistant.answered`.
+#[must_use]
+pub fn assistant_answered(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.answered"),
+        vec![("count", Value::Text(count.to_string()))],
+    )
+}
+
+/// The message `assistant.card.change`.
+#[must_use]
+pub fn assistant_card_change(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.card.change"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
+/// The message `assistant.card.new-issue`.
+#[must_use]
+pub fn assistant_card_new_issue(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.card.new-issue"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `assistant.card.people`.
+#[must_use]
+pub fn assistant_card_people(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.card.people"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `assistant.leave-out`.
+#[must_use]
+pub fn assistant_leave_out(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.leave-out"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `assistant.never-sent`.
+#[must_use]
+pub fn assistant_never_sent(names: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.never-sent"),
+        vec![("names", Value::Text(names.to_string()))],
     )
 }
 
@@ -14313,6 +14726,141 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-author.guest", "a Guest"),
     ("ai-author.member", "someone in the project"),
     ("ai-author.outsider", "someone outside"),
+    ("ai-setup.address-add", "Allow this address"),
+    ("ai-setup.address-added", "Allowed {date}"),
+    (
+        "ai-setup.address-help",
+        "The return address of the app, like https://app.example.com/callback.",
+    ),
+    ("ai-setup.address-new", "Web address to allow"),
+    ("ai-setup.address-remove", "Take away"),
+    ("ai-setup.address-remove-name", "Take away {address}"),
+    (
+        "ai-setup.address-remove-text",
+        "Apps that signed in from this address are refused at their next sign-in. Nothing they did is undone.",
+    ),
+    ("ai-setup.address-remove-title", "Take this address away?"),
+    ("ai-setup.address-required", "Enter a web address."),
+    (
+        "ai-setup.addresses-intro",
+        "Apps that run on the web sign in only from the web addresses you allow here. An app on a person’s own computer needs none.",
+    ),
+    ("ai-setup.addresses-list", "Allowed web addresses"),
+    ("ai-setup.addresses-none", "No web address is allowed."),
+    ("ai-setup.agreement", "Agreement with the provider"),
+    ("ai-setup.agreement-confirm", "Confirm the agreement"),
+    (
+        "ai-setup.agreement-confirmed",
+        "Confirmed by {person}, {at}.",
+    ),
+    (
+        "ai-setup.agreement-intro",
+        "An outside provider gets the text of your issues. The law asks for a written agreement about personal data first.",
+    ),
+    (
+        "ai-setup.agreement-not-needed",
+        "The model runs on your own computers, so nothing leaves your organization and no agreement is needed.",
+    ),
+    (
+        "ai-setup.agreement-sentence",
+        "I confirm that a data processing agreement with {provider} is in place.",
+    ),
+    (
+        "ai-setup.agreement-text",
+        "Your data goes to {provider}. Before AI is switched on, confirm that a data processing agreement with {provider} is in place.",
+    ),
+    (
+        "ai-setup.agreement-title",
+        "Is the agreement with {provider} in place?",
+    ),
+    ("ai-setup.agreement-yes", "Yes, it is in place"),
+    ("ai-setup.apps", "AI apps"),
+    (
+        "ai-setup.apps-intro",
+        "Outside AI apps that people connect to their accounts.",
+    ),
+    (
+        "ai-setup.intro",
+        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
+    ),
+    ("ai-setup.key", "Key of the provider"),
+    (
+        "ai-setup.key-none",
+        "No key is stored. A model on your own computers may need none.",
+    ),
+    ("ai-setup.key-remove", "Remove the key"),
+    (
+        "ai-setup.key-set",
+        "A key is stored. Leave this empty to keep it.",
+    ),
+    ("ai-setup.never-sent", "Never sent to AI"),
+    (
+        "ai-setup.never-sent-help",
+        "Kept from the assistant, AI apps and agents, even for people who can read it.",
+    ),
+    (
+        "ai-setup.never-sent-intro",
+        "Fields and projects that AI never gets.",
+    ),
+    (
+        "ai-setup.never-sent-project-help",
+        "Kept from the assistant, AI apps and agents, with every project inside this one, even for people who can read it.",
+    ),
+    ("ai-setup.password", "Your password"),
+    (
+        "ai-setup.password-help",
+        "Needed when you change the provider, the address or the key.",
+    ),
+    ("ai-setup.password-required", "Enter your password."),
+    ("ai-setup.project-follow", "Follow the organization again"),
+    (
+        "ai-setup.project-help",
+        "Follows the choice of the organization until you switch it here.",
+    ),
+    (
+        "ai-setup.project-intro",
+        "The assistant and AI apps work in a project only while the organization and the project both have AI on.",
+    ),
+    (
+        "ai-setup.project-organization-off",
+        "AI is off for the organization, so it is off here too.",
+    ),
+    ("ai-setup.project-switch", "AI in this project"),
+    ("ai-setup.project-title", "AI in this project"),
+    ("ai-setup.save", "Save the setup"),
+    ("ai-setup.saved", "The setup is saved."),
+    ("ai-setup.set-up", "Set up the assistant"),
+    (
+        "ai-setup.set-up-intro",
+        "Choose who writes the answers. The key is stored encrypted and is never shown again.",
+    ),
+    ("ai-setup.switch", "Switch on"),
+    (
+        "ai-setup.switch-needs-agreement",
+        "Confirm the agreement above before AI is switched on.",
+    ),
+    ("ai-setup.title", "AI"),
+    ("ai-setup.try", "Try the provider"),
+    ("ai-setup.try-done", "The provider answered."),
+    ("ai-setup.where", "What goes where"),
+    ("ai-setup.where-country", "Country"),
+    (
+        "ai-setup.where-intro",
+        "What the assistant may send, to whom, and where that is.",
+    ),
+    ("ai-setup.where-model", "Model"),
+    ("ai-setup.where-names", "By name"),
+    ("ai-setup.where-none-off", "None"),
+    (
+        "ai-setup.where-note",
+        "Only what a person may read goes to the provider, and never what is marked Never sent to AI.",
+    ),
+    ("ai-setup.where-off", "Projects with AI off"),
+    ("ai-setup.where-off-more", "{names} and more"),
+    ("ai-setup.where-people", "People"),
+    ("ai-setup.where-provider", "Provider"),
+    ("ai-setup.where-roles", "As their role"),
+    ("ai-setup.where-state", "AI"),
     ("ai-tool.add-comment", "Write a comment on an issue."),
     (
         "ai-tool.ask",
@@ -14455,6 +15003,85 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.title-project", "Who has which role in {name}"),
     ("assignments.where", "Where it counts"),
     ("assignments.who-group", "Group {name}"),
+    ("assistant.answered", "The assistant gave answer {count}."),
+    ("assistant.ask", "Ask"),
+    ("assistant.button", "Assistant"),
+    ("assistant.card.apply", "Apply"),
+    ("assistant.card.change", "{field}: {before} → {after}"),
+    ("assistant.card.discard", "Discard"),
+    ("assistant.card.discarded", "Discarded. Nothing was saved."),
+    ("assistant.card.new-issue", "A new issue in {project}"),
+    (
+        "assistant.card.nothing-saved",
+        "Nothing is saved until you apply it.",
+    ),
+    ("assistant.card.other-value", "another value"),
+    (
+        "assistant.card.people",
+        "{count, plural, one {# person} other {# people}}",
+    ),
+    ("assistant.card.saved", "Saved as you."),
+    ("assistant.card.title", "Proposed change"),
+    (
+        "assistant.card.undone",
+        "The change from the assistant was undone.",
+    ),
+    ("assistant.card.undone-note", "Undone. The value is back."),
+    ("assistant.close", "Close the assistant"),
+    ("assistant.close-keep", "Keep talking"),
+    (
+        "assistant.close-text",
+        "Closing the assistant ends this conversation. It is not stored anywhere.",
+    ),
+    ("assistant.close-title", "Close the assistant?"),
+    ("assistant.close-yes", "Close and end it"),
+    ("assistant.conversation", "Conversation with the assistant"),
+    (
+        "assistant.empty",
+        "Ask about what you are looking at, for example: Summarize the comments on this issue.",
+    ),
+    ("assistant.label", "Assistant"),
+    ("assistant.leave-out", "Leave out {name}"),
+    ("assistant.looking-at", "Looking at:"),
+    ("assistant.looking-list", "This list"),
+    (
+        "assistant.looking-nothing",
+        "Nothing. Ask about an issue, a list or a project.",
+    ),
+    (
+        "assistant.names-as-seen",
+        "People are shown as you see them.",
+    ),
+    (
+        "assistant.names-role",
+        "People are sent as their role (“a Team member”), not by name.",
+    ),
+    (
+        "assistant.names-sent",
+        "People are sent by name. An administrator chose this.",
+    ),
+    ("assistant.never-sent", "Never sent to AI: {names}"),
+    (
+        "assistant.never-sent-none",
+        "Never sent to AI: nothing is marked.",
+    ),
+    ("assistant.question", "Your question"),
+    ("assistant.quick-ask", "Ask the assistant"),
+    (
+        "assistant.source-anthropic",
+        "Answers come from Claude (Anthropic). Your organization chose this.",
+    ),
+    (
+        "assistant.source-local-model",
+        "Answers come from a model on your own server. Nothing leaves your organization.",
+    ),
+    (
+        "assistant.source-other-provider",
+        "Answers come from a provider on the internet. Your organization chose this.",
+    ),
+    ("assistant.title", "Assistant"),
+    ("assistant.working", "The assistant is working on it…"),
+    ("assistant.you", "You"),
     ("backup.copied", "Copied"),
     ("backup.copy", "Copy the codes"),
     (
@@ -17005,6 +17632,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Wait {seconds, plural, one {# second} other {# seconds}} and call again.",
     ),
     ("nav.access-keys", "Access keys"),
+    ("nav.ai", "AI"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
     ("nav.connected-apps", "Connected apps"),

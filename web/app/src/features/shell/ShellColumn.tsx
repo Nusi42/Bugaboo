@@ -5,6 +5,7 @@ import { usePageFocus } from "../../shared/focus.ts";
 import { BarSlot } from "./bar-slot.ts";
 import { CONTENT_ID, scrollRestoration } from "./content-id.ts";
 import { TopBar } from "./TopBar.tsx";
+import { TopBarActions } from "./TopBarActions.tsx";
 import { PageColumn } from "./PageColumn.tsx";
 import { PhoneBars } from "./PhoneBars.tsx";
 
@@ -23,7 +24,9 @@ export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
     <BarSlot value={slot}>
       <div {...partOf(part.appLayoutColumn)}>
         {/* Every screen has the top bar, the issue page of a phone too: Back and where you are (L1). */}
-        <TopBar layout={layout} />
+        <TopBar layout={layout}>
+          <TopBarActions />
+        </TopBar>
         <main id={CONTENT_ID} {...partOf(part.appLayoutMain)} tabIndex={-1} {...scrollRestoration}>
           <TitleCarriedByBar>
             <PageColumn phone={phone} signOutProblem={signOutProblem} />

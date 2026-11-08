@@ -49,6 +49,7 @@ export const paths = {
   workingHours: "/settings/working-hours",
   status: "/settings/status",
   mailServer: "/settings/email",
+  ai: "/settings/ai",
   projects: "/settings/projects",
   fieldPermissions: "/settings/field-permissions",
   peopleVisibility: "/settings/people-visibility",

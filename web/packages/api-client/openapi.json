@@ -1736,11 +1736,11 @@
         "parameters": [
           {
             "name": "project",
-            "in": "path",
+            "in": "query",
             "description": "The project the person looks at: its ID or short name. Left out, the question is about the\norganization.",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           }
         ],

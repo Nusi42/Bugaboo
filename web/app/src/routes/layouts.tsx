@@ -82,6 +82,20 @@ async function joinTime(): Promise<void> {
   }
 }
 
+let assistantJoined = false;
+
+/** The assistant joins the shell once somebody is signed in; its panel loads when it is first opened. */
+async function joinAssistant(): Promise<void> {
+  if (assistantJoined) {
+    return;
+  }
+  const assistant = await import("../features/assistant/index.ts");
+  if (!assistantJoined) {
+    assistantJoined = true;
+    assistant.registerAssistant();
+  }
+}
+
 /** Whether the issues have joined the shell (the new-issue dialog and its key). */
 let issuesJoined = false;
 
@@ -144,6 +158,7 @@ export const appRoute = createRoute({
     await joinProjects();
     await joinIssues();
     await joinTime();
+    await joinAssistant();
     return { person };
   },
   component: AppLayout,

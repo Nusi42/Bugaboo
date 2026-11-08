@@ -3,6 +3,7 @@
 export { messages as access } from "./access.ts";
 export { messages as account } from "./account.ts";
 export { messages as admin } from "./admin.ts";
+export { messages as assistant } from "./assistant.ts";
 export { messages as connect } from "./connect.ts";
 export { messages as fields } from "./fields.ts";
 export { messages as files } from "./files.ts";

@@ -260,6 +260,7 @@ async fn apply_assistant_proposal(
 
 /// Where the person looks, for the question *is the assistant there*.
 #[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
 pub(crate) struct AssistantStatusParams {
     /// The project the person looks at: its ID or short name. Left out, the question is about the
     /// organization.

@@ -12281,15 +12281,15 @@ export interface operations {
   };
   getAssistantStatus: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
+      query?: {
         /**
          * @description The project the person looks at: its ID or short name. Left out, the question is about the
          *     organization.
          */
-        project: string | null;
+        project?: string;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;

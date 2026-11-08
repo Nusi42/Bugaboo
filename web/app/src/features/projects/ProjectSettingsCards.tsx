@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 
 import { TimeDefaultsOfProject } from "../fields/index.ts";
-import { ProjectSettingsSection } from "../settings/index.ts";
+import { ProjectAiSection, ProjectSettingsSection } from "../settings/index.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /**
@@ -15,6 +15,9 @@ export function ProjectSettingsCards({ project }: { readonly project: OneProject
     <>
       <Card heading={t("projects.issue-ids-title")}>
         <ProjectSettingsSection projectId={project.project.id} />
+      </Card>
+      <Card heading={t("ai-setup.project-title")} intro={t("ai-setup.project-intro")}>
+        <ProjectAiSection project={project.project.short_name} />
       </Card>
       <TimeDefaultsOfProject project={project} />
     </>

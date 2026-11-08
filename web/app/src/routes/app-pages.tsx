@@ -228,6 +228,7 @@ const MailServerScreen = lazyRouteComponent(
   () => import("../features/notifications/index.ts"),
   "MailServerPage",
 );
+const AiScreen = lazyRouteComponent(() => import("../features/settings/index.ts"), "AiPage");
 const HandleScreen = lazyRouteComponent(
   () => import("../features/my-settings/index.ts"),
   "HandlePage",
@@ -255,6 +256,20 @@ export const handleRoute = createRoute({
   path: paths.handle,
   loader: loadsScreen(HandleScreen),
   component: HandleScreen,
+});
+
+/** *Organization settings › Connections › AI*: *Set up the assistant*, the agreement and *What goes where*. */
+export const aiRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.ai,
+  loader: loadsScreen(AiScreen),
+  component: function Ai() {
+    return (
+      <OnlyWith path={paths.ai}>
+        <AiScreen />
+      </OnlyWith>
+    );
+  },
 });
 
 /** *Organization settings › Connections › E-mail & notifications*: the mail server. */

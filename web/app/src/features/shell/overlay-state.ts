@@ -9,6 +9,7 @@ export const overlays = {
   menu: "menu",
   more: "more",
   newIssue: "new-issue",
+  assistant: "assistant",
 } as const;
 
 /** The name of a layer. */

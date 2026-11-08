@@ -36,6 +36,7 @@ function Flags({ field }: { readonly field: OwnField }) {
           change.mutate(fieldChange(field, { never_to_assistant: never }));
         }}
       />
+      <p {...partOf(part.muted)}>{t("ai-setup.never-sent-help")}</p>
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </>
   );

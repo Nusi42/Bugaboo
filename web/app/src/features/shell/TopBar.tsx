@@ -11,35 +11,12 @@ import {
   part,
   ariaCurrent,
 } from "@bugaboo/ui";
-import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { Link } from "react-aria-components";
 
-import { paths } from "../../shared/paths.ts";
 import { openOverlay } from "./overlay-state.ts";
-import { pageTrails, type TrailStep } from "./page-trail.ts";
-import { placeAt } from "../../shared/places.ts";
-import { stepsOfScreens } from "./steps-of-screens.ts";
-import { useRegistry } from "./registry.ts";
-
-/**
- * *Back* on a phone: where the person came from, or else the screen this one belongs under (for a
- * page with its own trail, the step above it).
- */
-function useGoBack(trail: readonly TrailStep[] | undefined): () => void {
-  const router = useRouter();
-  const canGoBack = useCanGoBack();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  return () => {
-    const above = trail === undefined ? undefined : trail.at(-2)?.href;
-    const parent = above ?? placeAt(pathname)?.parent;
-    if (canGoBack) {
-      router.history.back();
-    } else {
-      void navigate({ to: parent ?? paths.home });
-    }
-  };
-}
+import type { TrailStep } from "./page-trail.ts";
+import { useTopBar } from "./use-top-bar.ts";
 
 /** The words of a step: an issue ID is drawn by the part of IDs. */
 function StepLabel({ step }: { readonly step: TrailStep }) {
@@ -77,22 +54,18 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
 
 export interface TopBarProps {
   readonly layout: LayoutMode;
+  /** What stands at the end of the bar: the buttons features add (`TopBarActions`). */
+  readonly children?: ReactNode;
 }
 
 /**
  * The bar at the top of the content (UX §3): where you are, and what a tablet or a phone needs
  * instead of a sidebar: the *Menu* button, *Search*, or *Back*.
  */
-export function TopBar({ layout }: TopBarProps) {
-  const { pathname } = useLocation();
-  const set = useRegistry(pageTrails).at(-1)?.steps;
-  const goBack = useGoBack(set);
-  const place = placeAt(pathname);
+export function TopBar({ layout, children }: TopBarProps) {
+  const { steps, hasUp, goBack } = useTopBar();
   const phone = layout === "phone";
-  const steps = set ?? stepsOfScreens(pathname);
   const last = steps.at(-1);
-  // A page with a trail of its own has a screen above it, which *Back* leads to.
-  const hasUp = set === undefined ? place?.parent !== null && place !== undefined : true;
   return (
     <header {...partOf(part.topBar)}>
       {layout === "tablet" ? (
@@ -128,6 +101,7 @@ export function TopBar({ layout }: TopBarProps) {
           {t("shell.search")}
         </Button>
       ) : null}
+      {children}
     </header>
   );
 }

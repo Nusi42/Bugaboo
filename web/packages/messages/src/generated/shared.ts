@@ -248,6 +248,10 @@ export const messages = {
   "access-keys.may": "What it may do",
   "access-keys.more": "More options",
   "nav.connected-apps": "Connected apps",
+  "nav.ai": "AI",
+  "ai-setup.never-sent": "Never sent to AI",
+  "ai-setup.never-sent-help":
+    "Kept from the assistant, AI apps and agents, even for people who can read it.",
   "connect.page": "Connect an app",
   "permission.see-projects": "See the project and what is in it",
   "permission.see-issues": "See every issue of the project, not only the ones they reported",

@@ -165,6 +165,7 @@ const visits: readonly Visit[] = [
   { address: paths.notificationSettings, open: signedIn(paths.notificationSettings), guest: false },
   { address: paths.handle, open: signedIn(paths.handle), guest: false },
   { address: paths.mailServer, open: signedIn(paths.mailServer), guest: false },
+  { address: paths.ai, open: signedIn(paths.ai), guest: false },
   { address: paths.shortcuts, open: signedIn(paths.shortcuts), guest: false },
   { address: paths.security, open: signedIn(paths.security), guest: false },
   { address: paths.sessions, open: signedIn(paths.sessions), guest: false },

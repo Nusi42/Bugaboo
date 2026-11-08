@@ -6,6 +6,7 @@ import { fieldAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { detailsOf, useFields } from "./fields.ts";
+import { NeverSentFields } from "../settings/index.ts";
 import { CreateFieldForm } from "./CreateFieldForm.tsx";
 
 /**
@@ -41,6 +42,9 @@ export function FieldsPage() {
       </Card>
       <Card heading={t("fields.create-title")} intro={t("fields.create-intro")}>
         <CreateFieldForm />
+      </Card>
+      <Card heading={t("ai-setup.never-sent")} intro={t("ai-setup.never-sent-intro")}>
+        <NeverSentFields />
       </Card>
     </div>
   );

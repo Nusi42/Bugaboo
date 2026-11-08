@@ -123,6 +123,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.themes,
       paths.workingHours,
       paths.mailServer,
+      paths.ai,
       paths.organizationSecurity,
       paths.status,
     ]);

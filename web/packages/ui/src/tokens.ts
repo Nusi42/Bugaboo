@@ -901,6 +901,18 @@ export const part = {
   sheetBlock: "sheet.block",
   sheetHistory: "sheet.history",
   sheetHistoryEntry: "sheet.history-entry",
+  assistantPanel: "assistant-panel",
+  assistantTop: "assistant-top",
+  assistantBody: "assistant-body",
+  assistantAsk: "assistant-ask",
+  assistantItems: "assistant-items",
+  assistantChip: "assistant-chip",
+  assistantTurns: "assistant-turns",
+  assistantTurn: "assistant-turn",
+  assistantQuestion: "assistant-question",
+  proposalCard: "proposal-card",
+  proposalHead: "proposal-head",
+  proposalChange: "proposal-change",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -1567,6 +1579,18 @@ export const partWords = {
   "sheet.block": { variant: [], state: [] },
   "sheet.history": { variant: [], state: [] },
   "sheet.history-entry": { variant: [], state: [] },
+  "assistant-panel": { variant: [], state: [] },
+  "assistant-top": { variant: [], state: [] },
+  "assistant-body": { variant: [], state: [] },
+  "assistant-ask": { variant: [], state: [] },
+  "assistant-items": { variant: [], state: [] },
+  "assistant-chip": { variant: [], state: [] },
+  "assistant-turns": { variant: [], state: [] },
+  "assistant-turn": { variant: ["person", "assistant"], state: [] },
+  "assistant-question": { variant: [], state: [] },
+  "proposal-card": { variant: [], state: [] },
+  "proposal-head": { variant: [], state: [] },
+  "proposal-change": { variant: [], state: [] },
 } as const;
 
 /** The places of a window to drag: the variants of the part `window.handle`. */

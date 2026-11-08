@@ -3,6 +3,7 @@
 import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
+import type { messages as assistant } from "./assistant.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -37,6 +38,7 @@ export type MessageKey =
   | keyof typeof access
   | keyof typeof account
   | keyof typeof admin
+  | keyof typeof assistant
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -81,12 +83,29 @@ export interface MessageArguments {
   "access.origin-from": { project: string | number };
   "access.preview-heading": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
+  "ai-setup.address-added": { date: string | number };
+  "ai-setup.address-remove-name": { address: string | number };
+  "ai-setup.agreement-confirmed": { at: string | number; person: string | number };
+  "ai-setup.agreement-sentence": { provider: string | number };
+  "ai-setup.agreement-text": { provider: string | number };
+  "ai-setup.agreement-title": { provider: string | number };
+  "ai-setup.where-off-more": { names: string | number };
   "assignments.change-here-name": { who: string | number };
   "assignments.picked": { name: string | number };
   "assignments.remove-name": { what: string | number; who: string | number };
   "assignments.removed": { what: string | number; who: string | number };
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
+  "assistant.answered": { count: string | number };
+  "assistant.card.change": {
+    after: string | number;
+    before: string | number;
+    field: string | number;
+  };
+  "assistant.card.new-issue": { project: string | number };
+  "assistant.card.people": { count: number };
+  "assistant.leave-out": { name: string | number };
+  "assistant.never-sent": { names: string | number };
   "backup.left": { count: number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };

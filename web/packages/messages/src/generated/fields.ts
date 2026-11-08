@@ -3,6 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "ai-setup.never-sent-intro": "Fields and projects that AI never gets.",
   "fields.intro":
     "Fields are the pieces of information on an issue or a project. Add the fields your organization needs, and decide who sees and fills in each one under Field permissions.",
   "fields.list": "Fields",

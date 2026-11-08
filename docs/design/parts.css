@@ -8021,3 +8021,117 @@ textarea,
   overflow-wrap: anywhere;
   padding: var(--space-2) var(--space-3);
 }
+
+[data-part="assistant-panel"] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--pad-box);
+}
+
+[data-part="assistant-top"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width) solid var(--divider);
+}
+
+[data-part="assistant-body"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  scroll-padding: var(--ring-room);
+  margin-block: 0;
+  padding: var(--ring-room);
+  margin-inline: calc(var(--ring-room) * -1);
+}
+
+[data-part="assistant-ask"] {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--divider);
+}
+
+[data-part="assistant-items"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+[data-part="assistant-chip"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--bg-surface);
+}
+
+[data-part="assistant-turns"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+[data-part="assistant-turn"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--r-ctl);
+}
+
+[data-part="assistant-turn"][data-variant~="person"] {
+  background: var(--bg-sunken);
+}
+
+[data-part="assistant-turn"][data-variant~="assistant"] {
+  border: var(--border-width) solid var(--border);
+  background: var(--bg-raised);
+}
+
+[data-part="assistant-question"] {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+[data-part="proposal-card"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--accent);
+  border-radius: var(--r-ctl);
+  background: var(--accent-soft);
+}
+
+[data-part="proposal-head"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+[data-part="proposal-change"] {
+  overflow-wrap: anywhere;
+}

@@ -4,6 +4,9 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "search.projects": "Projects",
+  "ai-setup.project-title": "AI in this project",
+  "ai-setup.project-intro":
+    "The assistant and AI apps work in a project only while the organization and the project both have AI on.",
   "projects.heading": "Projects",
   "projects.tree-empty": "You do not see any project yet.",
   "projects.tree-more": "Show more projects",

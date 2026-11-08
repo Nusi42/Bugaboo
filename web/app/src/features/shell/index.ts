@@ -34,6 +34,7 @@ export { FocusView, type FocusViewProps } from "./FocusView.tsx";
 export { ListEditor, type ListEditorProps, type ListRow } from "./ListEditor.tsx";
 export { SidePanel, type SidePanelProps } from "./SidePanel.tsx";
 export { addOverlayHost, type OverlayHost } from "./overlay-hosts.ts";
+export { addTopBarAction, type TopBarAction } from "./top-bar-actions.ts";
 export {
   closeOverlay,
   openOverlay,

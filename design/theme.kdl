@@ -15215,3 +15215,118 @@ part "sheet.history-entry" {
     use "column-wrap"
     padding "$space-2 $space-3"
 }
+
+// ───────────── Assistant (UX §4.12) ─────────────
+//
+// The panel opens from the end of the screen on a computer and fills the screen of a phone. On top it says
+// what it looks at, where the answers come from and what is never sent; the turns scroll between that and
+// the box to ask, which stays at the foot.
+
+part "assistant-panel" {
+    display flex
+    flex 1
+    flex-direction column
+    gap "$space-3"
+    min-height 0
+    padding "$pad-box"
+}
+
+part "assistant-top" {
+    display flex
+    flex none
+    flex-direction column
+    gap "$space-3"
+    padding-bottom "$space-3"
+    border-bottom "$border-width solid $divider"
+}
+
+part "assistant-body" {
+    display flex
+    flex "1 1 auto"
+    flex-direction column
+    gap "$space-3"
+    min-height 0
+    overflow-y auto
+    use "ring-room"
+    use "ring-room-flush"
+}
+
+part "assistant-ask" {
+    display flex
+    flex none
+    flex-direction column
+    gap "$space-2"
+    padding-top "$space-3"
+    border-top "$border-width solid $divider"
+}
+
+part "assistant-items" {
+    use "list-reset"
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+part "assistant-chip" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    padding-left "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-pill"
+    background "$bg-surface"
+}
+
+part "assistant-turns" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "assistant-turn" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    padding "$space-3"
+    border-radius "$r-ctl"
+}
+
+part "assistant-turn[variant=person]" {
+    background "$bg-sunken"
+}
+
+part "assistant-turn[variant=assistant]" {
+    border "$border-width solid $border"
+    background "$bg-raised"
+}
+
+part "assistant-question" {
+    margin 0
+    overflow-wrap anywhere
+    white-space pre-wrap
+}
+
+// A change the assistant proposes: the issue, each field before and after, and the two answers.
+part "proposal-card" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+    padding "$space-3"
+    border "$border-width solid $accent"
+    border-radius "$r-ctl"
+    background "$accent-soft"
+}
+
+part "proposal-head" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+    justify-content space-between
+}
+
+part "proposal-change" {
+    overflow-wrap anywhere
+}
