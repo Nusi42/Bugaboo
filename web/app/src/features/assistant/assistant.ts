@@ -1,4 +1,4 @@
-import type { Schema } from "@bugaboo/api-client";
+import { assistantLimits, type Schema } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -15,11 +15,8 @@ export type AppliedProposal = Schema<"AppliedProposalBody">;
 /** The fields a proposal would change, or a change has changed. */
 export type ProposedChange = Schema<"ProposedChangeBody">;
 
-/**
- * The most turns a question carries and the most characters of a question and of a turn. The
- * server's own limits (`bb_core::ai`): a longer one is refused, so the panel keeps within them.
- */
-export const limits = { turns: 20, question: 4000, turn: 8000 } as const;
+/** The server's limits of a question, so the panel keeps within them: a longer one is refused. */
+export const limits = assistantLimits;
 
 /**
  * Whether the assistant is there at the place, and where its answers come from. The place is a

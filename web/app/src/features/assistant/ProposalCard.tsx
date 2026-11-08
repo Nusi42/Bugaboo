@@ -1,8 +1,11 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, IssueId, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { changeArrowText } from "../../shared/change-line.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { WithWording } from "../../shared/with-wording.tsx";
 import { changeValueText } from "./change-value.ts";
 
 /** One field a proposed change touches: the value now and the value after (none for a field that is new or taken away). */
@@ -10,6 +13,8 @@ export interface CardChange {
   readonly field: string;
   readonly before?: unknown;
   readonly after?: unknown;
+  /** The same change in the words of the history (status by its name, people as the reader may see them), when the server has them. */
+  readonly words?: Schema<"FieldChangeBody"> | undefined;
 }
 
 /** Where a card stands: waiting for the person, saving, saved, dropped, or refused with a reason. */
@@ -38,6 +43,14 @@ export interface ProposalCardProps {
 
 /** One line of the change: *Priority: Normal → High*. */
 function ChangeLine({ change }: { readonly change: CardChange }) {
+  const words = change.words;
+  if (words !== undefined) {
+    return (
+      <li {...partOf(part.proposalChange)}>
+        <WithWording>{(wording) => changeArrowText(wording, words)}</WithWording>
+      </li>
+    );
+  }
   return (
     <li {...partOf(part.proposalChange)}>
       {t("assistant.card.change", {

@@ -248,7 +248,7 @@ export const messages = {
   "access-keys.may": "What it may do",
   "access-keys.more": "More options",
   "nav.connected-apps": "Connected apps",
-  "nav.ai": "AI",
+  "nav.ai": "Set up the assistant",
   "ai-setup.never-sent": "Never sent to AI",
   "ai-setup.never-sent-help":
     "Kept from the assistant, AI apps and agents, even for people who can read it.",

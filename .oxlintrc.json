@@ -137,13 +137,6 @@
           },
           // The bytes of a file the tests make (a picture, a PDF) are a Node `Buffer`.
           { "from": "package", "package": "@types/node", "name": ["Buffer"] },
-          // The request and the answer of the fake model of a test (a server on this computer that says what the
-          // test scripted) are Node's own objects.
-          {
-            "from": "package",
-            "package": "@types/node",
-            "name": ["IncomingMessage", "ServerResponse"]
-          },
           // What React Aria hands the place that takes dropped files: the event, and the files,
           // folders and texts in it (`FileDrop`).
           {

@@ -5,6 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { ada } from "./accounts.ts";
 import { openSession } from "./api.ts";
 import { type FakeModel } from "./fake-model.ts";
+import { box, dialog } from "./quick-search.ts";
 import { type Instance } from "./server.ts";
 
 /** An administrator sets up the assistant with the fake model of a test and switches AI on. */
@@ -67,4 +68,12 @@ export async function ask(page: Page, question: string): Promise<void> {
   const panel = assistantPanel(page);
   await panel.getByRole("textbox", { name: t("assistant.question") }).fill(question);
   await panel.getByRole("button", { name: t("assistant.ask"), exact: true }).click();
+}
+
+/** Opens quick search, looks for the assistant, and gives the entries that offer it. */
+export async function quickEntryOfTheAssistant(page: Page) {
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await box(page).fill(t("assistant.quick-ask"));
+  return dialog(page).getByRole("option", { name: t("assistant.quick-ask") });
 }

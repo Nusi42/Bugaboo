@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
@@ -19,8 +20,16 @@ export function inputText(input: unknown, member: string): string | undefined {
 }
 
 /** A change of the API as the card draws it. */
-export function cardChange(change: ProposedChange): CardChange {
-  return { field: change.field, before: change.before, after: change.after };
+export function cardChange(
+  change: ProposedChange,
+  words: readonly Schema<"FieldChangeBody">[],
+): CardChange {
+  return {
+    field: change.field,
+    before: change.before,
+    after: change.after,
+    words: words.find((each) => each.field === change.field),
+  };
 }
 
 /** Where the card stands: from what the person decided and what the server answered. */
@@ -64,23 +73,24 @@ export function useApplyProposal(proposal: Proposal): ProposalControl {
   const live = useUndoOffers().some((each) => each.id === offer);
   const issue = inputText(proposal.input, "issue");
   const offerBack = (applied: AppliedProposal): void => {
-    const saved = applied.changes.map((change) => cardChange(change));
-    if (issue !== undefined && canTakeBack(proposal.tool, saved)) {
+    const saved = applied.changes.map((change) => cardChange(change, applied.words));
+    if (canTakeBack(issue, applied, saved)) {
       setOffer(
         undoStore.offer({
           message: t("assistant.card.undone"),
           inline: true,
           undo: () => {
             setUndone(true);
-            void takeBack(issue, saved);
+            void takeBack(issue, applied, saved);
           },
         }),
       );
     }
   };
+  const shown: Pick<Proposal, "changes" | "words"> = applying.data ?? proposal;
   return {
     state: stateOf(dropped, undone, applying.status, applying.error),
-    changes: (applying.data?.changes ?? proposal.changes).map((change) => cardChange(change)),
+    changes: shown.changes.map((change) => cardChange(change, shown.words)),
     apply: () => {
       applying.mutate(
         { body: { reference: proposal.reference, tool: proposal.tool, input: proposal.input } },

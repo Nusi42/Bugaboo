@@ -96,10 +96,10 @@ export const messages = {
   "setting.auth.sign-up-domains.name": "E-mail domains that may sign up",
   "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
   "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
-  "ai-setup.title": "AI",
+  "ai-setup.title": "Set up the assistant",
   "ai-setup.intro":
     "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
-  "ai-setup.set-up": "Set up the assistant",
+  "ai-setup.set-up": "Provider and key",
   "ai-setup.set-up-intro":
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",
   "ai-setup.key": "Key of the provider",

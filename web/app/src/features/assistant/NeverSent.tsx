@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { useFields } from "../fields/index.ts";
 import { useNeverSent } from "./assistant.ts";
 
 /**
@@ -10,10 +11,12 @@ import { useNeverSent } from "./assistant.ts";
  */
 export function NeverSent() {
   const marks = useNeverSent().data;
+  const own = useFields().data?.fields ?? [];
   if (marks === undefined) {
     return null;
   }
   const names = [
+    ...own.filter((each) => each.never_to_assistant).map((each) => each.name),
     ...marks.fields.filter((each) => each.marked).map((each) => fieldNameOf({ code: each.field })),
     ...marks.projects.filter((each) => each.marked).map((each) => each.project.name),
   ];

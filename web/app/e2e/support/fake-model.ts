@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer } from "node:http";
 
 /** What the fake model says next: some text, or a call of a tool of the assistant. */
 export type Said =
@@ -53,8 +53,19 @@ function personTurns(body: unknown): readonly string[] {
   });
 }
 
+/** What the fake model needs of a request: the pieces of its body. */
+interface Chunks {
+  readonly [Symbol.asyncIterator]: () => AsyncIterator<unknown>;
+}
+
+/** What the fake model needs of the answer it writes. */
+interface Answerer {
+  readonly setHeader: (name: string, value: string) => unknown;
+  readonly end: (text: string) => unknown;
+}
+
 /** The text of a request body, read whole. */
-async function textOf(request: IncomingMessage): Promise<string> {
+async function textOf(request: Chunks): Promise<string> {
   const parts: Uint8Array[] = [];
   for await (const part of request) {
     parts.push(part instanceof Uint8Array ? part : Buffer.from(String(part)));
@@ -66,7 +77,7 @@ async function textOf(request: IncomingMessage): Promise<string> {
 export async function startFakeModel(): Promise<FakeModel> {
   const script: Said[] = [];
   const calls: (readonly string[])[] = [];
-  const server = createServer((request, response: ServerResponse) => {
+  const server = createServer((request: Chunks, response: Answerer) => {
     void textOf(request).then((text) => {
       calls.push(personTurns(JSON.parse(text) as unknown));
       response.setHeader("content-type", "application/json");
