@@ -60,7 +60,7 @@ export async function anaStartsHerDayAndStopsATimer(page: Page, server: Instance
   await openIssueWithDetails(page, key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
   await expect(timerOn(page, key)).toBeVisible();
-  await startedMinutesAgo(session, TIMER_MINUTES);
+  await startedMinutesAgo(session, TIMER_MINUTES, true);
   await openIssueWithDetails(page, key);
   await timerOn(page, key).click();
   await page

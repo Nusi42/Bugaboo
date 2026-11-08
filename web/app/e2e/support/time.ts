@@ -81,23 +81,44 @@ export async function startTimerOn(session: ApiSession, issue: MadeIssue): Promi
   dataOf(await session.client.POST("/api/v1/me/timer", { body: { issue: issue.key } }));
 }
 
+/** A day in seconds. */
+const DAY_SECONDS = 86_400;
+
 /**
- * The moment `seconds` ago, but never before one minute past the start of today on the computer of the
- * test (the browser of a test has the same zone): a work day must start on its own date, so a test in
- * the first hour after midnight starts it as early as that date allows.
+ * The moment `seconds` ago, but not before one minute past the start of today, both in UTC (the zone
+ * of the people of the test server) and on the computer of the test (the zone of the browser): a work
+ * day must start on its own date, so a test in the first hour after midnight starts it as early as that
+ * date allows. A start more than a day back (a timer that runs long on purpose) is not held.
  */
 export function earlierToday(seconds: number): string {
   const now = Date.now();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 1, 0, 0);
-  return new Date(Math.max(now - seconds * 1000, startOfToday.getTime())).toISOString();
+  if (seconds > DAY_SECONDS) {
+    return new Date(now - seconds * 1000).toISOString();
+  }
+  const local = new Date(now);
+  local.setHours(0, 1, 0, 0);
+  const utc = new Date(now);
+  utc.setUTCHours(0, 1, 0, 0);
+  const earliest = Math.max(local.getTime(), utc.getTime());
+  return new Date(Math.max(now - seconds * 1000, earliest)).toISOString();
 }
 
-/** Moves the start of the person's running timer `minutes` and a few seconds into the past. */
-export async function startedMinutesAgo(session: ApiSession, minutes: number): Promise<void> {
+/**
+ * Moves the start of the person's running timer `minutes` and a few seconds into the past; with
+ * `withinToday` not before the start of the day `earlierToday` gives (for a timer whose time must lie in
+ * a work day that started on that date).
+ */
+export async function startedMinutesAgo(
+  session: ApiSession,
+  minutes: number,
+  withinToday = false,
+): Promise<void> {
   const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
   const SECONDS = 5;
-  const started = earlierToday(minutes * 60 + SECONDS);
+  const seconds = minutes * 60 + SECONDS;
+  const started = withinToday
+    ? earlierToday(seconds)
+    : new Date(Date.now() - seconds * 1000).toISOString();
   dataOf(
     await session.client.POST("/api/v1/me/timer/start-time", {
       body: { version: timer.version, started_at: started },
