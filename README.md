@@ -96,7 +96,7 @@ Time on issues with a timer or by hand, estimates, a weekly timesheet and the da
 
 ## AI agents and Bugaboo as shared memory
 
-*Being built now, in milestone M7 of the [roadmap](docs/04-milestones.md). Built so far: the **assistant** beside the page, which answers questions about an issue and proposes a change that you see before and after, apply, and can undo; the page where an administrator sets AI up (the provider or a model on your own server, the agreement, what goes where); AI apps that sign in through MCP; and runs of an app that can be undone in one step. Agent work on the issue screen comes next; it is not finished.*
+*Being built now, in milestone M7 of the [roadmap](docs/04-milestones.md). Built so far: the **assistant** beside the page, which answers questions about an issue and proposes a change that you see before and after, apply, and can undo; the page where an administrator sets AI up (the provider or a model on your own server, the agreement, what goes where); AI apps that sign in through MCP; runs of an app that can be undone in one step; and agent work on the issue: *Hand over* to an agent, its attempts, questions and plan, and the review that accepts, sends back or throws away. Tools for agents and standing rules work on the server. It is not finished.*
 
 An AI agent starts fresh every time. It remembers nothing of yesterday and knows only what is written down where it can read it. A person keeps much of a task in their head; an agent cannot.
 
