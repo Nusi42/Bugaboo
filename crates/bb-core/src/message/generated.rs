@@ -695,6 +695,9 @@ pub const AGENTS_RULE_FIELDS: MessageKey = MessageKey::new("agents.rule-fields")
 /// The message `agents.rule-may`.
 pub const AGENTS_RULE_MAY: MessageKey = MessageKey::new("agents.rule-may");
 
+/// The message `agents.rule-need-agent`.
+pub const AGENTS_RULE_NEED_AGENT: MessageKey = MessageKey::new("agents.rule-need-agent");
+
 /// The message `agents.rule-need-creates-in`.
 pub const AGENTS_RULE_NEED_CREATES_IN: MessageKey = MessageKey::new("agents.rule-need-creates-in");
 
@@ -706,6 +709,9 @@ pub const AGENTS_RULE_NEED_FIELDS: MessageKey = MessageKey::new("agents.rule-nee
 
 /// The message `agents.rule-need-project`.
 pub const AGENTS_RULE_NEED_PROJECT: MessageKey = MessageKey::new("agents.rule-need-project");
+
+/// The message `agents.rule-need-search`.
+pub const AGENTS_RULE_NEED_SEARCH: MessageKey = MessageKey::new("agents.rule-need-search");
 
 /// The message `agents.rule-need-search-agent`.
 pub const AGENTS_RULE_NEED_SEARCH_AGENT: MessageKey =
@@ -16606,6 +16612,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-fields", "Fields"),
     ("agents.rule-line", "{search} (agent {agent})"),
     ("agents.rule-may", "What it may do"),
+    ("agents.rule-need-agent", "Choose an agent first."),
     (
         "agents.rule-need-creates-in",
         "Choose the project to create issues in.",
@@ -16622,6 +16629,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.rule-need-project",
         "Choose the project the agent works in.",
     ),
+    ("agents.rule-need-search", "Choose a saved search first."),
     (
         "agents.rule-need-search-agent",
         "Choose a saved search and an agent first.",

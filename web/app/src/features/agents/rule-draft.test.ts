@@ -69,8 +69,9 @@ describe("ai_32 the line that says why the window of a standing rule waits", () 
   it("says why *Create the rule* waits, the first thing missing first", () => {
     expect(ruleWaitsFor(complete)).toBeUndefined();
     expect(ruleWaitsFor(emptyRuleDraft())).toBe("agents.rule-need-search-agent");
-    expect(ruleWaitsFor({ ...complete, search: "" })).toBe("agents.rule-need-search-agent");
-    expect(ruleWaitsFor({ ...complete, agent: "" })).toBe("agents.rule-need-search-agent");
+    expect(ruleWaitsFor({ ...complete, search: "" })).toBe("agents.rule-need-search");
+    // Opened from a saved search, the search is there and only the agent is missing.
+    expect(ruleWaitsFor({ ...complete, agent: "" })).toBe("agents.rule-need-agent");
     expect(ruleWaitsFor({ ...complete, project: "" })).toBe("agents.rule-need-project");
     expect(ruleWaitsFor({ ...complete, power: "change" })).toBe("agents.rule-need-fields");
     expect(ruleWaitsFor({ ...complete, createIssues: true })).toBe("agents.rule-need-creates-in");

@@ -63,8 +63,14 @@ export function daysAreRight(text: string): boolean {
  * missing or wrong, in the order of the window; none when the rule can be made.
  */
 export function ruleWaitsFor(draft: RuleDraft): MessageKey | undefined {
-  if (draft.search === "" || draft.agent === "") {
+  if (draft.search === "" && draft.agent === "") {
     return "agents.rule-need-search-agent";
+  }
+  if (draft.search === "") {
+    return "agents.rule-need-search";
+  }
+  if (draft.agent === "") {
+    return "agents.rule-need-agent";
   }
   if (draft.project === "") {
     return "agents.rule-need-project";

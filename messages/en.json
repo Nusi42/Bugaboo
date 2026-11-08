@@ -3232,6 +3232,8 @@
   "agents.rule-text": "An agent works on everything a saved search finds. Every issue that newly comes under the rule is written down.",
   "agents.rule-confirm": "Create the rule",
   "agents.rule-need-search-agent": "Choose a saved search and an agent first.",
+  "agents.rule-need-search": "Choose a saved search first.",
+  "agents.rule-need-agent": "Choose an agent first.",
   "agents.rule-need-project": "Choose the project the agent works in.",
   "agents.rule-need-fields": "Tick at least one field the agent may change.",
   "agents.rule-need-creates-in": "Choose the project to create issues in.",
