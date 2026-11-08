@@ -27,6 +27,18 @@ test.describe.configure({ mode: "serial" });
 const MILESTONE = "M7/agent-work";
 const TAKING_MS = 900_000;
 
+// First, while the list is short enough to show the three status groups on one screen.
+test("the rows of a list: each status group, a ticked row and the open one", async ({
+  page,
+  server,
+}) => {
+  test.setTimeout(TAKING_MS);
+  const first = await openRowsList(page, server);
+  await inFourThemes(page, "list-rows-statuses-ticked", MILESTONE);
+  await goToBlock(page, first);
+  await inFourThemes(page, "list-rows-current", MILESTONE);
+});
+
 test("who works on an issue that has a person, and the plan that waits for Approve plan", async ({
   page,
   server,
@@ -101,17 +113,6 @@ test("the block ready for review, and after Accept and after Throw away", async 
     .click();
   await expect(review).toBeHidden();
   await inFourThemes(page, "block-after-throw-away", MILESTONE);
-});
-
-test("the rows of a list: each status group, a ticked row and the open one", async ({
-  page,
-  server,
-}) => {
-  test.setTimeout(TAKING_MS);
-  const first = await openRowsList(page, server);
-  await inFourThemes(page, "list-rows-statuses-ticked", MILESTONE);
-  await goToBlock(page, first);
-  await inFourThemes(page, "list-rows-current", MILESTONE);
 });
 
 test("the column Agent in Customize", async ({ page, server }) => {
