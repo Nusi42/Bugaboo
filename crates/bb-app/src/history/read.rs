@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
-use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
+use bb_core::history::{FileEvent, HistoryEntry, HistoryKind};
 use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, RunId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;

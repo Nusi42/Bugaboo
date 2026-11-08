@@ -143,6 +143,8 @@ mod tests {
             ),
             record_kind: bb_core::technical::TechnicalName::new(RecordKind::TimeEntry.code())
                 .unwrap(),
+            run: None,
+            undid_run: None,
             changes,
         }
     }
