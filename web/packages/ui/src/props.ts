@@ -96,7 +96,7 @@ export const legendLook = {
 >;
 
 /** How a group of choices is laid out besides the usual: a grid that wraps, several in a row (the colors). */
-export const choiceGroupLook = { grid: "grid" } as const;
+export const choiceGroupLook = { grid: "grid", radios: "radios" } as const;
 export type ChoiceGroupLook = (typeof choiceGroupLook)[keyof typeof choiceGroupLook];
 
 /** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */

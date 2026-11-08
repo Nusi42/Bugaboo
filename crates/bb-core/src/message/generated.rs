@@ -481,8 +481,8 @@ pub const AGENTS_ANSWER: MessageKey = MessageKey::new("agents.answer");
 /// The message `agents.approve`.
 pub const AGENTS_APPROVE: MessageKey = MessageKey::new("agents.approve");
 
-/// The message `agents.back`.
-pub const AGENTS_BACK: MessageKey = MessageKey::new("agents.back");
+/// The message `agents.choose-project`.
+pub const AGENTS_CHOOSE_PROJECT: MessageKey = MessageKey::new("agents.choose-project");
 
 /// The message `agents.create`.
 pub const AGENTS_CREATE: MessageKey = MessageKey::new("agents.create");
@@ -504,6 +504,9 @@ pub const AGENTS_DECLINE: MessageKey = MessageKey::new("agents.decline");
 
 /// The message `agents.hand`.
 pub const AGENTS_HAND: MessageKey = MessageKey::new("agents.hand");
+
+/// The message `agents.hand-choose-person`.
+pub const AGENTS_HAND_CHOOSE_PERSON: MessageKey = MessageKey::new("agents.hand-choose-person");
 
 /// The message `agents.hand-confirm`.
 pub const AGENTS_HAND_CONFIRM: MessageKey = MessageKey::new("agents.hand-confirm");
@@ -537,6 +540,9 @@ pub const AGENTS_KEY_CREATE: MessageKey = MessageKey::new("agents.key-create");
 
 /// The message `agents.key-create-confirm`.
 pub const AGENTS_KEY_CREATE_CONFIRM: MessageKey = MessageKey::new("agents.key-create-confirm");
+
+/// The message `agents.key-label`.
+pub const AGENTS_KEY_LABEL: MessageKey = MessageKey::new("agents.key-label");
 
 /// The message `agents.key-name`.
 pub const AGENTS_KEY_NAME: MessageKey = MessageKey::new("agents.key-name");
@@ -658,8 +664,8 @@ pub const AGENTS_RULE_AGENT: MessageKey = MessageKey::new("agents.rule-agent");
 /// The message `agents.rule-change`.
 pub const AGENTS_RULE_CHANGE: MessageKey = MessageKey::new("agents.rule-change");
 
-/// The message `agents.rule-choose`.
-pub const AGENTS_RULE_CHOOSE: MessageKey = MessageKey::new("agents.rule-choose");
+/// The message `agents.rule-choose-agent`.
+pub const AGENTS_RULE_CHOOSE_AGENT: MessageKey = MessageKey::new("agents.rule-choose-agent");
 
 /// The message `agents.rule-confirm`.
 pub const AGENTS_RULE_CONFIRM: MessageKey = MessageKey::new("agents.rule-confirm");
@@ -688,6 +694,22 @@ pub const AGENTS_RULE_FIELDS: MessageKey = MessageKey::new("agents.rule-fields")
 
 /// The message `agents.rule-may`.
 pub const AGENTS_RULE_MAY: MessageKey = MessageKey::new("agents.rule-may");
+
+/// The message `agents.rule-need-creates-in`.
+pub const AGENTS_RULE_NEED_CREATES_IN: MessageKey = MessageKey::new("agents.rule-need-creates-in");
+
+/// The message `agents.rule-need-days`.
+pub const AGENTS_RULE_NEED_DAYS: MessageKey = MessageKey::new("agents.rule-need-days");
+
+/// The message `agents.rule-need-fields`.
+pub const AGENTS_RULE_NEED_FIELDS: MessageKey = MessageKey::new("agents.rule-need-fields");
+
+/// The message `agents.rule-need-project`.
+pub const AGENTS_RULE_NEED_PROJECT: MessageKey = MessageKey::new("agents.rule-need-project");
+
+/// The message `agents.rule-need-search-agent`.
+pub const AGENTS_RULE_NEED_SEARCH_AGENT: MessageKey =
+    MessageKey::new("agents.rule-need-search-agent");
 
 /// The message `agents.rule-never`.
 pub const AGENTS_RULE_NEVER: MessageKey = MessageKey::new("agents.rule-never");
@@ -737,14 +759,8 @@ pub const AGENTS_RULES_MORE: MessageKey = MessageKey::new("agents.rules-more");
 /// The message `agents.rules-none`.
 pub const AGENTS_RULES_NONE: MessageKey = MessageKey::new("agents.rules-none");
 
-/// The message `agents.state.active`.
-pub const AGENTS_STATE_ACTIVE: MessageKey = MessageKey::new("agents.state.active");
-
 /// The message `agents.state.paused`.
 pub const AGENTS_STATE_PAUSED: MessageKey = MessageKey::new("agents.state.paused");
-
-/// The message `agents.state.stopped`.
-pub const AGENTS_STATE_STOPPED: MessageKey = MessageKey::new("agents.state.stopped");
 
 /// The message `agents.stop`.
 pub const AGENTS_STOP: MessageKey = MessageKey::new("agents.stop");
@@ -8839,18 +8855,6 @@ pub fn agents_rule_stop_name(
     )
 }
 
-/// The message `agents.state-of`.
-#[must_use]
-pub fn agents_state_of(person: impl std::fmt::Display, state: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agents.state-of"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("state", Value::Text(state.to_string())),
-        ],
-    )
-}
-
 /// The message `agents.stop-name`.
 #[must_use]
 pub fn agents_stop_name(agent: impl std::fmt::Display) -> Message {
@@ -8915,12 +8919,14 @@ pub fn agents_waiting_review(agent: impl std::fmt::Display) -> Message {
 #[must_use]
 pub fn agents_waiting_rule(
     agent: impl std::fmt::Display,
+    count: i64,
     search: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.waiting-rule"),
         vec![
             ("agent", Value::Text(agent.to_string())),
+            ("count", Value::Number(count)),
             ("search", Value::Text(search.to_string())),
         ],
     )
@@ -16439,7 +16445,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.answer", "Answer"),
     ("agents.approve", "Approve plan"),
-    ("agents.back", "All my agents"),
+    ("agents.choose-project", "Choose a project"),
     ("agents.count", "({count})"),
     ("agents.create", "Create an agent"),
     ("agents.create-confirm", "Create the agent"),
@@ -16459,6 +16465,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.decline", "Decline"),
     ("agents.decline-name", "Decline the agent {agent}"),
     ("agents.hand", "Hand to another person"),
+    ("agents.hand-choose-person", "Choose a person"),
     ("agents.hand-confirm", "Hand over"),
     (
         "agents.hand-intro",
@@ -16486,6 +16493,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.key-create", "Create an agent key"),
     ("agents.key-create-confirm", "Create the key"),
+    ("agents.key-label", "The agent key"),
     ("agents.key-name", "Name"),
     (
         "agents.key-name-help",
@@ -16568,7 +16576,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.review", "Review"),
     ("agents.rule-agent", "Agent"),
     ("agents.rule-change", "Change only these fields"),
-    ("agents.rule-choose", "Choose…"),
+    ("agents.rule-choose-agent", "Choose an agent"),
     ("agents.rule-confirm", "Create the rule"),
     ("agents.rule-creates", "Create issues in one project"),
     ("agents.rule-creates-in", "Create issues in the project"),
@@ -16592,6 +16600,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-fields", "Fields"),
     ("agents.rule-line", "{search} (agent {agent})"),
     ("agents.rule-may", "What it may do"),
+    (
+        "agents.rule-need-creates-in",
+        "Choose the project to create issues in.",
+    ),
+    (
+        "agents.rule-need-days",
+        "Write a whole number of days the rule lasts.",
+    ),
+    (
+        "agents.rule-need-fields",
+        "Tick at least one field the agent may change.",
+    ),
+    (
+        "agents.rule-need-project",
+        "Choose the project the agent works in.",
+    ),
+    (
+        "agents.rule-need-search-agent",
+        "Choose a saved search and an agent first.",
+    ),
     (
         "agents.rule-never",
         "A rule never changes a field that holds people or the status.",
@@ -16629,10 +16657,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rules", "Standing rules"),
     ("agents.rules-more", "Show more standing rules"),
     ("agents.rules-none", "No standing rule works now."),
-    ("agents.state-of", "{state}, agent of {person}"),
-    ("agents.state.active", "Active"),
     ("agents.state.paused", "Paused"),
-    ("agents.state.stopped", "Stopped"),
     ("agents.stop", "Stop"),
     ("agents.stop-all", "Stop all my agents"),
     ("agents.stop-all-confirm", "Stop all my agents"),
@@ -16658,7 +16683,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.waiting-plan", "{agent} has a plan to approve"),
     ("agents.waiting-question", "{agent} asks a question"),
     ("agents.waiting-review", "{agent} has a result to review"),
-    ("agents.waiting-rule", "Standing rule {search} of {agent}"),
+    (
+        "agents.waiting-rule",
+        "{count, plural, =0 {{agent}’s standing rule {search} runs out today} one {{agent}’s standing rule {search} runs out in # day} other {{agent}’s standing rule {search} runs out in # days}}",
+    ),
     ("agents.work", "What it works on"),
     ("agents.work-none", "Nothing yet."),
     (

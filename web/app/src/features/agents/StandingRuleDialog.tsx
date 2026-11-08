@@ -6,6 +6,7 @@ import {
   AskDialog,
   Checkbox,
   ChoiceGroup,
+  choiceGroupLook,
   SelectField,
   TextField,
   partOf,
@@ -23,7 +24,7 @@ import {
   offeredFields,
   ruleBody,
   ruleFieldText,
-  ruleIsComplete,
+  ruleWaitsFor,
   withField,
   daysAreRight,
   type DraftProps,
@@ -43,10 +44,29 @@ function AgentSelect({ draft, onChange }: DraftProps) {
         onChange({ agent });
       }}
       choices={[
-        { value: "", label: t("agents.rule-choose") },
+        { value: "", label: t("agents.rule-choose-agent") },
         ...agents.map((agent) => ({ value: agent.id, label: agent.name })),
       ]}
     />
+  );
+}
+
+/** The fields of the short list, one box each, for a rule that changes fields. */
+function FieldBoxes({ draft, onChange }: DraftProps) {
+  return (
+    <fieldset {...partOf(part.agentWorkGroup)}>
+      <legend {...partOf(part.agentWorkGroupName)}>{t("agents.rule-fields")}</legend>
+      {offeredFields.map((field) => (
+        <Checkbox
+          key={field}
+          label={ruleFieldText(field)}
+          isSelected={draft.fields.includes(field)}
+          onChange={(on) => {
+            onChange({ fields: withField(draft.fields, field, on) });
+          }}
+        />
+      ))}
+    </fieldset>
   );
 }
 
@@ -56,6 +76,7 @@ function Powers({ draft, onChange }: DraftProps) {
     <div {...partOf(part.stack)}>
       <ChoiceGroup
         legend={t("agents.rule-may")}
+        look={choiceGroupLook.radios}
         choices={[
           { value: "propose", label: t("agents.rule-propose") },
           { value: "change", label: t("agents.rule-change") },
@@ -65,21 +86,7 @@ function Powers({ draft, onChange }: DraftProps) {
           onChange({ power });
         }}
       />
-      {draft.power === "change" ? (
-        <fieldset {...partOf(part.agentWorkGroup)}>
-          <legend {...partOf(part.agentWorkGroupName)}>{t("agents.rule-fields")}</legend>
-          {offeredFields.map((field) => (
-            <Checkbox
-              key={field}
-              label={ruleFieldText(field)}
-              isSelected={draft.fields.includes(field)}
-              onChange={(on) => {
-                onChange({ fields: withField(draft.fields, field, on) });
-              }}
-            />
-          ))}
-        </fieldset>
-      ) : null}
+      {draft.power === "change" ? <FieldBoxes draft={draft} onChange={onChange} /> : null}
       <p {...partOf(part.muted)}>{t("agents.rule-never")}</p>
       <Checkbox
         label={t("agents.rule-creates")}
@@ -164,6 +171,7 @@ export function StandingRuleDialog({
 }: StandingRuleDialogProps) {
   const [draft, setDraft] = useState<RuleDraft>(() => emptyRuleDraft(start));
   const create = useCreateRule();
+  const waits = ruleWaitsFor(draft);
   return (
     <>
       <AskDialog
@@ -173,7 +181,8 @@ export function StandingRuleDialog({
         text={t("agents.rule-text")}
         confirmLabel={t("agents.rule-confirm")}
         cancelLabel={t("common.cancel")}
-        confirmDisabled={!ruleIsComplete(draft) || create.isPending}
+        confirmDisabled={waits !== undefined || create.isPending}
+        {...(waits === undefined ? {} : { confirmHint: t(waits) })}
         onConfirm={() => {
           create.mutate({ body: ruleBody(draft) });
         }}

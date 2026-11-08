@@ -28,7 +28,7 @@ export function ProjectSelect({
       {...(description === undefined ? {} : { description })}
       value={value}
       onChange={onChange}
-      choices={[{ value: "", label: t("agents.rule-choose") }, ...projects]}
+      choices={[{ value: "", label: t("agents.choose-project") }, ...projects]}
     />
   );
 }

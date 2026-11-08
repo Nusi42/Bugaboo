@@ -12,7 +12,10 @@ export interface AgentsSectionsProps {
   readonly work: readonly MyWorkItem[];
 }
 
-/** *Agents*: one box for each agent, and the buttons to make one (and, on a phone, to stop them all). */
+/**
+ * *Agents*: one box for each agent, in the order they come in, and the button to make one. On a
+ * phone *Stop all my agents* ends the section, apart from *Create an agent* (UX §4.17).
+ */
 export function AgentList({ agents, work }: AgentsSectionsProps) {
   const phone = useLayout() === "phone";
   const running = agents.filter((agent) => agent.state !== "stopped");
@@ -33,8 +36,12 @@ export function AgentList({ agents, work }: AgentsSectionsProps) {
       )}
       <div {...partOf(part.row)}>
         <CreateAgentButton count={agents.length} />
-        {phone && running.length > 0 ? <StopAll agents={running} /> : null}
       </div>
+      {phone && running.length > 0 ? (
+        <div {...partOf(part.row)}>
+          <StopAll agents={running} />
+        </div>
+      ) : null}
     </Section>
   );
 }

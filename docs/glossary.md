@@ -300,6 +300,7 @@ Rules:
 | **Agent work**           | The record on an issue of what an agent did: the brief, its attempts, questions and the review. Kept apart from the comments | agent log, transcript (in UI) |
 | **Attempt**              | One go of an agent at a handed-over issue: plan, steps, results    | iteration, job (in UI) |
 | **Waiting for the agent / Agent working / Waiting for you / Ready for review / Agent gave up / Stopped** | The states of agent work. *Waiting for you* means a question or a plan waits for a person | needs input, idle (in UI) |
+| **Agent working / Paused / Stopped** (an agent) | The states of an agent itself, shown as a pill on *My agents*, its page and the list of agents: it may work on what it was given; its person or a limit paused it and *Resume* lets it go on (a limit says which: *"Fixer paused: 60 changes in a minute"*); it was stopped and never works again | idle, disabled, suspended (in UI) |
 | **Approve plan**         | Let an agent start an attempt after reading its plan               | — |
 | **Accept / Send back / Throw away** | The three answers of a review: keep the result; try again with a note; undo everything the attempts changed in Bugaboo | merge, reject, revert (in UI) |
 | **Accept by itself when its checks pass** | A project setting for handed-over issues; off at the start | auto-merge, auto-accept (in UI) |

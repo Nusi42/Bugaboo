@@ -1,18 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { buttonLook, ConfirmDialog, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { itemsOf } from "../../shared/paged.ts";
 import { personName } from "../../shared/person.ts";
 import { QueryGate } from "../shell/index.ts";
-import { ActionError } from "./ActionError.tsx";
-import {
-  agentStateText,
-  listedAgents,
-  useChangeAgent,
-  useOrganizationAgents,
-  type ListedAgent,
-} from "./agents.ts";
+import { agentsInOrder } from "./agent-state.ts";
+import { listedAgents, useOrganizationAgents, type ListedAgent } from "./agents.ts";
+import { AgentStatePill } from "./AgentState.tsx";
+import { StateButtons } from "./StateButtons.tsx";
 
 interface RowProps {
   readonly agent: ListedAgent;
@@ -20,9 +16,8 @@ interface RowProps {
   readonly lastUsed: string | undefined;
 }
 
-/** One agent of the organization: its name, its person, its state, its last use, and *Stop*. */
+/** One agent of the organization: its name, its person, its state pill, its last use, and *Stop*. */
 function Row({ agent, lastUsed }: RowProps) {
-  const change = useChangeAgent();
   return (
     <li {...partOf(part.item)}>
       <span {...partOf(part.startColumn)}>
@@ -32,31 +27,16 @@ function Row({ agent, lastUsed }: RowProps) {
             ? t("agents.person-unknown")
             : t("agents.of", { person: personName(agent.person) })}
         </span>
-        <span {...partOf(part.muted)}>{agentStateText(agent.state)}</span>
+        <span {...partOf(part.agentsStateLine)}>
+          <AgentStatePill agent={agent} />
+        </span>
         <span {...partOf(part.muted)}>
           {lastUsed === undefined
             ? t("agents.never-used")
             : t("agents.last-used", { when: formatDateTime(lastUsed) })}
         </span>
       </span>
-      {agent.state === "stopped" ? null : (
-        <ConfirmDialog
-          triggerLabel={t("agents.stop")}
-          triggerName={t("agents.stop-name", { agent: agent.name })}
-          title={t("agents.stop-title", { agent: agent.name })}
-          text={t("agents.stop-others-text")}
-          confirmLabel={t("agents.stop")}
-          cancelLabel={t("common.cancel")}
-          confirmLook={buttonLook.danger}
-          onConfirm={() => {
-            change.mutate({
-              params: { path: { agent: agent.id } },
-              body: { action: "stop", version: agent.version },
-            });
-          }}
-        />
-      )}
-      <ActionError error={change.error} />
+      <StateButtons agent={agent} stopOnly />
     </li>
   );
 }
@@ -79,7 +59,8 @@ export function OrganizationAgents() {
       lastUsed.set(item.id, item.last_used_at);
     }
   }
-  const agents = listedAgents(items);
+  // The one order of agents, over the pages read so far (M7-F224).
+  const agents = agentsInOrder(listedAgents(items));
   return (
     <QueryGate error={found.error} data={found.data === undefined ? undefined : agents}>
       {(all) =>

@@ -25,7 +25,7 @@ function PersonSelect({
       value={value}
       onChange={onChange}
       choices={[
-        { value: "", label: t("agents.rule-choose") },
+        { value: "", label: t("agents.hand-choose-person") },
         ...people.map((person) => ({ value: person.id, label: person.name })),
       ]}
     />

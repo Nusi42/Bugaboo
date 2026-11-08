@@ -1,5 +1,5 @@
 import { agentRuleWarningDays, type Schema } from "@bugaboo/api-client";
-import { t, type MessageKey } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 
 import { agentWorkKeys } from "../../shared/agent-work-keys.ts";
 import { api } from "../../shared/api.ts";
@@ -26,6 +26,8 @@ export type MyWork = Schema<"MyAgentWorkBody">;
 export type Rule = Schema<"StandingRuleItem">;
 /** The state of an agent: it works, rests, or is stopped for good. */
 export type AgentStateWord = Schema<"AgentState">;
+/** The limit an agent reached when a limit paused it. */
+export type LimitWord = Schema<"LimitKind">;
 /** What an action on an agent does. */
 export type AgentActionWord = "pause" | "resume" | "stop";
 
@@ -34,6 +36,8 @@ export interface ListedAgent {
   readonly id: string;
   readonly name: string;
   readonly state: AgentStateWord;
+  /** The limit that paused it; none when it is not paused or its person paused it. */
+  readonly pausedFor: LimitWord | undefined;
   readonly version: number;
   readonly offered: boolean;
   /** The person who reads is the person responsible for it. */
@@ -61,6 +65,7 @@ export function listedAgents(items: readonly AgentEntry[] | undefined): readonly
             id: item.id,
             name: item.name,
             state: item.state,
+            pausedFor: item.paused_for ?? undefined,
             version: item.version,
             offered: item.offered === true,
             yours: item.yours === true,
@@ -119,7 +124,7 @@ export function useOrganizationAgents() {
         params: {
           query: {
             limit: pageSize.short,
-            fields: "id,name,state,person,last_used_at,version",
+            fields: "id,name,state,person,yours,last_used_at,version",
             ...after,
           },
         },
@@ -201,18 +206,6 @@ export function mayAct(agent: Pick<ListedAgent, "state">): boolean {
   return agent.state !== "stopped";
 }
 
-/** The words of the states of an agent. */
-const STATE_TEXT = {
-  active: "agents.state.active",
-  paused: "agents.state.paused",
-  stopped: "agents.state.stopped",
-} as const satisfies Record<AgentStateWord, MessageKey>;
-
-/** Where an agent stands, in words: *Active*, *Paused*, *Stopped*. */
-export function agentStateText(state: AgentStateWord): string {
-  return t(STATE_TEXT[state]);
-}
-
 /** Whether a standing rule is about to run out: it works, and its end is the warning days away or nearer. */
 export function runsOutSoon(rule: Pick<Rule, "state" | "ends_at">, nowMs: number): boolean {
   return rule.state === "open" && daysUntil(rule.ends_at, nowMs) <= agentRuleWarningDays;
@@ -232,10 +225,9 @@ export function agentNamed(agents: readonly ListedAgent[], id: string): ListedAg
   return agents.find((agent) => agent.id === id);
 }
 
-/** The state of an agent and whose it is: *Active, agent of Ada Brandt*. */
-export function agentLine(agent: Pick<ListedAgent, "state" | "person">): string {
-  const state = agentStateText(agent.state);
+/** Whose an agent is: *Agent of Ada Brandt*; none when the reader may not see the person. */
+export function agentLine(agent: Pick<ListedAgent, "person">): string | undefined {
   return agent.person === undefined || agent.person === null
-    ? state
-    : t("agents.state-of", { state, person: personName(agent.person) });
+    ? undefined
+    : t("agents.of", { person: personName(agent.person) });
 }

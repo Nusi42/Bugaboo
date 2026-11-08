@@ -28,4 +28,31 @@ describe("ux_5 the one choice group, also for the colors", () => {
     expect(markup).toContain(`data-test="${words.swatch}"`);
     expect(markup).not.toContain("checked");
   });
+
+  it("shows each choice of the radios look with its round mark, the chosen one checked", () => {
+    const markup = renderToStaticMarkup(
+      <ChoiceGroup
+        legend={words.legend}
+        choices={choices}
+        value={choices[0].value}
+        look={choiceGroupLook.radios}
+        onChange={doNothing}
+      />,
+    );
+    expect(markup).toContain('data-variant="radios"');
+    expect(markup.match(/data-part="choice-group\.dot"/gu)).toHaveLength(2);
+    expect(markup.match(/checked=""/gu)).toHaveLength(1);
+  });
+
+  it("draws no round mark in the usual look", () => {
+    const markup = renderToStaticMarkup(
+      <ChoiceGroup
+        legend={words.legend}
+        choices={choices}
+        value={choices[0].value}
+        onChange={doNothing}
+      />,
+    );
+    expect(markup).not.toContain("choice-group.dot");
+  });
 });

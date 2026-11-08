@@ -26,7 +26,8 @@ export interface ChoiceGroupProps<Value extends string> {
   readonly renderLabel?: (choice: Choice<Value>) => ReactNode;
   /**
    * How the choices are laid out besides the usual (side by side while they fit on one line, else under each other):
-   * a grid that wraps, several in a row, for many small choices such as the colors.
+   * a grid that wraps, several in a row, for many small choices such as the colors; or radios, a round mark and its
+   * words under each other, for choices that are sentences.
    */
   readonly look?: ChoiceGroupLook;
 }
@@ -72,6 +73,8 @@ type OptionsProps<Value extends string> = Pick<
 > & {
   /** The name that makes the radios one group. */
   readonly group: string;
+  /** Each choice shows its round mark (the radios look). */
+  readonly dot?: boolean;
 };
 
 /** The choices as radios, each with its label. */
@@ -81,6 +84,7 @@ function Options<Value extends string>({
   onChange,
   renderLabel,
   group,
+  dot = false,
 }: OptionsProps<Value>) {
   return choices.map((choice) => (
     <label
@@ -97,6 +101,7 @@ function Options<Value extends string>({
           onChange(choice.value);
         }}
       />
+      {dot ? <span {...partOf(part.choiceGroupDot)} /> : null}
       {renderLabel === undefined ? (
         <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
       ) : (
@@ -119,7 +124,8 @@ function MeasuredChoices<Value extends string>(props: OptionsProps<Value>) {
 /**
  * One choice out of a few, shown as buttons that sit side by side while they all fit on one line, and under each
  * other, as wide as the screen, when they do not: themes, spacing and the like. With the grid look the choices stand
- * in a grid that wraps instead (the colors), and nothing is measured.
+ * in a grid that wraps instead (the colors), with the radios look under each other with their round marks, and
+ * nothing is measured.
  */
 export function ChoiceGroup<Value extends string>({
   legend,
@@ -130,12 +136,12 @@ export function ChoiceGroup<Value extends string>({
   return (
     <fieldset {...partOf(part.choiceGroup)}>
       <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
-      {look === choiceGroupLook.grid ? (
-        <div {...partOf(part.choiceGroupChoices, { variants: [look] })}>
-          <Options {...options} group={group} />
-        </div>
-      ) : (
+      {look === undefined ? (
         <MeasuredChoices {...options} group={group} />
+      ) : (
+        <div {...partOf(part.choiceGroupChoices, { variants: [look] })}>
+          <Options {...options} group={group} dot={look === choiceGroupLook.radios} />
+        </div>
       )}
     </fieldset>
   );

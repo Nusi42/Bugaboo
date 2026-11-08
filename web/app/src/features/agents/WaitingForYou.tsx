@@ -1,13 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, IssueId, partOf, part } from "@bugaboo/ui";
+import { Button, IssueId, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
+import { daysUntil } from "../../shared/format.ts";
 import { issueAddress } from "../../shared/paths.ts";
 import { useNow } from "../../shared/use-now.ts";
 import {
   agentNamed,
   runsOutSoon,
-  runsOutText,
   useChangeRule,
   type ListedAgent,
   type MyWorkItem,
@@ -49,7 +49,6 @@ function WorkRow({
         <span {...partOf(part.muted)}>{t(words.line, { agent })}</span>
       </span>
       <Button
-        look={buttonLook.primary}
         aria-label={t("agents.waiting-button-name", { action: t(words.button), issue: key })}
         onPress={() => {
           void navigate({ href: issueAddress(key) });
@@ -61,7 +60,10 @@ function WorkRow({
   );
 }
 
-/** A standing rule about to run out, with *Renew* right there. */
+/**
+ * A standing rule about to run out, in one sentence with the name of its saved search set apart
+ * (*Sorter's standing rule* New bugs in Website *runs out in 1 day*), and *Renew* right there.
+ */
 function RuleRow({
   rule,
   agents,
@@ -74,18 +76,22 @@ function RuleRow({
   const now = useNow();
   const renew = useChangeRule();
   const agent = agentNamed(agents, rule.agent)?.name ?? "";
+  const search = names.search(rule.search);
+  const sentence = t("agents.waiting-rule", {
+    agent,
+    search,
+    count: Math.max(daysUntil(rule.ends_at, now), 0),
+  });
   return (
     <li {...partOf(part.item)}>
-      <span {...partOf(part.startColumn)}>
-        <span {...partOf(part.itemTitle)}>
-          {t("agents.waiting-rule", { agent, search: names.search(rule.search) })}
-        </span>
-        <span {...partOf(part.muted)}>{runsOutText(rule.ends_at, now)}</span>
+      <span {...partOf(part.itemTitle)}>
+        <SentenceWithValue sentence={sentence} value={search}>
+          {(name) => <span {...partOf(part.agentsSearchName)}>{name}</span>}
+        </SentenceWithValue>
       </span>
       <Button
-        look={buttonLook.primary}
         isPending={renew.isPending}
-        aria-label={t("agents.renew-name", { agent, search: names.search(rule.search) })}
+        aria-label={t("agents.renew-name", { agent, search })}
         onPress={() => {
           renew.mutate({
             params: { path: { rule: rule.id } },

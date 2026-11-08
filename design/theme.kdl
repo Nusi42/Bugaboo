@@ -1831,6 +1831,59 @@ part "choice-group.choices[variant=stacked] choice-group.label" {
     flex 1
 }
 
+// The radios look: each choice is a round mark and its words, under each other, and the words wrap on as many lines as
+// they need: a choice that is a sentence (what a standing rule may do) reads as a sentence, not as a button.
+part "choice-group.choices[variant=radios]" {
+    flex-direction column
+    flex-wrap nowrap
+    gap "$space-2"
+}
+
+part "choice-group.choices[variant=radios] choice-group.choice" {
+    use "touch-row"
+}
+
+part "choice-group.dot" {
+    position relative
+    flex none
+    box-sizing border-box
+    width "$space-5"
+    height "$space-5"
+    border "$border-width solid $border-control"
+    border-radius "$r-pill"
+    background "$bg-raised"
+}
+
+part "choice-group.input:hover + choice-group.dot" {
+    background "$bg-hover"
+}
+
+part "choice-group.input:checked + choice-group.dot" {
+    use "chosen"
+}
+
+part "choice-group.input:checked + choice-group.dot::after" {
+    content "\"\""
+    position absolute
+    inset "$space-1"
+    border-radius "$r-pill"
+    background "$on-accent"
+}
+
+part "choice-group.input:focus-visible + choice-group.dot" {
+    use "ring"
+}
+
+part "choice-group.choices[variant=radios] choice-group.label" {
+    flex 1
+    min-width 0
+    min-height 0
+    padding 0
+    border 0
+    background transparent
+    font-size "$fs-md"
+}
+
 // Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
 part "choice-group.choices[variant=grid]" {
     display grid
@@ -15522,7 +15575,8 @@ part "agent-work.pill" {
     white-space nowrap
 }
 
-part "agent-work.pill[variant=waiting-for-the-agent]" {
+// A paused agent (My agents, its page, the list of agents) wears the same quiet look as work that waits for its agent.
+part "agent-work.pill[variant=waiting-for-the-agent]" "agent-work.pill[variant=paused]" {
     use "status-soft-not-started"
 }
 
@@ -15793,19 +15847,32 @@ part "agents.work-line" {
 }
 
 // The limits of an agent: a name and its number on each line.
+// The limits of an agent: a narrow list of two columns, each number right beside its name, on a phone too.
 part "agents.facts" {
     margin 0
-    display flex
-    flex-direction column
-    gap "$space-2"
+    display grid
+    grid-template-columns "max-content minmax(0, max-content)"
+    justify-content start
+    align-items baseline
+    gap "$space-2" "$space-6"
 }
 
 part "agents.fact" {
+    display contents
+}
+
+// The name of a saved search inside a sentence (*Sorter's standing rule* New bugs in Website *runs out in 1 day*).
+part "agents.search-name" {
+    font-style italic
+}
+
+// What stands under the name of an agent: its state as a pill, whose it is, and the limit that paused it.
+part "agents.state-line" {
     display flex
     flex-wrap wrap
-    align-items baseline
-    justify-content space-between
-    gap "$space-1" "$space-3"
+    align-items center
+    gap "$space-1" "$space-2"
+    min-width 0
 }
 
 part "agents.fact-value" {

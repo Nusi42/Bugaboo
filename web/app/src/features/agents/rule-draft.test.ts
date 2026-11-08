@@ -7,6 +7,7 @@ import {
   offeredFields,
   ruleBody,
   ruleIsComplete,
+  ruleWaitsFor,
   withField,
 } from "./rule-draft.ts";
 
@@ -61,5 +62,22 @@ describe("ai_32 the rest of the window of a standing rule", () => {
   it("keeps the order of the list when a field is ticked", () => {
     expect(withField(["tags"], "labels", true)).toEqual(["labels", "tags"]);
     expect(withField(["labels", "tags"], "labels", false)).toEqual(["tags"]);
+  });
+});
+
+describe("ai_32 the line that says why the window of a standing rule waits", () => {
+  it("says why *Create the rule* waits, the first thing missing first", () => {
+    expect(ruleWaitsFor(complete)).toBeUndefined();
+    expect(ruleWaitsFor(emptyRuleDraft())).toBe("agents.rule-need-search-agent");
+    expect(ruleWaitsFor({ ...complete, search: "" })).toBe("agents.rule-need-search-agent");
+    expect(ruleWaitsFor({ ...complete, agent: "" })).toBe("agents.rule-need-search-agent");
+    expect(ruleWaitsFor({ ...complete, project: "" })).toBe("agents.rule-need-project");
+    expect(ruleWaitsFor({ ...complete, power: "change" })).toBe("agents.rule-need-fields");
+    expect(ruleWaitsFor({ ...complete, createIssues: true })).toBe("agents.rule-need-creates-in");
+    expect(ruleWaitsFor({ ...complete, days: "91" })).toBe("agents.rule-need-days");
+    // The window may be confirmed exactly when nothing is missing.
+    for (const draft of [complete, emptyRuleDraft(), { ...complete, days: "0" }]) {
+      expect(ruleIsComplete(draft)).toBe(ruleWaitsFor(draft) === undefined);
+    }
   });
 });

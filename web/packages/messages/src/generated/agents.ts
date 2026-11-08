@@ -3,15 +3,17 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "agent-paused.changes-a-minute":
+    "{agent} paused: {limit, plural, one {# change} other {# changes}} in a minute",
+  "agent-paused.issues-at-once":
+    "{agent} paused: {limit, plural, one {# issue} other {# issues}} at once",
+  "agent-paused.attempts-on-one-issue":
+    "{agent} paused: {limit, plural, one {# attempt} other {# attempts}} on one issue",
   "agents.title": "My agents",
   "agents.intro": "Your agents and what they work on. What waits for you comes first.",
   "agents.count": "({count})",
   "agents.of": "Agent of {person}",
-  "agents.state-of": "{state}, agent of {person}",
-  "agents.state.active": "Active",
   "agents.state.paused": "Paused",
-  "agents.state.stopped": "Stopped",
-  "agents.back": "All my agents",
   "agents.not-found": "There is no such agent.",
   "agents.create": "Create an agent",
   "agents.create-text":
@@ -31,7 +33,8 @@ export const messages = {
   "agents.waiting-question": "{agent} asks a question",
   "agents.waiting-plan": "{agent} has a plan to approve",
   "agents.waiting-review": "{agent} has a result to review",
-  "agents.waiting-rule": "Standing rule {search} of {agent}",
+  "agents.waiting-rule":
+    "{count, plural, =0 {{agent}’s standing rule {search} runs out today} one {{agent}’s standing rule {search} runs out in # day} other {{agent}’s standing rule {search} runs out in # days}}",
   "agents.waiting-button-name": "{action}, {issue}",
   "agents.answer": "Answer",
   "agents.approve": "Approve plan",
@@ -75,6 +78,7 @@ export const messages = {
   "agents.key-renew-text": "A new key takes the place of {name}. The old key is taken back.",
   "agents.key-renew-confirm": "Renew the key",
   "agents.key-shown-title": "Your new agent key",
+  "agents.key-label": "The agent key",
   "agents.key-take-back": "Take back",
   "agents.key-take-back-name": "Take back the key {name}",
   "agents.key-take-back-title": "Take back this key?",
@@ -97,6 +101,7 @@ export const messages = {
   "agents.hand-project": "Project",
   "agents.hand-project-help": "The people of this project are offered.",
   "agents.hand-person": "Person",
+  "agents.hand-choose-person": "Choose a person",
   "agents.hand-waiting": "This agent is handed to another person, who has not accepted it yet.",
   "agents.rules": "Standing rules",
   "agents.rules-none": "No standing rule works now.",
@@ -105,10 +110,16 @@ export const messages = {
   "agents.rule-text":
     "An agent works on everything a saved search finds. Every issue that newly comes under the rule is written down.",
   "agents.rule-confirm": "Create the rule",
+  "agents.rule-need-search-agent": "Choose a saved search and an agent first.",
+  "agents.rule-need-project": "Choose the project the agent works in.",
+  "agents.rule-need-fields": "Tick at least one field the agent may change.",
+  "agents.rule-need-creates-in": "Choose the project to create issues in.",
+  "agents.rule-need-days": "Write a whole number of days the rule lasts.",
   "agents.rule-search": "Saved search",
   "agents.rule-agent": "Agent",
+  "agents.rule-choose-agent": "Choose an agent",
   "agents.rule-project": "Works in the project",
-  "agents.rule-choose": "Choose…",
+  "agents.choose-project": "Choose a project",
   "agents.rule-may": "What it may do",
   "agents.rule-propose": "Propose only: nothing changes until a person applies it",
   "agents.rule-change": "Change only these fields",

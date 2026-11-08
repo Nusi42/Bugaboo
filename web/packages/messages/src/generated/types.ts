@@ -89,6 +89,9 @@ export interface MessageArguments {
   "access.origin-from": { project: string | number };
   "access.preview-heading": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
+  "agent-paused.attempts-on-one-issue": { agent: string | number; limit: number };
+  "agent-paused.changes-a-minute": { agent: string | number; limit: number };
+  "agent-paused.issues-at-once": { agent: string | number; limit: number };
   "agent-work.agent-of": { agent: string | number; person: string | number };
   "agent-work.amount": { amount: string | number };
   "agent-work.answered-by": { person: string | number };
@@ -166,14 +169,13 @@ export interface MessageArguments {
   "agents.rule-power-change": { fields: string | number };
   "agents.rule-power-creates": { project: string | number };
   "agents.rule-stop-name": { agent: string | number; search: string | number };
-  "agents.state-of": { person: string | number; state: string | number };
   "agents.stop-name": { agent: string | number };
   "agents.stop-title": { agent: string | number };
   "agents.waiting-button-name": { action: string | number; issue: string | number };
   "agents.waiting-plan": { agent: string | number };
   "agents.waiting-question": { agent: string | number };
   "agents.waiting-review": { agent: string | number };
-  "agents.waiting-rule": { agent: string | number; search: string | number };
+  "agents.waiting-rule": { agent: string | number; count: number; search: string | number };
   "agents.work-state": { state: string | number };
   "ai-setup.address-added": { date: string | number };
   "ai-setup.address-remove-name": { address: string | number };

@@ -3,6 +3,7 @@ import { Card, cardLook, partOf, part, useLayout } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
+import { agentsInOrder, waitingAgentsOf } from "./agent-state.ts";
 import { listedAgents, useMyAgentList, useMyAgentWork, type MyWork } from "./agents.ts";
 import { MyAgentsBody } from "./MyAgentsBody.tsx";
 import { StopAll } from "./StopAll.tsx";
@@ -18,7 +19,11 @@ export function MyAgentsPage() {
   const work = useMyAgentWork();
   const mine: MyWork | undefined = work.data;
   const phone = useLayout() === "phone";
-  const listed = agents.data === undefined ? undefined : listedAgents(agents.data.items);
+  // The one order of agents, here and in the question of *Stop all my agents*.
+  const listed =
+    agents.data === undefined
+      ? undefined
+      : agentsInOrder(listedAgents(agents.data.items), waitingAgentsOf(mine?.pieces ?? []));
   const running = (listed ?? []).filter((agent) => agent.state !== "stopped");
   return (
     <div {...partOf(part.stack)}>

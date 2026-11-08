@@ -407,6 +407,7 @@ export const part = {
   choiceGroupInput: "choice-group.input",
   choiceGroupLabel: "choice-group.label",
   themePickerTile: "theme-picker.tile",
+  choiceGroupDot: "choice-group.dot",
   overlay: "overlay",
   overlayModal: "overlay.modal",
   overlayDialog: "overlay.dialog",
@@ -953,6 +954,8 @@ export const part = {
   agentsWorkLine: "agents.work-line",
   agentsFacts: "agents.facts",
   agentsFact: "agents.fact",
+  agentsSearchName: "agents.search-name",
+  agentsStateLine: "agents.state-line",
   agentsFactValue: "agents.fact-value",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
@@ -1004,11 +1007,12 @@ export const partWords = {
   "checkbox.label": { variant: [], state: [] },
   "choice-group": { variant: [], state: [] },
   "choice-group.legend": { variant: [], state: [] },
-  "choice-group.choices": { variant: ["stacked", "grid"], state: [] },
+  "choice-group.choices": { variant: ["stacked", "radios", "grid"], state: [] },
   "choice-group.choice": { variant: ["danger"], state: [] },
   "choice-group.input": { variant: [], state: [] },
   "choice-group.label": { variant: [], state: [] },
   "theme-picker.tile": { variant: [], state: [] },
+  "choice-group.dot": { variant: [], state: [] },
   overlay: {
     variant: ["center", "bottom", "question", "full", "start", "end", "top", "window"],
     state: ["maximized"],
@@ -1645,6 +1649,7 @@ export const partWords = {
   "agent-work.pill": {
     variant: [
       "waiting-for-the-agent",
+      "paused",
       "agent-working",
       "waiting-for-you",
       "ready-for-review",
@@ -1681,6 +1686,8 @@ export const partWords = {
   "agents.work-line": { variant: [], state: [] },
   "agents.facts": { variant: [], state: [] },
   "agents.fact": { variant: [], state: [] },
+  "agents.search-name": { variant: [], state: [] },
+  "agents.state-line": { variant: [], state: [] },
   "agents.fact-value": { variant: [], state: [] },
 } as const;
 

@@ -58,16 +58,29 @@ export function daysAreRight(text: string): boolean {
   return days === null || (days >= 1 && days <= agentRuleDaysMost);
 }
 
-/** Whether the window may be confirmed: a search, an agent, a project, the power and the days are right. */
+/**
+ * Why *Create the rule* waits, as the line above the button says it: the first thing that is
+ * missing or wrong, in the order of the window; none when the rule can be made.
+ */
+export function ruleWaitsFor(draft: RuleDraft): MessageKey | undefined {
+  if (draft.search === "" || draft.agent === "") {
+    return "agents.rule-need-search-agent";
+  }
+  if (draft.project === "") {
+    return "agents.rule-need-project";
+  }
+  if (draft.power === "change" && draft.fields.length === 0) {
+    return "agents.rule-need-fields";
+  }
+  if (draft.createIssues && draft.createsIn === "") {
+    return "agents.rule-need-creates-in";
+  }
+  return daysAreRight(draft.days) ? undefined : "agents.rule-need-days";
+}
+
+/** Whether the window may be confirmed: nothing is missing or wrong. */
 export function ruleIsComplete(draft: RuleDraft): boolean {
-  return (
-    draft.search !== "" &&
-    draft.agent !== "" &&
-    draft.project !== "" &&
-    (draft.power === "propose" || draft.fields.length > 0) &&
-    (!draft.createIssues || draft.createsIn !== "") &&
-    daysAreRight(draft.days)
-  );
+  return ruleWaitsFor(draft) === undefined;
 }
 
 /** What the window sends. Only the fields of the short list can be in it: the list is closed. */

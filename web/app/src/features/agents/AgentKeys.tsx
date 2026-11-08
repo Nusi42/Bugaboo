@@ -17,7 +17,14 @@ interface StepProps {
 /** Under the list: the form that makes or renews a key, or the key that was just made. */
 function KeyStep({ agent, making, onMade, onDone }: StepProps) {
   if (making.step === "shown") {
-    return <ShownOnce secret={making.secret} onDone={onDone} title={t("agents.key-shown-title")} />;
+    return (
+      <ShownOnce
+        secret={making.secret}
+        onDone={onDone}
+        title={t("agents.key-shown-title")}
+        label={t("agents.key-label")}
+      />
+    );
   }
   if (making.step === "form") {
     return (
