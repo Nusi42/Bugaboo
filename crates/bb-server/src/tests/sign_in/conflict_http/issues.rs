@@ -26,6 +26,7 @@ pub(super) async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Res
             )?
             .under_lock(&record, "text"))
         }
+        "deleteComment" | "deleteIssue" => prepare_delete(id, site, ada).await,
         "changeIssue"
         | "saveIssueDescription"
         | "moveIssue"
@@ -88,4 +89,32 @@ pub(super) async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Res
         }
         other => Err(format!("no row for {other}").into()),
     }
+}
+
+/// A comment or an issue to put into the trash on a version that is not its own.
+async fn prepare_delete(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
+    if id == "deleteComment" {
+        let issue = ok(&site.create(ada, "Commented").await?)?.clone();
+        let comment = made(
+            ada,
+            &format!("{ISSUES}/{}/comments", text_in(&issue, "readable_id")?),
+            json!({"text": "First"}),
+        )
+        .await?;
+        return Ok(Save::new(
+            "DELETE",
+            format!("/api/v1/comments/{}", text_in(&comment, "id")?),
+            json!({}),
+            &comment["version"],
+        )?
+        .in_the_query());
+    }
+    let issue = ok(&site.create(ada, "To delete").await?)?.clone();
+    Ok(Save::new(
+        "DELETE",
+        format!("{ISSUES}/{}", text_in(&issue, "readable_id")?),
+        json!({}),
+        &issue["version"],
+    )?
+    .in_the_query())
 }
