@@ -155,13 +155,9 @@ function topics(page: Page, heading: string): Locator {
   return page.getByRole("navigation", { name: heading, exact: true }).getByRole("link");
 }
 
-async function topicsOnLargeScreens(page: Page): Promise<void> {
-  await page
-    .getByRole("link", { name: t("nav.my-settings"), exact: true })
-    .first()
-    .click();
-  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
-  await expect(topics(page, t("nav.my-settings"))).toHaveText([
+/** The topics of My settings, in their order: the same on every size of screen. */
+function ownTopics(): string[] {
+  return [
     t("nav.appearance"),
     t("nav.region"),
     t("nav.start-page"),
@@ -171,7 +167,17 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
     t("nav.security"),
     t("nav.sessions"),
     t("nav.access-keys"),
-  ]);
+    t("nav.connected-apps"),
+  ];
+}
+
+async function topicsOnLargeScreens(page: Page): Promise<void> {
+  await page
+    .getByRole("link", { name: t("nav.my-settings"), exact: true })
+    .first()
+    .click();
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
+  await expect(topics(page, t("nav.my-settings"))).toHaveText(ownTopics());
 }
 
 async function topicsOnPhone(page: Page): Promise<void> {
@@ -183,17 +189,7 @@ async function topicsOnPhone(page: Page): Promise<void> {
   // One screen at a time: the topics are the page of the settings, and a topic is a page of its own.
   await expect(page).toHaveURL(addressEndingAt(paths.mySettings));
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
-  await expect(topics(page, t("nav.my-settings"))).toHaveText([
-    t("nav.appearance"),
-    t("nav.region"),
-    t("nav.start-page"),
-    t("shortcut.title"),
-    t("nav.notification-settings"),
-    t("nav.handle"),
-    t("nav.security"),
-    t("nav.sessions"),
-    t("nav.access-keys"),
-  ]);
+  await expect(topics(page, t("nav.my-settings"))).toHaveText(ownTopics());
 }
 
 test("ux_01 My settings lists its topics and nothing for administrators only", async ({ page }) => {
