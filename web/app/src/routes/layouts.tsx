@@ -89,7 +89,7 @@ async function joinAssistant(): Promise<void> {
   if (assistantJoined) {
     return;
   }
-  const assistant = await import("../features/assistant/index.ts");
+  const assistant = await import("../features/assistant-entry/index.ts");
   if (!assistantJoined) {
     assistantJoined = true;
     assistant.registerAssistant();

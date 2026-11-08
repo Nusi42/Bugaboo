@@ -5007,6 +5007,12 @@ export interface components {
       /** @description The fields that were changed, with the value before and after. */
       changes: components["schemas"]["ProposedChangeBody"][];
       undo?: components["schemas"]["AppliedUndoBody"] | null;
+      /**
+       * Format: int64
+       * @description The version the issue is at after the change, when it is on an issue. *Undo* of fields is
+       *     made on this version.
+       */
+      version?: number | null;
       /** @description The same fields in the words of the history. */
       words: components["schemas"]["FieldChangeBody"][];
     };
@@ -5016,6 +5022,11 @@ export interface components {
       id: string;
       /** @description What was made: `comment`, `time-entry`, `issue` or `timer`. */
       kind: string;
+      /**
+       * Format: int64
+       * @description The version it was made at: it is taken away only while it is still at this version.
+       */
+      version: number;
     };
     /**
      * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.

@@ -18123,6 +18123,11 @@
               }
             ]
           },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version the issue is at after the change, when it is on an issue. *Undo* of fields is\nmade on this version."
+          },
           "words": {
             "type": "array",
             "items": {
@@ -18135,7 +18140,7 @@
       "AppliedUndoBody": {
         "type": "object",
         "description": "What *Undo* of an applied change takes away.",
-        "required": ["kind", "id"],
+        "required": ["kind", "id", "version"],
         "properties": {
           "id": {
             "type": "string",
@@ -18144,6 +18149,11 @@
           "kind": {
             "type": "string",
             "description": "What was made: `comment`, `time-entry`, `issue` or `timer`."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version it was made at: it is taken away only while it is still at this version."
           }
         }
       },

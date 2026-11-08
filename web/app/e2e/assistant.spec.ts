@@ -6,6 +6,8 @@ import {
   ask,
   assistantButton,
   assistantPanel,
+  changeTitleBehindTheScenes,
+  lowerToNormal,
   openAssistant,
   priorityAndVersion,
   proposeCritical,
@@ -101,7 +103,8 @@ test("ai_05 a proposed change shows before and after and saves only after apply"
   await openAssistant(page);
   await ask(page, "Raise the priority of WEB-1.");
   await expect(card(page)).toBeVisible();
-  await expect(card(page).getByText(/^Priority: .+ → Critical$/u)).toBeVisible();
+  // The old and the new priority are drawn as the lists draw them.
+  await expect(card(page).getByText(t("priority.critical"), { exact: true })).toBeVisible();
   await expect(card(page).getByText(t("assistant.card.nothing-saved"))).toBeVisible();
   // Nothing is saved before Apply.
   expect((await priorityAndVersion(server, "WEB-1")).priority).toBe(before.priority);
@@ -206,5 +209,31 @@ test("ai_10 closing the panel with a conversation asks first", async ({ page, se
   // The conversation is gone: a new panel starts empty.
   const again = await openAssistant(page);
   await expect(again.getByText("An answer.")).toBeHidden();
+  await model.close();
+});
+
+test("ai_05 undo of a change is refused when somebody changed the issue since, and keeps their change", async ({
+  page,
+  server,
+}) => {
+  const model = await startFakeModel();
+  await setUpAssistant(server, model);
+  await lowerToNormal(server, "WEB-2");
+  await proposeCritical(server, model, "WEB-2", "Proposed.");
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-2"));
+  await openAssistant(page);
+  await ask(page, "Raise the priority of WEB-2.");
+  await card(page)
+    .getByRole("button", { name: t("assistant.card.apply") })
+    .click();
+  await expect(card(page).getByText(t("assistant.card.saved"))).toBeVisible();
+  // Somebody else changes the issue before Undo is pressed.
+  await changeTitleBehindTheScenes(server, "WEB-2", "Changed by somebody else");
+  await card(page)
+    .getByRole("button", { name: t("common.undo") })
+    .click();
+  await expect(card(page).getByRole("alert")).toContainText(t("error.edit.version-changed"));
+  expect((await priorityAndVersion(server, "WEB-2")).priority).toBe("critical");
   await model.close();
 });

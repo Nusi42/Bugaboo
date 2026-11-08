@@ -1590,7 +1590,7 @@ export const partWords = {
   "assistant-question": { variant: [], state: [] },
   "proposal-card": { variant: [], state: [] },
   "proposal-head": { variant: [], state: [] },
-  "proposal-change": { variant: [], state: [] },
+  "proposal-change": { variant: ["values"], state: [] },
 } as const;
 
 /** The places of a window to drag: the variants of the part `window.handle`. */

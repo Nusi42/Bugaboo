@@ -1,9 +1,21 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, IssueId, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Icon,
+  iconName,
+  iconSize,
+  IssueId,
+  Priority,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { changeArrowText } from "../../shared/change-line.ts";
+import { changeArrowText, changeLineText } from "../../shared/change-line.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
 import { WithWording } from "../../shared/with-wording.tsx";
 import { changeValueText } from "./change-value.ts";
@@ -21,7 +33,7 @@ export interface CardChange {
 export type CardState =
   | { readonly kind: "open" }
   | { readonly kind: "saving" }
-  | { readonly kind: "saved" }
+  | { readonly kind: "saved"; readonly problem?: string }
   | { readonly kind: "undone" }
   | { readonly kind: "discarded" }
   | { readonly kind: "refused"; readonly problem: string };
@@ -41,9 +53,45 @@ export interface ProposalCardProps {
   readonly onUndo?: (() => void) | undefined;
 }
 
-/** One line of the change: *Priority: Normal → High*. */
-function ChangeLine({ change }: { readonly change: CardChange }) {
+/** The priorities a change can name, with the words the list of issues uses. */
+const PRIORITIES = ["low", "normal", "high", "critical"] as const;
+
+/** A priority as the lists of issues draw it, or none when the value is not one. */
+function priorityOf(value: unknown): (typeof PRIORITIES)[number] | undefined {
+  return PRIORITIES.find((each) => each === value);
+}
+
+/** A change of priority drawn with the priority component of the app: the old one, then the new one. */
+function PriorityChange({ before, after }: { readonly before: unknown; readonly after: unknown }) {
+  const was = priorityOf(before);
+  const now = priorityOf(after);
+  return (
+    <>
+      <span>{fieldNameOf({ code: "priority" })}</span>
+      {was === undefined ? null : <Priority priority={was} label={t(`priority.${was}`)} />}
+      <Icon name={iconName.next} size={iconSize.small} />
+      {now === undefined ? null : <Priority priority={now} label={t(`priority.${now}`)} />}
+    </>
+  );
+}
+
+/** One line of the change: *Priority: Normal → High*, or after *Apply* what it is now. */
+function ChangeLine({ change, saved }: { readonly change: CardChange; readonly saved: boolean }) {
   const words = change.words;
+  if (change.field === "priority" && !saved && priorityOf(change.after) !== undefined) {
+    return (
+      <li {...partOf(part.proposalChange, { variants: ["values"] })}>
+        <PriorityChange before={change.before} after={change.after} />
+      </li>
+    );
+  }
+  if (words !== undefined && saved) {
+    return (
+      <li {...partOf(part.proposalChange)}>
+        <WithWording>{(wording) => changeLineText(wording, words)}</WithWording>
+      </li>
+    );
+  }
   if (words !== undefined) {
     return (
       <li {...partOf(part.proposalChange)}>
@@ -66,20 +114,48 @@ function ChangeLine({ change }: { readonly change: CardChange }) {
 function Outcome({ state, onUndo }: Pick<ProposalCardProps, "state" | "onUndo">) {
   if (state.kind === "saved") {
     return (
-      <div {...partOf(part.row)}>
-        <output>{t("assistant.card.saved")}</output>
-        {onUndo === undefined ? null : (
-          <Button look={buttonLook.quiet} onPress={onUndo}>
-            {t("common.undo")}
-          </Button>
+      <>
+        <div {...partOf(part.row)}>
+          <output>{t("assistant.card.saved")}</output>
+          {onUndo === undefined ? null : (
+            <Button look={buttonLook.quiet} onPress={onUndo}>
+              {t("common.undo")}
+            </Button>
+          )}
+        </div>
+        {state.problem === undefined ? null : (
+          <Alert tone={alertTone.danger}>{state.problem}</Alert>
         )}
-      </div>
+      </>
     );
   }
   return (
     <output {...partOf(part.muted)}>
       {state.kind === "undone" ? t("assistant.card.undone-note") : t("assistant.card.discarded")}
     </output>
+  );
+}
+
+/** What stands under an open card: the sentence that nothing is saved yet, a refusal, and the two answers. */
+function Choice({
+  state,
+  onApply,
+  onDiscard,
+}: Pick<ProposalCardProps, "state" | "onApply" | "onDiscard">) {
+  const saving = state.kind === "saving";
+  return (
+    <>
+      <p {...partOf(part.muted)}>{t("assistant.card.nothing-saved")}</p>
+      {state.kind === "refused" ? <Alert tone={alertTone.danger}>{state.problem}</Alert> : null}
+      <div {...partOf(part.row)}>
+        <Button look={buttonLook.primary} isPending={saving} onPress={onApply}>
+          {t("assistant.card.apply")}
+        </Button>
+        <Button isDisabled={saving} onPress={onDiscard}>
+          {t("assistant.card.discard")}
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -99,13 +175,15 @@ export function ProposalCard({
   onDiscard,
   onUndo,
 }: ProposalCardProps) {
-  const saving = state.kind === "saving";
-  const refused = state.kind === "refused" ? state.problem : null;
   const decided = state.kind === "saved" || state.kind === "undone" || state.kind === "discarded";
   return (
     <section {...partOf(part.proposalCard)} aria-label={t("assistant.card.title")}>
       <div {...partOf(part.proposalHead)}>
-        <span {...partOf(part.muted)}>{t("assistant.card.title")}</span>
+        <span {...partOf(part.muted)}>
+          {state.kind === "saved" || state.kind === "undone"
+            ? t("assistant.card.title-saved")
+            : t("assistant.card.title")}
+        </span>
         {source}
       </div>
       {issue === undefined ? (
@@ -117,24 +195,13 @@ export function ProposalCard({
       )}
       <ul {...partOf(part.list, { variants: ["tight"] })}>
         {changes.map((change) => (
-          <ChangeLine key={change.field} change={change} />
+          <ChangeLine key={change.field} change={change} saved={decided} />
         ))}
       </ul>
       {decided ? (
         <Outcome state={state} onUndo={onUndo} />
       ) : (
-        <>
-          <p {...partOf(part.muted)}>{t("assistant.card.nothing-saved")}</p>
-          {refused === null ? null : <Alert tone={alertTone.danger}>{refused}</Alert>}
-          <div {...partOf(part.row)}>
-            <Button look={buttonLook.primary} isPending={saving} onPress={onApply}>
-              {t("assistant.card.apply")}
-            </Button>
-            <Button isDisabled={saving} onPress={onDiscard}>
-              {t("assistant.card.discard")}
-            </Button>
-          </div>
-        </>
+        <Choice state={state} onApply={onApply} onDiscard={onDiscard} />
       )}
     </section>
   );

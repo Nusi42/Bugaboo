@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { lookingAtOf, projectOf, withoutItem } from "./looking-at.ts";
+import { projectOf } from "../../shared/assistant-place.ts";
+import { lookingAtOf, withoutItem } from "./looking-at.ts";
 
 describe("ai_10 what the panel looks at", () => {
   it("looks at the issue on an issue page", () => {

@@ -127,3 +127,21 @@ export async function flip(page: Page, name: string): Promise<void> {
   });
   await page.getByText(name, { exact: true }).first().click();
 }
+
+/** Somebody else changes the title of an issue, through the API, on the version it has now. */
+export async function changeTitleBehindTheScenes(
+  server: Instance,
+  key: string,
+  title: string,
+): Promise<void> {
+  const now = await priorityAndVersion(server, key);
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PATCH("/api/v1/issues/{issue}", {
+    params: { path: { issue: key } },
+    body: { version: now.version, title },
+  });
+  await admin.dispose();
+}

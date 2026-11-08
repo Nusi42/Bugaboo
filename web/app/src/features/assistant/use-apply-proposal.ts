@@ -8,7 +8,7 @@ import { refreshHistory, refreshIssues } from "../../shared/query-keys.ts";
 import { useUndoOffers } from "../../shared/use-optimistic.ts";
 import { useApply, type AppliedProposal, type Proposal, type ProposedChange } from "./assistant.ts";
 import type { CardChange, CardState } from "./ProposalCard.tsx";
-import { canTakeBack, takeBack } from "./undo-change.ts";
+import { canTakeBack, takeBack, undoProblem } from "./undo-change.ts";
 
 /** What a member of a tool's input is, as text; none when it is not text. */
 export function inputText(input: unknown, member: string): string | undefined {
@@ -36,6 +36,7 @@ export function cardChange(
 function stateOf(
   dropped: boolean,
   undone: boolean,
+  failure: string | undefined,
   applying: "idle" | "pending" | "success" | "error",
   error: unknown,
 ): CardState {
@@ -46,9 +47,30 @@ function stateOf(
     return { kind: "saving" };
   }
   if (applying === "success") {
-    return { kind: undone ? "undone" : "saved" };
+    if (undone) {
+      return { kind: "undone" };
+    }
+    return failure === undefined ? { kind: "saved" } : { kind: "saved", problem: failure };
   }
   return applying === "error" ? { kind: "refused", problem: messageOf(error) } : { kind: "open" };
+}
+
+/** Puts *Undo* on offer for ten seconds. It is undone only once the server did it; a refusal is said on the card in its own words. */
+function offerUndo(
+  issue: string | undefined,
+  applied: AppliedProposal,
+  saved: readonly CardChange[],
+  then: { readonly done: () => void; readonly failed: (problem: string) => void },
+): number {
+  return undoStore.offer({
+    message: t("assistant.card.undone"),
+    inline: true,
+    undo: () => {
+      takeBack(issue, applied, saved).then(then.done, (error: unknown) => {
+        then.failed(undoProblem(error));
+      });
+    },
+  });
 }
 
 /** What the card shows of a proposal, and what its buttons do. */
@@ -69,6 +91,7 @@ export function useApplyProposal(proposal: Proposal): ProposalControl {
   const applying = useApply();
   const [dropped, setDropped] = useState(false);
   const [undone, setUndone] = useState(false);
+  const [problem, setProblem] = useState<string>();
   const [offer, setOffer] = useState<number>();
   const live = useUndoOffers().some((each) => each.id === offer);
   const issue = inputText(proposal.input, "issue");
@@ -76,20 +99,18 @@ export function useApplyProposal(proposal: Proposal): ProposalControl {
     const saved = applied.changes.map((change) => cardChange(change, applied.words));
     if (canTakeBack(issue, applied, saved)) {
       setOffer(
-        undoStore.offer({
-          message: t("assistant.card.undone"),
-          inline: true,
-          undo: () => {
+        offerUndo(issue, applied, saved, {
+          done: () => {
             setUndone(true);
-            void takeBack(issue, applied, saved);
           },
+          failed: setProblem,
         }),
       );
     }
   };
   const shown: Pick<Proposal, "changes" | "words"> = applying.data ?? proposal;
   return {
-    state: stateOf(dropped, undone, applying.status, applying.error),
+    state: stateOf(dropped, undone, problem, applying.status, applying.error),
     changes: shown.changes.map((change) => cardChange(change, shown.words)),
     apply: () => {
       applying.mutate(

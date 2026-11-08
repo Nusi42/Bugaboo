@@ -1,8 +1,6 @@
 import { assistantLimits, type Schema } from "@bugaboo/api-client";
-import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { refreshRoutes } from "../../shared/query-keys.ts";
 
 /** Whether the assistant is there at a place, and where its answers come from. */
 export type AssistantStatus = Schema<"AssistantStatusBody">;
@@ -17,27 +15,6 @@ export type ProposedChange = Schema<"ProposedChangeBody">;
 
 /** The server's limits of a question, so the panel keeps within them: a longer one is refused. */
 export const limits = assistantLimits;
-
-/**
- * Whether the assistant is there at the place, and where its answers come from. The place is a
- * project, or none for a page of the organization. While the answer is not known, and when the
- * server refuses (a project the person may not see, or one kept from AI), nothing of the assistant
- * is shown.
- */
-export function useAssistantStatus(project: string | undefined): AssistantStatus | undefined {
-  const query = useQuery({
-    ...api.query.queryOptions("get", "/api/v1/assistant", {
-      params: { query: project === undefined ? {} : { project } },
-    }),
-    retry: false,
-  });
-  return query.data;
-}
-
-/** AI was switched on or off, or its setup changed: the places ask again whether the assistant is there. */
-export function refreshAssistant(): void {
-  refreshRoutes(["/api/v1/assistant"]);
-}
 
 /** Asks the assistant a question about what the panel looks at. */
 export function useAsk() {

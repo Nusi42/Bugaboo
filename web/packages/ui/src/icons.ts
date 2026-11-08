@@ -29,7 +29,6 @@ import {
   LogOut,
   Mail,
   Maximize2,
-  MessageCircle,
   MessageSquare,
   Menu,
   Minus,
@@ -47,6 +46,7 @@ import {
   Search,
   Settings,
   Shapes,
+  Sparkles,
   Square,
   SlidersHorizontal,
   ShieldCheck,
@@ -136,7 +136,7 @@ export type IconName = (typeof iconName)[keyof typeof iconName];
 /** The drawing of each icon; the compiler makes sure no name is left out. */
 export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   "access-keys": KeyRound,
-  assistant: MessageCircle,
+  assistant: Sparkles,
   back: ChevronLeft,
   bell: Bell,
   bold: Bold,

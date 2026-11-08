@@ -8,6 +8,7 @@ import { QueryGate } from "../shell/index.ts";
 import { detailsOf, useFields } from "./fields.ts";
 import { NeverSentFields } from "../settings/index.ts";
 import { CreateFieldForm } from "./CreateFieldForm.tsx";
+import { OwnNeverSent } from "./OwnNeverSent.tsx";
 
 /**
  * *Organization settings › Fields* (CF-01): the own fields as a list, each a link to its page, and
@@ -45,6 +46,7 @@ export function FieldsPage() {
       </Card>
       <Card heading={t("ai-setup.never-sent")} intro={t("ai-setup.never-sent-intro")}>
         <NeverSentFields />
+        <OwnNeverSent fields={fields.data?.fields ?? []} />
       </Card>
     </div>
   );

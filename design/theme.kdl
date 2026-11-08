@@ -15337,3 +15337,11 @@ part "proposal-head" {
 part "proposal-change" {
     overflow-wrap anywhere
 }
+
+// A change of priority: the name, the old priority, an arrow and the new one on one line.
+part "proposal-change[variant=values]" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}

@@ -4,8 +4,6 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "assistant.title": "Assistant",
-  "assistant.button": "Assistant",
-  "assistant.quick-ask": "Ask the assistant",
   "assistant.close": "Close the assistant",
   "assistant.close-title": "Close the assistant?",
   "assistant.close-text":
@@ -31,10 +29,15 @@ export const messages = {
   "assistant.you": "You",
   "assistant.label": "Assistant",
   "assistant.empty":
-    "Ask about what you are looking at, for example: Summarize the comments on this issue.",
+    "Ask about what you are looking at, for example: “Summarize the comments on this issue.”",
   "assistant.answered": "The assistant gave answer {count}.",
   "assistant.working": "The assistant is working on it…",
   "assistant.question": "Your question",
+  "assistant.question-limit": "At most {count, number} characters.",
+  "assistant.question-too-long":
+    "This question is longer than {count, number} characters. Shorten it to send it.",
+  "assistant.off-here":
+    "AI is off here. Your conversation is kept until you close the assistant, but nothing can be asked at this place.",
   "assistant.ask": "Ask",
   "assistant.card.title": "Proposed change",
   "assistant.card.nothing-saved": "Nothing is saved until you apply it.",
@@ -43,6 +46,8 @@ export const messages = {
   "assistant.card.saved": "Saved as you.",
   "assistant.card.discarded": "Discarded. Nothing was saved.",
   "assistant.card.undone": "The change from the assistant was undone.",
+  "assistant.card.undo-changed": "This changed since, so it was not taken back.",
+  "assistant.card.title-saved": "Changed",
   "assistant.card.undone-note": "Undone. The value is back.",
   "assistant.card.change": "{field}: {before} → {after}",
   "assistant.card.other-value": "another value",

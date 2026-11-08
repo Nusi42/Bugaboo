@@ -1,11 +1,10 @@
-// The texts of this area come along with its chunk (UX-07).
+// The texts of the panel come along with its chunk (UX-07); it loads when the panel is first opened.
 import "@bugaboo/messages/parts/assistant";
 
-export { registerAssistant } from "./register.tsx";
+export { AssistantPanel } from "./AssistantPanel.tsx";
 export {
   ProposalCard,
   type CardChange,
   type CardState,
   type ProposalCardProps,
 } from "./ProposalCard.tsx";
-export { refreshAssistant } from "./assistant.ts";

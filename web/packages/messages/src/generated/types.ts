@@ -4,6 +4,7 @@ import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
 import type { messages as assistant } from "./assistant.ts";
+import type { messages as assistantEntry } from "./assistant-entry.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -39,6 +40,7 @@ export type MessageKey =
   | keyof typeof account
   | keyof typeof admin
   | keyof typeof assistant
+  | keyof typeof assistantEntry
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -106,6 +108,8 @@ export interface MessageArguments {
   "assistant.card.people": { count: number };
   "assistant.leave-out": { name: string | number };
   "assistant.never-sent": { names: string | number };
+  "assistant.question-limit": { count: number };
+  "assistant.question-too-long": { count: number };
   "backup.left": { count: number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
