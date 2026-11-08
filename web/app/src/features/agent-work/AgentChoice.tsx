@@ -3,7 +3,7 @@ import { Link, partOf, part, SelectField } from "@bugaboo/ui";
 
 import { useMyAgents } from "./agent-work.ts";
 import type { DraftProps } from "./hand-over-draft.ts";
-import { myAgentsAddress } from "./my-agents-address.ts";
+import { paths } from "../../shared/paths.ts";
 
 /** The agents of the person that can work now, as the choices of the window. */
 function useAgentChoices() {
@@ -23,7 +23,7 @@ export function AgentChoice({ draft, onChange }: DraftProps) {
       <>
         <p {...partOf(part.text)}>{t("agent-work.agent-none")}</p>
         <p {...partOf(part.text)}>
-          <Link href={myAgentsAddress}>{t("agent-work.agent-create")}</Link>
+          <Link href={paths.myAgents}>{t("agent-work.agent-create")}</Link>
         </p>
       </>
     );

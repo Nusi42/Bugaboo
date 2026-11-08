@@ -32,7 +32,7 @@ async fn ai_37_my_agents_lists_the_work_of_my_agents_and_nobody_elses() -> TestR
         ok(&handed)?;
         let mine = tess.send("GET", "/api/v1/me/agents/work", None).await?;
         let body = ok(&mine)?;
-        let items = body["items"].as_array().ok_or("no items")?;
+        let items = body["pieces"].as_array().ok_or("no pieces")?;
         assert_eq!(items.len(), 1, "{body}");
         assert_eq!(items[0]["issue"]["readable_id"], json!(issue), "{body}");
         assert_eq!(items[0]["work"]["state"], json!("waiting-for-the-agent"));
@@ -42,7 +42,7 @@ async fn ai_37_my_agents_lists_the_work_of_my_agents_and_nobody_elses() -> TestR
         // Another person with no agent sees an empty list, whatever else exists.
         let nobody = other.send("GET", "/api/v1/me/agents/work", None).await?;
         assert_eq!(
-            ok(&nobody)?["items"].as_array().map(Vec::len),
+            ok(&nobody)?["pieces"].as_array().map(Vec::len),
             Some(0),
             "{}",
             nobody.body

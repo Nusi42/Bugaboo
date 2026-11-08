@@ -401,3 +401,13 @@ reason = "The proposals that wait for a person on one issue are few and those de
 route = "GET /api/v1/issues/{issue}/agent-work"
 property = "brief_missing"
 reason = "A brief has three parts, so the list holds at most three words of a fixed set; it is no page of records (M7-F205 holds the other lists of this answer)."
+
+[[exempt]]
+route = "GET /api/v1/me/agents/work"
+property = "pieces"
+reason = "The work of a person's own agents is read whole for one screen, newest first, at most 200 pieces; the answer says `truncated` (M7-F223)."
+
+[[exempt]]
+route = "GET /api/v1/me/agents/work"
+property = "offered"
+reason = "The agents handed to one person who have not accepted them yet are few, because one person hands over few agents; the list is the agents a person has, at most 50 (M7-F223)."

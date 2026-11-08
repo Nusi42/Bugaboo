@@ -7903,13 +7903,13 @@ export interface components {
     MoveRightKind: "nowhere" | "into-projects" | "into-projects-or-top";
     /** @description The current work of the person's agents. */
     MyAgentWorkBody: {
+      /** @description The agents handed to the person that wait for them to accept. */
+      offered: components["schemas"]["OfferedAgentBody"][];
       /**
        * @description The work, newest first: what has not ended, and what was accepted by itself and not looked
        *     at yet.
        */
-      items: components["schemas"]["MyWorkBody"][];
-      /** @description The agents handed to the person that wait for them to accept. */
-      offered: components["schemas"]["OfferedAgentBody"][];
+      pieces: components["schemas"]["MyWorkBody"][];
       /** @description Whether the list was cut at the most it holds. */
       truncated: boolean;
     };

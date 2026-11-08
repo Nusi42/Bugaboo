@@ -50,7 +50,7 @@ pub(crate) struct MyAgentWorkBody {
     offered: Vec<OfferedAgentBody>,
     /// The work, newest first: what has not ended, and what was accepted by itself and not looked
     /// at yet.
-    items: Vec<MyWorkBody>,
+    pieces: Vec<MyWorkBody>,
     /// Whether the list was cut at the most it holds.
     truncated: bool,
 }
@@ -69,7 +69,7 @@ impl From<&MyAgentWork> for MyAgentWorkBody {
                     from: agent.from.clone(),
                 })
                 .collect(),
-            items: all
+            pieces: all
                 .items
                 .iter()
                 .map(|item| MyWorkBody {

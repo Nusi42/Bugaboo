@@ -7,7 +7,7 @@ import { WorkLines } from "./WorkLines.tsx";
 /** What one agent works on now, each issue with the state of its work. */
 export function AgentWorkCard({ agent }: { readonly agent: ListedAgent }) {
   const all: MyWork | undefined = useMyAgentWork().data;
-  const work = all?.items ?? [];
+  const work = all?.pieces ?? [];
   const mine = work.filter((item) => item.work.agent === agent.id && item.work.open);
   return (
     <Card heading={t("agents.work")}>

@@ -71,7 +71,7 @@ export function MyAgentsPage() {
         data={listed === undefined || mine === undefined ? undefined : { listed, work: mine }}
       >
         {(loaded) => (
-          <Body agents={loaded.listed} work={loaded.work.items} offered={loaded.work.offered} />
+          <Body agents={loaded.listed} work={loaded.work.pieces} offered={loaded.work.offered} />
         )}
       </QueryGate>
     </div>

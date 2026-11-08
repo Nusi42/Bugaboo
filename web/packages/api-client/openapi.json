@@ -23964,21 +23964,21 @@
       "MyAgentWorkBody": {
         "type": "object",
         "description": "The current work of the person's agents.",
-        "required": ["offered", "items", "truncated"],
+        "required": ["offered", "pieces", "truncated"],
         "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MyWorkBody"
-            },
-            "description": "The work, newest first: what has not ended, and what was accepted by itself and not looked\nat yet."
-          },
           "offered": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OfferedAgentBody"
             },
             "description": "The agents handed to the person that wait for them to accept."
+          },
+          "pieces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyWorkBody"
+            },
+            "description": "The work, newest first: what has not ended, and what was accepted by itself and not looked\nat yet."
           },
           "truncated": {
             "type": "boolean",
