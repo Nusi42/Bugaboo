@@ -95,10 +95,6 @@ export interface MessageArguments {
   "agent-work.attempt-started": { date: string | number };
   "agent-work.ends": { date: string | number };
   "agent-work.fact-attempts": { most: string | number; number: string | number };
-  "agent-work.fact-cost": { amount: string | number };
-  "agent-work.fact-cost-of": { amount: string | number; most: string | number };
-  "agent-work.fact-time": { time: string | number };
-  "agent-work.fact-time-of": { most: string | number; time: string | number };
   "agent-work.gave-up": { reason: string | number };
   "agent-work.hand-over-ends": { date: string | number };
   "agent-work.hand-over-title": { issue: string | number };

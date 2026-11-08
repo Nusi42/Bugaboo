@@ -112,13 +112,15 @@ export function ReviewDialog(props: ReviewDialogProps) {
         />
       }
     >
-      <p {...partOf(part.text)}>{t("agent-work.review-text")}</p>
-      <ReviewResults attempt={attempt} />
-      <ReviewFields work={work} draft={draft} />
-      {draft.needsNote ? (
-        <p {...partOf(part.muted)}>{t("agent-work.review-note-required")}</p>
-      ) : null}
-      {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
+      <div {...partOf(part.stack)}>
+        <p {...partOf(part.text)}>{t("agent-work.review-text")}</p>
+        <ReviewResults attempt={attempt} />
+        <ReviewFields work={work} draft={draft} />
+        {draft.needsNote ? (
+          <p {...partOf(part.muted)}>{t("agent-work.review-note-required")}</p>
+        ) : null}
+        {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
+      </div>
     </Window>
   );
 }

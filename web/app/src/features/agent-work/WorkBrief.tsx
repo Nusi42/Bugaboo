@@ -3,45 +3,19 @@ import { Button, buttonLook, Facts, partOf, part, type Fact } from "@bugaboo/ui"
 import { useId, useState } from "react";
 
 import { listText } from "../../shared/list-text.ts";
-import { minutesText } from "../../shared/own-value-text.ts";
-import { amountText, type BriefLack, type Work } from "./agent-work.ts";
+import type { BriefLack, Work } from "./agent-work.ts";
 
-/** What the attempts reported so far: the attempts, the minutes and the cost, against the budget. */
+/** The attempts against the attempts the hand-over allows; the time and the cost stand on each attempt. */
 function factsOf(work: Work): readonly Fact[] {
-  const minutes = work.attempts.reduce((sum, attempt) => sum + attempt.reported_minutes, 0);
-  const cost = work.attempts.reduce((sum, attempt) => sum + attempt.reported_cost, 0);
-  const { budget } = work;
-  const facts: Fact[] = [
+  return [
     {
       key: "attempts",
-      node: t("agent-work.fact-attempts", { number: work.attempts.length, most: budget.attempts }),
+      node: t("agent-work.fact-attempts", {
+        number: work.attempts.length,
+        most: work.budget.attempts,
+      }),
     },
   ];
-  if (minutes > 0 || (budget.minutes !== null && budget.minutes !== undefined)) {
-    facts.push({
-      key: "time",
-      node:
-        budget.minutes === null || budget.minutes === undefined
-          ? t("agent-work.fact-time", { time: minutesText(minutes) })
-          : t("agent-work.fact-time-of", {
-              time: minutesText(minutes),
-              most: minutesText(budget.minutes),
-            }),
-    });
-  }
-  if (cost > 0 || (budget.cost !== null && budget.cost !== undefined)) {
-    facts.push({
-      key: "cost",
-      node:
-        budget.cost === null || budget.cost === undefined
-          ? t("agent-work.fact-cost", { amount: amountText(cost) })
-          : t("agent-work.fact-cost-of", {
-              amount: amountText(cost),
-              most: amountText(budget.cost),
-            }),
-    });
-  }
-  return facts;
 }
 
 /** The parts of the brief the agent has: what the issue holds of the three, and the note with the answers. */
@@ -101,11 +75,6 @@ export function WorkBrief({
       <p {...partOf(part.muted)}>
         <Facts items={factsOf(work)} />
       </p>
-      {work.attempts.some(
-        (attempt) => attempt.reported_minutes > 0 || attempt.reported_cost > 0,
-      ) ? (
-        <p {...partOf(part.muted)}>{t("agent-work.reported-note")}</p>
-      ) : null}
     </section>
   );
 }

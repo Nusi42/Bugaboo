@@ -95,15 +95,17 @@ export function HandOverDialog(props: HandOverDialogProps) {
         />
       }
     >
-      <HandOverFields
-        draft={draft}
-        issues={issues}
-        assigned={assigned}
-        onChange={(next) => {
-          setDraft((was) => ({ ...was, ...next }));
-        }}
-      />
-      {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
+      <div {...partOf(part.stack)}>
+        <HandOverFields
+          draft={draft}
+          issues={issues}
+          assigned={assigned}
+          onChange={(next) => {
+            setDraft((was) => ({ ...was, ...next }));
+          }}
+        />
+        {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
+      </div>
     </Window>
   );
 }

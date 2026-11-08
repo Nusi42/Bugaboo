@@ -12,7 +12,7 @@ import {
   sentBack,
 } from "./support/agent-work-shots.ts";
 import { openRowsList } from "./support/agent-work-rows.ts";
-import { showAgentColumns } from "./support/agent-work-windows.ts";
+import { showAgentColumns, skipOnAPhone } from "./support/agent-work-columns.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourThemes } from "./support/four-themes.ts";
 import { prepareWeb } from "./support/issues.ts";
@@ -42,7 +42,7 @@ test("who works on an issue that has a person, and the plan that waits for Appro
 
 test("the block waiting for the agent, working, asking, answered", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
-  const issues = await blockIssues(server);
+  const issues = await blockIssues(server, "A");
   await openBlock(page, keyOf(issues, "waiting"));
   await inFourThemes(page, "block-waiting-for-the-agent", MILESTONE);
   await goToBlock(page, keyOf(issues, "working"));
@@ -58,7 +58,7 @@ test("the block that gave up, was stopped, was accepted by itself, was sent back
   server,
 }) => {
   test.setTimeout(TAKING_MS);
-  const issues = await blockIssues(server);
+  const issues = await blockIssues(server, "B");
   const back = await sentBack(server);
   await openBlock(page, keyOf(issues, "gaveUp"));
   await inFourThemes(page, "block-gave-up", MILESTONE);
@@ -115,7 +115,13 @@ test("the rows of a list: each status group, a ticked row and the open one", asy
 });
 
 test("the column Agent in Customize", async ({ page, server }) => {
+  skipOnAPhone(page);
   test.setTimeout(TAKING_MS);
   await showAgentColumns(page, server);
+  await inFourThemes(page, "list-column-agent-customize", MILESTONE);
+  await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
+  await expect(
+    page.getByRole("columnheader", { name: t("issue-field.agent"), exact: true }),
+  ).toBeVisible();
   await inFourThemes(page, "list-column-agent", MILESTONE);
 });

@@ -57,9 +57,12 @@ export async function assignedAndWorkedOn(server: Instance): Promise<string> {
 }
 
 /** The keys of the issues of the states of the block, by name. */
-export async function blockIssues(server: Instance): Promise<Readonly<Record<string, string>>> {
+export async function blockIssues(
+  server: Instance,
+  who: string,
+): Promise<Readonly<Record<string, string>>> {
   const key = async (title: string, name: string, scene: Parameters<typeof sceneIssue>[3]) =>
-    (await sceneIssue(server, title, name, scene)).issue.key;
+    (await sceneIssue(server, `${title} ${who}`, `${name} ${who}`, scene)).issue.key;
   const attempt = { plan: PLAN, minutes: 25, cost: 40 };
   return {
     waiting: await key("Waiting for the agent", "Waiter", { state: "waiting-for-the-agent" }),
