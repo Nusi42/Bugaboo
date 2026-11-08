@@ -20,3 +20,13 @@ priority = 100
 [[profile.default.overrides]]
 filter = "package(bb-sample) | test(/iss_09_more_than_a_thousand_run_as_a_job|iss_01a_a_big_project_gets_new_ids|sec_12_changing_the_password_stops_the_runs|sec_12_signing_out_everywhere_stops_the_runs|iss_09_a_run_is_stopped_by_who_asked|iss_06_a_long_run_of_hidden_changes|cf_07_a_choice_held_by_thousands/)"
 priority = 50
+
+# The tests that compile code which must not compile (trybuild) write one shared project under
+# target/tests/trybuild. Two of them side by side can read a manifest the other is half way through
+# writing ("key with no value"), so they run one at a time; they still run, like every other test.
+[test-groups]
+trybuild = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = "test(/not_compile|cannot_be_made_outside_the_policy_crate|cannot_hold_a_member|cannot_be_a_view_with_fields/)"
+test-group = "trybuild"
