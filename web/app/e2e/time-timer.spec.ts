@@ -6,14 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
 import { chipOf } from "./support/time-scene.ts";
-import {
-  choiceNamed,
-  entriesBookedOn,
-  setTimeDefault,
-  startedMinutesAgo,
-  starterField,
-  startTimerOn,
-} from "./support/time.ts";
+import { entriesBookedOn, giveDefaults, startedMinutesAgo, startTimerOn } from "./support/time.ts";
 
 // The timer on screen (TIME-01): one timer per person that every device shows, *Stop timer* with the
 // fields of the entry filled in from the issue, and *Switch issue* that keeps one timer running.
@@ -26,12 +19,7 @@ test("time_01 stop timer shows activity and cost center from the issue", async (
 }) => {
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Login fails after password reset");
-  const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  const testing = await choiceNamed(admin, activity, "Testing");
-  const product = await choiceNamed(admin, costCenter, "Product development", "4100");
-  await setTimeDefault(admin, issue, activity, testing);
-  await setTimeDefault(admin, issue, costCenter, product);
+  const { activity, testing, product } = await giveDefaults(admin, issue);
   await startTimerOn(admin, issue);
   await startedMinutesAgo(admin, 42);
   await signIn(page, ada);

@@ -89,8 +89,11 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
   // The page reads the settings again once the change is saved; type only after that.
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
+  // The box holds what was typed at once; the next step needs the answer of the server to it.
+  const answered = page.waitForResponse((response) => response.request().method() === "PUT");
   await page.getByLabel(name, { exact: true }).fill("1");
   await page.getByLabel(name, { exact: true }).press("Enter");
+  await answered;
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("1");
   await expect(page.getByRole("alert").filter({ hasText: tooShort })).toHaveCount(0);
   // Choosing Germany again with one year kept is refused too, and the preset stays.
@@ -98,8 +101,10 @@ test("time_10 the keep period cannot go below two years with the preset Germany"
   await expect(page.getByRole("alert").filter({ hasText: tooShort })).toBeVisible();
   await expect(page.getByRole("radio", { name: t("working-time.preset.no-rules") })).toBeChecked();
   // The tests of a file share one server: the rules go back to the preset, two years first.
+  const restored = page.waitForResponse((response) => response.request().method() === "PUT");
   await page.getByLabel(name, { exact: true }).fill("2");
   await page.getByLabel(name, { exact: true }).press("Enter");
+  await restored;
   await expect(page.getByLabel(name, { exact: true })).toHaveValue("2");
   await page.getByRole("radio", { name: t("working-time.preset.germany"), exact: true }).click();
   await expect(page.getByRole("radio", { name: t("working-time.preset.germany") })).toBeChecked();

@@ -1,12 +1,10 @@
-import { dataOf } from "@bugaboo/api-client";
-
 import { signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { days } from "./demo-m6-common.ts";
 import { sampleAdministrator, sampleCostCenter } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { changeWorkDay } from "./timesheet.ts";
-import { choiceNamed, earlierToday, starterField } from "./time.ts";
+import { earlierToday, giveDefaults } from "./time.ts";
 
 // What the exit demo of M6 (`m6-exit-demo.spec.ts`) sets up before a step, through the API.
 
@@ -22,26 +20,9 @@ export async function startedTheDayEarlier(session: ApiSession): Promise<void> {
   await changeWorkDay(session, days().today, [{ start, end: null }]);
 }
 
-/** The issue gets an Activity and a Cost center for the time booked on it, so the entry of a stop is filled in. */
+/** The issue gets an Activity and the first cost center of the sample for the time booked on it, so the entry of a stop is filled in. */
 export async function giveTheIssueItsDefaults(server: Instance, key: string): Promise<void> {
   const admin = await signInThroughApi(server, sampleAdministrator());
-  const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  const center = sampleCostCenter();
-  const shown = dataOf(
-    await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
-  dataOf(
-    await admin.client.PATCH("/api/v1/issues/{issue}", {
-      params: { path: { issue: key } },
-      body: {
-        version: shown.issue.version ?? 0,
-        fields: {
-          [activity]: await choiceNamed(admin, activity, "Testing"),
-          [costCenter]: await choiceNamed(admin, costCenter, center.name, center.number),
-        },
-      },
-    }),
-  );
+  await giveDefaults(admin, { id: key, key }, sampleCostCenter());
   await admin.dispose();
 }

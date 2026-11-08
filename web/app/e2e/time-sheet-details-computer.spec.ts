@@ -6,6 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { partIn } from "./support/parts.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
 import {
   bookOn,
@@ -81,7 +82,14 @@ test("time_04 the details of a row list its entries and change one of them", asy
   await window.getByRole("textbox", { name: t("time.entry.note") }).fill("Longer than first noted");
   await window.getByRole("button", { name: t("time.details.save"), exact: true }).click();
   await expect(window.getByText(/Longer than first noted/u)).toBeVisible();
-  await window.getByRole("button", { name: t("common.close"), exact: true }).click();
+  // The window shows the list again once the change is saved; its footer says Close then, beside the
+  // Close of the window's own corner.
+  await expect(
+    window.getByRole("button", { name: t("time.details.back"), exact: true }),
+  ).toHaveCount(0);
+  await partIn(window, "window.footer-actions")
+    .getByRole("button", { name: t("common.close"), exact: true })
+    .click();
   await page.reload();
   await expect(cellOf(page, issue.key, 0, false)).toHaveValue("1:20");
 });

@@ -59,17 +59,41 @@ export async function setTimeDefault(
   );
 }
 
-/** Gives the issue an Activity (Testing) and a Cost center (4100 Product development) for its time, so the entry of a stop or a booking is filled in. */
-export async function giveDefaults(admin: ApiSession, issue: MadeIssue): Promise<void> {
+/** A cost center of the choices of the field *Cost center*: the number and the name. */
+export interface CostCenter {
+  readonly number: string;
+  readonly name: string;
+}
+
+/** The cost center the tests give an issue unless they name another. */
+const PRODUCT_DEVELOPMENT: CostCenter = { number: "4100", name: "Product development" };
+
+/** Makes the cost center the one the time of the issue starts with; the ID of its choice. */
+export async function giveCostCenter(
+  admin: ApiSession,
+  issue: MadeIssue,
+  center: CostCenter = PRODUCT_DEVELOPMENT,
+): Promise<string> {
+  const field = await starterField(admin, "cost-center");
+  const choice = await choiceNamed(admin, field, center.name, center.number);
+  await setTimeDefault(admin, issue, field, choice);
+  return choice;
+}
+
+/**
+ * Gives the issue an Activity (Testing) and a Cost center (4100 Product development, or the one named)
+ * for its time, so the entry of a stop or a booking is filled in. The field of the activity, and the
+ * IDs of the two choices.
+ */
+export async function giveDefaults(
+  admin: ApiSession,
+  issue: MadeIssue,
+  center: CostCenter = PRODUCT_DEVELOPMENT,
+): Promise<{ readonly activity: string; readonly testing: string; readonly product: string }> {
   const activity = await starterField(admin, "activity");
-  const costCenter = await starterField(admin, "cost-center");
-  await setTimeDefault(admin, issue, activity, await choiceNamed(admin, activity, "Testing"));
-  await setTimeDefault(
-    admin,
-    issue,
-    costCenter,
-    await choiceNamed(admin, costCenter, "Product development", "4100"),
-  );
+  const testing = await choiceNamed(admin, activity, "Testing");
+  await setTimeDefault(admin, issue, activity, testing);
+  return { activity, testing, product: await giveCostCenter(admin, issue, center) };
 }
 
 /** A little over a second: the server lets a person start or switch the timer once a second. */
@@ -100,30 +124,36 @@ export function earlierToday(seconds: number): string {
   const utc = new Date(now);
   utc.setUTCHours(0, 1, 0, 0);
   const earliest = Math.max(local.getTime(), utc.getTime());
-  return new Date(Math.max(now - seconds * 1000, earliest)).toISOString();
+  return new Date(Math.min(now, Math.max(now - seconds * 1000, earliest))).toISOString();
 }
 
-/**
- * Moves the start of the person's running timer `minutes` and a few seconds into the past; with
- * `withinToday` not before the start of the day `earlierToday` gives (for a timer whose time must lie in
- * a work day that started on that date).
- */
-export async function startedMinutesAgo(
-  session: ApiSession,
-  minutes: number,
-  withinToday = false,
-): Promise<void> {
+/** Moves the start of the running timer of the session to the moment `started`. */
+async function startedAt(session: ApiSession, started: string): Promise<void> {
   const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
-  const SECONDS = 5;
-  const seconds = minutes * 60 + SECONDS;
-  const started = withinToday
-    ? earlierToday(seconds)
-    : new Date(Date.now() - seconds * 1000).toISOString();
   dataOf(
     await session.client.POST("/api/v1/me/timer/start-time", {
       body: { version: timer.version, started_at: started },
     }),
   );
+}
+
+/** A few seconds more than the minutes: the clock has moved on by the time the timer is read. */
+const SECONDS = 5;
+
+/** Moves the start of the person's running timer `minutes` and a few seconds into the past. */
+export async function startedMinutesAgo(session: ApiSession, minutes: number): Promise<void> {
+  await startedAt(session, new Date(Date.now() - (minutes * 60 + SECONDS) * 1000).toISOString());
+}
+
+/**
+ * The same, but not before the start of the work day `earlierToday` gives: for a timer whose time must
+ * lie in a work day that started on that date.
+ */
+export async function startedMinutesAgoWithinToday(
+  session: ApiSession,
+  minutes: number,
+): Promise<void> {
+  await startedAt(session, earlierToday(minutes * 60 + SECONDS));
 }
 
 /** Whether the server has marked the person's timer as running longer than a work day (its job does, a little after). */
@@ -192,13 +222,7 @@ export async function entriesBookedOn(
 export async function issueStartingWithProductDevelopment(server: Instance): Promise<MadeIssue> {
   const admin = await signedInAdmin(server);
   const issue = await createIssue(admin, "WEB", "Printer jams");
-  const costCenter = await starterField(admin, "cost-center");
-  await setTimeDefault(
-    admin,
-    issue,
-    costCenter,
-    await choiceNamed(admin, costCenter, "Product development", "4100"),
-  );
+  await giveCostCenter(admin, issue);
   await admin.dispose();
   return issue;
 }

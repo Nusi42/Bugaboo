@@ -8,7 +8,7 @@ import { openIssueWithDetails, signIn } from "./flows.ts";
 import { giveTheIssueItsDefaults, startedTheDayEarlier } from "./demo-m6-setup.ts";
 import { type Instance } from "./server.ts";
 import { chipOf } from "./time-scene.ts";
-import { startedMinutesAgo } from "./time.ts";
+import { startedMinutesAgoWithinToday } from "./time.ts";
 
 // The steps of the exit demo of M6 (`m6-exit-demo.spec.ts`) on the sample organization: Ana's work
 // day and her timer.
@@ -60,7 +60,7 @@ export async function anaStartsHerDayAndStopsATimer(page: Page, server: Instance
   await openIssueWithDetails(page, key);
   await page.getByRole("button", { name: t("time.timer.start"), exact: true }).click();
   await expect(timerOn(page, key)).toBeVisible();
-  await startedMinutesAgo(session, TIMER_MINUTES, true);
+  await startedMinutesAgoWithinToday(session, TIMER_MINUTES);
   await openIssueWithDetails(page, key);
   await timerOn(page, key).click();
   await page
