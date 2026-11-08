@@ -9023,7 +9023,7 @@ textarea,
   z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
-  width: var(--size-side-panel);
+  width: var(--size-panel);
   max-width: 100%;
   box-sizing: border-box;
   border: var(--border-width) solid var(--border);
@@ -9042,7 +9042,7 @@ textarea,
 }
 
 [data-part="app-layout"][data-variant~="assistant-open"] {
-  padding-inline-end: var(--size-side-panel);
+  padding-inline-end: var(--size-panel);
 }
 
 [data-part="assistant-panel"] {

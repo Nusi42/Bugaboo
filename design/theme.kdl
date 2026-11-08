@@ -15244,7 +15244,7 @@ part "assistant-dock" {
     z-index "$z-overlay"
     display flex
     flex-direction column
-    width "$size-side-panel"
+    width "$size-panel"
     max-width "100%"
     use "floating-box"
     border-radius "$r-card 0 0 $r-card"
@@ -15260,7 +15260,7 @@ part "assistant-dock.body" {
 }
 
 part "app-layout[variant=assistant-open]" {
-    padding-inline-end "$size-side-panel"
+    padding-inline-end "$size-panel"
 }
 
 part "assistant-panel" {
