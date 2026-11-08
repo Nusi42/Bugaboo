@@ -53,6 +53,17 @@ const PROFILE: &str = "wasm";
 pub(crate) const TARGET: &str = "wasm32-unknown-unknown";
 /// Remembers which module cargo made last (its SHA-256), inside the folder of the module.
 const STAMP: &str = ".stamp";
+/// The standard library of the module is built again for size: without the text of its panics, the
+/// `Debug` text of the errors it names and a float formatter for the error texts of serde, which
+/// are about 20 KB of the module after Brotli (M6-F68, PERF-04). `cargo` needs `rust-src` for it,
+/// which `rust-toolchain.toml` lists.
+const SMALL_STANDARD_LIBRARY: [&str; 2] = [
+    "-Zbuild-std=std,panic_abort",
+    "-Zbuild-std-features=optimize_for_size",
+];
+/// A panic of the module stops it at once, with no text: nobody reads the text in a browser.
+const PANIC_AT_ONCE: &str = "-Cpanic=immediate-abort -Zunstable-options";
+
 /// What `wasm-opt` is asked to do: optimize for size until nothing gets smaller, leave out the
 /// notes of the toolchain that nothing reads, with the features the compiler uses.
 const OPTIMIZE: [&str; 8] = [
@@ -265,6 +276,7 @@ fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
 /// Runs cargo and returns the module it wrote. Cargo says where: a different `target-dir` in the
 /// settings of the machine needs no guessing.
 fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
+    let existing = std::env::var("RUSTFLAGS").unwrap_or_default();
     let out = tools::command("cargo")
         .args([
             "build",
@@ -276,6 +288,11 @@ fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
             "--profile",
             PROFILE,
         ])
+        .args(SMALL_STANDARD_LIBRARY)
+        // The small standard library and a panic that stops at once are unstable features of the
+        // compiler; this build asks for them, and no other build of the program does.
+        .env("RUSTC_BOOTSTRAP", "1")
+        .env("RUSTFLAGS", format!("{existing} {PANIC_AT_ONCE}").trim())
         .current_dir(root)
         .stderr(Stdio::inherit())
         .output()
