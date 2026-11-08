@@ -6,7 +6,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::agent_work::{MyAgentWork, MyAgentWorkQuery};
 use bb_core::agent_work::WaitsFor;
-use bb_policy::Masked;
+use bb_policy::{Masked, PersonRef};
 use serde::Serialize;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -32,9 +32,22 @@ pub(crate) struct MyWorkBody {
 
 impl Masked for MyWorkBody {}
 
+/// An agent another person handed to this person, who has not accepted it yet.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct OfferedAgentBody {
+    /// The ID of the agent.
+    id: String,
+    /// Its name.
+    name: String,
+    /// The person who hands it over, as *Who sees people* says for the person asking.
+    from: PersonRef,
+}
+
 /// The current work of the person's agents.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct MyAgentWorkBody {
+    /// The agents handed to the person that wait for them to accept.
+    offered: Vec<OfferedAgentBody>,
     /// The work, newest first: what has not ended, and what was accepted by itself and not looked
     /// at yet.
     items: Vec<MyWorkBody>,
@@ -47,6 +60,15 @@ impl Masked for MyAgentWorkBody {}
 impl From<&MyAgentWork> for MyAgentWorkBody {
     fn from(all: &MyAgentWork) -> Self {
         Self {
+            offered: all
+                .offered
+                .iter()
+                .map(|agent| OfferedAgentBody {
+                    id: agent.id.to_string(),
+                    name: agent.name.clone(),
+                    from: agent.from.clone(),
+                })
+                .collect(),
             items: all
                 .items
                 .iter()

@@ -1,9 +1,10 @@
 //! The work of a person's own agents in one list (AI-37, *My agents*): what waits for the person,
 //! the work in progress, and the work that was accepted by itself and that nobody has looked at.
 
-use bb_policy::{Authorized, Place};
+use bb_core::people_kinds::PeopleKind;
+use bb_policy::{Authorized, PeopleContext, Place};
 
-use super::types::{MyAgentWork, MyAgentWorkQuery, MyWorkItem};
+use super::types::{MyAgentWork, MyAgentWorkQuery, MyWorkItem, OfferedAgent};
 use crate::agents::AgentStore;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
@@ -62,5 +63,29 @@ pub async fn my_agent_work<S: AuthStore>(
             issue: line,
         });
     }
-    Ok(held.authorize(MyAgentWork { items, truncated }))
+    let mut offered = Vec::new();
+    for agent in ctx
+        .store()
+        .agents_offered_to(person)
+        .await
+        .map_err(failed)?
+    {
+        offered.push(OfferedAgent {
+            id: agent.id,
+            name: agent.name.clone(),
+            from: ctx
+                .person_ref(
+                    &held,
+                    PeopleKind::ProjectMembers,
+                    PeopleContext::Ordinary,
+                    agent.person,
+                )
+                .await?,
+        });
+    }
+    Ok(held.authorize(MyAgentWork {
+        offered,
+        items,
+        truncated,
+    }))
 }

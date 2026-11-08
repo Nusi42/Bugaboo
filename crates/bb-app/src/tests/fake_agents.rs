@@ -1,6 +1,6 @@
 //! The agent part of the in-memory store (AI-30).
 
-use bb_core::agent::{Agent, AgentState};
+use bb_core::agent::{Agent, AgentLimits, AgentState};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 
 use super::fake::{FakeError, FakeStore, Tx};
@@ -213,6 +213,19 @@ impl AgentStore for FakeStore {
         Ok(change(tx, id, version, |agent| {
             agent.state = state;
             agent.paused_for = paused_for;
+        }))
+    }
+
+    async fn set_agent_limits(
+        tx: &mut Tx,
+        id: AgentId,
+        limits: AgentLimits,
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        Ok(change(tx, id, version, |agent| {
+            agent.changes_a_minute = limits.changes_a_minute;
+            agent.issues_at_once = limits.issues_at_once;
+            agent.attempts_on_one_issue = limits.attempts_on_one_issue;
         }))
     }
 

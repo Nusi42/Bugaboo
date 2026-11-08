@@ -18,6 +18,7 @@ mod agent_work_scenarios;
 mod agent_work_screen;
 mod agent_work_writes;
 mod agents;
+mod agents_limits;
 mod agents_more;
 mod ai_setup;
 mod ai_tools;

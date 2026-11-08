@@ -112,6 +112,7 @@ table! {
     "look_at_work" => super::agent_work_scenarios::look_at_work_scenario,
     "rename_agent" => super::agents::rename_agent_scenario,
     "change_agent" => super::agents::change_agent_scenario,
+    "set_agent_limits" => super::agents_limits::set_agent_limits_scenario,
     "stop_all_agents" => super::agents::stop_all_agents_scenario,
     "hand_agent" => super::agents::hand_agent_scenario,
     "accept_agent" => super::agents::accept_agent_scenario,

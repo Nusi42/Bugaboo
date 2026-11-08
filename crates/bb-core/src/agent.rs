@@ -108,6 +108,28 @@ impl Default for AgentLimits {
     }
 }
 
+impl AgentLimits {
+    /// These limits cut to the most the organization allows: each one at most the same one of `most`.
+    #[must_use]
+    pub fn within(self, most: Self) -> Self {
+        Self {
+            changes_a_minute: self.changes_a_minute.min(most.changes_a_minute),
+            issues_at_once: self.issues_at_once.min(most.issues_at_once),
+            attempts_on_one_issue: self.attempts_on_one_issue.min(most.attempts_on_one_issue),
+        }
+    }
+
+    /// Whether these limits can be given to an agent: each is at least one and at most the same one
+    /// of `most` (the one rule for the limits an agent starts with and for a change of them).
+    #[must_use]
+    pub fn fit_within(&self, most: Self) -> bool {
+        self.changes_a_minute >= 1
+            && self.issues_at_once >= 1
+            && self.attempts_on_one_issue >= 1
+            && *self == self.within(most)
+    }
+}
+
 /// An agent. Every field carries its personal-data mark (ADR-0015).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Agent {

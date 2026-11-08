@@ -11,12 +11,12 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::agents::{
     AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, StopAllAgents,
+    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents,
 };
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
-use bb_core::agent::{AgentState, LimitKind};
+use bb_core::agent::{AgentState, LimitKind, AgentLimits};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -122,6 +122,8 @@ pub(crate) struct AgentBody {
     agent: AgentItem,
     /// The keys of the agent. Never the secret.
     keys: Vec<AccessKeyBody>,
+    /// The most any agent can be given as its limits.
+    maximums: Option<AgentLimitsBody>,
 }
 
 impl Masked for AgentBody {}
@@ -131,12 +133,44 @@ impl From<&AgentView> for AgentBody {
         Self {
             agent: AgentItem::from(agent),
             keys: agent.keys.iter().map(AccessKeyBody::from).collect(),
+            maximums: agent.maximums.map(AgentLimitsBody::from),
         }
     }
 }
 
-/// What to do to an agent: give it another name, or pause, resume or stop it. Exactly one of
-/// `name` and `action`.
+/// How much an agent may do. Each is at least 1 and at most what the organization allows.
+#[derive(Clone, Copy, Deserialize, Serialize, ToSchema)]
+pub(crate) struct AgentLimitsBody {
+    /// Changes it may make in one minute.
+    changes_a_minute: i64,
+    /// Issues it may work on at once.
+    issues_at_once: i64,
+    /// Attempts it may make on one issue.
+    attempts_on_one_issue: i64,
+}
+
+impl From<AgentLimits> for AgentLimitsBody {
+    fn from(limits: AgentLimits) -> Self {
+        Self {
+            changes_a_minute: limits.changes_a_minute,
+            issues_at_once: limits.issues_at_once,
+            attempts_on_one_issue: limits.attempts_on_one_issue,
+        }
+    }
+}
+
+impl From<AgentLimitsBody> for AgentLimits {
+    fn from(body: AgentLimitsBody) -> Self {
+        Self {
+            changes_a_minute: body.changes_a_minute,
+            issues_at_once: body.issues_at_once,
+            attempts_on_one_issue: body.attempts_on_one_issue,
+        }
+    }
+}
+
+/// What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly
+/// one of `name`, `limits` and `action`.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeAgentBody {
     /// The new name.
@@ -145,6 +179,9 @@ pub(crate) struct ChangeAgentBody {
     /// `pause`, `resume` or `stop`.
     #[serde(default)]
     action: Option<AgentActionBody>,
+    /// The new limits.
+    #[serde(default)]
+    limits: Option<AgentLimitsBody>,
     /// The version the person saw.
     version: i64,
 }
@@ -328,8 +365,8 @@ async fn change_agent(
     let read = body.and_then(|ApiJson(body)| Ok((body, path_id::<AgentId>(&agent_id)?)));
     let (body, id) = auth.after_who_asks(&info, &session_token, read).await?;
     let api = auth.api()?;
-    let changed = match (body.name, body.action) {
-        (Some(name), None) => {
+    let changed = match (body.name, body.action, body.limits) {
+        (Some(name), None, None) => {
             api.rename_agent(
                 info,
                 RenameAgent {
@@ -341,7 +378,19 @@ async fn change_agent(
             )
             .await?
         }
-        (None, Some(action)) => {
+        (None, None, Some(limits)) => {
+            api.set_agent_limits(
+                info,
+                SetAgentLimits {
+                    session_token,
+                    id,
+                    limits: limits.into(),
+                    version: body.version,
+                },
+            )
+            .await?
+        }
+        (None, Some(action), None) => {
             let action = match action {
                 AgentActionBody::Pause => AgentAction::Pause,
                 AgentActionBody::Resume => AgentAction::Resume,

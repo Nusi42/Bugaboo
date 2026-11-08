@@ -165,25 +165,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
+    /// The most any agent can be given as its limits: the maximums that the organization set.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn agent_maximums(&self) -> Result<AgentLimits, AppError> {
+        let layers = self.setting_layers_of(None).await?;
+        Ok(AgentLimits {
+            changes_a_minute: layers.number(&AGENTS_MAXIMUM_CHANGES_A_MINUTE),
+            issues_at_once: layers.number(&AGENTS_MAXIMUM_ISSUES_AT_ONCE),
+            attempts_on_one_issue: layers.number(&AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE),
+        })
+    }
+
     /// The limits a new agent starts with: the defaults of ADR-0029, cut to the maximums that the
     /// organization set.
     ///
     /// # Errors
     /// An internal error when the store fails.
     pub(crate) async fn starting_limits(&self) -> Result<AgentLimits, AppError> {
-        let layers = self.setting_layers_of(None).await?;
-        let start = AgentLimits::default();
-        Ok(AgentLimits {
-            changes_a_minute: start
-                .changes_a_minute
-                .min(layers.number(&AGENTS_MAXIMUM_CHANGES_A_MINUTE)),
-            issues_at_once: start
-                .issues_at_once
-                .min(layers.number(&AGENTS_MAXIMUM_ISSUES_AT_ONCE)),
-            attempts_on_one_issue: start
-                .attempts_on_one_issue
-                .min(layers.number(&AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE)),
-        })
+        Ok(AgentLimits::default().within(self.agent_maximums().await?))
     }
 
     /// Whether the agent may have one more key: it must be the person's, still there, and under

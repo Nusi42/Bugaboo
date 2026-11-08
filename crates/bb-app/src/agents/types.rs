@@ -39,6 +39,18 @@ pub enum AgentAction {
     Stop,
 }
 
+/// Give an agent other limits.
+pub struct SetAgentLimits {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The agent.
+    pub id: AgentId,
+    /// The new limits; at least one each, and at most what the organization allows.
+    pub limits: AgentLimits,
+    /// The version the person saw.
+    pub version: i64,
+}
+
 /// Pause, resume or stop an agent.
 pub struct ChangeAgent {
     /// The secret of the session of the request.
@@ -110,6 +122,8 @@ pub struct AgentView {
     pub person: PersonRef,
     /// What it may do at most.
     pub limits: AgentLimits,
+    /// The most any agent can be given, when the view is of one agent; none in a list.
+    pub maximums: Option<AgentLimits>,
     /// Whether it is offered to another person who has not accepted yet.
     pub offered: bool,
     /// The version of the record.

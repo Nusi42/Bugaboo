@@ -3,7 +3,7 @@
 
 use bb_app::agents::AgentStore;
 use bb_app::auth::AccessKeyRecord;
-use bb_core::agent::{Agent, AgentState, LimitKind};
+use bb_core::agent::{Agent, AgentState, LimitKind, AgentLimits};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
@@ -294,6 +294,21 @@ impl AgentStore for AuthStorage {
         update_at(transaction, id, version, |update| {
             update.value(AgentRow::State, state.code());
             update.value(AgentRow::PausedFor, paused_for.map(LimitKind::code));
+        })
+        .await
+    }
+
+    async fn set_agent_limits(
+        transaction: &mut Transaction,
+        id: AgentId,
+        limits: AgentLimits,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        update_at(transaction, id, version, |update| {
+            update
+                .value(AgentRow::ChangesAMinute, limits.changes_a_minute)
+                .value(AgentRow::IssuesAtOnce, limits.issues_at_once)
+                .value(AgentRow::AttemptsOnOneIssue, limits.attempts_on_one_issue);
         })
         .await
     }

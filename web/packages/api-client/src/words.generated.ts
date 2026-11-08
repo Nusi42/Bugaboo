@@ -118,6 +118,15 @@ export const onlyIfTestWords = ["filled", "empty"] as const;
 /** Every word of `BriefPart`, in the order the server lists them. */
 export const briefPartWords = ["description", "steps-to-reproduce", "done-when"] as const;
 
+/** Every word of `RuleField`, in the order the server lists them. */
+export const ruleFieldWords = [
+  "labels",
+  "tags",
+  "type",
+  "duplicate-of",
+  "found-in-release",
+] as const;
+
 /** The members of `FieldBody` that are always there, as the server lists them. */
 export const fieldMembers = [
   "id",

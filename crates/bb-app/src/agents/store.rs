@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 
-use bb_core::agent::{Agent, AgentState, LimitKind};
+use bb_core::agent::{Agent, AgentState, LimitKind, AgentLimits};
 use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
 use jiff::Timestamp;
@@ -80,6 +80,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         /// Writes the state and the limit that caused it (only a pause by a limit has one), counts
         /// the version up and says whether the agent was at `version`.
         fn set_agent_state(id: AgentId, state: AgentState, paused_for: Option<LimitKind>, version: i64) -> bool;
+        /// Writes the limits, counts the version up and says whether the agent was at `version`.
+        fn set_agent_limits(id: AgentId, limits: AgentLimits, version: i64) -> bool;
         /// Offers the agent to a person (`Some`) or takes the offer back (`None`).
         fn offer_agent(id: AgentId, to: Option<UserId>, version: i64) -> bool;
         /// Hands the agent to the person who accepted it, counting the version up.

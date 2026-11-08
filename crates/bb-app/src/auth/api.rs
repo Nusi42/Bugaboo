@@ -67,6 +67,7 @@ use super::{
     SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery, SearchesQuery, SecondStep,
     SecondStepGap, SecondStepGapQuery, SeeServerStatusQuery, SendPartQuery, SendTestEmail,
     SessionEnded, SessionList, SessionsQuery, SetAiKey, SetFieldLevel, SetMailPassword,
+    MyAgentWork, MyAgentWorkQuery, SetAgentLimits,
     SetNeverSent, SetParent, SetPeopleLevel, SetProjectList, SettingList, SettingView,
     SettingsQuery, ShareChoicePage, ShareChoicesQuery, ShareSearch, SignIn, SignOut,
     SignOutEverywhere, SignUp, SignUpPolicy, SignUpPolicyQuery, StandingRulePage, StandingRuleView,
@@ -132,6 +133,7 @@ use super::{
     try_workflow, two_step, undo_run, unfollow_issue, unread_notifications, upload_state,
     use_workflow, web_addresses, what_goes_where, who_may_change, work_day_history, work_days,
     workflow_editor, workflows,
+    set_agent_limits,
 };
 
 use_cases! {
@@ -621,6 +623,8 @@ use_cases! {
     agent(AgentQuery) -> Authorized<AgentView>;
     /// Gives an agent another name.
     rename_agent(RenameAgent) -> Authorized<AgentView>;
+    /// Gives an agent other limits.
+    set_agent_limits(SetAgentLimits) -> Authorized<AgentView>;
     /// Pauses, resumes or stops an agent.
     change_agent(ChangeAgent) -> Authorized<AgentView>;
     /// Stops every agent of the person.

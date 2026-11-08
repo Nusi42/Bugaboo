@@ -17935,6 +17935,17 @@
                   "$ref": "#/components/schemas/AccessKeyBody"
                 },
                 "description": "The keys of the agent. Never the secret."
+              },
+              "maximums": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentLimitsBody",
+                    "description": "The most any agent can be given as its limits."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -18019,6 +18030,28 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "The version of the agent; send it back with a change."
+          }
+        }
+      },
+      "AgentLimitsBody": {
+        "type": "object",
+        "description": "How much an agent may do. Each is at least 1 and at most what the organization allows.",
+        "required": ["changes_a_minute", "issues_at_once", "attempts_on_one_issue"],
+        "properties": {
+          "attempts_on_one_issue": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Attempts it may make on one issue."
+          },
+          "changes_a_minute": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Changes it may make in one minute."
+          },
+          "issues_at_once": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Issues it may work on at once."
           }
         }
       },
@@ -18878,7 +18911,7 @@
       },
       "ChangeAgentBody": {
         "type": "object",
-        "description": "What to do to an agent: give it another name, or pause, resume or stop it. Exactly one of\n`name` and `action`.",
+        "description": "What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly\none of `name`, `limits` and `action`.",
         "required": ["version"],
         "properties": {
           "action": {
@@ -18886,6 +18919,17 @@
               {
                 "$ref": "#/components/schemas/AgentActionBody",
                 "description": "`pause`, `resume` or `stop`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limits": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentLimitsBody",
+                "description": "The new limits."
               },
               {
                 "type": "null"
@@ -23920,7 +23964,7 @@
       "MyAgentWorkBody": {
         "type": "object",
         "description": "The current work of the person's agents.",
-        "required": ["items", "truncated"],
+        "required": ["offered", "items", "truncated"],
         "properties": {
           "items": {
             "type": "array",
@@ -23928,6 +23972,13 @@
               "$ref": "#/components/schemas/MyWorkBody"
             },
             "description": "The work, newest first: what has not ended, and what was accepted by itself and not looked\nat yet."
+          },
+          "offered": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferedAgentBody"
+            },
+            "description": "The agents handed to the person that wait for them to accept."
           },
           "truncated": {
             "type": "boolean",
@@ -24831,6 +24882,25 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "OfferedAgentBody": {
+        "type": "object",
+        "description": "An agent another person handed to this person, who has not accepted it yet.",
+        "required": ["id", "name", "from"],
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person who hands it over, as *Who sees people* says for the person asking."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the agent."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
           }
         }
       },

@@ -196,6 +196,7 @@ const WORD_LISTS: [&str; 14] = [
     "NotificationTab",
     "OnlyIfTest",
     "BriefPart",
+    "RuleField",
 ];
 
 /// The schemas whose members that are always there the browser needs by name, with the name of the
@@ -646,6 +647,27 @@ pub(super) fn assistant_limits(sources: &[Source]) -> anyhow::Result<String> {
 export const assistantLimits = {{ turns: {turns}, question: {question}, turn: {turn} }} as const;
 "
     ))
+}
+
+/// The numbers of agents the browser app shows or checks, from the code that owns them: how long a
+/// standing rule lasts, how long before its end it is about to run out, and how many agents one
+/// person can have. They come from the linked `bb-core`, so no screen writes them a second time.
+pub(super) fn agents() -> String {
+    format!(
+        "{TS_HEADER}/** The days a standing rule lasts unless the person sets another end (`DEFAULT_RULE_DAYS`). */
+export const agentRuleDaysDefault = {default};
+/** The most days a standing rule can last, however often it is renewed (`MOST_RULE_DAYS`). */
+export const agentRuleDaysMost = {most};
+/** A standing rule is about to run out this many days before its end (`RULE_WARNING_DAYS`). */
+export const agentRuleWarningDays = {warning};
+/** The most agents one person can have (`MOST_AGENTS`). */
+export const agentsMost = {agents};
+",
+        default = bb_core::agent_work::DEFAULT_RULE_DAYS,
+        most = bb_core::agent_work::MOST_RULE_DAYS,
+        warning = bb_core::agent_work::RULE_WARNING_DAYS,
+        agents = bb_core::agent::MOST_AGENTS,
+    )
 }
 
 /// The words a search names its fields by, as constants for the browser client: the Issue ID

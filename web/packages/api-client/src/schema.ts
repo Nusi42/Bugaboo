@@ -4899,6 +4899,7 @@ export interface components {
     AgentBody: components["schemas"]["AgentItem"] & {
       /** @description The keys of the agent. Never the secret. */
       keys: components["schemas"]["AccessKeyBody"][];
+      maximums?: components["schemas"]["AgentLimitsBody"] | null;
     };
     /**
      * @description An agent in a list: the fields that can be asked for. An answer holds only those that were
@@ -4944,6 +4945,24 @@ export interface components {
        * @description The version of the agent; send it back with a change.
        */
       version?: number | null;
+    };
+    /** @description How much an agent may do. Each is at least 1 and at most what the organization allows. */
+    AgentLimitsBody: {
+      /**
+       * Format: int64
+       * @description Attempts it may make on one issue.
+       */
+      attempts_on_one_issue: number;
+      /**
+       * Format: int64
+       * @description Changes it may make in one minute.
+       */
+      changes_a_minute: number;
+      /**
+       * Format: int64
+       * @description Issues it may work on at once.
+       */
+      issues_at_once: number;
     };
     /** @description The agent that works on an issue and where its work is: the mark of a row of a list. */
     AgentMarkRefBody: {
@@ -5382,11 +5401,12 @@ export interface components {
       options: Record<string, unknown>;
     };
     /**
-     * @description What to do to an agent: give it another name, or pause, resume or stop it. Exactly one of
-     *     `name` and `action`.
+     * @description What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly
+     *     one of `name`, `limits` and `action`.
      */
     ChangeAgentBody: {
       action?: components["schemas"]["AgentActionBody"] | null;
+      limits?: components["schemas"]["AgentLimitsBody"] | null;
       /** @description The new name. */
       name?: string | null;
       /**
@@ -7888,6 +7908,8 @@ export interface components {
        *     at yet.
        */
       items: components["schemas"]["MyWorkBody"][];
+      /** @description The agents handed to the person that wait for them to accept. */
+      offered: components["schemas"]["OfferedAgentBody"][];
       /** @description Whether the list was cut at the most it holds. */
       truncated: boolean;
     };
@@ -8304,6 +8326,15 @@ export interface components {
       /** @description Whether the subject is offered there. */
       offered?: boolean | null;
       place?: components["schemas"]["PlaceRef"] | null;
+    };
+    /** @description An agent another person handed to this person, who has not accepted it yet. */
+    OfferedAgentBody: {
+      /** @description The person who hands it over, as *Who sees people* says for the person asking. */
+      from: components["schemas"]["PersonRef"];
+      /** @description The ID of the agent. */
+      id: string;
+      /** @description Its name. */
+      name: string;
     };
     /** @description Where a subject is offered after a change. */
     OffersBody: {

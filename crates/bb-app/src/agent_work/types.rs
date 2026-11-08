@@ -4,13 +4,14 @@
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
     AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, StopCause,
+    WaitsFor,
 };
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId,
 };
 use bb_core::workflow::StatusKey;
-use bb_policy::{Masked, PersonRef};
+use bb_policy::{Masked, PersonRef, crate, relations, IssueLine};
 use jiff::Timestamp;
 use serde::Serialize;
 
@@ -495,14 +496,27 @@ pub struct MyWorkItem {
     /// The work.
     pub work: WorkView,
     /// The issue, as the person may see it.
-    pub issue: crate::relations::IssueLine,
+    pub issue: IssueLine,
     /// What it waits for, when it waits for the person.
-    pub waits_for: Option<bb_core::agent_work::WaitsFor>,
+    pub waits_for: Option<WaitsFor>,
+}
+
+/// An agent another person handed to this person, who has not accepted it yet.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OfferedAgent {
+    /// The agent.
+    pub id: AgentId,
+    /// Its name.
+    pub name: String,
+    /// The person who hands it over, as *Who sees people* says for the person asking.
+    pub from: PersonRef,
 }
 
 /// The current work of the person's agents.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MyAgentWork {
+    /// The agents handed to the person that wait for them to accept.
+    pub offered: Vec<OfferedAgent>,
     /// The work, newest first.
     pub items: Vec<MyWorkItem>,
     /// Whether the list was cut at the most *My agents* shows.
