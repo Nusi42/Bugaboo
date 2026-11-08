@@ -147,7 +147,7 @@ tokens {
     size "size-number-field" "120px" phone="100%"
     // The least height of what a window of a hand-over or a review holds: the window does not grow and shrink, so its
     // top stays where it is whatever decision is chosen.
-    size "size-agent-window" "520px"
+    size "size-agent-window" "380px"
     // How a row gives out its width (the browser gives the fixed columns their token before the
     // title grows): where the box is narrower than the tokens, the title gives up room first, down to
     // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give

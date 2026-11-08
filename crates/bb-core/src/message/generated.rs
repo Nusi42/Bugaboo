@@ -195,6 +195,9 @@ pub const AGENT_WORK_BRIEF_EMPTY: MessageKey = MessageKey::new("agent-work.brief
 /// The message `agent-work.brief-hide`.
 pub const AGENT_WORK_BRIEF_HIDE: MessageKey = MessageKey::new("agent-work.brief-hide");
 
+/// The message `agent-work.brief-note-only`.
+pub const AGENT_WORK_BRIEF_NOTE_ONLY: MessageKey = MessageKey::new("agent-work.brief-note-only");
+
 /// The message `agent-work.brief-show`.
 pub const AGENT_WORK_BRIEF_SHOW: MessageKey = MessageKey::new("agent-work.brief-show");
 
@@ -297,9 +300,6 @@ pub const AGENT_WORK_PART_DESCRIPTION: MessageKey = MessageKey::new("agent-work.
 /// The message `agent-work.part-done-when`.
 pub const AGENT_WORK_PART_DONE_WHEN: MessageKey = MessageKey::new("agent-work.part-done-when");
 
-/// The message `agent-work.part-note`.
-pub const AGENT_WORK_PART_NOTE: MessageKey = MessageKey::new("agent-work.part-note");
-
 /// The message `agent-work.part-steps-to-reproduce`.
 pub const AGENT_WORK_PART_STEPS_TO_REPRODUCE: MessageKey =
     MessageKey::new("agent-work.part-steps-to-reproduce");
@@ -309,6 +309,9 @@ pub const AGENT_WORK_PLAN_ANSWER: MessageKey = MessageKey::new("agent-work.plan-
 
 /// The message `agent-work.plan-approve`.
 pub const AGENT_WORK_PLAN_APPROVE: MessageKey = MessageKey::new("agent-work.plan-approve");
+
+/// The message `agent-work.plan-approved`.
+pub const AGENT_WORK_PLAN_APPROVED: MessageKey = MessageKey::new("agent-work.plan-approved");
 
 /// The message `agent-work.plan-needs-approval`.
 pub const AGENT_WORK_PLAN_NEEDS_APPROVAL: MessageKey =
@@ -7915,6 +7918,15 @@ pub fn agent_work_attempt_started(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `agent-work.brief-with-note`.
+#[must_use]
+pub fn agent_work_brief_with_note(parts: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.brief-with-note"),
+        vec![("parts", Value::Text(parts.to_string()))],
+    )
+}
+
 /// The message `agent-work.ends`.
 #[must_use]
 pub fn agent_work_ends(date: impl std::fmt::Display) -> Message {
@@ -8053,15 +8065,6 @@ pub fn agent_work_missing_next(part: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `agent-work.plan-approved`.
-#[must_use]
-pub fn agent_work_plan_approved(person: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.plan-approved"),
-        vec![("person", Value::Text(person.to_string()))],
-    )
-}
-
 /// The message `agent-work.proposal-line`.
 #[must_use]
 pub fn agent_work_proposal_line(
@@ -8187,16 +8190,10 @@ pub fn agent_work_stopped_access_lost(
 
 /// The message `agent-work.stopped-agent-stopped`.
 #[must_use]
-pub fn agent_work_stopped_agent_stopped(
-    agent: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_stopped_agent_stopped(agent: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.stopped-agent-stopped"),
-        vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("person", Value::Text(person.to_string())),
-        ],
+        vec![("agent", Value::Text(agent.to_string()))],
     )
 }
 
@@ -15537,7 +15534,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "No note. The agent reads the description and the related issues.",
     ),
     ("agent-work.brief-hide", "Hide"),
+    ("agent-work.brief-note-only", "A note"),
     ("agent-work.brief-show", "Show"),
+    ("agent-work.brief-with-note", "{parts} and a note"),
     ("agent-work.budget", "Budget"),
     ("agent-work.budget-attempts", "Attempts on one issue"),
     ("agent-work.budget-cost", "Cost budget, in euros (optional)"),
@@ -15629,11 +15628,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.outcome.thrown-away", "Thrown away"),
     ("agent-work.part-description", "Description"),
     ("agent-work.part-done-when", "Done when"),
-    ("agent-work.part-note", "note"),
     ("agent-work.part-steps-to-reproduce", "Steps to reproduce"),
     ("agent-work.plan-answer", "Answer with the note"),
     ("agent-work.plan-approve", "Approve plan"),
-    ("agent-work.plan-approved", "Plan approved by {person}"),
+    ("agent-work.plan-approved", "The plan is approved."),
     ("agent-work.plan-needs-approval", "Plan needs approval"),
     ("agent-work.plan-note", "Note on the plan (optional)"),
     (
@@ -15722,7 +15720,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agent-work.stopped-agent-stopped",
-        "{person} stopped {agent}, and its work on this issue stopped with it.",
+        "{agent} was stopped, and its work on this issue stopped with it.",
     ),
     (
         "agent-work.stopped-handed-on",

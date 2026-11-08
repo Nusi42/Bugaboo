@@ -22,7 +22,7 @@ export const messages = {
   "agent-work.attempt-thrown-away": "thrown away",
   "agent-work.attempt-started": "Started {date}",
   "agent-work.attempt-ended": "Ended {date}",
-  "agent-work.plan-approved": "Plan approved by {person}",
+  "agent-work.plan-approved": "The plan is approved.",
   "agent-work.plan-waits": "The plan waits for your approval.",
   "agent-work.no-plan": "The agent has not reported a plan.",
   "agent-work.result-check-passed": "Check {label}: passed",
@@ -32,7 +32,7 @@ export const messages = {
   "agent-work.run-link": "Open the run of this attempt",
   "agent-work.gave-up": "{agent} gave up: {reason}",
   "agent-work.stopped-agent-stopped":
-    "{person} stopped {agent}, and its work on this issue stopped with it.",
+    "{agent} was stopped, and its work on this issue stopped with it.",
   "agent-work.stopped-access-lost": "{person} lost the right to agents, so {agent} stopped.",
   "agent-work.stopped-handed-on":
     "{agent} was given to another person, so its work on this issue stopped.",
@@ -133,7 +133,8 @@ export const messages = {
   "agent-work.part-description": "Description",
   "agent-work.part-steps-to-reproduce": "Steps to reproduce",
   "agent-work.part-done-when": "Done when",
-  "agent-work.part-note": "note",
+  "agent-work.brief-with-note": "{parts} and a note",
+  "agent-work.brief-note-only": "A note",
   "agent-work.brief-show": "Show",
   "agent-work.brief-hide": "Hide",
 } as const;

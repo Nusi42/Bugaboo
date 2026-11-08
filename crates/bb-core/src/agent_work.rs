@@ -66,7 +66,7 @@ crate::words_in_api!(AgentWorkState, "The state of the agent work on an issue.")
 words! {
     /// Why work on an issue stopped, when it stopped without a review and without the agent giving up.
     pub enum StopCause {
-        /// The person the agent works for stopped the agent, or every agent of theirs.
+        /// The agent was stopped: by its person, by an administrator, or with every agent of a person.
         AgentStopped => "agent-stopped",
         /// The person the agent works for lost the right to agents.
         AccessLost => "access-lost",

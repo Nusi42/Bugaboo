@@ -20,11 +20,7 @@ function endedWithoutResult(work: Work): boolean {
 
 /** Why the work stopped, by the cause the server recorded: one sentence for the one real cause. */
 const stopWords: Readonly<Record<NonNullable<Work["stopped_for"]>, (work: Work) => string>> = {
-  "agent-stopped": (work) =>
-    t("agent-work.stopped-agent-stopped", {
-      person: personName(work.agent_person),
-      agent: work.agent_name,
-    }),
+  "agent-stopped": (work) => t("agent-work.stopped-agent-stopped", { agent: work.agent_name }),
   "access-lost": (work) =>
     t("agent-work.stopped-access-lost", {
       person: personName(work.agent_person),

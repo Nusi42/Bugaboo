@@ -7,12 +7,17 @@ import { listText } from "../../shared/list-text.ts";
 import { briefPartText, type BriefLack, type Work } from "./agent-work.ts";
 import { budgetFacts } from "./budget-facts.ts";
 
-/** The parts of the brief the agent has: what the issue holds of the three, and the note with the answers. */
-function partsOf(work: Work, lacking: readonly BriefLack[]): string[] {
-  const held = briefPartWords
-    .filter((each) => !lacking.includes(each))
-    .map((each) => briefPartText(each));
-  return work.brief.length === 0 ? held : [...held, t("agent-work.part-note")];
+/** The parts of the brief the agent has, in one phrase: what the issue holds of the three, and the note with the answers. */
+function partsText(work: Work, lacking: readonly BriefLack[]): string {
+  const held = listText(
+    briefPartWords.filter((each) => !lacking.includes(each)).map((each) => briefPartText(each)),
+  );
+  if (work.brief.length === 0) {
+    return held === "" ? t("agent-work.brief-empty") : held;
+  }
+  return held === ""
+    ? t("agent-work.brief-note-only")
+    : t("agent-work.brief-with-note", { parts: held });
 }
 
 /**
@@ -30,14 +35,13 @@ export function WorkBrief({
 }) {
   const heading = useId();
   const [shown, setShown] = useState(false);
-  const parts = partsOf(work, lacking);
   return (
     <section {...partOf(part.agentWorkSection)} aria-labelledby={heading}>
       <h3 id={heading} {...partOf(part.agentWorkLabel)}>
         {t("agent-work.brief")}
       </h3>
       <p {...partOf(part.agentWorkParts)}>
-        <span>{parts.length === 0 ? t("agent-work.brief-empty") : listText(parts)}</span>
+        <span>{partsText(work, lacking)}</span>
         {work.brief.length === 0 ? null : (
           <Button
             look={buttonLook.quiet}

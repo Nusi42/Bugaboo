@@ -26,7 +26,7 @@ export function AttemptLines({
   return (
     <section {...partOf(part.agentWorkAttempt)} aria-labelledby={heading}>
       <AttemptHead id={heading} work={work} attempt={attempt} />
-      <PlanSteps work={work} attempt={attempt} />
+      <PlanSteps attempt={attempt} />
       <Results attempt={attempt} />
       <ReportedLine attempt={attempt} />
       <PlanApproval work={work} attempt={attempt} />

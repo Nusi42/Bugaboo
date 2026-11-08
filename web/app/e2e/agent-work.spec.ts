@@ -154,7 +154,7 @@ test("ai_34 approve plan lets the attempt start", async ({ page, server }) => {
   await page.goto(issueAddress(issue.key));
   await expect(page.getByText(t("agent-work.plan-waits"))).toBeVisible();
   await page.getByRole("button", { name: t("agent-work.plan-approve"), exact: true }).click();
-  await expect(page.getByText(t("agent-work.plan-approved", { person: ada.name }))).toBeVisible();
+  await expect(page.getByText(t("agent-work.plan-approved"))).toBeVisible();
   const approved = await agentWorkOf(admin, issue.key);
   expect(approved.work[0]?.attempts.map((attempt) => attempt.plan_approved)).toEqual([true]);
 });

@@ -10,7 +10,13 @@ export async function waitUntilStill(element: Locator): Promise<void> {
   const places: number[] = [];
   await expect
     .poll(async () => {
-      places.push(await topOf(element));
+      // A window that is not on the screen yet starts the count again.
+      const place = await topOf(element).catch(() => Number.NaN);
+      if (Number.isNaN(place)) {
+        places.length = 0;
+        return false;
+      }
+      places.push(place);
       return new Set(places.slice(-STILL_READINGS)).size === 1 && places.length >= STILL_READINGS;
     })
     .toBe(true);

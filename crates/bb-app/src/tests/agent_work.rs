@@ -16,6 +16,7 @@ use crate::agent_work::{
     AgentWorkQuery, HandOver, HandOverView, ReportAttempt, TakeWork, WorkView, hand_over,
     issue_agent_work, take_work,
 };
+use crate::agents::{AcceptAgent, HandAgent, accept_agent, hand_agent};
 use crate::auth::{AppError, Started};
 use crate::issues::{IssueQuery, issue};
 
@@ -320,4 +321,39 @@ pub(super) async fn report_attempt(
     )
     .await;
     crate::agent_work::report_attempt(ctx, input).await
+}
+
+#[tokio::test]
+async fn ai_33_open_work_stops_for_the_hand_on_when_another_person_accepts_the_agent() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let other = member(
+        &world,
+        "other@example.test",
+        StartingRole::TeamMember,
+        given.project,
+    )
+    .await?;
+    hand_agent(
+        &world.ctx(),
+        HandAgent {
+            session_token: given.team.session_token.clone(),
+            id: given.agent,
+            to: other.person.id,
+            version: 1,
+        },
+    )
+    .await?;
+    accept_agent(
+        &world.ctx(),
+        AcceptAgent {
+            session_token: other.session_token.clone(),
+            id: given.agent,
+        },
+    )
+    .await?;
+    let stored = world.store.lock().state.work.clone();
+    assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
+    assert_eq!(stored.works[0].stopped_for, Some(StopCause::HandedOn));
+    Ok(())
 }

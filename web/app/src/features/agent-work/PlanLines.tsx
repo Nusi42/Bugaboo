@@ -1,13 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
-import { personName } from "../../shared/person.ts";
 import { lastAttempt, planWaitsForYou, type Attempt, type Work } from "./agent-work.ts";
 import { ApprovePlan } from "./ApprovePlan.tsx";
 import { planSteps } from "./plan-steps.ts";
 
-/** The plan the agent reported as numbered steps, and who approved it. */
-export function PlanSteps({ work, attempt }: { readonly work: Work; readonly attempt: Attempt }) {
+/** The plan the agent reported as numbered steps, and that it is approved. */
+export function PlanSteps({ attempt }: { readonly attempt: Attempt }) {
   if (attempt.plan === null || attempt.plan === undefined) {
     return <p {...partOf(part.muted)}>{t("agent-work.no-plan")}</p>;
   }
@@ -19,9 +18,7 @@ export function PlanSteps({ work, attempt }: { readonly work: Work; readonly att
         ))}
       </ol>
       {attempt.plan_approved ? (
-        <p {...partOf(part.muted)}>
-          {t("agent-work.plan-approved", { person: personName(work.agent_person) })}
-        </p>
+        <p {...partOf(part.muted)}>{t("agent-work.plan-approved")}</p>
       ) : null}
     </div>
   );
