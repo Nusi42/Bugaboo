@@ -219,7 +219,8 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
     let made = shown.items.first().ok_or("no history")?;
     assert_eq!(made.app.as_deref(), Some("Claude Code"));
     assert!(made.agent.is_none());
-    // What the person does in the browser has no app.
+    // What the person does in the browser has no app, a moment later, so the newest is the first.
+    world.clock.advance(1);
     crate::issues::change_issue(
         &world.ctx(),
         crate::issues::ChangeIssue {

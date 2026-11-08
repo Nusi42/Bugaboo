@@ -60,6 +60,7 @@ impl<S: AuthStore> Walk for DatedHistory<'_, '_, '_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         let entries: Vec<_> = found.iter().map(|(entry, _)| entry.clone()).collect();
+        self.ctx.read_apps(self.reading, &entries).await?;
         let batch = self.ctx.batch_of(&entries, self.kinds).await?;
         let mut shaped = Vec::with_capacity(found.len());
         for (entry, key) in found {

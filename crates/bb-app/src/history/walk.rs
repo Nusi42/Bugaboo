@@ -43,14 +43,7 @@ impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
             .history_page(self.issue.id, self.kind, after.copied(), skip, limit)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let events: Vec<_> = rows.iter().map(|row| row.event).collect();
-        let apps = self
-            .ctx
-            .store()
-            .apps_of_events(&events)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        self.reading.apps.extend(apps);
+        self.ctx.read_apps(self.reading, &rows).await?;
         let batch = self.ctx.batch_of(&rows, self.kinds).await?;
         let mut shaped = Vec::with_capacity(rows.len());
         for row in &rows {
@@ -91,5 +84,24 @@ impl Reading<'_> {
             Some(bb_policy::PersonRef::Name { .. }) => self.apps.get(&event).cloned(),
             _ => None,
         }
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Reads the apps behind the events of `rows` into the reading, so every row of the page says
+    /// which app made it.
+    pub(super) async fn read_apps(
+        &self,
+        reading: &mut Reading<'_>,
+        rows: &[bb_core::history::HistoryEntry],
+    ) -> Result<(), AppError> {
+        let events: Vec<_> = rows.iter().map(|row| row.event).collect();
+        let apps = self
+            .store()
+            .apps_of_events(&events)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        reading.apps.extend(apps);
+        Ok(())
     }
 }
