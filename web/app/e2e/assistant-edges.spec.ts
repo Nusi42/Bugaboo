@@ -9,7 +9,7 @@ import {
   openAssistant,
   proposalCard as card,
   setUpAssistant,
-  switchProjectAiOff,
+  setProjectAi,
 } from "./support/assistant.ts";
 import { startFakeModel } from "./support/fake-model.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -22,6 +22,21 @@ import { layoutOf } from "./support/layout.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
+
+test("ai_10 asking waits for a question and says why", async ({ page, server }) => {
+  const model = await startFakeModel();
+  await setUpAssistant(server, model);
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  const panel = await openAssistant(page);
+  const send = panel.getByRole("button", { name: t("assistant.ask"), exact: true });
+  await expect(send).toBeDisabled();
+  await expect(panel.getByText(t("assistant.ask-empty"))).toBeVisible();
+  await panel.getByRole("textbox", { name: t("assistant.question") }).fill("What is open?");
+  await expect(send).toBeEnabled();
+  await expect(panel.getByText(t("assistant.ask-empty"))).toBeHidden();
+  await model.close();
+});
 
 test("ai_10 a question longer than the limit is refused with the sentence and never cut", async ({
   page,
@@ -62,7 +77,7 @@ test("ai_10 going to a place where AI is off keeps the panel and says so", async
   );
   const model = await startFakeModel();
   await setUpAssistant(server, model);
-  await switchProjectAiOff(server, "WEB");
+  await setProjectAi(server, "WEB", false);
   await page.setViewportSize({ width: 1800, height: 900 });
   await signIn(page, ada);
   await page.goto(paths.organizationSettings);
@@ -72,6 +87,8 @@ test("ai_10 going to a place where AI is off keeps the panel and says so", async
   await page.getByRole("link", { name: "Website" }).first().click();
   await expect(panel.getByText(t("assistant.off-here"))).toBeVisible();
   await expect(panel.getByRole("button", { name: t("assistant.ask"), exact: true })).toBeDisabled();
+  // The project follows the organization again, for the tests after this one.
+  await setProjectAi(server, "WEB", true);
   await model.close();
 });
 

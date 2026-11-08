@@ -14,6 +14,7 @@ use super::search_fields::{bob_with_a_role, every_field};
 use super::world::{Outcome, World};
 use crate::ai::assistant::apply_proposal;
 use crate::history::ChangeValue;
+use crate::issues::{ChangeIssue, change_issue};
 
 #[tokio::test]
 async fn ai_05_a_proposal_comes_with_the_words_of_the_history() -> Outcome {
@@ -130,5 +131,46 @@ async fn ai_05_people_in_a_proposal_are_worded_as_the_reader_may_see_them() -> O
         Some(ChangeValue::People { people }) => assert_eq!(people.len(), 1),
         other => return Err(format!("not people: {other:?}").into()),
     }
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_05_the_version_after_apply_is_the_one_the_write_made_and_undo_on_it_is_refused_later()
+-> Outcome {
+    let (world, key) = with_an_issue().await?;
+    will_call(
+        &world,
+        "update_issue",
+        json!({"issue": key, "version": 1, "priority": "high"}),
+    );
+    will_say(&world, "Proposed.");
+    let answer = ask(&world, question(&token(&world), "Make it high")).await?;
+    let proposal = answer.proposals.first().ok_or("no proposal")?;
+    let applied = apply_proposal(&world.ctx(), apply_of(&world, proposal))
+        .await?
+        .into_value();
+    // The write counted the issue from 1 to 2, and says so itself.
+    assert_eq!(applied.version, Some(2));
+    // Somebody else changes the issue right after: the version of the write is not read again.
+    change_issue(
+        &world.ctx(),
+        ChangeIssue {
+            title: Some("Theirs".to_owned()),
+            ..ChangeIssue::of(&token(&world), key.clone(), 2)
+        },
+    )
+    .await?;
+    let undo = change_issue(
+        &world.ctx(),
+        ChangeIssue {
+            priority: Some(bb_core::issue::Priority::Normal),
+            ..ChangeIssue::of(&token(&world), key, applied.version.ok_or("no version")?)
+        },
+    )
+    .await;
+    assert!(
+        matches!(undo, Err(crate::auth::AppError::Stale(_))),
+        "{undo:?}"
+    );
     Ok(())
 }

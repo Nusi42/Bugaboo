@@ -10,11 +10,45 @@ import {
   part,
   useLayout,
 } from "@bugaboo/ui";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { limits } from "./assistant.ts";
 import { codePointsOf } from "./code-points.ts";
+
+interface AskRowProps {
+  readonly phone: boolean;
+  readonly isPending: boolean;
+  readonly isDisabled: boolean;
+  /** Nothing is typed yet: the button waits and says why. */
+  readonly isEmpty: boolean;
+}
+
+/** The button that sends the question, with the reason when it waits for something to be typed. */
+function AskRow({ phone, isPending, isDisabled, isEmpty }: AskRowProps) {
+  const reasonId = useId();
+  const button = (
+    <SubmitButton
+      isPending={isPending}
+      isDisabled={isDisabled || isEmpty}
+      wide={phone}
+      {...(isEmpty ? { describedBy: reasonId } : {})}
+    >
+      {t("assistant.ask")}
+    </SubmitButton>
+  );
+  return (
+    <div {...partOf(part.row)}>
+      {isEmpty ? (
+        <span id={reasonId} {...partOf(part.muted)}>
+          {t("assistant.ask-empty")}
+        </span>
+      ) : null}
+      {/* On a computer the button that sends stands at the end (R6); on a phone it fills the width. */}
+      {phone ? button : <span {...partOf(part.rowEnd)}>{button}</span>}
+    </div>
+  );
+}
 
 export interface AskBoxProps {
   /** Sends the question. */
@@ -37,10 +71,15 @@ export function AskBox({ onAsk, isPending, isDisabled, error, answeredCount }: A
   // A question that was answered leaves the box empty; one that failed stays, to be sent again.
   const text = typed.after === answeredCount ? typed.text : "";
   const tooLong = codePointsOf(text.trim()) > limits.question;
+  // Nothing typed yet: the button waits, and says why.
+  const empty = text.trim().length === 0 && !isDisabled;
   const send = (
-    <SubmitButton isPending={isPending} isDisabled={isDisabled || tooLong} wide={phone}>
-      {t("assistant.ask")}
-    </SubmitButton>
+    <AskRow
+      phone={phone}
+      isPending={isPending}
+      isDisabled={isDisabled || tooLong}
+      isEmpty={empty}
+    />
   );
   return (
     <Form
@@ -67,10 +106,7 @@ export function AskBox({ onAsk, isPending, isDisabled, error, answeredCount }: A
             setTyped({ text: next, after: answeredCount });
           }}
         />
-        <div {...partOf(part.row)}>
-          {/* On a computer the button that sends stands at the end (R6); on a phone it fills the width. */}
-          {phone ? send : <span {...partOf(part.rowEnd)}>{send}</span>}
-        </div>
+        {send}
       </div>
     </Form>
   );

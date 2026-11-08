@@ -2,6 +2,7 @@ import { markSafeHtml } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import { limits } from "./assistant.ts";
+import { codePointsOf } from "./code-points.ts";
 import { turnsSent, type Turn } from "./conversation.ts";
 
 const said = (id: number): Turn => ({ id, from: "person", text: `question ${id}` });
@@ -30,7 +31,7 @@ describe("ai_10 the conversation lives in the open panel", () => {
 describe("ai_10 a turn is cut by characters", () => {
   it("keeps a picture character whole at the cut", () => {
     const long: Turn = { id: 0, from: "person", text: "\u{1F600}".repeat(limits.turn + 3) };
-    const counts = turnsSent([long]).map((one) => Array.from(one.text).length);
+    const counts = turnsSent([long]).map((one) => codePointsOf(one.text));
     expect(counts).toEqual([limits.turn]);
   });
 });

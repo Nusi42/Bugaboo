@@ -249,13 +249,13 @@ impl CommentStore for FakeStore {
         tx: &mut Tx,
         id: CommentId,
         deleted_at: Option<Timestamp>,
+        version: Option<Version>,
     ) -> Result<bool, FakeError> {
-        let Some(found) = tx
-            .state
-            .comments
-            .iter_mut()
-            .find(|found| found.id == id && found.deleted_at.is_some() != deleted_at.is_some())
-        else {
+        let Some(found) = tx.state.comments.iter_mut().find(|found| {
+            found.id == id
+                && found.deleted_at.is_some() != deleted_at.is_some()
+                && version.is_none_or(|version| found.version == version.get())
+        }) else {
             return Ok(false);
         };
         found.deleted_at = deleted_at;

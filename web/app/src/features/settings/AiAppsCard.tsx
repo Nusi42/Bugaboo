@@ -11,7 +11,9 @@ const APP_TOPICS = "ai-apps.";
 /** The explanation of *Let AI apps sign in*: one sentence, for the state the switch is in. */
 const APP_HELPS = {
   "ai-apps.enabled": (setting: Setting): string =>
-    setting.value === true ? t("ai-setup.apps-on") : t("ai-setup.apps-off"),
+    setting.value === true
+      ? t("setting.ai-apps.enabled.help-on")
+      : t("setting.ai-apps.enabled.help-off"),
 };
 
 /**

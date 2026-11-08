@@ -420,7 +420,7 @@ async fn qry_05_a_cursor_that_is_not_an_issue_the_person_reads_is_one_bad_cursor
         let ev = event(&mut data.source, 12);
         ChangeStore::record_change(storage, &ev, move |tx| {
             Box::pin(async move {
-                AuthStorage::set_issue_deleted(tx, trashed, Some(at(5)), at(5))
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(5)), at(5), None)
                     .await
                     .map(|_| ())
             })

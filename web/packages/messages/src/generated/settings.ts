@@ -104,7 +104,7 @@ export const messages = {
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",
   "ai-setup.key": "Key of the provider",
   "ai-setup.key-set": "A key is stored. Leave this empty to keep it.",
-  "ai-setup.key-none": "No key is stored. A model on your own computers may need none.",
+  "ai-setup.key-none": "No key is stored. A model on your own server may need none.",
   "ai-setup.key-remove": "Remove the key",
   "ai-setup.password": "Your password",
   "ai-setup.password-help": "Needed when you change the provider, the address or the key.",
@@ -117,7 +117,7 @@ export const messages = {
   "ai-setup.agreement-intro":
     "An outside provider gets the text of your issues. The law asks for a written agreement about personal data first.",
   "ai-setup.agreement-not-needed":
-    "The model runs on your own computers, so nothing leaves your organization and no agreement is needed.",
+    "The model runs on your own server, so nothing leaves your organization and no agreement is needed.",
   "ai-setup.agreement-text":
     "Your data goes to {provider}. Before AI is switched on, confirm that a data processing agreement with {provider} is in place.",
   "ai-setup.agreement-text-confirmed":
@@ -148,10 +148,6 @@ export const messages = {
   "ai-setup.switch-needs-agreement": "Confirm the agreement above before AI is switched on.",
   "ai-setup.apps": "AI apps",
   "ai-setup.apps-intro": "Outside AI apps that people connect to their accounts.",
-  "ai-setup.apps-on":
-    "People can connect AI apps to their accounts, and each app does at most what its person may do.",
-  "ai-setup.apps-off":
-    "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
   "ai-setup.addresses-intro":
     "Apps that run on the web sign in only from the web addresses you allow here. An app on a person’s own computer needs none.",
   "ai-setup.addresses-list": "Allowed web addresses",
@@ -395,29 +391,31 @@ export const messages = {
   "working-hours.who-not-allowed":
     "To see who holds it, you need both of these permissions: {manage}; {decide}.",
   "ai.provider.anthropic": "Anthropic",
-  "ai.provider.openai-compatible": "Other provider or own model",
-  "ai.provider.local-model": "A model on your own computers",
+  "ai.provider.openai-compatible": "Other provider or own server",
+  "ai.provider.local-model": "A model on your own server",
   "ai.provider.other": "A provider on the internet",
   "ai.country.anthropic": "United States",
-  "ai.country.local-model": "Nowhere: the data stays on your own computers",
+  "ai.country.local-model": "Nowhere: the data stays on your own server",
   "ai.country.other": "Not known to Bugaboo: ask the provider where it works",
   "setting.ai.enabled.name": "Use AI",
   "setting.ai.enabled.help":
-    "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",
+    "Switches AI on for the organization. AI works in a project only when the organization and the project both have it on.",
   "setting.ai.provider.name": "Provider",
   "setting.ai.provider.help":
-    "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model of your own is reached at the address you enter.",
+    "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model on your own server is reached at the web address you enter.",
   "setting.ai.model.name": "Model",
   "setting.ai.model.help": "The name of the model, as the provider writes it.",
   "setting.ai.address.name": "Address of the model",
   "setting.ai.address.help":
-    "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
+    "The web address of the model, like https://models.example.com/v1. A model on your own server may use http://; any other has to use https://.",
   "setting.ai-apps.enabled.name": "Let AI apps sign in",
-  "setting.ai-apps.enabled.help":
-    "On: people can connect AI apps to their accounts, and each app does at most what its person may do. Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
+  "setting.ai-apps.enabled.help-on":
+    "People can connect AI apps to their accounts, and each app does at most what its person may do.",
+  "setting.ai-apps.enabled.help-off":
+    "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help":
-    "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+    "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own server always gets the names each person may see.",
 } as const;
 
 register(messages);

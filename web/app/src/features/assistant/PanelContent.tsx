@@ -42,12 +42,13 @@ export function PanelContent({
   conversation,
   onClose,
 }: PanelContentProps) {
-  // On a phone what the panel looks at and where it answers from scroll with the turns, so the turns keep the screen.
+  // On a phone what the panel looks at and what is never sent scroll with the turns, so the turns keep the
+  // screen; where the answers come from always stays in view, as the panel promises (COMP-08).
   const phone = useLayout() === "phone";
   const top = (
     <div {...partOf(part.assistantTop)}>
       <LookingAt items={items} onLeaveOut={onLeaveOut} />
-      <WhereFrom status={status} />
+      {phone ? null : <WhereFrom status={status} />}
       <NeverSent />
     </div>
   );
@@ -66,7 +67,7 @@ export function PanelContent({
           <IconButton icon={iconName.close} label={t("assistant.close")} onPress={onClose} />
         )}
       </div>
-      {phone ? null : top}
+      {phone ? <WhereFrom status={status} /> : top}
       {here ? null : <Alert tone={alertTone.warning}>{t("assistant.off-here")}</Alert>}
       <div {...partOf(part.assistantBody)}>
         {phone ? top : null}

@@ -13,7 +13,7 @@ settings! {
         default: true,
         levels: [Organization],
         changed_by: Administrators,
-        help: message::SETTING_AI_APPS_ENABLED_HELP,
+        help: message::SETTING_AI_APPS_ENABLED_HELP_ON,
         lockable: false,
     }
 }

@@ -2,8 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { ada } from "./accounts.ts";
-import { openSession } from "./api.ts";
+import { ada, signInThroughApi } from "./accounts.ts";
 import { type FakeModel } from "./fake-model.ts";
 import { layoutOf } from "./layout.ts";
 import { box, dialog } from "./quick-search.ts";
@@ -11,10 +10,7 @@ import { type Instance } from "./server.ts";
 
 /** An administrator sets up the assistant with the fake model of a test and switches AI on. */
 export async function setUpAssistant(server: Instance, model: FakeModel): Promise<void> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   const changed = await admin.client.PUT("/api/v1/ai", {
     body: {
       provider: "openai-compatible",
@@ -35,10 +31,7 @@ export async function priorityAndVersion(
   server: Instance,
   key: string,
 ): Promise<{ readonly priority: string; readonly version: number }> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   const found = dataOf(
     await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
   );
@@ -100,10 +93,7 @@ export async function proposeCritical(
 /** Puts the priority of an issue back to Normal, so a picture of a proposal to raise it can be taken again. */
 export async function lowerToNormal(server: Instance, key: string): Promise<void> {
   const now = await priorityAndVersion(server, key);
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PATCH("/api/v1/issues/{issue}", {
     params: { path: { issue: key } },
     body: { version: now.version, priority: "normal" },
@@ -113,10 +103,7 @@ export async function lowerToNormal(server: Instance, key: string): Promise<void
 
 /** An administrator switches AI off for the organization again, so a test can set it up from the start. */
 export async function switchAiOff(server: Instance): Promise<void> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PUT("/api/v1/ai", { body: { enabled: false } });
   await admin.dispose();
 }
@@ -136,10 +123,7 @@ export async function changeTitleBehindTheScenes(
   title: string,
 ): Promise<void> {
   const now = await priorityAndVersion(server, key);
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PATCH("/api/v1/issues/{issue}", {
     params: { path: { issue: key } },
     body: { version: now.version, title },
@@ -149,10 +133,7 @@ export async function changeTitleBehindTheScenes(
 
 /** An administrator sets up an outside provider, confirms the agreement and switches AI on; nothing is called. */
 export async function setUpOutsideProvider(server: Instance): Promise<void> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PUT("/api/v1/ai", {
     body: {
       enabled: false,
@@ -169,10 +150,7 @@ export async function setUpOutsideProvider(server: Instance): Promise<void> {
 
 /** An administrator marks a built-in field Never sent to AI. */
 export async function markFieldNeverSent(server: Instance, field: string): Promise<void> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PUT("/api/v1/never-sent-to-ai/fields/{field}", {
     params: { path: { field } },
     body: { marked: true, version: 0 },
@@ -180,25 +158,23 @@ export async function markFieldNeverSent(server: Instance, field: string): Promi
   await admin.dispose();
 }
 
-/** An administrator switches AI off for one project, so the project has no assistant while the organization has it. */
-export async function switchProjectAiOff(server: Instance, project: string): Promise<void> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+/** An administrator switches AI off for one project (`false`), or lets it follow the organization again (`true`). */
+export async function setProjectAi(
+  server: Instance,
+  project: string,
+  followsOrganization: boolean,
+): Promise<void> {
+  const admin = await signInThroughApi(server, ada);
   await admin.client.PUT("/api/v1/projects/{project}/ai", {
     params: { path: { project } },
-    body: { enabled: false },
+    body: followsOrganization ? {} : { enabled: false },
   });
   await admin.dispose();
 }
 
 /** The comments of an issue as safe HTML, as the history has them now (a comment in the trash is not in it). */
 export async function commentTexts(server: Instance, key: string): Promise<readonly string[]> {
-  const admin = openSession(server.url);
-  await admin.client.POST("/api/v1/auth/sign-in", {
-    body: { email: ada.email, password: ada.password },
-  });
+  const admin = await signInThroughApi(server, ada);
   const found = dataOf(
     await admin.client.GET("/api/v1/issues/{issue}/history", {
       params: { path: { issue: key }, query: { tab: "comments", fields: "comment,html" } },
@@ -232,4 +208,15 @@ export async function saveOutsideProvider(page: Page): Promise<void> {
   await page.getByLabel(t("ai-setup.password")).fill(ada.password);
   await page.getByRole("button", { name: t("ai-setup.save") }).click();
   await expect(page.getByText(t("ai-setup.saved"))).toBeVisible();
+}
+
+/**
+ * Waits for the answer that says whether the assistant is at this place: a page where it is off shows no
+ * button either while that answer is still on its way, so a check that nothing is there counts only after it.
+ */
+export function assistantStatusAnswered(page: Page): Promise<unknown> {
+  return page.waitForResponse(
+    (answer) =>
+      new URL(answer.url()).pathname === "/api/v1/assistant" && answer.request().method() === "GET",
+  );
 }

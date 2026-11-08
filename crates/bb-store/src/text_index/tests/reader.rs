@@ -455,7 +455,7 @@ async fn iss_13_trashed_texts_leave_the_index_and_a_restored_one_comes_back() ->
             comment_id.into(),
             move |tx| {
                 Box::pin(async move {
-                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10))).await?;
+                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10)), None).await?;
                     Ok(())
                 })
             },
@@ -485,7 +485,7 @@ async fn iss_13_trashed_texts_leave_the_index_and_a_restored_one_comes_back() ->
             comment_id.into(),
             move |tx| {
                 Box::pin(async move {
-                    AuthStorage::set_comment_deleted(tx, comment_id, None).await?;
+                    AuthStorage::set_comment_deleted(tx, comment_id, None, None).await?;
                     Ok(())
                 })
             },
@@ -497,7 +497,7 @@ async fn iss_13_trashed_texts_leave_the_index_and_a_restored_one_comes_back() ->
         // The whole issue in the trash leaves the index with everything it had.
         changed_issue(storage, &mut source, id, move |tx| {
             Box::pin(async move {
-                AuthStorage::set_issue_deleted(tx, id, Some(at(13)), at(13)).await?;
+                AuthStorage::set_issue_deleted(tx, id, Some(at(13)), at(13), None).await?;
                 Ok(())
             })
         })
@@ -506,7 +506,7 @@ async fn iss_13_trashed_texts_leave_the_index_and_a_restored_one_comes_back() ->
         assert!(rows(storage).await?.is_empty());
         changed_issue(storage, &mut source, id, move |tx| {
             Box::pin(async move {
-                AuthStorage::set_issue_deleted(tx, id, None, at(15)).await?;
+                AuthStorage::set_issue_deleted(tx, id, None, at(15), None).await?;
                 Ok(())
             })
         })
@@ -630,7 +630,7 @@ async fn iss_13_readers_at_the_same_moment_leave_the_index_as_the_stored_texts_s
                     one.into(),
                     move |tx| {
                         Box::pin(async move {
-                            AuthStorage::set_comment_deleted(tx, one, Some(at(30))).await?;
+                            AuthStorage::set_comment_deleted(tx, one, Some(at(30)), None).await?;
                             Ok(())
                         })
                     },
@@ -689,7 +689,7 @@ async fn iss_13_a_second_writer_waits_for_the_first_and_then_reads_the_newest_te
             comment_id.into(),
             move |tx| {
                 Box::pin(async move {
-                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10))).await?;
+                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10)), None).await?;
                     Ok(())
                 })
             },

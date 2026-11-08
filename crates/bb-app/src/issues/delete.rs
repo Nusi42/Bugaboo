@@ -5,7 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
 use bb_core::issue::Issue;
-use bb_core::version::counted_up;
+use bb_core::version::{Version, counted_up};
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
@@ -68,20 +68,24 @@ pub async fn delete_issue<S: AuthStore>(
     )?;
     let why = Why::default();
     let stopped = why.clone();
-    let (expected, project, editor) = (input.version, issue.project, actor.person.id);
+    let (expected, project, editor) = (
+        input.version.map(Version::new),
+        issue.project,
+        actor.person.id,
+    );
+    // Nothing changed with a version given means somebody changed the issue since.
+    let missed = if expected.is_some() {
+        ErrorCode::VersionChanged
+    } else {
+        ErrorCode::NotFound
+    };
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if let Some(expected) = expected {
-                    let stored = S::issue_in(transaction, id).await?;
-                    if stored.is_some_and(|stored| stored.version != expected) {
-                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                    }
-                }
-                if S::set_issue_deleted(transaction, id, Some(now), now).await? {
+                if S::set_issue_deleted(transaction, id, Some(now), now, expected).await? {
                     Ok(())
                 } else {
-                    Err(stopped.stop::<S>(ErrorCode::NotFound))
+                    Err(stopped.stop::<S>(missed))
                 }
             })
         })
@@ -133,7 +137,7 @@ pub async fn restore_issue<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::set_issue_deleted(transaction, id, None, now).await? {
+                if !S::set_issue_deleted(transaction, id, None, now, None).await? {
                     return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
                 // An issue whose workflow lacks its status starts again, with its history.

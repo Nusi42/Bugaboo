@@ -13,6 +13,8 @@ export interface SubmitButtonProps {
   readonly isDisabled?: boolean;
   /** The ID of the form it sends, when it stands outside it (the footer of a window). */
   readonly form?: string;
+  /** The ID of the note that says why the button waits. */
+  readonly describedBy?: string;
 }
 
 /** The one button of a form that does what the form is for: it sends the form. */
@@ -22,6 +24,7 @@ export function SubmitButton({
   isPending = false,
   isDisabled = false,
   form,
+  describedBy,
 }: SubmitButtonProps) {
   return (
     <Button
@@ -31,6 +34,7 @@ export function SubmitButton({
       isPending={isPending}
       isDisabled={isDisabled}
       {...(form === undefined ? {} : { form })}
+      {...(describedBy === undefined ? {} : { "aria-describedby": describedBy })}
     >
       {children}
     </Button>

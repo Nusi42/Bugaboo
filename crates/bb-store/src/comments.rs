@@ -214,6 +214,7 @@ impl CommentStore for AuthStorage {
         transaction: &mut Transaction,
         id: CommentId,
         deleted_at: Option<Timestamp>,
+        version: Option<Version>,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -221,6 +222,9 @@ impl CommentStore for AuthStorage {
             .value(CommentRow::DeletedAt, deleted_at.map(to_micros))
             .value(CommentRow::Version, Expr::col(CommentRow::Version).add(1))
             .and_where(Expr::col(CommentRow::Id).eq(id.stored()));
+        if let Some(version) = version {
+            update.and_where(Expr::col(CommentRow::Version).eq(version.get()));
+        }
         // Only a comment that is where the change expects it: not in the trash to put it there,
         // in the trash to take it out.
         update.and_where(if deleted_at.is_some() {

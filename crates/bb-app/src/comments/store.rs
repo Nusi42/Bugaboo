@@ -43,8 +43,14 @@ pub trait CommentStore: IssueStore + 'static {
         /// Keeps an earlier text of a comment.
         fn insert_comment_version(version: &CommentVersion) -> ();
         /// Puts a comment into the trash (a date) or takes it out (`None`), counts its version up,
-        /// and says whether the comment was there.
-        fn set_comment_deleted(id: CommentId, deleted_at: Option<Timestamp>) -> bool;
+        /// and says whether the comment was there. Given a `version`, only a comment still at that
+        /// version is changed, in the same statement, so a change that commits meanwhile is never
+        /// put into the trash.
+        fn set_comment_deleted(
+            id: CommentId,
+            deleted_at: Option<Timestamp>,
+            version: Option<Version>
+        ) -> bool;
         /// Makes these the mentions of a comment: the ones that stay keep the date they were read.
         fn replace_mentions(comment: CommentId, mentions: &[Mention]) -> ();
     }

@@ -6,6 +6,7 @@ import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import {
   assistantButton,
+  assistantStatusAnswered,
   flip,
   openAssistant,
   quickEntryOfTheAssistant,
@@ -29,7 +30,9 @@ test("ai_02 with AI off there is no assistant button and administrators see set 
   server,
 }) => {
   await signIn(page, ada);
+  const answered = assistantStatusAnswered(page);
   await page.goto(issueAddress("WEB-1"));
+  await answered;
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(assistantButton(page)).toHaveCount(0);
   // Quick search offers no entry for the assistant either.

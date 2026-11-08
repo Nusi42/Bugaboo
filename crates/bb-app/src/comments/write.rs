@@ -378,20 +378,20 @@ pub async fn delete_comment<S: AuthStore>(
         .await?;
     let (id, now, why) = (plan.comment.id, ctx.now(), Why::default());
     let stopped = why.clone();
-    let expected = input.version;
+    let expected = input.version.map(Version::new);
+    // Nothing changed with a version given means somebody changed the comment since.
+    let missed = if expected.is_some() {
+        ErrorCode::VersionChanged
+    } else {
+        ErrorCode::NotFound
+    };
     ctx.store()
         .record_change(&plan.event, move |transaction| {
             Box::pin(async move {
-                if let Some(expected) = expected {
-                    let stored = S::comment_in(transaction, id).await?;
-                    if stored.is_some_and(|stored| stored.version != expected) {
-                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                    }
-                }
-                if S::set_comment_deleted(transaction, id, Some(now)).await? {
+                if S::set_comment_deleted(transaction, id, Some(now), expected).await? {
                     Ok(())
                 } else {
-                    Err(stopped.stop::<S>(ErrorCode::NotFound))
+                    Err(stopped.stop::<S>(missed))
                 }
             })
         })
@@ -423,7 +423,7 @@ pub async fn restore_comment<S: AuthStore>(
     ctx.store()
         .record_change(&plan.event, move |transaction| {
             Box::pin(async move {
-                if S::set_comment_deleted(transaction, id, None).await? {
+                if S::set_comment_deleted(transaction, id, None, None).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::NotFound))

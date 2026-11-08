@@ -1,10 +1,13 @@
 //! Counting the version of an issue up, on both databases (ADR-0017): every way of doing it adds
 //! one to the version and sets the date the issue changed, and the guards say what they promise.
 
+use bb_app::comments::CommentStore as _;
 use bb_app::issues::{InTrash, IssueStore as _};
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_core::id::IdSource;
+use bb_core::comment::Comment;
+use bb_core::id::{CommentId, IdSource, UserId};
 use bb_core::readable_id::IssueCode;
+use bb_core::version::{FIRST_VERSION, Version};
 use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 
@@ -73,9 +76,9 @@ async fn adr_0017_every_count_up_adds_one_and_sets_the_date() -> TestResult {
         // The trash and the way out of it count, with the date.
         for (deleted_at, now, version) in [(Some(at(40)), at(40), 5), (None, at(50), 7)] {
             changed(storage, &mut source, move |tx| {
-                Box::pin(
-                    async move { AuthStorage::set_issue_deleted(tx, issue, deleted_at, now).await },
-                )
+                Box::pin(async move {
+                    AuthStorage::set_issue_deleted(tx, issue, deleted_at, now, None).await
+                })
             })
             .await?;
             assert_eq!(version_and_date(storage, issue).await?, (version, now));
@@ -99,6 +102,81 @@ async fn adr_0017_every_count_up_adds_one_and_sets_the_date() -> TestResult {
                 assert_eq!(counted, Some(6));
                 assert_eq!(version_and_date(storage, issue).await?, (6, at(46)));
             }
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01_the_trash_takes_an_issue_only_at_the_version_given_in_the_same_statement()
+-> TestResult {
+    each_database("iss_01_trash_at_version", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let issue = world.issues[0].id;
+        // A change committed between the person's look and the write: the version moved on.
+        for (version, taken) in [(9, false), (1, true)] {
+            let done = changed(storage, &mut source, move |tx| {
+                Box::pin(async move {
+                    AuthStorage::set_issue_deleted(
+                        tx,
+                        issue,
+                        Some(at(40)),
+                        at(40),
+                        Some(Version::new(version)),
+                    )
+                    .await
+                })
+            })
+            .await?;
+            assert_eq!(done, taken, "at version {version}");
+        }
+        assert_eq!(version_and_date(storage, issue).await?, (2, at(40)));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01_the_trash_takes_a_comment_only_at_the_version_given_in_the_same_statement()
+-> TestResult {
+    each_database("iss_01_comment_trash_at_version", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let said = Comment {
+            id: CommentId::generate(&mut source)?,
+            issue: world.issues[0].id,
+            author: UserId::generate(&mut source),
+            text: "Looks fine.".to_owned(),
+            created_at: at(2),
+            edited_at: None,
+            deleted_at: None,
+            version: FIRST_VERSION,
+        };
+        let id = said.id;
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::insert_comment(tx, &said).await })
+        })
+        .await?;
+        for (version, taken) in [(9, false), (FIRST_VERSION, true)] {
+            let done = changed(storage, &mut source, move |tx| {
+                Box::pin(async move {
+                    AuthStorage::set_comment_deleted(
+                        tx,
+                        id,
+                        Some(at(40)),
+                        Some(Version::new(version)),
+                    )
+                    .await
+                })
+            })
+            .await?;
+            assert_eq!(done, taken, "at version {version}");
         }
         Ok(())
     })

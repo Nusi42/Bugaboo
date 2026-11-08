@@ -551,12 +551,16 @@ impl IssueStore for AuthStorage {
         id: IssueId,
         deleted_at: Option<Timestamp>,
         now: Timestamp,
+        version: Option<Version>,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(IssueRow::Table)
             .value(IssueRow::DeletedAt, deleted_at.map(to_micros));
         counting_up(&mut update, now).and_where(Expr::col(IssueRow::Id).eq(id.stored()));
+        if let Some(version) = version {
+            update.and_where(Expr::col(IssueRow::Version).eq(version.get()));
+        }
         // Only an issue that is where the change expects it: not in the trash to put it there,
         // in the trash to take it out.
         update.and_where(if deleted_at.is_some() {

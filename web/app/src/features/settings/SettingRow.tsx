@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
+import { ControlWithHint } from "./ControlWithHint.tsx";
 import { SettingControl } from "./SettingControl.tsx";
 import { isBox, sourceNote, wordsOf } from "./texts.ts";
 
@@ -60,10 +61,7 @@ function WithHint({
 }) {
   return (
     <div {...partOf(part.stack)}>
-      <div {...partOf(part.settingsControl)}>
-        {children}
-        <p {...partOf(part.settingsHelp)}>{help ?? wordsOf(setting.help_key)}</p>
-      </div>
+      <ControlWithHint help={help ?? wordsOf(setting.help_key)}>{children}</ControlWithHint>
       {sourceNote(setting) === undefined ? null : (
         <p {...partOf(part.settingsSource)}>{sourceNote(setting)}</p>
       )}

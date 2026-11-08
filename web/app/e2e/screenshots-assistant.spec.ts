@@ -6,6 +6,7 @@ import {
   ask,
   assistantButton,
   assistantPanel,
+  assistantStatusAnswered,
   closePanelButton,
   lowerToNormal,
   markFieldNeverSent,
@@ -39,7 +40,9 @@ function card(page: Parameters<typeof assistantPanel>[0]) {
 test("AI is off: no button, and the administrator's item", async ({ page }) => {
   await signIn(page, ada);
   await inFourChosenThemes(page, "ai-off", MILESTONE, paths.appearance, async () => {
+    const answered = assistantStatusAnswered(page);
     await page.goto(issueAddress("WEB-1"));
+    await answered;
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(assistantButton(page)).toHaveCount(0);
   });

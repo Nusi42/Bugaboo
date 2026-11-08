@@ -120,7 +120,7 @@ function Outcome({ state, onUndo }: Pick<ProposalCardProps, "state" | "onUndo">)
     return (
       <>
         <div {...partOf(part.row)}>
-          <output>{t("assistant.card.saved")}</output>
+          <output {...partOf(part.muted)}>{t("assistant.card.saved")}</output>
           {onUndo === undefined ? null : (
             <Button look={buttonLook.quiet} onPress={onUndo}>
               {t("common.undo")}

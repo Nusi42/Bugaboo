@@ -142,7 +142,7 @@ async fn arch_db_parity_the_sum_of_a_search_leaves_out_the_entries_of_an_issue_i
         // Into the trash: its entries stay, but no search finds the issue, so its minutes are not summed.
         ChangeStore::record_change(storage, &event(&mut data.source, 8), move |tx| {
             Box::pin(async move {
-                AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9)).await?;
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9), None).await?;
                 Ok(())
             })
         })

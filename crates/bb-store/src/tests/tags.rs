@@ -153,7 +153,7 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
                 for link in &links {
                     AuthStorage::insert_issue_tag(tx, link).await?;
                 }
-                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3)).await?;
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3), None).await?;
                 Ok(())
             })
         })
@@ -433,7 +433,7 @@ async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offe
                 for link in &links {
                     AuthStorage::insert_issue_label(tx, link).await?;
                 }
-                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3)).await?;
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3), None).await?;
                 Ok(())
             })
         })

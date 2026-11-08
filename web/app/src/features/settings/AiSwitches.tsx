@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Switch, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { useChangeAi, type AiSetup } from "./ai.ts";
+import { SwitchBox } from "./ControlWithHint.tsx";
 
 /**
  * The two switches of the setup: whether AI is on for the organization (off at the start, AI-02), and
@@ -15,34 +16,27 @@ export function AiSwitches({ setup }: { readonly setup: AiSetup }) {
   const outside = setup.agreement_status !== "not-needed";
   return (
     <div {...partOf(part.stack)}>
-      <div {...partOf(part.box)}>
-        <div {...partOf(part.settingsControl)}>
-          <Switch
-            label={t("setting.ai.enabled.name")}
-            isSelected={setup.enabled}
-            onChange={(enabled) => {
-              change.mutate({ body: { enabled } });
-            }}
-          />
-          <p {...partOf(part.settingsHelp)}>{t("setting.ai.enabled.help")}</p>
-        </div>
+      <SwitchBox
+        label={t("setting.ai.enabled.name")}
+        isSelected={setup.enabled}
+        onChange={(enabled) => {
+          change.mutate({ body: { enabled } });
+        }}
+        help={t("setting.ai.enabled.help")}
+      >
         {waitsForAgreement ? (
           <Alert tone={alertTone.warning}>{t("ai-setup.switch-needs-agreement")}</Alert>
         ) : null}
-      </div>
+      </SwitchBox>
       {outside ? (
-        <div {...partOf(part.box)}>
-          <div {...partOf(part.settingsControl)}>
-            <Switch
-              label={t("setting.ai.send-names.name")}
-              isSelected={setup.send_names}
-              onChange={(sendNames) => {
-                change.mutate({ body: { send_names: sendNames } });
-              }}
-            />
-            <p {...partOf(part.settingsHelp)}>{t("setting.ai.send-names.help")}</p>
-          </div>
-        </div>
+        <SwitchBox
+          label={t("setting.ai.send-names.name")}
+          isSelected={setup.send_names}
+          onChange={(sendNames) => {
+            change.mutate({ body: { send_names: sendNames } });
+          }}
+          help={t("setting.ai.send-names.help")}
+        />
       ) : null}
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </div>

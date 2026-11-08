@@ -102,8 +102,14 @@ pub trait IssueStore: ProjectStore + 'static {
         fn replace_assigned_people(issue: IssueId, assigned_people: &[AssignedPerson]) -> ();
         /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up
         /// and sets the date it changed (see [`Self::count_issue_up`]), and says whether the issue
-        /// was there.
-        fn set_issue_deleted(id: IssueId, deleted_at: Option<Timestamp>, now: Timestamp) -> bool;
+        /// was there. Given a `version`, only an issue still at that version is changed, in the
+        /// same statement, so a change that commits meanwhile is never put into the trash.
+        fn set_issue_deleted(
+            id: IssueId,
+            deleted_at: Option<Timestamp>,
+            now: Timestamp,
+            version: Option<Version>
+        ) -> bool;
         /// Gives out the next counting number of a project: the number after the last one given
         /// out, which is stored. Two writers wait for each other, so no number is skipped or
         /// given twice.

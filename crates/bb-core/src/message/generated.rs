@@ -221,12 +221,6 @@ pub const AI_SETUP_APPS: MessageKey = MessageKey::new("ai-setup.apps");
 /// The message `ai-setup.apps-intro`.
 pub const AI_SETUP_APPS_INTRO: MessageKey = MessageKey::new("ai-setup.apps-intro");
 
-/// The message `ai-setup.apps-off`.
-pub const AI_SETUP_APPS_OFF: MessageKey = MessageKey::new("ai-setup.apps-off");
-
-/// The message `ai-setup.apps-on`.
-pub const AI_SETUP_APPS_ON: MessageKey = MessageKey::new("ai-setup.apps-on");
-
 /// The message `ai-setup.intro`.
 pub const AI_SETUP_INTRO: MessageKey = MessageKey::new("ai-setup.intro");
 
@@ -562,6 +556,9 @@ pub const ASSIGNMENTS_WHERE: MessageKey = MessageKey::new("assignments.where");
 
 /// The message `assistant.ask`.
 pub const ASSISTANT_ASK: MessageKey = MessageKey::new("assistant.ask");
+
+/// The message `assistant.ask-empty`.
+pub const ASSISTANT_ASK_EMPTY: MessageKey = MessageKey::new("assistant.ask-empty");
 
 /// The message `assistant.button`.
 pub const ASSISTANT_BUTTON: MessageKey = MessageKey::new("assistant.button");
@@ -5624,9 +5621,13 @@ pub const SETTING_AGENTS_RULE_DAYS_HELP: MessageKey =
 pub const SETTING_AGENTS_RULE_DAYS_NAME: MessageKey =
     MessageKey::new("setting.agents.rule-days.name");
 
-/// The message `setting.ai-apps.enabled.help`.
-pub const SETTING_AI_APPS_ENABLED_HELP: MessageKey =
-    MessageKey::new("setting.ai-apps.enabled.help");
+/// The message `setting.ai-apps.enabled.help-off`.
+pub const SETTING_AI_APPS_ENABLED_HELP_OFF: MessageKey =
+    MessageKey::new("setting.ai-apps.enabled.help-off");
+
+/// The message `setting.ai-apps.enabled.help-on`.
+pub const SETTING_AI_APPS_ENABLED_HELP_ON: MessageKey =
+    MessageKey::new("setting.ai-apps.enabled.help-on");
 
 /// The message `setting.ai-apps.enabled.name`.
 pub const SETTING_AI_APPS_ENABLED_NAME: MessageKey =
@@ -14807,7 +14808,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-setup.agreement-not-needed",
-        "The model runs on your own computers, so nothing leaves your organization and no agreement is needed.",
+        "The model runs on your own server, so nothing leaves your organization and no agreement is needed.",
     ),
     (
         "ai-setup.agreement-sentence",
@@ -14832,21 +14833,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Outside AI apps that people connect to their accounts.",
     ),
     (
-        "ai-setup.apps-off",
-        "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
-    ),
-    (
-        "ai-setup.apps-on",
-        "People can connect AI apps to their accounts, and each app does at most what its person may do.",
-    ),
-    (
         "ai-setup.intro",
         "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it. The guide for your people on what the assistant can and cannot do is linked here once it is published.",
     ),
     ("ai-setup.key", "Key of the provider"),
     (
         "ai-setup.key-none",
-        "No key is stored. A model on your own computers may need none.",
+        "No key is stored. A model on your own server may need none.",
     ),
     ("ai-setup.key-remove", "Remove the key"),
     (
@@ -14978,17 +14971,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai.country.anthropic", "United States"),
     (
         "ai.country.local-model",
-        "Nowhere: the data stays on your own computers",
+        "Nowhere: the data stays on your own server",
     ),
     (
         "ai.country.other",
         "Not known to Bugaboo: ask the provider where it works",
     ),
     ("ai.provider.anthropic", "Anthropic"),
-    ("ai.provider.local-model", "A model on your own computers"),
+    ("ai.provider.local-model", "A model on your own server"),
     (
         "ai.provider.openai-compatible",
-        "Other provider or own model",
+        "Other provider or own server",
     ),
     ("ai.provider.other", "A provider on the internet"),
     ("app.name", "Bugaboo"),
@@ -15067,6 +15060,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.who-group", "Group {name}"),
     ("assistant.answered", "The assistant gave answer {count}."),
     ("assistant.ask", "Ask"),
+    ("assistant.ask-empty", "Type a question first."),
     ("assistant.button", "Assistant"),
     ("assistant.card.apply", "Apply"),
     ("assistant.card.change", "{field}: {before} → {after}"),
@@ -15815,7 +15809,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.ai.address-not-encrypted",
-        "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+        "A web address on the internet must start with https://. Only a model on your own server may use http://.",
     ),
     (
         "error.ai.agreement-needed",
@@ -19670,18 +19664,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Days until a standing rule ends",
     ),
     (
-        "setting.ai-apps.enabled.help",
-        "On: people can connect AI apps to their accounts, and each app does at most what its person may do. Off: no AI app can connect, and the apps people allowed before are refused at their next call. Nothing they allowed is deleted, so switching this on again brings them back.",
+        "setting.ai-apps.enabled.help-off",
+        "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
+    ),
+    (
+        "setting.ai-apps.enabled.help-on",
+        "People can connect AI apps to their accounts, and each app does at most what its person may do.",
     ),
     ("setting.ai-apps.enabled.name", "Let AI apps sign in"),
     (
         "setting.ai.address.help",
-        "Where the model answers, like https://models.example.com/v1. A model on your own computers may use http://; any other address needs https://.",
+        "The web address of the model, like https://models.example.com/v1. A model on your own server may use http://; any other has to use https://.",
     ),
     ("setting.ai.address.name", "Address of the model"),
     (
         "setting.ai.enabled.help",
-        "Switches AI on for the organization, or for one project. AI works in a project only when the organization and the project both have it on.",
+        "Switches AI on for the organization. AI works in a project only when the organization and the project both have it on.",
     ),
     ("setting.ai.enabled.name", "Use AI"),
     (
@@ -19691,12 +19689,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ai.model.name", "Model"),
     (
         "setting.ai.provider.help",
-        "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model of your own is reached at the address you enter.",
+        "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model on your own server is reached at the web address you enter.",
     ),
     ("setting.ai.provider.name", "Provider"),
     (
         "setting.ai.send-names.help",
-        "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+        "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own server always gets the names each person may see.",
     ),
     ("setting.ai.send-names.name", "Send names of people"),
     (

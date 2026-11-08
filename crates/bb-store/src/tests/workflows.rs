@@ -269,7 +269,9 @@ async fn wf_02_the_live_issues_of_some_projects_and_types_are_found() -> TestRes
         let trashed = world.issues[0].id;
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                assert!(AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9)).await?);
+                assert!(
+                    AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9), None).await?
+                );
                 Ok(())
             })
         })

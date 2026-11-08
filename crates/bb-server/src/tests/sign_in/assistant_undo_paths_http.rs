@@ -66,6 +66,47 @@ async fn ai_05_undo_after_start_timer_names_the_timer_and_throws_it_away() -> Te
 }
 
 #[tokio::test]
+async fn ai_05_undo_of_the_timer_stops_when_the_timer_changed_since() -> TestResult {
+    each_database("ai_05_undo_timer_stale_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let set = ada.send("PUT", AI, Some(local_model_on())).await?;
+        assert_eq!(set.status, StatusCode::OK, "{}", set.body);
+        let first = key_of(&site.create(&mut ada, "First").await?)?;
+        let second = key_of(&site.create(&mut ada, "Second").await?)?;
+        let started = ask_and_apply(
+            &rig,
+            &mut ada,
+            "Start my timer",
+            "start_timer",
+            json!({"issue": first}),
+        )
+        .await?;
+        let (_, version) = made_of(&started)?;
+        // The person moves the timer to another issue: it is a new version of the timer.
+        rig.clock.advance(5);
+        let moved = ada
+            .send(
+                "POST",
+                "/api/v1/me/timer/switch",
+                Some(json!({"issue": second, "version": version})),
+            )
+            .await?;
+        assert!(moved.status.is_success(), "{}", moved.body);
+        let stale = ada
+            .send(
+                "POST",
+                "/api/v1/me/timer/throw-away",
+                Some(json!({"version": version})),
+            )
+            .await?;
+        assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_05_undo_of_a_new_issue_deletes_it_and_stops_when_it_changed_since() -> TestResult {
     each_database("ai_05_undo_issue_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
@@ -132,15 +173,24 @@ async fn ai_05_undo_of_a_comment_stops_when_it_changed_since() -> TestResult {
         )
         .await?;
         let (id, version) = made_of(&made)?;
-        // A version that is not the comment's any more stops the removal.
+        // The comment changes for real (into the trash and out again), so its version moved on.
+        let away = ada
+            .send("DELETE", &format!("/api/v1/comments/{id}"), None)
+            .await?;
+        assert_eq!(away.status, StatusCode::NO_CONTENT, "{}", away.body);
+        let back = ada
+            .send("POST", &format!("/api/v1/comments/{id}/restore"), None)
+            .await?;
+        assert_eq!(back.status, StatusCode::OK, "{}", back.body);
         let stale = ada
             .send(
                 "DELETE",
-                &format!("/api/v1/comments/{id}?version={}", version + 1),
+                &format!("/api/v1/comments/{id}?version={version}"),
                 None,
             )
             .await?;
         assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
+        let version = back.body["version"].as_i64().ok_or("no version")?;
         let gone = ada
             .send(
                 "DELETE",

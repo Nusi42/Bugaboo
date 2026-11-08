@@ -34,6 +34,7 @@ export const messages = {
   "assistant.working": "The assistant is working on it…",
   "assistant.question": "Your question",
   "assistant.question-limit": "At most {count, number} characters.",
+  "assistant.ask-empty": "Type a question first.",
   "assistant.question-too-long":
     "This question is longer than {count, number} characters. Shorten it to send it.",
   "assistant.off-here":

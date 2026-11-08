@@ -740,7 +740,7 @@ export const messages = {
   "error.ai.address-invalid":
     "This is not a web address. Write it like https://models.example.com/v1.",
   "error.ai.address-not-encrypted":
-    "An address on the internet must start with https://. Only a model on your own computers may use http://.",
+    "A web address on the internet must start with https://. Only a model on your own server may use http://.",
   "error.ai.proposal-invalid":
     "This proposed change can no longer be applied. Ask the assistant again.",
   "written-by.assistant": "Written with the assistant",
