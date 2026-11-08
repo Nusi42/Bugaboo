@@ -15,3 +15,4 @@
 - [Explicit deletion](explicit-deletion.md) — keep periods are minimums; business data is deleted only explicitly by an administrator
 - [Access rights are deliberate](access-rights-are-deliberate.md) — no masking of values derivable from readable fields; the admin chose the rights
 - [Do not wait for nightlies](dont-wait-for-nightlies.md) — go on with the next step at once; nightly results are looked at in parallel
+- [README with every push](readme-with-every-push.md) — front page, roadmap, version updated in the same landing; milestone tag on that commit
