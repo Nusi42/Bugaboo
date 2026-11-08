@@ -33,6 +33,9 @@ pub struct Applied {
     pub words: Vec<FieldChangeView>,
     /// What *Undo* takes away, where the change made something new.
     pub undo: Option<ToolUndo>,
+    /// The version the issue is at after the change, when the change is on an issue: *Undo* of
+    /// fields is made on this version, so a change by somebody else in between is never overwritten.
+    pub version: Option<i64>,
 }
 
 impl Masked for Applied {}
@@ -97,9 +100,18 @@ pub async fn apply_proposal<S: AuthStore>(
     .map_err(|error| AppError::Internal(error.to_string()))?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let words = ctx.words_of(&actor, &input_for_words, &saved.changes).await;
+    let version = match input_for_words.get("issue").and_then(Value::as_str) {
+        Some(address) => ctx
+            .visible_issue(&actor, address)
+            .await
+            .ok()
+            .map(|(issue, _)| issue.version),
+        None => None,
+    };
     Ok(held.authorize(Applied {
         changes: saved.changes,
         words,
         undo: saved.undo,
+        version,
     }))
 }

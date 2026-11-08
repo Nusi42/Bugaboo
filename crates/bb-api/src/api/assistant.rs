@@ -160,6 +160,10 @@ pub(crate) struct AppliedProposalBody {
     /// issue or the running timer.
     #[serde(skip_serializing_if = "Option::is_none")]
     undo: Option<AppliedUndoBody>,
+    /// The version the issue is at after the change, when it is on an issue. *Undo* of fields is
+    /// made on this version.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<i64>,
 }
 
 /// What *Undo* of an applied change takes away.
@@ -169,6 +173,8 @@ pub(crate) struct AppliedUndoBody {
     kind: String,
     /// Its ID; empty for the timer.
     id: String,
+    /// The version it was made at: it is taken away only while it is still at this version.
+    version: i64,
 }
 
 impl bb_policy::Masked for AppliedProposalBody {}
@@ -185,7 +191,9 @@ impl From<&Applied> for AppliedProposalBody {
             undo: applied.undo.as_ref().map(|undo| AppliedUndoBody {
                 kind: undo.kind.clone(),
                 id: undo.id.clone(),
+                version: undo.version,
             }),
+            version: applied.version,
         }
     }
 }

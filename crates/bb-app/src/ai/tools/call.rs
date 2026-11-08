@@ -80,6 +80,8 @@ pub struct ToolUndo {
     pub kind: String,
     /// Its ID; empty for the timer, which there is one of.
     pub id: String,
+    /// The version it was made at: *Undo* takes it away only while it is still at this version.
+    pub version: i64,
 }
 
 /// The name of the part an *Apply* leaves for the way back.
@@ -246,6 +248,11 @@ fn take_undo(parts: &mut Vec<Part>) -> Option<ToolUndo> {
     Some(ToolUndo {
         kind: text("kind"),
         id: text("id"),
+        version: part
+            .value
+            .get("version")
+            .and_then(Value::as_i64)
+            .unwrap_or_default(),
     })
 }
 

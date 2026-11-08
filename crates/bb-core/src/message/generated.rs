@@ -579,6 +579,12 @@ pub const ASSISTANT_CARD_SAVED: MessageKey = MessageKey::new("assistant.card.sav
 /// The message `assistant.card.title`.
 pub const ASSISTANT_CARD_TITLE: MessageKey = MessageKey::new("assistant.card.title");
 
+/// The message `assistant.card.title-saved`.
+pub const ASSISTANT_CARD_TITLE_SAVED: MessageKey = MessageKey::new("assistant.card.title-saved");
+
+/// The message `assistant.card.undo-changed`.
+pub const ASSISTANT_CARD_UNDO_CHANGED: MessageKey = MessageKey::new("assistant.card.undo-changed");
+
 /// The message `assistant.card.undone`.
 pub const ASSISTANT_CARD_UNDONE: MessageKey = MessageKey::new("assistant.card.undone");
 
@@ -629,6 +635,9 @@ pub const ASSISTANT_NAMES_SENT: MessageKey = MessageKey::new("assistant.names-se
 
 /// The message `assistant.never-sent-none`.
 pub const ASSISTANT_NEVER_SENT_NONE: MessageKey = MessageKey::new("assistant.never-sent-none");
+
+/// The message `assistant.off-here`.
+pub const ASSISTANT_OFF_HERE: MessageKey = MessageKey::new("assistant.off-here");
 
 /// The message `assistant.question`.
 pub const ASSISTANT_QUESTION: MessageKey = MessageKey::new("assistant.question");
@@ -7710,6 +7719,24 @@ pub fn assistant_never_sent(names: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("assistant.never-sent"),
         vec![("names", Value::Text(names.to_string()))],
+    )
+}
+
+/// The message `assistant.question-limit`.
+#[must_use]
+pub fn assistant_question_limit(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.question-limit"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `assistant.question-too-long`.
+#[must_use]
+pub fn assistant_question_too_long(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assistant.question-too-long"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -15026,6 +15053,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("assistant.card.saved", "Saved as you."),
     ("assistant.card.title", "Proposed change"),
+    ("assistant.card.title-saved", "Changed"),
+    (
+        "assistant.card.undo-changed",
+        "This changed since, so it was not taken back.",
+    ),
     (
         "assistant.card.undone",
         "The change from the assistant was undone.",
@@ -15042,7 +15074,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assistant.conversation", "Conversation with the assistant"),
     (
         "assistant.empty",
-        "Ask about what you are looking at, for example: Summarize the comments on this issue.",
+        "Ask about what you are looking at, for example: “Summarize the comments on this issue.”",
     ),
     ("assistant.label", "Assistant"),
     ("assistant.leave-out", "Leave out {name}"),
@@ -15069,7 +15101,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "assistant.never-sent-none",
         "Never sent to AI: nothing is marked.",
     ),
+    (
+        "assistant.off-here",
+        "AI is off here. Your conversation is kept until you close the assistant, but nothing can be asked at this place.",
+    ),
     ("assistant.question", "Your question"),
+    (
+        "assistant.question-limit",
+        "At most {count, number} characters.",
+    ),
+    (
+        "assistant.question-too-long",
+        "This question is longer than {count, number} characters. Shorten it to send it.",
+    ),
     ("assistant.quick-ask", "Ask the assistant"),
     (
         "assistant.source-anthropic",

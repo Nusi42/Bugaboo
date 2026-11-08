@@ -12,10 +12,11 @@ use serde_json::{Value, json};
 use super::call::UNDO_PART;
 use super::registry::{Boxed, Run};
 use super::{preview, requests};
+use crate::access::Actor;
 use crate::ai::context::{AuthorKind, Part};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::comments::add_comment as add_comment_as_person;
-use crate::issues::{change_issue, create_issue as create_issue_as_person};
+use crate::issues::{IssueView, change_issue, create_issue as create_issue_as_person};
 use crate::time::{
     add_time, start_timer as start_timer_as_person, stop_timer as stop_timer_as_person,
 };
@@ -24,16 +25,33 @@ use crate::time::{
 /// AI; the call takes it out of the answer.
 fn undo_part<T: Masked + serde::Serialize>(kind: &str, made: &Authorized<T>, at: &[&str]) -> Part {
     let value = made.masked_value().unwrap_or(Value::Null);
-    let id = at
+    let found = at
         .iter()
-        .try_fold(&value, |found, member| found.get(*member))
-        .and_then(Value::as_str)
-        .unwrap_or_default();
+        .try_fold(&value, |found, member| found.get(*member));
+    let id = found.and_then(|one| one.get("id")).and_then(Value::as_str);
+    let version = found
+        .and_then(|one| one.get("version"))
+        .and_then(Value::as_i64);
     Part {
         name: UNDO_PART,
-        value: json!({ "kind": kind, "id": id }),
+        value: json!({ "kind": kind, "id": id.unwrap_or_default(), "version": version.unwrap_or_default() }),
         author: AuthorKind::Assistant,
         project: None,
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether the actor may delete the issue they just made.
+    async fn may_delete_made(&self, actor: &Actor, made: &Authorized<IssueView>) -> bool {
+        let key = made
+            .masked_value()
+            .ok()
+            .and_then(|value| value.get("key").and_then(Value::as_str).map(str::to_owned));
+        let Some(key) = key else { return false };
+        match self.visible_issue(actor, &key).await {
+            Ok((issue, held)) => held.may_delete_issue(issue.reported_by),
+            Err(_) => false,
+        }
     }
 }
 
@@ -45,7 +63,10 @@ pub(super) fn create_issue<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::create_issue(ctx, run).await?;
         let made = create_issue_as_person(ctx, requests::create_issue(&run)?).await?;
-        shown.push(undo_part("issue", &made, &["id"]));
+        // *Undo* of a new issue sends it to the trash: only for a person who may delete it.
+        if ctx.may_delete_made(run.actor, &made).await {
+            shown.push(undo_part("issue", &made, &[]));
+        }
         Ok(shown)
     })
 }
@@ -82,7 +103,7 @@ pub(super) fn add_comment<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::add_comment(ctx, run).await?;
         let made = add_comment_as_person(ctx, requests::add_comment(&run)?).await?;
-        shown.push(undo_part("comment", &made, &["id"]));
+        shown.push(undo_part("comment", &made, &[]));
         Ok(shown)
     })
 }
@@ -95,7 +116,7 @@ pub(super) fn log_time<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::log_time(ctx, run).await?;
         let made = add_time(ctx, requests::log_time(&run)?).await?;
-        shown.push(undo_part("time-entry", &made, &["id"]));
+        shown.push(undo_part("time-entry", &made, &[]));
         Ok(shown)
     })
 }
@@ -119,9 +140,9 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let mut shown = preview::stop_timer(ctx, run).await?;
-        let saved = stop_timer_as_person(ctx, requests::stop_timer(&run)?).await?;
-        shown.push(undo_part("time-entry", &saved, &["entry", "id"]));
+        let shown = preview::stop_timer(ctx, run).await?;
+        // Time that was worked and recorded is never erased by *Undo*: stopping the timer has no way back.
+        stop_timer_as_person(ctx, requests::stop_timer(&run)?).await?;
         Ok(shown)
     })
 }

@@ -24,6 +24,7 @@ mod ai_mcp_http;
 mod ai_mcp_rig;
 mod assignments_http;
 mod assistant_status_http;
+mod assistant_undo_http;
 mod caching;
 mod check_access_types_http;
 mod comments_http;
