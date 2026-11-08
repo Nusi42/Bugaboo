@@ -34,6 +34,6 @@ pub use rules::{
 #[cfg(test)]
 pub(crate) use stop::TRIES;
 pub use stop::{Closing, close_work_of};
-pub use store::{AgentWorkRecords, GrantStore, WorkDetails};
+pub use store::{AgentWorkRecords, GrantStore, RuleCursor, WorkDetails};
 pub use take::take_work;
 pub use types::*;

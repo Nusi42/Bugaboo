@@ -309,7 +309,6 @@ impl AgentStore for AuthStorage {
         update
             .table(AgentRow::Table)
             .value(AgentRow::OfferedTo, Option::<Vec<u8>>::None)
-            .value(AgentRow::Version, Expr::col(AgentRow::Version).add(1))
             .and_where(Expr::col(AgentRow::Id).eq(id.stored()))
             .and_where(Expr::col(AgentRow::OfferedTo).is_not_null());
         transaction.execute(&update).await?;

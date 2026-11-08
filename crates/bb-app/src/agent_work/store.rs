@@ -7,8 +7,8 @@
 use std::future::Future;
 
 use bb_core::agent_records::{
-    Attempt, AttemptResult, HandOver, IssueWork, Proposal, ProposalState, Question, Review,
-    RuleMatch, StandingRule,
+    Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
+    Review, RuleMatch, StandingRule,
 };
 use bb_core::agent_work::{AgentWorkState, StopCause};
 use bb_core::event::DomainEvent;
@@ -21,6 +21,56 @@ use jiff::Timestamp;
 use crate::agents::AgentWorkStore;
 use crate::store_macros::{queries, reads, writes};
 
+/// Where a page of the rules of an agent stops: the last rule, whether it works and when it was made.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RuleCursor {
+    /// Whether the rule works (those come first).
+    pub open: bool,
+    /// When the rule was made, to the microsecond (newest first within those that work and those that ended).
+    pub made_at: Timestamp,
+    /// Its ID, for rules made at the same moment.
+    pub id: StandingRuleId,
+}
+
+impl RuleCursor {
+    /// The cursor of a rule.
+    #[must_use]
+    pub fn of(rule: &StandingRule) -> Self {
+        Self {
+            open: rule.state == GivingState::Open,
+            made_at: rule.made_at,
+            id: rule.id,
+        }
+    }
+
+    /// The cursor as text: `o` or `e`, the microseconds, `:` and the ID.
+    #[must_use]
+    pub fn text(&self) -> String {
+        format!(
+            "{}{}:{}",
+            if self.open { 'o' } else { 'e' },
+            self.made_at.as_microsecond(),
+            self.id
+        )
+    }
+
+    /// The cursor from its text, or none for text that is not one.
+    #[must_use]
+    pub fn parse(text: &str) -> Option<Self> {
+        let open = match text.chars().next()? {
+            'o' => true,
+            'e' => false,
+            _ => return None,
+        };
+        let (moment, id) = text.get(1..)?.split_once(':')?;
+        Some(Self {
+            open,
+            made_at: Timestamp::from_microsecond(moment.parse().ok()?).ok()?,
+            id: id.parse().ok()?,
+        })
+    }
+}
+
 /// What hand-overs, standing rules and what they propose need from storage.
 pub trait GrantStore: AgentWorkStore + 'static {
     queries! {
@@ -31,7 +81,9 @@ pub trait GrantStore: AgentWorkStore + 'static {
         /// The proposal with this ID.
         fn proposal(id: AgentNoteId) -> Option<Proposal> = proposal_in;
         /// The standing rules of one agent, by ID, after `after`, at most `limit`.
-        fn rules_of_agent(agent: AgentId, after: Option<StandingRuleId>, limit: u64) -> Vec<StandingRule> = rules_of_agent_in;
+        /// The standing rules of one agent: those that work first, then those that ended, newest first
+        /// in each; after `after`, at most `limit`.
+        fn rules_of_agent(agent: AgentId, after: Option<RuleCursor>, limit: u64) -> Vec<StandingRule> = rules_of_agent_in;
         /// The standing rules of these agents that work, by ID, at most `limit`.
         fn open_rules_of_agents(agents: Vec<AgentId>, limit: u64) -> Vec<StandingRule> = open_rules_of_agents_in;
         /// Every standing rule that has not ended.
@@ -146,7 +198,7 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         ///
         /// What waits for a person comes first, so a cut never takes it; work accepted by itself is
         /// only that which `person` was responsible for when it was given.
-        fn current_work_of_agents(agents: Vec<AgentId>, person: UserId, limit: u64) -> Vec<IssueWork> = current_work_of_agents_in;
+        fn current_work_of_agents(agents: Vec<AgentId>, person: UserId, now: Timestamp, limit: u64) -> Vec<IssueWork> = current_work_of_agents_in;
         /// The reviews of a piece of work, oldest first.
         fn reviews_of(work: AgentWorkId) -> Vec<Review> = reviews_of_in;
         /// The people who must hear about work: the person responsible for the agent and the person

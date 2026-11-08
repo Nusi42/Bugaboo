@@ -133,6 +133,9 @@ pub struct AgentView {
     pub limits: AgentLimits,
     /// The most any agent can be given, when the view is of one agent; none in a list.
     pub maximums: Option<AgentLimits>,
+    /// Whether the viewer is the person responsible for it (an administrator who is not may read it
+    /// and stop it, nothing more).
+    pub yours: bool,
     /// Whether it is offered to another person who has not accepted yet.
     pub offered: bool,
     /// The version of the record.

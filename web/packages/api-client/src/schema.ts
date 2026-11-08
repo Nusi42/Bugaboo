@@ -4953,6 +4953,8 @@ export interface components {
        * @description The version of the agent; send it back with a change.
        */
       version?: number | null;
+      /** @description Whether the person asking is the person responsible for it. */
+      yours?: boolean | null;
     };
     /** @description How much an agent may do. Each is at least 1 and at most what the organization allows. */
     AgentLimitsBody: {

@@ -22,8 +22,6 @@ export type MyWorkItem = Schema<"MyWorkBody">;
 export type OfferedAgent = Schema<"OfferedAgentBody">;
 /** The work of the person's agents. */
 export type MyWork = Schema<"MyAgentWorkBody">;
-/** A page of standing rules. */
-export type RulePage = Schema<"Page_StandingRuleItem">;
 /** A standing rule. */
 export type Rule = Schema<"StandingRuleItem">;
 /** The state of an agent: it works, rests, or is stopped for good. */
@@ -38,6 +36,8 @@ export interface ListedAgent {
   readonly state: AgentStateWord;
   readonly version: number;
   readonly offered: boolean;
+  /** The person who reads is the person responsible for it. */
+  readonly yours: boolean;
   readonly person: AgentEntry["person"];
   readonly changesAMinute: number;
   readonly issuesAtOnce: number;
@@ -63,6 +63,7 @@ export function listedAgents(items: readonly AgentEntry[] | undefined): readonly
             state: item.state,
             version: item.version,
             offered: item.offered === true,
+            yours: item.yours === true,
             person: item.person,
             changesAMinute: item.changes_a_minute ?? 0,
             issuesAtOnce: item.issues_at_once ?? 0,
@@ -91,10 +92,14 @@ export function useAgentRecord(id: string) {
   });
 }
 
-/** The standing rules of one agent, those that ended too: its person reads them, and so does an administrator. */
+/** The standing rules of one agent, a page at a time: those that work first, then those that ended. */
 export function useAgentRules(agent: string) {
-  return api.query.useQuery("get", "/api/v1/agents/{agent}/standing-rules", {
-    params: { path: { agent }, query: { limit: pageSize.largest } },
+  return usePaged({
+    queryKey: agentKeys.rules(agent),
+    read: (after) =>
+      api.client.GET("/api/v1/agents/{agent}/standing-rules", {
+        params: { path: { agent }, query: { limit: pageSize.short, ...after } },
+      }),
   });
 }
 

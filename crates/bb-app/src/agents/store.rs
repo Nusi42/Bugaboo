@@ -83,7 +83,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn set_agent_state(id: AgentId, state: AgentState, paused_for: Option<LimitKind>, version: i64) -> bool;
         /// Writes the limits, counts the version up and says whether the agent was at `version`.
         fn set_agent_limits(id: AgentId, limits: AgentLimits, version: i64) -> bool;
-        /// Ends the offer of the agent, counting the version up (a stopped agent is offered to nobody).
+        /// Ends the offer of the agent without counting its version up: it runs inside the change that
+        /// stops the agent, which counts the version once (a stopped agent is offered to nobody).
         fn end_offer_of(id: AgentId) -> ();
         /// Offers the agent to a person (`Some`) or takes the offer back (`None`).
         fn offer_agent(id: AgentId, to: Option<UserId>, version: i64) -> bool;

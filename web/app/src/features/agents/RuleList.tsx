@@ -24,6 +24,8 @@ interface RuleRowProps {
   readonly names: RuleNames;
   /** The agent is the heading of the list already (the page of an agent): its name is not said again. */
   readonly withAgent: boolean;
+  /** The reader is the agent's person: only they renew and stop a rule. */
+  readonly canChange: boolean;
 }
 
 /** *Renew* and *Stop* of a rule that works. */
@@ -70,7 +72,7 @@ interface ActionsProps {
 }
 
 /** One standing rule: the search, the agent, what it may do, when it runs out, *Renew* and *Stop*. */
-function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
+function RuleRow({ rule, agents, names, withAgent, canChange }: RuleRowProps) {
   const now = useNow();
   const agent = agentNamed(agents, rule.agent)?.name ?? "";
   const search = names.search(rule.search);
@@ -85,7 +87,9 @@ function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
           {rule.state === "ended" ? t("agents.rule-ended") : runsOutText(rule.ends_at, now)}
         </span>
       </span>
-      {rule.state === "ended" ? null : <RuleActions rule={rule} agent={agent} search={search} />}
+      {rule.state === "ended" || !canChange ? null : (
+        <RuleActions rule={rule} agent={agent} search={search} />
+      )}
     </li>
   );
 }
@@ -95,17 +99,32 @@ export interface RuleListProps {
   readonly agents: readonly ListedAgent[];
   readonly names: RuleNames;
   readonly withAgent?: boolean;
+  /** Whether the reader may renew and stop the rules; they may by default. */
+  readonly canChange?: boolean;
 }
 
 /** The standing rules: those that work with *Renew* and *Stop*, those that ended as they ended (UX §4.17). */
-export function RuleList({ rules, agents, names, withAgent = true }: RuleListProps) {
+export function RuleList({
+  rules,
+  agents,
+  names,
+  withAgent = true,
+  canChange = true,
+}: RuleListProps) {
   if (rules.length === 0) {
     return <p {...partOf(part.muted)}>{t("agents.rules-none")}</p>;
   }
   return (
     <ul {...partOf(part.list)}>
       {rules.map((rule) => (
-        <RuleRow key={rule.id} rule={rule} agents={agents} names={names} withAgent={withAgent} />
+        <RuleRow
+          key={rule.id}
+          rule={rule}
+          agents={agents}
+          names={names}
+          withAgent={withAgent}
+          canChange={canChange}
+        />
       ))}
     </ul>
   );

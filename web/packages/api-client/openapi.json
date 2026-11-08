@@ -18080,6 +18080,10 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "The version of the agent; send it back with a change."
+          },
+          "yours": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person asking is the person responsible for it."
           }
         }
       },

@@ -50,12 +50,21 @@ pub(super) fn only_open_work(select: &mut SelectStatement) {
 /// *open at `now`*, for the work of an agent and for the work on issues.
 pub(super) fn only_open_work_at(select: &mut SelectStatement, now: Timestamp) {
     only_open_work(select);
-    let mut running = Query::select();
-    running
+    select.and_where(
+        Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver))
+            .in_subquery(hand_overs_giving_work_at(now)),
+    );
+}
+
+/// The hand-overs that still give work at `now`: open, and not run out.
+pub(super) fn hand_overs_giving_work_at(now: Timestamp) -> SelectStatement {
+    let mut giving = Query::select();
+    giving
         .column(HandOverRow::Id)
         .from(HandOverRow::Table)
+        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()))
         .and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
-    select.and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(running));
+    giving
 }
 
 /// The open work of an agent at `now`, joined to its hand-over: the one definition of the work an

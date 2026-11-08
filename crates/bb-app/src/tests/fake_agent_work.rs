@@ -1,5 +1,6 @@
 //! The agent work part of the in-memory store (AI-31 to AI-35).
 
+use crate::agent_work::RuleCursor;
 use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     Review, RuleMatch, StandingRule,
@@ -97,20 +98,39 @@ impl GrantStore for super::fake::FakeStore {
     async fn rules_of_agent_in(
         tx: &mut Tx,
         agent: AgentId,
-        after: Option<StandingRuleId>,
+        after: Option<RuleCursor>,
         limit: u64,
     ) -> Result<Vec<StandingRule>, FakeError> {
-        Ok(page(
-            tx.state
-                .work
-                .rules
-                .iter()
-                .filter(|r| r.agent == agent)
-                .cloned(),
-            |r| r.id,
-            after,
-            limit,
-        ))
+        let mut found: Vec<StandingRule> = tx
+            .state
+            .work
+            .rules
+            .iter()
+            .filter(|r| r.agent == agent)
+            .cloned()
+            .collect();
+        // Those that work first, newest first in each.
+        let key = |r: &StandingRule| {
+            (
+                r.state != GivingState::Open,
+                std::cmp::Reverse(r.made_at),
+                std::cmp::Reverse(r.id),
+            )
+        };
+        found.sort_by_key(key);
+        let rest = found.into_iter().skip_while(|r| {
+            after.is_some_and(|cursor| {
+                key(r)
+                    <= (
+                        !cursor.open,
+                        std::cmp::Reverse(cursor.made_at),
+                        std::cmp::Reverse(cursor.id),
+                    )
+            })
+        });
+        Ok(rest
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .collect())
     }
 
     async fn every_open_rule_in(tx: &mut Tx) -> Result<Vec<StandingRule>, FakeError> {
@@ -602,6 +622,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
         tx: &mut Tx,
         agents: Vec<AgentId>,
         person: UserId,
+        now: Timestamp,
         limit: u64,
     ) -> Result<Vec<IssueWork>, FakeError> {
         let work = &tx.state.work;
@@ -616,7 +637,13 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .collect();
         found.reverse();
         // What waits for a person first, as the statement of the store does.
-        found.sort_by_key(|w| w.closed || !w.state.waits_for_a_person());
+        found.sort_by_key(|w| {
+            let giving = work
+                .hand_overs
+                .iter()
+                .any(|h| h.id == w.hand_over && h.state == GivingState::Open && h.ends_at > now);
+            w.closed || !giving || !w.state.waits_for_a_person()
+        });
         found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }

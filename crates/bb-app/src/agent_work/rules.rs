@@ -16,6 +16,7 @@ use serde_json::json;
 
 use super::members::{member, payload};
 use super::queue::queue;
+use super::store::RuleCursor;
 use super::types::{
     ChangeStandingRule, CreateStandingRule, DecideProposal, ProposalView, ProposeChange,
     StandingRulePage, StandingRuleView, StandingRulesQuery,
@@ -89,8 +90,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
-    /// The rule, when the person made it (or an administrator may see it): anybody else is told
-    /// there is no such rule.
+    /// The rule, when the person made it: anybody else, an administrator too, is told there is no
+    /// such rule. (An administrator may read the rules of an agent, not change them.)
     async fn rule_of(
         &self,
         person: bb_core::id::UserId,
@@ -284,9 +285,7 @@ pub async fn standing_rules<S: AuthStore>(
         .filter(|found| found.person == person || administrator)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     let len = page_len(Some(input.limit));
-    let after = cursor_or_invalid(input.cursor.as_deref(), |cursor| {
-        cursor.parse::<StandingRuleId>().ok()
-    })?;
+    let after = cursor_or_invalid(input.cursor.as_deref(), RuleCursor::parse)?;
     let page = Cut::of(
         ctx.store()
             .rules_of_agent(input.agent, after, read_len(len))
@@ -294,7 +293,7 @@ pub async fn standing_rules<S: AuthStore>(
             .map_err(|error| internal::<S>(&error))?,
         len,
     );
-    let next_cursor = page.next_cursor(|last| last.id.to_string());
+    let next_cursor = page.next_cursor(|last| RuleCursor::of(last).text());
     let items = page.items.iter().map(view_of).collect();
     Ok(ctx
         .evaluate(person, Place::Organization)

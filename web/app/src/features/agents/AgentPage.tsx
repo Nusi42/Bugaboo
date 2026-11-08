@@ -28,11 +28,13 @@ export function AgentPage({ id }: { readonly id: string }) {
         return agent === undefined ? null : (
           <div {...partOf(part.stack)}>
             <AgentHead agent={agent} />
-            <AgentKeys agent={agent.id} keys={loaded.keys} stopped={!mayAct(agent)} />
-            <AgentLimits agent={agent} maximums={loaded.maximums} />
+            {agent.yours ? (
+              <AgentKeys agent={agent.id} keys={loaded.keys} stopped={!mayAct(agent)} />
+            ) : null}
+            <AgentLimits agent={agent} maximums={agent.yours ? loaded.maximums : undefined} />
             <AgentWorkCard agent={agent} />
             <AgentRules agent={agent} />
-            <HandToPerson agent={agent} />
+            {agent.yours ? <HandToPerson agent={agent} /> : null}
           </div>
         );
       }}

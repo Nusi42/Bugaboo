@@ -320,6 +320,13 @@ async fn ai_30_an_offer_is_cut_taken_back_and_ended_by_a_stop() -> TestResult {
             )
             .await?;
         assert_eq!(stopped.status, StatusCode::OK, "{}", stopped.body);
+        // The stop counts the version once, the offer that ended with it does not count again.
+        assert_eq!(
+            ok(&stopped)?["version"].as_i64(),
+            version.as_i64().map(|before| before + 1),
+            "{}",
+            stopped.body
+        );
         let remaining = work_of(&mut olga).await?;
         assert_eq!(
             remaining["offered"].as_array().map(Vec::len),
@@ -330,6 +337,87 @@ async fn ai_30_an_offer_is_cut_taken_back_and_ended_by_a_stop() -> TestResult {
             .send("POST", &format!("/api/v1/agents/{offered}/accept"), None)
             .await?;
         assert_eq!(accepted.code(), "resource.not-found", "{}", accepted.body);
+        Ok::<(), Failure>(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_32_the_rules_of_an_agent_come_open_first_then_ended_in_pages() -> TestResult {
+    each_database("ai_32_agent_rules_pages", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        let search = tess
+            .send(
+                "POST",
+                "/api/v1/saved-searches",
+                Some(json!({"name": "New bugs", "search_text": ""})),
+            )
+            .await?;
+        let search = ok(&search)?["id"].as_str().ok_or("no search")?.to_owned();
+        let (agent, _) = new_agent(&mut tess, "Fixer").await?;
+        let mut rules = Vec::new();
+        for _ in 0..3 {
+            let made = tess
+                .send(
+                    "POST",
+                    "/api/v1/standing-rules",
+                    Some(json!({"agent": agent, "search": search, "project": site.acme})),
+                )
+                .await?;
+            let made = ok(&made)?.clone();
+            rules.push(made);
+            // Rules are told apart by when they were made.
+            rig.clock.advance(60);
+        }
+        // The middle one is stopped; an administrator cannot change a rule that is not theirs.
+        let middle = rules[1]["id"].as_str().ok_or("no rule")?.to_owned();
+        let path = format!("/api/v1/standing-rules/{middle}");
+        let by_admin = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"action": "stop", "version": rules[1]["version"]})),
+            )
+            .await?;
+        assert_eq!(by_admin.code(), "resource.not-found", "{}", by_admin.body);
+        let stopped = tess
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"action": "stop", "version": rules[1]["version"]})),
+            )
+            .await?;
+        ok(&stopped)?;
+        // Two to a page: those that work, newest first, then the one that ended, with nothing cut.
+        let list = format!("/api/v1/agents/{agent}/standing-rules");
+        let first = tess.send("GET", &format!("{list}?limit=2"), None).await?;
+        let first = ok(&first)?.clone();
+        let ids = |page: &Value| -> Vec<String> {
+            page["items"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|item| item["id"].as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        let id_of = |at: usize| rules[at]["id"].as_str().unwrap_or_default().to_owned();
+        assert_eq!(ids(&first), vec![id_of(2), id_of(0)], "{first}");
+        let cursor = first["next_cursor"]
+            .as_str()
+            .ok_or("cut without a cursor")?
+            .to_owned();
+        let second = tess
+            .send("GET", &format!("{list}?limit=2&cursor={cursor}"), None)
+            .await?;
+        let second = ok(&second)?.clone();
+        assert_eq!(ids(&second), vec![id_of(1)], "{second}");
+        assert_eq!(second["items"][0]["state"], json!("ended"));
+        assert!(second["next_cursor"].is_null(), "{second}");
         Ok::<(), Failure>(())
     })
     .await

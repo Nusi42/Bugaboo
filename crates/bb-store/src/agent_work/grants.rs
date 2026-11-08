@@ -1,6 +1,6 @@
 //! Hand-overs, standing rules, their proposals and matches.
 
-use bb_app::agent_work::GrantStore;
+use bb_app::agent_work::{GrantStore, RuleCursor};
 
 use super::*;
 
@@ -35,17 +35,40 @@ impl GrantStore for AuthStorage {
     async fn rules_of_agent_in(
         transaction: &mut Transaction,
         agent: AgentId,
-        cursor: Option<StandingRuleId>,
+        cursor: Option<RuleCursor>,
         limit: u64,
     ) -> Result<Vec<StandingRule>, StoreError> {
+        let works = Expr::col(StandingRuleRow::State).eq(GivingState::Open.code());
         let mut select = rule_select();
         select.and_where(Expr::col(StandingRuleRow::Agent).eq(agent.stored()));
-        all(
-            transaction,
-            &after(select, StandingRuleRow::Id, cursor, limit),
-            read_rule,
-        )
-        .await
+        if let Some(cursor) = cursor {
+            // Those that work come first, newest first; then those that ended, newest first.
+            let made = to_micros(cursor.made_at);
+            let older = sea_query::Cond::any()
+                .add(Expr::col(StandingRuleRow::MadeAt).lt(made))
+                .add(
+                    sea_query::Cond::all()
+                        .add(Expr::col(StandingRuleRow::MadeAt).eq(made))
+                        .add(Expr::col(StandingRuleRow::Id).lt(cursor.id.stored())),
+                );
+            if cursor.open {
+                select.and_where(
+                    sea_query::Cond::any()
+                        .add(Expr::col(StandingRuleRow::State).ne(GivingState::Open.code()))
+                        .add(older)
+                        .into(),
+                );
+            } else {
+                select.and_where(works.clone().not());
+                select.and_where(older.into());
+            }
+        }
+        select
+            .order_by_expr(works, Order::Desc)
+            .order_by(StandingRuleRow::MadeAt, Order::Desc)
+            .order_by(StandingRuleRow::Id, Order::Desc)
+            .limit(limit);
+        all(transaction, &select, read_rule).await
     }
 
     async fn open_rules_of_agents_in(

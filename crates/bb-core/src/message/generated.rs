@@ -731,6 +731,9 @@ pub const AGENTS_RULE_TITLE: MessageKey = MessageKey::new("agents.rule-title");
 /// The message `agents.rules`.
 pub const AGENTS_RULES: MessageKey = MessageKey::new("agents.rules");
 
+/// The message `agents.rules-more`.
+pub const AGENTS_RULES_MORE: MessageKey = MessageKey::new("agents.rules-more");
+
 /// The message `agents.rules-none`.
 pub const AGENTS_RULES_NONE: MessageKey = MessageKey::new("agents.rules-none");
 
@@ -16622,6 +16625,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.rule-title", "New standing rule"),
     ("agents.rules", "Standing rules"),
+    ("agents.rules-more", "Show more standing rules"),
     ("agents.rules-none", "No standing rule works now."),
     ("agents.state-of", "{state}, agent of {person}"),
     ("agents.state.active", "Active"),

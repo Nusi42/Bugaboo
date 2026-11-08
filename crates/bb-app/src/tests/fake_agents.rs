@@ -231,7 +231,6 @@ impl AgentStore for FakeStore {
             .find(|agent| agent.id == id && agent.offered_to.is_some())
         {
             agent.offered_to = None;
-            agent.version += 1;
         }
         Ok(())
     }

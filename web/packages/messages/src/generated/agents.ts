@@ -152,6 +152,7 @@ export const messages = {
   "agents.decline-name": "Decline the agent {agent}",
   "agents.offer-take-back": "Take the offer back",
   "agents.rule-ended": "Ended",
+  "agents.rules-more": "Show more standing rules",
 } as const;
 
 register(messages);

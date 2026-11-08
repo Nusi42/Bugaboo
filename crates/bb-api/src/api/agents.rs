@@ -36,7 +36,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an agent that can be asked for, and which of them a list holds when the request
 /// names none.
-const AGENT_FIELDS: [FieldSpec; 11] = [
+const AGENT_FIELDS: [FieldSpec; 12] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("state"),
@@ -45,6 +45,7 @@ const AGENT_FIELDS: [FieldSpec; 11] = [
     FieldSpec::by_default("changes_a_minute"),
     FieldSpec::by_default("issues_at_once"),
     FieldSpec::by_default("attempts_on_one_issue"),
+    FieldSpec::by_default("yours"),
     FieldSpec::by_default("offered"),
     FieldSpec::by_default("version"),
     FieldSpec::on_request("created_at"),
@@ -80,6 +81,9 @@ pub(crate) struct AgentItem {
     /// Attempts it may make on one issue, at most.
     #[serde(skip_serializing_if = "Option::is_none")]
     attempts_on_one_issue: Option<i64>,
+    /// Whether the person asking is the person responsible for it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    yours: Option<bool>,
     /// Whether it is offered to another person who has not accepted yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     offered: Option<bool>,
@@ -107,6 +111,7 @@ impl From<&AgentView> for AgentItem {
             changes_a_minute: Some(agent.limits.changes_a_minute),
             issues_at_once: Some(agent.limits.issues_at_once),
             attempts_on_one_issue: Some(agent.limits.attempts_on_one_issue),
+            yours: Some(agent.yours),
             offered: Some(agent.offered),
             version: Some(agent.version),
             created_at: Some(agent.made_at.to_string()),

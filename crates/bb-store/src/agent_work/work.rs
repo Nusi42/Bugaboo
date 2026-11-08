@@ -397,16 +397,17 @@ impl AgentWorkRecords for AuthStorage {
         transaction: &mut Transaction,
         agents: Vec<AgentId>,
         person: UserId,
+        now: Timestamp,
         limit: u64,
     ) -> Result<Vec<IssueWork>, StoreError> {
-        // Open work is what `only_open_work` says, of these agents; work accepted by itself is closed
-        // and stays in the list of the person it was given for until they looked at it, whoever the
-        // agent belongs to now.
+        // Open work is what `only_open_work_at` says, of these agents; work accepted by itself is
+        // closed and stays in the list of the person it was given for until they looked at it,
+        // whoever the agent belongs to now.
         let mut open_ids = Query::select();
         open_ids
             .column((IssueWorkRow::Table, IssueWorkRow::Id))
             .from(IssueWorkRow::Table);
-        only_open_work(&mut open_ids);
+        only_open_work_at(&mut open_ids, now);
         let mut select = work_select();
         select
             .and_where(
@@ -430,7 +431,12 @@ impl AgentWorkRecords for AuthStorage {
             .order_by_expr(
                 Expr::col(IssueWorkRow::State)
                     .is_in(AgentWorkState::WAITING_FOR_A_PERSON.map(AgentWorkState::code))
-                    .and(Expr::col(IssueWorkRow::Closed).eq(false)),
+                    .and(Expr::col(IssueWorkRow::Closed).eq(false))
+                    // Its hand-over still gives work: the same as `waits_for` of a piece that is open.
+                    .and(
+                        Expr::col(IssueWorkRow::HandOver)
+                            .in_subquery(hand_overs_giving_work_at(now)),
+                    ),
                 Order::Desc,
             )
             .order_by(IssueWorkRow::Id, Order::Desc)

@@ -18,14 +18,16 @@ export function StateButtons({ agent }: { readonly agent: ListedAgent }) {
   }
   return (
     <>
-      <Button
-        isPending={change.isPending}
-        onPress={() => {
-          send(agent.state === "paused" ? "resume" : "pause");
-        }}
-      >
-        {t(agent.state === "paused" ? "agents.resume" : "agents.pause")}
-      </Button>
+      {agent.yours ? (
+        <Button
+          isPending={change.isPending}
+          onPress={() => {
+            send(agent.state === "paused" ? "resume" : "pause");
+          }}
+        >
+          {t(agent.state === "paused" ? "agents.resume" : "agents.pause")}
+        </Button>
+      ) : null}
       <ConfirmDialog
         triggerLabel={t("agents.stop")}
         title={t("agents.stop-title", { agent: agent.name })}

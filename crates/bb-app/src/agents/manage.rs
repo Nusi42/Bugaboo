@@ -94,6 +94,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             } else {
                 None
             },
+            yours: viewer.person.id == agent.person,
             offered: agent.offered_to.is_some(),
             version: agent.version,
             made_at: agent.made_at,

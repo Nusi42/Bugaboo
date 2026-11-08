@@ -110,7 +110,12 @@ pub async fn my_agent_work<S: AuthStore>(
         .collect();
     let mut works = ctx
         .store()
-        .current_work_of_agents(agents.clone(), person, MOST_SHOWN_IN_MY_AGENTS as u64 + 1)
+        .current_work_of_agents(
+            agents.clone(),
+            person,
+            ctx.now(),
+            MOST_SHOWN_IN_MY_AGENTS as u64 + 1,
+        )
         .await
         .map_err(failed)?;
     let truncated = works.len() > MOST_SHOWN_IN_MY_AGENTS;
