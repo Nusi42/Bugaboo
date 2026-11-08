@@ -144,7 +144,7 @@ pub struct ReviewView {
 }
 
 /// What a hand-over lets the agent spend, and whether its plan waits for a person.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WorkBudget {
     /// The most attempts on the issue.
     pub attempts: i64,

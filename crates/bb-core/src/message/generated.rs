@@ -321,9 +321,6 @@ pub const AGENT_WORK_QUESTION_JOINS: MessageKey = MessageKey::new("agent-work.qu
 /// The message `agent-work.question-send`.
 pub const AGENT_WORK_QUESTION_SEND: MessageKey = MessageKey::new("agent-work.question-send");
 
-/// The message `agent-work.reported-note`.
-pub const AGENT_WORK_REPORTED_NOTE: MessageKey = MessageKey::new("agent-work.reported-note");
-
 /// The message `agent-work.results`.
 pub const AGENT_WORK_RESULTS: MessageKey = MessageKey::new("agent-work.results");
 
@@ -7888,54 +7885,6 @@ pub fn agent_work_fact_attempts(
     )
 }
 
-/// The message `agent-work.fact-cost`.
-#[must_use]
-pub fn agent_work_fact_cost(amount: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.fact-cost"),
-        vec![("amount", Value::Text(amount.to_string()))],
-    )
-}
-
-/// The message `agent-work.fact-cost-of`.
-#[must_use]
-pub fn agent_work_fact_cost_of(
-    amount: impl std::fmt::Display,
-    most: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.fact-cost-of"),
-        vec![
-            ("amount", Value::Text(amount.to_string())),
-            ("most", Value::Text(most.to_string())),
-        ],
-    )
-}
-
-/// The message `agent-work.fact-time`.
-#[must_use]
-pub fn agent_work_fact_time(time: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.fact-time"),
-        vec![("time", Value::Text(time.to_string()))],
-    )
-}
-
-/// The message `agent-work.fact-time-of`.
-#[must_use]
-pub fn agent_work_fact_time_of(
-    most: impl std::fmt::Display,
-    time: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.fact-time-of"),
-        vec![
-            ("most", Value::Text(most.to_string())),
-            ("time", Value::Text(time.to_string())),
-        ],
-    )
-}
-
 /// The message `agent-work.gave-up`.
 #[must_use]
 pub fn agent_work_gave_up(reason: impl std::fmt::Display) -> Message {
@@ -15470,13 +15419,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agent-work.ends", "The hand-over runs out on {date}."),
     ("agent-work.fact-attempts", "Attempt {number} of {most}"),
-    ("agent-work.fact-cost", "Cost reported: {amount}"),
-    (
-        "agent-work.fact-cost-of",
-        "Cost reported: {amount} of {most}",
-    ),
-    ("agent-work.fact-time", "Time reported: {time}"),
-    ("agent-work.fact-time-of", "Time reported: {time} of {most}"),
     ("agent-work.gave-up", "The agent gave up: {reason}"),
     ("agent-work.hand-over", "Hand over to an agent"),
     ("agent-work.hand-over-confirm", "Hand over"),
@@ -15556,10 +15498,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The answer joins the brief, so the next attempt and any other agent read it.",
     ),
     ("agent-work.question-send", "Answer"),
-    (
-        "agent-work.reported-note",
-        "Time and cost are what the agent reports. They are no time entry.",
-    ),
     ("agent-work.result-check-failed", "Check {label}: failed"),
     ("agent-work.result-check-passed", "Check {label}: passed"),
     ("agent-work.results", "Results"),
