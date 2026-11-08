@@ -95,3 +95,17 @@ export async function proposeCritical(
   );
   return before;
 }
+
+/** Puts the priority of an issue back to Normal, so a picture of a proposal to raise it can be taken again. */
+export async function lowerToNormal(server: Instance, key: string): Promise<void> {
+  const now = await priorityAndVersion(server, key);
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PATCH("/api/v1/issues/{issue}", {
+    params: { path: { issue: key } },
+    body: { version: now.version, priority: "normal" },
+  });
+  await admin.dispose();
+}
