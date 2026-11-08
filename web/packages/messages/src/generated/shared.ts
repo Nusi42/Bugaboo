@@ -632,7 +632,7 @@ export const messages = {
   "notification.kind.ready-for-review": "Ready for review",
   "notification.kind.agent-gave-up": "An agent gave up",
   "notification.kind.rule-runs-out-soon": "A standing rule runs out soon",
-  "notification.kind.agent-stopped": "An agent was stopped",
+  "notification.kind.agent-stopped": "An agent was stopped or paused",
   "notification.kind.edit-notice":
     "Somebody asks you to finish editing, or takes your editing over",
   "error.mail.rejected":
@@ -678,7 +678,8 @@ export const messages = {
   "notifications.agent-gave-up": "An agent gave up on this issue.",
   "notifications.rule-runs-out-soon":
     "A standing rule of yours runs out in three days. Renew it if the agent should go on.",
-  "notifications.agent-stopped": "An agent of yours was stopped. Its work stopped with it.",
+  "notifications.agent-stopped":
+    "An agent of yours was stopped or paused. Look at My agents to see which one and why.",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
@@ -724,6 +725,8 @@ export const messages = {
   "error.agent-work.already-open": "This agent already has this issue handed over.",
   "error.agent-work.not-ready": "The work is not waiting for that.",
   "error.agent-work.budget-reached": "The agent used all the attempts it was given on this issue.",
+  "error.agent.limit-reached":
+    "The agent reached one of its limits and is paused. Its person can let it work again.",
   "error.ai.off": "AI is off here.",
   "error.ai.unavailable": "The AI provider did not answer.",
   "error.ai.not-set-up":

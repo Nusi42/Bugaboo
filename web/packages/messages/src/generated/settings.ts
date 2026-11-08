@@ -199,12 +199,12 @@ export const messages = {
     "A standing rule runs out soon: by e-mail",
   "setting.notifications.rule-runs-out-soon-by-mail.help":
     "Sends you an e-mail three days before a standing rule of yours runs out.",
-  "setting.notifications.agent-stopped-in-app.name": "An agent was stopped: in the app",
+  "setting.notifications.agent-stopped-in-app.name": "An agent was stopped or paused: in the app",
   "setting.notifications.agent-stopped-in-app.help":
-    "Tells you when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
-  "setting.notifications.agent-stopped-by-mail.name": "An agent was stopped: by e-mail",
+    "Tells you when an agent of yours is stopped by an administrator or because you lost access, or paused because it reached a limit.",
+  "setting.notifications.agent-stopped-by-mail.name": "An agent was stopped or paused: by e-mail",
   "setting.notifications.agent-stopped-by-mail.help":
-    "Sends you an e-mail when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
+    "Sends you an e-mail when an agent of yours is stopped by an administrator or because you lost access, or paused because it reached a limit.",
   "setting.time.billable.name": "Billable",
   "setting.time.billable.help":
     "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",
