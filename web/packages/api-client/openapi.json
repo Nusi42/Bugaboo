@@ -17973,7 +17973,7 @@
           }
         }
       },
-      "AgentMarkBody": {
+      "AgentMarkRefBody": {
         "type": "object",
         "description": "The agent that works on an issue and where its work is: the mark of a row of a list.",
         "required": ["name", "state"],
@@ -22117,7 +22117,7 @@
           "agent_work": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AgentMarkBody",
+                "$ref": "#/components/schemas/AgentMarkRefBody",
                 "description": "The agent that works on it now and where its work is; left out while no agent works on it.\nOnly a list that asks for it reads it."
               },
               {

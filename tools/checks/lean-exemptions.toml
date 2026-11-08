@@ -396,3 +396,8 @@ reason = "The work on one issue is its hand-overs with their attempts, read whol
 route = "GET /api/v1/issues/{issue}/agent-work"
 property = "proposals"
 reason = "The proposals that wait for a person on one issue are few and those decided are not listed; the answer shows at most 50 and says `truncated` (M7-F205)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/agent-work"
+property = "brief_missing"
+reason = "A brief has three parts, so the list holds at most three words of a fixed set; it is no page of records (M7-F100)."

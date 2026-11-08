@@ -4921,7 +4921,7 @@ export interface components {
       version?: number | null;
     };
     /** @description The agent that works on an issue and where its work is: the mark of a row of a list. */
-    AgentMarkBody: {
+    AgentMarkRefBody: {
       /** @description The name of the agent. */
       name: string;
       /** @description Where its work is. It is not the status of the issue. */
@@ -7031,7 +7031,7 @@ export interface components {
      *     hidden from them is left out, and asking for it fails like asking for one that does not exist.
      */
     IssueItem: {
-      agent_work?: components["schemas"]["AgentMarkBody"] | null;
+      agent_work?: components["schemas"]["AgentMarkRefBody"] | null;
       /** @description Who works on it, as the viewer may see people of this kind. */
       assigned_to?: components["schemas"]["PersonRef"][] | null;
       /**

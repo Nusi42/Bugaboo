@@ -71,7 +71,7 @@ impl From<&AppIssueTypeRef> for IssueTypeRef {
 
 /// The agent that works on an issue and where its work is: the mark of a row of a list.
 #[derive(Serialize, ToSchema, Masked)]
-pub(crate) struct AgentMarkBody {
+pub(crate) struct AgentMarkRefBody {
     /// The name of the agent.
     #[masked(open)]
     pub(crate) name: String,
@@ -80,7 +80,7 @@ pub(crate) struct AgentMarkBody {
     pub(crate) state: AgentWorkState,
 }
 
-impl From<&AgentMark> for AgentMarkBody {
+impl From<&AgentMark> for AgentMarkRefBody {
     fn from(mark: &AgentMark) -> Self {
         Self {
             name: mark.name.clone(),
@@ -188,7 +188,7 @@ pub(crate) struct IssueItem {
     /// Only a list that asks for it reads it.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(nested, item_type)]
-    agent_work: Option<AgentMarkBody>,
+    agent_work: Option<AgentMarkRefBody>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
@@ -229,7 +229,7 @@ impl From<&IssueView> for IssueItem {
                 .labels
                 .as_ref()
                 .map(|labels| labels.iter().map(LabelRefBody::from).collect()),
-            agent_work: issue.agent_work.as_ref().map(AgentMarkBody::from),
+            agent_work: issue.agent_work.as_ref().map(AgentMarkRefBody::from),
             version: Some(issue.version),
         }
     }
@@ -293,7 +293,7 @@ mod tests {
             closed_at: Some(String::new()),
             own_fields: Some(OwnValues::default()),
             labels: Some(Vec::new()),
-            agent_work: Some(AgentMarkBody {
+            agent_work: Some(AgentMarkRefBody {
                 name: String::new(),
                 state: AgentWorkState::AgentWorking,
             }),

@@ -101,7 +101,7 @@ export interface FoundLine {
   readonly issueType: Schema<"IssueTypeRef"> | undefined;
   readonly assignedTo: readonly Schema<"PersonRef">[];
   /** The agent that works on the issue and where its work is. */
-  readonly agent: Schema<"AgentMarkBody"> | undefined;
+  readonly agent: Schema<"AgentMarkRefBody"> | undefined;
   readonly project: Schema<"ProjectRef"> | undefined;
   readonly labels: readonly Schema<"LabelRefBody">[];
   readonly reportedBy: Schema<"PersonRef"> | undefined;
