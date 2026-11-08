@@ -2,13 +2,14 @@ import { t } from "@bugaboo/messages";
 import { AskDialog, Button, Card, SelectField } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { useMe } from "../../shared/use-me.ts";
 import { peopleOf, useAssignablePeople } from "../issues/index.ts";
 import { useHandAgent, useTakeBackOffer, type ListedAgent } from "./agents.ts";
 import { ActionError } from "./ActionError.tsx";
 import { projectKey } from "./project-choices.ts";
 import { ProjectSelect } from "./ProjectSelect.tsx";
 
-/** The people of a project that the person can name, as the choices of the window. */
+/** The people of a project that the person can name, but the person, as the choices of the window. */
 function PersonSelect({
   project,
   value,
@@ -18,7 +19,11 @@ function PersonSelect({
   readonly value: string;
   readonly onChange: (person: string) => void;
 }) {
-  const people = peopleOf(useAssignablePeople(project, "").data?.pages);
+  // The agent is the person's own already: only somebody else can take it.
+  const me = useMe()?.id;
+  const people = peopleOf(useAssignablePeople(project, "").data?.pages).filter(
+    (person) => person.id !== me,
+  );
   return (
     <SelectField
       label={t("agents.hand-person")}

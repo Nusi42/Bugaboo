@@ -54,7 +54,9 @@ test("The sidebar with My agents in a window 600 px high, in the four themes", a
     paths.appearance,
     async () => {
       await page.goto(paths.home);
-      await expect(page.getByRole("navigation", { name: t("shell.menu") })).toBeVisible();
+      // In a window this low *My agents* is in the menu of the group at the bottom.
+      await page.getByRole("button", { name: t("shell.group-fold"), exact: true }).click();
+      await expect(page.getByRole("link", { name: t("nav.my-agents"), exact: true })).toBeVisible();
     },
   );
   await admin.dispose();

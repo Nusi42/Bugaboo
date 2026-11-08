@@ -1,9 +1,6 @@
 import { appPaths } from "@bugaboo/api-client";
 
-/**
- * The addresses of the pages of the app, written once; routes, links and redirects all use these (ODR). They
- * are the addresses of the UX design (§2.1): `/me/…` for *My settings*, `/settings/…` for *Organization settings*.
- */
+/** The addresses of the pages (UX §2.1: `/me/…`, `/settings/…`), written once for routes, links and redirects (ODR). */
 export const paths = {
   home: "/",
   notifications: appPaths.notifications,

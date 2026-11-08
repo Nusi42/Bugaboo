@@ -110,8 +110,8 @@ describe("ai_37 the state of an agent", () => {
 });
 
 /** A piece of work of the tests that waits for `waits` on the issue `key`. */
-function waiting(key: string, waits: MyWorkItem["waits_for"]) {
-  return { issue: { readable_id: key }, waits_for: waits };
+function waiting(key: string, waits: NonNullable<MyWorkItem["waits_for"]> | null) {
+  return { issue: { readable_id: key }, waits_for: waits } as const;
 }
 
 describe("ai_37 the order of Waiting for you", () => {
