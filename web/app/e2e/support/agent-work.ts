@@ -16,7 +16,6 @@ const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
 
 export { tickTwo } from "./labels.ts";
-export { topOf } from "./agent-work-still.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */
 export async function createAgent(admin: ApiSession, name: string): Promise<string> {
@@ -93,6 +92,8 @@ export interface WorkScene {
   /** A review that was made before: *send-back* with its note, or *accept* by itself. */
   readonly review?: { readonly answer: "send-back" | "accept"; readonly note?: string };
   readonly gaveUp?: string;
+  /** Why the work stopped, when it stopped without a review and without giving up. */
+  readonly stoppedFor?: Schema<"StopCause">;
   /** The result was accepted by itself and nobody looked at it. */
   readonly acceptedByItself?: boolean;
   /** The issue kept its status after it was accepted by itself, and a person chooses the next one. */
@@ -120,9 +121,10 @@ class SceneWriter {
   state(work: string, scene: WorkScene): void {
     const flag = scene.acceptedByItself === true ? 1 : 0;
     this.run(
-      "UPDATE issue_work SET state = ?, gave_up = ?, accepted_by_itself = ?, closed = ?, status_pending = ? WHERE id = ?",
+      "UPDATE issue_work SET state = ?, gave_up = ?, stopped_for = ?, accepted_by_itself = ?, closed = ?, status_pending = ? WHERE id = ?",
       scene.state,
       scene.gaveUp ?? null,
+      scene.stoppedFor ?? null,
       flag,
       flag,
       scene.statusPending === true ? 1 : 0,

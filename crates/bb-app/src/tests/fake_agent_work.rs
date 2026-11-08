@@ -4,7 +4,7 @@ use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     Review, RuleMatch, StandingRule,
 };
-use bb_core::agent_work::AgentWorkState;
+use bb_core::agent_work::{AgentWorkState, StopCause};
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, StandingRuleId,
     UserId,
@@ -744,6 +744,17 @@ impl AgentWorkRecords for super::fake::FakeStore {
         Ok(())
     }
 
+    async fn set_stop_cause(
+        tx: &mut Tx,
+        id: AgentWorkId,
+        cause: StopCause,
+    ) -> Result<(), FakeError> {
+        if let Some(w) = tx.state.work.works.iter_mut().find(|w| w.id == id) {
+            w.stopped_for = Some(cause);
+        }
+        Ok(())
+    }
+
     async fn insert_review(tx: &mut Tx, review: &Review) -> Result<(), FakeError> {
         tx.state.work.reviews.push(review.clone());
         Ok(())
@@ -752,6 +763,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
     async fn stop_work_of_agent(
         tx: &mut Tx,
         agent: AgentId,
+        cause: StopCause,
     ) -> Result<Vec<AgentWorkId>, FakeError> {
         let open: Vec<AgentWorkId> = {
             let work = &tx.state.work;
@@ -764,6 +776,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
         for w in &mut tx.state.work.works {
             if open.contains(&w.id) {
                 w.state = AgentWorkState::Stopped;
+                w.stopped_for = Some(cause);
                 w.version += 1;
             }
         }

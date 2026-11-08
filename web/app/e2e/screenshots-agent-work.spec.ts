@@ -50,6 +50,14 @@ test("who works on an issue that has a person, and the plan that waits for Appro
   await inFourThemes(page, "worked-on-by", MILESTONE);
   await goToBlock(page, plan);
   await inFourThemes(page, "block-plan-waits", MILESTONE);
+  // With a note typed the one button is named for what it does.
+  await page
+    .getByLabel(t("agent-work.plan-note"), { exact: true })
+    .fill("Please also cover the passkey");
+  await expect(
+    page.getByRole("button", { name: t("agent-work.plan-answer"), exact: true }),
+  ).toBeVisible();
+  await inFourThemes(page, "block-plan-note", MILESTONE);
 });
 
 test("the block waiting for the agent, working, asking, answered", async ({ page, server }) => {

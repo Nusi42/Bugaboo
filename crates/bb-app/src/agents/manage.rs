@@ -8,6 +8,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent::{Agent, AgentState, MOST_AGENTS};
+use bb_core::agent_work::StopCause;
 use bb_core::event::RecordKind;
 use bb_core::id::{AgentId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
@@ -416,7 +417,7 @@ pub async fn change_agent<S: AuthStore>(
                 }
                 if to == AgentState::Stopped {
                     // The work it was given stops with it (ADR-0029, decision 2).
-                    S::stop_work_of_agent(transaction, id).await?;
+                    S::stop_work_of_agent(transaction, id, StopCause::AgentStopped).await?;
                     S::end_grants_of_agent(transaction, id).await?;
                 }
                 Ok(())
@@ -475,7 +476,7 @@ pub async fn stop_all_agents<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 for agent in S::stop_agents_of(transaction, person).await? {
-                    S::stop_work_of_agent(transaction, agent).await?;
+                    S::stop_work_of_agent(transaction, agent, StopCause::AgentStopped).await?;
                     S::end_grants_of_agent(transaction, agent).await?;
                 }
                 Ok(())
@@ -591,7 +592,7 @@ pub async fn accept_agent<S: AuthStore>(
                 }
                 S::delete_keys_of_agent(transaction, id).await?;
                 // The work was handed over by the person who had the agent; it stops.
-                S::stop_work_of_agent(transaction, id).await?;
+                S::stop_work_of_agent(transaction, id, StopCause::HandedOn).await?;
                 S::end_grants_of_agent(transaction, id).await?;
                 if S::hand_agent_to(transaction, id, person, version).await? {
                     Ok(())

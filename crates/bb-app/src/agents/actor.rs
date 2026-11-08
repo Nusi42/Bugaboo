@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::agent::{AgentLimits, AgentState, MOST_AGENT_KEYS};
+use bb_core::agent_work::StopCause;
 use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::person::Person;
 use bb_core::settings::{
@@ -49,7 +50,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .is_empty()
         {
             // The person has lost the right to agents: the work they gave stops (AI-33).
-            self.stop_work_of_agent(found.id).await?;
+            self.stop_work_of_agent(found.id, StopCause::AccessLost)
+                .await?;
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
         // Agents off for the organization refuse every agent; off for a project, they work nowhere

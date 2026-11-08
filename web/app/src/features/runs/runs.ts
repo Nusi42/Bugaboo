@@ -161,3 +161,11 @@ export function skipLineText(skip: UndoSkip): string {
         reason,
       });
 }
+
+/** How many fields stay that the preview counts but does not list: the list holds only the first ones. */
+export function unlistedSkips(preview: {
+  readonly skipped: readonly unknown[];
+  readonly skipped_count: number;
+}): number {
+  return preview.skipped_count - preview.skipped.length;
+}

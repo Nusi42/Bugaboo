@@ -178,7 +178,12 @@ async fn ai_33_the_open_work_of_a_page_is_read_in_one_statement_and_leaves_out_w
         storage
             .record_change(&event(&mut made.source, step), move |transaction| {
                 Box::pin(async move {
-                    AuthStorage::stop_work_of_agent(transaction, fixer).await?;
+                    AuthStorage::stop_work_of_agent(
+                        transaction,
+                        fixer,
+                        bb_core::agent_work::StopCause::AgentStopped,
+                    )
+                    .await?;
                     Ok(())
                 })
             })

@@ -109,6 +109,7 @@ pub(super) async fn hand_over(
             person,
             state: AgentWorkState::WaitingForTheAgent,
             gave_up: None,
+            stopped_for: None,
             closed: false,
             accepted_by_itself: false,
             status_pending: false,
@@ -321,7 +322,12 @@ async fn ai_31_an_agent_has_one_open_work_for_an_issue_whatever_two_requests_do(
         storage
             .record_change(&event(&mut made.source, step), move |transaction| {
                 Box::pin(async move {
-                    AuthStorage::stop_work_of_agent(transaction, fixer).await?;
+                    AuthStorage::stop_work_of_agent(
+                        transaction,
+                        fixer,
+                        bb_core::agent_work::StopCause::AgentStopped,
+                    )
+                    .await?;
                     let _ = id;
                     Ok(())
                 })

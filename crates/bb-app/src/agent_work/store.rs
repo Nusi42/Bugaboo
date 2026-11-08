@@ -10,7 +10,7 @@ use bb_core::agent_records::{
     Attempt, AttemptResult, HandOver, IssueWork, Proposal, ProposalState, Question, Review,
     RuleMatch, StandingRule,
 };
-use bb_core::agent_work::AgentWorkState;
+use bb_core::agent_work::{AgentWorkState, StopCause};
 use bb_core::event::DomainEvent;
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, StandingRuleId,
@@ -181,9 +181,11 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn insert_question(question: &Question) -> ();
         /// Writes the answer to a question.
         fn set_answer(id: AgentNoteId, answer: &str, by: UserId, at: Timestamp) -> ();
+        /// Notes why a piece of work stopped.
+        fn set_stop_cause(id: AgentWorkId, cause: StopCause) -> ();
         /// Adds a review.
         fn insert_review(review: &Review) -> ();
         /// Ends the open work of an agent as *Stopped*; the work that was open.
-        fn stop_work_of_agent(agent: AgentId) -> Vec<AgentWorkId>;
+        fn stop_work_of_agent(agent: AgentId, cause: StopCause) -> Vec<AgentWorkId>;
     }
 }

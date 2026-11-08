@@ -14,6 +14,9 @@ const memberKeys: Readonly<Record<string, string>> = {
   parent: "issue-field.parent",
   "sub-issue": "issue-field.sub-issue",
   project: "issue-field.project",
+  relations: "issue-field.relations",
+  comments: "issue-field.comments",
+  attachments: "issue-field.attachments",
 };
 
 /**

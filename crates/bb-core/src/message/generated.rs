@@ -178,10 +178,6 @@ pub const AGENT_WORK_ALWAYS: MessageKey = MessageKey::new("agent-work.always");
 /// The message `agent-work.attempt-accepted`.
 pub const AGENT_WORK_ATTEMPT_ACCEPTED: MessageKey = MessageKey::new("agent-work.attempt-accepted");
 
-/// The message `agent-work.attempt-accepted-by-itself`.
-pub const AGENT_WORK_ATTEMPT_ACCEPTED_BY_ITSELF: MessageKey =
-    MessageKey::new("agent-work.attempt-accepted-by-itself");
-
 /// The message `agent-work.attempt-sent-back`.
 pub const AGENT_WORK_ATTEMPT_SENT_BACK: MessageKey =
     MessageKey::new("agent-work.attempt-sent-back");
@@ -314,9 +310,6 @@ pub const AGENT_WORK_PLAN_ANSWER: MessageKey = MessageKey::new("agent-work.plan-
 /// The message `agent-work.plan-approve`.
 pub const AGENT_WORK_PLAN_APPROVE: MessageKey = MessageKey::new("agent-work.plan-approve");
 
-/// The message `agent-work.plan-approved`.
-pub const AGENT_WORK_PLAN_APPROVED: MessageKey = MessageKey::new("agent-work.plan-approved");
-
 /// The message `agent-work.plan-needs-approval`.
 pub const AGENT_WORK_PLAN_NEEDS_APPROVAL: MessageKey =
     MessageKey::new("agent-work.plan-needs-approval");
@@ -359,6 +352,10 @@ pub const AGENT_WORK_QUESTION_ANSWER: MessageKey = MessageKey::new("agent-work.q
 
 /// The message `agent-work.question-joins`.
 pub const AGENT_WORK_QUESTION_JOINS: MessageKey = MessageKey::new("agent-work.question-joins");
+
+/// The message `agent-work.question-needs-answer`.
+pub const AGENT_WORK_QUESTION_NEEDS_ANSWER: MessageKey =
+    MessageKey::new("agent-work.question-needs-answer");
 
 /// The message `agent-work.question-send`.
 pub const AGENT_WORK_QUESTION_SEND: MessageKey = MessageKey::new("agent-work.question-send");
@@ -2746,11 +2743,17 @@ pub const ISSUE_FIELD_AGENT_STATE: MessageKey = MessageKey::new("issue-field.age
 /// The message `issue-field.assigned-to`.
 pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
 
+/// The message `issue-field.attachments`.
+pub const ISSUE_FIELD_ATTACHMENTS: MessageKey = MessageKey::new("issue-field.attachments");
+
 /// The message `issue-field.changed`.
 pub const ISSUE_FIELD_CHANGED: MessageKey = MessageKey::new("issue-field.changed");
 
 /// The message `issue-field.closed`.
 pub const ISSUE_FIELD_CLOSED: MessageKey = MessageKey::new("issue-field.closed");
+
+/// The message `issue-field.comments`.
+pub const ISSUE_FIELD_COMMENTS: MessageKey = MessageKey::new("issue-field.comments");
 
 /// The message `issue-field.created`.
 pub const ISSUE_FIELD_CREATED: MessageKey = MessageKey::new("issue-field.created");
@@ -2789,6 +2792,9 @@ pub const ISSUE_FIELD_PROJECT: MessageKey = MessageKey::new("issue-field.project
 
 /// The message `issue-field.readable-id`.
 pub const ISSUE_FIELD_READABLE_ID: MessageKey = MessageKey::new("issue-field.readable-id");
+
+/// The message `issue-field.relations`.
+pub const ISSUE_FIELD_RELATIONS: MessageKey = MessageKey::new("issue-field.relations");
 
 /// The message `issue-field.reported-by`.
 pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.reported-by");
@@ -8047,6 +8053,15 @@ pub fn agent_work_missing_next(part: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `agent-work.plan-approved`.
+#[must_use]
+pub fn agent_work_plan_approved(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.plan-approved"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
 /// The message `agent-work.proposal-line`.
 #[must_use]
 pub fn agent_work_proposal_line(
@@ -8155,18 +8170,51 @@ pub fn agent_work_stays_assigned(people: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `agent-work.stopped-why`.
+/// The message `agent-work.stopped-access-lost`.
 #[must_use]
-pub fn agent_work_stopped_why(
+pub fn agent_work_stopped_access_lost(
     agent: impl std::fmt::Display,
-    date: impl std::fmt::Display,
+    person: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
-        MessageKey::new("agent-work.stopped-why"),
+        MessageKey::new("agent-work.stopped-access-lost"),
         vec![
             ("agent", Value::Text(agent.to_string())),
-            ("date", Value::Text(date.to_string())),
+            ("person", Value::Text(person.to_string())),
         ],
+    )
+}
+
+/// The message `agent-work.stopped-agent-stopped`.
+#[must_use]
+pub fn agent_work_stopped_agent_stopped(
+    agent: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.stopped-agent-stopped"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.stopped-handed-on`.
+#[must_use]
+pub fn agent_work_stopped_handed_on(agent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.stopped-handed-on"),
+        vec![("agent", Value::Text(agent.to_string()))],
+    )
+}
+
+/// The message `agent-work.stopped-ran-out`.
+#[must_use]
+pub fn agent_work_stopped_ran_out(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.stopped-ran-out"),
+        vec![("date", Value::Text(date.to_string()))],
     )
 }
 
@@ -8208,6 +8256,15 @@ pub fn agent_work_throw_away_summary(back: i64, stay: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.throw-away-summary"),
         vec![("back", Value::Number(back)), ("stay", Value::Number(stay))],
+    )
+}
+
+/// The message `agent-work.throw-away-unlisted`.
+#[must_use]
+pub fn agent_work_throw_away_unlisted(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.throw-away-unlisted"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -15449,7 +15506,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agent-work.accepted-by-itself",
-        "Accepted by itself, because every check passed. Look at it.",
+        "Every check passed. Look at it.",
     ),
     ("agent-work.agent", "Agent"),
     ("agent-work.agent-create", "Create an agent"),
@@ -15466,10 +15523,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.answered-by", "Answered by {person}"),
     ("agent-work.attempt", "Attempt {number}"),
     ("agent-work.attempt-accepted", "accepted"),
-    (
-        "agent-work.attempt-accepted-by-itself",
-        "accepted by itself",
-    ),
     ("agent-work.attempt-ended", "Ended {date}"),
     (
         "agent-work.attempt-reported",
@@ -15576,16 +15629,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.outcome.thrown-away", "Thrown away"),
     ("agent-work.part-description", "Description"),
     ("agent-work.part-done-when", "Done when"),
-    ("agent-work.part-note", "Note"),
+    ("agent-work.part-note", "note"),
     ("agent-work.part-steps-to-reproduce", "Steps to reproduce"),
     ("agent-work.plan-answer", "Answer with the note"),
     ("agent-work.plan-approve", "Approve plan"),
-    ("agent-work.plan-approved", "A person approved the plan."),
+    ("agent-work.plan-approved", "Plan approved by {person}"),
     ("agent-work.plan-needs-approval", "Plan needs approval"),
     ("agent-work.plan-note", "Note on the plan (optional)"),
     (
         "agent-work.plan-note-help",
-        "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another.",
+        "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another plan.",
     ),
     ("agent-work.plan-waits", "The plan waits for your approval."),
     ("agent-work.power-change-fields", "Change these fields"),
@@ -15604,6 +15657,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.question-joins",
         "The answer joins the brief, so the next attempt and any other agent read it.",
     ),
+    ("agent-work.question-needs-answer", "Write an answer first."),
     ("agent-work.question-send", "Answer"),
     ("agent-work.result-check-failed", "Check {label}: failed"),
     ("agent-work.result-check-passed", "Check {label}: passed"),
@@ -15663,8 +15717,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The issue stays assigned to {people}.",
     ),
     (
-        "agent-work.stopped-why",
-        "{agent} was stopped before it finished: its person stopped it, it reached a limit, or the hand-over ran out on {date}.",
+        "agent-work.stopped-access-lost",
+        "{person} lost the right to agents, so {agent} stopped.",
+    ),
+    (
+        "agent-work.stopped-agent-stopped",
+        "{person} stopped {agent}, and its work on this issue stopped with it.",
+    ),
+    (
+        "agent-work.stopped-handed-on",
+        "{agent} was given to another person, so its work on this issue stopped.",
+    ),
+    (
+        "agent-work.stopped-ran-out",
+        "The hand-over ran out on {date}.",
     ),
     (
         "agent-work.summary",
@@ -15689,6 +15755,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "agent-work.throw-away-summary",
         "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",
+    ),
+    (
+        "agent-work.throw-away-unlisted",
+        "{count, plural, one {# more field stays than is listed} other {# more fields stay than are listed}}. Every other change of this attempt goes back.",
     ),
     ("agent-work.title", "Agent work"),
     ("agent-work.worked-on-by", "Worked on by"),
@@ -17717,8 +17787,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.agent", "Agent"),
     ("issue-field.agent-state", "Agent state"),
     ("issue-field.assigned-to", "Assigned to"),
+    ("issue-field.attachments", "Files"),
     ("issue-field.changed", "Changed"),
     ("issue-field.closed", "Closed"),
+    ("issue-field.comments", "Comments"),
     ("issue-field.created", "Created"),
     ("issue-field.description", "Description"),
     ("issue-field.due-date", "Due date"),
@@ -17731,6 +17803,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.priority", "Priority"),
     ("issue-field.project", "Project"),
     ("issue-field.readable-id", "Issue ID"),
+    ("issue-field.relations", "Relations"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
     ("issue-field.status-group", "Status group"),

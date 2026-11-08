@@ -91,6 +91,7 @@ export async function blockIssues(
     }),
     stopped: await key("The agent was stopped", "Stopper", {
       state: "stopped",
+      stoppedFor: "agent-stopped",
       attempt: { ...attempt, ended: true },
     }),
     itself: await acceptedByItself(server, `Accepted by itself ${who}`, `Quick ${who}`, true),

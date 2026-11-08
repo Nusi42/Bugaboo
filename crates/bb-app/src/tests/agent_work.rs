@@ -2,7 +2,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::GivingState;
-use bb_core::agent_work::{AgentWorkState, BriefPart};
+use bb_core::agent_work::{AgentWorkState, BriefPart, StopCause};
 use bb_core::id::{AgentId, HandOverId, IssueId, ProjectId};
 use bb_policy::StartingRole;
 use serde_json::json;
@@ -260,6 +260,10 @@ async fn ai_31_a_hand_over_runs_out_after_14_days() -> Outcome {
         .run_hand_over_runs_out(&json!({ "hand_over": id.to_string() }))
         .await?;
     assert_eq!(work(&world), (GivingState::Ended, AgentWorkState::Stopped));
+    assert_eq!(
+        world.store.lock().state.work.works[0].stopped_for,
+        Some(StopCause::RanOut)
+    );
     // The agent has lost the issue with its hand-over.
     let refusal = issue(&world.ctx(), query(&given.key, given.issue)).await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::NotFound));
@@ -270,9 +274,13 @@ async fn ai_31_a_hand_over_runs_out_after_14_days() -> Outcome {
 async fn ai_33_open_work_becomes_stopped_when_the_person_loses_access() -> Outcome {
     let world = World::new().await?;
     let given = handed(&world).await?;
-    world.ctx().stop_work_of_agent(given.agent).await?;
+    world
+        .ctx()
+        .stop_work_of_agent(given.agent, StopCause::AccessLost)
+        .await?;
     let stored = world.store.lock().state.work.clone();
     assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
+    assert_eq!(stored.works[0].stopped_for, Some(StopCause::AccessLost));
     assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }
@@ -290,6 +298,7 @@ async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome 
     .await?;
     let stored = world.store.lock().state.work.clone();
     assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
+    assert_eq!(stored.works[0].stopped_for, Some(StopCause::AgentStopped));
     assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
 }

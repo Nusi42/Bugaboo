@@ -106,6 +106,7 @@ export interface MessageArguments {
   "agent-work.missing-first": { part: string | number };
   "agent-work.missing-many": { issue: string | number; parts: string | number };
   "agent-work.missing-next": { part: string | number };
+  "agent-work.plan-approved": { person: string | number };
   "agent-work.proposal-line": {
     after: string | number;
     agent: string | number;
@@ -125,7 +126,10 @@ export interface MessageArguments {
     number: string | number;
   };
   "agent-work.stays-assigned": { people: string | number };
-  "agent-work.stopped-why": { agent: string | number; date: string | number };
+  "agent-work.stopped-access-lost": { agent: string | number; person: string | number };
+  "agent-work.stopped-agent-stopped": { agent: string | number; person: string | number };
+  "agent-work.stopped-handed-on": { agent: string | number };
+  "agent-work.stopped-ran-out": { date: string | number };
   "agent-work.summary": { address: string | number; number: string | number };
   "agent-work.throw-away-back": {
     field: string | number;
@@ -133,6 +137,7 @@ export interface MessageArguments {
     to: string | number;
   };
   "agent-work.throw-away-summary": { back: number; stay: number };
+  "agent-work.throw-away-unlisted": { count: number };
   "ai-setup.address-added": { date: string | number };
   "ai-setup.address-remove-name": { address: string | number };
   "ai-setup.agreement-confirmed": { at: string | number; person: string | number };

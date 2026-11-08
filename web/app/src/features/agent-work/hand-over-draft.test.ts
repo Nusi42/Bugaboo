@@ -71,28 +71,31 @@ describe("ai_31 the cost budget of a hand-over", () => {
 
 type OwnFieldKind = Parameters<typeof nameableFields>[0][number]["kind"];
 
-const own = (
-  id: string,
-  kind: OwnFieldKind,
-  appliesTo: "issues" | "projects",
-  retired = false,
-) => ({
+const own = (id: string, kind: OwnFieldKind, appliesTo: "issues" | "projects") => ({
   id,
   name: `Field ${id}`,
   kind,
   applies_to: appliesTo,
-  retired,
 });
+
+// What the server says of the kinds: two of them hold people.
+const kinds = [
+  { kind: "text", traits: [] },
+  { kind: "person", traits: ["holds-people"] },
+  { kind: "people", traits: ["holds-people"] },
+] as const;
 
 describe("ai_31 what an agent can be given to change", () => {
   it("offers every member the server lists and the own fields of issues that hold no people", () => {
-    const codes = nameableFields([
-      own("F1", "text", "issues"),
-      own("F2", "person", "issues"),
-      own("F3", "people", "issues"),
-      own("F4", "text", "projects"),
-      own("F5", "text", "issues", true),
-    ]).map((field) => field.code);
+    const codes = nameableFields(
+      [
+        own("F1", "text", "issues"),
+        own("F2", "person", "issues"),
+        own("F3", "people", "issues"),
+        own("F4", "text", "projects"),
+      ],
+      kinds,
+    ).map((field) => field.code);
     expect(codes).toEqual(
       expect.arrayContaining(["title", "relations", "comments", "attachments"]),
     );
@@ -100,6 +103,5 @@ describe("ai_31 what an agent can be given to change", () => {
     expect(codes).not.toContain("F2");
     expect(codes).not.toContain("F3");
     expect(codes).not.toContain("F4");
-    expect(codes).not.toContain("F5");
   });
 });

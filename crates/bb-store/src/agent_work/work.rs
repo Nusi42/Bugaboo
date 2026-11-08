@@ -467,6 +467,7 @@ impl AgentWorkRecords for AuthStorage {
                 IssueWorkRow::Person,
                 IssueWorkRow::State,
                 IssueWorkRow::GaveUp,
+                IssueWorkRow::StoppedFor,
                 IssueWorkRow::Closed,
                 IssueWorkRow::AcceptedByItself,
                 IssueWorkRow::StatusPending,
@@ -481,6 +482,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(work.person.stored()),
                 Expr::val(work.state.code()),
                 Expr::val(work.gave_up.clone()),
+                Expr::val(work.stopped_for.map(StopCause::code)),
                 Expr::val(work.closed),
                 Expr::val(work.accepted_by_itself),
                 Expr::val(work.status_pending),
@@ -516,6 +518,20 @@ impl AgentWorkRecords for AuthStorage {
             },
         )
         .await
+    }
+
+    async fn set_stop_cause(
+        transaction: &mut Transaction,
+        id: AgentWorkId,
+        cause: StopCause,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(IssueWorkRow::Table)
+            .value(IssueWorkRow::StoppedFor, cause.code())
+            .and_where(Expr::col(IssueWorkRow::Id).eq(id.stored()));
+        transaction.execute(&update).await?;
+        Ok(())
     }
 
     async fn close_work(
@@ -723,6 +739,7 @@ impl AgentWorkRecords for AuthStorage {
     async fn stop_work_of_agent(
         transaction: &mut Transaction,
         agent: AgentId,
+        cause: StopCause,
     ) -> Result<Vec<AgentWorkId>, StoreError> {
         let mut select = Query::select();
         select
@@ -740,6 +757,7 @@ impl AgentWorkRecords for AuthStorage {
             update
                 .table(IssueWorkRow::Table)
                 .value(IssueWorkRow::State, AgentWorkState::Stopped.code())
+                .value(IssueWorkRow::StoppedFor, cause.code())
                 .value(
                     IssueWorkRow::Version,
                     Expr::col(IssueWorkRow::Version).add(1),

@@ -6,6 +6,7 @@ import { personName } from "../../shared/person.ts";
 import {
   refreshRun,
   skipLineText,
+  unlistedSkips,
   useUndoPreview,
   useUndoRun,
   type Run,
@@ -20,7 +21,7 @@ function skipKey(skip: UndoSkip, index: number): string {
 
 /** What the question says: how many go back, and the fields that stay with their reasons. */
 function QuestionText({ preview }: { readonly preview: UndoPreview }) {
-  const named = preview.skipped.length;
+  const unlisted = unlistedSkips(preview);
   return (
     <div {...partOf(part.stack)}>
       <div>{t("runs.goes-back", { count: preview.goes_back })}</div>
@@ -32,9 +33,7 @@ function QuestionText({ preview }: { readonly preview: UndoPreview }) {
               <li key={skipKey(skip, index)}>{skipLineText(skip)}</li>
             ))}
           </ul>
-          {preview.skipped_count > named ? (
-            <div>{t("runs.skipped-more", { count: preview.skipped_count - named })}</div>
-          ) : null}
+          {unlisted > 0 ? <div>{t("runs.skipped-more", { count: unlisted })}</div> : null}
         </div>
       )}
       <div {...partOf(part.muted)}>{t("runs.dialog-note")}</div>

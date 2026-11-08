@@ -161,6 +161,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 person,
                 state: AgentWorkState::WaitingForTheAgent,
                 gave_up: None,
+                stopped_for: None,
                 closed: false,
                 accepted_by_itself: false,
                 status_pending: false,

@@ -33,6 +33,8 @@ export async function readyForReview(
     plan: "1. Find the check\n2. Cut the lifetime\n3. Add a test",
     minutes: 25,
     cost: 40,
+    // An attempt that ended with a result has an end.
+    ended: true,
     results: [
       { kind: "link", label: "Pull request 91", link: "https://example.test/pull/91" },
       { kind: "check", label: "Tests", outcome: "passed" },

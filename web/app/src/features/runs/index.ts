@@ -2,9 +2,11 @@
 import "@bugaboo/messages/parts/runs";
 
 export { RunPage } from "./RunPage.tsx";
+export { ShowMore } from "./ShowMore.tsx";
 export {
   skipLineText,
   skipReasonText,
+  unlistedSkips,
   useRunChanges,
   useUndoPreview,
   type RunChange,

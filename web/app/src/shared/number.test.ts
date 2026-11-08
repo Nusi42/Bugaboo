@@ -43,8 +43,28 @@ describe("ai_31 an amount is read the way the person writes numbers", () => {
   });
 
   it("refuses what is no amount of euros and cents", () => {
-    for (const text of ["", "abc", "1.234", "-2", "1e3", "12,50 x", "12.5.0"]) {
+    for (const text of [
+      "",
+      "abc",
+      "1.234",
+      "-2",
+      "1e3",
+      "12,50 x",
+      "12.5.0",
+      "1,2,3",
+      "1,23,456",
+      "1,2345",
+      "12,",
+      ",5",
+    ]) {
       expect(`${text}: ${String(centsIn(text, region("point")))}`).toBe(`${text}: null`);
     }
+  });
+
+  it("takes a group mark only between groups of three digits", () => {
+    expect(centsIn("1,234,567", region("point"))).toBe(123_456_700);
+    expect(centsIn("1.234.567,5", region("comma"))).toBe(123_456_750);
+    expect(centsIn("12,34", region("point"))).toBeNull();
+    expect(centsIn("1,2,3", region("point"))).toBeNull();
   });
 });

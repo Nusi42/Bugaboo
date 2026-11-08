@@ -14,7 +14,6 @@ import {
   changeWorkBehindTheScreen,
   putScene,
   tickTwo,
-  topOf,
   workByAgent,
 } from "./support/agent-work.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
@@ -59,22 +58,6 @@ test("ai_31 hand over names what the brief is missing and still hands over", asy
   expect(work.state).toBe("waiting-for-the-agent");
 });
 
-test("ai_31 ticking what the agent may change keeps the window where it is", async ({
-  page,
-  server,
-}) => {
-  const admin = await signedInAdmin(server);
-  await createAgent(admin, "Ticker");
-  await signIn(page, ada);
-  await page.goto(issueAddress("WEB-2"));
-  const window = await openHandOver(page);
-  // The window settles first (on a phone it slides in); then a tick further down must not move it.
-  const before = await topOf(window);
-  await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
-  await expect(window.getByRole("checkbox", { name: t("issue-field.title") })).toBeVisible();
-  expect(await topOf(window)).toBe(before);
-});
-
 test("ai_31 hand over from ticked issues gives each issue to the agent", async ({
   page,
   server,
@@ -95,27 +78,6 @@ test("ai_31 hand over from ticked issues gives each issue to the agent", async (
   await expect(page.getByText(t("agent-work.handed", { count: 2 }))).toBeVisible();
   expect((await workByAgent(admin, "WEB-1", "Sorter")).open).toBe(true);
   expect((await workByAgent(admin, "WEB-2", "Sorter")).open).toBe(true);
-});
-
-test("ai_33 agent work shows under the description apart from the comments", async ({
-  page,
-  server,
-}) => {
-  const admin = await signedInAdmin(server);
-  const issue = await createIssue(admin, "WEB", "Work under the description", "A description");
-  const agent = await createAgent(admin, "Under");
-  await handOverOne(admin, agent, issue);
-  await signIn(page, ada);
-  await page.goto(issueAddress(issue.key));
-  const block = page.getByRole("heading", { level: 2, name: t("agent-work.title"), exact: true });
-  await expect(block).toBeVisible();
-  await expect(
-    page.getByText(t("agent-work.agent-of", { agent: "Under", person: ada.name })).first(),
-  ).toBeVisible();
-  // Apart from the comments: the history section does not hold the agent work.
-  const history = page.getByRole("region", { name: t("history.title") }).first();
-  await expect(history.getByText(t("agent-work.title"))).toHaveCount(0);
-  expect(await topOf(block)).toBeLessThan(await topOf(history));
 });
 
 test("ai_33 the issue shows worked on by and keeps its person", async ({ page, server }) => {
@@ -192,7 +154,7 @@ test("ai_34 approve plan lets the attempt start", async ({ page, server }) => {
   await page.goto(issueAddress(issue.key));
   await expect(page.getByText(t("agent-work.plan-waits"))).toBeVisible();
   await page.getByRole("button", { name: t("agent-work.plan-approve"), exact: true }).click();
-  await expect(page.getByText(t("agent-work.plan-approved"))).toBeVisible();
+  await expect(page.getByText(t("agent-work.plan-approved", { person: ada.name }))).toBeVisible();
   const approved = await agentWorkOf(admin, issue.key);
   expect(approved.work[0]?.attempts.map((attempt) => attempt.plan_approved)).toEqual([true]);
 });

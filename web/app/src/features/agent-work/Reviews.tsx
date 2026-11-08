@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { factSeparator, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { detailsText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import type { Work } from "./agent-work.ts";
 import { reviewOf } from "./outcome.ts";
@@ -26,9 +27,7 @@ function reviewText(review: Review): string {
 export function ReviewLine({ review }: { readonly review: Review }) {
   return (
     <div {...partOf(part.agentWorkSection)}>
-      <p {...partOf(part.text)}>
-        {[reviewText(review), factSeparator, formatDateTime(review.at)].join(" ")}
-      </p>
+      <p {...partOf(part.text)}>{detailsText([reviewText(review), formatDateTime(review.at)])}</p>
       {review.note === null || review.note === undefined ? null : (
         <p {...partOf(part.agentWorkWords)}>{t("agent-work.review-note", { note: review.note })}</p>
       )}

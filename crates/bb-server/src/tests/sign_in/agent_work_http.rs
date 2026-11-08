@@ -283,8 +283,11 @@ async fn ai_31_a_hand_over_with_one_piece_accepted_still_ends_and_stops_the_othe
         let left = state_of(&mut person, &third).await?;
         assert_eq!(left["state"], "stopped", "{left}");
         assert_eq!(left["open"], false);
+        // The answer says why it stopped, on both databases: the hand-over ran out.
+        assert_eq!(left["stopped_for"], "ran-out", "{left}");
         let done = state_of(&mut person, &given.other).await?;
         assert_eq!(done["state"], "ready-for-review", "{done}");
+        assert!(done["stopped_for"].is_null(), "{done}");
         Ok(())
     })
     .await

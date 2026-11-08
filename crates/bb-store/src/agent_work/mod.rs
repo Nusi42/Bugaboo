@@ -10,7 +10,9 @@ use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     ResultKind, Review, RuleMatch, StandingRule,
 };
-use bb_core::agent_work::{AgentWorkState, Allowance, CheckResult, HandOverPower, ReviewAnswer};
+use bb_core::agent_work::{
+    AgentWorkState, Allowance, CheckResult, HandOverPower, ReviewAnswer, StopCause,
+};
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId, UserId,
@@ -206,6 +208,7 @@ pub(super) fn work_select() -> SelectStatement {
             IssueWorkRow::Person,
             IssueWorkRow::State,
             IssueWorkRow::GaveUp,
+            IssueWorkRow::StoppedFor,
             IssueWorkRow::Closed,
             IssueWorkRow::AcceptedByItself,
             IssueWorkRow::StatusPending,
@@ -225,6 +228,10 @@ pub(super) fn read_work(row: &Row) -> Result<IssueWork, StoreError> {
         person: row.id(IssueWorkRow::Person)?,
         state: word(row, IssueWorkRow::State)?,
         gave_up: row.get(IssueWorkRow::GaveUp)?,
+        stopped_for: row
+            .get::<Option<String>>(IssueWorkRow::StoppedFor)?
+            .map(|code| StopCause::from_code(&code).ok_or(StoreError::Corrupt("why work stopped")))
+            .transpose()?,
         closed: row.get(IssueWorkRow::Closed)?,
         accepted_by_itself: row.get(IssueWorkRow::AcceptedByItself)?,
         status_pending: row.get(IssueWorkRow::StatusPending)?,

@@ -6,7 +6,7 @@ use bb_app::agent_work::{
 };
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField,
+    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, StopCause,
 };
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -288,6 +288,8 @@ pub(crate) struct WorkBody {
     pub(super) reviews: Vec<ReviewAnswerBody>,
     /// Why the agent gave up.
     pub(super) gave_up: Option<String>,
+    /// Why the work stopped, when it stopped without a review and without the agent giving up.
+    pub(super) stopped_for: Option<StopCause>,
     /// Whether it was accepted by itself and nobody looked yet.
     pub(super) accepted_by_itself: bool,
     /// Whether the issue keeps its status after an accept by itself and a person chooses the next
@@ -318,6 +320,7 @@ impl From<&WorkView> for WorkBody {
             questions: work.questions.iter().map(QuestionBody::from).collect(),
             reviews: work.reviews.iter().map(ReviewAnswerBody::from).collect(),
             gave_up: work.gave_up.clone(),
+            stopped_for: work.stopped_for,
             accepted_by_itself: work.accepted_by_itself,
             choose_next_status: work.choose_next_status,
             version: work.version,

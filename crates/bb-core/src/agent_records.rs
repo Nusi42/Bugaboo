@@ -169,6 +169,9 @@ pub struct IssueWork {
     /// Why the agent gave up, when it did.
     #[personal(category = "content", basis = "contract")]
     pub gave_up: Option<String>,
+    /// Why the work stopped, when it stopped without a review and without the agent giving up.
+    #[not_personal]
+    pub stopped_for: Option<crate::agent_work::StopCause>,
     /// Whether the work ended with a review: accepted, or thrown away. A hand-over of several
     /// issues goes on for the others.
     #[not_personal]

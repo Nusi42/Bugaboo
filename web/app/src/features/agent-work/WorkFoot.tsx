@@ -3,6 +3,7 @@ import { Button, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { formatDate } from "../../shared/format.ts";
+import { personName } from "../../shared/person.ts";
 import type { Work } from "./agent-work.ts";
 import { HandOverDialog } from "./HandOverDialog.tsx";
 import { outcomeOf } from "./outcome.ts";
@@ -17,7 +18,23 @@ function endedWithoutResult(work: Work): boolean {
   );
 }
 
-/** Why the work ended, in words: who gave up and why, or who stopped it; nothing for work that went on to a review. */
+/** Why the work stopped, by the cause the server recorded: one sentence for the one real cause. */
+const stopWords: Readonly<Record<NonNullable<Work["stopped_for"]>, (work: Work) => string>> = {
+  "agent-stopped": (work) =>
+    t("agent-work.stopped-agent-stopped", {
+      person: personName(work.agent_person),
+      agent: work.agent_name,
+    }),
+  "access-lost": (work) =>
+    t("agent-work.stopped-access-lost", {
+      person: personName(work.agent_person),
+      agent: work.agent_name,
+    }),
+  "handed-on": (work) => t("agent-work.stopped-handed-on", { agent: work.agent_name }),
+  "ran-out": (work) => t("agent-work.stopped-ran-out", { date: formatDate(work.ends_at) }),
+};
+
+/** Why the work ended, in words: who gave up and why, or the cause that stopped it; nothing for work that went on to a review. */
 function WhyEnded({ work }: { readonly work: Work }) {
   if (work.gave_up !== null && work.gave_up !== undefined) {
     return (
@@ -26,15 +43,13 @@ function WhyEnded({ work }: { readonly work: Work }) {
       </p>
     );
   }
-  if (work.state === "stopped" && outcomeOf(work) === undefined && !work.open) {
-    return (
-      <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.stopped-why", {
-          agent: work.agent_name,
-          date: formatDate(work.ends_at),
-        })}
-      </p>
-    );
+  if (
+    work.state === "stopped" &&
+    !work.open &&
+    work.stopped_for !== null &&
+    work.stopped_for !== undefined
+  ) {
+    return <p {...partOf(part.agentWorkWords)}>{stopWords[work.stopped_for](work)}</p>;
   }
   return null;
 }

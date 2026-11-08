@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, IssueId, Link, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, IssueId, Link, partOf, part } from "@bugaboo/ui";
 
 import { changeArrowText } from "../../shared/change-line.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -14,6 +14,7 @@ import {
   type RunChange,
   type RunField,
 } from "./runs.ts";
+import { ShowMore } from "./ShowMore.tsx";
 
 /** The issue of a change: its ID as a link to it, and what it is about. */
 function IssueCell({ issue }: { readonly issue: RunChange["issue"] }) {
@@ -94,16 +95,12 @@ export function RunChanges({ found }: { readonly found: Run }) {
         </table>
       )}
       {read.hasNextPage ? (
-        <div>
-          <Button
-            isPending={read.isFetchingNextPage}
-            onPress={() => {
-              void read.fetchNextPage();
-            }}
-          >
-            {t("runs.show-more")}
-          </Button>
-        </div>
+        <ShowMore
+          isLoading={read.isFetchingNextPage}
+          onMore={() => {
+            void read.fetchNextPage();
+          }}
+        />
       ) : null}
     </Card>
   );

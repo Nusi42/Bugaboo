@@ -3,7 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::{GivingState, HandOver, IssueWork};
-use bb_core::agent_work::AgentWorkState;
+use bb_core::agent_work::{AgentWorkState, StopCause};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{AgentId, HandOverId};
 use serde_json::{Value, json};
@@ -50,6 +50,7 @@ pub(crate) async fn end_and_stop<S: AuthStore>(
         {
             return Err(S::aborted());
         }
+        S::set_stop_cause(transaction, work.id, StopCause::RanOut).await?;
     }
     Ok(())
 }
@@ -228,7 +229,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// An internal error when the store fails.
-    pub(crate) async fn stop_work_of_agent(&self, agent: AgentId) -> Result<(), AppError> {
+    pub(crate) async fn stop_work_of_agent(
+        &self,
+        agent: AgentId,
+        cause: StopCause,
+    ) -> Result<(), AppError> {
         // Nothing left to end: no event and no notification (a refused request asks every time).
         if !self
             .store()
@@ -249,7 +254,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    S::stop_work_of_agent(transaction, agent).await?;
+                    S::stop_work_of_agent(transaction, agent, cause).await?;
                     S::end_grants_of_agent(transaction, agent).await
                 })
             })

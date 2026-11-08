@@ -59,7 +59,8 @@ export function outcomeText(outcome: Outcome): string {
 const attemptWords: Readonly<Record<Outcome | "sent-back", () => string>> = {
   "sent-back": () => t("agent-work.attempt-sent-back"),
   accepted: () => t("agent-work.attempt-accepted"),
-  "accepted-by-itself": () => t("agent-work.attempt-accepted-by-itself"),
+  // The pill and the line of the review say *by itself*; the name of the attempt does not say it a third time.
+  "accepted-by-itself": () => t("agent-work.attempt-accepted"),
   "thrown-away": () => t("agent-work.attempt-thrown-away"),
 };
 

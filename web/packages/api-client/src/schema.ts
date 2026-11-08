@@ -10552,6 +10552,11 @@ export interface components {
      * @enum {string}
      */
     StatusValue: "ok";
+    /**
+     * @description Why work on an issue stopped.
+     * @enum {string}
+     */
+    StopCause: "agent-stopped" | "access-lost" | "handed-on" | "ran-out";
     /** @description A stop of the timer. */
     StopTimerBody: {
       entry?: components["schemas"]["EntryDetailsBody"] | null;
@@ -11079,6 +11084,7 @@ export interface components {
       reviews: components["schemas"]["ReviewAnswerBody"][];
       /** @description Where the work is. It is not the status of the issue. */
       state: components["schemas"]["AgentWorkState"];
+      stopped_for?: components["schemas"]["StopCause"] | null;
       /**
        * Format: int64
        * @description The version of the work; send it back with an answer.

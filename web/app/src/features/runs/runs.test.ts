@@ -6,6 +6,7 @@ import {
   runActorLine,
   runTitle,
   skipReasonText,
+  unlistedSkips,
   type Run,
   type UndoSkip,
 } from "./runs.ts";
@@ -66,5 +67,12 @@ describe("ai_38 the words of a run", () => {
     const run: Run = { ...base, started_at: "2026-11-07T10:00:00Z" };
     expect(changeWhenText(run, "2026-11-07T10:30:00Z")).not.toContain("2026");
     expect(changeWhenText(run, "2026-11-09T10:30:00Z")).toContain("2026");
+  });
+});
+
+describe("ai_35 the skipped fields a preview counts but does not list", () => {
+  it("counts the ones beyond the list", () => {
+    expect(unlistedSkips({ skipped: [], skipped_count: 0 })).toBe(0);
+    expect(unlistedSkips({ skipped: [{ field: "a" }, { field: "b" }], skipped_count: 7 })).toBe(5);
   });
 });

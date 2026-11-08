@@ -29224,6 +29224,11 @@
         "description": "The only value a status can have today.",
         "enum": ["ok"]
       },
+      "StopCause": {
+        "type": "string",
+        "description": "Why work on an issue stopped.",
+        "enum": ["agent-stopped", "access-lost", "handed-on", "ran-out"]
+      },
       "StopTimerBody": {
         "type": "object",
         "description": "A stop of the timer.",
@@ -30282,6 +30287,17 @@
           "state": {
             "$ref": "#/components/schemas/AgentWorkState",
             "description": "Where the work is. It is not the status of the issue."
+          },
+          "stopped_for": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StopCause",
+                "description": "Why the work stopped, when it stopped without a review and without the agent giving up."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "version": {
             "type": "integer",

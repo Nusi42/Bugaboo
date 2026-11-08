@@ -3,7 +3,7 @@
 
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField,
+    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, StopCause,
 };
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
@@ -195,6 +195,8 @@ pub struct WorkView {
     pub reviews: Vec<ReviewView>,
     /// Why the agent gave up.
     pub gave_up: Option<String>,
+    /// Why the work stopped, when it stopped without a review and without the agent giving up.
+    pub stopped_for: Option<StopCause>,
     /// Whether it was accepted by itself and nobody looked yet.
     pub accepted_by_itself: bool,
     /// Whether the issue keeps its status after an accept by itself and a person chooses the next

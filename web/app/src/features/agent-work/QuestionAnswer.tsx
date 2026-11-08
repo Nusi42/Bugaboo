@@ -5,7 +5,6 @@ import {
   Button,
   buttonLook,
   buttonType,
-  factSeparator,
   fieldKind,
   Form,
   partOf,
@@ -16,6 +15,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
+import { detailsText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { useAnswerQuestion, type Work } from "./agent-work.ts";
@@ -39,7 +39,7 @@ function AgentBubble({ work, text }: { readonly work: Work; readonly text: strin
 /** Who answered and, when it is known, when: *Answered by Ada Brandt · Nov 8, 2026, 3:00 PM*. */
 function answeredLine(by: NonNullable<Question["answered_by"]>, at: string | null | undefined) {
   const who = t("agent-work.answered-by", { person: personName(by) });
-  return at === null || at === undefined ? who : [who, factSeparator, formatDateTime(at)].join(" ");
+  return at === null || at === undefined ? who : detailsText([who, formatDateTime(at)]);
 }
 
 /** An answered question: what the agent asked, and the answer that joined the brief. */
@@ -91,6 +91,9 @@ function Unanswered({ work, question }: { readonly work: Work; readonly question
         onChange={setAnswer}
       />
       <p {...partOf(part.muted)}>{t("agent-work.question-joins")}</p>
+      {nothingWritten ? (
+        <p {...partOf(part.muted)}>{t("agent-work.question-needs-answer")}</p>
+      ) : null}
       {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
       <div {...partOf(part.agentWorkActions)}>
         <Button

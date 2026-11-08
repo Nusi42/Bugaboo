@@ -1,10 +1,6 @@
 import { expect, type Locator } from "@playwright/test";
 
-/** Where the top of an element is on the page. */
-export async function topOf(element: Locator): Promise<number> {
-  const box = await element.boundingBox();
-  return box === null ? Number.NaN : box.y;
-}
+import { topOf } from "./geometry.ts";
 
 /** How many readings in a row must agree for an element to count as standing still. */
 const STILL_READINGS = 5;

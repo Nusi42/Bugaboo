@@ -111,7 +111,10 @@ async fn ai_30_a_stopped_agent_and_a_rule_that_runs_out_soon_tell_the_person() -
         .ctx()
         .run_rule_about_to_run_out(&payload_of(&rule))
         .await?;
-    world.ctx().stop_work_of_agent(given.agent).await?;
+    world
+        .ctx()
+        .stop_work_of_agent(given.agent, bb_core::agent_work::StopCause::AgentStopped)
+        .await?;
     world.ctx().catch_up_notifications().await?;
     let mut kinds = kinds_for(&world, given.team.person.id);
     kinds.sort_by_key(|kind| kind.code());

@@ -64,6 +64,22 @@ words! {
 crate::words_in_api!(AgentWorkState, "The state of the agent work on an issue.");
 
 words! {
+    /// Why work on an issue stopped, when it stopped without a review and without the agent giving up.
+    pub enum StopCause {
+        /// The person the agent works for stopped the agent, or every agent of theirs.
+        AgentStopped => "agent-stopped",
+        /// The person the agent works for lost the right to agents.
+        AccessLost => "access-lost",
+        /// The agent was given to another person, and what it was handed stops.
+        HandedOn => "handed-on",
+        /// The hand-over ran out.
+        RanOut => "ran-out",
+    }
+}
+
+crate::words_in_api!(StopCause, "Why work on an issue stopped.");
+
+words! {
     /// What a hand-over lets the agent do on top of what it always may (read the issue and what it
     /// links to, comment, report, attach results, link related issues).
     pub enum HandOverPower {

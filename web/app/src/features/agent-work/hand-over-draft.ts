@@ -1,6 +1,6 @@
 import { nameableMembers } from "@bugaboo/api-client";
 import { centsIn, wholeNumberIn } from "../../shared/number.ts";
-import type { OwnField } from "../fields/index.ts";
+import type { OwnField, TypeInfo } from "../fields/index.ts";
 import type { Power } from "./agent-work.ts";
 
 /** What the person has filled in in the window of a hand-over. */
@@ -51,18 +51,17 @@ export interface NameableField {
  * server refuses the others, COMP-10).
  */
 export function nameableFields(
-  own: readonly Pick<OwnField, "id" | "name" | "kind" | "applies_to" | "retired">[],
+  own: readonly Pick<OwnField, "id" | "name" | "kind" | "applies_to">[],
+  kinds: readonly Pick<TypeInfo, "kind" | "traits">[],
 ): readonly NameableField[] {
+  // `useFields` leaves retired fields out already; a kind that holds people is never offered.
+  const people = new Set(
+    kinds.filter((info) => info.traits.includes("holds-people")).map((info) => info.kind),
+  );
   return [
     ...nameableMembers.map((code) => ({ code })),
     ...own
-      .filter(
-        (field) =>
-          field.applies_to === "issues" &&
-          !field.retired &&
-          field.kind !== "person" &&
-          field.kind !== "people",
-      )
+      .filter((field) => field.applies_to === "issues" && !people.has(field.kind))
       .map((field) => ({ code: field.id, name: field.name })),
   ];
 }

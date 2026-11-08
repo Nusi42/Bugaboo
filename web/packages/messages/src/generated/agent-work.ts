@@ -19,11 +19,10 @@ export const messages = {
   "agent-work.budget-label": "Budget",
   "agent-work.attempt-sent-back": "sent back",
   "agent-work.attempt-accepted": "accepted",
-  "agent-work.attempt-accepted-by-itself": "accepted by itself",
   "agent-work.attempt-thrown-away": "thrown away",
   "agent-work.attempt-started": "Started {date}",
   "agent-work.attempt-ended": "Ended {date}",
-  "agent-work.plan-approved": "A person approved the plan.",
+  "agent-work.plan-approved": "Plan approved by {person}",
   "agent-work.plan-waits": "The plan waits for your approval.",
   "agent-work.no-plan": "The agent has not reported a plan.",
   "agent-work.result-check-passed": "Check {label}: passed",
@@ -32,12 +31,16 @@ export const messages = {
   "agent-work.attempt-reported": "{amount} reported by the agent",
   "agent-work.run-link": "Open the run of this attempt",
   "agent-work.gave-up": "{agent} gave up: {reason}",
-  "agent-work.stopped-why":
-    "{agent} was stopped before it finished: its person stopped it, it reached a limit, or the hand-over ran out on {date}.",
+  "agent-work.stopped-agent-stopped":
+    "{person} stopped {agent}, and its work on this issue stopped with it.",
+  "agent-work.stopped-access-lost": "{person} lost the right to agents, so {agent} stopped.",
+  "agent-work.stopped-handed-on":
+    "{agent} was given to another person, so its work on this issue stopped.",
+  "agent-work.stopped-ran-out": "The hand-over ran out on {date}.",
   "agent-work.next-step":
     "Hand the issue over again, or work on it yourself: the issue still has its person.",
   "agent-work.hand-over-again": "Hand over again",
-  "agent-work.accepted-by-itself": "Accepted by itself, because every check passed. Look at it.",
+  "agent-work.accepted-by-itself": "Every check passed. Look at it.",
   "agent-work.looked-at": "I looked at it",
   "agent-work.choose-next-status":
     "The issue kept its status, because the workflow does not name one next status. Choose the next one yourself.",
@@ -49,12 +52,13 @@ export const messages = {
   "agent-work.review-note": "Note: {note}",
   "agent-work.question-answer": "Your answer",
   "agent-work.question-send": "Answer",
+  "agent-work.question-needs-answer": "Write an answer first.",
   "agent-work.answered-by": "Answered by {person}",
   "agent-work.question-joins":
     "The answer joins the brief, so the next attempt and any other agent read it.",
   "agent-work.plan-note": "Note on the plan (optional)",
   "agent-work.plan-note-help":
-    "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another.",
+    "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another plan.",
   "agent-work.plan-approve": "Approve plan",
   "agent-work.plan-answer": "Answer with the note",
   "agent-work.review": "Review",
@@ -75,6 +79,8 @@ export const messages = {
     "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",
   "agent-work.throw-away-outside":
     "A branch, a pull request or anything else outside Bugaboo stays as it is.",
+  "agent-work.throw-away-unlisted":
+    "{count, plural, one {# more field stays than is listed} other {# more fields stay than are listed}}. Every other change of this attempt goes back.",
   "agent-work.throw-away-back": "{field} goes back from {from} to {to}",
   "agent-work.throw-away-list": "What stays when the work is thrown away",
   "agent-work.throw-away-reading": "Looking at what would go back...",
@@ -127,7 +133,7 @@ export const messages = {
   "agent-work.part-description": "Description",
   "agent-work.part-steps-to-reproduce": "Steps to reproduce",
   "agent-work.part-done-when": "Done when",
-  "agent-work.part-note": "Note",
+  "agent-work.part-note": "note",
   "agent-work.brief-show": "Show",
   "agent-work.brief-hide": "Hide",
 } as const;

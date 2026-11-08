@@ -47,7 +47,8 @@ export function registerAgentWork(): void {
   });
   addSelectionBar({
     id: "hand-over",
-    order: 10,
+    // Before the red *Delete issues* of the bar of changes to many issues.
+    order: -10,
     component: (props: SelectionBarProps): ReactNode =>
       createElement(Suspense, { fallback: null }, createElement(LazyBar, props)),
   });

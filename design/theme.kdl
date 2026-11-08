@@ -142,10 +142,12 @@ tokens {
     size "size-col-person" "96px"
     size "size-col-labels" "96px"
     size "size-col-project" "96px"
-    // The narrowest a number field of a hand-over is: three of them stand side by side where there is room.
-    size "size-number-field" "120px"
-    // The room an agent-work box holds its text back by: the text of the box uses the width of a phone.
-    size "size-agent-pad" "16px" phone="8px"
+    // The narrowest a number field of a hand-over is: three of them stand side by side where there is room, and one
+    // under the other on a phone, where their labels would wrap to different heights.
+    size "size-number-field" "120px" phone="100%"
+    // The least height of what a window of a hand-over or a review holds: the window does not grow and shrink, so its
+    // top stays where it is whatever decision is chosen.
+    size "size-agent-window" "520px"
     // How a row gives out its width (the browser gives the fixed columns their token before the
     // title grows): where the box is narrower than the tokens, the title gives up room first, down to
     // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give
@@ -15487,7 +15489,7 @@ part "agent-work.piece" {
     flex-direction column
     gap "$space-3"
     min-width 0
-    padding "$space-3 $size-agent-pad"
+    padding "$space-3 $pad-box"
 }
 
 // Who works, and where the work is: the agent and its state on one line that wraps on a narrow screen.
@@ -15559,6 +15561,7 @@ part "agent-work.window" {
     display flex
     flex-direction column
     gap "$space-4"
+    min-height "$size-agent-window"
     min-width 0
     text-wrap wrap
 }

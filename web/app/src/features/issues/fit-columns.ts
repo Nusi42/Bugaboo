@@ -1,6 +1,7 @@
 import { listNeeds, type ListColumnSpec } from "@bugaboo/ui";
 
 import { cellOf, listWord, staysColumns } from "../../shared/list-columns.ts";
+import { isAgentWord } from "./agent-value.ts";
 
 /** What the fit counts: the room, the tick box, the widths a person gave and the longest ID drawn. */
 export interface FitInput {
@@ -35,8 +36,7 @@ function nextToDrop(kept: readonly string[]): number {
       continue;
     }
     const changed = kept.indexOf(listWord.changed);
-    const forAgent = word === listWord.agent || word === listWord.agentState;
-    return forAgent && changed >= 0 ? changed : at;
+    return isAgentWord(word) && changed >= 0 ? changed : at;
   }
   return -1;
 }

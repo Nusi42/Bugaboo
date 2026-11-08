@@ -5,7 +5,7 @@ import { useId } from "react";
 import { runAddress } from "../../shared/paths.ts";
 import type { Attempt, Work } from "./agent-work.ts";
 import { AttemptHead } from "./AttemptHead.tsx";
-import { PlanLines } from "./PlanLines.tsx";
+import { PlanApproval, PlanSteps } from "./PlanLines.tsx";
 import { ReportedLine } from "./ReportedLine.tsx";
 import { Results } from "./Results.tsx";
 import { ReviewOfAttempt } from "./Reviews.tsx";
@@ -26,9 +26,10 @@ export function AttemptLines({
   return (
     <section {...partOf(part.agentWorkAttempt)} aria-labelledby={heading}>
       <AttemptHead id={heading} work={work} attempt={attempt} />
-      <PlanLines work={work} attempt={attempt} />
+      <PlanSteps work={work} attempt={attempt} />
       <Results attempt={attempt} />
       <ReportedLine attempt={attempt} />
+      <PlanApproval work={work} attempt={attempt} />
       <ReviewOfAttempt work={work} attempt={attempt} />
       {attempt.run === null || attempt.run === undefined ? null : (
         <p {...partOf(part.text)}>

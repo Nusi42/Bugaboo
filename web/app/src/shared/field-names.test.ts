@@ -24,6 +24,12 @@ describe("fieldNameOf", () => {
     expect(fieldNameOf({ code: "project" })).toBe("Project");
   });
 
+  it("names the members a hand-over can give an agent, never by their codes", () => {
+    expect(fieldNameOf({ code: "relations" })).toBe("Relations");
+    expect(fieldNameOf({ code: "comments" })).toBe("Comments");
+    expect(fieldNameOf({ code: "attachments" })).toBe("Files");
+  });
+
   it("gives the code of a field this version does not know", () => {
     expect(fieldNameOf({ code: "from-the-future" })).toBe("from-the-future");
   });

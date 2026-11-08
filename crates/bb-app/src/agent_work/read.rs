@@ -208,6 +208,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             questions: question_views,
             reviews,
             gave_up: work.gave_up.clone(),
+            stopped_for: work.stopped_for,
             accepted_by_itself: work.accepted_by_itself,
             choose_next_status: work.status_pending,
             version: work.version,

@@ -185,7 +185,7 @@ export const tokenNames = [
   "size-col-labels",
   "size-col-project",
   "size-number-field",
-  "size-agent-pad",
+  "size-agent-window",
   "size-col-title-least",
   "size-col-least",
   "size-col-most",

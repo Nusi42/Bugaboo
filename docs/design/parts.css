@@ -8277,7 +8277,7 @@ textarea,
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
-  padding: var(--space-3) var(--size-agent-pad);
+  padding: var(--space-3) var(--pad-box);
 }
 
 [data-part="agent-work.head"] {
@@ -8349,6 +8349,7 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-height: var(--size-agent-window);
   min-width: 0;
   text-wrap: wrap;
 }
