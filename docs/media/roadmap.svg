@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" data-total="225" data-done="96" viewBox="0 0 1280 210" width="1280" height="210" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" data-total="225" data-done="106" viewBox="0 0 1280 210" width="1280" height="210" role="img" aria-labelledby="title desc">
   <title id="title">Roadmap</title>
-  <desc id="desc">The sixteen milestones from M0 to M15. M0 to M5 are done, M6 is next. Version 0.9.0 means every feature is built, version 1.0.0 follows the last milestone.</desc>
+  <desc id="desc">The sixteen milestones from M0 to M15. M0 to M6 are done, M7 is next. Version 0.9.0 means every feature is built, version 1.0.0 follows the last milestone.</desc>
   <style>
     /* The colors are the values of the tokens of the default themes (Daylight and Dusk) in design/theme.kdl,
        under the names of the tokens; a test (web/tooling/roadmap.test.ts) keeps them the same, and keeps
@@ -85,13 +85,13 @@
     <text class="code" x="438.5" y="98" text-anchor="middle">M5</text>
     <text class="count" x="438.5" y="121" text-anchor="middle">12</text>
   </g>
-  <g class="next" data-milestone="M6" data-features="10">
+  <g class="done" data-milestone="M6" data-features="10">
     <title>M6: Time and working hours, 10 features</title>
     <rect class="tile" x="482" y="70" width="71" height="64" rx="12"/>
     <text class="code" x="517.5" y="98" text-anchor="middle">M6</text>
     <text class="count" x="517.5" y="121" text-anchor="middle">10</text>
   </g>
-  <g class="later" data-milestone="M7" data-features="24">
+  <g class="next" data-milestone="M7" data-features="24">
     <title>M7: Assistant, AI apps and agents, 24 features</title>
     <rect class="tile" x="561" y="70" width="71" height="64" rx="12"/>
     <text class="code" x="596.5" y="98" text-anchor="middle">M7</text>
@@ -145,12 +145,12 @@
     <text class="code" x="1228.5" y="98" text-anchor="middle">M15</text>
     <text class="count" x="1228.5" y="121" text-anchor="middle">2</text>
   </g>
-  <line class="flag-line" x1="475" y1="48" x2="475" y2="68"/>
-  <text class="flag" x="475" y="38" text-anchor="middle">Now: 0.3.0</text>
+  <line class="flag-line" x1="557" y1="48" x2="557" y2="68"/>
+  <text class="flag" x="557" y="38" text-anchor="middle">Now: 0.4.0</text>
   <line class="flag-line" x1="1193" y1="48" x2="1193" y2="68"/>
   <text class="flag" x="1193" y="38" text-anchor="end">0.9.0: every feature is built</text>
   <rect class="track" x="4" y="152" width="1272" height="14" rx="7"/>
-  <rect class="bar" x="4" y="152" width="542.7" height="14" rx="7"/>
+  <rect class="bar" x="4" y="152" width="599.3" height="14" rx="7"/>
   <text class="legend" x="8" y="196">Tiles: milestones with the number of features each brings. Filled: done. Outlined: next.</text>
   <text class="legend" x="1272" y="196" text-anchor="end">1.0.0 follows M15</text>
 </svg>
