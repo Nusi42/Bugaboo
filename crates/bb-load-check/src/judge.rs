@@ -379,6 +379,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
     found.extend(searches_hold_the_rules(book));
     found.extend(no_text_lost(book, facts));
     found.extend(locks_are_gone(book, facts, afterwards));
+    found.extend(crate::agents::agents_hold_the_rules(book, &facts.agents));
     found
 }
 
@@ -485,6 +486,7 @@ mod tests {
                 search("p1", true, &["A-1", "A-2"], Some(2)),
                 search("guest", true, &["A-2"], Some(1)),
             ],
+            ..Book::default()
         };
         let facts = Facts {
             issues: vec![
@@ -529,6 +531,7 @@ mod tests {
                 events: 2,
                 warnings_as_the_rules_find_them: true,
             }],
+            agents: crate::agents::AgentFacts::default(),
         };
         (book, facts)
     }

@@ -108,6 +108,46 @@ pub struct Dayed {
     pub date: String,
 }
 
+/// An agent of the run and the person who answers for it.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Agented {
+    /// The ID of the agent.
+    pub agent: String,
+    /// The ID of the person responsible for it.
+    pub person: String,
+}
+
+/// An issue handed over to an agent.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct HandedOver {
+    /// The ID of the agent.
+    pub agent: String,
+    /// The readable ID of the issue.
+    pub key: String,
+}
+
+/// Agents that took the same issue at the same moment, and which of them got it.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Raced {
+    /// The readable ID of the issue.
+    pub key: String,
+    /// The agents that asked to take it.
+    pub askers: Vec<String>,
+    /// The agents that were told they had it.
+    pub winners: Vec<String>,
+}
+
+/// A person who lost access to agents while their agent worked, and what the agent still kept.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Lost {
+    /// The ID of the agent.
+    pub agent: String,
+    /// The ID of the person.
+    pub person: String,
+    /// How many calls of the agent that came after were answered and kept a change.
+    pub kept_after: u64,
+}
+
 /// Everything the people did that counts, in the order it happened to each of them.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Book {
@@ -143,6 +183,21 @@ pub struct Book {
     /// hours start and stop at the same time"): each is a version of the day with its event.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub days: Vec<Dayed>,
+    /// The agents of the run (architecture §11, "Ten people with agents").
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agents: Vec<Agented>,
+    /// The issues handed over to agents.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub handed: Vec<HandedOver>,
+    /// The issues agents took at the same moment.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub races: Vec<Raced>,
+    /// The people who lost access while their agent worked.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub lost: Vec<Lost>,
+    /// The readable ID of every issue whose change an undo of a run named as skipped.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skipped: Vec<String>,
 }
 
 impl Book {

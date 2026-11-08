@@ -15,7 +15,7 @@ use bb_store::Database;
 use crate::book::{Book, DraftEnd, last_drafts};
 
 /// The most events of one kind that are read: far more than a run makes.
-const MOST_EVENTS: u64 = 1_000_000;
+pub(crate) const MOST_EVENTS: u64 = 1_000_000;
 
 /// The error of reading: anything that went wrong, with its words.
 pub type Failure = Box<dyn Error + Send + Sync>;
@@ -104,9 +104,11 @@ pub struct Facts {
     pub notifications: Vec<NotificationFacts>,
     /// The work days the book names.
     pub days: Vec<DayFacts>,
+    /// What agents did on the issues of the book.
+    pub agents: crate::agents::AgentFacts,
 }
 
-fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
+pub(crate) fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
     format!("{what}: {error}").into()
 }
 
@@ -119,7 +121,7 @@ fn is_comment_on(event: &DomainEvent, issue: &str) -> bool {
         })
 }
 
-fn description_of(id: &str) -> Result<EditWhat, Failure> {
+pub(crate) fn description_of(id: &str) -> Result<EditWhat, Failure> {
     Ok(EditWhat {
         record: EntityRef {
             kind: RecordKind::Issue.into(),
@@ -244,6 +246,7 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
         }
     }
     facts.days = work_days(database, book).await?;
+    facts.agents = crate::agents::gather(database, book).await?;
     facts.locks = lock_rows(database).await?;
     for drafted in last_drafts(book) {
         if drafted.ending == DraftEnd::Saved {

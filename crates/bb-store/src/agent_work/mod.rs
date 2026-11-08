@@ -3,6 +3,7 @@
 //! rules and proposals; `work` the work on an issue.
 
 mod grants;
+#[cfg(any(test, feature = "testing"))]
 mod stored;
 mod work;
 

@@ -30,7 +30,12 @@ async fn team(site: &Site<'_>, ada: &mut Browser, names: &[&str]) -> Result<Team
     })
 }
 
-async fn call(mcp: &Mcp<'_>, key: &str, tool: &str, arguments: Value) -> Result<Answer, Failure> {
+pub(super) async fn call(
+    mcp: &Mcp<'_>,
+    key: &str,
+    tool: &str,
+    arguments: Value,
+) -> Result<Answer, Failure> {
     mcp.post(
         Some(key),
         json!({
@@ -41,7 +46,7 @@ async fn call(mcp: &Mcp<'_>, key: &str, tool: &str, arguments: Value) -> Result<
     .await
 }
 
-fn failed(answer: &Answer) -> bool {
+pub(super) fn failed(answer: &Answer) -> bool {
     answer.json["result"]["isError"] == json!(true)
 }
 

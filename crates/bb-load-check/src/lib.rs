@@ -6,12 +6,18 @@
 
 #![forbid(unsafe_code)]
 
+mod agents;
 mod book;
 mod days;
 mod facts;
 mod judge;
 
-pub use book::{Book, Dayed, DraftEnd, Drafted, Kept, Seen, Work};
+pub use agents::{
+    AgentEvent, AgentFacts, RunningFacts, UndoEvent, WorkFacts, agents_hold_the_rules,
+};
+pub use book::{
+    Agented, Book, Dayed, DraftEnd, Drafted, HandedOver, Kept, Lost, Raced, Seen, Work,
+};
 pub use facts::{DayFacts, Facts, Failure, LockRow, NotificationFacts, gather, lock_rows};
 pub use judge::{Afterwards, judge, locks_beyond_lease};
 
