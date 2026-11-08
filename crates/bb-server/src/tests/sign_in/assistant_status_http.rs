@@ -48,7 +48,7 @@ async fn ai_02_the_status_follows_the_switch_of_the_organization_and_of_the_proj
         let off = ada
             .send(
                 "PUT",
-                &format!("/api/v1/projects/ACME/ai"),
+                "/api/v1/projects/ACME/ai",
                 Some(json!({"enabled": false})),
             )
             .await?;

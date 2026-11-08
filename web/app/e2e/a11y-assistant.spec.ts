@@ -6,7 +6,7 @@ import {
   ask,
   assistantPanel,
   openAssistant,
-  priorityAndVersion,
+  proposeCritical,
   setUpAssistant,
 } from "./support/assistant.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -23,14 +23,7 @@ test.use({ preparation: { run: prepareWeb } });
 test("a11y the assistant panel with an answer and a proposed change", async ({ page, server }) => {
   const model = await startFakeModel();
   await setUpAssistant(server, model);
-  const before = await priorityAndVersion(server, "WEB-1");
-  model.will(
-    {
-      tool: "update_issue",
-      arguments: { issue: "WEB-1", version: before.version, priority: "critical" },
-    },
-    { text: "I suggest raising the priority." },
-  );
+  await proposeCritical(server, model, "WEB-1", "I suggest raising the priority.");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await openAssistant(page);

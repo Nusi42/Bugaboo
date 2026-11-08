@@ -139,6 +139,18 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
     ]
 }
 
+/// The limits of a question to the assistant, as the browser client's constants.
+fn assistant_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> {
+    Ok(Generated::new(
+        ASSISTANT_PATH,
+        format_with_oxfmt(
+            repo,
+            ASSISTANT_PATH,
+            &web_constants::assistant_limits(sources)?,
+        )?,
+    ))
+}
+
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     let spec = openapi_text(repo)?;
     let sources = read_sources(repo, None, Kind::Rust)?;
@@ -197,14 +209,6 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
             )?,
         ),
         Generated::new(
-            ASSISTANT_PATH,
-            format_with_oxfmt(
-                repo,
-                ASSISTANT_PATH,
-                &web_constants::assistant_limits(&sources)?,
-            )?,
-        ),
-        Generated::new(
             SEARCH_WORDS_PATH,
             format_with_oxfmt(repo, SEARCH_WORDS_PATH, &web_constants::search_words())?,
         ),
@@ -246,6 +250,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     for (path, text) in web_constants::user_pages::pages(&sources)? {
         files.push(Generated::new(path, text));
     }
+    files.push(assistant_file(repo, &sources)?);
     Ok(files)
 }
 

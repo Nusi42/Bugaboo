@@ -77,3 +77,21 @@ export async function quickEntryOfTheAssistant(page: Page) {
   await box(page).fill(t("assistant.quick-ask"));
   return dialog(page).getByRole("option", { name: t("assistant.quick-ask") });
 }
+
+/** The model proposes to raise the priority of an issue to Critical and then says `said`; gives the issue as it is now. */
+export async function proposeCritical(
+  server: Instance,
+  model: FakeModel,
+  key: string,
+  said: string,
+): Promise<{ readonly priority: string; readonly version: number }> {
+  const before = await priorityAndVersion(server, key);
+  model.will(
+    {
+      tool: "update_issue",
+      arguments: { issue: key, version: before.version, priority: "critical" },
+    },
+    { text: said },
+  );
+  return before;
+}

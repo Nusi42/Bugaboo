@@ -8,6 +8,7 @@ import {
   assistantPanel,
   openAssistant,
   priorityAndVersion,
+  proposeCritical,
   setUpAssistant,
 } from "./support/assistant.ts";
 import { startFakeModel } from "./support/fake-model.ts";
@@ -94,14 +95,7 @@ test("ai_05 a proposed change shows before and after and saves only after apply"
 }) => {
   const model = await startFakeModel();
   await setUpAssistant(server, model);
-  const before = await priorityAndVersion(server, "WEB-1");
-  model.will(
-    {
-      tool: "update_issue",
-      arguments: { issue: "WEB-1", version: before.version, priority: "critical" },
-    },
-    { text: "I suggest raising the priority." },
-  );
+  const before = await proposeCritical(server, model, "WEB-1", "I suggest raising the priority.");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await openAssistant(page);
@@ -130,14 +124,7 @@ test("ai_05 a proposed change shows before and after and saves only after apply"
 test("ai_05 discard saves nothing", async ({ page, server }) => {
   const model = await startFakeModel();
   await setUpAssistant(server, model);
-  const before = await priorityAndVersion(server, "WEB-2");
-  model.will(
-    {
-      tool: "update_issue",
-      arguments: { issue: "WEB-2", version: before.version, priority: "critical" },
-    },
-    { text: "Proposed." },
-  );
+  const before = await proposeCritical(server, model, "WEB-2", "Proposed.");
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-2"));
   await openAssistant(page);
