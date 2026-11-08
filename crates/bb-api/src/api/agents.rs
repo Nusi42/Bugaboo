@@ -238,6 +238,9 @@ pub(crate) struct CreateAgentKeyBody {
 /// The name of the lists of agents, so their cursors are their own.
 const AGENTS_LIST: &str = "agents";
 
+/// The name of the list of every agent: its cursors say a place in another order.
+const ORGANIZATION_AGENTS_LIST: &str = "organization-agents";
+
 /// The agents of the person, a page at a time.
 #[utoipa::path(
     get,
@@ -267,20 +270,22 @@ async fn list_my_agents(
         .await
         .map_err(cursor_error)?;
     bad_cursor?;
-    answer_page(&params, page)
+    answer_page(&params, AGENTS_LIST, page)
 }
 
 /// The answer of a list of agents: the page, with the fields that were asked for.
-fn answer_page(params: &ListParams, page: Authorized<AgentPage>) -> Result<Response, ApiError> {
+fn answer_page(
+    params: &ListParams,
+    list_name: &str,
+    page: Authorized<AgentPage>,
+) -> Result<Response, ApiError> {
     let list = page.map(|page| Listed {
         items: page.items.iter().map(AgentItem::from).collect(),
         next: page.next_cursor,
     });
     let fields = params.fields_readable(&AGENT_FIELDS, &list.hidden_properties())?;
     Ok(super::auth::answer(Page::of_authorized(
-        AGENTS_LIST,
-        &list,
-        &fields,
+        list_name, &list, &fields,
     )?))
 }
 
@@ -662,7 +667,7 @@ async fn stop_all_my_agents(
     operation_id = "listOrganizationAgents",
     tag = "agents",
     params(ListParams),
-    responses((status = 200, description = "Every agent, by ID.", body = Page<AgentItem>), NotSignedInAnswer, ForbiddenAnswer, InvalidAnswer)
+    responses((status = 200, description = "Every agent: working ones first, then paused, then stopped; by name inside each.", body = Page<AgentItem>), NotSignedInAnswer, ForbiddenAnswer, InvalidAnswer)
 )]
 async fn list_organization_agents(
     State(auth): State<AuthHandle>,
@@ -670,7 +675,7 @@ async fn list_organization_agents(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let (cursor, bad_cursor) = params.start(AGENTS_LIST);
+    let (cursor, bad_cursor) = params.start(ORGANIZATION_AGENTS_LIST);
     let page = auth
         .api()?
         .organization_agents(
@@ -684,7 +689,7 @@ async fn list_organization_agents(
         .await
         .map_err(cursor_error)?;
     bad_cursor?;
-    answer_page(&params, page)
+    answer_page(&params, ORGANIZATION_AGENTS_LIST, page)
 }
 
 /// The routes of agents.

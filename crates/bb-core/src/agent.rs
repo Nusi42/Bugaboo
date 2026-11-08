@@ -39,6 +39,19 @@ words! {
 
 crate::words_in_api!(AgentState, "Whether an agent may act.");
 
+impl AgentState {
+    /// Where the state stands in the one order of agents: working first, then paused, then
+    /// stopped.
+    #[must_use]
+    pub const fn rank(self) -> i64 {
+        match self {
+            Self::Active => 0,
+            Self::Paused => 1,
+            Self::Stopped => 2,
+        }
+    }
+}
+
 words! {
     /// The limits of an agent (ADR-0029, decision 9). Reaching one pauses the agent with a
     /// sentence that names it.

@@ -17,6 +17,6 @@ pub use manage::{
 pub(crate) use names::AgentNames;
 pub use store::{AgentStore, AgentWork, AgentWorkStore};
 pub use types::{
-    AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
+    AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
+    ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
 };

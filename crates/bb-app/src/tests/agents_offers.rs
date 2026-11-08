@@ -334,3 +334,17 @@ pub(crate) async fn take_back_offer_scenario(world: &World) -> super::scenarios:
     )
     .await
 }
+
+#[tokio::test]
+async fn ai_30_an_agent_is_never_handed_to_its_own_person() -> Outcome {
+    let world = World::new().await?;
+    let given = ground(&world).await?;
+    let refusal = hand_agent(
+        &world.ctx(),
+        offer(&given.team, given.agent, &given.team, 1),
+    )
+    .await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::NotFound));
+    assert_eq!(offered_to(&world, &given.team).await?, 0);
+    Ok(())
+}

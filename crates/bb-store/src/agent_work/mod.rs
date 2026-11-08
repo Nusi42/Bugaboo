@@ -32,17 +32,25 @@ use crate::schema::{
 /// Keeps the work that is open: its state is not an end, no review closed it, and its hand-over
 /// still gives work (an accepted hand-over ended, and its work with it).
 pub(super) fn only_open_work(select: &mut SelectStatement) {
-    let mut open = Query::select();
-    open.column(HandOverRow::Id)
-        .from(HandOverRow::Table)
-        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
     select
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
         .and_where(
             Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
                 .is_not_in(AgentWorkState::ENDED.map(AgentWorkState::code)),
         )
-        .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open));
+        .and_where(
+            Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open_hand_overs()),
+        );
+}
+
+/// The hand-overs that are open: the one definition of a hand-over that still gives work, before its
+/// end is looked at.
+fn open_hand_overs() -> SelectStatement {
+    let mut open = Query::select();
+    open.column(HandOverRow::Id)
+        .from(HandOverRow::Table)
+        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
+    open
 }
 
 /// Keeps the work that is open at `now` ([`only_open_work`]) and whose hand-over has not run out: a
@@ -58,12 +66,8 @@ pub(super) fn only_open_work_at(select: &mut SelectStatement, now: Timestamp) {
 
 /// The hand-overs that still give work at `now`: open, and not run out.
 pub(super) fn hand_overs_giving_work_at(now: Timestamp) -> SelectStatement {
-    let mut giving = Query::select();
-    giving
-        .column(HandOverRow::Id)
-        .from(HandOverRow::Table)
-        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()))
-        .and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
+    let mut giving = open_hand_overs();
+    giving.and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
     giving
 }
 

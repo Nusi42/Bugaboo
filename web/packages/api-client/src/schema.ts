@@ -18201,7 +18201,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Every agent, by ID. */
+      /** @description Every agent: working ones first, then paused, then stopped; by name inside each. */
       200: {
         headers: {
           etag: components["headers"]["ETag"];

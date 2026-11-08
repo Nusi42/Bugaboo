@@ -4,7 +4,7 @@ use bb_core::agent::{Agent, AgentLimits, AgentState};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::agents::{AgentStore, AgentWork, AgentWorkStore};
+use crate::agents::{AgentPosition, AgentStore, AgentWork, AgentWorkStore};
 use crate::auth::AccessKeyRecord;
 
 impl AgentWorkStore for FakeStore {
@@ -134,10 +134,23 @@ impl AgentStore for FakeStore {
 
     async fn all_agents(
         &self,
-        after: Option<AgentId>,
+        after: Option<AgentPosition>,
         limit: u64,
     ) -> Result<Vec<Agent>, FakeError> {
-        Ok(self.read(|state| page(&state.agents, |_| true, after, limit)))
+        let place = |agent: &Agent| (agent.state.rank(), agent.name.to_lowercase(), agent.id);
+        Ok(self.read(|state| {
+            let mut found: Vec<Agent> = state.agents.clone();
+            found.sort_by_key(place);
+            found
+                .into_iter()
+                .filter(|agent| {
+                    after
+                        .as_ref()
+                        .is_none_or(|after| place(agent) > place_of(after))
+                })
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
+        }))
     }
 
     async fn last_use_of_agents(
@@ -298,6 +311,15 @@ impl AgentStore for FakeStore {
             .retain(|record| record.key.agent != Some(agent));
         Ok(gone)
     }
+}
+
+/// The place of a position, as the order of the list of every agent says it.
+fn place_of(position: &AgentPosition) -> (i64, String, AgentId) {
+    (
+        position.state.rank(),
+        position.name.to_lowercase(),
+        position.id,
+    )
 }
 
 fn page(

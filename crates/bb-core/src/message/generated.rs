@@ -472,14 +472,8 @@ pub const AGENT_WORK_WORKED_ON_BY: MessageKey = MessageKey::new("agent-work.work
 /// The message `agents.accept`.
 pub const AGENTS_ACCEPT: MessageKey = MessageKey::new("agents.accept");
 
-/// The message `agents.accepted`.
-pub const AGENTS_ACCEPTED: MessageKey = MessageKey::new("agents.accepted");
-
 /// The message `agents.answer`.
 pub const AGENTS_ANSWER: MessageKey = MessageKey::new("agents.answer");
-
-/// The message `agents.approve`.
-pub const AGENTS_APPROVE: MessageKey = MessageKey::new("agents.approve");
 
 /// The message `agents.choose-project`.
 pub const AGENTS_CHOOSE_PROJECT: MessageKey = MessageKey::new("agents.choose-project");
@@ -505,9 +499,6 @@ pub const AGENTS_DECLINE: MessageKey = MessageKey::new("agents.decline");
 /// The message `agents.hand`.
 pub const AGENTS_HAND: MessageKey = MessageKey::new("agents.hand");
 
-/// The message `agents.hand-choose-person`.
-pub const AGENTS_HAND_CHOOSE_PERSON: MessageKey = MessageKey::new("agents.hand-choose-person");
-
 /// The message `agents.hand-confirm`.
 pub const AGENTS_HAND_CONFIRM: MessageKey = MessageKey::new("agents.hand-confirm");
 
@@ -519,6 +510,18 @@ pub const AGENTS_HAND_NEED: MessageKey = MessageKey::new("agents.hand-need");
 
 /// The message `agents.hand-person`.
 pub const AGENTS_HAND_PERSON: MessageKey = MessageKey::new("agents.hand-person");
+
+/// The message `agents.hand-person-list`.
+pub const AGENTS_HAND_PERSON_LIST: MessageKey = MessageKey::new("agents.hand-person-list");
+
+/// The message `agents.hand-person-more`.
+pub const AGENTS_HAND_PERSON_MORE: MessageKey = MessageKey::new("agents.hand-person-more");
+
+/// The message `agents.hand-person-nothing`.
+pub const AGENTS_HAND_PERSON_NOTHING: MessageKey = MessageKey::new("agents.hand-person-nothing");
+
+/// The message `agents.hand-person-search`.
+pub const AGENTS_HAND_PERSON_SEARCH: MessageKey = MessageKey::new("agents.hand-person-search");
 
 /// The message `agents.hand-project`.
 pub const AGENTS_HAND_PROJECT: MessageKey = MessageKey::new("agents.hand-project");
@@ -577,9 +580,6 @@ pub const AGENTS_KEYS_INTRO: MessageKey = MessageKey::new("agents.keys-intro");
 /// The message `agents.keys-none`.
 pub const AGENTS_KEYS_NONE: MessageKey = MessageKey::new("agents.keys-none");
 
-/// The message `agents.limit-attempts`.
-pub const AGENTS_LIMIT_ATTEMPTS: MessageKey = MessageKey::new("agents.limit-attempts");
-
 /// The message `agents.limit-changes`.
 pub const AGENTS_LIMIT_CHANGES: MessageKey = MessageKey::new("agents.limit-changes");
 
@@ -609,9 +609,6 @@ pub const AGENTS_LIST: MessageKey = MessageKey::new("agents.list");
 
 /// The message `agents.name`.
 pub const AGENTS_NAME: MessageKey = MessageKey::new("agents.name");
-
-/// The message `agents.never-used`.
-pub const AGENTS_NEVER_USED: MessageKey = MessageKey::new("agents.never-used");
 
 /// The message `agents.none`.
 pub const AGENTS_NONE: MessageKey = MessageKey::new("agents.none");
@@ -645,9 +642,6 @@ pub const AGENTS_PAGE: MessageKey = MessageKey::new("agents.page");
 
 /// The message `agents.pause`.
 pub const AGENTS_PAUSE: MessageKey = MessageKey::new("agents.pause");
-
-/// The message `agents.person-unknown`.
-pub const AGENTS_PERSON_UNKNOWN: MessageKey = MessageKey::new("agents.person-unknown");
 
 /// The message `agents.renew`.
 pub const AGENTS_RENEW: MessageKey = MessageKey::new("agents.renew");
@@ -792,9 +786,6 @@ pub const AGENTS_STOP_TEXT: MessageKey = MessageKey::new("agents.stop-text");
 /// The message `agents.title`.
 pub const AGENTS_TITLE: MessageKey = MessageKey::new("agents.title");
 
-/// The message `agents.waiting`.
-pub const AGENTS_WAITING: MessageKey = MessageKey::new("agents.waiting");
-
 /// The message `agents.waiting-none`.
 pub const AGENTS_WAITING_NONE: MessageKey = MessageKey::new("agents.waiting-none");
 
@@ -803,9 +794,6 @@ pub const AGENTS_WORK: MessageKey = MessageKey::new("agents.work");
 
 /// The message `agents.work-none`.
 pub const AGENTS_WORK_NONE: MessageKey = MessageKey::new("agents.work-none");
-
-/// The message `agents.work-none-stopped`.
-pub const AGENTS_WORK_NONE_STOPPED: MessageKey = MessageKey::new("agents.work-none-stopped");
 
 /// The message `ai-author.agent`.
 pub const AI_AUTHOR_AGENT: MessageKey = MessageKey::new("ai-author.agent");
@@ -6286,6 +6274,28 @@ pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_HELP: MessageKey =
 pub const SETTING_AGENTS_MAXIMUM_ISSUES_AT_ONCE_NAME: MessageKey =
     MessageKey::new("setting.agents.maximum-issues-at-once.name");
 
+/// The message `setting.agents.project-follows`.
+pub const SETTING_AGENTS_PROJECT_FOLLOWS: MessageKey =
+    MessageKey::new("setting.agents.project-follows");
+
+/// The message `setting.agents.project-follows-off`.
+pub const SETTING_AGENTS_PROJECT_FOLLOWS_OFF: MessageKey =
+    MessageKey::new("setting.agents.project-follows-off");
+
+/// The message `setting.agents.project-follows-on`.
+pub const SETTING_AGENTS_PROJECT_FOLLOWS_ON: MessageKey =
+    MessageKey::new("setting.agents.project-follows-on");
+
+/// The message `setting.agents.project-help`.
+pub const SETTING_AGENTS_PROJECT_HELP: MessageKey = MessageKey::new("setting.agents.project-help");
+
+/// The message `setting.agents.project-off`.
+pub const SETTING_AGENTS_PROJECT_OFF: MessageKey = MessageKey::new("setting.agents.project-off");
+
+/// The message `setting.agents.project-switch`.
+pub const SETTING_AGENTS_PROJECT_SWITCH: MessageKey =
+    MessageKey::new("setting.agents.project-switch");
+
 /// The message `setting.agents.rule-days.help`.
 pub const SETTING_AGENTS_RULE_DAYS_HELP: MessageKey =
     MessageKey::new("setting.agents.rule-days.help");
@@ -8696,12 +8706,12 @@ pub fn agents_key_take_back_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `agents.last-used`.
+/// The message `agents.key-taken-back`.
 #[must_use]
-pub fn agents_last_used(when: impl std::fmt::Display) -> Message {
+pub fn agents_key_taken_back(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("agents.last-used"),
-        vec![("when", Value::Text(when.to_string()))],
+        MessageKey::new("agents.key-taken-back"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -8849,6 +8859,15 @@ pub fn agents_rule_power_creates(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-power-creates"),
         vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `agents.rule-search-named`.
+#[must_use]
+pub fn agents_rule_search_named(search: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.rule-search-named"),
+        vec![("search", Value::Text(search.to_string()))],
     )
 }
 
@@ -16450,13 +16469,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.worked-on-by", "Worked on by"),
     ("agents.accept", "Accept"),
     ("agents.accept-name", "Accept the agent {agent}"),
-    ("agents.accepted", "Accepted by itself"),
     (
         "agents.accepted-line",
         "{agent}: {count, plural, one {# check} other {# checks}} passed",
     ),
     ("agents.answer", "Answer"),
-    ("agents.approve", "Approve plan"),
     ("agents.choose-project", "Choose a project"),
     ("agents.count", "({count})"),
     ("agents.create", "Create an agent"),
@@ -16477,7 +16494,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.decline", "Decline"),
     ("agents.decline-name", "Decline the agent {agent}"),
     ("agents.hand", "Hand to another person"),
-    ("agents.hand-choose-person", "Choose a person"),
     ("agents.hand-confirm", "Hand over"),
     (
         "agents.hand-intro",
@@ -16485,6 +16501,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.hand-need", "Choose a person first."),
     ("agents.hand-person", "Person"),
+    ("agents.hand-person-list", "People"),
+    ("agents.hand-person-more", "Show more people"),
+    ("agents.hand-person-nothing", "Nobody found."),
+    ("agents.hand-person-search", "Search people by name"),
     ("agents.hand-project", "Project"),
     (
         "agents.hand-project-help",
@@ -16526,14 +16546,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The key stops working at once. An agent that uses it can no longer sign in.",
     ),
     ("agents.key-take-back-title", "Take back this key?"),
+    ("agents.key-taken-back", "The key {name} was taken back."),
     ("agents.keys", "Agent keys"),
     (
         "agents.keys-intro",
         "An agent signs in with a key. Every key runs out. You see a key once, when you create it.",
     ),
-    ("agents.keys-none", "This agent has no key yet."),
-    ("agents.last-used", "Last used {when}"),
-    ("agents.limit-attempts", "Attempts on one issue"),
+    (
+        "agents.keys-none",
+        "This agent has no key that works. Create one so it can sign in.",
+    ),
     ("agents.limit-changes", "Changes a minute"),
     ("agents.limit-issues", "Issues at once"),
     ("agents.limits", "Limits"),
@@ -16555,7 +16577,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.limits-title", "Limits of {agent}"),
     ("agents.list", "Agents"),
     ("agents.name", "Name"),
-    ("agents.never-used", "Never used"),
     (
         "agents.none",
         "You have no agents yet. Create an agent, then hand it issues to work on.",
@@ -16577,7 +16598,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.page", "Agent"),
     ("agents.pause", "Pause"),
     ("agents.pause-name", "Pause {agent}"),
-    ("agents.person-unknown", "Agent of someone"),
     ("agents.renew", "Renew"),
     (
         "agents.renew-name",
@@ -16595,7 +16615,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-days", "Runs out after (days)"),
     (
         "agents.rule-days-help",
-        "Left empty, the usual number of days of your organization counts: {usual} days unless it chose another. At most {most} days; Renew starts again.",
+        "Leave empty for your organization’s usual length: {usual} days unless it set another. At most {most} days; Renew starts the count again.",
     ),
     (
         "agents.rule-days-wrong",
@@ -16656,6 +16676,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.rule-search-gone",
         "A saved search you can no longer open",
     ),
+    ("agents.rule-search-named", "Saved search: {search}"),
     ("agents.rule-stop", "Stop the rule"),
     ("agents.rule-stop-name", "Stop the rule {search} of {agent}"),
     (
@@ -16691,7 +16712,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.stop-title", "Stop {agent}?"),
     ("agents.title", "My agents"),
-    ("agents.waiting", "Waiting for you"),
     ("agents.waiting-button-name", "{action}, {issue}"),
     ("agents.waiting-none", "Nothing waits for you."),
     ("agents.waiting-plan", "{agent} has a plan to approve"),
@@ -16703,10 +16723,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.work", "What it works on"),
     ("agents.work-none", "Nothing yet."),
-    (
-        "agents.work-none-stopped",
-        "It was stopped and works on nothing.",
-    ),
     ("agents.work-state", "Work: {state}"),
     ("ai-author.agent", "an agent"),
     ("ai-author.assistant", "the assistant"),
@@ -21599,6 +21615,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.agents.maximum-issues-at-once.name",
         "Most issues at once for an agent",
     ),
+    ("setting.agents.project-follows", "As the organization"),
+    (
+        "setting.agents.project-follows-off",
+        "As the organization (off)",
+    ),
+    (
+        "setting.agents.project-follows-on",
+        "As the organization (on)",
+    ),
+    (
+        "setting.agents.project-help",
+        "As the organization: the agents of people may work here while they may work for the organization. Off: no agent works in this project, whatever the organization says.",
+    ),
+    ("setting.agents.project-off", "Off"),
+    ("setting.agents.project-switch", "Agents in this project"),
     (
         "setting.agents.rule-days.help",
         "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed.",

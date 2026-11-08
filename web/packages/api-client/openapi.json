@@ -11817,7 +11817,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Every agent, by ID.",
+            "description": "Every agent: working ones first, then paused, then stopped; by name inside each.",
             "headers": {
               "etag": {
                 "$ref": "#/components/headers/ETag"

@@ -19,8 +19,8 @@ use bb_policy::{ActorKind, Authorized, Permission, Place};
 use serde_json::json;
 
 use super::types::{
-    AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
+    AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
+    ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
 };
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, change_failed, internal};
 use crate::auth::{entity, set_to};
@@ -262,7 +262,7 @@ pub async fn organization_agents<S: AuthStore>(
         .await?;
     let len = page_len(Some(input.limit));
     let after = cursor_or_invalid(input.cursor.as_deref(), |cursor| {
-        cursor.parse::<AgentId>().ok()
+        AgentPosition::from_cursor(cursor)
     })?;
     let page = Cut::of(
         ctx.store()
@@ -271,7 +271,7 @@ pub async fn organization_agents<S: AuthStore>(
             .map_err(|error| internal::<S>(&error))?,
         len,
     );
-    let next_cursor = page.next_cursor(|last| last.id.to_string());
+    let next_cursor = page.next_cursor(|last| AgentPosition::of(last).cursor());
     let people: Vec<UserId> = page.items.iter().map(|agent| agent.person).collect();
     ctx.preload_people(&people).await?;
     let mut items = Vec::with_capacity(page.items.len());

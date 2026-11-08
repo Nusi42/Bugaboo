@@ -197,3 +197,54 @@ async fn ai_37_a_person_changes_the_limits_of_an_agent_over_http() -> TestResult
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_30_the_list_of_the_organization_puts_working_agents_first_page_by_page() -> TestResult {
+    each_database("ai_30_agents_order", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        // Made in an order that is neither the order of names nor of states.
+        for name in ["Echo 2", "alpha", "Delta", "Bravo", "Foxtrot"] {
+            let made = tess
+                .send("POST", "/api/v1/agents", Some(json!({"name": name})))
+                .await?;
+            let made = ok(&made)?;
+            let action = match name {
+                "Echo 2" | "alpha" => "stop",
+                "Delta" => "pause",
+                _ => continue,
+            };
+            let id = made["id"].as_str().ok_or("no agent ID")?;
+            let changed = tess
+                .send(
+                    "PATCH",
+                    &format!("/api/v1/agents/{id}"),
+                    Some(json!({"action": action, "version": made["version"]})),
+                )
+                .await?;
+            assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+        }
+        let mut names = Vec::new();
+        let mut after = String::new();
+        loop {
+            let page = ada
+                .send(
+                    "GET",
+                    &format!("/api/v1/organization/agents?limit=2&fields=id,name,state{after}"),
+                    None,
+                )
+                .await?;
+            for item in ok(&page)?["items"].as_array().ok_or("no items")? {
+                names.push(item["name"].as_str().ok_or("no name")?.to_owned());
+            }
+            match page.body["next_cursor"].as_str() {
+                Some(cursor) => after = format!("&cursor={cursor}"),
+                None => break,
+            }
+        }
+        assert_eq!(names, ["Bravo", "Foxtrot", "Delta", "alpha", "Echo 2"]);
+        Ok::<(), Failure>(())
+    })
+    .await
+}

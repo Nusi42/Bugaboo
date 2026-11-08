@@ -106,6 +106,48 @@ pub struct AgentQuery {
     pub id: AgentId,
 }
 
+/// Where a page of the list of every agent starts: after the last agent of the page before, in the
+/// order working, paused, stopped, then by name, then by ID. It holds what the last agent was
+/// sorted by, so the next page is right even if that agent changed its state meanwhile.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AgentPosition {
+    /// Its state.
+    pub state: AgentState,
+    /// Its name.
+    pub name: String,
+    /// Its ID.
+    pub id: AgentId,
+}
+
+impl AgentPosition {
+    /// The position of an agent.
+    #[must_use]
+    pub fn of(agent: &bb_core::agent::Agent) -> Self {
+        Self {
+            state: agent.state,
+            name: agent.name.clone(),
+            id: agent.id,
+        }
+    }
+
+    /// The position as the cursor of the next page says it: `state`, `ID`, `name`.
+    #[must_use]
+    pub fn cursor(&self) -> String {
+        format!("{}:{}:{}", self.state.code(), self.id, self.name)
+    }
+
+    /// The position a cursor says; none for text that is not a cursor.
+    #[must_use]
+    pub fn from_cursor(cursor: &str) -> Option<Self> {
+        let mut parts = cursor.splitn(3, ':');
+        Some(Self {
+            state: AgentState::from_code(parts.next()?)?,
+            id: parts.next()?.parse().ok()?,
+            name: parts.next()?.to_owned(),
+        })
+    }
+}
+
 /// A list of agents, one page at a time.
 pub struct AgentsQuery {
     /// The secret of the session of the request.

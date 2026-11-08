@@ -11,6 +11,7 @@ use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
 use jiff::Timestamp;
 
+use super::types::AgentPosition;
 use crate::auth::AccessKeyRecord;
 use crate::ports::ChangeStore;
 use crate::store_macros::{queries, reads, writes};
@@ -59,8 +60,9 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
     reads! {
         /// The agents a person is responsible for, by ID, after `after`, at most `limit`.
         fn agents_of(person: UserId, after: Option<AgentId>, limit: u64) -> Vec<Agent>;
-        /// Every agent of the organization, by ID, after `after`, at most `limit`.
-        fn all_agents(after: Option<AgentId>, limit: u64) -> Vec<Agent>;
+        /// Every agent of the organization, working ones first, then paused, then stopped, by name
+        /// and ID inside each, after `after`, at most `limit`.
+        fn all_agents(after: Option<AgentPosition>, limit: u64) -> Vec<Agent>;
         /// When each of these agents last signed in with a key, for those that did.
         fn last_use_of_agents(agents: Vec<AgentId>) -> Vec<(AgentId, Timestamp)>;
         /// The keys of one agent, newest first.

@@ -1,17 +1,18 @@
 //! The adapter of the port of agents (`bb_app::agents::AgentStore`): the records of agents, and
 //! the empty implementation of their work (AI-30, ADR-0029).
 
-use bb_app::agents::AgentStore;
+use bb_app::agents::{AgentPosition, AgentStore};
 use bb_app::auth::AccessKeyRecord;
 use bb_core::agent::{Agent, AgentLimits, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
+use sea_query::{Expr, ExprTrait as _, Func, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
+use crate::paging::after_last;
 use crate::schema::{AccessKeyRow, AgentRow, Computed};
 
 fn agent_select() -> SelectStatement {
@@ -64,6 +65,57 @@ fn page(mut select: SelectStatement, after: Option<AgentId>, limit: u64) -> Sele
         select.and_where(Expr::col(AgentRow::Id).gt(after.stored()));
     }
     select.order_by(AgentRow::Id, Order::Asc).limit(limit);
+    select
+}
+
+/// The place of an agent in the list of every agent: working ones, then paused, then stopped.
+fn state_rank() -> Expr {
+    [AgentState::Active, AgentState::Paused, AgentState::Stopped]
+        .into_iter()
+        .fold(None, |case: Option<sea_query::CaseStatement>, state| {
+            let when = Expr::col(AgentRow::State).eq(state.code());
+            Some(match case {
+                None => Expr::case(when, state.rank()),
+                Some(case) => case.case(when, state.rank()),
+            })
+        })
+        .map_or_else(Expr::null, |case| case.finally(Expr::null()).into())
+}
+
+/// The name an agent is sorted by: capitals do not count.
+fn name_sorted() -> Expr {
+    Expr::expr(Func::lower(Expr::col(AgentRow::Name)))
+}
+
+/// A page of every agent in the order working, paused, stopped, then by name, then by ID. A row is
+/// after the position if its state is further on, or the state is the same and the name is
+/// further on, or both are the same and the ID is.
+fn page_of_all(after: Option<&AgentPosition>, limit: u64) -> SelectStatement {
+    let mut select = agent_select();
+    if let Some(position) = after {
+        let name = position.name.clone();
+        let within_state = after_last(
+            name_sorted,
+            move || Expr::expr(Func::lower(Expr::val(name.clone()))),
+            &Order::Asc,
+            AgentRow::Id,
+            position.id.stored(),
+        );
+        select.cond_where(
+            sea_query::Cond::any()
+                .add(state_rank().gt(position.state.rank()))
+                .add(
+                    sea_query::Cond::all()
+                        .add(state_rank().eq(position.state.rank()))
+                        .add(within_state),
+                ),
+        );
+    }
+    select
+        .order_by_expr(state_rank(), Order::Asc)
+        .order_by_expr(name_sorted(), Order::Asc)
+        .order_by(AgentRow::Id, Order::Asc)
+        .limit(limit);
     select
 }
 
@@ -167,11 +219,11 @@ impl AgentStore for AuthStorage {
 
     async fn all_agents(
         &self,
-        after: Option<AgentId>,
+        after: Option<AgentPosition>,
         limit: u64,
     ) -> Result<Vec<Agent>, StoreError> {
         self.database()
-            .fetch_all(&page(agent_select(), after, limit))
+            .fetch_all(&page_of_all(after.as_ref(), limit))
             .await?
             .iter()
             .map(read_agent)
