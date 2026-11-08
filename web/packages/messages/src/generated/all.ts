@@ -6,6 +6,7 @@ export { messages as admin } from "./admin.ts";
 export { messages as agentWork } from "./agent-work.ts";
 export { messages as assistant } from "./assistant.ts";
 export { messages as assistantEntry } from "./assistant-entry.ts";
+export { messages as agents } from "./agents.ts";
 export { messages as connect } from "./connect.ts";
 export { messages as fields } from "./fields.ts";
 export { messages as files } from "./files.ts";

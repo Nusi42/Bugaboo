@@ -40,6 +40,9 @@ import {
 } from "./work-pages.tsx";
 import {
   accessKeysRoute,
+  agentRoute,
+  myAgentsRoute,
+  organizationAgentsRoute,
   appearanceRoute,
   connectedAppsRoute,
   connectRoute,
@@ -92,6 +95,8 @@ const routeTree = rootRoute.addChildren([
     projectIssuesRoute,
     issueRoute,
     runRoute,
+    myAgentsRoute,
+    agentRoute,
     projectSettingsRoute,
     projectRolesRoute,
     projectFieldsRoute,
@@ -138,6 +143,7 @@ const routeTree = rootRoute.addChildren([
       projectsRoute,
       aiRoute,
       mailServerRoute,
+      organizationAgentsRoute,
       organizationSecurityRoute,
       statusRoute,
     ]),

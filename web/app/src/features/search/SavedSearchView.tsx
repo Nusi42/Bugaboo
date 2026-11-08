@@ -18,7 +18,7 @@ import { useCanonicalForms } from "./canonical-forms.ts";
 import { MadeByLine } from "./MadeByLine.tsx";
 import type { SavedSearch } from "./saved-searches.ts";
 import { SearchBar } from "./SearchBar.tsx";
-import { ShareButton } from "./ShareButton.tsx";
+import { SavedSearchActions } from "./SavedSearchActions.tsx";
 
 export interface SavedSearchViewProps {
   readonly search: SavedSearch;
@@ -75,7 +75,7 @@ export function SavedSearchView({
         onStale={setStale}
         listView={{ view, onView }}
         phoneStart={phoneStart}
-        actions={search.mine ? <ShareButton search={search} /> : null}
+        actions={<SavedSearchActions search={search} />}
       />
       {results({ text, onText, view, defaults, onView, stale })}
     </Card>

@@ -1,0 +1,37 @@
+import { t } from "@bugaboo/messages";
+import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
+
+import { personName } from "../../shared/person.ts";
+import { useAcceptAgent, type OfferedAgent } from "./agents.ts";
+
+/** The agents another person handed to this one, with *Accept*. */
+export function Offered({ offered }: { readonly offered: readonly OfferedAgent[] }) {
+  const accept = useAcceptAgent();
+  if (offered.length === 0) {
+    return null;
+  }
+  return (
+    <ul {...partOf(part.list)} aria-label={t("agents.offered")}>
+      {offered.map((agent) => (
+        <li key={agent.id} {...partOf(part.item)}>
+          <span {...partOf(part.startColumn)}>
+            <span {...partOf(part.itemTitle)}>{agent.name}</span>
+            <span {...partOf(part.muted)}>
+              {t("agents.offered-line", { person: personName(agent.from) })}
+            </span>
+          </span>
+          <Button
+            look={buttonLook.primary}
+            isPending={accept.isPending}
+            aria-label={t("agents.accept-name", { agent: agent.name })}
+            onPress={() => {
+              accept.mutate({ params: { path: { agent: agent.id } } });
+            }}
+          >
+            {t("agents.accept")}
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}

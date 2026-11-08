@@ -6,12 +6,14 @@ export interface ShownOnceProps {
   readonly secret: string;
   /** The person says that they copied it: it is not shown again. */
   readonly onDone: () => void;
+  /** What the card is called; *Your new access key* without it (an agent key has its own). */
+  readonly title?: string;
 }
 
 /** The new key, shown once, with a button that copies it. */
-export function ShownOnce({ secret, onDone }: ShownOnceProps) {
+export function ShownOnce({ secret, onDone, title }: ShownOnceProps) {
   return (
-    <Card heading={t("access-keys.shown-title")}>
+    <Card heading={title ?? t("access-keys.shown-title")}>
       <div {...partOf(part.stack)}>
         <Alert tone={alertTone.warning}>{t("access-keys.shown-once")}</Alert>
         <p {...partOf(part.muted)}>{t("access-keys.key-label")}</p>

@@ -15736,3 +15736,80 @@ part "app-layout[variant=phone] ai-page row > button" "app-layout[variant=phone]
     flex "1 1 100%"
     width "100%"
 }
+
+// ───────────── My agents (features/agents, M7 WP-12) ─────────────
+//
+// *My agents* (UX §4.17): a list of sections, one for each agent, with its buttons and what it works on. The buttons
+// wrap under the words on a narrow screen and are as high as a touch needs (the button part does that).
+
+part "agents.heading" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+}
+
+// One agent: its head (name, state, buttons), then what it works on.
+part "agents.agent" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+    padding "$space-3"
+}
+
+part "agents.agent-head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-4"
+    min-width 0
+}
+
+part "agents.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+part "agents.work" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "agents.work-line" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-1" "$space-3"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+// The limits of an agent: a name and its number on each line.
+part "agents.facts" {
+    margin 0
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "agents.fact" {
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    justify-content space-between
+    gap "$space-1" "$space-3"
+}
+
+part "agents.fact-value" {
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+}

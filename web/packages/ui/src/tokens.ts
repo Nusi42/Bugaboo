@@ -945,6 +945,16 @@ export const part = {
   agentWorkBubbleHead: "agent-work.bubble-head",
   agentWorkSteps: "agent-work.steps",
   agentWorkParts: "agent-work.parts",
+  agentWorkMissing: "agent-work.missing",
+  agentsHeading: "agents.heading",
+  agentsAgent: "agents.agent",
+  agentsAgentHead: "agents.agent-head",
+  agentsActions: "agents.actions",
+  agentsWork: "agents.work",
+  agentsWorkLine: "agents.work-line",
+  agentsFacts: "agents.facts",
+  agentsFact: "agents.fact",
+  agentsFactValue: "agents.fact-value",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -1664,6 +1674,16 @@ export const partWords = {
   "agent-work.bubble-head": { variant: [], state: [] },
   "agent-work.steps": { variant: [], state: [] },
   "agent-work.parts": { variant: [], state: [] },
+  "agent-work.missing": { variant: [], state: [] },
+  "agents.heading": { variant: [], state: [] },
+  "agents.agent": { variant: [], state: [] },
+  "agents.agent-head": { variant: [], state: [] },
+  "agents.actions": { variant: [], state: [] },
+  "agents.work": { variant: [], state: [] },
+  "agents.work-line": { variant: [], state: [] },
+  "agents.facts": { variant: [], state: [] },
+  "agents.fact": { variant: [], state: [] },
+  "agents.fact-value": { variant: [], state: [] },
 } as const;
 
 /** The places of a window to drag: the variants of the part `window.handle`. */

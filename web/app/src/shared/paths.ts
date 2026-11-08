@@ -1,9 +1,8 @@
 import { appPaths } from "@bugaboo/api-client";
 
 /**
- * The addresses of the pages of the app, written once. Routes, links and redirects all use these,
- * so an address cannot differ between the page and the link to it (ODR). They are the addresses of
- * the UX design (§2.1): `/me/…` for *My settings*, `/settings/…` for *Organization settings*.
+ * The addresses of the pages of the app, written once; routes, links and redirects all use these (ODR). They
+ * are the addresses of the UX design (§2.1): `/me/…` for *My settings*, `/settings/…` for *Organization settings*.
  */
 export const paths = {
   home: "/",
@@ -28,6 +27,8 @@ export const paths = {
   sessions: "/me/sessions",
   accessKeys: "/me/access-keys",
   connectedApps: "/me/connected-apps",
+  myAgents: "/me/agents",
+  agent: "/me/agents/$agent",
   connect: appPaths.connect,
   organizationSettings: "/settings",
   people: "/settings/people",
@@ -50,6 +51,7 @@ export const paths = {
   status: "/settings/status",
   mailServer: "/settings/email",
   ai: "/settings/ai",
+  organizationAgents: "/settings/agents",
   projects: "/settings/projects",
   fieldPermissions: "/settings/field-permissions",
   peopleVisibility: "/settings/people-visibility",
@@ -84,6 +86,7 @@ export const routeParam = {
   issue: "issue",
   run: "run",
   search: "search",
+  agent: "agent",
 } as const;
 
 /** The name of a part of an address that changes. */

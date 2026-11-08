@@ -24,3 +24,9 @@ export {
 } from "../../shared/search-address.ts";
 export { withGroupFilter } from "../../shared/with-filter.ts";
 export { useCanonicalForms, type CanonicalForms } from "./canonical-forms.ts";
+export { SavedSearchChoice, type SavedSearchChoiceProps } from "./SavedSearchChoice.tsx";
+export {
+  addSavedSearchAction,
+  type SavedSearchAction,
+  type SavedSearchActionProps,
+} from "./saved-search-actions.ts";

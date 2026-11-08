@@ -416,6 +416,9 @@ export const messages = {
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help":
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own server always gets the names each person may see.",
+    "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own computers always gets the names each person may see.",
+  "agents.org-intro":
+    "Every agent of the organization, and how much any agent may do. You can stop any agent.",
 } as const;
 
 register(messages);

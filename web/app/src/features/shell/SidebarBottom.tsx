@@ -6,7 +6,7 @@ import { Dialog, DialogTrigger, OverlayTriggerStateContext, Popover } from "reac
 import { paths } from "../../shared/paths.ts";
 import { NavButton } from "./NavItem.tsx";
 import { openOverlay } from "./overlay-state.ts";
-import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
+import { MyAgentsLink, PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
 import { toggleSidebar } from "./sidebar-state.ts";
 
 export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate"> {
@@ -19,7 +19,7 @@ export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate
 /** Where the menu of the group opens: above its button, from the start edge (words of React Aria). */
 const above = "top start";
 
-/** The items of the group: *My settings*, *Organization settings*, the list of shortcuts, and narrowing the bar. */
+/** The items of the group: *My settings*, *Organization settings*, the list of shortcuts, and narrowing the bar; where the group is folded, *Timesheet* and *My agents* too. */
 function Items({
   narrow,
   inDrawer,
@@ -32,6 +32,7 @@ function Items({
       {withTimesheet ? (
         <PlaceLink path={paths.time} narrow={narrow} onNavigate={onNavigate} />
       ) : null}
+      {withTimesheet ? <MyAgentsLink narrow={narrow} onNavigate={onNavigate} /> : null}
       <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
       {organizationSettings ? (
         <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />

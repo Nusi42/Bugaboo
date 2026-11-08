@@ -6,6 +6,7 @@ import type { messages as admin } from "./admin.ts";
 import type { messages as agentWork } from "./agent-work.ts";
 import type { messages as assistant } from "./assistant.ts";
 import type { messages as assistantEntry } from "./assistant-entry.ts";
+import type { messages as agents } from "./agents.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -43,6 +44,7 @@ export type MessageKey =
   | keyof typeof agentWork
   | keyof typeof assistant
   | keyof typeof assistantEntry
+  | keyof typeof agents
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -146,6 +148,41 @@ export interface MessageArguments {
   "ai-setup.agreement-text-confirmed": { provider: string | number };
   "ai-setup.agreement-title": { provider: string | number };
   "ai-setup.where-off-more": { names: string | number };
+  "agents.accept-name": { agent: string | number };
+  "agents.accepted-line": { agent: string | number; count: number };
+  "agents.count": { count: string | number };
+  "agents.create-full": { most: number };
+  "agents.hand-title": { agent: string | number };
+  "agents.key-renew-name": { name: string | number };
+  "agents.key-renew-text": { name: string | number };
+  "agents.key-runs-out": { date: string | number };
+  "agents.key-take-back-name": { name: string | number };
+  "agents.last-used": { when: string | number };
+  "agents.limits-most": { most: number };
+  "agents.limits-title": { agent: string | number };
+  "agents.of": { person: string | number };
+  "agents.offered-line": { person: string | number };
+  "agents.open-name": { issue: string | number };
+  "agents.pause-name": { agent: string | number };
+  "agents.renew-name": { agent: string | number; search: string | number };
+  "agents.resume-name": { agent: string | number };
+  "agents.rule-days-help": { most: string | number };
+  "agents.rule-days-wrong": { most: string | number };
+  "agents.rule-ends-in": { count: number };
+  "agents.rule-ends-on": { date: string | number };
+  "agents.rule-line": { agent: string | number; search: string | number };
+  "agents.rule-power-change": { fields: string | number };
+  "agents.rule-power-creates": { project: string | number };
+  "agents.rule-stop-name": { agent: string | number; search: string | number };
+  "agents.state-of": { person: string | number; state: string | number };
+  "agents.stop-name": { agent: string | number };
+  "agents.stop-title": { agent: string | number };
+  "agents.waiting-button-name": { action: string | number; issue: string | number };
+  "agents.waiting-plan": { agent: string | number };
+  "agents.waiting-question": { agent: string | number };
+  "agents.waiting-review": { agent: string | number };
+  "agents.waiting-rule": { agent: string | number; search: string | number };
+  "agents.work-state": { state: string | number };
   "assignments.change-here-name": { who: string | number };
   "assignments.picked": { name: string | number };
   "assignments.remove-name": { what: string | number; who: string | number };

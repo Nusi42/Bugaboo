@@ -3,6 +3,8 @@ import { useLocation } from "@tanstack/react-router";
 
 import { NavLink } from "./NavItem.tsx";
 import { howCurrent, placeAt, placeCurrent, type Place } from "../../shared/places.ts";
+import { paths } from "../../shared/paths.ts";
+import { useMyAgentsEntry } from "../../shared/use-my-agents-entry.ts";
 
 export interface PlaceLinkProps {
   readonly path: Place["path"];
@@ -32,4 +34,9 @@ export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
       />
     </li>
   );
+}
+
+/** The link to *My agents*, for a person who has an agent or may create one (UX §4.17); nothing for anybody else. */
+export function MyAgentsLink(props: Omit<PlaceLinkProps, "path">) {
+  return useMyAgentsEntry() ? <PlaceLink {...props} path={paths.myAgents} /> : null;
 }

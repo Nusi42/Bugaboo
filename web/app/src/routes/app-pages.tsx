@@ -285,3 +285,5 @@ export const mailServerRoute = createRoute({
     );
   },
 });
+
+export { agentRoute, myAgentsRoute, organizationAgentsRoute } from "./agent-pages.tsx";

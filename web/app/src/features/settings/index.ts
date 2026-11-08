@@ -11,6 +11,7 @@ export { SettingsForm, type SettingsFormProps } from "./SettingsForm.tsx";
 export { AiPage } from "./AiPage.tsx";
 export { NeverSentFields } from "./NeverSentFields.tsx";
 export { ProjectAiSection } from "./ProjectAiSection.tsx";
+export { AgentsPage } from "./AgentsPage.tsx";
 export { SecurityPage } from "./SecurityPage.tsx";
 export { SignInRulesPage } from "./SignInRulesPage.tsx";
 export { ThemesPage } from "./ThemesPage.tsx";

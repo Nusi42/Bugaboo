@@ -238,6 +238,7 @@ export const messages = {
   "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
   "issues.group-by": "Group by",
   "issues.group-by-none": "No grouping",
+  "search.choose-saved": "Choose a saved search",
 } as const;
 
 register(messages);

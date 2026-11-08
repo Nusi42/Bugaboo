@@ -247,6 +247,7 @@ export const messages = {
   "nav.access-keys": "Access keys",
   "access-keys.may": "What it may do",
   "access-keys.more": "More options",
+  "access-keys.row.prefix": "Starts with {prefix}",
   "nav.connected-apps": "Connected apps",
   "nav.ai": "Set up the assistant",
   "ai-setup.never-sent": "Never sent to AI",
@@ -766,6 +767,14 @@ export const messages = {
   "agent-work.lack-description": "description",
   "agent-work.lack-steps-to-reproduce": "steps to reproduce",
   "agent-work.lack-done-when": "Done when",
+  "agent-work.missing-description": "No description",
+  "agent-work.missing-steps-to-reproduce": "No steps to reproduce",
+  "agent-work.missing-done-when": "No Done when",
+  "nav.my-agents": "My agents",
+  "nav.organization-agents": "Agents",
+  "agents.page": "Agent",
+  "agents.work": "What it works on",
+  "agents.org-list": "Every agent",
 } as const;
 
 register(messages);

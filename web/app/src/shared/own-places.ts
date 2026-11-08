@@ -40,6 +40,21 @@ export const ownPlaces: readonly Place[] = [
     listed: false,
   },
   {
+    // *My agents*: in the sidebar and the sheet *More* only for a person who has an agent or may make one.
+    path: paths.myAgents,
+    name: "nav.my-agents",
+    icon: iconName.agent,
+    parent: null,
+    listed: false,
+  },
+  {
+    path: paths.agent,
+    name: "agents.page",
+    icon: iconName.agent,
+    parent: paths.myAgents,
+    listed: false,
+  },
+  {
     path: paths.mySettings,
     name: "nav.my-settings",
     icon: iconName.settings,

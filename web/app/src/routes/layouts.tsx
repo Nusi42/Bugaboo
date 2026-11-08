@@ -113,6 +113,7 @@ async function joinIssues(): Promise<void> {
     labels,
     manyChanges,
     agentWork,
+    agents,
     files,
     search,
   ] = await Promise.all([
@@ -124,6 +125,7 @@ async function joinIssues(): Promise<void> {
     import("../features/labels/index.ts"),
     import("../features/many-changes/index.ts"),
     import("../features/agent-work/index.ts"),
+    import("../features/agents/index.ts"),
     import("../features/files/index.ts"),
     import("../features/search/index.ts"),
   ]);
@@ -138,6 +140,7 @@ async function joinIssues(): Promise<void> {
     labels.registerLabelBlocks();
     manyChanges.registerManyChanges();
     agentWork.registerAgentWork();
+    agents.registerAgents();
     files.registerFileBlocks();
     search.registerSearch();
   }

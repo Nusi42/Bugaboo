@@ -8,6 +8,7 @@ import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
 import { placeAt } from "../../shared/places.ts";
 import { useSidebarSections } from "./sidebar-sections.ts";
+import { useMyAgentsEntry } from "../../shared/use-my-agents-entry.ts";
 
 export interface MoreSheetProps {
   /** The person may open *Organization settings*. */
@@ -18,9 +19,11 @@ export interface MoreSheetProps {
   readonly signingOut: boolean;
 }
 
-/** *My settings*, and *Organization settings* for a person who may open it. */
+/** *My agents* for a person who has an agent or may create one, *My settings*, and *Organization settings* for a person who may open it. */
 function Places({ organizationSettings }: Pick<MoreSheetProps, "organizationSettings">) {
+  const agents = useMyAgentsEntry();
   const places = [
+    agents ? placeAt(paths.myAgents) : undefined,
     placeAt(paths.mySettings),
     organizationSettings ? placeAt(paths.organizationSettings) : undefined,
   ];
