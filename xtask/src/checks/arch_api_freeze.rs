@@ -94,34 +94,20 @@ fn lost_in_the_copy(origin: &str, kept: &Value, frozen: &Value) -> Vec<Finding> 
     )]
 }
 
-/// Runs `git`; the answer is its text, or an error when git does not run or fails.
-fn git(repo: &Repo, arguments: &[&str]) -> anyhow::Result<String> {
-    let output = crate::tools::command("git")
-        .args(arguments)
-        .current_dir(repo.root())
-        .output()
-        .with_context(|| format!("git {} did not start", arguments.join(" ")))?;
-    anyhow::ensure!(
-        output.status.success(),
-        "git {} failed: {}",
-        arguments.join(" "),
-        String::from_utf8_lossy(&output.stderr).trim()
-    );
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
-}
-
 /// Whether a name is a reference of the repository.
 fn is_reference(repo: &Repo, name: &str) -> anyhow::Result<bool> {
-    Ok(!git(repo, &["for-each-ref", "--format=%(refname)", name])?.is_empty())
+    Ok(!repo
+        .git_text(&["for-each-ref", "--format=%(refname)", name])?
+        .is_empty())
 }
 
 /// The frozen copy as it is stored at a commit or tag: nothing when the commit has none.
 fn copy_at(repo: &Repo, reference: &str) -> anyhow::Result<Option<Value>> {
-    let listed = git(repo, &["ls-tree", reference, "--", FROZEN_PATH])?;
+    let listed = repo.git_text(&["ls-tree", reference, "--", FROZEN_PATH])?;
     if listed.is_empty() {
         return Ok(None);
     }
-    let text = git(repo, &["show", &format!("{reference}:{FROZEN_PATH}")])?;
+    let text = repo.git_text(&["show", &format!("{reference}:{FROZEN_PATH}")])?;
     let copy = serde_json::from_str(&text)
         .with_context(|| format!("the frozen copy at {reference} is not JSON"))?;
     Ok(Some(copy))
@@ -140,7 +126,7 @@ fn copy_to_keep(repo: &Repo) -> anyhow::Result<Option<(String, Value)>> {
         if !is_reference(repo, main)? {
             continue;
         }
-        let base = git(repo, &["merge-base", "HEAD", main])?;
+        let base = repo.git_text(&["merge-base", "HEAD", main])?;
         return Ok(
             copy_at(repo, &base)?.map(|copy| (format!("at the merge base with {main}"), copy))
         );

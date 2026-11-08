@@ -45,21 +45,40 @@ impl TempDir {
 
     /// Runs `git` in this folder and returns whether it succeeded.
     pub(crate) fn git(&self, args: &[&str]) -> bool {
-        crate::tools::command("git")
-            .args([
-                "-c",
-                "user.name=tester",
-                "-c",
-                "user.email=1+tester@users.noreply.github.com",
-            ])
-            .args(["-c", "core.autocrlf=false", "-c", "commit.gpgsign=false"])
-            .args(args)
-            .current_dir(&self.path)
+        git_command(&self.path, args)
             .output()
             .unwrap()
             .status
             .success()
     }
+
+    /// Runs `git` in `dir` (a folder made here) and returns its trimmed output; a failure
+    /// stops the test and shows what Git said.
+    pub(crate) fn git_in(dir: &Path, args: &[&str]) -> String {
+        let out = git_command(dir, args).output().unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8_lossy(&out.stdout).trim().to_owned()
+    }
+}
+
+/// `git` in `dir` with an identity and without the settings of the person who runs the test.
+fn git_command(dir: &Path, args: &[&str]) -> std::process::Command {
+    let mut command = crate::tools::command("git");
+    command
+        .args([
+            "-c",
+            "user.name=tester",
+            "-c",
+            "user.email=1+tester@users.noreply.github.com",
+        ])
+        .args(["-c", "core.autocrlf=false", "-c", "commit.gpgsign=false"])
+        .args(args)
+        .current_dir(dir);
+    command
 }
 
 impl Drop for TempDir {

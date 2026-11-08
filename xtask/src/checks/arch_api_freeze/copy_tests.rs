@@ -73,7 +73,7 @@ fn bad_example_a_tag_without_a_copy_and_a_folder_that_is_no_repository_fail_clos
     );
     assert!(write_frozen(&repo).is_err());
     // A git that fails is an error too.
-    assert!(git(&repo, &["no-such-subcommand-for-test"]).is_err());
+    assert!(repo.git_text(&["no-such-subcommand-for-test"]).is_err());
 }
 
 #[test]

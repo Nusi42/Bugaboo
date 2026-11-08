@@ -12,6 +12,25 @@ pub(crate) struct Repo {
     root: PathBuf,
     /// Set while checking staged content: a read-only export of the index.
     view: Option<PathBuf>,
+    /// Another checkout than the one the program runs for: Git must not be steered to the
+    /// repository of the running program by the variables a hook sets.
+    foreign: bool,
+}
+
+/// The variables that tell Git which repository, work tree or index to use.
+const GIT_LOCATION_VARIABLES: [&str; 5] = [
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+];
+
+/// Makes `command` ask the repository of its own folder, whatever the environment says.
+pub(crate) fn isolate_git(command: &mut std::process::Command) {
+    for variable in GIT_LOCATION_VARIABLES {
+        command.env_remove(variable);
+    }
 }
 
 /// An export of the staged files; dropping it removes the export (and only the export).
@@ -26,16 +45,21 @@ impl Drop for StagedTree {
     }
 }
 
+/// Removes a link to a folder, or a file or an empty folder, and never anything a link points to.
+/// A real folder with content is left alone (the error says so).
+pub(crate) fn remove_link(path: &Path) -> std::io::Result<()> {
+    fs::remove_dir(path).or_else(|_| fs::remove_file(path))
+}
+
 /// Removes an export. The `node_modules` link is removed as a link first, so the real folder
 /// it points to can never be touched.
 fn remove_export(dir: &Path) {
-    let link = dir.join("node_modules");
-    let _ = fs::remove_dir(&link).or_else(|_| fs::remove_file(&link));
+    let _ = remove_link(&dir.join("node_modules"));
     let _ = fs::remove_dir_all(dir);
 }
 
 /// A folder link: a symbolic link on Unix, a junction on Windows (no special rights needed).
-fn link_directory(target: &Path, link: &Path) {
+pub(crate) fn link_directory(target: &Path, link: &Path) {
     if !target.is_dir() {
         return;
     }
@@ -55,7 +79,20 @@ impl Repo {
     /// The repository (or fixture) whose folder is `root`.
     #[cfg(test)]
     pub(crate) fn at(root: PathBuf) -> Self {
-        Self { root, view: None }
+        Self {
+            root,
+            view: None,
+            foreign: false,
+        }
+    }
+
+    /// Another checkout, for example a work folder next to this one.
+    pub(crate) fn foreign(root: PathBuf) -> Self {
+        Self {
+            root,
+            view: None,
+            foreign: true,
+        }
     }
 
     /// The repository containing this xtask crate, or the master when the command runs in it: the
@@ -65,6 +102,7 @@ impl Repo {
             return Ok(Self {
                 root: master,
                 view: None,
+                foreign: false,
             });
         }
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -72,7 +110,11 @@ impl Repo {
             .parent()
             .context("xtask must live in a folder inside the repository")?
             .to_path_buf();
-        Ok(Self { root, view: None })
+        Ok(Self {
+            root,
+            view: None,
+            foreign: false,
+        })
     }
 
     /// Where the files to check are: the working tree, or the export of the staged files.
@@ -150,6 +192,7 @@ impl Repo {
             repo: Self {
                 root: self.root.clone(),
                 view: Some(dir.clone()),
+                foreign: false,
             },
             dir,
         })
@@ -166,7 +209,11 @@ impl Repo {
         args: &[&str],
         input: &[u8],
     ) -> anyhow::Result<Vec<u8>> {
-        let mut child = crate::tools::command("git")
+        let mut command = crate::tools::command("git");
+        if self.foreign {
+            isolate_git(&mut command);
+        }
+        let mut child = command
             .args(args)
             .current_dir(&self.root)
             .stdin(Stdio::piped())
@@ -205,7 +252,29 @@ impl Repo {
         self.git_bytes(&all)
     }
 
-    fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
+    /// What Git writes for the arguments as text, without the space around it: the answer of
+    /// a question with one value (a branch, an object name, a status).
+    pub(crate) fn git_text(&self, args: &[&str]) -> anyhow::Result<String> {
+        Ok(String::from_utf8_lossy(&self.git_bytes(args)?)
+            .trim()
+            .to_owned())
+    }
+
+    /// The names (or records) that Git wrote separated by NUL (`-z`), as text. No quoting, no
+    /// language of Git and no odd letter changes them; a name that is not text is an error.
+    pub(crate) fn git_names_z(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
+        self.git_bytes(args)?
+            .split(|byte| *byte == 0)
+            .filter(|name| !name.is_empty())
+            .map(|name| {
+                String::from_utf8(name.to_vec())
+                    .context("Git named a file that is not text; rename it")
+            })
+            .collect()
+    }
+
+    /// The same, one trimmed line each; empty lines are left out.
+    pub(crate) fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
         Ok(String::from_utf8_lossy(&self.git_paths_bytes(args)?)
             .lines()
             .map(str::trim)
@@ -224,6 +293,7 @@ mod tests {
         Repo {
             root: temp.path().to_path_buf(),
             view: None,
+            foreign: false,
         }
     }
 

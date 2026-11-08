@@ -72,11 +72,15 @@ pub(crate) fn master_here() -> Option<std::path::PathBuf> {
         .output()
         .ok()?;
     let top = std::path::PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
-    (out.status.success()
-        && read_env(&top)
-            .get(ROLE_VARIABLE)
-            .is_some_and(|value| value.eq_ignore_ascii_case(MASTER)))
-    .then_some(top)
+    (out.status.success() && marked_master(&top)).then_some(top)
+}
+
+/// Whether the `.env.local` of the checkout at `root` marks it as the master. The environment of
+/// the running program is not asked: it describes the checkout the program runs in.
+pub(crate) fn marked_master(root: &Path) -> bool {
+    read_env(root)
+        .get(ROLE_VARIABLE)
+        .is_some_and(|value| value.eq_ignore_ascii_case(MASTER))
 }
 
 /// Stops xtask before it builds, installs or tests anything in the master. `allowed` is true for

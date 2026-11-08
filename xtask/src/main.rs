@@ -18,6 +18,7 @@ mod db;
 mod dev;
 mod docs;
 mod fakecc;
+mod folder;
 #[path = "gen/mod.rs"]
 mod generate;
 mod git_identity;
@@ -135,6 +136,11 @@ enum Command {
         /// The master folder (default: the folder the `origin` remote points to).
         master: Option<PathBuf>,
     },
+    /// Work with the work folders next to this one.
+    Folder {
+        #[command(subcommand)]
+        action: FolderAction,
+    },
     /// The index of the text search (ADR-0016).
     SearchIndex {
         #[command(subcommand)]
@@ -145,6 +151,22 @@ enum Command {
         /// What to generate.
         #[arg(value_parser = generate::possible_values())]
         target: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum FolderAction {
+    /// Clean the idle work folder `bugaboo.winN` next to this one: its branch `WINn` moves to
+    /// `origin/main` and everything Git does not track goes (`target/`, `.work/`, `data/`, the
+    /// built web app), except `.codegraph/`, `.tools/`, `node_modules/`, `.env.local`,
+    /// `.claude/settings.local.json`, `CLAUDE.local.md` and `.cargo/config.local.toml`. It
+    /// refuses, changing nothing, for this folder, the master, a folder on another branch,
+    /// uncommitted or untracked files, a Git repository inside the folder, merge commits on the
+    /// branch, and commits that are neither in `origin/main` (by patch) nor pushed to `origin/WINn`. It does NOT check whether
+    /// an agent still works or waits in that folder: the lead checks that first.
+    Clean {
+        /// The number of the work folder.
+        number: u32,
     },
 }
 
@@ -308,6 +330,12 @@ fn run() -> anyhow::Result<ExitCode> {
             for line in master::run(&repo, master)? {
                 output::info(&line);
             }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Folder {
+            action: FolderAction::Clean { number },
+        } => {
+            folder::clean(&repo, number, &mut output::info)?;
             Ok(ExitCode::SUCCESS)
         }
         Command::Gen { target } => {

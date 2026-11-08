@@ -24,7 +24,7 @@ use crate::repo::Repo;
 const HOOKS_FOLDER: &str = "bugaboo-hooks";
 /// The first line of a Cargo setting file this command wrote.
 const WRITTEN_MARK: &str = "# Written by `cargo xtask guard-master`; Git ignores this file.";
-const CARGO_CONFIG: &str = ".cargo/config.local.toml";
+pub(crate) const CARGO_CONFIG: &str = ".cargo/config.local.toml";
 
 /// The text of `.env.local` with `key` set to `value`: the line is replaced if the key is there,
 /// else added; the other lines stay.

@@ -79,9 +79,9 @@ struct IndexEntry {
 
 /// Every tracked file with what Git stored for its line endings (`git ls-files --eol`).
 fn index_entries(repo: &Repo) -> anyhow::Result<Vec<IndexEntry>> {
-    let out = repo.git_paths_bytes(&["ls-files", "--eol", "-z"])?;
-    Ok(String::from_utf8_lossy(&out)
-        .split('\0')
+    Ok(repo
+        .git_names_z(&["ls-files", "--eol", "-z"])?
+        .iter()
         .filter_map(|record| record.split_once('\t'))
         .map(|(info, path)| IndexEntry {
             path: path.to_owned(),

@@ -63,13 +63,22 @@ impl Layout {
         if let Some(value) = override_value.filter(|value| !value.is_empty()) {
             return valid(value.parse().ok(), format!("{variable}={value}"));
         }
-        let number = folder_name
-            .strip_prefix(self.work_folder_prefix.as_str())
-            .filter(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()));
-        match number {
+        match self.work_folder_number(folder_name) {
             None => Ok(1),
-            Some(rest) => valid(rest.parse().ok(), format!("The folder {folder_name}")),
+            Some(number) => valid(number.parse().ok(), format!("The folder {folder_name}")),
         }
+    }
+
+    /// The N of a work folder called `bugaboo.winN`, as written; none for any other name.
+    pub(crate) fn work_folder_number<'a>(&self, folder_name: &'a str) -> Option<&'a str> {
+        folder_name
+            .strip_prefix(self.work_folder_prefix.as_str())
+            .filter(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()))
+    }
+
+    /// The name of work folder number `number`.
+    pub(crate) fn work_folder_name(&self, number: u32) -> String {
+        format!("{}{number}", self.work_folder_prefix)
     }
 
     /// The port called `key` in block `block` (counted from 1).
