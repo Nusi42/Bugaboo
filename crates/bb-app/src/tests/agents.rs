@@ -132,6 +132,7 @@ pub(super) fn give_work_on(
         .find(|(id, _)| *id == agent)
     {
         held.issues.insert(issue);
+        held.handed.insert(issue);
         held.allowances
             .entry(issue)
             .or_default()

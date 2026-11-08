@@ -61,6 +61,53 @@ fn read_review(row: &Row) -> Result<Review, StoreError> {
 }
 
 impl AgentWorkRecords for AuthStorage {
+    async fn matches_of_agent_since(
+        &self,
+        agent: AgentId,
+        now: Timestamp,
+        since: (Timestamp, Option<IssueId>),
+        limit: u64,
+    ) -> Result<Vec<RuleMatch>, StoreError> {
+        let (since, after) = since;
+        let at = || Expr::col((RuleMatchRow::Table, RuleMatchRow::At));
+        let later = match after {
+            Some(issue) => at().gt(to_micros(since)).or(at()
+                .eq(to_micros(since))
+                .and(Expr::col((RuleMatchRow::Table, RuleMatchRow::Issue)).gt(issue.stored()))),
+            None => at().gt(to_micros(since)),
+        };
+        let mut select = Query::select();
+        select
+            .columns([
+                (RuleMatchRow::Table, RuleMatchRow::Rule),
+                (RuleMatchRow::Table, RuleMatchRow::Issue),
+                (RuleMatchRow::Table, RuleMatchRow::At),
+            ])
+            .from(RuleMatchRow::Table)
+            .inner_join(
+                StandingRuleRow::Table,
+                Expr::col((StandingRuleRow::Table, StandingRuleRow::Id))
+                    .equals((RuleMatchRow::Table, RuleMatchRow::Rule)),
+            )
+            .cond_where(working_rule(agent, now))
+            .and_where(later)
+            .order_by((RuleMatchRow::Table, RuleMatchRow::At), Order::Asc)
+            .order_by((RuleMatchRow::Table, RuleMatchRow::Issue), Order::Asc)
+            .limit(limit);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok(RuleMatch {
+                    rule: row.id(RuleMatchRow::Rule)?,
+                    issue: row.id(RuleMatchRow::Issue)?,
+                    at: row.time(RuleMatchRow::At)?,
+                })
+            })
+            .collect()
+    }
+
     async fn issue_events_after(
         &self,
         after: i64,
@@ -220,6 +267,26 @@ impl AgentWorkRecords for AuthStorage {
         Ok(details)
     }
 
+    async fn another_in_attempt_in(
+        transaction: &mut Transaction,
+        issue: IssueId,
+        except: AgentWorkId,
+    ) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr(Expr::val(1))
+            .from(IssueWorkRow::Table)
+            .and_where(Expr::col(IssueWorkRow::Issue).eq(issue.stored()))
+            .and_where(Expr::col(IssueWorkRow::Id).ne(except.stored()))
+            .and_where(
+                Expr::col(IssueWorkRow::State)
+                    .is_in(AgentWorkState::IN_ATTEMPT.map(AgentWorkState::code)),
+            )
+            .limit(1);
+        only_open_work(&mut select);
+        Ok(transaction.fetch_optional(&select).await?.is_some())
+    }
+
     async fn working_issues_of_in(
         transaction: &mut Transaction,
         agent: AgentId,
@@ -328,6 +395,15 @@ impl AgentWorkRecords for AuthStorage {
             }
         }
         Ok(people)
+    }
+
+    async fn lock_working_of(
+        transaction: &mut Transaction,
+        agent: AgentId,
+    ) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock(LockClass::AgentTaking, lock_key(agent.to_bytes()))
+            .await
     }
 
     async fn lock_taking_of(

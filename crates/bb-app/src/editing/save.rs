@@ -126,50 +126,43 @@ impl<S: AuthStore> Ctx<'_, S> {
                         Written::Refused(code) => return Err(stopped.stop::<S>(code)),
                     };
                     S::remove_edit_lock_held(transaction, &what, hold).await?;
-                    S::delete_draft_in(transaction, me, &DraftTarget::Editing(what)).await?;
+                    // The draft is the person's own text; the save of an agent leaves it be.
+                    if !by_agent {
+                        S::delete_draft_in(transaction, me, &DraftTarget::Editing(what)).await?;
+                    }
                     Ok(done)
                 })
             })
             .await;
-        match saved {
-            Ok(done) => Ok(done),
-            Err(error) if by_agent => {
-                // The lock was for this save only, and the text of an agent is nobody's draft.
-                let _ = self.store().release_edit_lock(&save.what, hold).await;
-                Err(match why.said() {
-                    Some(ErrorCode::EditTakenOver) => {
-                        self.taken_over_by(me, place, &save.what).await
-                    }
-                    Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
-                    None => change_failed::<S>(&error, Stops::NONE),
-                })
-            }
-            Err(error) => {
-                // Only a reason this function gave is a refusal of the save; whatever else the write
-                // or the store did is a failure of its own, not a stale version.
-                let refused = match why.said() {
-                    Some(ErrorCode::EditTakenOver) => {
-                        self.taken_over_by(me, place, &save.what).await
-                    }
-                    Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
-                    None => change_failed::<S>(&error, Stops::NONE),
-                };
-                if refused
-                    .code()
-                    .is_some_and(|code| DRAFT_KEPT_BY.contains(&code))
-                {
-                    self.keep_draft(
-                        me,
-                        &DraftTarget::Editing(save.what.clone()),
-                        DraftText {
-                            text: save.text.clone(),
-                            base_version: Some(save.version),
-                        },
-                    )
-                    .await?;
-                }
-                Err(refused)
-            }
+        let error = match saved {
+            Ok(done) => return Ok(done),
+            Err(error) => error,
+        };
+        // Only a reason this function gave is a refusal of the save; whatever else the write or the
+        // store did is a failure of its own, not a stale version.
+        let refused = match why.said() {
+            Some(ErrorCode::EditTakenOver) => self.taken_over_by(me, place, &save.what).await,
+            Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
+            None => change_failed::<S>(&error, Stops::NONE),
+        };
+        if by_agent {
+            // The lock was for this save only, and the text of an agent is nobody's draft: not its
+            // person's.
+            let _ = self.store().release_edit_lock(&save.what, hold).await;
+        } else if refused
+            .code()
+            .is_some_and(|code| DRAFT_KEPT_BY.contains(&code))
+        {
+            self.keep_draft(
+                me,
+                &DraftTarget::Editing(save.what.clone()),
+                DraftText {
+                    text: save.text.clone(),
+                    base_version: Some(save.version),
+                },
+            )
+            .await?;
         }
+        Err(refused)
     }
 }

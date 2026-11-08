@@ -267,8 +267,7 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             | "undo_run"
             | "start_app_session"
             | "end_app_runs"
-            // Taking an issue and the first report of an attempt also open its run.
-            | "report_attempt"
+            // Taking an issue also opens the run of its attempt.
             | "take_work" => {
                 assert_eq!(added, 2, "{name} appended {added} events");
             }

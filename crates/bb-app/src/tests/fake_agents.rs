@@ -33,6 +33,7 @@ impl AgentWorkStore for FakeStore {
                 })
             {
                 work.issues.insert(held.issue);
+                work.handed.insert(held.issue);
                 if let Some(hand_over) = records.hand_overs.iter().find(|h| h.id == held.hand_over)
                 {
                     work.allowances.entry(held.issue).or_default().add(

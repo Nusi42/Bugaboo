@@ -342,6 +342,7 @@ pub struct DecideProposal {
 }
 
 /// What an agent reports on its attempt.
+#[derive(Clone)]
 pub struct ReportAttempt {
     /// The secret of the key of the agent.
     pub session_token: String,
@@ -356,6 +357,7 @@ pub struct ReportAttempt {
 }
 
 /// A question of an agent.
+#[derive(Clone)]
 pub struct AskQuestion {
     /// The secret of the key of the agent.
     pub session_token: String,
@@ -366,6 +368,7 @@ pub struct AskQuestion {
 }
 
 /// A result an agent attaches.
+#[derive(Clone)]
 pub struct AttachResult {
     /// The secret of the key of the agent.
     pub session_token: String,
@@ -382,6 +385,7 @@ pub struct AttachResult {
 }
 
 /// An agent says it is done with the attempt, or gives up.
+#[derive(Clone)]
 pub struct EndAttempt {
     /// The secret of the key of the agent.
     pub session_token: String,
@@ -392,6 +396,7 @@ pub struct EndAttempt {
 }
 
 /// A change an agent proposes under a standing rule. Nothing changes until a person applies it.
+#[derive(Clone)]
 pub struct ProposeChange {
     /// The secret of the key of the agent.
     pub session_token: String,
@@ -427,6 +432,7 @@ pub struct StandingRulePage {
 }
 
 /// An agent takes an issue that was handed over to it and starts an attempt.
+#[derive(Clone)]
 pub struct TakeWork {
     /// The secret of the key of the agent.
     pub session_token: String,

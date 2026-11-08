@@ -127,6 +127,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             .cloned())
     }
 
+    /// Refuses a write by an agent to an issue it was not handed. Adding a comment, a link or a file
+    /// needs no tick, but it needs the hand-over: on an issue a standing rule found, an agent reads
+    /// and proposes. A person is not asked.
+    ///
+    /// # Errors
+    /// `access.forbidden` for an issue the agent was not handed.
+    pub(crate) async fn ensure_agent_works_on(
+        &self,
+        actor: &Actor,
+        issue: IssueId,
+    ) -> Result<(), AppError> {
+        let Some(agent) = actor.agent() else {
+            return Ok(());
+        };
+        if self.work_of_agent_now(agent).await?.handed.contains(&issue) {
+            Ok(())
+        } else {
+            Err(ErrorCode::Forbidden.into())
+        }
+    }
+
     /// Refuses a change by an agent to a member its work does not allow. A person is not asked.
     /// What the agent then changes belongs to the run of its attempt.
     ///
@@ -142,6 +163,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         };
         let work = self.work_of_agent_now(agent).await?;
+        self.ensure_agent_works_on(actor, issue).await?;
         let allowance = work.allowances.get(&issue).cloned().unwrap_or_default();
         let by_the_system = *locked(&self.accepting) == Some(issue);
         let accepted_status = by_the_system && members.iter().any(|member| member == STATUS);

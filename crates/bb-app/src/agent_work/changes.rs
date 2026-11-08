@@ -13,9 +13,9 @@ use bb_core::ErrorCode;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::ai::AuthorKind;
 use bb_core::event::{Actor as EventActor, DomainEvent};
-use bb_core::id::{ProjectId, StandingRuleId, UserId};
+use bb_core::id::{IssueId, ProjectId, StandingRuleId, UserId};
 use bb_core::issue::Issue;
-use bb_core::paging::page_len;
+use bb_core::paging::{Cut, page_len, read_len};
 use bb_policy::{Authorized, Evaluation, Masked, Place};
 use jiff::Timestamp;
 use serde::Serialize;
@@ -47,18 +47,29 @@ pub struct ChangesSinceQuery {
 struct Mark {
     place: i64,
     at: Timestamp,
+    /// The issue of the last match given at that very moment, when the matches go on after it.
+    after: Option<IssueId>,
 }
 
 impl Mark {
     fn write(self) -> String {
-        format!("{}.{}", self.place, self.at.as_microsecond())
+        let mark = format!("{}.{}", self.place, self.at.as_microsecond());
+        match self.after {
+            Some(issue) => format!("{mark}.{issue}"),
+            None => mark,
+        }
     }
 
     fn read(text: &str) -> Option<Self> {
-        let (place, at) = text.split_once('.')?;
+        let mut parts = text.splitn(3, '.');
+        let (place, at, after) = (parts.next()?, parts.next()?, parts.next());
         Some(Self {
             place: place.parse().ok().filter(|place| *place >= 0)?,
             at: Timestamp::from_microsecond(at.parse().ok()?).ok()?,
+            after: match after {
+                Some(issue) => Some(issue.parse().ok()?),
+                None => None,
+            },
         })
     }
 }
@@ -125,7 +136,7 @@ impl Masked for ChangesPage {}
 
 /// The issues one request has looked at, each once.
 struct Seen {
-    issues: HashMap<bb_core::id::IssueId, Option<(Issue, std::sync::Arc<Evaluation>, String)>>,
+    issues: HashMap<IssueId, Option<(Issue, std::sync::Arc<Evaluation>, String)>>,
     authors: HashMap<(UserId, ProjectId), AuthorKind>,
 }
 
@@ -136,7 +147,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         maker: &mut LineMaker,
         seen: &'a mut Seen,
-        id: bb_core::id::IssueId,
+        id: IssueId,
     ) -> Result<Option<&'a (Issue, std::sync::Arc<Evaluation>, String)>, AppError> {
         if seen.issues.contains_key(&id) {
             return Ok(seen.issues.get(&id).and_then(Option::as_ref));
@@ -203,47 +214,116 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(found)
     }
 
-    /// The issues that came under an open rule of the agent after `since`, the ones the agent may
-    /// see.
+    /// The issues that came under an open rule of the agent after `since`, oldest first, one page: the
+    /// ones the agent may see, and the moment to go on from when there are more (the match after the
+    /// last one of the page). One statement, whatever the number of rules and matches.
     async fn matches_since(
         &self,
         actor: &Actor,
         maker: &mut LineMaker,
         seen: &mut Seen,
         agent: bb_core::id::AgentId,
-        since: Timestamp,
-    ) -> Result<Vec<MatchSeen>, AppError> {
-        let failed = |error| internal::<S>(&error);
-        let rules = self
+        since: (Timestamp, Option<IssueId>),
+        wanted: usize,
+    ) -> Result<(Vec<MatchSeen>, Option<(Timestamp, IssueId)>), AppError> {
+        let rows = self
             .store()
-            .rules_of_agent(agent, None, 100)
+            .matches_of_agent_since(agent, self.now(), since, read_len(wanted))
             .await
-            .map_err(failed)?;
+            .map_err(|error| internal::<S>(&error))?;
+        let cut = Cut::of(rows, wanted);
+        let resume = cut
+            .more
+            .then(|| cut.items.last().map(|each| (each.at, each.issue)))
+            .flatten();
         let mut found = Vec::new();
-        for rule in rules
-            .iter()
-            .filter(|rule| rule.state == bb_core::agent_records::GivingState::Open)
-        {
-            let matches = self
-                .store()
-                .matches_of(rule.id, None, 200)
-                .await
-                .map_err(failed)?;
-            for each in matches.iter().filter(|each| each.at > since) {
-                if let Some((issue, _, key)) =
-                    self.seen_once(actor, maker, seen, each.issue).await?
-                {
-                    found.push(MatchSeen {
-                        rule: rule.id,
-                        key: key.clone(),
-                        project: issue.project,
-                        at: each.at,
-                    });
-                }
+        for each in &cut.items {
+            if let Some((issue, _, key)) = self.seen_once(actor, maker, seen, each.issue).await? {
+                found.push(MatchSeen {
+                    rule: each.rule,
+                    key: key.clone(),
+                    project: issue.project,
+                    at: each.at,
+                });
             }
         }
-        found.sort_by_key(|each| each.at);
-        Ok(found)
+        Ok((found, resume))
+    }
+}
+
+/// What one look at the log of changes found.
+struct Scanned {
+    changes: Vec<ChangeSeen>,
+    /// The place of the last event given up or taken, where the next look goes on.
+    place: i64,
+    /// Whether the page was full before the log was read to its end.
+    full_page: bool,
+    /// Whether the log goes on after what one request reads.
+    log_goes_on: bool,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Reads the log of changes of issues after `from`, for the issues the agent reaches, one page.
+    async fn scan_changes(
+        &self,
+        actor: &Actor,
+        maker: &mut LineMaker,
+        seen: &mut Seen,
+        reach: &crate::agents::AgentWork,
+        from: i64,
+        wanted: usize,
+    ) -> Result<Scanned, AppError> {
+        let mut reader = self.change_reader().await?;
+        let mut scanned = Scanned {
+            changes: Vec::new(),
+            place: from,
+            full_page: false,
+            log_goes_on: false,
+        };
+        'scan: for _ in 0..SCANS {
+            let events = self
+                .store()
+                .issue_events_after(scanned.place, SCAN)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let full = events.len() as u64 == SCAN;
+            for (at, event) in events {
+                let reached = IssueId::from_bytes(event.entity.id.to_bytes())
+                    .ok()
+                    .filter(|id| reach.issues.contains(id));
+                // The issues the work and the rules of the agent reach are looked at first, so an
+                // event of any other issue costs nothing.
+                if let Some(id) = reached
+                    && let Some((issue, in_project, key)) =
+                        self.seen_once(actor, maker, seen, id).await?.cloned()
+                {
+                    let shown = self
+                        .changes_as_read(&mut reader, actor, &in_project, &issue, &event.changes)
+                        .await?;
+                    if !shown.is_empty() {
+                        if scanned.changes.len() == wanted {
+                            // The page is full: this event is the first of the next one.
+                            scanned.full_page = true;
+                            break 'scan;
+                        }
+                        let author = self.author_of_event(seen, &event, issue.project).await?;
+                        scanned.changes.push(ChangeSeen {
+                            key,
+                            project: issue.project,
+                            at: event.time,
+                            author,
+                            changes: shown,
+                        });
+                    }
+                }
+                scanned.place = at;
+            }
+            scanned.log_goes_on = full;
+            if !full {
+                break;
+            }
+        }
+        Ok(scanned)
     }
 }
 
@@ -268,6 +348,7 @@ pub async fn changes_since<S: AuthStore>(
         let mark = Mark {
             place,
             at: ctx.now(),
+            after: None,
         };
         return Ok(held.authorize(ChangesPage {
             changes: Vec::new(),
@@ -279,77 +360,40 @@ pub async fn changes_since<S: AuthStore>(
     };
     let since = Mark::read(text).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let wanted = page_len(input.limit);
-    let mut reader = ctx.change_reader().await?;
     let mut maker = ctx.line_maker().await?;
     let mut seen = Seen {
         issues: HashMap::new(),
         authors: HashMap::new(),
     };
-    let mut changes = Vec::new();
-    let mut place = since.place;
-    let mut full_page = false;
-    let mut log_goes_on = false;
-    'scan: for _ in 0..SCANS {
-        let events = ctx
-            .store()
-            .issue_events_after(place, SCAN)
-            .await
-            .map_err(failed)?;
-        let full = events.len() as u64 == SCAN;
-        for (at, event) in events {
-            let Ok(id) = bb_core::id::IssueId::from_bytes(event.entity.id.to_bytes()) else {
-                place = at;
-                continue;
-            };
-            let found = ctx
-                .seen_once(&actor, &mut maker, &mut seen, id)
-                .await?
-                .cloned();
-            if let Some((issue, in_project, key)) = found {
-                let shown = ctx
-                    .changes_as_read(&mut reader, &actor, &in_project, &issue, &event.changes)
-                    .await?;
-                if !shown.is_empty() {
-                    if changes.len() == wanted {
-                        // The page is full: this event is the first of the next one.
-                        full_page = true;
-                        break 'scan;
-                    }
-                    let author = ctx
-                        .author_of_event(&mut seen, &event, issue.project)
-                        .await?;
-                    changes.push(ChangeSeen {
-                        key,
-                        project: issue.project,
-                        at: event.time,
-                        author,
-                        changes: shown,
-                    });
-                }
-            }
-            place = at;
-        }
-        log_goes_on = full;
-        if !full {
-            break;
-        }
-    }
-    let matches = ctx
-        .matches_since(&actor, &mut maker, &mut seen, agent, since.at)
+    let reach = ctx.work_of_agent_now(agent).await?;
+    let scanned = ctx
+        .scan_changes(&actor, &mut maker, &mut seen, &reach, since.place, wanted)
+        .await?;
+    let (matches, resume) = ctx
+        .matches_since(
+            &actor,
+            &mut maker,
+            &mut seen,
+            agent,
+            (since.at, since.after),
+            wanted,
+        )
         .await?;
     let work = ctx
         .open_work_seen(&actor, &mut maker, &mut seen, agent)
         .await?;
+    // More matches than a page: the next look goes on after the last one it was given.
     let mark = Mark {
-        place,
-        at: ctx.now(),
+        place: scanned.place,
+        at: resume.map_or_else(|| ctx.now(), |(at, _)| at),
+        after: resume.map(|(_, issue)| issue),
     };
     Ok(held.authorize(ChangesPage {
-        changes,
+        changes: scanned.changes,
         matches,
         work,
         mark: mark.write(),
-        more: full_page || log_goes_on,
+        more: scanned.full_page || scanned.log_goes_on || resume.is_some(),
     }))
 }
 
@@ -362,6 +406,7 @@ mod tests {
         let mark = Mark {
             place: 42,
             at: Timestamp::from_second(1_800_000_000).unwrap(),
+            after: None,
         };
         assert_eq!(Mark::read(&mark.write()), Some(mark));
         for text in ["", "x", "1", "-1.5", "1.x", "1.99999999999999999999999"] {

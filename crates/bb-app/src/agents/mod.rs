@@ -9,7 +9,7 @@ mod names;
 mod store;
 mod types;
 
-pub(crate) use limits::AgentRate;
+pub(crate) use limits::{AgentRate, input_changes_something};
 pub use manage::{
     accept_agent, agent, change_agent, create_agent, hand_agent, my_agents, organization_agents,
     rename_agent, stop_all_agents,

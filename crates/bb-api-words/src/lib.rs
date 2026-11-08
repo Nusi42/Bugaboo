@@ -124,14 +124,53 @@ pub mod sec_matrix {
     pub const TOOL_LINE: &str = "tool ";
     /// The key of an agent that was handed an issue (nothing ticked): it reaches only that issue.
     pub const AGENT_WITH_WORK: &str = "agent-with-work";
+    /// The key of an agent that was handed an issue, and calls a tool about another one.
+    pub const AGENT_ON_ANOTHER_ISSUE: &str = "agent-on-another-issue";
+    /// The key of an agent under a standing rule that found the issue: it proposes and nothing else.
+    pub const AGENT_UNDER_A_RULE: &str = "agent-under-a-rule";
+    /// The key of an agent handed an issue of a project where AI was switched off afterwards.
+    pub const AGENT_IN_AN_AI_OFF_PROJECT: &str = "agent-in-an-ai-off-project";
+    /// A person who signed in through an AI app with the scope to change.
+    pub const PERSON_VIA_APP: &str = "person-via-app";
+    /// Every actor that is an agent starts like this.
+    pub const AGENT_PREFIX: &str = "agent";
+    /// A `tool` line says that the tool changes something.
+    pub const EFFECT_CHANGES: &str = "changes";
+    /// A `tool` line says whom the tool is for: agents only.
+    pub const AUDIENCE_AGENTS: &str = "agents";
+    /// A `tool` line says whom the tool is for: people only (their own time).
+    pub const AUDIENCE_PEOPLE: &str = "people";
+    /// A `tool` line says whom the tool is for: everyone.
+    pub const AUDIENCE_EVERYONE: &str = "everyone";
+
+    /// Whom a tool is for, in the words of the record.
+    #[must_use]
+    pub const fn audience_of(for_agents: bool, for_people: bool) -> &'static str {
+        if for_agents {
+            AUDIENCE_AGENTS
+        } else if for_people {
+            AUDIENCE_PEOPLE
+        } else {
+            AUDIENCE_EVERYONE
+        }
+    }
     /// The actors every `tool` line names: nobody, a person with each starting role (who calls with
-    /// a key that may do all they may), an agent with no work and an agent with work.
+    /// a key that may do all they may), a person signed in through an app, and five kinds of agent.
     #[must_use]
     pub fn mcp_actors(role_keys: &[&str]) -> Vec<String> {
         let mut actors = vec![NOBODY.to_owned()];
         actors.extend(role_keys.iter().map(|key| role_actor(key)));
-        actors.push(AGENT_WITHOUT_WORK.to_owned());
-        actors.push(AGENT_WITH_WORK.to_owned());
+        actors.extend(
+            [
+                PERSON_VIA_APP,
+                AGENT_WITHOUT_WORK,
+                AGENT_WITH_WORK,
+                AGENT_ON_ANOTHER_ISSUE,
+                AGENT_UNDER_A_RULE,
+                AGENT_IN_AN_AI_OFF_PROJECT,
+            ]
+            .map(str::to_owned),
+        );
         actors
     }
     /// A `delivery` line says `heard=` [`YES`] or [`NO`]: whether anything reached the recipient.

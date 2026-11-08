@@ -2,8 +2,7 @@
 //! (AI-32, AI-36, AI-37, ADR-0019, ADR-0029).
 
 use bb_core::ErrorCode;
-use bb_core::agent::{AgentState, LimitKind};
-use bb_core::agent_work::{AgentWorkState, HandOverPower};
+use bb_core::agent_work::HandOverPower;
 use bb_core::edit::{DESCRIPTION_PART, EditWhat};
 use bb_core::event::RecordKind;
 use bb_core::id::{EditorId, IssueId, LockToken};
@@ -11,12 +10,14 @@ use bb_core::technical::TechnicalName;
 use serde_json::{Value, json};
 
 use super::agent_tools::{previewed, used};
-use super::agent_work::{Handed, handed, handed_with, query};
+use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query};
 use super::agents::refused;
+use super::agents::{an_agent, key_of};
 use super::ai_tools::without_nonces;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
+use crate::agent_work::hand_over;
 use crate::auth::{AppError, entity};
 use crate::editing::{TakeLockQuery, take_lock};
 use crate::issues::{ChangeIssue, SaveDescription, change_issue, issue, save_description};
@@ -58,7 +59,7 @@ async fn save_as_agent(
     .await
 }
 
-async fn version_of(world: &World, given: &Handed) -> Result<i64, AppError> {
+pub(super) async fn version_of(world: &World, given: &Handed) -> Result<i64, AppError> {
     Ok(issue(&world.ctx(), query(&given.key, given.issue))
         .await?
         .into_value()
@@ -260,259 +261,6 @@ async fn ai_36_changes_since_is_paged_and_a_mark_that_is_none_is_refused() -> Ou
     Ok(())
 }
 
-/// Lowers a limit of the agent in the store, as its person would on its page.
-fn limit(world: &World, kind: LimitKind, value: i64) {
-    let mut shared = world.store.lock();
-    for agent in &mut shared.state.agents {
-        match kind {
-            LimitKind::ChangesAMinute => agent.changes_a_minute = value,
-            LimitKind::IssuesAtOnce => agent.issues_at_once = value,
-            LimitKind::AttemptsOnOneIssue => agent.attempts_on_one_issue = value,
-        }
-    }
-}
-
-fn the_agent(world: &World) -> bb_core::agent::Agent {
-    world.store.lock().state.agents[0].clone()
-}
-
-#[tokio::test]
-async fn ai_37_reaching_a_limit_pauses_the_agent_with_a_sentence_and_no_change_halfway() -> Outcome
-{
-    let world = World::new().await?;
-    let given = handed(&world).await?;
-    limit(&world, LimitKind::ChangesAMinute, 3);
-    let issue_text = given.issue.to_string();
-    // The first three changes are within the limit, at the edge of it.
-    used(&world, &given.key, "take", json!({"issue": issue_text})).await?;
-    for minutes in [1, 2] {
-        used(
-            &world,
-            &given.key,
-            "report",
-            json!({"issue": issue_text, "minutes": minutes, "cost_cents": 0}),
-        )
-        .await?;
-    }
-    assert_eq!(the_agent(&world).state, AgentState::Active);
-    // Reads count nothing.
-    for _ in 0..5 {
-        used(&world, &given.key, "changes_since", json!({})).await?;
-        previewed(
-            &world,
-            &given.key,
-            "report",
-            json!({"issue": issue_text, "minutes": 9, "cost_cents": 0}),
-        )
-        .await?;
-    }
-    assert_eq!(the_agent(&world).state, AgentState::Active);
-    // The fourth does not start: nothing of it is written, and the agent is paused.
-    let events = world.store.lock().events.len();
-    let attempts = format!("{:?}", world.store.lock().state.work.attempts);
-    let over = used(
-        &world,
-        &given.key,
-        "report",
-        json!({"issue": issue_text, "minutes": 3, "cost_cents": 0}),
-    )
-    .await;
-    assert!(refused(&over.unwrap_err(), ErrorCode::AgentLimitReached));
-    let agent = the_agent(&world);
-    assert_eq!(agent.state, AgentState::Paused);
-    assert_eq!(agent.paused_for, Some(LimitKind::ChangesAMinute));
-    // Only the pause itself was written.
-    assert_eq!(world.store.lock().events.len(), events + 1);
-    assert_eq!(
-        attempts,
-        format!("{:?}", world.store.lock().state.work.attempts)
-    );
-    // The sentence names the agent and the limit.
-    assert_eq!(
-        LimitKind::ChangesAMinute
-            .sentence(&agent.name, agent.changes_a_minute)
-            .render(),
-        "Fixer paused: 3 changes in a minute"
-    );
-    // A paused agent is refused at its next request, whatever it asks.
-    let after = used(&world, &given.key, "changes_since", json!({})).await;
-    assert!(refused(&after.unwrap_err(), ErrorCode::NotSignedIn));
-    // Its person is told.
-    world.ctx().catch_up_notifications().await?;
-    let told = world
-        .store
-        .lock()
-        .state
-        .notifications
-        .iter()
-        .filter(|row| {
-            row.recipient == given.team.person.id
-                && row.kind == bb_core::notification::NotificationKind::AgentStopped
-        })
-        .count();
-    assert_eq!(told, 1, "the person was not told");
-    // Resuming starts the agent from nothing.
-    crate::agents::change_agent(
-        &world.ctx(),
-        crate::agents::ChangeAgent {
-            session_token: given.team.session_token.clone(),
-            id: agent.id,
-            action: crate::agents::AgentAction::Resume,
-            version: agent.version,
-        },
-    )
-    .await?;
-    assert_eq!(the_agent(&world).paused_for, None);
-    used(
-        &world,
-        &given.key,
-        "report",
-        json!({"issue": issue_text, "minutes": 4, "cost_cents": 0}),
-    )
-    .await?;
-    Ok(())
-}
-
-#[tokio::test]
-async fn ai_37_an_agent_works_on_as_many_issues_at_once_as_it_may_and_no_more() -> Outcome {
-    let world = World::new().await?;
-    let first = handed(&world).await?;
-    let second = an_issue(&world, first.project).await?;
-    crate::agent_work::hand_over(
-        &world.ctx(),
-        super::agent_work::plain_hand_over(&first.team.session_token, first.agent, &[second]),
-    )
-    .await?;
-    limit(&world, LimitKind::IssuesAtOnce, 1);
-    used(
-        &world,
-        &first.key,
-        "take",
-        json!({"issue": first.issue.to_string()}),
-    )
-    .await?;
-    let over = used(
-        &world,
-        &first.key,
-        "take",
-        json!({"issue": second.to_string()}),
-    )
-    .await;
-    assert!(refused(&over.unwrap_err(), ErrorCode::AgentLimitReached));
-    let agent = the_agent(&world);
-    assert_eq!(agent.state, AgentState::Paused);
-    assert_eq!(agent.paused_for, Some(LimitKind::IssuesAtOnce));
-    // The work on the second issue did not start.
-    let started = world
-        .store
-        .lock()
-        .state
-        .work
-        .works
-        .iter()
-        .filter(|work| work.issue == second && work.state != AgentWorkState::WaitingForTheAgent)
-        .count();
-    assert_eq!(started, 0);
-    Ok(())
-}
-
-#[tokio::test]
-async fn ai_37_an_agent_makes_as_many_attempts_on_an_issue_as_it_may_and_no_more() -> Outcome {
-    let world = World::new().await?;
-    let given = handed(&world).await?;
-    limit(&world, LimitKind::AttemptsOnOneIssue, 1);
-    let address = given.issue.to_string();
-    used(&world, &given.key, "take", json!({"issue": address})).await?;
-    used(&world, &given.key, "submit", json!({"issue": address})).await?;
-    // The person sends it back; a second attempt would pass the limit.
-    let work = super::agent_work_review::show(&world, &given).await?;
-    crate::agent_work::review_work(
-        &world.ctx(),
-        crate::agent_work::ReviewWork {
-            note: Some("Try the other way".to_owned()),
-            ..super::agent_work_review::review(
-                &given.team.session_token,
-                &work,
-                bb_core::agent_work::ReviewAnswer::SendBack,
-            )
-        },
-    )
-    .await?;
-    let over = used(&world, &given.key, "take", json!({"issue": address})).await;
-    assert!(refused(&over.unwrap_err(), ErrorCode::AgentLimitReached));
-    assert_eq!(
-        the_agent(&world).paused_for,
-        Some(LimitKind::AttemptsOnOneIssue)
-    );
-    Ok(())
-}
-
-#[tokio::test]
-async fn ai_37_a_preview_that_finds_a_limit_pauses_nobody() -> Outcome {
-    let world = World::new().await?;
-    let given = handed(&world).await?;
-    limit(&world, LimitKind::IssuesAtOnce, 0);
-    let over = previewed(
-        &world,
-        &given.key,
-        "take",
-        json!({"issue": given.issue.to_string()}),
-    )
-    .await;
-    assert!(refused(&over.unwrap_err(), ErrorCode::AgentLimitReached));
-    assert_eq!(the_agent(&world).state, AgentState::Active);
-    Ok(())
-}
-
-#[tokio::test]
-async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -> Outcome {
-    let world = World::new().await?;
-    let given = handed_with(&world, |asked| {
-        asked.powers = vec![HandOverPower::ChangeFields];
-        asked.fields = vec!["title".to_owned()];
-    })
-    .await?;
-    limit(&world, LimitKind::ChangesAMinute, 1);
-    let mut counts = Vec::new();
-    for title in ["One", "Two"] {
-        let version = version_of(&world, &given).await?;
-        // The use cases of the API count a change when it is made through `AuthApi`: the table of
-        // the use cases says which inputs change something.
-        let ctx = world.ctx();
-        ctx.expect_change();
-        counts.push(
-            change_issue(
-                &ctx,
-                ChangeIssue {
-                    session_token: given.key.clone(),
-                    issue: given.issue.to_string(),
-                    version,
-                    issue_type: None,
-                    title: Some(title.to_owned()),
-                    status: None,
-                    priority: None,
-                    estimated_time: None,
-                    time_left: None,
-                    assigned_to: None,
-                    fields: std::collections::BTreeMap::default(),
-                },
-            )
-            .await,
-        );
-        // `AuthApi` settles a request that was made; here it is done by hand.
-        if counts.last().is_some_and(Result::is_ok) {
-            ctx.settle_agent_change();
-        }
-    }
-    assert!(counts[0].is_ok());
-    assert!(refused(
-        counts[1].as_ref().unwrap_err(),
-        ErrorCode::AgentLimitReached
-    ));
-    assert_eq!(the_agent(&world).state, AgentState::Paused);
-    Ok(())
-}
-
 /// The value of the title the person sees, to show that nothing changed.
 async fn title_of(world: &World, given: &Handed) -> Result<(String, i64), AppError> {
     let view = issue(&world.ctx(), query(&given.team.session_token, given.issue))
@@ -631,34 +379,203 @@ async fn ai_21_preview_propose_answers_what_would_change_and_saves_nothing() -> 
 }
 
 #[tokio::test]
-async fn ai_37_a_change_that_is_refused_counts_nothing() -> Outcome {
+async fn ai_36_a_report_never_starts_an_attempt_only_take_does() -> Outcome {
     let world = World::new().await?;
-    // Nothing ticked: every change of a field is refused.
-    let given = handed(&world).await?;
-    limit(&world, LimitKind::ChangesAMinute, 1);
-    for title in ["One", "Two", "Three"] {
-        let version = version_of(&world, &given).await?;
-        let ctx = world.ctx();
-        ctx.expect_change();
-        let refusal = change_issue(
-            &ctx,
-            ChangeIssue {
-                session_token: given.key.clone(),
-                issue: given.issue.to_string(),
-                version,
-                issue_type: None,
-                title: Some(title.to_owned()),
-                status: None,
-                priority: None,
-                estimated_time: None,
-                time_left: None,
-                assigned_to: None,
-                fields: std::collections::BTreeMap::default(),
+    let first = handed(&world).await?;
+    let session = first.team.session_token.clone();
+    let helper = an_agent(&world, &session, "Helper").await?;
+    let helper_key = key_of(&world, &session, helper).await?;
+    hand_over(
+        &world.ctx(),
+        plain_hand_over(&session, helper, &[first.issue]),
+    )
+    .await?;
+    let address = first.issue.to_string();
+    let report = json!({"issue": address, "minutes": 1, "cost_cents": 0});
+    // Waiting for the agent: a report is turned away and nothing starts.
+    let before = format!("{:?}", world.store.lock().state.work.attempts);
+    let early = used(&world, &first.key, "report", report.clone()).await;
+    assert!(refused(&early.unwrap_err(), ErrorCode::AgentWorkNotReady));
+    assert_eq!(
+        before,
+        format!("{:?}", world.store.lock().state.work.attempts)
+    );
+    // A works on the issue; B reports on it and is turned away, and B cannot take it either.
+    used(&world, &first.key, "take", json!({"issue": address})).await?;
+    let other = used(&world, &helper_key, "report", report).await;
+    assert!(refused(&other.unwrap_err(), ErrorCode::AgentWorkNotReady));
+    let taken = used(&world, &helper_key, "take", json!({"issue": address})).await;
+    assert!(refused(&taken.unwrap_err(), ErrorCode::AgentWorkNotReady));
+    assert_eq!(world.store.lock().state.work.attempts.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_36_an_agents_save_leaves_the_draft_of_its_person() -> Outcome {
+    let world = World::new().await?;
+    let given = handed_with_description(&world).await?;
+    let version = version_of(&world, &given).await?;
+    crate::editing::save_draft(
+        &world.ctx(),
+        crate::editing::SaveDraftQuery {
+            session_token: given.team.session_token.clone(),
+            target: bb_core::edit::DraftTarget::Editing(description_of(given.issue)?),
+            draft: crate::editing::DraftText {
+                text: "The unsaved words of the person".to_owned(),
+                base_version: Some(version),
             },
+        },
+    )
+    .await?;
+    assert_eq!(world.store.lock().state.drafts.len(), 1);
+    save_as_agent(&world, &given, version, "Steps: press the button").await?;
+    assert_eq!(world.store.lock().state.drafts.len(), 1, "the draft stays");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_32_an_agent_comments_only_on_an_issue_it_was_handed() -> Outcome {
+    use super::agent_work_rules::{found_by_search, made, rule_world};
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    made(&world, &given).await?;
+    found_by_search(&world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await?;
+    // The rule found the issue and the agent reads it, but it was not handed over.
+    let comment = json!({"issue": given.issue.to_string(), "text": "A comment"});
+    let refusal = used(&world, &given.key, "add_comment", comment).await;
+    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+    // An issue it is handed, it may comment on.
+    let other = an_issue(&world, given.project).await?;
+    hand_over(
+        &world.ctx(),
+        plain_hand_over(&given.team.session_token, given.agent, &[other]),
+    )
+    .await?;
+    let comment = json!({"issue": other.to_string(), "text": "A comment"});
+    used(&world, &given.key, "add_comment", comment).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_36_more_matches_than_a_page_all_reach_the_agent() -> Outcome {
+    use super::agent_work_rules::{made, rule_world};
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    let first = used(&world, &given.key, "changes_since", json!({})).await?;
+    let mut mark = mark_of(&without_nonces(&first.text));
+    let mut found = Vec::new();
+    for _ in 0..230 {
+        found.push(an_issue(&world, given.project).await?);
+    }
+    world.clock.advance(10);
+    {
+        let now = world.ctx().now();
+        let mut shared = world.store.lock();
+        for issue in &found {
+            shared
+                .state
+                .work
+                .matches
+                .push(bb_core::agent_records::RuleMatch {
+                    rule: rule.id,
+                    issue: *issue,
+                    at: now,
+                });
+        }
+    }
+    let mut seen = 0;
+    for _ in 0..10 {
+        let page = used(
+            &world,
+            &given.key,
+            "changes_since",
+            json!({"since": mark, "limit": 50}),
+        )
+        .await?;
+        let text = without_nonces(&page.text);
+        seen += text.matches("match:").count();
+        mark = mark_of(&text);
+        if !text.contains("more: true") {
+            break;
+        }
+    }
+    assert_eq!(seen, 230, "every match reached the agent, the newest too");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_36_only_a_web_address_is_attached_as_a_link() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let address = given.issue.to_string();
+    used(&world, &given.key, "take", json!({"issue": address})).await?;
+    for bad in [
+        "javascript:alert(1)",
+        "data:text/html,x",
+        "file:///etc/passwd",
+        "//evil.example/x",
+        "https://",
+        "https://a b",
+        "not a link",
+    ] {
+        let refusal = used(
+            &world,
+            &given.key,
+            "attach",
+            json!({"issue": address, "kind": "link", "label": "Branch", "address": bad}),
         )
         .await;
-        assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
+        assert!(
+            refused(&refusal.unwrap_err(), ErrorCode::InvalidRequest),
+            "{bad}"
+        );
     }
-    assert_eq!(the_agent(&world).state, AgentState::Active);
+    used(
+        &world,
+        &given.key,
+        "attach",
+        json!({"issue": address, "kind": "link", "label": "Branch", "address": "https://example.test/pull/1"}),
+    )
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_36_the_answer_to_an_old_version_leaves_out_a_field_kept_from_ai() -> Outcome {
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let version = version_of(&world, &given).await?;
+    retitle(&world, given.issue, "A title that changed").await?;
+    crate::ai::set_never_sent(
+        &world.ctx(),
+        crate::ai::SetNeverSent {
+            session_token: token(&world),
+            target: crate::ai::NeverSentTarget::Field(bb_core::fields::Field::Title),
+            marked: true,
+            version: 0,
+        },
+    )
+    .await?;
+    let stale = used(
+        &world,
+        &given.key,
+        "take",
+        json!({"issue": given.issue.to_string(), "version": version}),
+    )
+    .await;
+    let Err(AppError::Conflict(conflict)) = stale else {
+        return Err("a stale take is answered with what changed".into());
+    };
+    assert!(
+        !conflict.fields.iter().any(|field| field == "title"),
+        "{:?}",
+        conflict.fields
+    );
+    assert!(!conflict.current.contains_key("title"));
     Ok(())
 }

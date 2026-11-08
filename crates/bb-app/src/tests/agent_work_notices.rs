@@ -4,10 +4,11 @@ use bb_core::id::UserId;
 use bb_core::notification::NotificationKind;
 
 use super::agent_work::handed;
+use super::agent_work::report_attempt;
 use super::agent_work_review::{ready, report};
 use super::agent_work_rules::{made, payload_of, rule_world};
 use super::world::{Outcome, World};
-use crate::agent_work::{AskQuestion, EndAttempt, ask_question, end_attempt, report_attempt};
+use crate::agent_work::{AskQuestion, EndAttempt, ask_question, end_attempt};
 
 /// The kinds the notifications of a person have.
 fn kinds_for(world: &World, person: UserId) -> Vec<NotificationKind> {

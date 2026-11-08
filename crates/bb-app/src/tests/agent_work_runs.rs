@@ -6,6 +6,7 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::message::Message;
 use bb_policy::StartingRole;
 
+use super::agent_work::report_attempt;
 use super::agent_work::{Handed, handed, plain_hand_over, query};
 use super::agent_work_review::{check, ready, report, review, show};
 use super::agents::{an_agent, key_of};
@@ -15,7 +16,7 @@ use super::scenarios_issues::an_issue;
 use super::workflows_rules::{go, member, status_of};
 use super::world::{Outcome, World};
 use crate::agent_work::{attach_result, end_attempt};
-use crate::agent_work::{hand_over, report_attempt, review_work};
+use crate::agent_work::{hand_over, review_work};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
 use crate::runs::{RunQuery, get_run, preview_undo_run};

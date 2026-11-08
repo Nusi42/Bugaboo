@@ -36,6 +36,14 @@ impl Default for AgentRate {
     }
 }
 
+/// Whether the use case with this input type changes something. The one place that says it: a use
+/// case that only reads has an input that ends in `Query` (ARCH-EVENTS holds every input of the
+/// list of use cases to it), so every other input is a change and is counted for an agent.
+#[must_use]
+pub(crate) fn input_changes_something(input_type: &str) -> bool {
+    !input_type.ends_with("Query")
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Says that the request makes a change, so that when it is known to come from an agent (when
     /// its key is read) the agent is checked against its limit of changes a minute, and when the
@@ -51,9 +59,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.services.agent_rate.changes.forget(&agent);
     }
 
-    /// Checks the agent against its limit of changes a minute, once for a request that makes a
-    /// change. Over the limit the agent is paused and the request is refused before anything is
-    /// written. A request that makes no change is not checked.
+    /// Counts the change the request makes against the limit of changes a minute of the agent, once
+    /// for a request that makes a change, and at once: the change is counted here, before anything
+    /// is written, so requests at the same moment cannot all pass the limit. Over the limit the
+    /// agent is paused and the request is refused. A request that makes no change is not counted.
+    /// The window refuses an agent it does not know when its table is full of agents that are still
+    /// within their minute, so a flood of invented agents cannot use up the memory and an agent the
+    /// table has no room for is paused rather than let through.
     ///
     /// # Errors
     /// `agent.limit-reached` when one more change would pass the limit.
@@ -66,7 +78,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .services
             .agent_rate
             .changes
-            .room_within(&agent.id, Instant::now(), limit)
+            .hit_within(agent.id, Instant::now(), limit)
             .is_err()
         {
             return Err(self.pause_for_limit(agent, LimitKind::ChangesAMinute).await);
@@ -75,16 +87,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
-    /// Counts the change the request made, when it was made: a request that was refused counted
-    /// nothing, so an agent that tries what it may not is not paused for it. The count is made once
-    /// for a request.
-    pub(crate) fn settle_agent_change(&self) {
-        if let Some(agent) = locked(&self.change_pending).take() {
-            let _ = self
-                .services
-                .agent_rate
-                .changes
-                .hit_within(agent, Instant::now(), u32::MAX);
+    /// Ends the count of the request: a change that was refused gives its count back, so an agent
+    /// that tries what it may not is not paused for it.
+    pub(crate) fn settle_agent_change(&self, made: bool) {
+        if let Some(agent) = locked(&self.change_pending).take()
+            && !made
+        {
+            self.services.agent_rate.changes.give_back(&agent);
         }
     }
 

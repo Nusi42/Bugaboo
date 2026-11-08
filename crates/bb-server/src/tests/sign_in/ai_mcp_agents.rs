@@ -165,3 +165,76 @@ async fn ai_37_an_agent_over_its_limit_is_paused_over_mcp_and_resumes() -> TestR
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_37_two_takes_of_one_agent_at_the_same_moment_pass_a_limit_of_one_issue_once()
+-> TestResult {
+    each_database("ai_37_parallel_takes", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        ok(&ada
+            .send(
+                "PUT",
+                "/api/v1/settings/agents.maximum-issues-at-once",
+                Some(json!({"value": 1})),
+            )
+            .await?)?;
+        let mut team = team(&site, &mut ada, &["Fixer"]).await?;
+        let (agent, key) = team.agents.remove(0);
+        let second = key_of(&site.create(&mut ada, "Another issue to fix").await?)?;
+        ok(&team
+            .person
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(json!({"agent": agent, "issues": [second], "note": "And this one"})),
+            )
+            .await?)?;
+        let mcp = Mcp::new(&app);
+        let (one, other) = tokio::join!(
+            call(&mcp, &key, "take", json!({"issue": team.issue})),
+            call(&mcp, &key, "take", json!({"issue": second})),
+        );
+        let (one, other) = (one?, other?);
+        assert_eq!(
+            usize::from(!failed(&one)) + usize::from(!failed(&other)),
+            1,
+            "{} / {}",
+            one.json,
+            other.json
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_36_a_report_before_a_take_starts_nothing_over_mcp() -> TestResult {
+    each_database("ai_36_report_before_take", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let team = team(&site, &mut ada, &["Fixer", "Helper"]).await?;
+        let mcp = Mcp::new(&app);
+        let report = json!({"issue": team.issue, "minutes": 1, "cost_cents": 0});
+        assert!(failed(
+            &call(&mcp, &team.agents[0].1, "report", report.clone()).await?
+        ));
+        assert!(!failed(
+            &call(
+                &mcp,
+                &team.agents[0].1,
+                "take",
+                json!({"issue": team.issue})
+            )
+            .await?
+        ));
+        // The other agent reports on an issue the first one works on, and is turned away.
+        assert!(failed(
+            &call(&mcp, &team.agents[1].1, "report", report).await?
+        ));
+        Ok(())
+    })
+    .await
+}

@@ -98,6 +98,13 @@ impl<K: Hash + Eq + Clone> Window<K> {
         }
     }
 
+    /// Takes one event back: the one counted for a request that was then refused.
+    pub fn give_back(&self, key: &K) {
+        if let Some(entry) = self.lock().entries.get_mut(key) {
+            entry.count = entry.count.saturating_sub(1);
+        }
+    }
+
     /// Forgets what the key has counted, so its next event starts a new window: an agent that its
     /// person lets work again starts from nothing.
     pub fn forget(&self, key: &K) {

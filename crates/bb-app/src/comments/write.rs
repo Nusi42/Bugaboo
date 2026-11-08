@@ -140,6 +140,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !held.allows(Permission::Comment) {
             return Err(ErrorCode::Forbidden.into());
         }
+        self.ensure_agent_works_on(actor, issue.id).await?;
         Ok((issue, clean_comment(&input.text)?, held))
     }
 }

@@ -21,7 +21,7 @@ use crate::sign_in_tests::http::Browser;
 const NOBODYS_ENTRY: &str = "018f0e6a-5c2b-7d3e-9a1f-2b3c4d5e6f70";
 
 /// The version of the actor's timer, or 0 when they never started one.
-async fn timer_version(browser: &mut Browser) -> Result<i64, Failure> {
+pub(super) async fn timer_version(browser: &mut Browser) -> Result<i64, Failure> {
     let timer = browser.send("GET", "/api/v1/me/timer", None).await?;
     Ok(timer.body["version"].as_i64().unwrap_or_default())
 }

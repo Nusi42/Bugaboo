@@ -348,6 +348,36 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .collect())
     }
 
+    async fn matches_of_agent_since(
+        &self,
+        agent: AgentId,
+        now: Timestamp,
+        since: (Timestamp, Option<IssueId>),
+        limit: u64,
+    ) -> Result<Vec<RuleMatch>, FakeError> {
+        let (since, after) = since;
+        let shared = self.lock();
+        let records = &shared.state.work;
+        let mut found: Vec<RuleMatch> = records
+            .matches
+            .iter()
+            .filter(|found| {
+                (found.at > since
+                    || (found.at == since && after.is_some_and(|issue| found.issue > issue)))
+                    && records.rules.iter().any(|rule| {
+                        rule.id == found.rule
+                            && rule.agent == agent
+                            && rule.state == GivingState::Open
+                            && rule.ends_at > now
+                    })
+            })
+            .cloned()
+            .collect();
+        found.sort_by_key(|found| (found.at, found.issue));
+        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+        Ok(found)
+    }
+
     async fn last_event_place(&self) -> Result<i64, FakeError> {
         Ok(i64::try_from(self.lock().events.len()).unwrap_or(i64::MAX))
     }
@@ -556,6 +586,24 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .iter()
             .filter(|work| work.agent == agent && work.state.in_attempt() && state.is_open(work))
             .count() as u64)
+    }
+
+    async fn lock_working_of(_tx: &mut Tx, _agent: AgentId) -> Result<(), FakeError> {
+        Ok(())
+    }
+
+    async fn another_in_attempt_in(
+        tx: &mut Tx,
+        issue: IssueId,
+        except: AgentWorkId,
+    ) -> Result<bool, FakeError> {
+        let state = &tx.state.work;
+        Ok(state.works.iter().any(|work| {
+            work.issue == issue
+                && work.id != except
+                && work.state.in_attempt()
+                && state.is_open(work)
+        }))
     }
 
     async fn lock_taking_of(_tx: &mut Tx, _issue: IssueId) -> Result<(), FakeError> {

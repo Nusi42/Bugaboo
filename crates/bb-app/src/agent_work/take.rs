@@ -1,24 +1,29 @@
-//! Taking a handed-over issue (AI-36, ADR-0029, decision 9): all or nothing. The agent takes the work
-//! it was handed with the version of the issue it read; an attempt starts, with its run, and the work
-//! is *Agent working*. Of two agents who take the same issue at the same moment one gets it: the
-//! taking is judged under a lock of the issue, on what is stored then.
+//! Taking a handed-over issue (AI-36, ADR-0029, decision 9): all or nothing, and the only way an
+//! attempt starts. The agent takes the work it was handed with the version of the issue it read; an
+//! attempt starts, with its run, and the work is *Agent working*.
 //!
-//! The limits of the agent are judged here and in the first report (`attempt_to_report`), the one
-//! place that starts an attempt: issues at once, and attempts on one issue.
+//! Of two agents who take the same issue at the same moment one gets it, and an agent never works on
+//! more issues than its limit says: both are judged again inside the change that starts the attempt,
+//! under the lock of the issue and then the lock of the agent, on what is stored then. The limits of
+//! the agent that belong to starting an attempt (issues at once, attempts on one issue) are judged
+//! here and nowhere else.
 
 use bb_core::ErrorCode;
 use bb_core::agent::LimitKind;
 use bb_core::agent_records::Attempt;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::event::{FieldChange, RecordKind};
+use bb_core::id::AttemptId;
+use bb_core::run::RunEnd;
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
 use super::attempt::Mine;
 use super::members::member;
-use super::plan::{Plan, set, state_change};
+use super::plan::{Plan, state_change};
 use super::types::{TakeWork, WorkView};
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
+use crate::projects::Why;
 
 /// What taking an issue would do: everything judged before anything is written.
 pub(super) struct TakePlan {
@@ -31,7 +36,7 @@ impl TakePlan {
     pub(super) fn changes(&self) -> Vec<FieldChange> {
         vec![
             state_change(self.mine.work.state, AgentWorkState::AgentWorking),
-            set(member::ATTEMPT, json!(self.attempt.number)),
+            set_to(member::ATTEMPT, json!(self.attempt.number)),
         ]
     }
 }
@@ -56,7 +61,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 mine.actor.person.id,
             ));
         }
-        if self.another_agent_works_on(&mine).await? {
+        if self
+            .store()
+            .another_in_attempt(mine.work.issue, mine.work.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
             return Err(ErrorCode::AgentWorkNotReady.into());
         }
         let agent = self.agent_of(&mine).await?;
@@ -77,20 +87,30 @@ impl<S: AuthStore> Ctx<'_, S> {
             .attempts_of(mine.work.id)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let (attempt, _) = self.attempt_to_report(&mine, &attempts, mode).await?;
+        self.ensure_agent_room(
+            &agent,
+            LimitKind::AttemptsOnOneIssue,
+            attempts.len(),
+            mode == Plan::Writing,
+        )
+        .await?;
+        let held = i64::try_from(attempts.len()).unwrap_or(i64::MAX);
+        if held >= mine.hand_over.budget_attempts {
+            return Err(ErrorCode::AgentWorkBudget.into());
+        }
+        let attempt = Attempt {
+            id: AttemptId::generate(&mut self.ids()),
+            work: mine.work.id,
+            number: held + 1,
+            plan: None,
+            plan_approved: false,
+            reported_minutes: 0,
+            reported_cost: 0,
+            started_at: self.now(),
+            ended_at: None,
+            run: None,
+        };
         Ok(TakePlan { mine, attempt })
-    }
-
-    /// Whether the issue is being worked on by another agent: one of its pieces of work is in an
-    /// attempt.
-    async fn another_agent_works_on(&self, mine: &Mine) -> Result<bool, AppError> {
-        Ok(self
-            .store()
-            .work_on_issue(mine.work.issue, None, 50)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .iter()
-            .any(|work| work.id != mine.work.id && work.state.in_attempt()))
     }
 
     /// What taking an issue would change, without saving anything. A tool that goes on to take it
@@ -126,22 +146,30 @@ pub async fn take_work<S: AuthStore>(
     input: TakeWork,
 ) -> Result<Authorized<WorkView>, AppError> {
     let TakePlan { mine, mut attempt } = ctx.plan_take(&input, Plan::Writing).await?;
-    attempt.run = Some(ctx.open_attempt_run(&input.session_token, &mine).await?);
+    let run = ctx.open_attempt_run(&input.session_token, &mine).await?;
+    attempt.run = Some(run);
     let next = AgentWorkState::AgentWorking;
     let event = ctx.work_event(mine.actor.person.id, &mine.work, next)?;
-    let (work, stored) = (mine.work.clone(), attempt);
-    ctx.store()
+    let (work, stored, closing) = (mine.work.clone(), attempt.clone(), attempt);
+    let limit = ctx.agent_of(&mine).await?.limits().issues_at_once;
+    let why = Why::default();
+    let stopped = why.clone();
+    let made = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                // Judged again under the lock of the issue, on what is stored now: of two agents
-                // who take it at the same moment the second finds the first one in its attempt.
+                // Judged again under the lock of the issue and then the lock of the agent, on what is
+                // stored now: of two agents who take the same issue at the same moment the second
+                // finds the first in its attempt, and two takes of one agent cannot both pass its
+                // limit of issues at once.
                 S::lock_taking_of(transaction, work.issue).await?;
-                let others = S::work_on_issue_in(transaction, work.issue, None, 50).await?;
-                if others
-                    .iter()
-                    .any(|other| other.id != work.id && other.state.in_attempt())
-                {
-                    return Err(S::aborted());
+                S::lock_working_of(transaction, work.agent).await?;
+                if S::another_in_attempt_in(transaction, work.issue, work.id).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::AgentWorkNotReady));
+                }
+                let working = S::working_issues_of_in(transaction, work.agent).await?;
+                if i64::try_from(working).unwrap_or(i64::MAX) >= limit {
+                    return Err(stopped.stop::<S>(ErrorCode::AgentLimitReached));
                 }
                 S::insert_attempt(transaction, &stored).await?;
                 if S::set_work_state(transaction, work.id, next, None, false, work.version).await? {
@@ -151,7 +179,20 @@ pub async fn take_work<S: AuthStore>(
                 }
             })
         })
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::AgentWorkNotReady)))?;
+        .await;
+    if let Err(error) = made {
+        // The run was opened for an attempt that did not start: it does not stay *Running*.
+        let _ = ctx
+            .close_attempt_run(&input.session_token, &mine, &closing, RunEnd::Failed)
+            .await;
+        return Err(match why.said() {
+            Some(ErrorCode::AgentLimitReached) => {
+                let agent = ctx.agent_of(&mine).await?;
+                ctx.pause_for_limit(&agent, LimitKind::IssuesAtOnce).await
+            }
+            Some(code) => AppError::Refused(code),
+            None => change_failed::<S>(&error, Stops::both(ErrorCode::AgentWorkNotReady)),
+        });
+    }
     ctx.work_after(&mine, mine.work.id).await
 }

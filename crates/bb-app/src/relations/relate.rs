@@ -120,6 +120,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !held.may_change_issue(first.reported_by) {
             return Err(ErrorCode::Forbidden.into());
         }
+        self.ensure_agent_works_on(actor, first.id).await?;
         if first.id == second.id {
             return Err(ErrorCode::InvalidRequest.into());
         }

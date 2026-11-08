@@ -6,7 +6,6 @@ use bb_core::event::FieldChange;
 use serde_json::json;
 
 use super::members::member;
-use crate::auth::set_to;
 
 /// Whether a plan is made to be written (`Writing`) or only to say what would be written
 /// (`Preview`): a preview that finds a limit reached says so and pauses nobody.
@@ -25,9 +24,4 @@ pub(super) fn state_change(before: AgentWorkState, after: AgentWorkState) -> Fie
         before: Some(json!(before.code())),
         after: Some(json!(after.code())),
     }
-}
-
-/// A member that is set to a value.
-pub(super) fn set(field: &str, value: serde_json::Value) -> FieldChange {
-    set_to(field, value)
 }

@@ -310,3 +310,96 @@ async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_36_the_matches_of_an_agent_are_paged_by_moment_and_issue() -> TestResult {
+    each_database("ai_36_matches_since", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let found: Vec<IssueId> = data.issues.iter().map(|issue| issue.id).collect();
+        assert!(found.len() > 3, "the data has issues enough for pages");
+        rule_that_found(storage, &mut made, (owner, fixer), &data, &found, at(ENDS)).await?;
+        // Every match is at the same moment: pages go on after the last issue of the page, and the
+        // newest are not left out.
+        let mut since = (at(0), None);
+        let mut given_out = Vec::new();
+        loop {
+            let page = storage
+                .matches_of_agent_since(fixer, at(2), since, 2)
+                .await?;
+            let Some(last) = page.last() else { break };
+            since = (last.at, Some(last.issue));
+            given_out.extend(page.iter().map(|each| each.issue));
+        }
+        let mut wanted = found.clone();
+        wanted.sort();
+        assert_eq!(given_out, wanted);
+        // A rule that ran out has no matches to give.
+        assert!(
+            storage
+                .matches_of_agent_since(fixer, at(ENDS + 1), (at(0), None), 10)
+                .await?
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_37_another_agent_in_an_attempt_on_the_issue_is_found_among_all_the_work() -> TestResult
+{
+    each_database("ai_37_another_in_attempt", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let issue = data.issues[0].id;
+        let (_, works) = hand_over(
+            storage,
+            &mut made,
+            (owner, fixer),
+            &[issue],
+            (Vec::new(), Vec::new()),
+        )
+        .await?;
+        let work = works[0].id;
+        let other = AgentWorkId::from_random(made.bytes());
+        assert!(!storage.another_in_attempt(issue, other).await?);
+        assert!(!storage.another_in_attempt(issue, work).await?);
+        made.step += 1;
+        let step = made.step;
+        storage
+            .record_change(&event(&mut made.source, step), move |transaction| {
+                Box::pin(async move {
+                    AuthStorage::set_work_state(
+                        transaction,
+                        work,
+                        AgentWorkState::AgentWorking,
+                        None,
+                        false,
+                        1,
+                    )
+                    .await?;
+                    Ok(())
+                })
+            })
+            .await?;
+        // Another piece of work (not this one) finds the issue taken; the one that works does not.
+        assert!(storage.another_in_attempt(issue, other).await?);
+        assert!(!storage.another_in_attempt(issue, work).await?);
+        assert_eq!(storage.working_issues_of(fixer).await?, 1);
+        Ok(())
+    })
+    .await
+}

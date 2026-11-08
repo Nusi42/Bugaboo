@@ -24,6 +24,9 @@ pub struct AgentWork {
     pub projects: BTreeSet<ProjectId>,
     /// The issues handed over, or found by a standing rule.
     pub issues: BTreeSet<IssueId>,
+    /// The issues handed over to it, as against the ones a standing rule found: it works on these
+    /// (comments, reports, attempts); on the others it reads and proposes.
+    pub handed: BTreeSet<IssueId>,
     /// What the agent may change on each of them: the ticks of the hand-overs and the fields of
     /// the rules. Reading, commenting and reporting need nothing.
     pub allowances: BTreeMap<IssueId, Allowance>,

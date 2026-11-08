@@ -5,6 +5,7 @@ use bb_core::agent_records::GivingState;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::id::{IssueId, ProjectId};
 
+use super::agent_work::report_attempt;
 use super::agent_work::{Ground, Handed, ground, handed, handed_with, plain_hand_over, query};
 use super::agents::refused;
 use super::scenarios_issues::an_issue;
@@ -21,7 +22,7 @@ use super::scenarios::token as admin_token;
 use crate::agent_work::{
     AnswerQuestion, ApprovePlan, AskQuestion, AttachResult, EndAttempt, LookAtWork, ReportAttempt,
     ReviewWork, WorkView, answer_question, approve_plan, ask_question, attach_result, end_attempt,
-    look_at_work, report_attempt, review_work,
+    look_at_work, review_work,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -363,7 +364,15 @@ async fn ai_34_the_attempts_are_limited_by_the_budget() -> Outcome {
     let mut back = review(&team.session_token, &work, ReviewAnswer::SendBack);
     back.note = Some("Again".to_owned());
     review_work(&world.ctx(), back).await?;
-    let refusal = report_attempt(&world.ctx(), report(&key, issue_id, None, 1)).await;
+    let refusal = crate::agent_work::take_work(
+        &world.ctx(),
+        crate::agent_work::TakeWork {
+            session_token: key.clone(),
+            issue: issue_id.to_string(),
+            version: None,
+        },
+    )
+    .await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::AgentWorkBudget));
     Ok(())
 }

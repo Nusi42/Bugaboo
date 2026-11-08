@@ -174,7 +174,7 @@ async fn ai_36_a_take_with_an_old_version_of_the_issue_takes_nothing() -> Outcom
     )
     .await;
     assert!(
-        matches!(stale, Err(AppError::Stale(_))),
+        matches!(stale, Err(AppError::Conflict(_))),
         "an issue that is not at the version the agent read is told what changed"
     );
     assert_eq!(before, stored(&world));
@@ -206,7 +206,7 @@ fn preview_case(tool: &str, issue: IssueId) -> Option<(Vec<(&'static str, Value)
     Some(match tool {
         "take" => (Vec::new(), json!({"issue": issue})),
         "report" => (
-            Vec::new(),
+            vec![take],
             json!({"issue": issue, "plan": "Fix the button", "minutes": 5, "cost_cents": 20}),
         ),
         "ask" => (

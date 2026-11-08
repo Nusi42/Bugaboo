@@ -4,7 +4,7 @@
 use bb_core::agent_work::{CheckResult, ReviewAnswer};
 use bb_policy::StartingRole;
 
-use super::agent_work::{Handed, handed, plain_hand_over};
+use super::agent_work::{Handed, handed, plain_hand_over, report_attempt};
 use super::agent_work_review::{check, ready, report, review, show};
 use super::agents::{an_agent, key_of};
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -13,8 +13,7 @@ use super::workflows_rules::member;
 use super::world::World;
 use crate::agent_work::{
     AnswerQuestion, ApprovePlan, AskQuestion, LookAtWork, TakeWork, answer_question, approve_plan,
-    ask_question, attach_result, end_attempt, hand_over, look_at_work, report_attempt, review_work,
-    take_work,
+    ask_question, attach_result, end_attempt, hand_over, look_at_work, review_work, take_work,
 };
 
 pub(crate) async fn hand_over_scenario(world: &World) -> Added {
@@ -60,10 +59,10 @@ pub(crate) async fn take_work_scenario(world: &World) -> Added {
 }
 
 pub(crate) async fn report_attempt_scenario(world: &World) -> Added {
-    let given = handed(world).await.map_err(text)?;
+    let given = started(world).await?;
     measured(
         &world.store,
-        report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)),
+        crate::agent_work::report_attempt(&world.ctx(), report(&given.key, given.issue, None, 6)),
     )
     .await
 }

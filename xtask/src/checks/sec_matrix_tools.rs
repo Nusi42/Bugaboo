@@ -52,17 +52,6 @@ fn tool_lines(record: &str) -> BTreeMap<String, ToolLine> {
     lines
 }
 
-/// Who a tool is for, in the words of the record.
-fn audience_of(tool: Tool) -> &'static str {
-    if tool.is_for_agents() {
-        "agents"
-    } else if tool.is_for_people() {
-        "people"
-    } else {
-        "everyone"
-    }
-}
-
 /// The tools of the registry at `/mcp` (M7-F41): every tool has a line, every actor was answered,
 /// nobody signed in is turned away, a tool of agents is not for a person, a tool about the own time
 /// of a person is not for an agent, and an agent with no work changes nothing.
@@ -86,12 +75,12 @@ pub(super) fn tool_findings(record: &str) -> Vec<Finding> {
                 format!("{place} was run through `{}`, not `mcp`.", line.entry),
             ));
         }
-        if line.audience != audience_of(*tool) {
+        if line.audience != words::audience_of(tool.is_for_agents(), tool.is_for_people()) {
             found.push(Finding::at(
                 RECORD_PATH,
                 format!(
                     "{place} is for `{}`, but the record says `{}`: run the matrix again.",
-                    audience_of(*tool),
+                    words::audience_of(tool.is_for_agents(), tool.is_for_people()),
                     line.audience
                 ),
             ));
@@ -117,15 +106,24 @@ pub(super) fn tool_findings(record: &str) -> Vec<Finding> {
             ));
         }
         for actor in &actors {
-            let is_agent = actor.starts_with("agent");
+            let is_agent = actor.starts_with(words::AGENT_PREFIX);
             let allowed = answer(actor) == Some(words::ALLOWED);
             let not_for_them = if tool.is_for_agents() {
                 !is_agent
             } else {
                 tool.is_for_people() && is_agent
             };
-            let changes_with_no_work =
-                actor == words::AGENT_WITHOUT_WORK && line.effect == "changes";
+            // An agent with no way into the issue changes nothing there; one under a rule only
+            // proposes.
+            let changes = line.effect == words::EFFECT_CHANGES;
+            let changes_with_no_work = changes
+                && match actor.as_str() {
+                    words::AGENT_WITHOUT_WORK
+                    | words::AGENT_ON_ANOTHER_ISSUE
+                    | words::AGENT_IN_AN_AI_OFF_PROJECT => true,
+                    words::AGENT_UNDER_A_RULE => *tool != Tool::Propose,
+                    _ => false,
+                };
             if allowed && (not_for_them || changes_with_no_work) {
                 found.push(Finding::at(
                     RECORD_PATH,
@@ -164,9 +162,12 @@ mod tests {
                 .map(|actor| {
                     let word = if actor == words::NOBODY {
                         words::NOT_SIGNED_IN
-                    } else if (tool.is_for_agents() && !actor.starts_with("agent"))
-                        || (tool.is_for_people() && actor.starts_with("agent"))
+                    } else if (tool.is_for_agents() && !actor.starts_with(words::AGENT_PREFIX))
+                        || (tool.is_for_people() && actor.starts_with(words::AGENT_PREFIX))
                         || actor == words::AGENT_WITHOUT_WORK
+                        || actor == words::AGENT_ON_ANOTHER_ISSUE
+                        || actor == words::AGENT_IN_AN_AI_OFF_PROJECT
+                        || (actor == words::AGENT_UNDER_A_RULE && *tool != Tool::Propose)
                     {
                         words::FORBIDDEN
                     } else {
@@ -177,10 +178,11 @@ mod tests {
                 .collect();
             let _ = writeln!(
                 text,
-                "tool {} {} changes {} : {}",
+                "tool {} {} {} {} : {}",
                 tool.code(),
                 words::ENTRY_MCP,
-                audience_of(*tool),
+                words::EFFECT_CHANGES,
+                words::audience_of(tool.is_for_agents(), tool.is_for_people()),
                 answers.join(" ")
             );
         }

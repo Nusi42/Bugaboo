@@ -12,6 +12,7 @@ use bb_core::own_fields::FieldType;
 use bb_policy::StartingRole;
 use serde_json::json;
 
+use super::agent_work::report_attempt;
 use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query};
 use super::agent_work_review::{ready, report, review, show};
 use super::agents::{an_agent, key_of, refused};
@@ -22,7 +23,7 @@ use super::workflows_rules::starting_role;
 use super::world::{Outcome, World};
 use crate::agent_work::{
     AgentWorkQuery, end_attempt, event_member, hand_over, issue_agent_work, look_at_work,
-    report_attempt, review_work,
+    review_work,
 };
 use crate::auth::AppError;
 use crate::comments::{AddComment, DeleteComment, add_comment, delete_comment};

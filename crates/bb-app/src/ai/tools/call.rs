@@ -211,6 +211,28 @@ pub async fn call_tool<S: AuthStore>(
     Ok(held.authorize(ToolAnswer { text, changes }))
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The answer for a stale version, as the actor may read it: the fields that changed and their
+    /// values now, without a field that is kept from AI.
+    async fn conflict_for_ai(
+        &self,
+        stale: &crate::editing::Stale,
+        withheld: &crate::ai::Withheld,
+    ) -> AppError {
+        let hidden = |field: &str| {
+            bb_core::fields::FieldKey::from_code(field).is_some_and(|key| withheld.hides_field(key))
+        };
+        match self.conflict_of(stale).await {
+            AppError::Conflict(mut conflict) => {
+                conflict.fields.retain(|field| !hidden(field));
+                conflict.current.retain(|field, _| !hidden(field));
+                AppError::Conflict(conflict)
+            }
+            other => other,
+        }
+    }
+}
+
 /// A word that is new for every answer: both marker lines of a fence carry it, so a text cannot
 /// write a closing line before it knows the answer.
 fn nonce() -> Result<String, AppError> {
@@ -258,7 +280,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             withheld: &withheld,
             caller: request.caller,
         };
-        let parts = if mode == ToolMode::Apply {
+        let outcome = if mode == ToolMode::Apply {
             // What an agent changes counts against its limits, before anything is written.
             if actor.agent().is_some() {
                 self.expect_change();
@@ -268,11 +290,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
             // What the use case records says it was made through the assistant or an AI app.
             self.act_through(request.caller.channel());
-            let parts = applied.await?;
-            self.settle_agent_change();
-            parts
+            let result = applied.await;
+            self.settle_agent_change(result.is_ok());
+            result
         } else {
-            spec.run(self, run).await?
+            spec.run(self, run).await
+        };
+        let parts = match outcome {
+            Ok(parts) => parts,
+            // A change made from an old version tells what changed, as the actor may read it and
+            // without what is kept from AI.
+            Err(AppError::Stale(stale)) => {
+                return Err(self.conflict_for_ai(&stale, &withheld).await);
+            }
+            Err(error) => return Err(error),
         };
         let changes = if spec.effect() == ToolEffect::Changes {
             proposed_changes(&parts)

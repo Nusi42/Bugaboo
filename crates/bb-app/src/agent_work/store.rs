@@ -92,6 +92,9 @@ pub struct WorkDetails {
 /// What the work on an issue needs from storage.
 pub trait AgentWorkRecords: GrantStore + 'static {
     reads! {
+        /// The issues that came under the open rules of an agent after `since`, oldest first, at
+        /// most `limit`: what *changes since* tells of the matches of its rules.
+        fn matches_of_agent_since(agent: AgentId, now: Timestamp, since: (Timestamp, Option<IssueId>), limit: u64) -> Vec<RuleMatch>;
         /// The events about issues that were committed after the place `after` in the order they
         /// were committed, with their places, at most `limit`.
         fn issue_events_after(after: i64, limit: u64) -> Vec<(i64, DomainEvent)>;
@@ -128,6 +131,9 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn work_of_agent(agent: AgentId, after: Option<AgentWorkId>, limit: u64) -> Vec<IssueWork> = work_of_agent_in;
         /// How many issues the agent has an attempt running on now (the limit of issues at once).
         fn working_issues_of(agent: AgentId) -> u64 = working_issues_of_in;
+        /// Whether another piece of work on the issue has an attempt running (all the work on the
+    /// issue is looked at, however much there is).
+    fn another_in_attempt(issue: IssueId, except: AgentWorkId) -> bool = another_in_attempt_in;
         /// The reviews of a piece of work, oldest first.
         fn reviews_of(work: AgentWorkId) -> Vec<Review> = reviews_of_in;
         /// The people who must hear about work: the person responsible for the agent and the person
@@ -139,6 +145,10 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// Takes the lock of the taking of one issue, so that two agents who take it at the same
         /// moment are judged one after the other; does nothing where writes cannot overlap.
         fn lock_taking_of(issue: IssueId) -> ();
+        /// Takes the lock of the attempts of one agent, so that two takes of it at the same moment
+    /// are judged one after the other; does nothing where writes cannot overlap. Taken after
+    /// `lock_taking_of`.
+        fn lock_working_of(agent: AgentId) -> ();
         /// Adds the work on an issue.
         fn insert_work(work: &IssueWork) -> ();
         /// Writes the state of the work, counting its version up; whether it was at `version`.

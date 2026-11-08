@@ -166,6 +166,7 @@ pub async fn start_upload<S: AuthStore>(
     let (issue, held) = ctx
         .upload_target(&actor, &input.issue, input.comment)
         .await?;
+    ctx.ensure_agent_works_on(&actor, issue.id).await?;
     let name = clean_file_name(&input.name).ok_or(ErrorCode::InvalidRequest)?;
     let size = i64::try_from(input.size).map_err(|_| ErrorCode::InvalidRequest)?;
     if size == 0 {

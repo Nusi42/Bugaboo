@@ -62,7 +62,7 @@ pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatem
 
 /// Which standing rules of an agent work at `now`: the one definition, for the rules it reads and
 /// for the issues they found.
-fn working_rule(agent: AgentId, now: Timestamp) -> sea_query::Cond {
+pub(super) fn working_rule(agent: AgentId, now: Timestamp) -> sea_query::Cond {
     let column = |column: StandingRuleRow| Expr::col((StandingRuleRow::Table, column));
     sea_query::Cond::all()
         .add(column(StandingRuleRow::Agent).eq(agent.stored()))
@@ -404,6 +404,7 @@ impl AuthStorage {
         for row in self.database().fetch_all(&open).await? {
             let issue = row.id::<IssueId>(IssueRow::Id)?;
             work.issues.insert(issue);
+            work.handed.insert(issue);
             work.projects
                 .insert(row.id::<ProjectId>(IssueRow::Project)?);
             let powers: Vec<HandOverPower> =

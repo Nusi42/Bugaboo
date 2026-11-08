@@ -4,7 +4,7 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_app::agent_work::{EndAttempt, ReportAttempt, end_attempt, report_attempt};
+use bb_app::agent_work::{EndAttempt, TakeWork, end_attempt, take_work};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -234,14 +234,12 @@ async fn ai_31_a_hand_over_with_one_piece_accepted_still_ends_and_stops_the_othe
         ok(&both)?;
         // The agent finishes the work on one of the two, and the person accepts it.
         let ctx = rig.services.ctx(Rig::info());
-        report_attempt(
+        take_work(
             &ctx,
-            ReportAttempt {
+            TakeWork {
                 session_token: given.key.clone(),
                 issue: given.other.clone(),
-                plan: None,
-                minutes: 1,
-                cost: 0,
+                version: None,
             },
         )
         .await

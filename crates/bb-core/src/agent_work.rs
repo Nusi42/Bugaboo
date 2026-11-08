@@ -414,6 +414,24 @@ impl AgentWorkState {
     }
 }
 
+/// Whether a result an agent attached as a link is a web address: `http` or `https`, with a host, and
+/// nothing that is not part of an address. The one rule for the link of a result, so that no other
+/// scheme (`javascript:`, `data:`, `file:`) is ever stored to be shown as a link.
+#[must_use]
+pub fn is_web_address(text: &str) -> bool {
+    let rest = ["https://", "http://"].iter().find_map(|scheme| {
+        text.get(..scheme.len())
+            .filter(|start| start.eq_ignore_ascii_case(scheme))
+            .map(|_| &text[scheme.len()..])
+    });
+    rest.is_some_and(|rest| {
+        rest.chars().next().is_some_and(char::is_alphanumeric)
+            && !text
+                .chars()
+                .any(|each| each.is_whitespace() || each.is_control())
+    })
+}
+
 /// Whether an attempt is accepted by itself (M7-Q8): only when the project allows it, the
 /// hand-over did not turn it off, the attempt has at least one check, and every check passed.
 #[must_use]
@@ -430,6 +448,32 @@ pub fn accepts_by_itself(
 
 #[cfg(test)]
 mod tests {
+    use super::is_web_address;
+
+    #[test]
+    fn ai_36_only_a_web_address_is_a_link_a_result_may_carry() {
+        for good in [
+            "https://example.test/pull/1",
+            "HTTP://example.test",
+            "http://a",
+        ] {
+            assert!(is_web_address(good), "{good}");
+        }
+        for bad in [
+            "",
+            "https://",
+            "https:// x",
+            "javascript:alert(1)",
+            "data:text/html,x",
+            "file:///x",
+            "//example.test",
+            "https://exa mple.test",
+            "https://a\u{7}b",
+        ] {
+            assert!(!is_web_address(bad), "{bad}");
+        }
+    }
+
     use super::*;
 
     fn at(text: &str) -> Timestamp {

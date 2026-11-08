@@ -14,7 +14,7 @@ use bb_core::agent_work::{CheckResult, RuleField};
 use bb_core::ai::AuthorKind;
 use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
-use bb_core::id::{HandOverId, StandingRuleId};
+use bb_core::id::{AgentWorkId, StandingRuleId};
 use std::future::Future;
 
 use serde_json::{Value, json};
@@ -139,21 +139,23 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// What an agent reads about its work after a tool changed it: where it stands, the note of the
-    /// brief and the answers (written by people, each with the kind of its author), and what it asked
-    /// itself.
+    /// brief, the answers and the notes of a review (each with the kind of the author who really
+    /// wrote it), and what it asked itself.
     async fn work_parts(
         &self,
         run: &Run<'_>,
         address: &str,
         work: &Value,
     ) -> Result<Vec<Part>, AppError> {
+        let failed = |error| crate::auth::internal::<S>(&error);
         let issue = self.agent_issue_in_reach(run, address).await?;
         let key = self
             .readable_id_for(run.actor, issue.id)
             .await?
             .unwrap_or_else(|| address.to_owned());
-        let attempts = work.get("attempts").and_then(Value::as_array);
-        let attempt = attempts
+        let attempt = work
+            .get("attempts")
+            .and_then(Value::as_array)
             .and_then(|attempts| attempts.last())
             .and_then(|last| last.get("number"))
             .cloned()
@@ -169,54 +171,63 @@ impl<S: AuthStore> Ctx<'_, S> {
             author: AuthorKind::Agent,
             project: Some(issue.project),
         }];
-        // The note of the brief is the word of the person who handed the issue over; what follows
-        // it (answers, the note of a *Send back*) is the word of the person who answers for the
-        // agent.
-        let handed_by = match work
-            .get("hand_over")
+        let Some(id) = work
+            .get("id")
             .and_then(Value::as_str)
-            .and_then(|id| id.parse::<HandOverId>().ok())
+            .and_then(|id| id.parse::<AgentWorkId>().ok())
+        else {
+            return Ok(parts);
+        };
+        let Some(record) = self.store().issue_work(id).await.map_err(failed)? else {
+            return Ok(parts);
+        };
+        let text_of = |name: &'static str, text: &str, author: AuthorKind| Part {
+            name,
+            value: Value::String(text.to_owned()),
+            author,
+            project: Some(issue.project),
+        };
+        // The note of the brief is the word of the person who handed the issue over.
+        if let Some(hand_over) = self
+            .store()
+            .hand_over(record.hand_over)
+            .await
+            .map_err(failed)?
+            && !hand_over.note.is_empty()
         {
-            Some(id) => self
-                .store()
-                .hand_over(id)
-                .await
-                .map_err(|error| crate::auth::internal::<S>(&error))?
-                .map(|found| found.person),
-            None => None,
-        };
-        let note_by = match handed_by {
-            Some(person) => self.author_kind(person, issue.project).await?,
-            None => AuthorKind::Outsider,
-        };
-        let answers_by = self.author_kind(run.actor.person.id, issue.project).await?;
-        let brief = work.get("brief").and_then(Value::as_array);
-        for (at, text) in brief.into_iter().flatten().enumerate() {
-            parts.push(Part {
-                name: "brief",
-                value: text.clone(),
-                author: if at == 0 { note_by } else { answers_by },
-                project: Some(issue.project),
-            });
+            let by = self.author_kind(hand_over.person, issue.project).await?;
+            parts.push(text_of("brief", &hand_over.note, by));
         }
-        for question in work
-            .get("questions")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            parts.push(Part {
-                name: "question",
-                value: question.get("text").cloned().unwrap_or(Value::Null),
-                author: AuthorKind::Agent,
-                project: Some(issue.project),
-            });
+        // An answer is the word of the person who answered it, a note of a review the word of the
+        // person who reviewed; when nobody can be named the least trusted kind stands for them.
+        for question in self.store().questions_of(id).await.map_err(failed)? {
+            parts.push(text_of("question", &question.text, AuthorKind::Agent));
+            if let Some(answer) = &question.answer {
+                let by = self.author_of(question.answered_by, issue.project).await?;
+                parts.push(text_of("brief", answer, by));
+            }
+        }
+        for review in self.store().reviews_of(id).await.map_err(failed)? {
+            if let Some(note) = &review.note {
+                let by = self.author_of(review.by, issue.project).await?;
+                parts.push(text_of("review", note, by));
+            }
         }
         Ok(parts)
     }
-}
 
-impl<S: AuthStore> Ctx<'_, S> {
+    /// The kind of author of a person who may be unknown.
+    async fn author_of(
+        &self,
+        person: Option<bb_core::id::UserId>,
+        project: bb_core::id::ProjectId,
+    ) -> Result<AuthorKind, AppError> {
+        match person {
+            Some(person) => self.author_kind(person, project).await,
+            None => Ok(AuthorKind::Outsider),
+        }
+    }
+
     /// The preview of a call: what the plan of the use case would change, saved nowhere.
     async fn agent_preview(
         &self,
@@ -229,18 +240,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(preview_parts(run, planned.await?, AuthorKind::Agent))
     }
 
-    /// What the call said it would change, then where the work stands after the use case made it.
-    async fn agent_applied(
+    /// A call that changes the work of an agent, made: the plan is judged as the use case will judge
+    /// it (so a limit that is reached pauses the agent before anything is written), the use case
+    /// runs, and the answer says what it changed and where the work stands.
+    async fn agent_apply(
         &self,
         run: &Run<'_>,
         address: &str,
-        shown: Vec<Part>,
-        work: Authorized<WorkView>,
+        planned: impl Future<Output = Result<Vec<FieldChange>, AppError>>,
+        made: impl Future<Output = Result<Authorized<WorkView>, AppError>>,
     ) -> Result<Vec<Part>, AppError> {
+        let mut parts = self.agent_preview(run, address, planned).await?;
+        let work = made.await?;
         let value = work
             .masked_value()
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        let mut parts = shown;
         parts.extend(self.work_parts(run, address, &value).await?);
         Ok(parts)
     }
@@ -258,21 +272,21 @@ pub(super) fn preview_take<'a, S: AuthStore>(
     })
 }
 
-/// `take`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `take`, made.
 pub(super) fn apply_take<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = take_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(&run, &request.issue, ctx.preview_take_work(&request, true))
-            .await?;
-        let address = request.issue.clone();
-        let work = take_work(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_take_work(&request, true);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            take_work(ctx, request.clone()),
+        )
+        .await
     })
 }
 
@@ -283,34 +297,26 @@ pub(super) fn preview_report<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = report_request(&run)?;
-        ctx.agent_preview(
-            &run,
-            &request.issue,
-            ctx.preview_report_attempt(&request, false),
-        )
-        .await
+        ctx.agent_preview(&run, &request.issue, ctx.preview_report_attempt(&request))
+            .await
     })
 }
 
-/// `report`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `report`, made.
 pub(super) fn apply_report<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = report_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(
-                &run,
-                &request.issue,
-                ctx.preview_report_attempt(&request, true),
-            )
-            .await?;
-        let address = request.issue.clone();
-        let work = report_attempt(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_report_attempt(&request);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            report_attempt(ctx, request.clone()),
+        )
+        .await
     })
 }
 
@@ -326,21 +332,21 @@ pub(super) fn preview_ask<'a, S: AuthStore>(
     })
 }
 
-/// `ask`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `ask`, made.
 pub(super) fn apply_ask<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = ask_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(&run, &request.issue, ctx.preview_ask_question(&request))
-            .await?;
-        let address = request.issue.clone();
-        let work = ask_question(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_ask_question(&request);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            ask_question(ctx, request.clone()),
+        )
+        .await
     })
 }
 
@@ -356,21 +362,21 @@ pub(super) fn preview_attach<'a, S: AuthStore>(
     })
 }
 
-/// `attach`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `attach`, made.
 pub(super) fn apply_attach<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = attach_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(&run, &request.issue, ctx.preview_attach_result(&request))
-            .await?;
-        let address = request.issue.clone();
-        let work = attach_result(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_attach_result(&request);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            attach_result(ctx, request.clone()),
+        )
+        .await
     })
 }
 
@@ -386,21 +392,21 @@ pub(super) fn preview_submit<'a, S: AuthStore>(
     })
 }
 
-/// `submit`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `submit`, made.
 pub(super) fn apply_submit<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = submit_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(&run, &request.issue, ctx.preview_end_attempt(&request))
-            .await?;
-        let address = request.issue.clone();
-        let work = end_attempt(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_end_attempt(&request);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            end_attempt(ctx, request.clone()),
+        )
+        .await
     })
 }
 
@@ -416,21 +422,21 @@ pub(super) fn preview_give_up<'a, S: AuthStore>(
     })
 }
 
-/// `give_up`, made: the use case runs, and the answer says what it changed and where the work stands.
+/// `give_up`, made.
 pub(super) fn apply_give_up<'a, S: AuthStore>(
     ctx: &'a Ctx<'_, S>,
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = give_up_request(&run)?;
-        // The plan is judged as the use case will judge it, so a limit that is reached pauses the
-        // agent before anything is written.
-        let shown = ctx
-            .agent_preview(&run, &request.issue, ctx.preview_end_attempt(&request))
-            .await?;
-        let address = request.issue.clone();
-        let work = end_attempt(ctx, request).await?;
-        ctx.agent_applied(&run, &address, shown, work).await
+        let planned = ctx.preview_end_attempt(&request);
+        ctx.agent_apply(
+            &run,
+            &request.issue,
+            planned,
+            end_attempt(ctx, request.clone()),
+        )
+        .await
     })
 }
 

@@ -119,8 +119,7 @@ async fn prompt_injection_a_standing_rule_fed_an_issue_made_to_look_like_an_inst
     );
     let address = given.issue.to_string();
     // The rule agent obeys: it changes the issue itself, takes other issues, and proposes what the
-    // rule has no power for. All of it is turned away. (A comment needs no tick: it is marked
-    // *Written by an agent* and changes no field.)
+    // rule has no power for. All of it is turned away, a comment too: a rule agent only proposes.
     let title_version = issue(&world.ctx(), query(&given.key, given.issue))
         .await?
         .into_value()
@@ -136,6 +135,10 @@ async fn prompt_injection_a_standing_rule_fed_an_issue_made_to_look_like_an_inst
             json!({"issue": address, "version": title_version, "status": "done"}),
         ),
         ("take", json!({"issue": address})),
+        (
+            "add_comment",
+            json!({"issue": address, "text": "my key is ..."}),
+        ),
     ] {
         assert!(
             used(&world, &given.key, tool, input).await.is_err(),

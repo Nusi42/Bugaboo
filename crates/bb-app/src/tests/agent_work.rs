@@ -12,7 +12,10 @@ use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::{assign, member, starting_role};
 use super::world::{Outcome, World};
-use crate::agent_work::{AgentWorkQuery, HandOver, HandOverView, hand_over, issue_agent_work};
+use crate::agent_work::{
+    AgentWorkQuery, HandOver, HandOverView, ReportAttempt, TakeWork, WorkView, hand_over,
+    issue_agent_work, take_work,
+};
 use crate::auth::{AppError, Started};
 use crate::issues::{IssueQuery, issue};
 
@@ -289,4 +292,23 @@ async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome 
     assert_eq!(stored.works[0].state, AgentWorkState::Stopped);
     assert_eq!(stored.hand_overs[0].state, GivingState::Ended);
     Ok(())
+}
+
+/// A report of an attempt, as the tests of the work of agents make one: the attempt is taken first
+/// when it waits to be (only `take` starts an attempt), and what the report then answers is the
+/// answer. A work that is not waiting makes the take fail, and the report is judged on its own.
+pub(super) async fn report_attempt(
+    ctx: &crate::auth::Ctx<'_, impl crate::auth::AuthStore>,
+    input: ReportAttempt,
+) -> Result<bb_policy::Authorized<WorkView>, AppError> {
+    let _ = take_work(
+        ctx,
+        TakeWork {
+            session_token: input.session_token.clone(),
+            issue: input.issue.clone(),
+            version: None,
+        },
+    )
+    .await;
+    crate::agent_work::report_attempt(ctx, input).await
 }

@@ -29,9 +29,9 @@ macro_rules! use_cases {
             {
                 Box::pin(async move {
                     let ctx = self.ctx(request);
-                    // An input that does not end in `Query` changes something: an agent's limits
-                    // count it (`Ctx::count_agent_change`).
-                    if !stringify!($input).ends_with("Query") {
+                    // A use case that changes something is counted for an agent's limits
+                    // (`Ctx::count_agent_change`).
+                    if $crate::agents::input_changes_something(stringify!($input)) {
                         ctx.expect_change();
                     }
                     match function!($name $($via)?)(&ctx, input).await {
@@ -39,9 +39,7 @@ macro_rules! use_cases {
                         Err(AppError::Stale(stale)) => Err(ctx.conflict_of(&stale).await),
                         answer => {
                             // A change that was made counts for an agent; one that was refused does not.
-                            if answer.is_ok() {
-                                ctx.settle_agent_change();
-                            }
+                            ctx.settle_agent_change(answer.is_ok());
                             answer
                         }
                     }
