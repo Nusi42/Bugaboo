@@ -26,6 +26,9 @@ const COMMENTS_MAX: u32 = 20;
 /// that says the least. The search language refuses a field the reader may not see, so a reader who
 /// may not see the status gets the issues assigned to them without it, and one who may not see who an
 /// issue is assigned to has no work to list (the answer is empty, not a mistake).
+const UNKNOWN_FIELD: &str = "search.mistake.unknown-field";
+
+/// The searches of `get_my_work` (see above).
 const MY_WORK: [&str; 2] = [
     "assigned to is me and status group is not Done",
     "assigned to is me",
@@ -154,7 +157,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .search_parts(actor, session_token, text, input.limit, withheld)
                 .await
             {
-                Err(AppError::Mistakes(_)) => {}
+                // Only a field the reader may not see is a reason to ask for less; any other
+                // mistake is an error of the program and surfaces.
+                Err(AppError::Mistakes(mistakes))
+                    if mistakes
+                        .iter()
+                        .all(|mistake| mistake.key.starts_with(UNKNOWN_FIELD)) => {}
                 answered => return answered,
             }
         }

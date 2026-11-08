@@ -36,7 +36,11 @@ macro_rules! use_cases {
                     }
                     match function!($name $($via)?)(&ctx, input).await {
                         // The one place where a stale version becomes the structured answer.
-                        Err(AppError::Stale(stale)) => Err(ctx.conflict_of(&stale).await),
+                        Err(AppError::Stale(stale)) => {
+                            // A change that was refused gives its count back.
+                            ctx.settle_agent_change(false);
+                            Err(ctx.conflict_of(&stale).await)
+                        }
                         answer => {
                             // A change that was made counts for an agent; one that was refused does not.
                             ctx.settle_agent_change(answer.is_ok());

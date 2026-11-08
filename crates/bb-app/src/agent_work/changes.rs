@@ -47,28 +47,30 @@ pub struct ChangesSinceQuery {
 struct Mark {
     place: i64,
     at: Timestamp,
-    /// The issue of the last match given at that very moment, when the matches go on after it.
-    after: Option<IssueId>,
+    /// The issue and rule of the last match given at that very moment, when the matches go on after it.
+    after: Option<(IssueId, StandingRuleId)>,
 }
 
 impl Mark {
     fn write(self) -> String {
         let mark = format!("{}.{}", self.place, self.at.as_microsecond());
         match self.after {
-            Some(issue) => format!("{mark}.{issue}"),
+            Some((issue, rule)) => format!("{mark}.{issue}.{rule}"),
             None => mark,
         }
     }
 
     fn read(text: &str) -> Option<Self> {
-        let mut parts = text.splitn(3, '.');
-        let (place, at, after) = (parts.next()?, parts.next()?, parts.next());
+        let mut parts = text.splitn(4, '.');
+        let (place, at) = (parts.next()?, parts.next()?);
+        let after = (parts.next(), parts.next());
         Some(Self {
             place: place.parse().ok().filter(|place| *place >= 0)?,
             at: Timestamp::from_microsecond(at.parse().ok()?).ok()?,
             after: match after {
-                Some(issue) => Some(issue.parse().ok()?),
-                None => None,
+                (Some(issue), Some(rule)) => Some((issue.parse().ok()?, rule.parse().ok()?)),
+                (None, None) => None,
+                _ => return None,
             },
         })
     }
@@ -223,9 +225,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         maker: &mut LineMaker,
         seen: &mut Seen,
         agent: bb_core::id::AgentId,
-        since: (Timestamp, Option<IssueId>),
+        since: (Timestamp, Option<(IssueId, StandingRuleId)>),
         wanted: usize,
-    ) -> Result<(Vec<MatchSeen>, Option<(Timestamp, IssueId)>), AppError> {
+    ) -> Result<(Vec<MatchSeen>, Option<(Timestamp, IssueId, StandingRuleId)>), AppError> {
         let rows = self
             .store()
             .matches_of_agent_since(agent, self.now(), since, read_len(wanted))
@@ -234,7 +236,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         let cut = Cut::of(rows, wanted);
         let resume = cut
             .more
-            .then(|| cut.items.last().map(|each| (each.at, each.issue)))
+            .then(|| {
+                cut.items
+                    .last()
+                    .map(|each| (each.at, each.issue, each.rule))
+            })
             .flatten();
         let mut found = Vec::new();
         for each in &cut.items {
@@ -385,8 +391,8 @@ pub async fn changes_since<S: AuthStore>(
     // More matches than a page: the next look goes on after the last one it was given.
     let mark = Mark {
         place: scanned.place,
-        at: resume.map_or_else(|| ctx.now(), |(at, _)| at),
-        after: resume.map(|(_, issue)| issue),
+        at: resume.map_or_else(|| ctx.now(), |(at, _, _)| at),
+        after: resume.map(|(_, issue, rule)| (issue, rule)),
     };
     Ok(held.authorize(ChangesPage {
         changes: scanned.changes,

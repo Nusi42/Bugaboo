@@ -424,11 +424,13 @@ pub fn is_web_address(text: &str) -> bool {
             .filter(|start| start.eq_ignore_ascii_case(scheme))
             .map(|_| &text[scheme.len()..])
     });
+    // Only printable ASCII after the scheme: no space, no control and no format character (the
+    // right-to-left override U+202E and its kind) that could make an address read as another.
     rest.is_some_and(|rest| {
-        rest.chars().next().is_some_and(char::is_alphanumeric)
-            && !text
-                .chars()
-                .any(|each| each.is_whitespace() || each.is_control())
+        rest.chars()
+            .next()
+            .is_some_and(|first| first.is_ascii_alphanumeric())
+            && rest.chars().all(|each| each.is_ascii_graphic())
     })
 }
 
@@ -469,6 +471,9 @@ mod tests {
             "//example.test",
             "https://exa mple.test",
             "https://a\u{7}b",
+            "https://example.test/\u{202e}gpj.exe",
+            "https://ex\u{430}mple.test",
+            "https://example.test/\u{200b}",
         ] {
             assert!(!is_web_address(bad), "{bad}");
         }

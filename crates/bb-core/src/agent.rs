@@ -69,6 +69,13 @@ impl LimitKind {
 }
 
 impl AgentLimits {
+    /// Whether an agent that holds `held` of the things `kind` counts has room for one more. The one
+    /// place that judges a limit of a number of things.
+    #[must_use]
+    pub fn has_room(&self, kind: LimitKind, held: usize) -> bool {
+        i64::try_from(held).unwrap_or(i64::MAX) < self.of(kind)
+    }
+
     /// The number the agent may not pass for `kind`.
     #[must_use]
     pub const fn of(&self, kind: LimitKind) -> i64 {

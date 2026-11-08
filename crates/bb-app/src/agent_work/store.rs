@@ -94,7 +94,7 @@ pub trait AgentWorkRecords: GrantStore + 'static {
     reads! {
         /// The issues that came under the open rules of an agent after `since`, oldest first, at
         /// most `limit`: what *changes since* tells of the matches of its rules.
-        fn matches_of_agent_since(agent: AgentId, now: Timestamp, since: (Timestamp, Option<IssueId>), limit: u64) -> Vec<RuleMatch>;
+        fn matches_of_agent_since(agent: AgentId, now: Timestamp, since: (Timestamp, Option<(IssueId, StandingRuleId)>), limit: u64) -> Vec<RuleMatch>;
         /// The events about issues that were committed after the place `after` in the order they
         /// were committed, with their places, at most `limit`.
         fn issue_events_after(after: i64, limit: u64) -> Vec<(i64, DomainEvent)>;

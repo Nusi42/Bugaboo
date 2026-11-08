@@ -32,7 +32,7 @@ async fn two_issues_and_a_limit_of_one(world: &World) -> Result<(Handed, IssueId
 }
 
 /// Lowers a limit of the agent in the store, as its person would on its page.
-fn limit(world: &World, kind: LimitKind, value: i64) {
+pub(super) fn limit(world: &World, kind: LimitKind, value: i64) {
     let mut shared = world.store.lock();
     for agent in &mut shared.state.agents {
         match kind {
@@ -43,7 +43,7 @@ fn limit(world: &World, kind: LimitKind, value: i64) {
     }
 }
 
-fn the_agent(world: &World) -> bb_core::agent::Agent {
+pub(super) fn the_agent(world: &World) -> bb_core::agent::Agent {
     world.store.lock().state.agents[0].clone()
 }
 

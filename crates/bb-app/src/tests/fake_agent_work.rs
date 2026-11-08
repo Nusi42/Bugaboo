@@ -352,7 +352,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
         &self,
         agent: AgentId,
         now: Timestamp,
-        since: (Timestamp, Option<IssueId>),
+        since: (Timestamp, Option<(IssueId, StandingRuleId)>),
         limit: u64,
     ) -> Result<Vec<RuleMatch>, FakeError> {
         let (since, after) = since;
@@ -363,7 +363,10 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .iter()
             .filter(|found| {
                 (found.at > since
-                    || (found.at == since && after.is_some_and(|issue| found.issue > issue)))
+                    || (found.at == since
+                        && after.is_some_and(|(issue, rule)| {
+                            (found.issue, found.rule) > (issue, rule)
+                        })))
                     && records.rules.iter().any(|rule| {
                         rule.id == found.rule
                             && rule.agent == agent
@@ -373,7 +376,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
             })
             .cloned()
             .collect();
-        found.sort_by_key(|found| (found.at, found.issue));
+        found.sort_by_key(|found| (found.at, found.issue, found.rule));
         found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }

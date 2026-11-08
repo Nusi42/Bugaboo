@@ -9,6 +9,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::ai::{ToolCaller, ToolEffect, ToolOutcome, ToolScope};
+use bb_core::event::RecordKind;
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Place};
@@ -222,9 +223,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         stale: &crate::editing::Stale,
         withheld: &crate::ai::Withheld,
     ) -> AppError {
+        let is_issue = stale.record.kind == bb_core::event::EntityKind::from(RecordKind::Issue);
         let issue = match bb_core::id::IssueId::from_bytes(stale.record.id.to_bytes()) {
-            Ok(id) => self.seen_issue_by_id(actor, id).await,
-            Err(_) => Ok(None),
+            Ok(id) if is_issue => self.seen_issue_by_id(actor, id).await,
+            _ => Ok(None),
         };
         let (issue, held) = match issue {
             Ok(Some(found)) => found,
@@ -242,6 +244,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             AppError::Conflict(mut conflict) => {
                 conflict.fields.retain(|field| !hidden(field));
                 conflict.current.retain(|field, _| !hidden(field));
+                // Who changed it was judged for the person; an agent is told what changed, not by
+                // whom.
+                conflict.changed_by = None;
                 AppError::Conflict(conflict)
             }
             other => other,

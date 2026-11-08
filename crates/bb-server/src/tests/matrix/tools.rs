@@ -90,8 +90,6 @@ fn word_of(tool: Tool, answer: &Answer) -> Result<&'static str, String> {
         .as_str()
         .unwrap_or_default();
     let said = |code: ErrorCode| Message::from(code.message()).render();
-    // The fixed search of *my work* names fields a role may not see (M7-F89): the search is refused
-    // as one with a mistake, which is the refusal of the role.
     // A person who could not start a timer has none to stop: there is nothing of theirs to find.
     if text == said(ErrorCode::NotFound)
         || (tool == Tool::StopTimer && text == said(ErrorCode::TimerNotRunning))

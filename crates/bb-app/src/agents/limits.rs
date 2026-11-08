@@ -110,8 +110,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         held: usize,
         writing: bool,
     ) -> Result<(), AppError> {
-        let limit = agent.limits().of(kind);
-        if i64::try_from(held).unwrap_or(i64::MAX) < limit {
+        if agent.limits().has_room(kind, held) {
             return Ok(());
         }
         if writing {

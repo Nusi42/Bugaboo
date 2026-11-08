@@ -410,7 +410,7 @@ async fn ai_36_the_tools_of_agents_are_offered_to_agents_and_to_nobody_else() ->
 
 /// The nearest line above the first line that holds `needle` that opens a fence, if the line is
 /// inside one.
-fn fence_above(answer: &str, needle: &str) -> Option<String> {
+pub(super) fn fence_above(answer: &str, needle: &str) -> Option<String> {
     let lines = fenced_lines(answer);
     let at = lines.iter().position(|(line, _)| line.contains(needle))?;
     lines[..at]

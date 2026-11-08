@@ -151,8 +151,18 @@ pub async fn apply_many_changes<S: AuthStore>(
     if input.issues.len() <= MANY_CHANGES_JOB_ABOVE {
         let mut maker = ctx.line_maker().await?;
         let mut outcomes = Vec::with_capacity(input.issues.len());
+        // The limits of an agent count one change for each issue: the count of the request is given
+        // back, and each issue takes its place in the minute when it is judged, and gives it back
+        // when it is left alone.
+        let by_agent = actor.agent().is_some();
+        ctx.settle_agent_change(false);
         for target in &input.issues {
-            outcomes.push(ctx.apply_item(&selection, target, &mut maker).await?);
+            if by_agent {
+                ctx.expect_change();
+            }
+            let done = ctx.apply_item(&selection, target, &mut maker).await;
+            ctx.settle_agent_change(done.as_ref().is_ok_and(|each| each.skipped.is_none()));
+            outcomes.push(done?);
         }
         return Ok(held.authorize(ManyChangeResult {
             outcomes,

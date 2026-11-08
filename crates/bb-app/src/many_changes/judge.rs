@@ -120,11 +120,10 @@ const WORDED: [(ErrorCode, SkipReason); 13] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 88] = [
+const UNWORDED: [ErrorCode; 87] = [
     ErrorCode::AgentWorkOpen,
     ErrorCode::AgentWorkNotReady,
     ErrorCode::AgentWorkBudget,
-    ErrorCode::AgentLimitReached,
     ErrorCode::WrongCredentials,
     ErrorCode::ChoiceNumberTaken,
     ErrorCode::WrongSecondStepCode,
@@ -217,7 +216,9 @@ const BUSY: ErrorCode = ErrorCode::Unavailable;
 
 /// The reason an issue is left alone for a refusal of the single change; none for a busy database.
 fn reason_of(code: ErrorCode) -> Option<SkipReason> {
-    if code == BUSY {
+    // The database being busy and an agent that reached its limit are no reason to leave an issue
+    // alone: they stop the whole change.
+    if code == BUSY || code == ErrorCode::AgentLimitReached {
         return None;
     }
     if let Some((_, reason)) = WORDED.iter().find(|(worded, _)| *worded == code) {
@@ -434,6 +435,7 @@ mod tests {
             let places = usize::from(WORDED.iter().any(|(worded, _)| worded == code))
                 + usize::from(code.is_field_rule())
                 + usize::from(*code == BUSY)
+                + usize::from(*code == ErrorCode::AgentLimitReached)
                 + usize::from(UNWORDED.contains(code));
             assert_eq!(places, 1, "{code:?} is decided in {places} places");
         }

@@ -65,16 +65,26 @@ impl AgentWorkRecords for AuthStorage {
         &self,
         agent: AgentId,
         now: Timestamp,
-        since: (Timestamp, Option<IssueId>),
+        since: (Timestamp, Option<(IssueId, StandingRuleId)>),
         limit: u64,
     ) -> Result<Vec<RuleMatch>, StoreError> {
         let (since, after) = since;
-        let at = || Expr::col((RuleMatchRow::Table, RuleMatchRow::At));
+        let col = |column: RuleMatchRow| Expr::col((RuleMatchRow::Table, column));
+        // After the match the last page ended with: later in time, or at that very moment with a
+        // later issue, or with the same issue and a later rule.
         let later = match after {
-            Some(issue) => at().gt(to_micros(since)).or(at()
-                .eq(to_micros(since))
-                .and(Expr::col((RuleMatchRow::Table, RuleMatchRow::Issue)).gt(issue.stored()))),
-            None => at().gt(to_micros(since)),
+            Some((issue, rule)) => {
+                col(RuleMatchRow::At)
+                    .gt(to_micros(since))
+                    .or(col(RuleMatchRow::At).eq(to_micros(since)).and(
+                        col(RuleMatchRow::Issue)
+                            .gt(issue.stored())
+                            .or(col(RuleMatchRow::Issue)
+                                .eq(issue.stored())
+                                .and(col(RuleMatchRow::Rule).gt(rule.stored()))),
+                    ))
+            }
+            None => col(RuleMatchRow::At).gt(to_micros(since)),
         };
         let mut select = Query::select();
         select
@@ -93,6 +103,7 @@ impl AgentWorkRecords for AuthStorage {
             .and_where(later)
             .order_by((RuleMatchRow::Table, RuleMatchRow::At), Order::Asc)
             .order_by((RuleMatchRow::Table, RuleMatchRow::Issue), Order::Asc)
+            .order_by((RuleMatchRow::Table, RuleMatchRow::Rule), Order::Asc)
             .limit(limit);
         self.database()
             .fetch_all(&select)

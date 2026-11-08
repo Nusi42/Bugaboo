@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 
 use super::ai_mcp_rig::{Answer, Mcp, ai_on, an_agent_with_a_key};
 use super::http::Browser;
-use super::issues_site::{Site, key_of, ok};
+use super::issues_site::{ISSUES, Site, key_of, ok};
 
 /// A team member, two agents of theirs with a key each, and an issue handed over to both.
 struct Team {
@@ -285,6 +285,73 @@ async fn ai_37_twenty_requests_at_once_against_a_limit_of_five_changes_let_five_
             .send("GET", &format!("/api/v1/agents/{agent}"), None)
             .await?;
         assert_eq!(ok(&shown)?["state"], "paused");
+        // What got in is what was stored: one comment for each change that was let in.
+        let stored = team
+            .person
+            .send(
+                "GET",
+                &format!("{ISSUES}/{}/history?tab=comments&limit=100", team.issue),
+                None,
+            )
+            .await?
+            .body["items"]
+            .as_array()
+            .map_or(0, Vec::len);
+        assert_eq!(stored, made, "comments stored against changes let in");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_37_a_stale_change_over_the_api_gives_its_count_back() -> TestResult {
+    each_database("ai_37_stale_gives_back", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        ok(&ada
+            .send(
+                "PUT",
+                "/api/v1/settings/agents.maximum-changes-a-minute",
+                Some(json!({"value": 3})),
+            )
+            .await?)?;
+        let (mut person, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        let issue = key_of(&site.create(&mut ada, "Fix the login button").await?)?;
+        let (agent, key) = an_agent_with_a_key(&mut person, "Fixer", None).await?;
+        ok(&person
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(
+                    json!({"agent": agent, "issues": [issue], "note": "Fix the title",
+                            "powers": ["change-fields"], "fields": ["title"]}),
+                ),
+            )
+            .await?)?;
+        let mut script = Browser::new(&app, &super::http::called());
+        // Ten changes from a version that is not the issue's: each is refused as stale, and none of
+        // them counts against a limit of three.
+        for _ in 0..10 {
+            let stale = script
+                .script(
+                    "PATCH",
+                    &format!("{ISSUES}/{issue}"),
+                    Some(json!({"version": 999, "title": "Too late"})),
+                    &key,
+                )
+                .await?;
+            assert_eq!(
+                stale.status,
+                axum::http::StatusCode::CONFLICT,
+                "{}",
+                stale.body
+            );
+        }
+        let shown = person
+            .send("GET", &format!("/api/v1/agents/{agent}"), None)
+            .await?;
+        assert_eq!(ok(&shown)?["state"], "active");
         Ok(())
     })
     .await

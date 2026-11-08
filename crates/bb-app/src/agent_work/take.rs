@@ -28,6 +28,7 @@ use crate::projects::Why;
 /// What taking an issue would do: everything judged before anything is written.
 pub(super) struct TakePlan {
     mine: Mine,
+    agent: bb_core::agent::Agent,
     attempt: Attempt,
 }
 
@@ -110,7 +111,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             ended_at: None,
             run: None,
         };
-        Ok(TakePlan { mine, attempt })
+        Ok(TakePlan {
+            mine,
+            agent,
+            attempt,
+        })
     }
 
     /// What taking an issue would change, without saving anything. A tool that goes on to take it
@@ -145,13 +150,17 @@ pub async fn take_work<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TakeWork,
 ) -> Result<Authorized<WorkView>, AppError> {
-    let TakePlan { mine, mut attempt } = ctx.plan_take(&input, Plan::Writing).await?;
+    let TakePlan {
+        mine,
+        agent,
+        mut attempt,
+    } = ctx.plan_take(&input, Plan::Writing).await?;
     let run = ctx.open_attempt_run(&input.session_token, &mine).await?;
     attempt.run = Some(run);
     let next = AgentWorkState::AgentWorking;
     let event = ctx.work_event(mine.actor.person.id, &mine.work, next)?;
     let (work, stored, closing) = (mine.work.clone(), attempt.clone(), attempt);
-    let limit = ctx.agent_of(&mine).await?.limits().issues_at_once;
+    let limits = agent.limits();
     let why = Why::default();
     let stopped = why.clone();
     let made = ctx
@@ -168,7 +177,10 @@ pub async fn take_work<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::AgentWorkNotReady));
                 }
                 let working = S::working_issues_of_in(transaction, work.agent).await?;
-                if i64::try_from(working).unwrap_or(i64::MAX) >= limit {
+                if !limits.has_room(
+                    LimitKind::IssuesAtOnce,
+                    usize::try_from(working).unwrap_or(usize::MAX),
+                ) {
                     return Err(stopped.stop::<S>(ErrorCode::AgentLimitReached));
                 }
                 S::insert_attempt(transaction, &stored).await?;
@@ -187,7 +199,6 @@ pub async fn take_work<S: AuthStore>(
             .await;
         return Err(match why.said() {
             Some(ErrorCode::AgentLimitReached) => {
-                let agent = ctx.agent_of(&mine).await?;
                 ctx.pause_for_limit(&agent, LimitKind::IssuesAtOnce).await
             }
             Some(code) => AppError::Refused(code),

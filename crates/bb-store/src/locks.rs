@@ -168,7 +168,7 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 12] = [
+    const ORDER: [LockClass; 16] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
@@ -181,6 +181,10 @@ mod tests {
         LockClass::IssueFiles,
         LockClass::TextIndex,
         LockClass::SavedSearches,
+        LockClass::WorkDays,
+        LockClass::Agents,
+        LockClass::IssueTaking,
+        LockClass::AgentTaking,
     ];
 
     #[test]
@@ -230,7 +234,7 @@ mod tests {
     #[test]
     fn arch_lock_order_the_order_is_the_written_one_and_covers_every_class() {
         let ranks: Vec<u8> = ORDER.iter().map(|class| class.rank()).collect();
-        assert_eq!(ranks, (0..12).collect::<Vec<u8>>());
+        assert_eq!(ranks, (0..16).collect::<Vec<u8>>());
         // The numbers of the classes are the ones PostgreSQL sees: none may repeat.
         let mut numbers: Vec<i32> = ORDER.iter().map(|class| *class as i32).collect();
         numbers.sort_unstable();

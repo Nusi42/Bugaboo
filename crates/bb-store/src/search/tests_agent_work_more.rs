@@ -312,7 +312,7 @@ async fn ai_35_two_closes_of_the_two_last_pieces_at_once_leave_no_hand_over_open
 }
 
 #[tokio::test]
-async fn ai_36_the_matches_of_an_agent_are_paged_by_moment_and_issue() -> TestResult {
+async fn ai_36_the_matches_of_an_agent_are_paged_by_moment_issue_and_rule() -> TestResult {
     each_database("ai_36_matches_since", async |db| {
         let Given {
             fixture,
@@ -324,22 +324,28 @@ async fn ai_36_the_matches_of_an_agent_are_paged_by_moment_and_issue() -> TestRe
         let mut made = Made::new();
         let found: Vec<IssueId> = data.issues.iter().map(|issue| issue.id).collect();
         assert!(found.len() > 3, "the data has issues enough for pages");
-        rule_that_found(storage, &mut made, (owner, fixer), &data, &found, at(ENDS)).await?;
-        // Every match is at the same moment: pages go on after the last issue of the page, and the
-        // newest are not left out.
+        // Two rules find the same issues at the same moment: a page may end between the two rows
+        // of one issue.
+        let first =
+            rule_that_found(storage, &mut made, (owner, fixer), &data, &found, at(ENDS)).await?;
+        let second =
+            rule_that_found(storage, &mut made, (owner, fixer), &data, &found, at(ENDS)).await?;
         let mut since = (at(0), None);
         let mut given_out = Vec::new();
         loop {
             let page = storage
-                .matches_of_agent_since(fixer, at(2), since, 2)
+                .matches_of_agent_since(fixer, at(2), since, 3)
                 .await?;
             let Some(last) = page.last() else { break };
-            since = (last.at, Some(last.issue));
-            given_out.extend(page.iter().map(|each| each.issue));
+            since = (last.at, Some((last.issue, last.rule)));
+            given_out.extend(page.iter().map(|each| (each.issue, each.rule)));
         }
-        let mut wanted = found.clone();
+        let mut wanted: Vec<(IssueId, bb_core::id::StandingRuleId)> = found
+            .iter()
+            .flat_map(|issue| [(*issue, first.id), (*issue, second.id)])
+            .collect();
         wanted.sort();
-        assert_eq!(given_out, wanted);
+        assert_eq!(given_out, wanted, "every row once, none left out, in order");
         // A rule that ran out has no matches to give.
         assert!(
             storage
