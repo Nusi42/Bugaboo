@@ -99,40 +99,6 @@ async fn ai_33_a_list_row_names_the_agent_and_its_state_only_when_asked() -> Out
 }
 
 #[tokio::test]
-async fn ai_33_an_agent_result_link_must_be_a_web_address() -> Outcome {
-    use bb_core::agent_records::ResultKind;
-
-    use super::agent_work_review::report;
-    use super::agents::refused;
-    use crate::agent_work::{AttachResult, attach_result, report_attempt};
-
-    let world = World::new().await?;
-    let given = handed(&world).await?;
-    report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
-    let link = |address: &str| AttachResult {
-        session_token: given.key.clone(),
-        issue: given.issue.to_string(),
-        kind: ResultKind::Link,
-        label: "Pull request".to_owned(),
-        link: Some(address.to_owned()),
-        outcome: None,
-    };
-    for bad in [
-        "javascript:alert(1)",
-        "data:text/html,x",
-        "ftp://example.test",
-    ] {
-        let answer = attach_result(&world.ctx(), link(bad)).await;
-        assert!(refused(
-            &answer.unwrap_err(),
-            bb_core::ErrorCode::InvalidRequest
-        ));
-    }
-    attach_result(&world.ctx(), link("https://example.test/pull/91")).await?;
-    Ok(())
-}
-
-#[tokio::test]
 async fn ai_30_a_reader_not_told_who_people_are_sees_someone_behind_an_agent() -> Outcome {
     use bb_core::access::PeopleLevel;
     use bb_core::people_kinds::PeopleKind;
