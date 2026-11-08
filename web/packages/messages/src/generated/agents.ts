@@ -130,7 +130,7 @@ export const messages = {
   "agents.rule-creates-in": "Create issues in the project",
   "agents.rule-days": "Runs out after (days)",
   "agents.rule-days-help":
-    "Left empty, the usual number of days of your organization counts. At most {most} days.",
+    "Left empty, the usual number of days of your organization counts: {usual} days unless it chose another. At most {most} days; Renew starts again.",
   "agents.rule-days-wrong": "Write a whole number of days from 1 to {most}.",
   "agents.rule-line": "{search} (agent {agent})",
   "agents.rule-power-propose": "Proposes only.",

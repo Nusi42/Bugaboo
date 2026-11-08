@@ -1,4 +1,4 @@
-import { agentRuleDaysMost } from "@bugaboo/api-client";
+import { agentRuleDaysDefault, agentRuleDaysMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -134,7 +134,10 @@ function Fields({ draft, onChange, searchFixed }: DraftProps & { readonly search
       <Powers draft={draft} onChange={onChange} />
       <TextField
         label={t("agents.rule-days")}
-        description={t("agents.rule-days-help", { most: agentRuleDaysMost })}
+        description={t("agents.rule-days-help", {
+          usual: agentRuleDaysDefault,
+          most: agentRuleDaysMost,
+        })}
         errorMessage={
           daysAreRight(draft.days)
             ? undefined

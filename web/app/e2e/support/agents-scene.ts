@@ -1,8 +1,11 @@
 import { dataOf } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import type { Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { webIssues } from "./issues.ts";
+import { layoutOf } from "./layout.ts";
 
 /** How many scenes this server has had: agent names are taken for good, so each scene has names of its own. */
 let scenesMade = 0;
@@ -104,8 +107,20 @@ export async function createAgentsInOrder(
 /** The administrator with one agent and nothing else (no saved search): the sidebar as low as it gets with *My agents*. */
 export async function adminWithOneAgent(
   server: Parameters<typeof signedInAdmin>[0],
+  name = "Sidebar helper",
 ): Promise<ApiSession> {
   const admin = await signedInAdmin(server);
-  await createAgent(admin, "Sidebar helper");
+  await createAgent(admin, name);
   return admin;
+}
+
+/**
+ * Opens the window of a standing rule from the page of a saved search: on a phone what is done with
+ * a search stands in the foot of its sheet *Filters*, so the sheet is opened first.
+ */
+export async function openRuleOfSearch(page: Page): Promise<void> {
+  if (layoutOf(page) === "phone") {
+    await page.getByRole("button", { name: t("search.bar.filters"), exact: true }).click();
+  }
+  await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
 }

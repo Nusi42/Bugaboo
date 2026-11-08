@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene } from "./support/agents-scene.ts";
+import { agentsScene, ruleSearchName } from "./support/agents-scene.ts";
+import { giveWaitingWork, pauseByLimit, scrollToEnd } from "./support/my-agents-scenes.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
@@ -24,6 +25,34 @@ test("My agents", async ({ page, server }) => {
     await expect(page.getByRole("heading", { level: 1, name: t("agents.title") })).toBeVisible();
     await expect(
       page.getByRole("button", { name: t("agents.pause-name", { agent: scene.names.fixer }) }),
+    ).toBeVisible();
+  });
+  await scene.dispose();
+});
+
+test("My agents with a question, a plan, a result and work accepted by itself", async ({
+  page,
+  server,
+}) => {
+  const scene = await agentsScene(server);
+  await giveWaitingWork(server, scene);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "my-agents-waiting", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.myAgents);
+    await expect(page.getByRole("button", { name: /^Approve plan, /u })).toBeVisible();
+    await expect(page.getByRole("heading", { name: t("agents.accepted") })).toBeVisible();
+  });
+  await scene.dispose();
+});
+
+test("My agents with an agent a limit paused", async ({ page, server }) => {
+  const scene = await agentsScene(server);
+  pauseByLimit(server, scene.fixer, "changes-a-minute");
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "my-agents-limit", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.myAgents);
+    await expect(
+      page.getByRole("button", { name: t("agents.resume-name", { agent: scene.names.fixer }) }),
     ).toBeVisible();
   });
   await scene.dispose();
@@ -65,7 +94,35 @@ test("The window of a standing rule", async ({ page, server }) => {
   await inFourChosenThemes(page, "standing-rule", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.myAgents);
     await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
+    await expect(page.getByText(t("agents.rule-need-search-agent"))).toBeVisible();
+  });
+  await scene.dispose();
+});
+
+test("The window of a standing rule that changes fields", async ({ page, server }) => {
+  const scene = await agentsScene(server);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "standing-rule-change", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.myAgents);
+    await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
     await page.getByRole("alertdialog").getByLabel(t("agents.rule-change")).check();
+  });
+  await scene.dispose();
+});
+
+test("The end of the window of a standing rule", async ({ page, server }) => {
+  const scene = await agentsScene(server);
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "standing-rule-end", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.myAgents);
+    await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
+    const window = page.getByRole("alertdialog");
+    await window.getByLabel(t("agents.rule-search")).selectOption({ label: ruleSearchName });
+    await window.getByLabel(t("agents.rule-agent")).selectOption({ label: scene.names.fixer });
+    await window.getByLabel(t("agents.rule-project")).selectOption({ index: 1 });
+    await expect(window.getByLabel(t("agents.rule-propose"))).toBeChecked();
+    await scrollToEnd(window);
+    await expect(window.getByRole("button", { name: t("agents.rule-confirm") })).toBeEnabled();
   });
   await scene.dispose();
 });
@@ -88,6 +145,20 @@ test("The page of an agent", async ({ page, server }) => {
     await page.goto(paths.myAgents);
     await page.getByRole("link", { name: scene.names.fixer, exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: scene.names.fixer })).toBeVisible();
+  });
+  await scene.dispose();
+});
+
+test("The page of an agent a limit paused", async ({ page, server }) => {
+  const scene = await agentsScene(server);
+  pauseByLimit(server, scene.fixer, "issues-at-once");
+  await signIn(page, ada);
+  await inFourChosenThemes(page, "agent-page-paused", MILESTONE, paths.appearance, async () => {
+    await page.goto(paths.myAgents);
+    await page.getByRole("link", { name: scene.names.fixer, exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: t("agents.resume-name", { agent: scene.names.fixer }) }),
+    ).toBeVisible();
   });
   await scene.dispose();
 });

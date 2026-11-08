@@ -161,7 +161,7 @@ export interface MessageArguments {
   "agents.pause-name": { agent: string | number };
   "agents.renew-name": { agent: string | number; search: string | number };
   "agents.resume-name": { agent: string | number };
-  "agents.rule-days-help": { most: string | number };
+  "agents.rule-days-help": { most: string | number; usual: string | number };
   "agents.rule-days-wrong": { most: string | number };
   "agents.rule-ends-in": { count: number };
   "agents.rule-ends-on": { date: string | number };

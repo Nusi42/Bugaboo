@@ -2,17 +2,18 @@ import { t } from "@bugaboo/messages";
 import { Button, IssueId, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { daysUntil } from "../../shared/format.ts";
 import { issueAddress } from "../../shared/paths.ts";
 import { useNow } from "../../shared/use-now.ts";
 import {
   agentNamed,
+  ruleDaysLeft,
   runsOutSoon,
   useChangeRule,
   type ListedAgent,
   type MyWorkItem,
   type Rule,
 } from "./agents.ts";
+import { waitingInOrder } from "./agent-state.ts";
 import { type RuleNames } from "./rule-names.ts";
 import { ActionError } from "./ActionError.tsx";
 import { Section } from "./Section.tsx";
@@ -80,7 +81,7 @@ function RuleRow({
   const sentence = t("agents.waiting-rule", {
     agent,
     search,
-    count: Math.max(daysUntil(rule.ends_at, now), 0),
+    count: ruleDaysLeft(rule, now),
   });
   return (
     <li {...partOf(part.item)}>
@@ -119,7 +120,7 @@ export interface WaitingForYouProps {
  */
 export function WaitingForYou({ work, rules, agents, names }: WaitingForYouProps) {
   const now = useNow();
-  const waiting = work.filter((item) => item.waits_for !== undefined && item.waits_for !== null);
+  const waiting = waitingInOrder(work);
   const ending = rules.filter((rule) => runsOutSoon(rule, now));
   const count = waiting.length + ending.length;
   return (

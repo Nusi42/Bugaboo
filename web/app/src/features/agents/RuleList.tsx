@@ -51,6 +51,7 @@ function RuleActions({ rule, agent, search }: ActionsProps) {
       <ConfirmDialog
         triggerLabel={t("agents.rule-stop")}
         triggerName={t("agents.rule-stop-name", { agent, search })}
+        triggerLook={buttonLook.danger}
         title={t("agents.rule-stop-title")}
         text={t("agents.rule-stop-text")}
         confirmLabel={t("agents.rule-stop")}

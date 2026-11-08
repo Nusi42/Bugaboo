@@ -8776,10 +8776,16 @@ pub fn agents_resume_name(agent: impl std::fmt::Display) -> Message {
 
 /// The message `agents.rule-days-help`.
 #[must_use]
-pub fn agents_rule_days_help(most: impl std::fmt::Display) -> Message {
+pub fn agents_rule_days_help(
+    most: impl std::fmt::Display,
+    usual: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-days-help"),
-        vec![("most", Value::Text(most.to_string()))],
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("usual", Value::Text(usual.to_string())),
+        ],
     )
 }
 
@@ -16583,7 +16589,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-days", "Runs out after (days)"),
     (
         "agents.rule-days-help",
-        "Left empty, the usual number of days of your organization counts. At most {most} days.",
+        "Left empty, the usual number of days of your organization counts: {usual} days unless it chose another. At most {most} days; Renew starts again.",
     ),
     (
         "agents.rule-days-wrong",

@@ -50,7 +50,7 @@ export function agentsInOrder<Agent extends Readonly<Pick<ListedAgent, "id" | "n
   return agents.toSorted(
     (one, other) =>
       rank(one) - rank(other) ||
-      one.name.localeCompare(other.name, undefined, { sensitivity: "base" }) ||
+      one.name.localeCompare(other.name, undefined, { sensitivity: "base", numeric: true }) ||
       one.id.localeCompare(other.id),
   );
 }
@@ -76,4 +76,34 @@ export function pausedSentence(agent: ListedAgent): string | undefined {
   }
   const [key, limit] = PAUSED_FOR[agent.pausedFor];
   return t(key, { agent: agent.name, limit: agent[limit] });
+}
+
+/** Where each kind of waiting stands in *Waiting for you*: questions, then plans, then results. */
+const WAITS_RANK = { question: 0, plan: 1, review: 2 } as const;
+
+/** What the order of *Waiting for you* reads of a piece of work. */
+type Waiting = Pick<MyWorkItem, "waits_for"> & {
+  readonly issue: Pick<MyWorkItem["issue"], "readable_id">;
+};
+
+/** Where a piece of work stands in *Waiting for you*. */
+function waitsRank(item: Readonly<Waiting>): number {
+  return item.waits_for === undefined || item.waits_for === null ? 0 : WAITS_RANK[item.waits_for];
+}
+
+/**
+ * What waits for the person, in one order on every screen: questions, then plans to approve, then
+ * results to review (UX §4.17), by the ID of the issue inside each kind. Work that waits for
+ * nothing is left out.
+ */
+export function waitingInOrder<Item extends Readonly<Waiting>>(
+  work: readonly Item[],
+): readonly Item[] {
+  return work
+    .filter((item) => item.waits_for !== undefined && item.waits_for !== null)
+    .toSorted(
+      (one, other) =>
+        waitsRank(one) - waitsRank(other) ||
+        one.issue.readable_id.localeCompare(other.issue.readable_id, undefined, { numeric: true }),
+    );
 }

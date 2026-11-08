@@ -211,6 +211,11 @@ export function runsOutSoon(rule: Pick<Rule, "state" | "ends_at">, nowMs: number
   return rule.state === "open" && daysUntil(rule.ends_at, nowMs) <= agentRuleWarningDays;
 }
 
+/** The whole days until a rule runs out, none below zero. */
+export function ruleDaysLeft(rule: Pick<Rule, "ends_at">, nowMs: number): number {
+  return Math.max(daysUntil(rule.ends_at, nowMs), 0);
+}
+
 /** When a rule runs out, in words: *in 4 days*, *today*, or the date when it is further away. */
 export function runsOutText(endsAt: string, nowMs: number): string {
   const days = daysUntil(endsAt, nowMs);

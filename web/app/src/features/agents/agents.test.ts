@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { agentPill, agentsInOrder, pausedSentence } from "./agent-state.ts";
-import { listedAgents, mayAct, runsOutSoon, type ListedAgent } from "./agents.ts";
+import { agentPill, agentsInOrder, pausedSentence, waitingInOrder } from "./agent-state.ts";
+import { listedAgents, mayAct, runsOutSoon, type ListedAgent, type MyWorkItem } from "./agents.ts";
 
 const day = 86_400_000;
 
@@ -106,5 +106,39 @@ describe("ai_37 the state of an agent", () => {
     );
     expect(pausedSentence(testAgent("Sorter", "paused"))).toBeUndefined();
     expect(pausedSentence({ ...paused, state: "active" })).toBeUndefined();
+  });
+});
+
+/** A piece of work of the tests that waits for `waits` on the issue `key`. */
+function waiting(key: string, waits: MyWorkItem["waits_for"]) {
+  return { issue: { readable_id: key }, waits_for: waits };
+}
+
+describe("ai_37 the order of Waiting for you", () => {
+  it("lists questions, then plans, then results, by issue, and leaves out what waits for nothing", () => {
+    const work = [
+      waiting("WEB-10", "review"),
+      waiting("WEB-3", "plan"),
+      waiting("WEB-12", "question"),
+      waiting("WEB-2", null),
+      waiting("WEB-9", "question"),
+    ];
+    expect(waitingInOrder(work).map((item) => item.issue.readable_id)).toEqual([
+      "WEB-9",
+      "WEB-12",
+      "WEB-3",
+      "WEB-10",
+    ]);
+  });
+});
+
+describe("ai_37 the names of agents", () => {
+  it("orders numbers in names as numbers", () => {
+    const all = [
+      testAgent("Fixer 10", "active"),
+      testAgent("Fixer 3", "active"),
+      testAgent("Fixer", "active"),
+    ];
+    expect(agentsInOrder(all).map((one) => one.name)).toEqual(["Fixer", "Fixer 3", "Fixer 10"]);
   });
 });
