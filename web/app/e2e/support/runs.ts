@@ -17,7 +17,7 @@ const MICROSECONDS = 1000;
 const UUID_SEVEN_VARIANT = 0x80;
 
 /** A new ID of the kind the server makes (a UUID of version 7, which begins with the time). */
-function newId(): string {
+export function newId(): string {
   const bytes = randomBytes(16);
   bytes.writeUIntBE(Date.now(), 0, 6);
   bytes[6] = (bytes.readUInt8(6) & 0x0f) | 0x70;
@@ -33,7 +33,7 @@ function newId(): string {
 }
 
 /** An ID as the database stores it: its 16 bytes. */
-function stored(id: string): Buffer {
+export function stored(id: string): Buffer {
   return Buffer.from(id.replaceAll("-", ""), "hex");
 }
 
