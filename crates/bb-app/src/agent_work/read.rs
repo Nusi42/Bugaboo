@@ -14,6 +14,33 @@ use super::types::{
 };
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
+/// The brief the agent works from: the note, the answers, then what a person wrote when they sent
+/// a result back.
+fn brief_of(work: &IssueWork, hand_over: &HandOver, details: &WorkDetails) -> Vec<String> {
+    let mut brief = Vec::new();
+    if !hand_over.note.is_empty() {
+        brief.push(hand_over.note.clone());
+    }
+    brief.extend(
+        details
+            .questions
+            .iter()
+            .filter(|question| question.work == work.id)
+            .filter_map(|question| question.answer.clone()),
+    );
+    brief.extend(
+        details
+            .reviews
+            .iter()
+            .filter(|review| {
+                review.work == work.id
+                    && review.answer == bb_core::agent_work::ReviewAnswer::SendBack
+            })
+            .filter_map(|review| review.note.clone()),
+    );
+    brief
+}
+
 /// The attempts of a piece of work with what each attached, oldest first.
 fn attempts_of(work: &IssueWork, details: &WorkDetails) -> Vec<AttemptView> {
     details
@@ -117,26 +144,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .filter(|question| question.work == work.id)
             .collect();
-        let mut brief = Vec::new();
-        if !hand_over.note.is_empty() {
-            brief.push(hand_over.note.clone());
-        }
-        brief.extend(
-            questions
-                .iter()
-                .filter_map(|question| question.answer.clone()),
-        );
-        // What a person wrote when they sent a result back joins the brief too, after the answers.
-        brief.extend(
-            details
-                .reviews
-                .iter()
-                .filter(|review| {
-                    review.work == work.id
-                        && review.answer == bb_core::agent_work::ReviewAnswer::SendBack
-                })
-                .filter_map(|review| review.note.clone()),
-        );
+        let brief = brief_of(work, hand_over, details);
         let attempts = attempts_of(work, details);
         let mut reviews = Vec::new();
         for review in details
