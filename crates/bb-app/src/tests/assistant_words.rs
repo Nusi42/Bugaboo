@@ -2,11 +2,16 @@
 //! shows a priority by its name and a status by its name, and an applied comment says which comment
 //! *Undo* takes away.
 
+use std::collections::BTreeMap;
+
 use serde_json::json;
 
-use super::assistant::{apply_of, ask, question, will_call, will_say, with_an_issue};
+use super::ai_tools::issue_with;
+use super::assistant::{ai_on, apply_of, ask, question, will_call, will_say, with_an_issue};
+use super::scenarios::a_project;
 use super::scenarios::token;
-use super::world::Outcome;
+use super::search_fields::{bob_with_a_role, every_field};
+use super::world::{Outcome, World};
 use crate::ai::assistant::apply_proposal;
 use crate::history::ChangeValue;
 
@@ -56,5 +61,74 @@ async fn ai_05_an_applied_comment_says_which_comment_undo_takes_away() -> Outcom
     let undo = applied.undo.ok_or("no way back")?;
     assert_eq!(undo.kind, "comment");
     assert!(!undo.id.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_05_a_status_change_is_worded_by_the_name_of_the_status() -> Outcome {
+    let (world, key) = with_an_issue().await?;
+    will_call(
+        &world,
+        "change_status",
+        json!({"issue": key, "version": 1, "status": "done"}),
+    );
+    will_say(&world, "Proposed.");
+    let answer = ask(&world, question(&token(&world), "Close WEB-1")).await?;
+    let words = answer
+        .proposals
+        .first()
+        .and_then(|proposal| proposal.words.iter().find(|each| each.field == "status"))
+        .ok_or("no words for the status")?;
+    let named = |value: &Option<ChangeValue>| match value {
+        Some(ChangeValue::Text { text }) => !text.is_empty(),
+        Some(ChangeValue::Names { names }) => !names.is_empty(),
+        _ => false,
+    };
+    assert!(named(&words.before), "{:?}", words.before);
+    assert!(named(&words.after), "{:?}", words.after);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_05_people_in_a_proposal_are_worded_as_the_reader_may_see_them() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    ai_on(&world).await?;
+    let key = issue_with(&world, "WEB", "Login", "plain", BTreeMap::new()).await?;
+    bob_with_a_role(&world, &every_field()).await?;
+    let bob = world
+        .store
+        .lock()
+        .state
+        .people
+        .iter()
+        .find(|(person, _)| person.email == "bob@example.test")
+        .map(|(person, _)| person.id.to_string())
+        .ok_or("bob exists")?;
+    will_call(
+        &world,
+        "update_issue",
+        json!({"issue": key, "version": 1, "assigned_to": [bob]}),
+    );
+    will_say(&world, "Done.");
+    let answer = ask(
+        &world,
+        question(&token(&world), "Assign WEB-1 to Bob Builder"),
+    )
+    .await?;
+    let words = answer
+        .proposals
+        .first()
+        .and_then(|proposal| {
+            proposal
+                .words
+                .iter()
+                .find(|each| each.field == "assigned-to")
+        })
+        .ok_or("no words for the people")?;
+    match &words.after {
+        Some(ChangeValue::People { people }) => assert_eq!(people.len(), 1),
+        other => return Err(format!("not people: {other:?}").into()),
+    }
     Ok(())
 }
