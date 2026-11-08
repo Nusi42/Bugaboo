@@ -142,6 +142,8 @@ tokens {
     size "size-col-person" "96px"
     size "size-col-labels" "96px"
     size "size-col-project" "96px"
+    // The narrowest a number field of a hand-over is: three of them stand side by side where there is room.
+    size "size-number-field" "120px"
     // How a row gives out its width (the browser gives the fixed columns their token before the
     // title grows): where the box is narrower than the tokens, the title gives up room first, down to
     // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give
@@ -15439,6 +15441,170 @@ part "proposal-change[variant=values]" {
     gap "$space-2"
     // The name of the field and both values are one size.
     font-size "$fs-ui"
+}
+
+// ───────────── Agent work (features/agent-work, M7 WP-11) ─────────────
+//
+// The small mark that says an agent works on an issue (UX §4.17, §4.2): an icon whose name carries the state, so the color
+// is never alone. It stands in a row of a list and beside an agent's name; the row keeps its status tint and edge.
+
+part "agent-mark" {
+    display inline-flex
+    align-items center
+    flex none
+    margin-inline-start "$space-2"
+    vertical-align middle
+    color "$fg-muted"
+}
+
+part "agent-mark[variant=agent-working]" "agent-mark[variant=waiting-for-the-agent]" {
+    color "$fg-muted"
+}
+
+part "agent-mark[variant=waiting-for-you]" "agent-mark[variant=ready-for-review]" {
+    color "$accent-fg"
+}
+
+part "agent-mark[variant=agent-gave-up]" {
+    color "$warning"
+}
+
+part "agent-mark[variant=stopped]" {
+    color "$fg-subtle"
+}
+
+part "agent-mark" {
+    forced {
+        color CanvasText
+    }
+}
+
+// The agent work of an issue: a piece of work for each hand-over, apart from the comments, each in a box of its own.
+part "agent-work" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "agent-work.piece" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+    padding "$space-3 $space-4"
+}
+
+// Who works, and where the work is: the agent and its state on one line that wraps on a narrow screen.
+part "agent-work.head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-1" "$space-3"
+    min-width 0
+}
+
+part "agent-work.who" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+part "agent-work.state" {
+    display inline-flex
+    align-items center
+    color "$fg"
+    font-size "$fs-base"
+}
+
+part "agent-work.section" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "agent-work.label" {
+    use "control-label"
+    margin 0
+}
+
+// A text a person or an agent wrote: lines kept, long words broken.
+part "agent-work.words" {
+    margin 0
+    font-size "$fs-md"
+    line-height "$lh-text"
+    white-space pre-wrap
+    overflow-wrap anywhere
+}
+
+part "agent-work.attempt" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+    padding-block-start "$space-3"
+    border-top "$border-width solid $border-subtle"
+}
+
+part "agent-work.results" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "agent-work.result" {
+    overflow-wrap anywhere
+}
+
+part "agent-work.result[variant=failed]" {
+    color "$danger"
+}
+
+part "agent-work.question" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "agent-work.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+// The windows of a hand-over and a review: their groups of choices stand under each other.
+part "agent-work.group" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "agent-work.group-name" {
+    use "control-label"
+    padding 0
+}
+
+part "agent-work.numbers" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax($size-number-field, 1fr))"
+    gap "$space-3"
+}
+
+part "agent-work.missing" {
+    use "note-box"
+}
+
+// Nothing lacks: no box.
+part "agent-work.missing:empty" {
+    display none
 }
 
 // ───────────── The page that sets AI up (comes last, after the rules of alert and button it overrides) ─────────────

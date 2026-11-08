@@ -23,6 +23,8 @@ export type IssueView = IssueDetail["issue"];
 
 /** The places a block can go. */
 export const issueSlots = {
+  /** The agent work on the issue, right under the description and apart from the comments (M7 WP-11). */
+  agentWork: "agent-work",
   /** The sub-issues of the issue, below the description (WP-07). */
   subIssues: "sub-issues",
   /** The related issues, below the sub-issues (WP-07). */

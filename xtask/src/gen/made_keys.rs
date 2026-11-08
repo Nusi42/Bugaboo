@@ -5,6 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::agent_work::{AgentWorkState, BriefPart};
 use bb_core::ai::{AuthorKind, Tool};
 use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, StatusGroup};
@@ -65,6 +66,12 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));
+    }
+    for state in AgentWorkState::ALL {
+        keys.push(made("the state of agent work", state.code(), state.name()));
+    }
+    for lack in BriefPart::ALL {
+        keys.push(made("the part of a brief", lack.code(), lack.name()));
     }
     for group in StatusGroup::ALL {
         keys.push(made("the status group", group.code(), group.name()));

@@ -104,18 +104,29 @@ async function joinIssues(): Promise<void> {
   if (issuesJoined) {
     return;
   }
-  const [issues, fields, relations, history, follow, labels, manyChanges, files, search] =
-    await Promise.all([
-      import("../features/issues/index.ts"),
-      import("../features/fields/index.ts"),
-      import("../features/relations/index.ts"),
-      import("../features/history/index.ts"),
-      import("../features/follow/index.ts"),
-      import("../features/labels/index.ts"),
-      import("../features/many-changes/index.ts"),
-      import("../features/files/index.ts"),
-      import("../features/search/index.ts"),
-    ]);
+  const [
+    issues,
+    fields,
+    relations,
+    history,
+    follow,
+    labels,
+    manyChanges,
+    agentWork,
+    files,
+    search,
+  ] = await Promise.all([
+    import("../features/issues/index.ts"),
+    import("../features/fields/index.ts"),
+    import("../features/relations/index.ts"),
+    import("../features/history/index.ts"),
+    import("../features/follow/index.ts"),
+    import("../features/labels/index.ts"),
+    import("../features/many-changes/index.ts"),
+    import("../features/agent-work/index.ts"),
+    import("../features/files/index.ts"),
+    import("../features/search/index.ts"),
+  ]);
   if (!issuesJoined) {
     issuesJoined = true;
     issues.registerIssues();
@@ -126,6 +137,7 @@ async function joinIssues(): Promise<void> {
     follow.registerFollowersBlock();
     labels.registerLabelBlocks();
     manyChanges.registerManyChanges();
+    agentWork.registerAgentWork();
     files.registerFileBlocks();
     search.registerSearch();
   }

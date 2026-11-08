@@ -726,6 +726,7 @@ export const messages = {
     "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
+  "agent-work.summary": "Attempt {number} is ready for review: {address}",
   "error.agent-work.already-open": "This agent already has this issue handed over.",
   "error.agent-work.not-ready": "The work is not waiting for that.",
   "error.agent-work.budget-reached": "The agent used all the attempts it was given on this issue.",
@@ -750,6 +751,18 @@ export const messages = {
   "written-by.agent-unnamed": "Written by an agent",
   "runs.place": "Run",
   "runs.change-line": "{field}: {before} → {after}",
+  "agent-work.state.waiting-for-the-agent": "Waiting for the agent",
+  "agent-work.state.agent-working": "Agent working",
+  "agent-work.state.waiting-for-you": "Waiting for you",
+  "agent-work.state.ready-for-review": "Ready for review",
+  "agent-work.state.agent-gave-up": "Agent gave up",
+  "agent-work.state.stopped": "Stopped",
+  "agent-work.mark": "{agent}, {state}",
+  "agent-work.attempt": "Attempt {number}",
+  "agent-work.results": "Results",
+  "agent-work.missing-description": "No description",
+  "agent-work.missing-steps-to-reproduce": "No steps to reproduce",
+  "agent-work.missing-done-when": "No Done when",
 } as const;
 
 register(messages);

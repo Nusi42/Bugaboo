@@ -7,6 +7,7 @@ export { LegendButton } from "./LegendButton.tsx";
 export { SearchResults } from "./SearchResults.tsx";
 export { IssueLongText, type IssueLongTextProps } from "./IssueLongText.tsx";
 export { registerIssues } from "./register.tsx";
+export { addMoreEntry, type MoreDialogProps, type MoreEntry } from "./more-entries.ts";
 export { addSelectionBar, type SelectionBarProps } from "./selection-bars.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";

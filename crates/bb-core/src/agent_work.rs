@@ -58,6 +58,7 @@ words! {
         /// The agent was stopped, its person lost access, or the hand-over ran out.
         Stopped => "stopped",
     }
+    messages name = "agent-work.state."
 }
 
 crate::words_in_api!(AgentWorkState, "The state of the agent work on an issue.");
@@ -139,6 +140,7 @@ words! {
         /// *Done when*.
         DoneWhen => "done-when",
     }
+    messages name = "agent-work.missing-"
 }
 
 crate::words_in_api!(BriefPart, "A part of a brief taken from the issue.");

@@ -2,6 +2,9 @@ import type { Schema } from "@bugaboo/api-client";
 import { IssueId, IssueTypeIcon, Link, StatusIcon, iconSize, type ListColumn } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { AgentMark } from "../../shared/AgentMark.tsx";
+import type { WorkState } from "../../shared/agent-state.ts";
+
 /** What the first cells of every row of an issue are made of: the list, the slim list, the sub-issues. */
 export interface CellSource {
   /** The readable ID. */
@@ -13,6 +16,8 @@ export interface CellSource {
   readonly statusWord: string | undefined;
   /** Its issue type; none where the list does not ask for it. */
   readonly type: Pick<Schema<"IssueTypeRef">, "icon" | "name"> | undefined;
+  /** The agent that works on it and where its work is; none where no agent does or the list does not ask. */
+  readonly agent?: { readonly name: string; readonly state: WorkState } | undefined;
 }
 
 /** What a row adds to its cells. */
@@ -33,7 +38,7 @@ export function issueCells(
   href: string,
   { before, current = false }: CellOptions = {},
 ): Readonly<Pick<Record<ListColumn, ReactNode>, "status" | "key" | "type" | "title">> {
-  const { key, title, group, statusWord, type } = source;
+  const { key, title, group, statusWord, type, agent } = source;
   return {
     status:
       group === undefined || group === null || statusWord === undefined ? undefined : (
@@ -47,6 +52,7 @@ export function issueCells(
         <Link href={href} current={current}>
           {title}
         </Link>
+        {agent === undefined ? null : <AgentMark name={agent.name} state={agent.state} />}
       </>
     ),
   };

@@ -56,6 +56,7 @@ export function IssueMain({ detail, address, blocks }: IssueMainProps) {
           <WrittenBy mark={detail.description_written_by} />
         </div>
       ) : null}
+      <SectionBlocks slot={issueSlots.agentWork} blocks={blocks} />
       <SectionBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
       <SectionBlocks slot={issueSlots.subIssues} blocks={blocks} />
       <SectionBlocks slot={issueSlots.relatedIssues} blocks={blocks} />

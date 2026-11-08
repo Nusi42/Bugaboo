@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { formatAgo } from "../../shared/format.ts";
 import { cellOf, type ColumnCell } from "../../shared/list-columns.ts";
 import type { FoundLine } from "./found-issues.ts";
+import { agentValueOf } from "./agent-value.ts";
 import { issueCells } from "./issue-cells.tsx";
 import type { OwnColumns } from "./own-columns.ts";
 import { assignedPeople, labelsOf, valueOf } from "./value-cell.tsx";
@@ -55,7 +56,7 @@ const contentOf: Readonly<Record<ColumnCell, (input: CellInput) => ReactNode>> =
   changed: ({ line, context }) =>
     line.changedAt === undefined ? undefined : formatAgo(line.changedAt, context.now),
   project: ({ line }) => line.project?.name,
-  value: ({ word, line, context }) => valueOf(word, line, context.own),
+  value: ({ word, line, context }) => agentValueOf(word, line) ?? valueOf(word, line, context.own),
   length: ({ word, line, context }) => valueOf(word, line, context.own),
 };
 
@@ -83,6 +84,7 @@ export function rowCells(
       group: line.group,
       statusWord: line.status.name,
       type: line.issueType,
+      agent: line.agent,
     },
     context.href,
     { current: context.current },

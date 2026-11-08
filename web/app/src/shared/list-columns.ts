@@ -1,4 +1,5 @@
 import type { SearchWord } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
@@ -141,9 +142,26 @@ const wordsWithText: ReadonlySet<string> = new Set([
   listWord.statusGroup,
 ]);
 
+/**
+ * The words of the agent fields (AI-33): the agent that works on an issue and where its work is. The
+ * search language names them as the catalog does, so they are read from it and not written twice.
+ */
+export function agentWords(): { readonly agent: string; readonly state: string } {
+  return {
+    agent: t("issue-field.agent").toLowerCase(),
+    state: t("issue-field.agent-state").toLowerCase(),
+  };
+}
+
+/** Whether the list draws the word as text from the row, and not as a field of the organization. */
+function drawnFromRow(word: string): boolean {
+  const agent = agentWords();
+  return wordsWithText.has(word) || word === agent.agent || word === agent.state;
+}
+
 /** Whether a column or a group is a field of the organization: a word with no cell of its own and no text drawn from the row. */
 export function isOwnField(word: string): boolean {
-  return cellOf(word) === "value" && !wordsWithText.has(word);
+  return cellOf(word) === "value" && !drawnFromRow(word);
 }
 
 /** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
@@ -193,7 +211,7 @@ export function isDrawnColumn(word: string, field?: ColumnField): boolean {
   if (cellOf(word) !== "value") {
     return true;
   }
-  if (wordsWithText.has(word)) {
+  if (drawnFromRow(word)) {
     return true;
   }
   // A long text has no value a cell can show.

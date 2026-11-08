@@ -2,6 +2,7 @@ import {
   Activity,
   Bell,
   Bold,
+  Bot,
   Building2,
   Check,
   CircleAlert,
@@ -68,6 +69,7 @@ import {
  */
 export const iconName = {
   "access-keys": "access-keys",
+  agent: "agent",
   assistant: "assistant",
   back: "back",
   bell: "bell",
@@ -136,6 +138,7 @@ export type IconName = (typeof iconName)[keyof typeof iconName];
 /** The drawing of each icon; the compiler makes sure no name is left out. */
 export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   "access-keys": KeyRound,
+  agent: Bot,
   assistant: Sparkles,
   back: ChevronLeft,
   bell: Bell,

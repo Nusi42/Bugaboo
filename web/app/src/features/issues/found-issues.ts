@@ -16,7 +16,15 @@ type FoundItem = Schema<"IssueItem">;
  * What a row needs whatever the columns are: its ID, its title, the status and priority it is
  * tinted and edged by (R4), and the project its title opens in.
  */
-const BASE_FIELDS = ["id", "readable_id", "title", "status", "priority", "project"] as const;
+const BASE_FIELDS = [
+  "id",
+  "readable_id",
+  "title",
+  "status",
+  "priority",
+  "project",
+  "agent_work",
+] as const;
 
 /**
  * The field of an issue each column needs, by the search word of the column. A word that is not
@@ -92,6 +100,8 @@ export interface FoundLine {
   readonly priority: Schema<"Priority">;
   readonly issueType: Schema<"IssueTypeRef"> | undefined;
   readonly assignedTo: readonly Schema<"PersonRef">[];
+  /** The agent that works on the issue and where its work is. */
+  readonly agent: Schema<"AgentMarkBody"> | undefined;
   readonly project: Schema<"ProjectRef"> | undefined;
   readonly labels: readonly Schema<"LabelRefBody">[];
   readonly reportedBy: Schema<"PersonRef"> | undefined;
@@ -128,6 +138,7 @@ export function foundLineOf(item: FoundItem): FoundLine | undefined {
     priority,
     issueType: known(item.issue_type),
     assignedTo: item.assigned_to ?? [],
+    agent: known(item.agent_work),
     project: known(item.project),
     labels: item.labels ?? [],
     reportedBy: known(item.reported_by),

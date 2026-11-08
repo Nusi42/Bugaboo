@@ -27,7 +27,7 @@ export function IssueFrame(props: IssueFrameProps) {
   const layout = useLayout();
   const closeLabel = useCloseLabel();
   const { issue } = detail;
-  const { actions, refusal } = useMoreActions(issue, detail.may_delete, onClose);
+  const { actions, refusal, dialog } = useMoreActions(issue, detail.may_delete, onClose);
   const inside = (
     <div {...partOf(part.issuePage)}>
       <IssueHeader
@@ -41,6 +41,7 @@ export function IssueFrame(props: IssueFrameProps) {
         onSwitch={onSwitch}
       />
       {refusal === null ? null : <Alert tone={alertTone.danger}>{refusal}</Alert>}
+      {dialog}
       <IssueContent
         detail={detail}
         address={address}

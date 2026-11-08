@@ -152,6 +152,268 @@ pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 /// The message `access.scrolls`.
 pub const ACCESS_SCROLLS: MessageKey = MessageKey::new("access.scrolls");
 
+/// The message `agent-work.accept-by-itself`.
+pub const AGENT_WORK_ACCEPT_BY_ITSELF: MessageKey = MessageKey::new("agent-work.accept-by-itself");
+
+/// The message `agent-work.accept-by-itself-help`.
+pub const AGENT_WORK_ACCEPT_BY_ITSELF_HELP: MessageKey =
+    MessageKey::new("agent-work.accept-by-itself-help");
+
+/// The message `agent-work.accepted-by-itself`.
+pub const AGENT_WORK_ACCEPTED_BY_ITSELF: MessageKey =
+    MessageKey::new("agent-work.accepted-by-itself");
+
+/// The message `agent-work.agent`.
+pub const AGENT_WORK_AGENT: MessageKey = MessageKey::new("agent-work.agent");
+
+/// The message `agent-work.agent-create`.
+pub const AGENT_WORK_AGENT_CREATE: MessageKey = MessageKey::new("agent-work.agent-create");
+
+/// The message `agent-work.agent-none`.
+pub const AGENT_WORK_AGENT_NONE: MessageKey = MessageKey::new("agent-work.agent-none");
+
+/// The message `agent-work.always`.
+pub const AGENT_WORK_ALWAYS: MessageKey = MessageKey::new("agent-work.always");
+
+/// The message `agent-work.brief`.
+pub const AGENT_WORK_BRIEF: MessageKey = MessageKey::new("agent-work.brief");
+
+/// The message `agent-work.brief-empty`.
+pub const AGENT_WORK_BRIEF_EMPTY: MessageKey = MessageKey::new("agent-work.brief-empty");
+
+/// The message `agent-work.budget`.
+pub const AGENT_WORK_BUDGET: MessageKey = MessageKey::new("agent-work.budget");
+
+/// The message `agent-work.budget-attempts`.
+pub const AGENT_WORK_BUDGET_ATTEMPTS: MessageKey = MessageKey::new("agent-work.budget-attempts");
+
+/// The message `agent-work.budget-cost`.
+pub const AGENT_WORK_BUDGET_COST: MessageKey = MessageKey::new("agent-work.budget-cost");
+
+/// The message `agent-work.budget-minutes`.
+pub const AGENT_WORK_BUDGET_MINUTES: MessageKey = MessageKey::new("agent-work.budget-minutes");
+
+/// The message `agent-work.checks-note`.
+pub const AGENT_WORK_CHECKS_NOTE: MessageKey = MessageKey::new("agent-work.checks-note");
+
+/// The message `agent-work.choose-next-status`.
+pub const AGENT_WORK_CHOOSE_NEXT_STATUS: MessageKey =
+    MessageKey::new("agent-work.choose-next-status");
+
+/// The message `agent-work.days`.
+pub const AGENT_WORK_DAYS: MessageKey = MessageKey::new("agent-work.days");
+
+/// The message `agent-work.days-help`.
+pub const AGENT_WORK_DAYS_HELP: MessageKey = MessageKey::new("agent-work.days-help");
+
+/// The message `agent-work.hand-over`.
+pub const AGENT_WORK_HAND_OVER: MessageKey = MessageKey::new("agent-work.hand-over");
+
+/// The message `agent-work.hand-over-confirm`.
+pub const AGENT_WORK_HAND_OVER_CONFIRM: MessageKey =
+    MessageKey::new("agent-work.hand-over-confirm");
+
+/// The message `agent-work.hand-over-text`.
+pub const AGENT_WORK_HAND_OVER_TEXT: MessageKey = MessageKey::new("agent-work.hand-over-text");
+
+/// The message `agent-work.keeps-person`.
+pub const AGENT_WORK_KEEPS_PERSON: MessageKey = MessageKey::new("agent-work.keeps-person");
+
+/// The message `agent-work.looked-at`.
+pub const AGENT_WORK_LOOKED_AT: MessageKey = MessageKey::new("agent-work.looked-at");
+
+/// The message `agent-work.may-do`.
+pub const AGENT_WORK_MAY_DO: MessageKey = MessageKey::new("agent-work.may-do");
+
+/// The message `agent-work.missing-description`.
+pub const AGENT_WORK_MISSING_DESCRIPTION: MessageKey =
+    MessageKey::new("agent-work.missing-description");
+
+/// The message `agent-work.missing-done-when`.
+pub const AGENT_WORK_MISSING_DONE_WHEN: MessageKey =
+    MessageKey::new("agent-work.missing-done-when");
+
+/// The message `agent-work.missing-ends`.
+pub const AGENT_WORK_MISSING_ENDS: MessageKey = MessageKey::new("agent-work.missing-ends");
+
+/// The message `agent-work.missing-ends-many`.
+pub const AGENT_WORK_MISSING_ENDS_MANY: MessageKey =
+    MessageKey::new("agent-work.missing-ends-many");
+
+/// The message `agent-work.missing-steps-to-reproduce`.
+pub const AGENT_WORK_MISSING_STEPS_TO_REPRODUCE: MessageKey =
+    MessageKey::new("agent-work.missing-steps-to-reproduce");
+
+/// The message `agent-work.no-plan`.
+pub const AGENT_WORK_NO_PLAN: MessageKey = MessageKey::new("agent-work.no-plan");
+
+/// The message `agent-work.note`.
+pub const AGENT_WORK_NOTE: MessageKey = MessageKey::new("agent-work.note");
+
+/// The message `agent-work.plan-answer`.
+pub const AGENT_WORK_PLAN_ANSWER: MessageKey = MessageKey::new("agent-work.plan-answer");
+
+/// The message `agent-work.plan-approve`.
+pub const AGENT_WORK_PLAN_APPROVE: MessageKey = MessageKey::new("agent-work.plan-approve");
+
+/// The message `agent-work.plan-approved`.
+pub const AGENT_WORK_PLAN_APPROVED: MessageKey = MessageKey::new("agent-work.plan-approved");
+
+/// The message `agent-work.plan-needs-approval`.
+pub const AGENT_WORK_PLAN_NEEDS_APPROVAL: MessageKey =
+    MessageKey::new("agent-work.plan-needs-approval");
+
+/// The message `agent-work.plan-note`.
+pub const AGENT_WORK_PLAN_NOTE: MessageKey = MessageKey::new("agent-work.plan-note");
+
+/// The message `agent-work.plan-waits`.
+pub const AGENT_WORK_PLAN_WAITS: MessageKey = MessageKey::new("agent-work.plan-waits");
+
+/// The message `agent-work.power-change-fields`.
+pub const AGENT_WORK_POWER_CHANGE_FIELDS: MessageKey =
+    MessageKey::new("agent-work.power-change-fields");
+
+/// The message `agent-work.power-change-status`.
+pub const AGENT_WORK_POWER_CHANGE_STATUS: MessageKey =
+    MessageKey::new("agent-work.power-change-status");
+
+/// The message `agent-work.power-create-sub-issues`.
+pub const AGENT_WORK_POWER_CREATE_SUB_ISSUES: MessageKey =
+    MessageKey::new("agent-work.power-create-sub-issues");
+
+/// The message `agent-work.proposal-apply`.
+pub const AGENT_WORK_PROPOSAL_APPLY: MessageKey = MessageKey::new("agent-work.proposal-apply");
+
+/// The message `agent-work.proposal-discard`.
+pub const AGENT_WORK_PROPOSAL_DISCARD: MessageKey = MessageKey::new("agent-work.proposal-discard");
+
+/// The message `agent-work.proposal-empty`.
+pub const AGENT_WORK_PROPOSAL_EMPTY: MessageKey = MessageKey::new("agent-work.proposal-empty");
+
+/// The message `agent-work.proposals`.
+pub const AGENT_WORK_PROPOSALS: MessageKey = MessageKey::new("agent-work.proposals");
+
+/// The message `agent-work.question-answer`.
+pub const AGENT_WORK_QUESTION_ANSWER: MessageKey = MessageKey::new("agent-work.question-answer");
+
+/// The message `agent-work.question-joins`.
+pub const AGENT_WORK_QUESTION_JOINS: MessageKey = MessageKey::new("agent-work.question-joins");
+
+/// The message `agent-work.question-send`.
+pub const AGENT_WORK_QUESTION_SEND: MessageKey = MessageKey::new("agent-work.question-send");
+
+/// The message `agent-work.reported-note`.
+pub const AGENT_WORK_REPORTED_NOTE: MessageKey = MessageKey::new("agent-work.reported-note");
+
+/// The message `agent-work.results`.
+pub const AGENT_WORK_RESULTS: MessageKey = MessageKey::new("agent-work.results");
+
+/// The message `agent-work.review`.
+pub const AGENT_WORK_REVIEW: MessageKey = MessageKey::new("agent-work.review");
+
+/// The message `agent-work.review-accept-choice`.
+pub const AGENT_WORK_REVIEW_ACCEPT_CHOICE: MessageKey =
+    MessageKey::new("agent-work.review-accept-choice");
+
+/// The message `agent-work.review-accept-itself`.
+pub const AGENT_WORK_REVIEW_ACCEPT_ITSELF: MessageKey =
+    MessageKey::new("agent-work.review-accept-itself");
+
+/// The message `agent-work.review-choose`.
+pub const AGENT_WORK_REVIEW_CHOOSE: MessageKey = MessageKey::new("agent-work.review-choose");
+
+/// The message `agent-work.review-confirm-accept`.
+pub const AGENT_WORK_REVIEW_CONFIRM_ACCEPT: MessageKey =
+    MessageKey::new("agent-work.review-confirm-accept");
+
+/// The message `agent-work.review-confirm-send-back`.
+pub const AGENT_WORK_REVIEW_CONFIRM_SEND_BACK: MessageKey =
+    MessageKey::new("agent-work.review-confirm-send-back");
+
+/// The message `agent-work.review-confirm-throw-away`.
+pub const AGENT_WORK_REVIEW_CONFIRM_THROW_AWAY: MessageKey =
+    MessageKey::new("agent-work.review-confirm-throw-away");
+
+/// The message `agent-work.review-no-results`.
+pub const AGENT_WORK_REVIEW_NO_RESULTS: MessageKey =
+    MessageKey::new("agent-work.review-no-results");
+
+/// The message `agent-work.review-note-label`.
+pub const AGENT_WORK_REVIEW_NOTE_LABEL: MessageKey =
+    MessageKey::new("agent-work.review-note-label");
+
+/// The message `agent-work.review-note-required`.
+pub const AGENT_WORK_REVIEW_NOTE_REQUIRED: MessageKey =
+    MessageKey::new("agent-work.review-note-required");
+
+/// The message `agent-work.review-send-back-choice`.
+pub const AGENT_WORK_REVIEW_SEND_BACK_CHOICE: MessageKey =
+    MessageKey::new("agent-work.review-send-back-choice");
+
+/// The message `agent-work.review-send-back-help`.
+pub const AGENT_WORK_REVIEW_SEND_BACK_HELP: MessageKey =
+    MessageKey::new("agent-work.review-send-back-help");
+
+/// The message `agent-work.review-status`.
+pub const AGENT_WORK_REVIEW_STATUS: MessageKey = MessageKey::new("agent-work.review-status");
+
+/// The message `agent-work.review-status-keep`.
+pub const AGENT_WORK_REVIEW_STATUS_KEEP: MessageKey =
+    MessageKey::new("agent-work.review-status-keep");
+
+/// The message `agent-work.review-text`.
+pub const AGENT_WORK_REVIEW_TEXT: MessageKey = MessageKey::new("agent-work.review-text");
+
+/// The message `agent-work.review-throw-away-choice`.
+pub const AGENT_WORK_REVIEW_THROW_AWAY_CHOICE: MessageKey =
+    MessageKey::new("agent-work.review-throw-away-choice");
+
+/// The message `agent-work.reviews`.
+pub const AGENT_WORK_REVIEWS: MessageKey = MessageKey::new("agent-work.reviews");
+
+/// The message `agent-work.run-link`.
+pub const AGENT_WORK_RUN_LINK: MessageKey = MessageKey::new("agent-work.run-link");
+
+/// The message `agent-work.state.agent-gave-up`.
+pub const AGENT_WORK_STATE_AGENT_GAVE_UP: MessageKey =
+    MessageKey::new("agent-work.state.agent-gave-up");
+
+/// The message `agent-work.state.agent-working`.
+pub const AGENT_WORK_STATE_AGENT_WORKING: MessageKey =
+    MessageKey::new("agent-work.state.agent-working");
+
+/// The message `agent-work.state.ready-for-review`.
+pub const AGENT_WORK_STATE_READY_FOR_REVIEW: MessageKey =
+    MessageKey::new("agent-work.state.ready-for-review");
+
+/// The message `agent-work.state.stopped`.
+pub const AGENT_WORK_STATE_STOPPED: MessageKey = MessageKey::new("agent-work.state.stopped");
+
+/// The message `agent-work.state.waiting-for-the-agent`.
+pub const AGENT_WORK_STATE_WAITING_FOR_THE_AGENT: MessageKey =
+    MessageKey::new("agent-work.state.waiting-for-the-agent");
+
+/// The message `agent-work.state.waiting-for-you`.
+pub const AGENT_WORK_STATE_WAITING_FOR_YOU: MessageKey =
+    MessageKey::new("agent-work.state.waiting-for-you");
+
+/// The message `agent-work.throw-away-list`.
+pub const AGENT_WORK_THROW_AWAY_LIST: MessageKey = MessageKey::new("agent-work.throw-away-list");
+
+/// The message `agent-work.throw-away-outside`.
+pub const AGENT_WORK_THROW_AWAY_OUTSIDE: MessageKey =
+    MessageKey::new("agent-work.throw-away-outside");
+
+/// The message `agent-work.throw-away-reading`.
+pub const AGENT_WORK_THROW_AWAY_READING: MessageKey =
+    MessageKey::new("agent-work.throw-away-reading");
+
+/// The message `agent-work.title`.
+pub const AGENT_WORK_TITLE: MessageKey = MessageKey::new("agent-work.title");
+
+/// The message `agent-work.worked-on-by`.
+pub const AGENT_WORK_WORKED_ON_BY: MessageKey = MessageKey::new("agent-work.worked-on-by");
+
 /// The message `ai-author.agent`.
 pub const AI_AUTHOR_AGENT: MessageKey = MessageKey::new("ai-author.agent");
 
@@ -7523,6 +7785,342 @@ pub fn agent_paused_issues_at_once(agent: impl std::fmt::Display, limit: i64) ->
     )
 }
 
+/// The message `agent-work.agent-of`.
+#[must_use]
+pub fn agent_work_agent_of(
+    agent: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.agent-of"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.attempt`.
+#[must_use]
+pub fn agent_work_attempt(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.attempt"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `agent-work.attempt-ended`.
+#[must_use]
+pub fn agent_work_attempt_ended(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.attempt-ended"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `agent-work.attempt-reported`.
+#[must_use]
+pub fn agent_work_attempt_reported(
+    cost: impl std::fmt::Display,
+    time: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.attempt-reported"),
+        vec![
+            ("cost", Value::Text(cost.to_string())),
+            ("time", Value::Text(time.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.attempt-started`.
+#[must_use]
+pub fn agent_work_attempt_started(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.attempt-started"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `agent-work.ends`.
+#[must_use]
+pub fn agent_work_ends(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.ends"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `agent-work.fact-attempts`.
+#[must_use]
+pub fn agent_work_fact_attempts(
+    most: impl std::fmt::Display,
+    number: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.fact-attempts"),
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("number", Value::Text(number.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.fact-cost`.
+#[must_use]
+pub fn agent_work_fact_cost(amount: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.fact-cost"),
+        vec![("amount", Value::Text(amount.to_string()))],
+    )
+}
+
+/// The message `agent-work.fact-cost-of`.
+#[must_use]
+pub fn agent_work_fact_cost_of(
+    amount: impl std::fmt::Display,
+    most: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.fact-cost-of"),
+        vec![
+            ("amount", Value::Text(amount.to_string())),
+            ("most", Value::Text(most.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.fact-time`.
+#[must_use]
+pub fn agent_work_fact_time(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.fact-time"),
+        vec![("time", Value::Text(time.to_string()))],
+    )
+}
+
+/// The message `agent-work.fact-time-of`.
+#[must_use]
+pub fn agent_work_fact_time_of(
+    most: impl std::fmt::Display,
+    time: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.fact-time-of"),
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("time", Value::Text(time.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.gave-up`.
+#[must_use]
+pub fn agent_work_gave_up(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.gave-up"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `agent-work.hand-over-title`.
+#[must_use]
+pub fn agent_work_hand_over_title(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.hand-over-title"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `agent-work.hand-over-title-many`.
+#[must_use]
+pub fn agent_work_hand_over_title_many(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.hand-over-title-many"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `agent-work.handed`.
+#[must_use]
+pub fn agent_work_handed(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.handed"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `agent-work.handed-over`.
+#[must_use]
+pub fn agent_work_handed_over(
+    date: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.handed-over"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.mark`.
+#[must_use]
+pub fn agent_work_mark(agent: impl std::fmt::Display, state: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.mark"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("state", Value::Text(state.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.missing-many`.
+#[must_use]
+pub fn agent_work_missing_many(
+    issue: impl std::fmt::Display,
+    parts: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.missing-many"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("parts", Value::Text(parts.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.proposal-line`.
+#[must_use]
+pub fn agent_work_proposal_line(
+    after: impl std::fmt::Display,
+    agent: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.proposal-line"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("agent", Value::Text(agent.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.question-answered`.
+#[must_use]
+pub fn agent_work_question_answered(answer: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.question-answered"),
+        vec![("answer", Value::Text(answer.to_string()))],
+    )
+}
+
+/// The message `agent-work.question-asks`.
+#[must_use]
+pub fn agent_work_question_asks(
+    agent: impl std::fmt::Display,
+    question: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.question-asks"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("question", Value::Text(question.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.question-line`.
+#[must_use]
+pub fn agent_work_question_line(
+    agent: impl std::fmt::Display,
+    question: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.question-line"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("question", Value::Text(question.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.result-check-failed`.
+#[must_use]
+pub fn agent_work_result_check_failed(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.result-check-failed"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `agent-work.result-check-passed`.
+#[must_use]
+pub fn agent_work_result_check_passed(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.result-check-passed"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `agent-work.review-accept`.
+#[must_use]
+pub fn agent_work_review_accept(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.review-accept"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `agent-work.review-note`.
+#[must_use]
+pub fn agent_work_review_note(note: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.review-note"),
+        vec![("note", Value::Text(note.to_string()))],
+    )
+}
+
+/// The message `agent-work.review-send-back`.
+#[must_use]
+pub fn agent_work_review_send_back(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.review-send-back"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `agent-work.review-throw-away`.
+#[must_use]
+pub fn agent_work_review_throw_away(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.review-throw-away"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The message `agent-work.review-title`.
+#[must_use]
+pub fn agent_work_review_title(
+    agent: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+    number: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.review-title"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+            ("number", Value::Text(number.to_string())),
+        ],
+    )
+}
+
 /// The message `agent-work.summary`.
 #[must_use]
 pub fn agent_work_summary(
@@ -7535,6 +8133,30 @@ pub fn agent_work_summary(
             ("address", Value::Text(address.to_string())),
             ("number", Value::Text(number.to_string())),
         ],
+    )
+}
+
+/// The message `agent-work.throw-away-stay`.
+#[must_use]
+pub fn agent_work_throw_away_stay(
+    field: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.throw-away-stay"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `agent-work.throw-away-summary`.
+#[must_use]
+pub fn agent_work_throw_away_summary(back: i64, stay: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.throw-away-summary"),
+        vec![("back", Value::Number(back)), ("stay", Value::Number(stay))],
     )
 }
 
@@ -14767,9 +15389,222 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{agent} paused: {limit, plural, one {# issue} other {# issues}} at once",
     ),
     (
+        "agent-work.accept-by-itself",
+        "Accept by itself when its checks pass",
+    ),
+    (
+        "agent-work.accept-by-itself-help",
+        "Only where the project allows it. Bugaboo does not run or verify the checks: the agent says whether they passed.",
+    ),
+    (
+        "agent-work.accepted-by-itself",
+        "Accepted by itself, because every check passed. Look at it.",
+    ),
+    ("agent-work.agent", "Agent"),
+    ("agent-work.agent-create", "Create an agent"),
+    (
+        "agent-work.agent-none",
+        "You have no agent that can work yet.",
+    ),
+    ("agent-work.agent-of", "{agent}, agent of {person}"),
+    (
+        "agent-work.always",
+        "Always: read the issue and its related issues, comment, report its work, attach results, add relations.",
+    ),
+    ("agent-work.attempt", "Attempt {number}"),
+    ("agent-work.attempt-ended", "Ended {date}"),
+    (
+        "agent-work.attempt-reported",
+        "As reported by the agent: {time}, {cost}",
+    ),
+    ("agent-work.attempt-started", "Started {date}"),
+    ("agent-work.brief", "Brief"),
+    (
+        "agent-work.brief-empty",
+        "No note. The agent reads the description and the related issues.",
+    ),
+    ("agent-work.budget", "Budget"),
+    ("agent-work.budget-attempts", "Attempts on one issue"),
+    ("agent-work.budget-cost", "Most cost it reports (optional)"),
+    (
+        "agent-work.budget-minutes",
+        "Most minutes it reports (optional)",
+    ),
+    (
+        "agent-work.checks-note",
+        "Bugaboo does not run or verify these checks.",
+    ),
+    (
+        "agent-work.choose-next-status",
+        "The issue kept its status. Choose the next one yourself.",
+    ),
+    (
+        "agent-work.days",
+        "Days until the hand-over ends (optional)",
+    ),
+    (
+        "agent-work.days-help",
+        "Left empty, the usual number of days of your organization counts.",
+    ),
+    ("agent-work.ends", "The hand-over runs out on {date}."),
+    ("agent-work.fact-attempts", "Attempt {number} of {most}"),
+    ("agent-work.fact-cost", "Cost reported: {amount}"),
+    (
+        "agent-work.fact-cost-of",
+        "Cost reported: {amount} of {most}",
+    ),
+    ("agent-work.fact-time", "Time reported: {time}"),
+    ("agent-work.fact-time-of", "Time reported: {time} of {most}"),
+    ("agent-work.gave-up", "The agent gave up: {reason}"),
+    ("agent-work.hand-over", "Hand over to an agent"),
+    ("agent-work.hand-over-confirm", "Hand over"),
+    (
+        "agent-work.hand-over-text",
+        "An agent works on what you hand over and can never do more than you may. You review every result.",
+    ),
+    (
+        "agent-work.hand-over-title",
+        "Hand over {issue} to an agent",
+    ),
+    (
+        "agent-work.hand-over-title-many",
+        "{count, plural, one {Hand over # issue to an agent} other {Hand over # issues to an agent}}",
+    ),
+    (
+        "agent-work.handed",
+        "{count, plural, one {Handed over # issue.} other {Handed over # issues.}}",
+    ),
+    (
+        "agent-work.handed-over",
+        "Handed over by {person} on {date}",
+    ),
+    (
+        "agent-work.keeps-person",
+        "The issue keeps its person: an agent is never assigned to an issue.",
+    ),
+    ("agent-work.looked-at", "I looked at it"),
+    ("agent-work.mark", "{agent}, {state}"),
+    ("agent-work.may-do", "What it may do"),
+    ("agent-work.missing-description", "No description"),
+    ("agent-work.missing-done-when", "No Done when"),
+    (
+        "agent-work.missing-ends",
+        "The agent gets what is there. You can hand it over anyway.",
+    ),
+    (
+        "agent-work.missing-ends-many",
+        "Where a brief lacks something, the agent gets what is there. You can hand the issues over anyway.",
+    ),
+    ("agent-work.missing-many", "{issue}: {parts}"),
+    (
+        "agent-work.missing-steps-to-reproduce",
+        "No steps to reproduce",
+    ),
+    ("agent-work.no-plan", "The agent has not reported a plan."),
+    ("agent-work.note", "Note for the agent (optional)"),
+    ("agent-work.plan-answer", "Answer with the note"),
+    ("agent-work.plan-approve", "Approve plan"),
+    ("agent-work.plan-approved", "A person approved the plan."),
+    ("agent-work.plan-needs-approval", "Plan needs approval"),
+    ("agent-work.plan-note", "Note on the plan (optional)"),
+    ("agent-work.plan-waits", "The plan waits for your approval."),
+    ("agent-work.power-change-fields", "Change these fields"),
+    ("agent-work.power-change-status", "Change the status"),
+    ("agent-work.power-create-sub-issues", "Create sub-issues"),
+    ("agent-work.proposal-apply", "Apply"),
+    ("agent-work.proposal-discard", "Discard"),
+    ("agent-work.proposal-empty", "nothing"),
+    (
+        "agent-work.proposal-line",
+        "{agent} proposes: {field}, {before} to {after}",
+    ),
+    ("agent-work.proposals", "Proposals of standing rules"),
+    ("agent-work.question-answer", "Your answer"),
+    ("agent-work.question-answered", "Answer: {answer}"),
+    ("agent-work.question-asks", "{agent} asks: {question}"),
+    (
+        "agent-work.question-joins",
+        "The answer joins the brief, so the next attempt and any other agent read it.",
+    ),
+    ("agent-work.question-line", "{agent}: {question}"),
+    ("agent-work.question-send", "Answer"),
+    (
+        "agent-work.reported-note",
+        "Time and cost are what the agent reports. They are no time entry.",
+    ),
+    ("agent-work.result-check-failed", "Check {label}: failed"),
+    ("agent-work.result-check-passed", "Check {label}: passed"),
+    ("agent-work.results", "Results"),
+    ("agent-work.review", "Review"),
+    ("agent-work.review-accept", "Accepted by {person}"),
+    ("agent-work.review-accept-choice", "Accept"),
+    ("agent-work.review-accept-itself", "Accepted by itself"),
+    ("agent-work.review-choose", "Your answer"),
+    ("agent-work.review-confirm-accept", "Accept"),
+    ("agent-work.review-confirm-send-back", "Send back"),
+    ("agent-work.review-confirm-throw-away", "Throw away"),
+    (
+        "agent-work.review-no-results",
+        "The attempt attached no results.",
+    ),
+    ("agent-work.review-note", "Note: {note}"),
+    ("agent-work.review-note-label", "Note for the agent"),
+    (
+        "agent-work.review-note-required",
+        "A note is needed to send it back.",
+    ),
+    ("agent-work.review-send-back", "Sent back by {person}"),
+    ("agent-work.review-send-back-choice", "Send back"),
+    (
+        "agent-work.review-send-back-help",
+        "The note joins the brief and the agent makes a new attempt.",
+    ),
+    ("agent-work.review-status", "Move the issue to"),
+    ("agent-work.review-status-keep", "Keep the status"),
+    (
+        "agent-work.review-text",
+        "Results of this attempt are below. The review ends the work or starts another attempt.",
+    ),
+    ("agent-work.review-throw-away", "Thrown away by {person}"),
+    ("agent-work.review-throw-away-choice", "Throw away"),
+    (
+        "agent-work.review-title",
+        "Review attempt {number} of {agent} on {issue}",
+    ),
+    ("agent-work.reviews", "Reviews"),
+    ("agent-work.run-link", "Open the run of this attempt"),
+    ("agent-work.state.agent-gave-up", "Agent gave up"),
+    ("agent-work.state.agent-working", "Agent working"),
+    ("agent-work.state.ready-for-review", "Ready for review"),
+    ("agent-work.state.stopped", "Stopped"),
+    (
+        "agent-work.state.waiting-for-the-agent",
+        "Waiting for the agent",
+    ),
+    ("agent-work.state.waiting-for-you", "Waiting for you"),
+    (
         "agent-work.summary",
         "Attempt {number} is ready for review: {address}",
     ),
+    (
+        "agent-work.throw-away-list",
+        "What stays when the work is thrown away",
+    ),
+    (
+        "agent-work.throw-away-outside",
+        "A branch, a pull request or anything else outside Bugaboo stays as it is.",
+    ),
+    (
+        "agent-work.throw-away-reading",
+        "Looking at what would go back...",
+    ),
+    ("agent-work.throw-away-stay", "{field}, {reason}"),
+    (
+        "agent-work.throw-away-summary",
+        "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",
+    ),
+    ("agent-work.title", "Agent work"),
+    ("agent-work.worked-on-by", "Worked on by"),
     ("ai-author.agent", "an agent"),
     ("ai-author.assistant", "the assistant"),
     ("ai-author.guest", "a Guest"),
