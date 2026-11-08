@@ -132,8 +132,29 @@ export function useOrganizationAgents() {
   });
 }
 
+/**
+ * The list of every agent is sorted by state, so an agent that changed its state is not where the
+ * cursors of the pages read so far would find it: only its first page is kept and read again, and
+ * *Show more agents* goes on from there.
+ */
+function keepFirstPageOfEveryAgent(): void {
+  queryClient.setQueryData(agentKeys.organization(), (kept: unknown) =>
+    isInfinite(kept)
+      ? { pages: kept.pages.slice(0, 1), pageParams: kept.pageParams.slice(0, 1) }
+      : kept,
+  );
+}
+
+/** Whether what the cache holds is a list read a page at a time. */
+function isInfinite(
+  value: unknown,
+): value is { readonly pages: readonly unknown[]; readonly pageParams: readonly unknown[] } {
+  return typeof value === "object" && value !== null && "pages" in value && "pageParams" in value;
+}
+
 /** Agents, their work or their rules changed: every list that shows them is read again. */
 export function refreshAgents(): void {
+  keepFirstPageOfEveryAgent();
   refreshRoutes([
     "/api/v1/agents",
     "/api/v1/me/agents",

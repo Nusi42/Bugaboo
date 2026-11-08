@@ -350,7 +350,7 @@ textarea,
 }
 
 [data-part="agent-work.window"] [data-part="field.description"],
-[data-part="agents.rule-window"] [data-part="field.description"] {
+[data-part="stack"][data-variant~="wide-hints"] [data-part="field.description"] {
   text-wrap: wrap;
 }
 
@@ -8621,8 +8621,12 @@ textarea,
   padding: var(--space-3);
 }
 
+[data-part="agents.agent"][data-variant~="stopped"],
+[data-part="item"][data-variant~="stopped"] {
+  background: var(--bg-canvas);
+}
+
 [data-part="agents.agent"][data-variant~="stopped"] {
-  background: var(--bg-sunken);
   padding: var(--space-2) var(--space-3);
 }
 
@@ -8639,17 +8643,6 @@ textarea,
 [data-part="app-layout"][data-variant~="phone"] [data-part="agents.agent-head"] {
   flex-direction: column;
   align-items: flex-start;
-}
-
-[data-part="item"][data-variant~="stopped"] {
-  background: var(--bg-sunken);
-}
-
-[data-part="agents.rule-window"] {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  min-width: 0;
 }
 
 [data-part="agents.actions"] {

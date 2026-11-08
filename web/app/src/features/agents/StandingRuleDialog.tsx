@@ -114,7 +114,7 @@ function Fields({
   searchName,
 }: DraftProps & { readonly searchName: string | undefined }) {
   return (
-    <div {...partOf(part.agentsRuleWindow)}>
+    <div {...partOf(part.stack, { variants: ["wide-hints"] })}>
       {searchName === undefined ? (
         <SavedSearchChoice
           label={t("agents.rule-search")}

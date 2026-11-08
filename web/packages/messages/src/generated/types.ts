@@ -709,6 +709,8 @@ export interface MessageArguments {
   "sessions.last-seen": { when: string | number };
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
+  "setting.agents.project-follows-project-off": { project: string | number };
+  "setting.agents.project-follows-project-on": { project: string | number };
   "setting.ui.between": { least: string | number; most: string | number };
   "setting.ui.between-amounts": { least: string | number; most: string | number };
   "setting.ui.device-zone": { zone: string | number };

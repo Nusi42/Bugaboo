@@ -6292,6 +6292,9 @@ pub const SETTING_AGENTS_PROJECT_HELP: MessageKey = MessageKey::new("setting.age
 /// The message `setting.agents.project-off`.
 pub const SETTING_AGENTS_PROJECT_OFF: MessageKey = MessageKey::new("setting.agents.project-off");
 
+/// The message `setting.agents.project-on`.
+pub const SETTING_AGENTS_PROJECT_ON: MessageKey = MessageKey::new("setting.agents.project-on");
+
 /// The message `setting.agents.project-switch`.
 pub const SETTING_AGENTS_PROJECT_SWITCH: MessageKey =
     MessageKey::new("setting.agents.project-switch");
@@ -14527,6 +14530,24 @@ pub fn sessions_started(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `setting.agents.project-follows-project-off`.
+#[must_use]
+pub fn setting_agents_project_follows_project_off(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.agents.project-follows-project-off"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `setting.agents.project-follows-project-on`.
+#[must_use]
+pub fn setting_agents_project_follows_project_on(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.agents.project-follows-project-on"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
 /// The message `setting.ui.between`.
 #[must_use]
 pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Display) -> Message {
@@ -21625,10 +21646,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "As the organization (on)",
     ),
     (
+        "setting.agents.project-follows-project-off",
+        "As {project} (off)",
+    ),
+    (
+        "setting.agents.project-follows-project-on",
+        "As {project} (on)",
+    ),
+    (
         "setting.agents.project-help",
-        "As the organization: the agents of people may work here while they may work for the organization. Off: no agent works in this project, whatever the organization says.",
+        "As the organization (or the project above, when it has its own choice): the agents of people may work here while they may work there. Off: no agent works in this project. On: they may work here although the project above has them off.",
     ),
     ("setting.agents.project-off", "Off"),
+    ("setting.agents.project-on", "On"),
     ("setting.agents.project-switch", "Agents in this project"),
     (
         "setting.agents.rule-days.help",

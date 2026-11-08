@@ -1,7 +1,6 @@
 import { QueryGate } from "../shell/index.ts";
 import { useProjectSettings } from "./project.ts";
-import { agentsEnabledKey } from "./agents-enabled-key.ts";
-import { projectAgentsControl, projectAgentsHelp } from "./agents-switch.tsx";
+import { agentsEnabledKey, projectAgentsControl, projectAgentsHelp } from "./agents-switch.tsx";
 import { SettingsForm } from "./SettingsForm.tsx";
 
 /** A project with more settings than this has a search box; a few settings do not need one. */

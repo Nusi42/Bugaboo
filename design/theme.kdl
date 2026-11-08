@@ -1445,8 +1445,8 @@ part "ai-page field.description" "ai-page settings.help" "ai-page card.intro" {
     text-wrap pretty
 }
 
-// The hint under a box in the windows of a hand-over, a review and a standing rule uses the whole width of the window, like the text around it.
-part "agent-work.window field.description" "agents.rule-window field.description" {
+// The hint under a box in the windows of a hand-over and a review, and in a stack of the standing rule, uses the whole width of the window, like the text around it.
+part "agent-work.window field.description" "stack[variant=wide-hints] field.description" {
     text-wrap wrap
 }
 
@@ -15819,9 +15819,13 @@ part "agents.agent" {
     padding "$space-3"
 }
 
-// A stopped agent is a quiet card: sunk into the page, less padding, nothing under its name but its state.
+// A stopped agent is a quiet card or row: the color of the page, not of a card, so it is never heavier than a card of an
+// agent that works; the card also has less padding and nothing under its name but its state.
+part "agents.agent[variant=stopped]" "item[variant=stopped]" {
+    background "$bg-canvas"
+}
+
 part "agents.agent[variant=stopped]" {
-    background "$bg-sunken"
     padding "$space-2 $space-3"
 }
 
@@ -15839,19 +15843,6 @@ part "agents.agent-head" {
 part "app-layout[variant=phone] item[variant=buttons-below]" "app-layout[variant=phone] agents.agent-head" {
     flex-direction column
     align-items flex-start
-}
-
-// A row of a stopped agent is as quiet as its card.
-part "item[variant=stopped]" {
-    background "$bg-sunken"
-}
-
-// The window of a standing rule: its parts stand under each other and its hints use the whole width of the window.
-part "agents.rule-window" {
-    display flex
-    flex-direction column
-    gap "$space-4"
-    min-width 0
 }
 
 part "agents.actions" {
