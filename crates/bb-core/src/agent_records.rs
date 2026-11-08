@@ -277,6 +277,9 @@ pub struct Question {
     /// Who answered.
     #[personal(category = "identity", basis = "contract")]
     pub answered_by: Option<UserId>,
+    /// When it was answered.
+    #[not_personal]
+    pub answered_at: Option<Timestamp>,
     /// When it was asked.
     #[not_personal]
     pub asked_at: Timestamp,

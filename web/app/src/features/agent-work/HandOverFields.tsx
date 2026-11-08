@@ -1,28 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { fieldKind, partOf, part, TextField } from "@bugaboo/ui";
-import { useState } from "react";
 
-import { formatDate } from "../../shared/format.ts";
-import { useIssueAgentWork } from "./agent-work.ts";
 import { AgentChoice } from "./AgentChoice.tsx";
 import { BriefMissing } from "./BriefMissing.tsx";
-import { wholeNumber, type DraftProps } from "./hand-over-draft.ts";
+import type { DraftProps } from "./hand-over-draft.ts";
+import { EndsOn } from "./HandOverEnds.tsx";
 import { HandOverLimits } from "./HandOverLimits.tsx";
 import { HandOverPowers } from "./HandOverPowers.tsx";
-
-const DAY_MS = 86_400_000;
-
-/** When a hand-over made now would run out: the days typed, or the usual days of the organization. */
-function EndsOn({ issue, days }: { readonly issue: string; readonly days: string }) {
-  const [now] = useState(() => Date.now());
-  const usual = useIssueAgentWork(issue).data?.hand_over_days;
-  const counted = wholeNumber(days) ?? usual;
-  if (counted === undefined) {
-    return null;
-  }
-  const date = formatDate(new Date(now + counted * DAY_MS).toISOString());
-  return <p {...partOf(part.muted)}>{t("agent-work.hand-over-ends", { date })}</p>;
-}
 
 /** What the window of a hand-over asks, top to bottom: the way it works, the agent, the brief, the ticks, the budget. */
 export function HandOverFields({

@@ -116,6 +116,17 @@ async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -
         answered.brief,
         ["Please look at the login button", "Firefox"]
     );
+    // The answer says who answered and when.
+    let question = &answered.questions[0];
+    assert!(
+        question.answered_by.is_some(),
+        "the answer names who answered"
+    );
+    assert!(
+        question.answered_at.is_some(),
+        "the answer names when it was written"
+    );
+    assert!(asked.questions[0].answered_by.is_none() && asked.questions[0].answered_at.is_none());
     // Somebody who does not answer for the agent is told there is no such work.
     let stranger = answer_question(
         &world.ctx(),

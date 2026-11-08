@@ -5,6 +5,7 @@ import {
   Button,
   buttonLook,
   buttonType,
+  factSeparator,
   fieldKind,
   Form,
   partOf,
@@ -14,6 +15,8 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { formatDateTime } from "../../shared/format.ts";
+import { personName } from "../../shared/person.ts";
 import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { useAnswerQuestion, type Work } from "./agent-work.ts";
 
@@ -25,11 +28,18 @@ function AgentBubble({ work, text }: { readonly work: Work; readonly text: strin
     <div {...partOf(part.agentWorkBubble)}>
       <span {...partOf(part.agentWorkBubbleHead)}>
         <span>{work.agent_name}</span>
-        <WrittenBy mark={{ kind: "agent", agent: work.agent_name }} />
+        {/* The name stands once, in front of the mark, which only says an agent wrote it. */}
+        <WrittenBy mark={{ kind: "agent" }} />
       </span>
       <p {...partOf(part.agentWorkWords)}>{text}</p>
     </div>
   );
+}
+
+/** Who answered and, when it is known, when: *Answered by Ada Brandt · Nov 8, 2026, 3:00 PM*. */
+function answeredLine(by: NonNullable<Question["answered_by"]>, at: string | null | undefined) {
+  const who = t("agent-work.answered-by", { person: personName(by) });
+  return at === null || at === undefined ? who : [who, factSeparator, formatDateTime(at)].join(" ");
 }
 
 /** An answered question: what the agent asked, and the answer that joined the brief. */
@@ -38,9 +48,12 @@ function Answered({ work, question }: { readonly work: Work; readonly question: 
     <div {...partOf(part.agentWorkQuestion)}>
       <AgentBubble work={work} text={question.text} />
       <div {...partOf(part.agentWorkBubble, { variants: ["yours"] })}>
-        <p {...partOf(part.agentWorkWords)}>
-          {t("agent-work.question-answered", { answer: question.answer ?? "" })}
-        </p>
+        {question.answered_by === null || question.answered_by === undefined ? null : (
+          <span {...partOf(part.agentWorkBubbleHead)}>
+            {answeredLine(question.answered_by, question.answered_at)}
+          </span>
+        )}
+        <p {...partOf(part.agentWorkWords)}>{question.answer ?? ""}</p>
       </div>
     </div>
   );

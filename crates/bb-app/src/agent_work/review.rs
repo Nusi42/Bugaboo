@@ -135,11 +135,11 @@ pub async fn answer_question<S: AuthStore>(
     };
     let person = acting.actor.person.id;
     let event = ctx.work_event(person, &acting.work, next)?;
-    let (work, id) = (acting.work.clone(), question.id);
+    let (work, id, now) = (acting.work.clone(), question.id, ctx.now());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::set_answer(transaction, id, &answer, person).await?;
+                S::set_answer(transaction, id, &answer, person, now).await?;
                 if S::set_work_state(transaction, work.id, next, None, false, work.version).await? {
                     Ok(())
                 } else {
@@ -195,6 +195,7 @@ pub async fn approve_plan<S: AuthStore>(
                 text: attempt.plan.clone().unwrap_or_default(),
                 answer: Some(note),
                 answered_by: Some(person),
+                answered_at: Some(now),
                 asked_at: now,
             }),
         ),

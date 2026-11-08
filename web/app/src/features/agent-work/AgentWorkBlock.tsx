@@ -35,9 +35,10 @@ export function AgentWorkBlock({
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>
         {t("agent-work.title")}
       </h2>
-      {works.map((work) => (
+      {works.map((work, at) => (
         <WorkPiece
           key={work.id}
+          isNewest={at === 0}
           work={work}
           issue={readableId}
           statusChanges={issue.status_changes}

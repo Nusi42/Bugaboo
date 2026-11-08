@@ -4,6 +4,9 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "agent-work.title": "Agent work",
+  "agent-work.outcome.accepted": "Accepted",
+  "agent-work.outcome.accepted-by-itself": "Accepted by itself",
+  "agent-work.outcome.thrown-away": "Thrown away",
   "agent-work.worked-on-by": "Worked on by",
   "agent-work.agent-of": "{agent}, agent of {person}",
   "agent-work.handed-over": "Handed over by {person} on {date}",
@@ -11,6 +14,13 @@ export const messages = {
   "agent-work.brief": "Brief",
   "agent-work.brief-empty": "No note. The agent reads the description and the related issues.",
   "agent-work.fact-attempts": "Attempt {number} of {most}",
+  "agent-work.fact-no-attempt": "No attempt yet",
+  "agent-work.fact-of": "{used} of {most}",
+  "agent-work.budget-label": "Budget",
+  "agent-work.attempt-sent-back": "sent back",
+  "agent-work.attempt-accepted": "accepted",
+  "agent-work.attempt-accepted-by-itself": "accepted by itself",
+  "agent-work.attempt-thrown-away": "thrown away",
   "agent-work.attempt-started": "Started {date}",
   "agent-work.attempt-ended": "Ended {date}",
   "agent-work.plan-approved": "A person approved the plan.",
@@ -21,11 +31,17 @@ export const messages = {
   "agent-work.checks-note": "Bugaboo does not run or verify these checks.",
   "agent-work.attempt-reported": "{amount} reported by the agent",
   "agent-work.run-link": "Open the run of this attempt",
-  "agent-work.gave-up": "The agent gave up: {reason}",
+  "agent-work.gave-up": "{agent} gave up: {reason}",
+  "agent-work.stopped-why":
+    "{agent} was stopped before it finished: its person stopped it, it reached a limit, or the hand-over ran out on {date}.",
+  "agent-work.next-step":
+    "Hand the issue over again, or work on it yourself: the issue still has its person.",
+  "agent-work.hand-over-again": "Hand over again",
   "agent-work.accepted-by-itself": "Accepted by itself, because every check passed. Look at it.",
   "agent-work.looked-at": "I looked at it",
-  "agent-work.choose-next-status": "The issue kept its status. Choose the next one yourself.",
-  "agent-work.reviews": "Reviews",
+  "agent-work.choose-next-status":
+    "The issue kept its status, because the workflow does not name one next status. Choose the next one yourself.",
+  "agent-work.moved-status": "The issue moved to the status its workflow proposes.",
   "agent-work.review-accept": "Accepted by {person}",
   "agent-work.review-accept-itself": "Accepted by itself",
   "agent-work.review-send-back": "Sent back by {person}",
@@ -33,10 +49,12 @@ export const messages = {
   "agent-work.review-note": "Note: {note}",
   "agent-work.question-answer": "Your answer",
   "agent-work.question-send": "Answer",
-  "agent-work.question-answered": "Answer: {answer}",
+  "agent-work.answered-by": "Answered by {person}",
   "agent-work.question-joins":
     "The answer joins the brief, so the next attempt and any other agent read it.",
   "agent-work.plan-note": "Note on the plan (optional)",
+  "agent-work.plan-note-help":
+    "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another.",
   "agent-work.plan-approve": "Approve plan",
   "agent-work.plan-answer": "Answer with the note",
   "agent-work.review": "Review",
@@ -55,9 +73,9 @@ export const messages = {
   "agent-work.review-send-back-help": "The note joins the brief and the agent makes a new attempt.",
   "agent-work.throw-away-summary":
     "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",
-  "agent-work.throw-away-stay": "{field}, {reason}",
   "agent-work.throw-away-outside":
     "A branch, a pull request or anything else outside Bugaboo stays as it is.",
+  "agent-work.throw-away-back": "{field} goes back from {from} to {to}",
   "agent-work.throw-away-list": "What stays when the work is thrown away",
   "agent-work.throw-away-reading": "Looking at what would go back...",
   "agent-work.review-confirm-accept": "Accept",
@@ -80,6 +98,8 @@ export const messages = {
   "agent-work.agent-create": "Create an agent",
   "agent-work.note": "Note for the agent (optional)",
   "agent-work.missing-many": "{issue}: {parts}",
+  "agent-work.missing-first": "No {part}",
+  "agent-work.missing-next": "no {part}",
   "agent-work.missing-ends": "The agent gets what is there. You can hand it over anyway.",
   "agent-work.missing-ends-many":
     "Where a brief lacks something, the agent gets what is there. You can hand the issues over anyway.",
@@ -91,8 +111,8 @@ export const messages = {
   "agent-work.power-create-sub-issues": "Create sub-issues",
   "agent-work.budget": "Budget",
   "agent-work.budget-attempts": "Attempts on one issue",
-  "agent-work.budget-minutes": "Most minutes it reports (optional)",
-  "agent-work.budget-cost": "Most cost it reports (optional)",
+  "agent-work.budget-minutes": "Time budget, in minutes (optional)",
+  "agent-work.budget-cost": "Cost budget, in euros (optional)",
   "agent-work.plan-needs-approval": "Plan needs approval",
   "agent-work.accept-by-itself": "Accept by itself when its checks pass",
   "agent-work.accept-by-itself-help":
@@ -104,7 +124,6 @@ export const messages = {
   "agent-work.review-status-proposed": "{status} (the workflow proposes it)",
   "agent-work.amount": "€{amount}",
   "agent-work.stays-assigned": "The issue stays assigned to {people}.",
-  "agent-work.hand-over-ends": "The hand-over runs out on {date}.",
   "agent-work.part-description": "Description",
   "agent-work.part-steps-to-reproduce": "Steps to reproduce",
   "agent-work.part-done-when": "Done when",

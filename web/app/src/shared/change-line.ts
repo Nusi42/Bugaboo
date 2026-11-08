@@ -36,3 +36,15 @@ export function changeArrowText(wording: Wording, change: Schema<"FieldChangeBod
     after: sideText(wording, change, change.after),
   });
 }
+
+/** The two sides of a change in words, for a line that names them in its own order. */
+export function changeSidesText(
+  wording: Wording,
+  change: Schema<"FieldChangeBody">,
+): { readonly field: string; readonly before: string; readonly after: string } {
+  return {
+    field: fieldNameOf({ code: change.field, name: change.name }),
+    before: sideText(wording, change, change.before),
+    after: sideText(wording, change, change.after),
+  };
+}

@@ -26863,6 +26863,22 @@
             "type": ["string", "null"],
             "description": "The answer, which joins the brief."
           },
+          "answered_at": {
+            "type": ["string", "null"],
+            "description": "When it was answered; nothing for an answer written before the moment was kept.",
+            "format": "date-time"
+          },
+          "answered_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who answered, as *Who sees people* says for the reader."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "asked_at": {
             "type": "string",
             "description": "When it was asked.",
@@ -27330,7 +27346,7 @@
           },
           "link": {
             "type": ["string", "null"],
-            "description": "The link."
+            "description": "The link, only when it is a web address."
           },
           "outcome": {
             "oneOf": [

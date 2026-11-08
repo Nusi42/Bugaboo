@@ -123,8 +123,9 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// The work on an issue, newest first, at most `limit`; only the work of `agent` when it is
         /// given.
         fn work_on_issue(issue: IssueId, agent: Option<AgentId>, limit: u64) -> Vec<IssueWork> = work_on_issue_in;
-        /// The open work on these issues at `now`, newest first, by the one definition of *open* that
-        /// the answer of an issue uses too: what a page of a list marks (PERF-N1).
+        /// The work on these issues that is open at `now`, newest first: not ended or closed, and its
+        /// hand-over has neither ended nor run out. The one definition of *open at `now`* that the
+        /// work of an agent uses too, so a list row and the issue agree (PERF-N1).
         fn open_work_on_issues(issues: Vec<IssueId>, now: Timestamp) -> Vec<IssueWork> = open_work_on_issues_in;
         /// What belongs to these pieces of work, read together.
         fn details_of_works(works: Vec<IssueWork>) -> WorkDetails = details_of_works_in;
@@ -179,7 +180,7 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// Adds a question.
         fn insert_question(question: &Question) -> ();
         /// Writes the answer to a question.
-        fn set_answer(id: AgentNoteId, answer: &str, by: UserId) -> ();
+        fn set_answer(id: AgentNoteId, answer: &str, by: UserId, at: Timestamp) -> ();
         /// Adds a review.
         fn insert_review(review: &Review) -> ();
         /// Ends the open work of an agent as *Stopped*; the work that was open.

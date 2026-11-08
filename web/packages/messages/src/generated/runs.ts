@@ -10,7 +10,6 @@ export const messages = {
   "runs.changes-heading": "Changes",
   "runs.nothing-to-show": "This run changed nothing that you can see.",
   "runs.undo": "Undo the run",
-  "runs.show-more": "Show more changes",
   "runs.actor-via": "{person} via {app}, {span}",
   "runs.actor-plain": "{person}, {span}",
   "runs.span": "{from}–{to}",
@@ -43,7 +42,6 @@ export const messages = {
   "runs.skip-gone": "The issue is gone.",
   "runs.skip-not-allowed": "You may not change it.",
   "runs.skip-not-undoable": "It cannot be put back yet.",
-  "runs.skipped-more": "{count, plural, one {# more is skipped.} other {# more are skipped.}}",
   "runs.dialog-note": "An undo never touches a field that somebody else changed afterwards.",
   "runs.confirm": "{count, plural, one {Undo # change} other {Undo # changes}}",
   "runs.undone-message":

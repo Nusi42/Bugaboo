@@ -5,7 +5,7 @@ import { openHandOver, openWindow, tickTwo } from "./support/agent-work.ts";
 import { openReview, signedInWithAgent } from "./support/agent-work-windows.ts";
 import { scrollWindow } from "./support/agent-work-shots.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { inFourThemes } from "./support/four-themes.ts";
+import { inFourThemesAsWindow } from "./support/four-themes.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
@@ -26,9 +26,9 @@ test("the window of a hand-over, from its top to its end", async ({ page, server
   await window.getByLabel(t("agent-work.agent"), { exact: true }).selectOption({ label: "Fixer" });
   await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
   await scrollWindow(page, "top");
-  await inFourThemes(page, "hand-over-top", MILESTONE);
+  await inFourThemesAsWindow(page, "hand-over-top", MILESTONE);
   await scrollWindow(page, "end");
-  await inFourThemes(page, "hand-over-end", MILESTONE);
+  await inFourThemesAsWindow(page, "hand-over-end", MILESTONE);
 });
 
 test("the window of a hand-over from ticked issues", async ({ page, server }) => {
@@ -39,17 +39,17 @@ test("the window of a hand-over from ticked issues", async ({ page, server }) =>
   const window = await openWindow(page);
   await window.getByLabel(t("agent-work.agent"), { exact: true }).selectOption({ label: "Sorter" });
   await scrollWindow(page, "top");
-  await inFourThemes(page, "hand-over-ticked", MILESTONE);
+  await inFourThemesAsWindow(page, "hand-over-ticked", MILESTONE);
 });
 
 test("the review window with its three decisions", async ({ page, server }) => {
   test.setTimeout(TAKING_MS);
   const window = await openReview(page, server);
-  await inFourThemes(page, "review-accept", MILESTONE);
+  await inFourThemesAsWindow(page, "review-accept", MILESTONE);
   const choose = (name: string) => window.getByRole("radio", { name }).check({ force: true });
   await choose(t("agent-work.review-send-back-choice"));
-  await inFourThemes(page, "review-send-back", MILESTONE);
+  await inFourThemesAsWindow(page, "review-send-back", MILESTONE);
   await choose(t("agent-work.review-throw-away-choice"));
   await expect(window.getByText(t("agent-work.throw-away-outside"))).toBeVisible();
-  await inFourThemes(page, "review-throw-away", MILESTONE);
+  await inFourThemesAsWindow(page, "review-throw-away", MILESTONE);
 });

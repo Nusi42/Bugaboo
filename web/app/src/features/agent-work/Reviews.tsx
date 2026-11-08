@@ -4,6 +4,7 @@ import { factSeparator, partOf, part } from "@bugaboo/ui";
 import { formatDateTime } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import type { Work } from "./agent-work.ts";
+import { reviewOf } from "./outcome.ts";
 
 type Review = Work["reviews"][number];
 
@@ -21,33 +22,28 @@ function reviewText(review: Review): string {
     : t("agent-work.review-throw-away", { person });
 }
 
-/** The line of a review: what it was and when. */
-function lineOf(review: Review): string {
-  return [reviewText(review), factSeparator, formatDateTime(review.at)].join(" ");
-}
-
-/** What tells a review from the others of its work. */
-function keyOf(review: Review): string {
-  return [review.at, review.answer].join("/");
-}
-
-/** The reviews of the work, oldest first, each with its note. */
-export function Reviews({ work }: { readonly work: Work }) {
-  if (work.reviews.length === 0) {
-    return null;
-  }
+/** The review of an attempt: who answered what and when, and the note that came with it. */
+export function ReviewLine({ review }: { readonly review: Review }) {
   return (
-    <ul {...partOf(part.agentWorkResults)} aria-label={t("agent-work.reviews")}>
-      {work.reviews.map((review) => (
-        <li key={keyOf(review)}>
-          <span>{lineOf(review)}</span>
-          {review.note === null || review.note === undefined ? null : (
-            <p {...partOf(part.agentWorkWords)}>
-              {t("agent-work.review-note", { note: review.note })}
-            </p>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div {...partOf(part.agentWorkSection)}>
+      <p {...partOf(part.text)}>
+        {[reviewText(review), factSeparator, formatDateTime(review.at)].join(" ")}
+      </p>
+      {review.note === null || review.note === undefined ? null : (
+        <p {...partOf(part.agentWorkWords)}>{t("agent-work.review-note", { note: review.note })}</p>
+      )}
+    </div>
   );
+}
+
+/** The review that answered an attempt, with its note; nothing for an attempt no review answered. */
+export function ReviewOfAttempt({
+  work,
+  attempt,
+}: {
+  readonly work: Work;
+  readonly attempt: Work["attempts"][number];
+}) {
+  const review = reviewOf(work, attempt);
+  return review === undefined ? null : <ReviewLine review={review} />;
 }

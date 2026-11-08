@@ -6,7 +6,7 @@ import { ada, ownId } from "./accounts.ts";
 import { openDetails, type ResultScene } from "./agent-work.ts";
 import { readyForReview, sceneIssue } from "./agent-work-ready.ts";
 import { signIn } from "./flows.ts";
-import { readIssue } from "./issues.ts";
+import { issueOf, readIssue, setStatusAndPriority, versionOf } from "./issues.ts";
 import { partIn } from "./parts.ts";
 import type { Instance } from "./server.ts";
 
@@ -33,13 +33,16 @@ export async function scrollWindow(page: Page, to: "top" | "end"): Promise<void>
 export async function openBlock(page: Page, key: string): Promise<void> {
   await signIn(page, ada);
   await goToBlock(page, key);
-  await openDetails(page);
 }
 
-/** Opens another issue and waits for its block. */
+/**
+ * Opens another issue and waits for its block, with the Details open where they are behind a button
+ * (a phone), so every picture of the block shows them the same way.
+ */
 export async function goToBlock(page: Page, key: string): Promise<void> {
   await page.goto(issueAddress(key));
   await expect(page.getByRole("heading", { level: 2, name: t("agent-work.title") })).toBeVisible();
+  await openDetails(page);
 }
 
 /** An issue its person has, with an agent that works on it. */
@@ -90,17 +93,46 @@ export async function blockIssues(
       state: "stopped",
       attempt: { ...attempt, ended: true },
     }),
-    itself: await key("Accepted by itself", "Quick", {
-      state: "ready-for-review",
-      acceptedByItself: true,
-      review: { answer: "accept" },
-      attempt: {
-        ...attempt,
-        ended: true,
-        results: [RESULTS[0], RESULTS[1]].flatMap((each) => (each === undefined ? [] : [each])),
-      },
-    }),
+    itself: await acceptedByItself(server, `Accepted by itself ${who}`, `Quick ${who}`, true),
+    itselfKept: await acceptedByItself(
+      server,
+      `Accepted by itself, status kept ${who}`,
+      `Slow ${who}`,
+      false,
+    ),
   };
+}
+
+/**
+ * An issue whose result was accepted by itself: the issue moved to the status the workflow proposes
+ * (*Done*), or kept its status because there is no one to move to and a person chooses.
+ */
+async function acceptedByItself(
+  server: Instance,
+  title: string,
+  name: string,
+  moved: boolean,
+): Promise<string> {
+  const attempt = { plan: PLAN, minutes: 25, cost: 40 };
+  const { admin, issue } = await sceneIssue(server, title, name, {
+    state: "ready-for-review",
+    acceptedByItself: true,
+    statusPending: !moved,
+    review: { answer: "accept" },
+    attempt: {
+      ...attempt,
+      ended: true,
+      results: [RESULTS[0], RESULTS[1]].flatMap((each) => (each === undefined ? [] : [each])),
+    },
+  });
+  if (moved) {
+    const made = await issueOf(admin, issue.key);
+    await setStatusAndPriority(admin, made, await versionOf(admin, made), {
+      status: "done",
+      priority: "normal",
+    });
+  }
+  return issue.key;
 }
 
 /** An issue whose plan waits for *Approve plan*. */

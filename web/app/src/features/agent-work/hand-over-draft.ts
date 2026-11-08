@@ -1,3 +1,6 @@
+import { nameableMembers } from "@bugaboo/api-client";
+import { centsIn, wholeNumberIn } from "../../shared/number.ts";
+import type { OwnField } from "../fields/index.ts";
 import type { Power } from "./agent-work.ts";
 
 /** What the person has filled in in the window of a hand-over. */
@@ -13,6 +16,7 @@ export interface HandOverDraft {
   /** The budget and the end as typed; empty means the usual. */
   readonly attempts: string;
   readonly minutes: string;
+  /** The most cost the agent reports, in euros, written the way the person writes numbers. */
   readonly cost: string;
   readonly days: string;
   readonly planNeedsApproval: boolean;
@@ -35,28 +39,50 @@ export const emptyDraft: HandOverDraft = {
   acceptByItself: false,
 };
 
-/** The members of an issue an agent can be given to change, by their codes; the status is a power of its own. */
-export const nameableFields = [
-  "title",
-  "description",
-  "priority",
-  "estimated-time",
-  "time-left",
-  "issue-type",
-  "labels",
-  "tags",
-] as const;
+/** A member of an issue the window offers a box for: a code of the catalogue, or an own field by its ID and name. */
+export interface NameableField {
+  readonly code: string;
+  readonly name?: string;
+}
+
+/**
+ * What an agent can be given to change, one box each: the members the server lists
+ * (`nameableMembers`) and the own fields of issues that are not retired and hold no people (the
+ * server refuses the others, COMP-10).
+ */
+export function nameableFields(
+  own: readonly Pick<OwnField, "id" | "name" | "kind" | "applies_to" | "retired">[],
+): readonly NameableField[] {
+  return [
+    ...nameableMembers.map((code) => ({ code })),
+    ...own
+      .filter(
+        (field) =>
+          field.applies_to === "issues" &&
+          !field.retired &&
+          field.kind !== "person" &&
+          field.kind !== "people",
+      )
+      .map((field) => ({ code: field.id, name: field.name })),
+  ];
+}
 
 /** A whole number typed in a box, or nothing where the box is empty or holds something else. */
 export function wholeNumber(text: string): number | undefined {
-  const trimmed = text.trim();
-  return /^\d+$/u.test(trimmed) ? Number(trimmed) : undefined;
+  return wholeNumberIn(text) ?? undefined;
 }
 
-/** Whether every box that holds something holds a whole number. */
+/** The cost typed in euros as cents, or nothing where the box is empty or holds no amount. */
+function costCents(text: string): number | undefined {
+  return centsIn(text) ?? undefined;
+}
+
+/** Whether every box that holds something holds what it asks: whole numbers, and an amount for the cost. */
 export function numbersAreRight(draft: HandOverDraft): boolean {
-  return [draft.attempts, draft.minutes, draft.cost, draft.days].every(
-    (text) => text.trim() === "" || wholeNumber(text) !== undefined,
+  const whole = [draft.attempts, draft.minutes, draft.days];
+  return (
+    whole.every((text) => text.trim() === "" || wholeNumber(text) !== undefined) &&
+    (draft.cost.trim() === "" || costCents(draft.cost) !== undefined)
   );
 }
 
@@ -74,7 +100,7 @@ export function handOverBody(draft: HandOverDraft, issues: readonly string[]) {
   const [attempts, minutes, cost, days] = [
     wholeNumber(draft.attempts),
     wholeNumber(draft.minutes),
-    wholeNumber(draft.cost),
+    costCents(draft.cost),
     wholeNumber(draft.days),
   ];
   return {

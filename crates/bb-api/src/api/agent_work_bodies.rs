@@ -108,7 +108,7 @@ pub(crate) struct ResultBody {
     pub(super) kind: ResultKind,
     /// How the agent calls it.
     pub(super) label: String,
-    /// The link.
+    /// The link, only when it is a web address.
     pub(super) link: Option<String>,
     /// The outcome of a check. Bugaboo does not run or verify checks.
     pub(super) outcome: Option<CheckResult>,
@@ -161,7 +161,12 @@ impl From<&ResultView> for ResultBody {
         Self {
             kind: result.kind,
             label: result.label.clone(),
-            link: result.link.clone(),
+            // Only a web address is sent as a link (`is_web_address`): the browser follows a link
+            // only when it arrives and keeps no rule of its own.
+            link: result
+                .link
+                .clone()
+                .filter(|link| bb_core::agent_work::is_web_address(link)),
             outcome: result.outcome,
         }
     }
@@ -177,6 +182,10 @@ pub(crate) struct QuestionBody {
     /// The answer, which joins the brief.
     #[serde(rename = "answer")]
     pub(super) reply: Option<String>,
+    /// Who answered, as *Who sees people* says for the reader.
+    pub(super) answered_by: Option<PersonRef>,
+    /// When it was answered; nothing for an answer written before the moment was kept.
+    pub(super) answered_at: Option<String>,
     /// When it was asked.
     pub(super) asked_at: String,
 }
@@ -187,6 +196,8 @@ impl From<&QuestionView> for QuestionBody {
             id: question.id.to_string(),
             text: question.text.clone(),
             reply: question.answer.clone(),
+            answered_by: question.answered_by.clone(),
+            answered_at: question.answered_at.map(|at| at.to_string()),
             asked_at: question.asked_at.to_string(),
         }
     }

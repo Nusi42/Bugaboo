@@ -2,7 +2,6 @@ import { t } from "@bugaboo/messages";
 import { Link, partOf, part } from "@bugaboo/ui";
 
 import type { Attempt } from "./agent-work.ts";
-import { isWebAddress } from "./web-address.ts";
 
 type Result = Attempt["results"][number];
 
@@ -31,15 +30,16 @@ function ResultLine({ result }: { readonly result: Result }) {
       </li>
     );
   }
-  const link = result.link ?? "";
+  // The server sends `link` only for a web address (`is_web_address`); anything else is text.
+  const { link } = result;
   return (
     <li {...partOf(part.agentWorkResult)}>
-      {isWebAddress(link) ? (
+      {link === null || link === undefined || link === "" ? (
+        result.label
+      ) : (
         <Link href={link} external>
           {result.label}
         </Link>
-      ) : (
-        result.label
       )}
     </li>
   );

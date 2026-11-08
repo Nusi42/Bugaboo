@@ -43,6 +43,19 @@ pub(super) fn only_open_work(select: &mut SelectStatement) {
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open));
 }
 
+/// Keeps the work that is open at `now` ([`only_open_work`]) and whose hand-over has not run out: a
+/// hand-over past its end gives no work, though its job did not end it yet. The one definition of
+/// *open at `now`*, for the work of an agent and for the work on issues.
+pub(super) fn only_open_work_at(select: &mut SelectStatement, now: Timestamp) {
+    only_open_work(select);
+    let mut running = Query::select();
+    running
+        .column(HandOverRow::Id)
+        .from(HandOverRow::Table)
+        .and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
+    select.and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(running));
+}
+
 /// The open work of an agent at `now`, joined to its hand-over: the one definition of the work an
 /// agent reaches, for what it may read and change and for what its searches find.
 pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatement {
@@ -54,9 +67,8 @@ pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatem
             Expr::col((HandOverRow::Table, HandOverRow::Id))
                 .equals((IssueWorkRow::Table, IssueWorkRow::HandOver)),
         )
-        .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()))
-        .and_where(Expr::col((HandOverRow::Table, HandOverRow::EndsAt)).gt(to_micros(now)));
-    only_open_work(&mut select);
+        .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()));
+    only_open_work_at(&mut select, now);
     select
 }
 
@@ -264,6 +276,7 @@ pub(super) fn question_select() -> SelectStatement {
             QuestionRow::Text,
             QuestionRow::Answer,
             QuestionRow::AnsweredBy,
+            QuestionRow::AnsweredAt,
             QuestionRow::AskedAt,
         ])
         .from(QuestionRow::Table);
@@ -277,6 +290,7 @@ pub(super) fn read_question(row: &Row) -> Result<Question, StoreError> {
         text: row.get(QuestionRow::Text)?,
         answer: row.get(QuestionRow::Answer)?,
         answered_by: row.optional_id(QuestionRow::AnsweredBy)?,
+        answered_at: row.optional_time(QuestionRow::AnsweredAt)?,
         asked_at: row.time(QuestionRow::AskedAt)?,
     })
 }

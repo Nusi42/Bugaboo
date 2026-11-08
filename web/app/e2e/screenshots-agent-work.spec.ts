@@ -78,6 +78,8 @@ test("the block that gave up, was stopped, was accepted by itself, was sent back
   await inFourThemes(page, "block-stopped", MILESTONE);
   await goToBlock(page, keyOf(issues, "itself"));
   await inFourThemes(page, "block-accepted-by-itself", MILESTONE);
+  await goToBlock(page, keyOf(issues, "itselfKept"));
+  await inFourThemes(page, "block-accepted-by-itself-kept", MILESTONE);
   await goToBlock(page, back);
   await inFourThemes(page, "block-sent-back-and-new", MILESTONE);
 });

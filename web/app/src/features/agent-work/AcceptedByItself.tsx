@@ -13,9 +13,11 @@ export function AcceptedByItself({ work }: { readonly work: Work }) {
   return (
     <div {...partOf(part.agentWorkSection)}>
       <Alert tone={alertTone.info}>{t("agent-work.accepted-by-itself")}</Alert>
-      {work.choose_next_status ? (
-        <p {...partOf(part.muted)}>{t("agent-work.choose-next-status")}</p>
-      ) : null}
+      <p {...partOf(part.muted)}>
+        {work.choose_next_status
+          ? t("agent-work.choose-next-status")
+          : t("agent-work.moved-status")}
+      </p>
       {looked.isError ? <Alert tone={alertTone.danger}>{messageOf(looked.error)}</Alert> : null}
       <div {...partOf(part.agentWorkActions)}>
         <Button

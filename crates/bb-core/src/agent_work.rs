@@ -140,7 +140,7 @@ words! {
         /// *Done when*.
         DoneWhen => "done-when",
     }
-    messages name = "agent-work.missing-"
+    messages name = "agent-work.lack-"
 }
 
 crate::words_in_api!(BriefPart, "A part of a brief taken from the issue.");

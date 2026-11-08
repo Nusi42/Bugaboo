@@ -30,6 +30,8 @@
 //!   `src/assistant.generated.ts`;
 //! - the words a search names the fields of an issue by (`ID_WORD`, `Field::search_word`,
 //!   `IssueField::word`, from the linked crates) are written as `src/search-words.generated.ts`;
+//! - the members of an issue a hand-over can name (`issue_member::NAMEABLE`, linked) are written as
+//!   `src/agent-work.generated.ts`;
 //! - the words of the vocabularies the browser lists (the icons of issue types) are read from the
 //!   API description into `src/words.generated.ts`;
 //! - the names of the properties the server renders as HTML (the mark `x-safe-html`) are written
@@ -91,6 +93,8 @@ pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-cha
 pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
 /// The words a search names the fields of an issue by, for the browser app.
 pub(crate) const SEARCH_WORDS_PATH: &str = "web/packages/api-client/src/search-words.generated.ts";
+/// The members of an issue a hand-over can name, for the browser app.
+pub(crate) const AGENT_WORK_PATH: &str = "web/packages/api-client/src/agent-work.generated.ts";
 /// The names of the properties the server renders as HTML (mark `x-safe-html`).
 pub(crate) const SAFE_HTML_PATH: &str = "web/packages/api-client/src/safe-html.generated.ts";
 /// The words of the vocabularies the browser lists at run time.
@@ -126,6 +130,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         MANY_CHANGES_PATH,
         ASSISTANT_PATH,
         SEARCH_WORDS_PATH,
+        AGENT_WORK_PATH,
         WORDS_PATH,
         SAFE_HTML_PATH,
         BROWSER_NAMES_PATH,
@@ -149,6 +154,21 @@ fn assistant_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> 
             &web_constants::assistant_limits(sources)?,
         )?,
     ))
+}
+
+/// The words the browser takes from the linked crates: what a search names fields by, and what a
+/// hand-over can name.
+fn words_of_linked_crates(repo: &Repo) -> anyhow::Result<[Generated; 2]> {
+    Ok([
+        Generated::new(
+            SEARCH_WORDS_PATH,
+            format_with_oxfmt(repo, SEARCH_WORDS_PATH, &web_constants::search_words())?,
+        ),
+        Generated::new(
+            AGENT_WORK_PATH,
+            format_with_oxfmt(repo, AGENT_WORK_PATH, &web_constants::agent_work())?,
+        ),
+    ])
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
@@ -209,10 +229,6 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
             )?,
         ),
         Generated::new(
-            SEARCH_WORDS_PATH,
-            format_with_oxfmt(repo, SEARCH_WORDS_PATH, &web_constants::search_words())?,
-        ),
-        Generated::new(
             WORDS_PATH,
             format_with_oxfmt(repo, WORDS_PATH, &web_constants::words(&spec, &sources)?)?,
         ),
@@ -246,6 +262,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ];
+    files.extend(words_of_linked_crates(repo)?);
     // The user pages whose numbers come from the code.
     for (path, text) in web_constants::user_pages::pages(&sources)? {
         files.push(Generated::new(path, text));

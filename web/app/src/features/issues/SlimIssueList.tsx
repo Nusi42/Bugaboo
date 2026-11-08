@@ -36,6 +36,7 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
                 group: line.group,
                 statusWord: line.status.name,
                 type: line.issueType,
+                agent: line.agent,
               },
               issueAddress(line.key),
               { current: line.key === open },

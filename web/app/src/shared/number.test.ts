@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { wholeNumberIn } from "./number.ts";
+import { centsIn, wholeNumberIn } from "./number.ts";
+import { deviceRegion } from "./region.ts";
 
 describe("cfg_06 a number the person types is checked before it is sent", () => {
   const bounds = { least: 5, most: 60 };
@@ -25,5 +26,25 @@ describe("cfg_06 a number the person types is checked before it is sent", () => 
     expect(wholeNumberIn("4", bounds)).toBeNull();
     expect(wholeNumberIn("61", bounds)).toBeNull();
     expect(wholeNumberIn("-1", bounds)).toBeNull();
+  });
+});
+
+const region = (numberFormat: "point" | "comma" | "space") => ({ ...deviceRegion, numberFormat });
+
+describe("ai_31 an amount is read the way the person writes numbers", () => {
+  it("reads euros as cents in each number format", () => {
+    expect(centsIn("12.50", region("point"))).toBe(1250);
+    expect(centsIn("1,234.5", region("point"))).toBe(123_450);
+    expect(centsIn("12,50", region("comma"))).toBe(1250);
+    expect(centsIn("1.234,50", region("comma"))).toBe(123_450);
+    expect(centsIn("12,5", region("space"))).toBe(1250);
+    expect(centsIn("1 234,50", region("space"))).toBe(123_450);
+    expect(centsIn(" 3 ", region("point"))).toBe(300);
+  });
+
+  it("refuses what is no amount of euros and cents", () => {
+    for (const text of ["", "abc", "1.234", "-2", "1e3", "12,50 x", "12.5.0"]) {
+      expect(`${text}: ${String(centsIn(text, region("point")))}`).toBe(`${text}: null`);
+    }
   });
 });

@@ -9304,6 +9304,12 @@ export interface components {
       answer?: string | null;
       /**
        * Format: date-time
+       * @description When it was answered; nothing for an answer written before the moment was kept.
+       */
+      answered_at?: string | null;
+      answered_by?: components["schemas"]["PersonRef"] | null;
+      /**
+       * Format: date-time
        * @description When it was asked.
        */
       asked_at: string;
@@ -9550,7 +9556,7 @@ export interface components {
       kind: components["schemas"]["ResultKind"];
       /** @description How the agent calls it. */
       label: string;
-      /** @description The link. */
+      /** @description The link, only when it is a web address. */
       link?: string | null;
       outcome?: components["schemas"]["CheckResult"] | null;
     };

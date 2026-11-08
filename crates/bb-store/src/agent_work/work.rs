@@ -254,16 +254,7 @@ impl AgentWorkRecords for AuthStorage {
             )
             .order_by(IssueWorkRow::MadeAt, Order::Desc)
             .order_by(IssueWorkRow::Id, Order::Desc);
-        only_open_work(&mut select);
-        // A hand-over that has run out gives no work, though its job did not end it yet.
-        let mut running = Query::select();
-        running
-            .column(HandOverRow::Id)
-            .from(HandOverRow::Table)
-            .and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
-        select.and_where(
-            Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(running),
-        );
+        only_open_work_at(&mut select, now);
         all(transaction, &select, read_work).await
     }
 
@@ -666,6 +657,7 @@ impl AgentWorkRecords for AuthStorage {
                 QuestionRow::Text,
                 QuestionRow::Answer,
                 QuestionRow::AnsweredBy,
+                QuestionRow::AnsweredAt,
                 QuestionRow::AskedAt,
             ])
             .values([
@@ -674,6 +666,7 @@ impl AgentWorkRecords for AuthStorage {
                 Expr::val(question.text.as_str()),
                 Expr::val(question.answer.clone()),
                 Expr::val(question.answered_by.map(StoredId::stored)),
+                Expr::val(question.answered_at.map(to_micros)),
                 Expr::val(to_micros(question.asked_at)),
             ])
             .map_err(|_| StoreError::Corrupt("a question"))?;
@@ -686,12 +679,14 @@ impl AgentWorkRecords for AuthStorage {
         id: AgentNoteId,
         answer: &str,
         by: UserId,
+        at: Timestamp,
     ) -> Result<(), StoreError> {
         let mut update = Query::update();
         update
             .table(QuestionRow::Table)
             .value(QuestionRow::Answer, answer)
             .value(QuestionRow::AnsweredBy, by.stored())
+            .value(QuestionRow::AnsweredAt, to_micros(at))
             .and_where(Expr::col(QuestionRow::Id).eq(id.stored()));
         transaction.execute(&update).await?;
         Ok(())

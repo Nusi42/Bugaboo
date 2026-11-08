@@ -380,7 +380,7 @@ async fn perf_05_a_page_with_agent_marks_runs_as_many_statements_for_forty_issue
         let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
         // The marks are read for the whole page: the same for forty issues as for five, and a few
         // statements more than the page without them (the open work, and the names of its agents).
-        assert_as_many_statements(on_five, on_forty, plain_forty + 4, "a longer page of marks");
+        assert_as_many_statements(on_five, on_forty, plain_forty + 2, "a longer page of marks");
         Ok(())
     })
     .await

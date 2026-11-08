@@ -750,7 +750,9 @@ export const messages = {
   "written-by.agent": "Written by an agent: {agent}",
   "written-by.agent-unnamed": "Written by an agent",
   "runs.place": "Run",
+  "runs.show-more": "Show more changes",
   "runs.change-line": "{field}: {before} → {after}",
+  "runs.skipped-more": "{count, plural, one {# more is skipped.} other {# more are skipped.}}",
   "agent-work.state.waiting-for-the-agent": "Waiting for the agent",
   "agent-work.state.agent-working": "Agent working",
   "agent-work.state.waiting-for-you": "Waiting for you",
@@ -760,9 +762,9 @@ export const messages = {
   "agent-work.mark": "{agent}, {state}",
   "agent-work.attempt": "Attempt {number}",
   "agent-work.results": "Results",
-  "agent-work.missing-description": "No description",
-  "agent-work.missing-steps-to-reproduce": "No steps to reproduce",
-  "agent-work.missing-done-when": "No Done when",
+  "agent-work.lack-description": "description",
+  "agent-work.lack-steps-to-reproduce": "steps to reproduce",
+  "agent-work.lack-done-when": "Done when",
 } as const;
 
 register(messages);

@@ -2,16 +2,18 @@ import { t } from "@bugaboo/messages";
 import { Checkbox, partOf, part } from "@bugaboo/ui";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { useFields } from "../fields/index.ts";
 import { nameableFields, type DraftProps } from "./hand-over-draft.ts";
 
 /** The fields an agent can be given to change, one box each. */
 function FieldBoxes({ draft, onChange }: DraftProps) {
+  const own = useFields().data?.fields ?? [];
   return (
     <div {...partOf(part.agentWorkGroup, { variants: ["nested"] })}>
-      {nameableFields.map((code) => (
+      {nameableFields(own).map(({ code, name }) => (
         <Checkbox
           key={code}
-          label={fieldNameOf({ code })}
+          label={fieldNameOf({ code, name })}
           isSelected={draft.fields.includes(code)}
           onChange={(on) => {
             onChange({

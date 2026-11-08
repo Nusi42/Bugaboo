@@ -146,6 +146,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect();
         let brief = brief_of(work, hand_over, details);
         let attempts = attempts_of(work, details);
+        let mut question_views = Vec::new();
+        for question in &questions {
+            let answered_by = match question.answered_by {
+                Some(person) => Some(person_of(person).await?),
+                None => None,
+            };
+            question_views.push(QuestionView {
+                id: question.id,
+                text: question.text.clone(),
+                answer: question.answer.clone(),
+                answered_by,
+                answered_at: question.answered_at,
+                asked_at: question.asked_at,
+            });
+        }
         let mut reviews = Vec::new();
         for review in details
             .reviews
@@ -190,15 +205,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             open: work.is_open_under(hand_over, self.now()),
             brief,
             attempts,
-            questions: questions
-                .into_iter()
-                .map(|question| QuestionView {
-                    id: question.id,
-                    text: question.text.clone(),
-                    answer: question.answer.clone(),
-                    asked_at: question.asked_at,
-                })
-                .collect(),
+            questions: question_views,
             reviews,
             gave_up: work.gave_up.clone(),
             accepted_by_itself: work.accepted_by_itself,

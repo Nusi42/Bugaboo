@@ -39,7 +39,9 @@ test("ai_31 hand over names what the brief is missing and still hands over", asy
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-2"));
   const window = await openHandOver(page);
-  await expect(window.getByText(t("agent-work.missing-description"))).toBeVisible();
+  await expect(window).toContainText(
+    t("agent-work.missing-first", { part: t("agent-work.lack-description") }),
+  );
   await expect(window.getByText(t("agent-work.missing-ends"))).toBeVisible();
   // Nothing is chosen yet: the button waits for the agent, and then it hands over with things missing.
   const confirm = window.getByRole("button", {
@@ -55,6 +57,22 @@ test("ai_31 hand over names what the brief is missing and still hands over", asy
   ).toBeVisible();
   const work = await firstWorkOf(admin, "WEB-2");
   expect(work.state).toBe("waiting-for-the-agent");
+});
+
+test("ai_31 ticking what the agent may change keeps the window where it is", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  await createAgent(admin, "Ticker");
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-2"));
+  const window = await openHandOver(page);
+  // The window settles first (on a phone it slides in); then a tick further down must not move it.
+  const before = await topOf(window);
+  await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
+  await expect(window.getByRole("checkbox", { name: t("issue-field.title") })).toBeVisible();
+  expect(await topOf(window)).toBe(before);
 });
 
 test("ai_31 hand over from ticked issues gives each issue to the agent", async ({
@@ -157,9 +175,7 @@ test("ai_34 a question is answered on the phone and the answer joins the brief",
   await expect(page.getByText("Which browser is it?", { exact: false })).toBeVisible();
   await page.getByLabel(t("agent-work.question-answer"), { exact: true }).fill("Firefox");
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  await expect(
-    page.getByText(t("agent-work.question-answered", { answer: "Firefox" })),
-  ).toBeVisible();
+  await expect(page.getByText("Firefox", { exact: true })).toBeVisible();
   expect((await firstWorkOf(admin, issue.key)).brief).toContain("Firefox");
 });
 
@@ -261,7 +277,5 @@ test("ai_34 an answer to work that changed meanwhile reads the work again and ca
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(answer).toHaveValue("An old one");
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  await expect(
-    page.getByText(t("agent-work.question-answered", { answer: "An old one" })),
-  ).toBeVisible();
+  await expect(page.getByText("An old one", { exact: true })).toBeVisible();
 });

@@ -734,10 +734,12 @@ impl AgentWorkRecords for super::fake::FakeStore {
         id: AgentNoteId,
         answer: &str,
         by: UserId,
+        at: Timestamp,
     ) -> Result<(), FakeError> {
         if let Some(q) = tx.state.work.questions.iter_mut().find(|q| q.id == id) {
             q.answer = Some(answer.to_owned());
             q.answered_by = Some(by);
+            q.answered_at = Some(at);
         }
         Ok(())
     }

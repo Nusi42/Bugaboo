@@ -29,4 +29,18 @@ describe("ux_4_2 the columns that fit", () => {
     expect(columnsThatFit(words, { ...input, widths: wide, room: 899 })).toEqual(words.slice(0, 5));
     expect(columnsThatFit(words, { ...input, widths: wide, room: 700 })).toEqual(fixed);
   });
+
+  it("keeps the columns of an agent and drops Changed first", () => {
+    const withAgent = [...fixed, "changed", "agent", "agent state"];
+    const sized = Object.fromEntries(withAgent.map((word) => [word, 100]));
+    expect(columnsThatFit(withAgent, { ...input, widths: sized, room: 699 })).toEqual([
+      ...fixed,
+      "agent",
+      "agent state",
+    ]);
+    expect(columnsThatFit(withAgent, { ...input, widths: sized, room: 599 })).toEqual([
+      ...fixed,
+      "agent",
+    ]);
+  });
 });

@@ -89,27 +89,29 @@ export interface MessageArguments {
   "access.reset-label": { role: string | number; subject: string | number };
   "agent-work.agent-of": { agent: string | number; person: string | number };
   "agent-work.amount": { amount: string | number };
+  "agent-work.answered-by": { person: string | number };
   "agent-work.attempt": { number: string | number };
   "agent-work.attempt-ended": { date: string | number };
   "agent-work.attempt-reported": { amount: string | number };
   "agent-work.attempt-started": { date: string | number };
   "agent-work.ends": { date: string | number };
   "agent-work.fact-attempts": { most: string | number; number: string | number };
-  "agent-work.gave-up": { reason: string | number };
-  "agent-work.hand-over-ends": { date: string | number };
+  "agent-work.fact-of": { most: string | number; used: string | number };
+  "agent-work.gave-up": { agent: string | number; reason: string | number };
   "agent-work.hand-over-title": { issue: string | number };
   "agent-work.hand-over-title-many": { count: number };
   "agent-work.handed": { count: number };
   "agent-work.handed-over": { date: string | number; person: string | number };
   "agent-work.mark": { agent: string | number; state: string | number };
+  "agent-work.missing-first": { part: string | number };
   "agent-work.missing-many": { issue: string | number; parts: string | number };
+  "agent-work.missing-next": { part: string | number };
   "agent-work.proposal-line": {
     after: string | number;
     agent: string | number;
     before: string | number;
     field: string | number;
   };
-  "agent-work.question-answered": { answer: string | number };
   "agent-work.result-check-failed": { label: string | number };
   "agent-work.result-check-passed": { label: string | number };
   "agent-work.review-accept": { person: string | number };
@@ -123,8 +125,13 @@ export interface MessageArguments {
     number: string | number;
   };
   "agent-work.stays-assigned": { people: string | number };
+  "agent-work.stopped-why": { agent: string | number; date: string | number };
   "agent-work.summary": { address: string | number; number: string | number };
-  "agent-work.throw-away-stay": { field: string | number; reason: string | number };
+  "agent-work.throw-away-back": {
+    field: string | number;
+    from: string | number;
+    to: string | number;
+  };
   "agent-work.throw-away-summary": { back: number; stay: number };
   "ai-setup.address-added": { date: string | number };
   "ai-setup.address-remove-name": { address: string | number };

@@ -95,7 +95,7 @@ export function HandOverDialog(props: HandOverDialogProps) {
         />
       }
     >
-      <div {...partOf(part.stack)}>
+      <div {...partOf(part.agentWorkWindow)}>
         <HandOverFields
           draft={draft}
           issues={issues}

@@ -80,6 +80,7 @@ export {
 export { megabyte, partBytes } from "./files.generated.ts";
 export { manyChangesIssuesMax } from "./many-changes.generated.ts";
 export { assistantLimits } from "./assistant.generated.ts";
+export { nameableMembers } from "./agent-work.generated.ts";
 export { searchWords, type SearchWord } from "./search-words.generated.ts";
 export { issueMemberOf } from "./issue-member.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
@@ -93,6 +94,7 @@ export {
   timeEntryMinutesLeast,
 } from "./time.ts";
 export {
+  briefPartWords,
   choiceColorWords,
   fieldForWords,
   fieldTypeWords,

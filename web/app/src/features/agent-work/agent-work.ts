@@ -4,6 +4,7 @@ import { t } from "@bugaboo/messages";
 import { agentWorkKeys } from "../../shared/agent-work-keys.ts";
 import { api } from "../../shared/api.ts";
 import { formatNumber } from "../../shared/format.ts";
+import { listText } from "../../shared/list-text.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
 import { refreshHistory, refreshIssues, refreshRoutes } from "../../shared/query-keys.ts";
 
@@ -118,9 +119,32 @@ export function useDecideProposal() {
   });
 }
 
-/** The parts of a brief an issue lacks, in words: *No steps to reproduce*. */
-export function missingText(lack: BriefLack): string {
-  return t(`agent-work.missing-${lack}`);
+const lackWords: Readonly<Record<BriefLack, () => string>> = {
+  description: () => t("agent-work.lack-description"),
+  "steps-to-reproduce": () => t("agent-work.lack-steps-to-reproduce"),
+  "done-when": () => t("agent-work.lack-done-when"),
+};
+
+/** The parts of a brief an issue lacks as one sentence: *No description, no steps to reproduce, and no Done when*. */
+export function missingSentence(lacks: readonly BriefLack[]): string {
+  return listText(
+    lacks.map((lack, at) =>
+      t(at === 0 ? "agent-work.missing-first" : "agent-work.missing-next", {
+        part: lackWords[lack](),
+      }),
+    ),
+  );
+}
+
+const partWords: Readonly<Record<BriefLack, () => string>> = {
+  description: () => t("agent-work.part-description"),
+  "steps-to-reproduce": () => t("agent-work.part-steps-to-reproduce"),
+  "done-when": () => t("agent-work.part-done-when"),
+};
+
+/** A part of a brief the agent has, as the line of the brief names it: *Steps to reproduce*. */
+export function briefPartText(part: BriefLack): string {
+  return partWords[part]();
 }
 
 /** The work that waits for a person to review it: an attempt is ready. */

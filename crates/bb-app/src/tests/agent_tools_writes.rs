@@ -60,6 +60,7 @@ async fn ai_36_each_text_of_the_brief_names_the_kind_of_the_person_who_wrote_it(
                 text: "A question of the agent".to_owned(),
                 answer: Some(answer.to_owned()),
                 answered_by: by,
+                answered_at: Some(now),
                 asked_at: now,
             });
         }

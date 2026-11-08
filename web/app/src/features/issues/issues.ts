@@ -20,6 +20,7 @@ const LIST_FIELDS = fieldList<ListedIssue>([
   "priority",
   "assigned_to",
   "updated_at",
+  "agent_work",
 ]);
 
 /** An issue that has what a line of a list needs. */
@@ -38,6 +39,8 @@ export interface IssueLine {
   readonly assignedTo: readonly Schema<"PersonRef">[];
   /** When it was last changed, if the reader may see it. */
   readonly changedAt: string | undefined;
+  /** The agent that works on the issue and where its work is. */
+  readonly agent: Schema<"AgentMarkRefBody"> | undefined;
 }
 
 /** The line of an issue, or nothing for an item that came without what it needs. */
@@ -65,6 +68,7 @@ export function lineOf(item: ListedIssue): IssueLine | undefined {
         issueType,
         assignedTo: item.assigned_to ?? [],
         changedAt: known(item.updated_at),
+        agent: known(item.agent_work),
       };
 }
 

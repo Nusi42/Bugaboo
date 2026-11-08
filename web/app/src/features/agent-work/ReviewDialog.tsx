@@ -112,7 +112,7 @@ export function ReviewDialog(props: ReviewDialogProps) {
         />
       }
     >
-      <div {...partOf(part.stack)}>
+      <div {...partOf(part.agentWorkWindow)}>
         <p {...partOf(part.text)}>{t("agent-work.review-text")}</p>
         <ReviewResults attempt={attempt} />
         <ReviewFields work={work} draft={draft} />

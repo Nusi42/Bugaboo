@@ -29,7 +29,9 @@ test("a11y the window of a hand-over names what is missing", async ({ page, serv
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-2"));
   const window = await openHandOver(page);
-  await expect(window.getByText(t("agent-work.missing-description"))).toBeVisible();
+  await expect(window).toContainText(
+    t("agent-work.missing-first", { part: t("agent-work.lack-description") }),
+  );
   await expectGoodInEveryLook(page);
 });
 

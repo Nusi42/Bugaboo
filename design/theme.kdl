@@ -1443,6 +1443,11 @@ part "ai-page field.description" "ai-page settings.help" "ai-page card.intro" {
     text-wrap pretty
 }
 
+// The hint under a box in the windows of a hand-over and a review uses the whole width of the window, like the text around it.
+part "agent-work.window field.description" {
+    text-wrap wrap
+}
+
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
 // review of M4: "Alder Street Baker|y" in the Details).
 // One height for a box of one line and a choice (a select ignores the line height and would be 2 px
@@ -3402,8 +3407,11 @@ part "window.control[focus-visible]" {
     use "ring-inside"
 }
 
-// The scrolling part is the form; the title bar and the footer stay in place.
+// The scrolling part is the form; the title bar and the footer stay in place. It is the containing block of what is placed
+// absolutely inside it (the hidden box of a tick), so that the part of the form below the fold never makes the window
+// itself scrollable: a tick near the end would shift the whole window up.
 part "window.body" {
+    position relative
     flex 1
     min-height 0
     padding "$pad-dialog"
@@ -15535,6 +15543,39 @@ part "agent-work.pill[variant=stopped]" {
     color "$fg-muted"
 }
 
+// How the work ended once it is over: accepted (by a person or by itself) reads as done, thrown away as quiet as stopped.
+part "agent-work.pill[variant=accepted]" "agent-work.pill[variant=accepted-by-itself]" {
+    use "status-soft-done"
+}
+
+part "agent-work.pill[variant=thrown-away]" {
+    background "$bg-sunken"
+    color "$fg-muted"
+}
+
+// The windows of a hand-over and of a review: their parts stand under each other, and their text uses the whole width of
+// the window (a phone's too), where a hint and an introduction elsewhere are balanced into a narrower block.
+part "agent-work.window" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+    text-wrap wrap
+}
+
+// What the brief lacks: the icon and the words beside it, the words starting at one edge on every line.
+part "agent-work.warning" {
+    display flex
+    align-items flex-start
+    gap "$space-2"
+}
+
+part "agent-work.warning-text" {
+    flex 1
+    min-width 0
+    margin 0
+}
+
 part "agent-work.section" {
     display flex
     flex-direction column
@@ -15605,6 +15646,11 @@ part "agent-work.group" {
 // The boxes of the fields stand under the tick that asks for them, one step in.
 part "agent-work.group[variant=nested]" {
     padding-inline-start "$space-5"
+}
+
+// A group of its own below the ticks above it.
+part "agent-work.group[variant=apart]" {
+    padding-block-start "$space-3"
 }
 
 part "agent-work.group-name" {

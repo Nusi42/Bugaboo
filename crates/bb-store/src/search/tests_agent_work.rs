@@ -513,6 +513,7 @@ fn records_of(
         text: "Which browser?".to_owned(),
         answer: Some("Firefox".to_owned()),
         answered_by: Some(owner),
+        answered_at: Some(at(4)),
         asked_at: at(3),
     };
     let review = Review {

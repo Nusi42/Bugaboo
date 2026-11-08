@@ -181,7 +181,7 @@ pub(super) fn number_of(expr: &syn::Expr) -> Option<u128> {
 /// a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 13] = [
+const WORD_LISTS: [&str; 14] = [
     "IssueIcon",
     "StatusGroup",
     "Priority",
@@ -195,6 +195,7 @@ const WORD_LISTS: [&str; 13] = [
     "NotificationKind",
     "NotificationTab",
     "OnlyIfTest",
+    "BriefPart",
 ];
 
 /// The schemas whose members that are always there the browser needs by name, with the name of the
@@ -677,6 +678,21 @@ export const searchWords = [{list}] as const;
 
 /** One of the words a search names a field of an issue by. */
 export type SearchWord = (typeof searchWords)[number];
+"
+    )
+}
+
+/// The members of an issue a hand-over can name next to the own fields (`issue_member::NAMEABLE`,
+/// from the linked crate), so the window of a hand-over never lists them a second time.
+pub(super) fn agent_work() -> String {
+    let list = bb_core::agent_work::issue_member::NAMEABLE
+        .iter()
+        .map(|member| format!("{member:?}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{TS_HEADER}/** The members of an issue a hand-over can name for an agent to change, besides the own fields. */
+export const nameableMembers = [{list}] as const;
 "
     )
 }

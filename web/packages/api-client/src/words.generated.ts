@@ -115,6 +115,9 @@ export const notificationTabWords = ["all", "unread", "mentions"] as const;
 /** Every word of `OnlyIfTest`, in the order the server lists them. */
 export const onlyIfTestWords = ["filled", "empty"] as const;
 
+/** Every word of `BriefPart`, in the order the server lists them. */
+export const briefPartWords = ["description", "steps-to-reproduce", "done-when"] as const;
+
 /** The members of `FieldBody` that are always there, as the server lists them. */
 export const fieldMembers = [
   "id",

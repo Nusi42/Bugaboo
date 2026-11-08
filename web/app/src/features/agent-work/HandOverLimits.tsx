@@ -57,14 +57,16 @@ export function HandOverLimits({ draft, onChange }: DraftProps) {
         }}
       />
       <p {...partOf(part.muted)}>{t("agent-work.accept-by-itself-help")}</p>
-      <TextField
-        label={t("agent-work.days")}
-        description={t("agent-work.days-help")}
-        value={draft.days}
-        onChange={(days) => {
-          onChange({ days });
-        }}
-      />
+      <div {...partOf(part.agentWorkGroup, { variants: ["apart"] })}>
+        <TextField
+          label={t("agent-work.days")}
+          description={t("agent-work.days-help")}
+          value={draft.days}
+          onChange={(days) => {
+            onChange({ days });
+          }}
+        />
+      </div>
     </fieldset>
   );
 }

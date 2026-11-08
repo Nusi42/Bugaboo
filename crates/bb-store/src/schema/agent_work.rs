@@ -102,6 +102,7 @@ pub(crate) enum QuestionRow {
     Text,
     Answer,
     AnsweredBy,
+    AnsweredAt,
     AskedAt,
 }
 
@@ -216,6 +217,7 @@ stored_tables! {
         Text => text,
         Answer => answer,
         AnsweredBy => answered_by,
+        AnsweredAt => answered_at,
         AskedAt => asked_at,
     },
     ReviewRow => bb_core::agent_records::Review {

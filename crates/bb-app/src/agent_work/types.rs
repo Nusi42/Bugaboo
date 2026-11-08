@@ -126,6 +126,10 @@ pub struct QuestionView {
     pub text: String,
     /// The answer.
     pub answer: Option<String>,
+    /// Who answered, as the reader may see them; nobody when it is not answered.
+    pub answered_by: Option<PersonRef>,
+    /// When it was answered, when that is known.
+    pub answered_at: Option<Timestamp>,
     /// When it was asked.
     pub asked_at: Timestamp,
 }

@@ -175,6 +175,21 @@ pub const AGENT_WORK_AGENT_NONE: MessageKey = MessageKey::new("agent-work.agent-
 /// The message `agent-work.always`.
 pub const AGENT_WORK_ALWAYS: MessageKey = MessageKey::new("agent-work.always");
 
+/// The message `agent-work.attempt-accepted`.
+pub const AGENT_WORK_ATTEMPT_ACCEPTED: MessageKey = MessageKey::new("agent-work.attempt-accepted");
+
+/// The message `agent-work.attempt-accepted-by-itself`.
+pub const AGENT_WORK_ATTEMPT_ACCEPTED_BY_ITSELF: MessageKey =
+    MessageKey::new("agent-work.attempt-accepted-by-itself");
+
+/// The message `agent-work.attempt-sent-back`.
+pub const AGENT_WORK_ATTEMPT_SENT_BACK: MessageKey =
+    MessageKey::new("agent-work.attempt-sent-back");
+
+/// The message `agent-work.attempt-thrown-away`.
+pub const AGENT_WORK_ATTEMPT_THROWN_AWAY: MessageKey =
+    MessageKey::new("agent-work.attempt-thrown-away");
+
 /// The message `agent-work.brief`.
 pub const AGENT_WORK_BRIEF: MessageKey = MessageKey::new("agent-work.brief");
 
@@ -196,6 +211,9 @@ pub const AGENT_WORK_BUDGET_ATTEMPTS: MessageKey = MessageKey::new("agent-work.b
 /// The message `agent-work.budget-cost`.
 pub const AGENT_WORK_BUDGET_COST: MessageKey = MessageKey::new("agent-work.budget-cost");
 
+/// The message `agent-work.budget-label`.
+pub const AGENT_WORK_BUDGET_LABEL: MessageKey = MessageKey::new("agent-work.budget-label");
+
 /// The message `agent-work.budget-minutes`.
 pub const AGENT_WORK_BUDGET_MINUTES: MessageKey = MessageKey::new("agent-work.budget-minutes");
 
@@ -212,8 +230,14 @@ pub const AGENT_WORK_DAYS: MessageKey = MessageKey::new("agent-work.days");
 /// The message `agent-work.days-help`.
 pub const AGENT_WORK_DAYS_HELP: MessageKey = MessageKey::new("agent-work.days-help");
 
+/// The message `agent-work.fact-no-attempt`.
+pub const AGENT_WORK_FACT_NO_ATTEMPT: MessageKey = MessageKey::new("agent-work.fact-no-attempt");
+
 /// The message `agent-work.hand-over`.
 pub const AGENT_WORK_HAND_OVER: MessageKey = MessageKey::new("agent-work.hand-over");
+
+/// The message `agent-work.hand-over-again`.
+pub const AGENT_WORK_HAND_OVER_AGAIN: MessageKey = MessageKey::new("agent-work.hand-over-again");
 
 /// The message `agent-work.hand-over-confirm`.
 pub const AGENT_WORK_HAND_OVER_CONFIRM: MessageKey =
@@ -225,19 +249,21 @@ pub const AGENT_WORK_HAND_OVER_TEXT: MessageKey = MessageKey::new("agent-work.ha
 /// The message `agent-work.keeps-person`.
 pub const AGENT_WORK_KEEPS_PERSON: MessageKey = MessageKey::new("agent-work.keeps-person");
 
+/// The message `agent-work.lack-description`.
+pub const AGENT_WORK_LACK_DESCRIPTION: MessageKey = MessageKey::new("agent-work.lack-description");
+
+/// The message `agent-work.lack-done-when`.
+pub const AGENT_WORK_LACK_DONE_WHEN: MessageKey = MessageKey::new("agent-work.lack-done-when");
+
+/// The message `agent-work.lack-steps-to-reproduce`.
+pub const AGENT_WORK_LACK_STEPS_TO_REPRODUCE: MessageKey =
+    MessageKey::new("agent-work.lack-steps-to-reproduce");
+
 /// The message `agent-work.looked-at`.
 pub const AGENT_WORK_LOOKED_AT: MessageKey = MessageKey::new("agent-work.looked-at");
 
 /// The message `agent-work.may-do`.
 pub const AGENT_WORK_MAY_DO: MessageKey = MessageKey::new("agent-work.may-do");
-
-/// The message `agent-work.missing-description`.
-pub const AGENT_WORK_MISSING_DESCRIPTION: MessageKey =
-    MessageKey::new("agent-work.missing-description");
-
-/// The message `agent-work.missing-done-when`.
-pub const AGENT_WORK_MISSING_DONE_WHEN: MessageKey =
-    MessageKey::new("agent-work.missing-done-when");
 
 /// The message `agent-work.missing-ends`.
 pub const AGENT_WORK_MISSING_ENDS: MessageKey = MessageKey::new("agent-work.missing-ends");
@@ -246,15 +272,28 @@ pub const AGENT_WORK_MISSING_ENDS: MessageKey = MessageKey::new("agent-work.miss
 pub const AGENT_WORK_MISSING_ENDS_MANY: MessageKey =
     MessageKey::new("agent-work.missing-ends-many");
 
-/// The message `agent-work.missing-steps-to-reproduce`.
-pub const AGENT_WORK_MISSING_STEPS_TO_REPRODUCE: MessageKey =
-    MessageKey::new("agent-work.missing-steps-to-reproduce");
+/// The message `agent-work.moved-status`.
+pub const AGENT_WORK_MOVED_STATUS: MessageKey = MessageKey::new("agent-work.moved-status");
+
+/// The message `agent-work.next-step`.
+pub const AGENT_WORK_NEXT_STEP: MessageKey = MessageKey::new("agent-work.next-step");
 
 /// The message `agent-work.no-plan`.
 pub const AGENT_WORK_NO_PLAN: MessageKey = MessageKey::new("agent-work.no-plan");
 
 /// The message `agent-work.note`.
 pub const AGENT_WORK_NOTE: MessageKey = MessageKey::new("agent-work.note");
+
+/// The message `agent-work.outcome.accepted`.
+pub const AGENT_WORK_OUTCOME_ACCEPTED: MessageKey = MessageKey::new("agent-work.outcome.accepted");
+
+/// The message `agent-work.outcome.accepted-by-itself`.
+pub const AGENT_WORK_OUTCOME_ACCEPTED_BY_ITSELF: MessageKey =
+    MessageKey::new("agent-work.outcome.accepted-by-itself");
+
+/// The message `agent-work.outcome.thrown-away`.
+pub const AGENT_WORK_OUTCOME_THROWN_AWAY: MessageKey =
+    MessageKey::new("agent-work.outcome.thrown-away");
 
 /// The message `agent-work.part-description`.
 pub const AGENT_WORK_PART_DESCRIPTION: MessageKey = MessageKey::new("agent-work.part-description");
@@ -284,6 +323,9 @@ pub const AGENT_WORK_PLAN_NEEDS_APPROVAL: MessageKey =
 
 /// The message `agent-work.plan-note`.
 pub const AGENT_WORK_PLAN_NOTE: MessageKey = MessageKey::new("agent-work.plan-note");
+
+/// The message `agent-work.plan-note-help`.
+pub const AGENT_WORK_PLAN_NOTE_HELP: MessageKey = MessageKey::new("agent-work.plan-note-help");
 
 /// The message `agent-work.plan-waits`.
 pub const AGENT_WORK_PLAN_WAITS: MessageKey = MessageKey::new("agent-work.plan-waits");
@@ -383,9 +425,6 @@ pub const AGENT_WORK_REVIEW_TEXT: MessageKey = MessageKey::new("agent-work.revie
 /// The message `agent-work.review-throw-away-choice`.
 pub const AGENT_WORK_REVIEW_THROW_AWAY_CHOICE: MessageKey =
     MessageKey::new("agent-work.review-throw-away-choice");
-
-/// The message `agent-work.reviews`.
-pub const AGENT_WORK_REVIEWS: MessageKey = MessageKey::new("agent-work.reviews");
 
 /// The message `agent-work.run-link`.
 pub const AGENT_WORK_RUN_LINK: MessageKey = MessageKey::new("agent-work.run-link");
@@ -7825,6 +7864,15 @@ pub fn agent_work_amount(amount: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `agent-work.answered-by`.
+#[must_use]
+pub fn agent_work_answered_by(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.answered-by"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
 /// The message `agent-work.attempt`.
 #[must_use]
 pub fn agent_work_attempt(number: impl std::fmt::Display) -> Message {
@@ -7885,21 +7933,30 @@ pub fn agent_work_fact_attempts(
     )
 }
 
-/// The message `agent-work.gave-up`.
+/// The message `agent-work.fact-of`.
 #[must_use]
-pub fn agent_work_gave_up(reason: impl std::fmt::Display) -> Message {
+pub fn agent_work_fact_of(most: impl std::fmt::Display, used: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("agent-work.gave-up"),
-        vec![("reason", Value::Text(reason.to_string()))],
+        MessageKey::new("agent-work.fact-of"),
+        vec![
+            ("most", Value::Text(most.to_string())),
+            ("used", Value::Text(used.to_string())),
+        ],
     )
 }
 
-/// The message `agent-work.hand-over-ends`.
+/// The message `agent-work.gave-up`.
 #[must_use]
-pub fn agent_work_hand_over_ends(date: impl std::fmt::Display) -> Message {
+pub fn agent_work_gave_up(
+    agent: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
-        MessageKey::new("agent-work.hand-over-ends"),
-        vec![("date", Value::Text(date.to_string()))],
+        MessageKey::new("agent-work.gave-up"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
     )
 }
 
@@ -7957,6 +8014,15 @@ pub fn agent_work_mark(agent: impl std::fmt::Display, state: impl std::fmt::Disp
     )
 }
 
+/// The message `agent-work.missing-first`.
+#[must_use]
+pub fn agent_work_missing_first(part: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.missing-first"),
+        vec![("part", Value::Text(part.to_string()))],
+    )
+}
+
 /// The message `agent-work.missing-many`.
 #[must_use]
 pub fn agent_work_missing_many(
@@ -7969,6 +8035,15 @@ pub fn agent_work_missing_many(
             ("issue", Value::Text(issue.to_string())),
             ("parts", Value::Text(parts.to_string())),
         ],
+    )
+}
+
+/// The message `agent-work.missing-next`.
+#[must_use]
+pub fn agent_work_missing_next(part: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.missing-next"),
+        vec![("part", Value::Text(part.to_string()))],
     )
 }
 
@@ -7988,15 +8063,6 @@ pub fn agent_work_proposal_line(
             ("before", Value::Text(before.to_string())),
             ("field", Value::Text(field.to_string())),
         ],
-    )
-}
-
-/// The message `agent-work.question-answered`.
-#[must_use]
-pub fn agent_work_question_answered(answer: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agent-work.question-answered"),
-        vec![("answer", Value::Text(answer.to_string()))],
     )
 }
 
@@ -8089,6 +8155,21 @@ pub fn agent_work_stays_assigned(people: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `agent-work.stopped-why`.
+#[must_use]
+pub fn agent_work_stopped_why(
+    agent: impl std::fmt::Display,
+    date: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.stopped-why"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("date", Value::Text(date.to_string())),
+        ],
+    )
+}
+
 /// The message `agent-work.summary`.
 #[must_use]
 pub fn agent_work_summary(
@@ -8104,17 +8185,19 @@ pub fn agent_work_summary(
     )
 }
 
-/// The message `agent-work.throw-away-stay`.
+/// The message `agent-work.throw-away-back`.
 #[must_use]
-pub fn agent_work_throw_away_stay(
+pub fn agent_work_throw_away_back(
     field: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
+    from: impl std::fmt::Display,
+    to: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
-        MessageKey::new("agent-work.throw-away-stay"),
+        MessageKey::new("agent-work.throw-away-back"),
         vec![
             ("field", Value::Text(field.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
         ],
     )
 }
@@ -15380,13 +15463,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Always: read the issue and its related issues, comment, report its work, attach results, add relations.",
     ),
     ("agent-work.amount", "€{amount}"),
+    ("agent-work.answered-by", "Answered by {person}"),
     ("agent-work.attempt", "Attempt {number}"),
+    ("agent-work.attempt-accepted", "accepted"),
+    (
+        "agent-work.attempt-accepted-by-itself",
+        "accepted by itself",
+    ),
     ("agent-work.attempt-ended", "Ended {date}"),
     (
         "agent-work.attempt-reported",
         "{amount} reported by the agent",
     ),
+    ("agent-work.attempt-sent-back", "sent back"),
     ("agent-work.attempt-started", "Started {date}"),
+    ("agent-work.attempt-thrown-away", "thrown away"),
     ("agent-work.brief", "Brief"),
     (
         "agent-work.brief-empty",
@@ -15396,10 +15487,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.brief-show", "Show"),
     ("agent-work.budget", "Budget"),
     ("agent-work.budget-attempts", "Attempts on one issue"),
-    ("agent-work.budget-cost", "Most cost it reports (optional)"),
+    ("agent-work.budget-cost", "Cost budget, in euros (optional)"),
+    ("agent-work.budget-label", "Budget"),
     (
         "agent-work.budget-minutes",
-        "Most minutes it reports (optional)",
+        "Time budget, in minutes (optional)",
     ),
     (
         "agent-work.checks-note",
@@ -15407,7 +15499,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agent-work.choose-next-status",
-        "The issue kept its status. Choose the next one yourself.",
+        "The issue kept its status, because the workflow does not name one next status. Choose the next one yourself.",
     ),
     (
         "agent-work.days",
@@ -15419,13 +15511,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agent-work.ends", "The hand-over runs out on {date}."),
     ("agent-work.fact-attempts", "Attempt {number} of {most}"),
-    ("agent-work.gave-up", "The agent gave up: {reason}"),
+    ("agent-work.fact-no-attempt", "No attempt yet"),
+    ("agent-work.fact-of", "{used} of {most}"),
+    ("agent-work.gave-up", "{agent} gave up: {reason}"),
     ("agent-work.hand-over", "Hand over to an agent"),
+    ("agent-work.hand-over-again", "Hand over again"),
     ("agent-work.hand-over-confirm", "Hand over"),
-    (
-        "agent-work.hand-over-ends",
-        "The hand-over runs out on {date}.",
-    ),
     (
         "agent-work.hand-over-text",
         "An agent works on what you hand over and can never do more than you may. You review every result.",
@@ -15450,11 +15541,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.keeps-person",
         "The issue keeps its person: an agent is never assigned to an issue.",
     ),
+    ("agent-work.lack-description", "description"),
+    ("agent-work.lack-done-when", "Done when"),
+    ("agent-work.lack-steps-to-reproduce", "steps to reproduce"),
     ("agent-work.looked-at", "I looked at it"),
     ("agent-work.mark", "{agent}, {state}"),
     ("agent-work.may-do", "What it may do"),
-    ("agent-work.missing-description", "No description"),
-    ("agent-work.missing-done-when", "No Done when"),
     (
         "agent-work.missing-ends",
         "The agent gets what is there. You can hand it over anyway.",
@@ -15463,13 +15555,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.missing-ends-many",
         "Where a brief lacks something, the agent gets what is there. You can hand the issues over anyway.",
     ),
+    ("agent-work.missing-first", "No {part}"),
     ("agent-work.missing-many", "{issue}: {parts}"),
+    ("agent-work.missing-next", "no {part}"),
     (
-        "agent-work.missing-steps-to-reproduce",
-        "No steps to reproduce",
+        "agent-work.moved-status",
+        "The issue moved to the status its workflow proposes.",
+    ),
+    (
+        "agent-work.next-step",
+        "Hand the issue over again, or work on it yourself: the issue still has its person.",
     ),
     ("agent-work.no-plan", "The agent has not reported a plan."),
     ("agent-work.note", "Note for the agent (optional)"),
+    ("agent-work.outcome.accepted", "Accepted"),
+    (
+        "agent-work.outcome.accepted-by-itself",
+        "Accepted by itself",
+    ),
+    ("agent-work.outcome.thrown-away", "Thrown away"),
     ("agent-work.part-description", "Description"),
     ("agent-work.part-done-when", "Done when"),
     ("agent-work.part-note", "Note"),
@@ -15479,6 +15583,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.plan-approved", "A person approved the plan."),
     ("agent-work.plan-needs-approval", "Plan needs approval"),
     ("agent-work.plan-note", "Note on the plan (optional)"),
+    (
+        "agent-work.plan-note-help",
+        "Without a note the button approves the plan. With a note it does not approve the plan: the note answers it and the agent makes another.",
+    ),
     ("agent-work.plan-waits", "The plan waits for your approval."),
     ("agent-work.power-change-fields", "Change these fields"),
     ("agent-work.power-change-status", "Change the status"),
@@ -15492,7 +15600,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agent-work.proposals", "Proposals of standing rules"),
     ("agent-work.question-answer", "Your answer"),
-    ("agent-work.question-answered", "Answer: {answer}"),
     (
         "agent-work.question-joins",
         "The answer joins the brief, so the next attempt and any other agent read it.",
@@ -15541,7 +15648,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.review-title",
         "Review attempt {number} of {agent} on {issue}",
     ),
-    ("agent-work.reviews", "Reviews"),
     ("agent-work.run-link", "Open the run of this attempt"),
     ("agent-work.state.agent-gave-up", "Agent gave up"),
     ("agent-work.state.agent-working", "Agent working"),
@@ -15557,8 +15663,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The issue stays assigned to {people}.",
     ),
     (
+        "agent-work.stopped-why",
+        "{agent} was stopped before it finished: its person stopped it, it reached a limit, or the hand-over ran out on {date}.",
+    ),
+    (
         "agent-work.summary",
         "Attempt {number} is ready for review: {address}",
+    ),
+    (
+        "agent-work.throw-away-back",
+        "{field} goes back from {from} to {to}",
     ),
     (
         "agent-work.throw-away-list",
@@ -15572,7 +15686,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.throw-away-reading",
         "Looking at what would go back...",
     ),
-    ("agent-work.throw-away-stay", "{field}, {reason}"),
     (
         "agent-work.throw-away-summary",
         "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",

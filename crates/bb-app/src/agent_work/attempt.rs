@@ -343,6 +343,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             text: clean_text(&input.text, TEXT_MAX)?,
             answer: None,
             answered_by: None,
+            answered_at: None,
             asked_at: self.now(),
         };
         Ok(AskPlan {

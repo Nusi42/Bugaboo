@@ -6,6 +6,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { waitUntilStill } from "./agent-work-still.ts";
 import type { ApiSession } from "./api.ts";
 import { stored } from "./runs.ts";
 import type { Instance } from "./server.ts";
@@ -15,6 +16,7 @@ const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
 
 export { tickTwo } from "./labels.ts";
+export { topOf } from "./agent-work-still.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */
 export async function createAgent(admin: ApiSession, name: string): Promise<string> {
@@ -93,6 +95,8 @@ export interface WorkScene {
   readonly gaveUp?: string;
   /** The result was accepted by itself and nobody looked at it. */
   readonly acceptedByItself?: boolean;
+  /** The issue kept its status after it was accepted by itself, and a person chooses the next one. */
+  readonly statusPending?: boolean;
 }
 
 /** Writes the rows of a scene into the data of a throwaway server. */
@@ -116,11 +120,12 @@ class SceneWriter {
   state(work: string, scene: WorkScene): void {
     const flag = scene.acceptedByItself === true ? 1 : 0;
     this.run(
-      "UPDATE issue_work SET state = ?, gave_up = ?, accepted_by_itself = ?, closed = ? WHERE id = ?",
+      "UPDATE issue_work SET state = ?, gave_up = ?, accepted_by_itself = ?, closed = ?, status_pending = ? WHERE id = ?",
       scene.state,
       scene.gaveUp ?? null,
       flag,
       flag,
+      scene.statusPending === true ? 1 : 0,
       stored(work),
     );
   }
@@ -131,12 +136,13 @@ class SceneWriter {
     }
     const answered = scene.answer === undefined || person === undefined ? null : stored(person);
     this.run(
-      "INSERT INTO agent_question (id, work, text, answer, answered_by, asked_at) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO agent_question (id, work, text, answer, answered_by, answered_at, asked_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       stored(randomUUID()),
       stored(work),
       scene.question,
       scene.answer ?? null,
       answered,
+      answered === null ? null : this.now,
       this.now,
     );
   }
@@ -230,18 +236,14 @@ export async function firstWorkOf(admin: ApiSession, issue: string) {
   return first;
 }
 
-/** Where the top of an element is on the page. */
-export async function topOf(element: Locator): Promise<number> {
-  const box = await element.boundingBox();
-  return box === null ? Number.NaN : box.y;
-}
-
 /** Opens *More* of the issue page and chooses *Hand over to an agent*; the window it opens. */
 export async function openHandOver(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: t("issues.more"), exact: true }).click();
   await page.getByRole("button", { name: t("agent-work.hand-over"), exact: true }).click();
   const window = page.getByRole("dialog");
   await expect(window).toBeVisible();
+  // It has slid in (on a phone) before anything is done in it.
+  await waitUntilStill(window);
   return window;
 }
 

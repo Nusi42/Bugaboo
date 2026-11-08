@@ -4,7 +4,6 @@ import { partOf, part } from "@bugaboo/ui";
 import { AttemptLines } from "./AttemptLines.tsx";
 import type { BriefLack, Work } from "./agent-work.ts";
 import { Questions } from "./QuestionAnswer.tsx";
-import { Reviews } from "./Reviews.tsx";
 import { WorkActions } from "./WorkActions.tsx";
 import { WorkBrief } from "./WorkBrief.tsx";
 import { WorkFoot } from "./WorkFoot.tsx";
@@ -20,11 +19,14 @@ export function WorkPiece({
   issue,
   statusChanges,
   lacking,
+  isNewest,
 }: {
   readonly work: Work;
   /** The parts of the brief the issue lacks now. */
   readonly lacking: readonly BriefLack[];
   readonly issue: string;
+  /** Whether it is the newest work of the issue. */
+  readonly isNewest: boolean;
   readonly statusChanges: readonly Schema<"StatusChangeRef">[] | null | undefined;
 }) {
   return (
@@ -36,8 +38,7 @@ export function WorkPiece({
       ))}
       <Questions work={work} />
       <WorkActions work={work} issue={issue} statusChanges={statusChanges} />
-      <Reviews work={work} />
-      <WorkFoot work={work} />
+      <WorkFoot work={work} issue={issue} isNewest={isNewest} />
     </div>
   );
 }

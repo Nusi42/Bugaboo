@@ -15,9 +15,10 @@ import { messageOf } from "../../shared/errors.ts";
 import { useApprovePlan, type Work } from "./agent-work.ts";
 
 /**
- * *Approve plan* under the plan (UX §4.17): the one filled button, which lets the attempt start.
- * A note, which is optional, answers the plan instead and the agent makes another. Both are sent
- * against the version of the work the person saw.
+ * *Approve plan* under the plan (UX §4.17): one note field and one filled button. Without a note the
+ * button approves the plan and lets the attempt start; with a note it is named for what it does,
+ * answers the plan and the agent makes another. Both are sent against the version of the work the
+ * person saw.
  */
 export function ApprovePlan({ work }: { readonly work: Work }) {
   const [note, setNote] = useState("");
@@ -29,21 +30,12 @@ export function ApprovePlan({ work }: { readonly work: Work }) {
       body: { version: work.version, ...(withNote ? { note } : {}) },
     });
   };
+  // One note field and one button: the button approves the plan, and with a note it answers the plan instead.
   return (
     <div {...partOf(part.agentWorkQuestion)}>
-      <div {...partOf(part.agentWorkActions)}>
-        <Button
-          look={buttonLook.primary}
-          isPending={send.isPending}
-          onPress={() => {
-            ask(false);
-          }}
-        >
-          {t("agent-work.plan-approve")}
-        </Button>
-      </div>
       <TextField
         label={t("agent-work.plan-note")}
+        description={t("agent-work.plan-note-help")}
         kind={fieldKind.multiline}
         value={note}
         onChange={setNote}
@@ -51,12 +43,13 @@ export function ApprovePlan({ work }: { readonly work: Work }) {
       {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
       <div {...partOf(part.agentWorkActions)}>
         <Button
-          isDisabled={nothingWritten}
+          look={buttonLook.primary}
+          isPending={send.isPending}
           onPress={() => {
-            ask(true);
+            ask(!nothingWritten);
           }}
         >
-          {t("agent-work.plan-answer")}
+          {nothingWritten ? t("agent-work.plan-approve") : t("agent-work.plan-answer")}
         </Button>
       </div>
     </div>

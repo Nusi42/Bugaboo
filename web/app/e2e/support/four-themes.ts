@@ -6,6 +6,9 @@ import { shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 import { showTheme } from "./showcase.ts";
 
+/** How long a window takes to open before its picture is taken. */
+const WINDOW_SETTLING_MS = 600;
+
 /** Where the pictures go, below the folder the run was given, unless a test names its own. */
 const MILESTONE = "M4/workflows";
 
@@ -19,6 +22,27 @@ export async function inFourThemes(page: Page, name: string, milestone = MILESTO
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
       await shotWholeAs(page, `${name}-${layout}`, milestone, theme.id);
+    }),
+  );
+}
+
+/**
+ * Takes the screen as a person sees it in the four themes, not grown to the height of the page: for
+ * a window open over a page (a full screen on a phone), which a picture of the whole page would
+ * draw on a screen of another size.
+ */
+export async function inFourThemesAsWindow(
+  page: Page,
+  name: string,
+  milestone = MILESTONE,
+): Promise<void> {
+  const layout = layoutOf(page);
+  // A window slides or fades in: the picture is taken when it has stopped.
+  await page.waitForTimeout(WINDOW_SETTLING_MS);
+  await inOrder(
+    themes.map((theme) => async () => {
+      await chooseTheme(page, theme);
+      await shootWindowAs(page, `${name}-${layout}`, milestone, theme.id);
     }),
   );
 }
