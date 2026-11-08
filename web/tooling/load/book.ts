@@ -3,14 +3,30 @@
 // shape of the file is declared once, in Rust (`book.rs`); `book.generated.ts` is made from it by
 // `cargo xtask gen load-book`. This file holds what is not a declaration of that shape.
 
-import type { Book, Dayed, Drafted, Kept, Searched, Seen, Work } from "./book.generated.ts";
+import type {
+  Agented,
+  Book,
+  Dayed,
+  Drafted,
+  HandedOver,
+  Kept,
+  Lost,
+  Raced,
+  Searched,
+  Seen,
+  Work,
+} from "./book.generated.ts";
 
 export type {
+  Agented,
   Book,
   Dayed,
   DraftEnd,
   Drafted,
+  HandedOver,
   Kept,
+  Lost,
+  Raced,
   Searched,
   Seen,
   Work,
@@ -35,6 +51,14 @@ export interface BookWriter {
   /** The server kept a change of a work day. */
   readonly dayed: (note: Dayed) => void;
   readonly broken: (message: string) => void;
+  /** An agent of the run and the person who answers for it. */
+  readonly agent: (note: Agented) => void;
+  /** An issue handed over to an agent. */
+  readonly handed: (note: HandedOver) => void;
+  /** Agents took the same issue at the same moment. */
+  readonly raced: (note: Raced) => void;
+  /** A person lost access while their agent worked. */
+  readonly lost: (note: Lost) => void;
   /** A change that came second and was sent again on the newer version (*Use mine*). */
   readonly conflict: () => void;
   /** A person took the editing over (*Edit anyway*). */
@@ -72,6 +96,10 @@ interface Notes {
   readonly timed: string[];
   readonly days: Dayed[];
   readonly broken: string[];
+  readonly agents: Agented[];
+  readonly handed: HandedOver[];
+  readonly races: Raced[];
+  readonly lost: Lost[];
 }
 
 /** A writer that adds a note to a list. */
@@ -95,6 +123,10 @@ type Writers = Pick<
   | "timed"
   | "dayed"
   | "broken"
+  | "agent"
+  | "handed"
+  | "raced"
+  | "lost"
 >;
 
 /** Empty lists of what the people wrote, and the writers that add to them. */
@@ -111,6 +143,10 @@ function emptyNotes(): { readonly notes: Notes; readonly writers: Writers } {
     timed: [],
     days: [],
     broken: [],
+    agents: [],
+    handed: [],
+    races: [],
+    lost: [],
   };
   const writers: Writers = {
     kept: adder(notes.kept),
@@ -124,6 +160,10 @@ function emptyNotes(): { readonly notes: Notes; readonly writers: Writers } {
     timed: adder(notes.timed),
     dayed: adder(notes.days),
     broken: adder(notes.broken),
+    agent: adder(notes.agents),
+    handed: adder(notes.handed),
+    raced: adder(notes.races),
+    lost: adder(notes.lost),
   };
   return { notes, writers };
 }
@@ -153,6 +193,10 @@ export function newBook(): BookWriter {
       searched: notes.searched,
       timed: notes.timed,
       days: notes.days,
+      agents: notes.agents,
+      handed: notes.handed,
+      races: notes.races,
+      lost: notes.lost,
     }),
     counts: () => ({
       kept: notes.kept.length,

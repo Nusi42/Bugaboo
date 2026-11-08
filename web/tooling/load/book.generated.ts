@@ -79,6 +79,42 @@ export interface Dayed {
   readonly date: string;
 }
 
+/** An agent of the run and the person who answers for it. */
+export interface Agented {
+  /** The ID of the agent. */
+  readonly agent: string;
+  /** The ID of the person responsible for it. */
+  readonly person: string;
+}
+
+/** An issue handed over to an agent. */
+export interface HandedOver {
+  /** The ID of the agent. */
+  readonly agent: string;
+  /** The readable ID of the issue. */
+  readonly key: string;
+}
+
+/** Agents that took the same issue at the same moment, and which of them got it. */
+export interface Raced {
+  /** The readable ID of the issue. */
+  readonly key: string;
+  /** The agents that asked to take it. */
+  readonly askers: readonly string[];
+  /** The agents that were told they had it. */
+  readonly winners: readonly string[];
+}
+
+/** A person who lost access to agents while their agent worked, and what the agent still kept. */
+export interface Lost {
+  /** The ID of the agent. */
+  readonly agent: string;
+  /** The ID of the person. */
+  readonly person: string;
+  /** How many calls of the agent that came after were answered and kept a change. */
+  readonly kept_after: number;
+}
+
 /** Everything the people did that counts, in the order it happened to each of them. */
 export interface Book {
   /** The issues of the run. */
@@ -105,4 +141,14 @@ export interface Book {
   readonly timed?: readonly string[];
   /** Every change of a work day that the server kept (architecture §11, "Timers and working hours start and stop at the same time"): each is a version of the day with its event. */
   readonly days?: readonly Dayed[];
+  /** The agents of the run (architecture §11, "Ten people with agents"). */
+  readonly agents?: readonly Agented[];
+  /** The issues handed over to agents. */
+  readonly handed?: readonly HandedOver[];
+  /** The issues agents took at the same moment. */
+  readonly races?: readonly Raced[];
+  /** The people who lost access while their agent worked. */
+  readonly lost?: readonly Lost[];
+  /** The readable ID of every issue whose change an undo of a run named as skipped. */
+  readonly skipped?: readonly string[];
 }

@@ -4,6 +4,7 @@ import { writeFileSync } from "node:fs";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { type BookWriter, newBook } from "./book.ts";
 import { prepare } from "./organization.ts";
+import { prepareAgents, workWithAgents } from "./agents-run.ts";
 import { type LoadOptions, QUIET_SECONDS } from "./options.ts";
 import { type Context } from "./context.ts";
 import { keepWorking } from "./person.ts";
@@ -33,11 +34,18 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
   const guestAt = sessions.length - 1;
   book.guest(ids[guestAt] ?? "");
   book.hiddenFromGuests(hiddenField);
+  // The agents, their people and their issues are made before the people start: a search for
+  // everything judges the issues of the run, which must all be there by then.
+  const admin = sessions[0];
+  if (admin === undefined) {
+    throw new TypeError("A run needs an administrator.");
+  }
+  const agents = await prepareAgents(server, admin, sessions.slice(1, guestAt), book);
   const started = Date.now();
   const deadline = started + options.seconds * msPerSecond;
   // Nobody starts to edit under a lock once the lease could outlast the run.
   const editUntil = deadline - QUIET_SECONDS * msPerSecond;
-  await Promise.all(
+  const crowd = Promise.all(
     sessions.map((session, number) =>
       keepWorking({
         number,
@@ -54,7 +62,9 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
       } satisfies Context),
     ),
   );
-  writeFileSync(options.bookFile, JSON.stringify(book.file(issues)));
+  // The agents work at the same moments as their people.
+  await Promise.all([crowd, workWithAgents(server, admin, agents, book)]);
+  writeFileSync(options.bookFile, JSON.stringify(book.file([...issues, ...agents.issues])));
   await Promise.all(sessions.map((session) => session.dispose()));
   return summary(book, options);
 }
