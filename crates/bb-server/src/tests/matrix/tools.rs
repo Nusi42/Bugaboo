@@ -98,9 +98,7 @@ fn word_of(tool: Tool, answer: &Answer) -> Result<&'static str, String> {
     {
         return Ok(words::NOT_FOUND);
     }
-    if text == said(ErrorCode::Forbidden)
-        || (tool == Tool::GetMyWork && text == said(ErrorCode::SearchInvalid))
-    {
+    if text == said(ErrorCode::Forbidden) {
         Ok(words::FORBIDDEN)
     } else {
         Err(format!(

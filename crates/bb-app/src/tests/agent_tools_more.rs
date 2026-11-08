@@ -579,3 +579,60 @@ async fn ai_36_the_answer_to_an_old_version_leaves_out_a_field_kept_from_ai() ->
     assert!(!conflict.current.contains_key("title"));
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_person() -> Outcome {
+    use super::search_fields::set_field;
+    use super::workflows_rules::starting_role;
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let version = version_of(&world, &given).await?;
+    // The issue changes: its title and its priority.
+    let admin = token(&world);
+    let current = issue(&world.ctx(), query(&admin, given.issue))
+        .await?
+        .into_value()
+        .issue
+        .version;
+    change_issue(
+        &world.ctx(),
+        ChangeIssue {
+            session_token: admin,
+            issue: given.issue.to_string(),
+            version: current,
+            issue_type: None,
+            title: Some("A new title".to_owned()),
+            status: None,
+            priority: Some(bb_core::issue::Priority::High),
+            estimated_time: None,
+            time_left: None,
+            assigned_to: None,
+            fields: std::collections::BTreeMap::default(),
+        },
+    )
+    .await?;
+    // The role of the person cannot see the priority.
+    let role = starting_role(&world, bb_policy::StartingRole::TeamMember).await?;
+    set_field(
+        &world,
+        role,
+        None,
+        bb_core::fields::FieldKey::BuiltIn(bb_core::fields::Field::Priority),
+        Some(bb_core::access::FieldLevel::Hidden),
+    )
+    .await?;
+    let stale = used(
+        &world,
+        &given.key,
+        "take",
+        json!({"issue": given.issue.to_string(), "version": version}),
+    )
+    .await;
+    let Err(AppError::Conflict(conflict)) = stale else {
+        return Err("a stale take is answered with what changed".into());
+    };
+    assert!(conflict.fields.iter().any(|field| field == "title"));
+    assert!(!conflict.fields.iter().any(|field| field == "priority"));
+    assert!(!conflict.current.contains_key("priority"));
+    Ok(())
+}

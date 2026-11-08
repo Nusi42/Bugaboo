@@ -22,8 +22,14 @@ use bb_core::history::HistoryTab;
 const ISSUES_DEFAULT: u32 = 20;
 /// How many comments `get_issue` reads.
 const COMMENTS_MAX: u32 = 20;
-/// The search of `get_my_work`, in the search language.
-const MY_WORK: &str = "assigned to is me and status group is not Done";
+/// The searches of `get_my_work`, in the search language, from the one that says the most to the one
+/// that says the least. The search language refuses a field the reader may not see, so a reader who
+/// may not see the status gets the issues assigned to them without it, and one who may not see who an
+/// issue is assigned to has no work to list (the answer is empty, not a mistake).
+const MY_WORK: [&str; 2] = [
+    "assigned to is me and status group is not Done",
+    "assigned to is me",
+];
 
 /// The members left out of what the AI reads: HTML made from a text that is in the answer already
 /// as Markdown, and the buttons of the screen.
@@ -143,8 +149,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &GetMyWorkInput,
         withheld: &Withheld,
     ) -> Result<Vec<Part>, AppError> {
-        self.search_parts(actor, session_token, MY_WORK, input.limit, withheld)
-            .await
+        for text in MY_WORK {
+            match self
+                .search_parts(actor, session_token, text, input.limit, withheld)
+                .await
+            {
+                Err(AppError::Mistakes(_)) => {}
+                answered => return answered,
+            }
+        }
+        Ok(Vec::new())
     }
 
     /// `get_issue`: the issue and its comments.

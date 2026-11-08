@@ -238,3 +238,54 @@ async fn ai_36_a_report_before_a_take_starts_nothing_over_mcp() -> TestResult {
     })
     .await
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn ai_37_twenty_requests_at_once_against_a_limit_of_five_changes_let_five_in() -> TestResult {
+    each_database("ai_37_parallel_changes", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        ok(&ada
+            .send(
+                "PUT",
+                "/api/v1/settings/agents.maximum-changes-a-minute",
+                Some(json!({"value": 5})),
+            )
+            .await?)?;
+        let mut team = team(&site, &mut ada, &["Fixer"]).await?;
+        let (agent, key) = team.agents.remove(0);
+        let handles: Vec<_> = (0..20)
+            .map(|at| {
+                let (app, key, issue) = (app.clone(), key.clone(), team.issue.clone());
+                tokio::spawn(async move {
+                    let mcp = Mcp::new(&app);
+                    call(
+                        &mcp,
+                        &key,
+                        "add_comment",
+                        json!({"issue": issue, "text": format!("Comment {at}")}),
+                    )
+                    .await
+                })
+            })
+            .collect();
+        let mut made = 0;
+        for handle in handles {
+            let answer = handle.await.map_err(|error| error.to_string())??;
+            if answer.status == axum::http::StatusCode::OK && !failed(&answer) {
+                made += 1;
+            }
+        }
+        assert!(
+            (1..=5).contains(&made),
+            "{made} changes got in against a limit of 5"
+        );
+        let shown = team
+            .person
+            .send("GET", &format!("/api/v1/agents/{agent}"), None)
+            .await?;
+        assert_eq!(ok(&shown)?["state"], "paused");
+        Ok(())
+    })
+    .await
+}

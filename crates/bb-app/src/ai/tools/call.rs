@@ -212,15 +212,31 @@ pub async fn call_tool<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The answer for a stale version, as the actor may read it: the fields that changed and their
-    /// values now, without a field that is kept from AI.
+    /// The answer for a stale version, as the actor may read it: judged with the actor (an agent
+    /// with its narrowing, an app with its grant), not with the person behind it, so the issue must be
+    /// one the actor reaches and the fields are those it may see; and without a field that is kept
+    /// from AI.
     async fn conflict_for_ai(
         &self,
+        actor: &Actor,
         stale: &crate::editing::Stale,
         withheld: &crate::ai::Withheld,
     ) -> AppError {
+        let issue = match bb_core::id::IssueId::from_bytes(stale.record.id.to_bytes()) {
+            Ok(id) => self.seen_issue_by_id(actor, id).await,
+            Err(_) => Ok(None),
+        };
+        let (issue, held) = match issue {
+            Ok(Some(found)) => found,
+            Ok(None) => return AppError::Refused(ErrorCode::NotFound),
+            Err(error) => return error,
+        };
         let hidden = |field: &str| {
-            bb_core::fields::FieldKey::from_code(field).is_some_and(|key| withheld.hides_field(key))
+            bb_core::fields::FieldKey::from_code(field).is_some_and(|key| {
+                withheld.hides_field(key)
+                    || held.field_level_for(Some(issue.issue_type), key)
+                        < bb_core::access::FieldLevel::CanSee
+            })
         };
         match self.conflict_of(stale).await {
             AppError::Conflict(mut conflict) => {
@@ -301,7 +317,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             // A change made from an old version tells what changed, as the actor may read it and
             // without what is kept from AI.
             Err(AppError::Stale(stale)) => {
-                return Err(self.conflict_for_ai(&stale, &withheld).await);
+                return Err(self.conflict_for_ai(actor, &stale, &withheld).await);
             }
             Err(error) => return Err(error),
         };
