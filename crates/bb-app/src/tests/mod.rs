@@ -42,6 +42,7 @@ mod fake_auth_store;
 mod fake_editing;
 mod fake_fields;
 mod fake_files;
+mod fake_grants;
 mod fake_handles;
 mod fake_issues;
 mod fake_layouts;

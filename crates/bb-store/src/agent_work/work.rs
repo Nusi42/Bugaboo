@@ -4,62 +4,6 @@ use bb_app::agent_work::{AgentWorkRecords, WorkDetails};
 
 use super::*;
 
-fn results_select() -> SelectStatement {
-    let mut select = Query::select();
-    select
-        .columns([
-            AttemptResultRow::Id,
-            AttemptResultRow::Attempt,
-            AttemptResultRow::Kind,
-            AttemptResultRow::Label,
-            AttemptResultRow::Link,
-            AttemptResultRow::Outcome,
-        ])
-        .from(AttemptResultRow::Table);
-    select
-}
-
-fn read_result(row: &Row) -> Result<AttemptResult, StoreError> {
-    let outcome = row
-        .get::<Option<String>>(AttemptResultRow::Outcome)?
-        .map(|code| CheckResult::from_code(&code).ok_or(StoreError::Corrupt("a check result")))
-        .transpose()?;
-    Ok(AttemptResult {
-        id: row.id(AttemptResultRow::Id)?,
-        attempt: row.id(AttemptResultRow::Attempt)?,
-        kind: word::<ResultKind>(row, AttemptResultRow::Kind)?,
-        label: row.get(AttemptResultRow::Label)?,
-        link: row.get(AttemptResultRow::Link)?,
-        outcome,
-    })
-}
-
-fn reviews_select() -> SelectStatement {
-    let mut select = Query::select();
-    select
-        .columns([
-            ReviewRow::Id,
-            ReviewRow::Work,
-            ReviewRow::Answer,
-            ReviewRow::Note,
-            ReviewRow::By,
-            ReviewRow::At,
-        ])
-        .from(ReviewRow::Table);
-    select
-}
-
-fn read_review(row: &Row) -> Result<Review, StoreError> {
-    Ok(Review {
-        id: row.id(ReviewRow::Id)?,
-        work: row.id(ReviewRow::Work)?,
-        answer: word::<ReviewAnswer>(row, ReviewRow::Answer)?,
-        note: row.get(ReviewRow::Note)?,
-        by: row.optional_id(ReviewRow::By)?,
-        at: row.time(ReviewRow::At)?,
-    })
-}
-
 impl AgentWorkRecords for AuthStorage {
     async fn matches_of_agent_since(
         &self,

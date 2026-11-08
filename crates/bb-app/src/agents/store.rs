@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 
-use bb_core::agent::{Agent, AgentState, LimitKind, AgentLimits};
+use bb_core::agent::{Agent, AgentLimits, AgentState, LimitKind};
 use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
 use jiff::Timestamp;

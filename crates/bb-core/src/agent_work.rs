@@ -79,6 +79,7 @@ words! {
 
 crate::words_in_api!(StopCause, "Why work on an issue stopped.");
 
+words! {
     /// What work that waits for a person waits for (*My agents*, *Waiting for you*).
     pub enum WaitsFor {
         /// A question of the agent.

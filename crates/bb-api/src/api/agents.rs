@@ -16,7 +16,7 @@ use bb_app::agents::{
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
-use bb_core::agent::{AgentState, LimitKind, AgentLimits};
+use bb_core::agent::{AgentLimits, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an agent that can be asked for, and which of them a list holds when the request
 /// names none.
-const AGENT_FIELDS: [FieldSpec; 12] = [
+const AGENT_FIELDS: [FieldSpec; 13] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("state"),

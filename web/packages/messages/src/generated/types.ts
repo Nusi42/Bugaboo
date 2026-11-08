@@ -4,9 +4,9 @@ import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
 import type { messages as agentWork } from "./agent-work.ts";
+import type { messages as agents } from "./agents.ts";
 import type { messages as assistant } from "./assistant.ts";
 import type { messages as assistantEntry } from "./assistant-entry.ts";
-import type { messages as agents } from "./agents.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -42,9 +42,9 @@ export type MessageKey =
   | keyof typeof account
   | keyof typeof admin
   | keyof typeof agentWork
+  | keyof typeof agents
   | keyof typeof assistant
   | keyof typeof assistantEntry
-  | keyof typeof agents
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -140,14 +140,6 @@ export interface MessageArguments {
   };
   "agent-work.throw-away-summary": { back: number; stay: number };
   "agent-work.throw-away-unlisted": { count: number };
-  "ai-setup.address-added": { date: string | number };
-  "ai-setup.address-remove-name": { address: string | number };
-  "ai-setup.agreement-confirmed": { at: string | number; person: string | number };
-  "ai-setup.agreement-sentence": { provider: string | number };
-  "ai-setup.agreement-text": { provider: string | number };
-  "ai-setup.agreement-text-confirmed": { provider: string | number };
-  "ai-setup.agreement-title": { provider: string | number };
-  "ai-setup.where-off-more": { names: string | number };
   "agents.accept-name": { agent: string | number };
   "agents.accepted-line": { agent: string | number; count: number };
   "agents.count": { count: string | number };
@@ -183,6 +175,14 @@ export interface MessageArguments {
   "agents.waiting-review": { agent: string | number };
   "agents.waiting-rule": { agent: string | number; search: string | number };
   "agents.work-state": { state: string | number };
+  "ai-setup.address-added": { date: string | number };
+  "ai-setup.address-remove-name": { address: string | number };
+  "ai-setup.agreement-confirmed": { at: string | number; person: string | number };
+  "ai-setup.agreement-sentence": { provider: string | number };
+  "ai-setup.agreement-text": { provider: string | number };
+  "ai-setup.agreement-text-confirmed": { provider: string | number };
+  "ai-setup.agreement-title": { provider: string | number };
+  "ai-setup.where-off-more": { names: string | number };
   "assignments.change-here-name": { who: string | number };
   "assignments.picked": { name: string | number };
   "assignments.remove-name": { what: string | number; who: string | number };

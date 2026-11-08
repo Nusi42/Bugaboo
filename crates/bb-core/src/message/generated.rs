@@ -8590,36 +8590,6 @@ pub fn agent_work_throw_away_unlisted(count: i64) -> Message {
     )
 }
 
-/// The message `ai-setup.address-added`.
-#[must_use]
-pub fn ai_setup_address_added(date: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.address-added"),
-        vec![("date", Value::Text(date.to_string()))],
-    )
-}
-
-/// The message `ai-setup.address-remove-name`.
-#[must_use]
-pub fn ai_setup_address_remove_name(address: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.address-remove-name"),
-        vec![("address", Value::Text(address.to_string()))],
-    )
-}
-
-/// The message `ai-setup.agreement-confirmed`.
-#[must_use]
-pub fn ai_setup_agreement_confirmed(
-    at: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.agreement-confirmed"),
-        vec![
-            ("at", Value::Text(at.to_string())),
-            ("person", Value::Text(person.to_string())),
-
 /// The message `agents.accept-name`.
 #[must_use]
 pub fn agents_accept_name(agent: impl std::fmt::Display) -> Message {
@@ -8640,49 +8610,6 @@ pub fn agents_accepted_line(agent: impl std::fmt::Display, count: i64) -> Messag
         ],
     )
 }
-
-/// The message `ai-setup.agreement-sentence`.
-#[must_use]
-pub fn ai_setup_agreement_sentence(provider: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.agreement-sentence"),
-        vec![("provider", Value::Text(provider.to_string()))],
-    )
-}
-
-/// The message `ai-setup.agreement-text`.
-#[must_use]
-pub fn ai_setup_agreement_text(provider: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.agreement-text"),
-        vec![("provider", Value::Text(provider.to_string()))],
-    )
-}
-
-/// The message `ai-setup.agreement-text-confirmed`.
-#[must_use]
-pub fn ai_setup_agreement_text_confirmed(provider: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.agreement-text-confirmed"),
-        vec![("provider", Value::Text(provider.to_string()))],
-    )
-}
-
-/// The message `ai-setup.agreement-title`.
-#[must_use]
-pub fn ai_setup_agreement_title(provider: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.agreement-title"),
-        vec![("provider", Value::Text(provider.to_string()))],
-    )
-}
-
-/// The message `ai-setup.where-off-more`.
-#[must_use]
-pub fn ai_setup_where_off_more(names: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("ai-setup.where-off-more"),
-        vec![("names", Value::Text(names.to_string()))],
 
 /// The message `agents.count`.
 #[must_use]
@@ -9005,6 +8932,84 @@ pub fn agents_work_state(state: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.work-state"),
         vec![("state", Value::Text(state.to_string()))],
+    )
+}
+
+/// The message `ai-setup.address-added`.
+#[must_use]
+pub fn ai_setup_address_added(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.address-added"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `ai-setup.address-remove-name`.
+#[must_use]
+pub fn ai_setup_address_remove_name(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.address-remove-name"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-confirmed`.
+#[must_use]
+pub fn ai_setup_agreement_confirmed(
+    at: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-confirmed"),
+        vec![
+            ("at", Value::Text(at.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `ai-setup.agreement-sentence`.
+#[must_use]
+pub fn ai_setup_agreement_sentence(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-sentence"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-text`.
+#[must_use]
+pub fn ai_setup_agreement_text(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-text"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-text-confirmed`.
+#[must_use]
+pub fn ai_setup_agreement_text_confirmed(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-text-confirmed"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.agreement-title`.
+#[must_use]
+pub fn ai_setup_agreement_title(provider: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.agreement-title"),
+        vec![("provider", Value::Text(provider.to_string()))],
+    )
+}
+
+/// The message `ai-setup.where-off-more`.
+#[must_use]
+pub fn ai_setup_where_off_more(names: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-setup.where-off-more"),
+        vec![("names", Value::Text(names.to_string()))],
     )
 }
 

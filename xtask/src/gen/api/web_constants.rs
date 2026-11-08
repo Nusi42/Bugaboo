@@ -181,7 +181,7 @@ pub(super) fn number_of(expr: &syn::Expr) -> Option<u128> {
 /// a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 14] = [
+const WORD_LISTS: [&str; 15] = [
     "IssueIcon",
     "StatusGroup",
     "Priority",

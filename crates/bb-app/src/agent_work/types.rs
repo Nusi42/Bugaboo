@@ -11,7 +11,9 @@ use bb_core::id::{
     StandingRuleId,
 };
 use bb_core::workflow::StatusKey;
-use bb_policy::{Masked, PersonRef, crate, relations, IssueLine};
+use bb_policy::{Masked, PersonRef};
+
+use crate::relations::IssueLine;
 use jiff::Timestamp;
 use serde::Serialize;
 

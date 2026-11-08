@@ -3,7 +3,7 @@
 
 use bb_app::agents::AgentStore;
 use bb_app::auth::AccessKeyRecord;
-use bb_core::agent::{Agent, AgentState, LimitKind, AgentLimits};
+use bb_core::agent::{Agent, AgentLimits, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
