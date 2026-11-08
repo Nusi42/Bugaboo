@@ -19,9 +19,12 @@
 use clap as _;
 use tokio as _;
 
+mod agents_work;
+mod ai_setup;
 mod clock;
 mod comments;
 mod dump;
+mod dump_ai;
 mod dump_issues;
 mod dump_organization;
 mod dump_time;
@@ -72,8 +75,8 @@ pub use dump::Dump;
 pub use error::{SampleError, Step};
 pub use folder::Output;
 pub use generate::{
-    DEFAULT_SEED, LATER_SECONDS, Later, LeftBehind, MadePerson, NothingMore, Options, STEP_SECONDS,
-    Sample, Target, World, create,
+    AgentKey, DEFAULT_SEED, LATER_SECONDS, Later, LeftBehind, MadePerson, NothingMore, Options,
+    STEP_SECONDS, Sample, Target, World, create,
 };
 pub use issues::Everything;
 pub use large::Large;

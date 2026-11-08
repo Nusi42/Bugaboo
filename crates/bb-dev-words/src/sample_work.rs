@@ -131,6 +131,7 @@ impl WorkPlan {
             counts.viewer_follows,
         );
         self.time.judge(judge, &work["time"], asked, full);
+        self.ai.judge(judge, &work["ai"]);
     }
 
     /// The starter workflows, and the one workflow of a project with its rule *Ask for*.

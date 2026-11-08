@@ -131,6 +131,76 @@ pub struct WorkPlan {
     pub hidden_from_contributors: Vec<String>,
     /// The working hours, time entries, estimates and timers (M6, TIME-01 to TIME-13).
     pub time: TimePlan,
+    /// AI, agents and what they did (M7, WP-13).
+    pub ai: AiPlan,
+}
+
+/// AI and agents in the sample (M7 part 6): how AI is set up, which agents one person has and what
+/// the hand-overs, the questions and the standing rule say. The counts of hand-overs are those of the
+/// states agent work can be in, so they are not scaled like the issues.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiPlan {
+    /// What a line of `sign-in.txt` starts with (before a tab) when it holds the key of an agent.
+    pub agent_key_mark: String,
+    /// The address of the provider: a made-up one that never answers.
+    pub address: String,
+    /// The model.
+    pub model: String,
+    /// The short names of the projects AI is switched on for.
+    pub projects_on: Vec<String>,
+    /// The short names of the projects AI is switched off for.
+    pub projects_off: Vec<String>,
+    /// The short names of the projects marked *Never sent to AI*.
+    pub never_sent_projects: Vec<String>,
+    /// The codes of the built-in fields marked *Never sent to AI*.
+    pub never_sent_fields: Vec<String>,
+    /// The name of the Team member the agents work for.
+    pub person: String,
+    /// The short name of the project the agents work in.
+    pub project: String,
+    /// The names of the two agents, the first one takes most of the work.
+    pub agents: Vec<String>,
+    /// The note of the brief of every hand-over.
+    pub note: String,
+    /// The question an agent asks.
+    pub question: String,
+    /// The answer to it.
+    pub answer: String,
+    /// The plan an agent shows for approval.
+    pub plan: String,
+    /// What the reviewer writes when sending an attempt back.
+    pub sent_back_note: String,
+    /// Why an agent gave up.
+    pub gave_up: String,
+    /// The name of the check an agent attaches.
+    pub check_label: String,
+    /// The standing rule over new bugs.
+    pub rule: RulePlan,
+    /// The AI app a Contributor allowed.
+    pub app: AppPlan,
+}
+
+/// The standing rule of the sample: it proposes and changes nothing.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RulePlan {
+    /// The name of the saved search the rule runs over.
+    pub search: String,
+    /// The search text.
+    pub text: String,
+    /// After how many days the rule runs out.
+    pub days: i64,
+}
+
+/// An AI app a Contributor allowed.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppPlan {
+    /// What the app is called.
+    pub name: String,
+    /// The address the app is sent back to after the person allowed it.
+    pub return_address: String,
 }
 
 /// A choice of *Cost center* the sample adds: its number and its name.

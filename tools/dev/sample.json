@@ -251,6 +251,35 @@
           "The call with the customer ran over"
         ],
         "hrReasons": ["Corrected with the employee", "Payroll check of the month"]
+      },
+      "ai": {
+        "$comment": "AI, agents and what they did (M7, part 6): the provider is a made-up address that never answers, so nothing leaves the computer (the browser tests put the test fake in its place); the agreement is confirmed because it is not a model on the local network. 'neverSentFields' are the codes of built-in fields. All the agent work is on 'project'; the person is named as the plan of the people names them. A line of sign-in.txt that starts with 'agentKeyMark' and a tab holds the key of an agent: the agent, the e-mail address of its person and the key, separated by tabs; it starts with a comment mark so readers of the people skip it.",
+        "agentKeyMark": "#agent",
+        "address": "https://models.example.test/v1",
+        "model": "sample-model",
+        "projectsOn": ["WEB", "APP"],
+        "projectsOff": ["OPS"],
+        "neverSentProjects": ["DOC"],
+        "neverSentFields": ["time-spent"],
+        "person": "Ben Hale",
+        "project": "WEB",
+        "agents": ["Fixer", "Sorter"],
+        "note": "Please look at this and tell what you find.",
+        "question": "Which browser shows the problem?",
+        "answer": "Firefox on a phone",
+        "plan": "Find the line that sets the width, then test it on a narrow screen.",
+        "sentBackNote": "Please also check the narrow layout.",
+        "gaveUp": "The steps to reproduce are missing.",
+        "checkLabel": "Unit tests",
+        "rule": {
+          "search": "New bugs in Website",
+          "text": "type is Bug and statusGroup is not Done",
+          "days": 30
+        },
+        "app": {
+          "name": "Claude Code",
+          "returnAddress": "http://127.0.0.1/callback"
+        }
       }
     }
   },

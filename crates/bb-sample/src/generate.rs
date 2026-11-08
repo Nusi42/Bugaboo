@@ -173,6 +173,33 @@ pub struct LeftBehind {
     /// The moment the people began to work together (reports, status changes under workflows,
     /// files, following): the dump counts what they did from here.
     pub work_since: Option<Timestamp>,
+    /// The keys of the agents the sample made, for `sign-in.txt`.
+    pub agent_keys: Vec<AgentKey>,
+    /// How many of the issues handed over to agents the person of the agent may not change.
+    pub agent_work_unchangeable: u64,
+}
+
+/// The key of an agent, and whom it works for. It goes to `sign-in.txt` and nowhere else.
+#[derive(Clone)]
+pub struct AgentKey {
+    /// What its line of `sign-in.txt` starts with (`agentKeyMark` of the plan).
+    pub mark: String,
+    /// The name of the agent.
+    pub agent: String,
+    /// The e-mail address of the person the agent works for.
+    pub email: String,
+    /// The whole key (`bb_…`).
+    pub key: String,
+}
+
+// A key never shows in a message or a failed test.
+impl fmt::Debug for AgentKey {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("AgentKey")
+            .field("agent", &self.agent)
+            .finish_non_exhaustive()
+    }
 }
 
 /// The step that follows the people today: none.
@@ -250,6 +277,13 @@ impl Sample {
                 text.push_str(key);
             }
             text.push('\n');
+        }
+        // The keys of the agents follow as comment lines, so a reader of the people skips them.
+        for agent in &self.left_behind.agent_keys {
+            text.push_str(&format!(
+                "{}\t{}\t{}\t{}\n",
+                agent.mark, agent.agent, agent.email, agent.key
+            ));
         }
         text
     }
@@ -459,7 +493,10 @@ fn link_path(created: Authorized<CreatedInvitation>) -> Result<String, SampleErr
 }
 
 /// One text out of an answer, read the way the browser gets it: through the answer's own view.
-fn plain_text<T>(answer: Authorized<T>, pick: impl FnOnce(T) -> String) -> Option<String> {
+pub(crate) fn plain_text<T>(
+    answer: Authorized<T>,
+    pick: impl FnOnce(T) -> String,
+) -> Option<String> {
     /// The one field of the answer the sample needs.
     #[derive(serde::Serialize)]
     struct Text {

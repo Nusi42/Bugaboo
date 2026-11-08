@@ -1274,6 +1274,8 @@
   "sample.step.following": "following an issue",
   "sample.step.saved-searches": "saving, sharing or choosing a search",
   "sample.step.time": "recording working hours and time",
+  "sample.step.ai": "setting up AI and letting an app in",
+  "sample.step.agents": "creating agents and giving them work",
   "sample.step.notifications": "reading or marking notifications",
   "sample.step.jobs": "running the jobs that were queued",
   "sample.step.dataset": "writing the large dataset",

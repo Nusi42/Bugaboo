@@ -129,9 +129,15 @@ impl Later for Everything {
         let work_since = world.clock.now();
         let full: u32 = names.projects.iter().map(|project| project.issues).sum();
         maker.work_together(self.issues, full).await?;
+        let ai = names.work.ai.clone();
+        maker.set_up_ai(&ai).await?;
+        maker.let_an_app_in(&ai.app).await?;
+        let (agent_keys, unchangeable) = maker.give_agents_work(&ai).await?;
         maker.work_hours(&calendar, self.issues, full).await?;
         self.left = maker.leave_states_behind().await?;
         self.left.work_since = Some(work_since);
+        self.left.agent_keys = agent_keys;
+        self.left.agent_work_unchangeable = unchangeable;
         // What a server does every day (the job `history.catch-up`): the history of every issue
         // is read from the events, so the first page that shows one does not have to.
         world

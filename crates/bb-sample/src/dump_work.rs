@@ -83,6 +83,8 @@ pub(crate) struct DumpWork {
     follows: BTreeMap<String, u64>,
     /// Working hours and time on issues.
     time: crate::dump_time::DumpTime,
+    /// AI and agents.
+    ai: crate::dump_ai::DumpAi,
 }
 
 /// The role as the dump counts it: Administrators and Team members do the work of the team.
@@ -116,6 +118,7 @@ impl Sample {
         self.notifications_of(&mut work, &roles, issues).await?;
         self.count_roles(&mut work, &roles, events);
         work.time = self.time_of(&roles, events, issues).await?;
+        work.ai = self.ai_of(events).await?;
         Ok(work)
     }
 

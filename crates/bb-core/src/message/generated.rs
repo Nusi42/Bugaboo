@@ -5349,6 +5349,12 @@ pub const SAMPLE_STEP_ACCEPTING_INVITATION: MessageKey =
 /// The message `sample.step.access-key`.
 pub const SAMPLE_STEP_ACCESS_KEY: MessageKey = MessageKey::new("sample.step.access-key");
 
+/// The message `sample.step.agents`.
+pub const SAMPLE_STEP_AGENTS: MessageKey = MessageKey::new("sample.step.agents");
+
+/// The message `sample.step.ai`.
+pub const SAMPLE_STEP_AI: MessageKey = MessageKey::new("sample.step.ai");
+
 /// The message `sample.step.assignment`.
 pub const SAMPLE_STEP_ASSIGNMENT: MessageKey = MessageKey::new("sample.step.assignment");
 
@@ -20752,6 +20758,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "accepting an invitation",
     ),
     ("sample.step.access-key", "creating an access key"),
+    ("sample.step.agents", "creating agents and giving them work"),
+    ("sample.step.ai", "setting up AI and letting an app in"),
     ("sample.step.assignment", "giving a role"),
     ("sample.step.change", "changing an issue"),
     ("sample.step.code-app", "setting up a code app"),

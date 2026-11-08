@@ -3,6 +3,7 @@
 //! rules and proposals; `work` the work on an issue.
 
 mod grants;
+mod stored;
 mod work;
 
 use bb_app::agents::{AgentWork, AgentWorkStore};

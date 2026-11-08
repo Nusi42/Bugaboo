@@ -270,6 +270,53 @@ pub(crate) mod tests {
             "asked_for_who": 3,
             "follows": { "viewer": counts.viewer_follows },
             "time": made_time(work, asked, full),
+            "ai": made_ai(&work.ai),
+        })
+    }
+
+    /// The part `ai` of a dump that has what the plan says.
+    fn made_ai(plan: &crate::sample::AiPlan) -> Value {
+        let states = bb_core::agent_work::AgentWorkState::ALL
+            .iter()
+            .map(|state| (state.code().to_owned(), json!(2)))
+            .collect::<serde_json::Map<_, _>>();
+        let sorted = |names: &[String]| {
+            let mut names = names.to_vec();
+            names.sort();
+            names
+        };
+        json!({
+            "enabled": true,
+            "agreement_confirmed": true,
+            "projects_on": sorted(&plan.projects_on),
+            "projects_off": sorted(&plan.projects_off),
+            "never_sent_projects": sorted(&plan.never_sent_projects),
+            "never_sent_fields": sorted(&plan.never_sent_fields),
+            "agents": plan.agents.iter().map(|name| json!({
+                "name": name, "person": plan.person, "keys": 1, "state": "active",
+            })).collect::<Vec<_>>(),
+            "agents_with_a_role": 0,
+            "agents_assigned": 0,
+            "work": {
+                "by_state": states,
+                "waiting_with_question": 1,
+                "waiting_with_plan": 1,
+                "answered_questions": 1,
+                "sent_back": 1,
+                "accepted": 1,
+                "thrown_away": 1,
+                "results": 4,
+                "on_issues_the_person_cannot_change": 0,
+            },
+            "rules": [{
+                "search": plan.rule.search,
+                "days_ahead": plan.rule.days,
+                "fields": [],
+                "names_a_people_field": false,
+                "matches": 3,
+            }],
+            "apps": 1,
+            "marks": { "agent": 4, "matching_events": 4 },
         })
     }
 

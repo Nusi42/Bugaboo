@@ -61,6 +61,27 @@ pub(crate) fn json<T: Masked + Serialize>(
         .map_err(|error| SampleError::step(step, &error))
 }
 
+/// A part of an answer that has no JSON form of its own, picked by the sample.
+#[derive(Serialize)]
+#[serde(transparent)]
+struct Picked(Value);
+
+impl Masked for Picked {}
+
+/// The part of an answer that `pick` takes, read as JSON: for the views that are not sent whole
+/// (a work view with the people in it), the sample needs only an ID or a version.
+pub(crate) fn picked<T>(
+    answer: Result<Authorized<T>, AppError>,
+    step: Step,
+    pick: impl FnOnce(T) -> Value,
+) -> Result<Value, SampleError> {
+    answer
+        .map_err(|error| SampleError::step(step, &error))?
+        .map(|answer| Picked(pick(answer)))
+        .masked_value()
+        .map_err(|error| SampleError::step(step, &error))
+}
+
 /// The ID that a member of a JSON object holds.
 pub(crate) fn id_in<T: FromStr>(value: &Value, member: &str) -> Result<T, SampleError> {
     value[member]

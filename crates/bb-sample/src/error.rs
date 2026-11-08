@@ -86,6 +86,10 @@ pub enum Step {
     Jobs,
     /// Recording working hours and time, estimates and timers.
     Time,
+    /// Setting up AI, marking what is never sent to it and letting an AI app in.
+    Ai,
+    /// Making agents and giving them work.
+    Agents,
 }
 
 impl Step {
@@ -128,6 +132,8 @@ impl Step {
             Self::SavedSearches => message::SAMPLE_STEP_SAVED_SEARCHES,
             Self::Jobs => message::SAMPLE_STEP_JOBS,
             Self::Time => message::SAMPLE_STEP_TIME,
+            Self::Ai => message::SAMPLE_STEP_AI,
+            Self::Agents => message::SAMPLE_STEP_AGENTS,
         })
     }
 }

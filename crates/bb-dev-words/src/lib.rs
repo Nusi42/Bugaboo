@@ -12,6 +12,7 @@
 pub mod accounts;
 pub mod database;
 pub mod sample;
+mod sample_ai;
 mod sample_issues;
 mod sample_large;
 mod sample_time;

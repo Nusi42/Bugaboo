@@ -14,6 +14,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 use serde_json::Value;
 
+mod ai;
 mod issues;
 mod searches;
 mod time;

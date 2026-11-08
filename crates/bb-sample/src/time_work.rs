@@ -221,7 +221,7 @@ impl Maker<'_, '_> {
     }
 
     /// The first administrator's place in the plan of the people.
-    fn administrator(&self) -> Result<usize, SampleError> {
+    pub(crate) fn administrator(&self) -> Result<usize, SampleError> {
         self.world
             .people
             .iter()

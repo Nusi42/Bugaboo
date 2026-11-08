@@ -138,15 +138,15 @@ The plan is `issues.work.savedSearches` of `tools/dev/sample.json` and the stage
 
 ### AI and agents of the sample (M7, part 6)
 
-Part 6 of the sample (`bb-sample`, WP-13) is made through the use cases after the saved searches:
+Part 6 of the sample (`bb-sample`, WP-13) is made through the use cases after the saved searches and before the working hours (`ai_setup.rs`, `agents_work.rs`; the numbers and names are the `ai` part of `issues.work` in `tools/dev/sample.json`):
 
-- **AI is on** for the organization with the **test fake** as its provider, so nothing leaves the computer; *Website* and *Mobile app* have it on, *Operations* has it off. *Cost center* and the own field *Customer* are *Never sent to AI*, and so is the project *Handbook*. *Send names of people* stays off.
-- **Two agents of one person**, *Fixer* and *Sorter*, both of the first Team member of Website, each with an agent key in `sign-in.txt` (like the access keys, never in the repository) and the starting limits.
-- **Hand-overs in every state** of agent work on Website issues (*Waiting for the agent*, *Agent working*, *Waiting for you* with a question and with a plan, *Ready for review*, *Agent gave up*, *Stopped*), attempts with results and checks, one accepted by itself on *Website*, which allows it.
-- **One standing rule** of *Sorter* on *"new bugs in Website"*, by proposals only, with a few matches written down.
-- **One connected app** of a Contributor through an access key, so the run page has a session to show.
+- **AI is on** for the organization. The provider is a made-up address under `.example.test` that never answers, so nothing leaves the computer (the browser tests put the test fake, a model on this computer, in its place); because the address is not on the local network, an administrator confirms the agreement. *Website* and *Mobile app* have AI on, *Operations* has it off. The project *Handbook* and the built-in field *Time spent* are *Never sent to AI*; *Cost center* and *Customer* stay hidden from Contributors, which keeps them from AI apps. *Send names of people* stays off.
+- **Two agents of one person**, *Fixer* and *Sorter*, both of Ben Hale (a Team member), each with an agent key. The keys are written to `sign-in.txt` as comment lines that start with `agentKeyMark` (`#agent`), so a reader of the people skips them, and nowhere else.
+- **Hand-overs in every state** of agent work on nine issues of *Website* (and its sub-projects): *Waiting for the agent*, *Agent working*, *Waiting for you* with a question and with a plan, *Ready for review* (with a comment of the agent and a passed check), *Agent gave up*, *Stopped* (a hand-over of one day that ran out: the work happens ten days before the end of the sample and the clock then moves two days on, so the queued jobs run), and two reviewed ones, one accepted after a question, an answer and a sent-back attempt, and one thrown away.
+- **One standing rule** of *Sorter* over the saved search *New bugs in Website*, by proposals only, ending in 30 days, with its matches written down.
+- **One AI app** (*Claude Code*) allowed by a Contributor at the consent step, with a session, so the run page has one to show.
 
-Enforced by: TEST-SAMPLE-DATA (the agents, hand-overs and standing rules hold the rules of ADR-0029).
+Enforced by: TEST-SAMPLE-DATA. The dump has the part `issues.work.ai`, and `AiPlan::judge` (`bb-dev-words`) holds it against the plan and the rules of ADR-0029: AI on with the agreement confirmed; the projects and fields of the plan marked; two agents of one person with a key each; no agent holds a role or is *Assigned to* anything; no piece of agent work is on an issue its person cannot change (*Check access* as an administrator asks it); every state of agent work, a question and a plan waiting, an answer, a sent-back, an accepted and a thrown-away attempt; one standing rule that changes no field, names no field of people, ends within 90 days and has matches; one AI app of a Contributor; and every comment an agent wrote has the mark *Written by an agent* that names that agent. The tests are `ai_30_…` and `ai_32_…` in `crates/bb-sample/src/tests/ai.rs`, on both databases.
 
 ### The M7 exit demo on the sample
 
