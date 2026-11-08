@@ -436,6 +436,7 @@ pub(super) fn agent_request(operation: &str) -> Option<Request> {
             None,
         ),
         "stopAllMyAgents" => ("POST", "/api/v1/me/agents/stop-all".into(), None),
+        "listMyAgentWork" => ("GET", "/api/v1/me/agents/work".into(), None),
         "listOrganizationAgents" => ("GET", "/api/v1/organization/agents".into(), None),
         _ => return None,
     })

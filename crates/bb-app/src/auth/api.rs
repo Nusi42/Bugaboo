@@ -102,13 +102,14 @@ use super::{
     end_session, exchange_token, field, field_permissions, field_types, field_usage, fields,
     file_rules, finish_upload, follow_issue, followers, following, form_layout, get_run, group,
     group_members, groups, hand_agent, hand_over, heartbeat, history, image_hosts,
+    MyAgentWork, MyAgentWorkQuery,
     invitation_lookup, invitations, issue, issue_agent_work, issue_files, issue_labels_and_tags,
     issue_relations, issue_time, issue_time_entries, issue_types, issues, label_change_preview,
     label_groups, labels, layout_editor, list_tools, lock_setting, look_at_work,
     mail_server_status, many_changes_run, mcp_identity, member_choices, mention_choices,
-    move_issue, move_project, my_agents, my_handle, my_time_entries, name_choices, never_sent_list,
-    notifications, oauth_metadata, offers, old_work_days, organization_agents, own_loss,
-    passkey_registration_options, passkey_second_step, passkey_second_step_options,
+    move_issue, move_project, my_agent_work, my_agents, my_handle, my_time_entries, name_choices,
+    never_sent_list, notifications, oauth_metadata, offers, old_work_days, organization_agents,
+    own_loss, passkey_registration_options, passkey_second_step, passkey_second_step_options,
     passkey_sign_in, passkey_sign_in_options, people, people_of_hours, people_to_check,
     people_visibility, permissions, person, preview_many_changes, preview_move, preview_undo_run,
     project, project_ai, project_choices, project_list, project_statuses, project_time, projects,
@@ -657,6 +658,8 @@ use_cases! {
     remove_web_address(RemoveWebAddress) -> Done;
     /// Hands issues over to one of the person's agents.
     hand_over(HandOver) -> Authorized<HandOverView>;
+    /// Lists the current work of the person's own agents.
+    my_agent_work(MyAgentWorkQuery) -> Authorized<MyAgentWork>;
     /// Shows the agent work on an issue.
     issue_agent_work(AgentWorkQuery) -> Authorized<IssueAgentWork>;
     /// An agent takes an issue that was handed over to it and starts an attempt.

@@ -140,6 +140,26 @@ impl AgentStore for FakeStore {
         Ok(self.read(|state| page(&state.agents, |_| true, after, limit)))
     }
 
+    async fn last_use_of_agents(
+        &self,
+        agents: Vec<AgentId>,
+    ) -> Result<Vec<(AgentId, jiff::Timestamp)>, FakeError> {
+        Ok(self.read(|state| {
+            let mut latest: std::collections::BTreeMap<AgentId, jiff::Timestamp> =
+                std::collections::BTreeMap::new();
+            for record in &state.access_keys {
+                let (Some(agent), Some(at)) = (record.key.agent, record.key.last_used_at) else {
+                    continue;
+                };
+                if agents.contains(&agent) {
+                    let slot = latest.entry(agent).or_insert(at);
+                    *slot = (*slot).max(at);
+                }
+            }
+            latest.into_iter().collect()
+        }))
+    }
+
     async fn keys_of_agent(&self, agent: AgentId) -> Result<Vec<AccessKeyRecord>, FakeError> {
         Ok(self.read(|state| {
             state

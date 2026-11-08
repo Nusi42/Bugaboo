@@ -580,6 +580,23 @@ impl AgentWorkRecords for super::fake::FakeStore {
         ))
     }
 
+    async fn current_work_of_agents_in(
+        tx: &mut Tx,
+        agents: Vec<AgentId>,
+        limit: u64,
+    ) -> Result<Vec<IssueWork>, FakeError> {
+        let work = &tx.state.work;
+        let mut found: Vec<IssueWork> = work
+            .works
+            .iter()
+            .filter(|w| agents.contains(&w.agent) && (work.is_open(w) || w.accepted_by_itself))
+            .cloned()
+            .collect();
+        found.reverse();
+        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+        Ok(found)
+    }
+
     async fn reviews_of_in(tx: &mut Tx, work: AgentWorkId) -> Result<Vec<Review>, FakeError> {
         Ok(tx
             .state

@@ -92,6 +92,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             offered: agent.offered_to.is_some(),
             version: agent.version,
             made_at: agent.made_at,
+            last_used_at: keys.iter().filter_map(|key| key.key.last_used_at).max(),
             keys: shown,
         })
     }
@@ -270,6 +271,19 @@ pub async fn organization_agents<S: AuthStore>(
     let mut items = Vec::with_capacity(page.items.len());
     for agent in &page.items {
         items.push(ctx.agent_view(&actor, agent, false).await?);
+    }
+    // One read for the whole page, not one for each agent.
+    let ids: Vec<AgentId> = page.items.iter().map(|agent| agent.id).collect();
+    let used = ctx
+        .store()
+        .last_use_of_agents(ids)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    for item in &mut items {
+        item.last_used_at = used
+            .iter()
+            .find(|(agent, _)| *agent == item.id)
+            .map(|(_, at)| *at);
     }
     Ok(access.authorize(AgentPage { items, next_cursor }))
 }

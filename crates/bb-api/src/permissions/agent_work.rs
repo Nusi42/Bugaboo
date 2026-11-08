@@ -11,6 +11,7 @@ use super::{Answer, Declared, Route, route};
 /// The routes of agent work, by operation ID.
 pub(super) const ROUTES: &[Route] = &[
     route("handOver", Declared::OwnAccount, Answer::Ordinary),
+    route("listMyAgentWork", Declared::OwnAccount, Answer::NeverStored),
     route("getIssueAgentWork", Declared::ByRecord, Answer::NeverStored),
     route(
         "answerAgentQuestion",

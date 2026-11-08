@@ -53,6 +53,7 @@ use crate::agent_work::{
     StandingRulePage, StandingRuleView, StandingRulesQuery, change_standing_rule,
     create_standing_rule, decide_proposal, propose_change, standing_rules,
 };
+use crate::agent_work::{MyAgentWork, MyAgentWorkQuery, my_agent_work};
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
     HandAgent, RenameAgent, StopAllAgents, accept_agent, agent, change_agent, create_agent,

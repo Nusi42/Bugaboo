@@ -61,6 +61,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn agents_of(person: UserId, after: Option<AgentId>, limit: u64) -> Vec<Agent>;
         /// Every agent of the organization, by ID, after `after`, at most `limit`.
         fn all_agents(after: Option<AgentId>, limit: u64) -> Vec<Agent>;
+        /// When each of these agents last signed in with a key, for those that did.
+        fn last_use_of_agents(agents: Vec<AgentId>) -> Vec<(AgentId, Timestamp)>;
         /// The keys of one agent, newest first.
         fn keys_of_agent(agent: AgentId) -> Vec<AccessKeyRecord>;
         /// The agents handed to a person that they have not accepted yet.

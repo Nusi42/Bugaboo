@@ -2699,6 +2699,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/agents/work": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The work of the person's own agents: what waits for the person, the work in progress, and the
+     *     work that was accepted by itself and nobody has looked at.
+     */
+    get: operations["listMyAgentWork"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/handle": {
     parameters: {
       query?: never;
@@ -4907,6 +4927,11 @@ export interface components {
        * @description Issues it may work on at once, at most.
        */
       issues_at_once?: number | null;
+      /**
+       * Format: date-time
+       * @description When it last signed in with a key; left out when it never did. Asked for by name.
+       */
+      last_used_at?: string | null;
       /** @description Its name. */
       name?: string | null;
       /** @description Whether it is offered to another person who has not accepted yet. */
@@ -7856,6 +7881,24 @@ export interface components {
      * @enum {string}
      */
     MoveRightKind: "nowhere" | "into-projects" | "into-projects-or-top";
+    /** @description The current work of the person's agents. */
+    MyAgentWorkBody: {
+      /**
+       * @description The work, newest first: what has not ended, and what was accepted by itself and not looked
+       *     at yet.
+       */
+      items: components["schemas"]["MyWorkBody"][];
+      /** @description Whether the list was cut at the most it holds. */
+      truncated: boolean;
+    };
+    /** @description One piece of work of one of the person's agents, with its issue. */
+    MyWorkBody: {
+      /** @description The issue, as the person may see it. */
+      issue: components["schemas"]["IssueRef"];
+      waits_for?: components["schemas"]["WaitsFor"] | null;
+      /** @description The work, with its brief, attempts, questions and reviews. */
+      work: components["schemas"]["WorkBody"];
+    };
     /** @description A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue. */
     NameBody: {
       /** @description The name. */
@@ -10941,6 +10984,11 @@ export interface components {
      * @enum {string}
      */
     ViewKind: "list";
+    /**
+     * @description What work that waits for a person waits for.
+     * @enum {string}
+     */
+    WaitsFor: "question" | "plan" | "review";
     /** @description A broken working-time rule of a day: which rule, its numbers in minutes, and its sentence. */
     WarningBody: {
       /** @description The rule and its numbers, in minutes (`{"rule": "long-day", "worked": 635, "most": 600}`). */
@@ -16836,6 +16884,33 @@ export interface operations {
         };
         content?: never;
       };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listMyAgentWork: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work of the person's agents. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyAgentWorkBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];

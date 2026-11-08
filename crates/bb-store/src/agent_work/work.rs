@@ -393,6 +393,42 @@ impl AgentWorkRecords for AuthStorage {
         .await
     }
 
+    async fn current_work_of_agents_in(
+        transaction: &mut Transaction,
+        agents: Vec<AgentId>,
+        limit: u64,
+    ) -> Result<Vec<IssueWork>, StoreError> {
+        if agents.is_empty() {
+            return Ok(Vec::new());
+        }
+        // Open work is what `only_open_work` says; work accepted by itself is closed, and stays in
+        // the list until a person looked at it.
+        let mut open_ids = Query::select();
+        open_ids
+            .column((IssueWorkRow::Table, IssueWorkRow::Id))
+            .from(IssueWorkRow::Table);
+        only_open_work(&mut open_ids);
+        let mut select = work_select();
+        select
+            .and_where(
+                Expr::col(IssueWorkRow::Agent).is_in(
+                    agents
+                        .iter()
+                        .map(|agent| agent.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .and_where(
+                sea_query::Cond::any()
+                    .add(Expr::col(IssueWorkRow::Id).in_subquery(open_ids))
+                    .add(Expr::col(IssueWorkRow::AcceptedByItself).eq(true))
+                    .into(),
+            )
+            .order_by(IssueWorkRow::Id, Order::Desc)
+            .limit(limit);
+        all(transaction, &select, read_work).await
+    }
+
     async fn reviews_of_in(
         transaction: &mut Transaction,
         work: AgentWorkId,

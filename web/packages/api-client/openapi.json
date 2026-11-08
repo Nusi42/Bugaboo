@@ -9606,6 +9606,50 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/agents/work": {
+      "get": {
+        "tags": ["agent-work"],
+        "summary": "The work of the person's own agents: what waits for the person, the work in progress, and the\nwork that was accepted by itself and nobody has looked at.",
+        "operationId": "listMyAgentWork",
+        "responses": {
+          "200": {
+            "description": "The work of the person's agents.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAgentWorkBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/me/handle": {
       "get": {
         "tags": ["people"],
@@ -17925,6 +17969,11 @@
             "format": "int64",
             "description": "Issues it may work on at once, at most."
           },
+          "last_used_at": {
+            "type": ["string", "null"],
+            "description": "When it last signed in with a key; left out when it never did. Asked for by name.",
+            "format": "date-time"
+          },
           "name": {
             "type": ["string", "null"],
             "description": "Its name."
@@ -23867,6 +23916,50 @@
         "type": "string",
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
+      },
+      "MyAgentWorkBody": {
+        "type": "object",
+        "description": "The current work of the person's agents.",
+        "required": ["items", "truncated"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyWorkBody"
+            },
+            "description": "The work, newest first: what has not ended, and what was accepted by itself and not looked\nat yet."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut at the most it holds."
+          }
+        }
+      },
+      "MyWorkBody": {
+        "type": "object",
+        "description": "One piece of work of one of the person's agents, with its issue.",
+        "required": ["work", "issue"],
+        "properties": {
+          "issue": {
+            "$ref": "#/components/schemas/IssueRef",
+            "description": "The issue, as the person may see it."
+          },
+          "waits_for": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WaitsFor",
+                "description": "What the work waits for, when it waits for the person."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work": {
+            "$ref": "#/components/schemas/WorkBody",
+            "description": "The work, with its brief, attempts, questions and reviews."
+          }
+        }
       },
       "NameBody": {
         "type": "object",
@@ -29977,6 +30070,11 @@
         "type": "string",
         "description": "The kind of view a saved search is shown as. Other kinds come with their views.",
         "enum": ["list"]
+      },
+      "WaitsFor": {
+        "type": "string",
+        "description": "What work that waits for a person waits for.",
+        "enum": ["question", "plan", "review"]
       },
       "WarningBody": {
         "type": "object",

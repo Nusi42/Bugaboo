@@ -116,6 +116,9 @@ pub struct AgentView {
     pub version: i64,
     /// When it was made.
     pub made_at: Timestamp,
+    /// When it last signed in with a key, when it did. Read for the list of the organization and
+    /// for one agent, not for the agents of a person.
+    pub last_used_at: Option<Timestamp>,
     /// Its keys, newest first.
     pub keys: Vec<AccessKeyView>,
 }

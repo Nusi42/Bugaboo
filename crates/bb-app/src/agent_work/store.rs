@@ -138,6 +138,10 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// Whether another piece of work on the issue has an attempt running (all the work on the
     /// issue is looked at, however much there is).
     fn another_in_attempt(issue: IssueId, except: AgentWorkId) -> bool = another_in_attempt_in;
+        /// The work that is current for these agents, newest first, at most `limit`: work that has
+        /// not ended and whose hand-over still gives work, and work that was accepted by itself
+        /// and that nobody has looked at yet (*My agents*).
+        fn current_work_of_agents(agents: Vec<AgentId>, limit: u64) -> Vec<IssueWork> = current_work_of_agents_in;
         /// The reviews of a piece of work, oldest first.
         fn reviews_of(work: AgentWorkId) -> Vec<Review> = reviews_of_in;
         /// The people who must hear about work: the person responsible for the agent and the person

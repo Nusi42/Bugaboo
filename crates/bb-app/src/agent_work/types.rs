@@ -482,3 +482,29 @@ pub struct TakeWork {
     /// agent is told what changed and takes nothing, so it never starts on an issue it did not read.
     pub version: Option<i64>,
 }
+
+/// The work of the person's own agents (*My agents*).
+pub struct MyAgentWorkQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+}
+
+/// One piece of work of one of the person's agents, with its issue.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MyWorkItem {
+    /// The work.
+    pub work: WorkView,
+    /// The issue, as the person may see it.
+    pub issue: crate::relations::IssueLine,
+    /// What it waits for, when it waits for the person.
+    pub waits_for: Option<bb_core::agent_work::WaitsFor>,
+}
+
+/// The current work of the person's agents.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MyAgentWork {
+    /// The work, newest first.
+    pub items: Vec<MyWorkItem>,
+    /// Whether the list was cut at the most *My agents* shows.
+    pub truncated: bool,
+}

@@ -321,6 +321,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::with("deleteAgentKey", &[Quirk::NamesAMissingThing]),
     Example::route("stopAllMyAgents"),
+    Example::route("listMyAgentWork"),
     Example::route("listOrganizationAgents"),
     Example::with("handOver", &[Quirk::NamesAMissingThing]),
     Example::with("getIssueAgentWork", &[Quirk::NamesAMissingThing]),

@@ -48,6 +48,7 @@ const AGENT_FIELDS: [FieldSpec; 11] = [
     FieldSpec::by_default("offered"),
     FieldSpec::by_default("version"),
     FieldSpec::on_request("created_at"),
+    FieldSpec::on_request("last_used_at"),
 ];
 
 /// An agent in a list: the fields that can be asked for. An answer holds only those that were
@@ -88,6 +89,9 @@ pub(crate) struct AgentItem {
     /// When it was created.
     #[serde(skip_serializing_if = "Option::is_none")]
     created_at: Option<String>,
+    /// When it last signed in with a key; left out when it never did. Asked for by name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_used_at: Option<String>,
 }
 
 impl Masked for AgentItem {}
@@ -106,6 +110,7 @@ impl From<&AgentView> for AgentItem {
             offered: Some(agent.offered),
             version: Some(agent.version),
             created_at: Some(agent.made_at.to_string()),
+            last_used_at: agent.last_used_at.map(|at| at.to_string()),
         }
     }
 }

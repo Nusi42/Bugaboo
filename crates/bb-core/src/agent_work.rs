@@ -79,6 +79,19 @@ words! {
 
 crate::words_in_api!(StopCause, "Why work on an issue stopped.");
 
+    /// What work that waits for a person waits for (*My agents*, *Waiting for you*).
+    pub enum WaitsFor {
+        /// A question of the agent.
+        Question => "question",
+        /// A plan to approve.
+        Plan => "plan",
+        /// A result to review.
+        Review => "review",
+    }
+}
+
+crate::words_in_api!(WaitsFor, "What work that waits for a person waits for.");
+
 words! {
     /// What a hand-over lets the agent do on top of what it always may (read the issue and what it
     /// links to, comment, report, attach results, link related issues).
@@ -433,6 +446,18 @@ impl AgentWorkState {
     #[must_use]
     pub const fn in_attempt(self) -> bool {
         matches!(self, Self::AgentWorking | Self::WaitingForYou)
+    }
+
+    /// What work in this state waits for, when it waits for a person: a result to review, a
+    /// question when one is unanswered, and a plan otherwise. The one place that says it.
+    #[must_use]
+    pub const fn waits_for(self, question_open: bool) -> Option<WaitsFor> {
+        match self {
+            Self::ReadyForReview => Some(WaitsFor::Review),
+            Self::WaitingForYou if question_open => Some(WaitsFor::Question),
+            Self::WaitingForYou => Some(WaitsFor::Plan),
+            _ => None,
+        }
     }
 
     /// The state after a question: *Waiting for you*. None for work that cannot ask: work that

@@ -5,6 +5,7 @@ use bb_app::agents::AgentStore;
 use bb_app::auth::AccessKeyRecord;
 use bb_core::agent::{Agent, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
+use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
@@ -175,6 +176,41 @@ impl AgentStore for AuthStorage {
             .iter()
             .map(read_agent)
             .collect()
+    }
+
+    async fn last_use_of_agents(
+        &self,
+        agents: Vec<AgentId>,
+    ) -> Result<Vec<(AgentId, Timestamp)>, StoreError> {
+        if agents.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = Query::select();
+        select
+            .columns([AccessKeyRow::Agent, AccessKeyRow::LastUsedAt])
+            .from(AccessKeyRow::Table)
+            .and_where(
+                Expr::col(AccessKeyRow::Agent).is_in(
+                    agents
+                        .iter()
+                        .map(|agent| agent.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .and_where(Expr::col(AccessKeyRow::LastUsedAt).is_not_null());
+        let mut latest: std::collections::BTreeMap<AgentId, Timestamp> =
+            std::collections::BTreeMap::new();
+        for row in self.database().fetch_all(&select).await? {
+            let (Some(agent), Some(at)) = (
+                row.optional_id::<AgentId>(AccessKeyRow::Agent)?,
+                row.optional_time(AccessKeyRow::LastUsedAt)?,
+            ) else {
+                continue;
+            };
+            let slot = latest.entry(agent).or_insert(at);
+            *slot = (*slot).max(at);
+        }
+        Ok(latest.into_iter().collect())
     }
 
     async fn keys_of_agent(&self, agent: AgentId) -> Result<Vec<AccessKeyRecord>, StoreError> {

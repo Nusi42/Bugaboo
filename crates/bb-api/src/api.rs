@@ -69,6 +69,7 @@ mod issue_types;
 mod issues;
 mod layouts;
 mod many_changes;
+mod my_agent_work;
 mod never_sent;
 mod notifications;
 mod oauth;
@@ -174,6 +175,7 @@ where
         .merge(auth::routes(limits))
         .merge(access_keys::routes())
         .merge(agent_work::routes())
+        .merge(my_agent_work::routes())
         .merge(agents::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
