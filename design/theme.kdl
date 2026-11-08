@@ -1418,8 +1418,21 @@ part "field.description" "settings.help" {
     line-height "$lh-body"
 }
 
+
 part "settings.help" {
     margin 0
+}
+
+// The page that sets AI up: its hints run the whole width of their card (the one wrap of every hint balances them into a narrow column).
+part "ai-page" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "ai-page field.description" "ai-page settings.help" "ai-page card.intro" {
+    text-wrap pretty
 }
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
@@ -15277,6 +15290,8 @@ part "assistant-body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
+    // Room above the first turn, so no sliver of a cut turn shows under the line above (and the edge shadow has something to fade over).
+    padding-top "$space-2"
 }
 
 part "assistant-ask" {

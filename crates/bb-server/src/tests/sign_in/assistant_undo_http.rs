@@ -247,3 +247,35 @@ async fn ai_05_a_new_issue_has_a_way_back_exactly_when_the_person_may_delete_it(
     })
     .await
 }
+
+#[tokio::test]
+async fn comp_10_a_default_assigned_to_of_the_project_is_not_the_ais_choice() -> TestResult {
+    each_database("comp_10_default_assigned_to_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let set = ada.send("PUT", AI, Some(local_model_on())).await?;
+        assert_eq!(set.status, StatusCode::OK, "{}", set.body);
+        // What a person gets for a new issue: the rule of the project decides who it is assigned to, if anybody.
+        let theirs = id_of(&site.create(&mut ada, "By a person").await?)?;
+        let by_person = ada
+            .send("GET", &format!("/api/v1/issues/{theirs}"), None)
+            .await?;
+        let default = by_person.body["issue"]["assigned_to"].clone();
+        // The question names nobody; the proposal is shown and the new issue gets the same default.
+        let made = ask_and_apply(
+            &rig,
+            &mut ada,
+            "Create an issue called By the assistant",
+            "create_issue",
+            json!({"project": "ACME", "issue_type": site.kind, "title": "By the assistant"}),
+        )
+        .await?;
+        let id = made["undo"]["id"].as_str().ok_or("no issue made")?;
+        let by_assistant = ada
+            .send("GET", &format!("/api/v1/issues/{id}"), None)
+            .await?;
+        assert_eq!(by_assistant.body["issue"]["assigned_to"], default);
+        Ok(())
+    })
+    .await
+}

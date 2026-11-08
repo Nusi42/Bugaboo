@@ -20,7 +20,7 @@ export function AiPage() {
   usePageTitle(t("ai-setup.title"));
   const setup = useAiSetup();
   return (
-    <div {...partOf(part.stack)}>
+    <div {...partOf(part.aiPage)}>
       <Card heading={t("ai-setup.title")} level={1} intro={t("ai-setup.intro")} />
       <QueryGate error={setup.error} data={setup.data} loading={null}>
         {(shown) => (

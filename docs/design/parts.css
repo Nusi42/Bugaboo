@@ -336,6 +336,19 @@ textarea,
   margin: 0;
 }
 
+[data-part="ai-page"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+[data-part="ai-page"] [data-part="field.description"],
+[data-part="ai-page"] [data-part="settings.help"],
+[data-part="ai-page"] [data-part="card.intro"] {
+  text-wrap: pretty;
+}
+
 [data-part="field.input"]::placeholder {
   color: var(--fg-muted);
 }
@@ -8080,6 +8093,7 @@ textarea,
   margin-block: 0;
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
+  padding-top: var(--space-2);
 }
 
 [data-part="assistant-ask"] {
