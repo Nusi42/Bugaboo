@@ -766,7 +766,7 @@
     --size-phone-hang: calc(-1 * var(--pad-control));
     --pad-nothing: 0px;
     --size-name: 120px;
-    --size-details-name: 104px;
+    --size-details-name: 96px;
     --legend-start: 0px;
   }
 }

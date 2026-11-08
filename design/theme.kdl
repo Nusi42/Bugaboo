@@ -121,8 +121,8 @@ tokens {
     // The name of a value in the details: 112 on a computer, 120 on a phone.
     size "size-name" "112px" phone="120px"
     // The one name column of every list in the Details card (R1): on a phone narrower than
-    // `size-name`, so the value column keeps room for the *Followers* row on one line.
-    size "size-details-name" "112px" phone="104px"
+    // `size-name`, so the value column keeps room for the *Followers* row on one line (at 104 it no longer fits a phone).
+    size "size-details-name" "112px" phone="96px"
     // The body of the window of the details of a row, as tall as the form of one entry: the window does not jump when the form opens.
     size "size-entry-details-body" "400px"
     // The room the name of a field in the layout editor wants before the buttons beside it go to the next line.
