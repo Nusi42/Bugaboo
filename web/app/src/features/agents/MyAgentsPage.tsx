@@ -39,7 +39,9 @@ export function MyAgentsPage() {
             work={loaded.work.pieces}
             offered={loaded.work.offered}
             rules={loaded.work.rules}
-            cut={loaded.work.truncated || loaded.work.offered_truncated}
+            cut={
+              loaded.work.truncated || loaded.work.offered_truncated || loaded.work.rules_truncated
+            }
           />
         )}
       </QueryGate>

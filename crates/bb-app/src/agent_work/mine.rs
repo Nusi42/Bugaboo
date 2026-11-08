@@ -67,7 +67,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 items.push((
                     one.at,
                     MyWorkItem {
-                        waits_for: view.state.waits_for(question_open),
+                        // Work that was accepted or thrown away waits for nobody.
+                        waits_for: if view.open {
+                            view.state.waits_for(question_open)
+                        } else {
+                            None
+                        },
                         work: view,
                         issue: one.line,
                     },
@@ -112,14 +117,14 @@ pub async fn my_agent_work<S: AuthStore>(
     works.truncate(MOST_SHOWN_IN_MY_AGENTS);
     let items = ctx.my_items(&actor, &works).await?;
     let held = ctx.evaluate(person, Place::Organization).await?;
-    let rules = ctx
+    let mut found_rules = ctx
         .store()
-        .open_rules_of_agents(agents, MOST_SHOWN_IN_MY_AGENTS as u64)
+        .open_rules_of_agents(agents, MOST_SHOWN_IN_MY_AGENTS as u64 + 1)
         .await
-        .map_err(failed)?
-        .iter()
-        .map(view_of)
-        .collect();
+        .map_err(failed)?;
+    let rules_truncated = found_rules.len() > MOST_SHOWN_IN_MY_AGENTS;
+    found_rules.truncate(MOST_SHOWN_IN_MY_AGENTS);
+    let rules = found_rules.iter().map(view_of).collect();
     let mut offered_agents = ctx
         .store()
         .agents_offered_to(person, most_agents + 1)
@@ -148,5 +153,6 @@ pub async fn my_agent_work<S: AuthStore>(
         items,
         truncated,
         rules,
+        rules_truncated,
     }))
 }

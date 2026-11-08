@@ -26,12 +26,9 @@ interface RuleRowProps {
   readonly withAgent: boolean;
 }
 
-/** One standing rule: the search, the agent, what it may do, when it runs out, *Renew* and *Stop*. */
-function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
-  const now = useNow();
+/** *Renew* and *Stop* of a rule that works. */
+function RuleActions({ rule, agent, search }: ActionsProps) {
   const change = useChangeRule();
-  const agent = agentNamed(agents, rule.agent)?.name ?? "";
-  const search = names.search(rule.search);
   const send = (action: "renew" | "stop"): void => {
     change.mutate({
       params: { path: { rule: rule.id } },
@@ -39,38 +36,56 @@ function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
     });
   };
   return (
+    <div {...partOf(part.agentsActions)}>
+      <Button
+        isPending={change.isPending}
+        aria-label={t("agents.renew-name", { agent, search })}
+        onPress={() => {
+          send("renew");
+        }}
+      >
+        {t("agents.renew")}
+      </Button>
+      <ConfirmDialog
+        triggerLabel={t("agents.rule-stop")}
+        triggerName={t("agents.rule-stop-name", { agent, search })}
+        title={t("agents.rule-stop-title")}
+        text={t("agents.rule-stop-text")}
+        confirmLabel={t("agents.rule-stop")}
+        cancelLabel={t("common.cancel")}
+        confirmLook={buttonLook.danger}
+        onConfirm={() => {
+          send("stop");
+        }}
+      />
+      <ActionError error={change.error} />
+    </div>
+  );
+}
+
+interface ActionsProps {
+  readonly rule: Rule;
+  readonly agent: string;
+  readonly search: string;
+}
+
+/** One standing rule: the search, the agent, what it may do, when it runs out, *Renew* and *Stop*. */
+function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
+  const now = useNow();
+  const agent = agentNamed(agents, rule.agent)?.name ?? "";
+  const search = names.search(rule.search);
+  return (
     <li {...partOf(part.item)}>
       <span {...partOf(part.startColumn)}>
         <span {...partOf(part.itemTitle)}>
           {withAgent ? t("agents.rule-line", { search, agent }) : search}
         </span>
         <span {...partOf(part.muted)}>{powerText(rule, names)}</span>
-        <span {...partOf(part.muted)}>{runsOutText(rule.ends_at, now)}</span>
+        <span {...partOf(part.muted)}>
+          {rule.state === "ended" ? t("agents.rule-ended") : runsOutText(rule.ends_at, now)}
+        </span>
       </span>
-      <div {...partOf(part.agentsActions)}>
-        <Button
-          isPending={change.isPending}
-          aria-label={t("agents.renew-name", { agent, search })}
-          onPress={() => {
-            send("renew");
-          }}
-        >
-          {t("agents.renew")}
-        </Button>
-        <ConfirmDialog
-          triggerLabel={t("agents.rule-stop")}
-          triggerName={t("agents.rule-stop-name", { agent, search })}
-          title={t("agents.rule-stop-title")}
-          text={t("agents.rule-stop-text")}
-          confirmLabel={t("agents.rule-stop")}
-          cancelLabel={t("common.cancel")}
-          confirmLook={buttonLook.danger}
-          onConfirm={() => {
-            send("stop");
-          }}
-        />
-        <ActionError error={change.error} />
-      </div>
+      {rule.state === "ended" ? null : <RuleActions rule={rule} agent={agent} search={search} />}
     </li>
   );
 }
@@ -82,15 +97,14 @@ export interface RuleListProps {
   readonly withAgent?: boolean;
 }
 
-/** The standing rules that still work, with *Renew* and *Stop* (UX §4.17). */
+/** The standing rules: those that work with *Renew* and *Stop*, those that ended as they ended (UX §4.17). */
 export function RuleList({ rules, agents, names, withAgent = true }: RuleListProps) {
-  const working = rules.filter((rule) => rule.state === "open");
-  if (working.length === 0) {
+  if (rules.length === 0) {
     return <p {...partOf(part.muted)}>{t("agents.rules-none")}</p>;
   }
   return (
     <ul {...partOf(part.list)}>
-      {working.map((rule) => (
+      {rules.map((rule) => (
         <RuleRow key={rule.id} rule={rule} agents={agents} names={names} withAgent={withAgent} />
       ))}
     </ul>

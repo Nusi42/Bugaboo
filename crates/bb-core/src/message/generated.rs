@@ -673,6 +673,9 @@ pub const AGENTS_RULE_CREATES_IN: MessageKey = MessageKey::new("agents.rule-crea
 /// The message `agents.rule-days`.
 pub const AGENTS_RULE_DAYS: MessageKey = MessageKey::new("agents.rule-days");
 
+/// The message `agents.rule-ended`.
+pub const AGENTS_RULE_ENDED: MessageKey = MessageKey::new("agents.rule-ended");
+
 /// The message `agents.rule-ends-today`.
 pub const AGENTS_RULE_ENDS_TODAY: MessageKey = MessageKey::new("agents.rule-ends-today");
 
@@ -16570,6 +16573,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.rule-days-wrong",
         "Write a whole number of days from 1 to {most}.",
     ),
+    ("agents.rule-ended", "Ended"),
     (
         "agents.rule-ends-in",
         "{count, plural, one {Runs out in # day} other {Runs out in # days}}",

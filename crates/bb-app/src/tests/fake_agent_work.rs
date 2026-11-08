@@ -609,19 +609,14 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .works
             .iter()
             .filter(|w| {
-                agents.contains(&w.agent)
-                    && (work.is_open(w) || (w.accepted_by_itself && w.person == person))
+                (agents.contains(&w.agent) && work.is_open(w))
+                    || (w.accepted_by_itself && w.person == person)
             })
             .cloned()
             .collect();
         found.reverse();
         // What waits for a person first, as the statement of the store does.
-        found.sort_by_key(|w| {
-            !matches!(
-                w.state,
-                AgentWorkState::WaitingForYou | AgentWorkState::ReadyForReview
-            )
-        });
+        found.sort_by_key(|w| w.closed || !w.state.waits_for_a_person());
         found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }

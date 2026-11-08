@@ -7922,6 +7922,8 @@ export interface components {
       pieces: components["schemas"]["MyWorkBody"][];
       /** @description The standing rules of the person's agents that work. */
       rules: components["schemas"]["StandingRuleItem"][];
+      /** @description Whether the rules were cut at the most it holds. */
+      rules_truncated: boolean;
       /** @description Whether the list was cut at the most it holds. */
       truncated: boolean;
     };

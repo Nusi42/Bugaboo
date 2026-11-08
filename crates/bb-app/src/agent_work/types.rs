@@ -525,4 +525,6 @@ pub struct MyAgentWork {
     pub truncated: bool,
     /// The standing rules of the person's agents that work.
     pub rules: Vec<StandingRuleView>,
+    /// Whether the rules were cut at the most *My agents* shows.
+    pub rules_truncated: bool,
 }

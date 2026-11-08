@@ -77,3 +77,15 @@ export async function agentsScene(
   await createRule(admin, scene, sorter, 2);
   return scene;
 }
+
+/** Creates agents for the person of the session one after the other, so their order is the order they were made in. */
+export async function createAgentsInOrder(
+  session: ApiSession,
+  names: readonly string[],
+): Promise<void> {
+  const [first, ...rest] = names;
+  if (first !== undefined) {
+    await createAgent(session, first);
+    await createAgentsInOrder(session, rest);
+  }
+}

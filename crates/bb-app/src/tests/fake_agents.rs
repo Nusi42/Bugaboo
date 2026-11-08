@@ -220,10 +220,20 @@ impl AgentStore for FakeStore {
         Ok(change(tx, id, version, |agent| {
             agent.state = state;
             agent.paused_for = paused_for;
-            if state == AgentState::Stopped {
-                agent.offered_to = None;
-            }
         }))
+    }
+
+    async fn end_offer_of(tx: &mut Tx, id: AgentId) -> Result<(), FakeError> {
+        if let Some(agent) = tx
+            .state
+            .agents
+            .iter_mut()
+            .find(|agent| agent.id == id && agent.offered_to.is_some())
+        {
+            agent.offered_to = None;
+            agent.version += 1;
+        }
+        Ok(())
     }
 
     async fn set_agent_limits(
@@ -265,7 +275,6 @@ impl AgentStore for FakeStore {
         for agent in &mut tx.state.agents {
             if agent.person == person && agent.state != AgentState::Stopped {
                 agent.state = AgentState::Stopped;
-                agent.offered_to = None;
                 agent.version += 1;
                 stopped.push(agent.id);
             }

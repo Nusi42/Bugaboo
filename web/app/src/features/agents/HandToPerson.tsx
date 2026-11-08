@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, AskDialog, Button, Card, SelectField } from "@bugaboo/ui";
+import { AskDialog, Button, Card, SelectField } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
 import { peopleOf, useAssignablePeople } from "../issues/index.ts";
 import { useHandAgent, useTakeBackOffer, type ListedAgent } from "./agents.ts";
 import { ActionError } from "./ActionError.tsx";
@@ -116,7 +115,7 @@ export function HandToPerson({ agent }: { readonly agent: ListedAgent }) {
       >
         <PersonChoice value={person} onChange={setPerson} />
       </AskDialog>
-      {hand.isError ? <Alert tone={alertTone.danger}>{messageOf(hand.error)}</Alert> : null}
+      <ActionError error={hand.error} />
       {agent.offered ? <OfferNote agent={agent.id} /> : null}
     </Card>
   );

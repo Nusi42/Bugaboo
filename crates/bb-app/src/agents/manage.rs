@@ -121,7 +121,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether the person may see and stop every agent of the organization.
-    async fn administers_agents(&self, person: UserId) -> Result<bool, AppError> {
+    pub(crate) async fn administers_agents(&self, person: UserId) -> Result<bool, AppError> {
         Ok(self
             .evaluate(person, Place::Organization)
             .await?
@@ -490,17 +490,20 @@ pub async fn change_agent<S: AuthStore>(
     if found.version != input.version {
         return Err(stale_agent(person, found.id));
     }
-    let event = counted(
-        ctx,
-        person,
-        found.id,
-        vec![bb_core::event::FieldChange {
-            field: "state".to_owned(),
-            before: Some(json!(found.state.code())),
-            after: Some(json!(to.code())),
-        }],
-        found.version,
-    )?;
+    let mut changes = vec![bb_core::event::FieldChange {
+        field: "state".to_owned(),
+        before: Some(json!(found.state.code())),
+        after: Some(json!(to.code())),
+    }];
+    // A stopped agent is offered to nobody.
+    if to == AgentState::Stopped && found.offered_to.is_some() {
+        changes.push(bb_core::event::FieldChange {
+            field: "offered_to".to_owned(),
+            before: found.offered_to.map(|person| json!(person.to_string())),
+            after: None,
+        });
+    }
+    let event = counted(ctx, person, found.id, changes, found.version)?;
     let (id, version) = (found.id, found.version);
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -509,7 +512,9 @@ pub async fn change_agent<S: AuthStore>(
                     return Err(S::aborted());
                 }
                 if to == AgentState::Stopped {
-                    // The work it was given stops with it (ADR-0029, decision 2).
+                    // A stopped agent is offered to nobody; the work it was given stops with it
+                    // (ADR-0029, decision 2).
+                    S::end_offer_of(transaction, id).await?;
                     S::stop_work_of_agent(transaction, id, StopCause::AgentStopped).await?;
                     S::end_grants_of_agent(transaction, id).await?;
                 }
@@ -569,6 +574,7 @@ pub async fn stop_all_agents<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 for agent in S::stop_agents_of(transaction, person).await? {
+                    S::end_offer_of(transaction, agent).await?;
                     S::stop_work_of_agent(transaction, agent, StopCause::AgentStopped).await?;
                     S::end_grants_of_agent(transaction, agent).await?;
                 }

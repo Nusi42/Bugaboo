@@ -24014,7 +24014,14 @@
       "MyAgentWorkBody": {
         "type": "object",
         "description": "The current work of the person's agents.",
-        "required": ["offered", "offered_truncated", "pieces", "truncated", "rules"],
+        "required": [
+          "offered",
+          "offered_truncated",
+          "pieces",
+          "truncated",
+          "rules",
+          "rules_truncated"
+        ],
         "properties": {
           "offered": {
             "type": "array",
@@ -24040,6 +24047,10 @@
               "$ref": "#/components/schemas/StandingRuleItem"
             },
             "description": "The standing rules of the person's agents that work."
+          },
+          "rules_truncated": {
+            "type": "boolean",
+            "description": "Whether the rules were cut at the most it holds."
           },
           "truncated": {
             "type": "boolean",

@@ -205,6 +205,16 @@ async fn ai_37_work_accepted_by_itself_stays_with_the_person_it_was_given_for() 
         after.items.is_empty(),
         "the new person does not inherit the rows"
     );
+    // The person it was given for still sees it, though the agent is not theirs any more.
+    let kept = my_agent_work(
+        &world.ctx(),
+        MyAgentWorkQuery {
+            session_token: given.team.session_token.clone(),
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(kept.items.len(), 1);
     Ok(())
 }
 

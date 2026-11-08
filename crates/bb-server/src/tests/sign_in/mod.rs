@@ -64,6 +64,7 @@ mod lists;
 mod long_text_http;
 mod many_changes_http;
 mod my_agents_http;
+mod my_agents_statements;
 mod notifications_http;
 mod offers_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the

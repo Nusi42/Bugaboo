@@ -3277,5 +3277,6 @@
   "agents.org-more": "Show more agents",
   "agents.decline": "Decline",
   "agents.decline-name": "Decline the agent {agent}",
-  "agents.offer-take-back": "Take the offer back"
+  "agents.offer-take-back": "Take the offer back",
+  "agents.rule-ended": "Ended"
 }

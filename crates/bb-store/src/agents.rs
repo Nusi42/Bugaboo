@@ -300,12 +300,20 @@ impl AgentStore for AuthStorage {
         update_at(transaction, id, version, |update| {
             update.value(AgentRow::State, state.code());
             update.value(AgentRow::PausedFor, paused_for.map(LimitKind::code));
-            // A stopped agent is offered to nobody.
-            if state == AgentState::Stopped {
-                update.value(AgentRow::OfferedTo, Option::<Vec<u8>>::None);
-            }
         })
         .await
+    }
+
+    async fn end_offer_of(transaction: &mut Transaction, id: AgentId) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(AgentRow::Table)
+            .value(AgentRow::OfferedTo, Option::<Vec<u8>>::None)
+            .value(AgentRow::Version, Expr::col(AgentRow::Version).add(1))
+            .and_where(Expr::col(AgentRow::Id).eq(id.stored()))
+            .and_where(Expr::col(AgentRow::OfferedTo).is_not_null());
+        transaction.execute(&update).await?;
+        Ok(())
     }
 
     async fn set_agent_limits(
@@ -369,7 +377,6 @@ impl AgentStore for AuthStorage {
             update
                 .table(AgentRow::Table)
                 .value(AgentRow::State, AgentState::Stopped.code())
-                .value(AgentRow::OfferedTo, Option::<Vec<u8>>::None)
                 .value(AgentRow::Version, Expr::col(AgentRow::Version).add(1))
                 .and_where(
                     Expr::col(AgentRow::Id)

@@ -399,11 +399,9 @@ impl AgentWorkRecords for AuthStorage {
         person: UserId,
         limit: u64,
     ) -> Result<Vec<IssueWork>, StoreError> {
-        if agents.is_empty() {
-            return Ok(Vec::new());
-        }
-        // Open work is what `only_open_work` says; work accepted by itself is closed, and stays in
-        // the list until a person looked at it.
+        // Open work is what `only_open_work` says, of these agents; work accepted by itself is closed
+        // and stays in the list of the person it was given for until they looked at it, whoever the
+        // agent belongs to now.
         let mut open_ids = Query::select();
         open_ids
             .column((IssueWorkRow::Table, IssueWorkRow::Id))
@@ -412,16 +410,15 @@ impl AgentWorkRecords for AuthStorage {
         let mut select = work_select();
         select
             .and_where(
-                Expr::col(IssueWorkRow::Agent).is_in(
-                    agents
-                        .iter()
-                        .map(|agent| agent.stored())
-                        .collect::<Vec<_>>(),
-                ),
-            )
-            .and_where(
                 sea_query::Cond::any()
-                    .add(Expr::col(IssueWorkRow::Id).in_subquery(open_ids))
+                    .add(
+                        sea_query::Cond::all()
+                            .add(
+                                Expr::col(IssueWorkRow::Agent)
+                                    .is_in(agents.iter().map(|agent| agent.stored()).collect::<Vec<_>>()),
+                            )
+                            .add(Expr::col(IssueWorkRow::Id).in_subquery(open_ids)),
+                    )
                     .add(
                         sea_query::Cond::all()
                             .add(Expr::col(IssueWorkRow::AcceptedByItself).eq(true))
@@ -432,10 +429,8 @@ impl AgentWorkRecords for AuthStorage {
             // What waits for a person first, so that a cut never takes it.
             .order_by_expr(
                 Expr::col(IssueWorkRow::State)
-                    .is_in([
-                        AgentWorkState::WaitingForYou.code(),
-                        AgentWorkState::ReadyForReview.code(),
-                    ]),
+                    .is_in(AgentWorkState::WAITING_FOR_A_PERSON.map(AgentWorkState::code))
+                    .and(Expr::col(IssueWorkRow::Closed).eq(false)),
                 Order::Desc,
             )
             .order_by(IssueWorkRow::Id, Order::Desc)

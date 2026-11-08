@@ -448,16 +448,28 @@ impl AgentWorkState {
         matches!(self, Self::AgentWorking | Self::WaitingForYou)
     }
 
+    /// The states in which work waits for a person: a question or a plan to answer, a result to
+    /// review. The one list; the statements of the store and `waits_for` read it.
+    pub const WAITING_FOR_A_PERSON: [Self; 2] = [Self::WaitingForYou, Self::ReadyForReview];
+
+    /// Whether work in this state waits for a person.
+    #[must_use]
+    pub fn waits_for_a_person(self) -> bool {
+        Self::WAITING_FOR_A_PERSON.contains(&self)
+    }
+
     /// What work in this state waits for, when it waits for a person: a result to review, a
     /// question when one is unanswered, and a plan otherwise. The one place that says it.
     #[must_use]
-    pub const fn waits_for(self, question_open: bool) -> Option<WaitsFor> {
-        match self {
-            Self::ReadyForReview => Some(WaitsFor::Review),
-            Self::WaitingForYou if question_open => Some(WaitsFor::Question),
-            Self::WaitingForYou => Some(WaitsFor::Plan),
-            _ => None,
+    pub fn waits_for(self, question_open: bool) -> Option<WaitsFor> {
+        if !self.waits_for_a_person() {
+            return None;
         }
+        Some(match self {
+            Self::ReadyForReview => WaitsFor::Review,
+            _ if question_open => WaitsFor::Question,
+            _ => WaitsFor::Plan,
+        })
     }
 
     /// The state after a question: *Waiting for you*. None for work that cannot ask: work that

@@ -3,7 +3,13 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada, bob, signInThroughApi } from "./support/accounts.ts";
-import { agentNames, agentsScene, createAgent, ruleSearchName } from "./support/agents-scene.ts";
+import {
+  agentNames,
+  agentsScene,
+  createAgent,
+  createAgentsInOrder,
+  ruleSearchName,
+} from "./support/agents-scene.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -250,10 +256,17 @@ test("ai_30_an_administrator_reaches_and_stops_every_agent_however_many_there_ar
     { length: 23 },
     (_, number) => `Helper ${String(number).padStart(2, "0")}`,
   );
-  await Promise.all(names.map((name) => createAgent(bobsSession, name)));
+  await createAgentsInOrder(bobsSession, names);
   await signIn(page, ada);
   await page.goto(paths.organizationAgents);
-  await page.getByRole("button", { name: t("agents.org-more") }).click();
+  const rows = page.getByRole("list", { name: t("agents.org-list") }).getByRole("listitem");
+  const more = page.getByRole("button", { name: t("agents.org-more") });
+  await expect(more).toBeVisible();
+  await expect(rows).toHaveCount(20);
+  await more.click();
+  // Every agent is reached, and there is nothing more to show.
+  await expect(rows).toHaveCount(names.length);
+  await expect(more).toHaveCount(0);
   const last = page.getByRole("listitem").filter({ hasText: "Helper 22" });
   await expect(last).toBeVisible();
   await last.getByRole("button", { name: /^Stop /u }).click();

@@ -265,21 +265,23 @@ pub async fn change_standing_rule<S: AuthStore>(
         .authorize(view_of(&next)))
 }
 
-/// The standing rules of one of the person's agents, a page at a time.
+/// The standing rules of one of the person's agents, a page at a time. An administrator reads those
+/// of any agent.
 ///
 /// # Errors
-/// `resource.not-found` for an agent that is not the person's, `request.invalid` for a cursor that
-/// is not one.
+/// `resource.not-found` for an agent that is not the person's (and the reader no administrator),
+/// `request.invalid` for a cursor that is not one.
 pub async fn standing_rules<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: StandingRulesQuery,
 ) -> Result<Authorized<StandingRulePage>, AppError> {
     let person = ctx.session_actor(&input.session_token).await?.person.id;
+    let administrator = ctx.administers_agents(person).await?;
     ctx.store()
         .agent(input.agent)
         .await
         .map_err(|error| internal::<S>(&error))?
-        .filter(|found| found.person == person)
+        .filter(|found| found.person == person || administrator)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     let len = page_len(Some(input.limit));
     let after = cursor_or_invalid(input.cursor.as_deref(), |cursor| {

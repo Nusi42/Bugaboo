@@ -240,10 +240,13 @@ routes = ["POST /api/v1/ai/try"]
 reason = "Sends one short call to the provider and changes nothing."
 
 [[exempt]]
+routes = ["DELETE /api/v1/agents/{agent}/hand-over"]
+reason = "Takes back or declines the offer that stands on the agent now. A page that is out of date can only take an offer away, never give or accept one, and an offer that is gone or was never the person's is refused as not found; the person offering makes it again with one press."
+
+[[exempt]]
 routes = [
   "POST /api/v1/agents",
   "POST /api/v1/agents/{agent}/accept",
-  "DELETE /api/v1/agents/{agent}/hand-over",
   "POST /api/v1/me/agents/stop-all",
   "POST /api/v1/agents/{agent}/keys",
   "POST /api/v1/agents/{agent}/keys/{access_key}/renew",

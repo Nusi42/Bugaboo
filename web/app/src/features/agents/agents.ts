@@ -22,6 +22,8 @@ export type MyWorkItem = Schema<"MyWorkBody">;
 export type OfferedAgent = Schema<"OfferedAgentBody">;
 /** The work of the person's agents. */
 export type MyWork = Schema<"MyAgentWorkBody">;
+/** A page of standing rules. */
+export type RulePage = Schema<"Page_StandingRuleItem">;
 /** A standing rule. */
 export type Rule = Schema<"StandingRuleItem">;
 /** The state of an agent: it works, rests, or is stopped for good. */
@@ -86,6 +88,13 @@ export function useMyAgentWork() {
 export function useAgentRecord(id: string) {
   return api.query.useQuery("get", "/api/v1/agents/{agent}", {
     params: { path: { agent: id } },
+  });
+}
+
+/** The standing rules of one agent, those that ended too: its person reads them, and so does an administrator. */
+export function useAgentRules(agent: string) {
+  return api.query.useQuery("get", "/api/v1/agents/{agent}/standing-rules", {
+    params: { path: { agent }, query: { limit: pageSize.largest } },
   });
 }
 
