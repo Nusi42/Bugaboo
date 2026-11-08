@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Overlay, overlayEdge, partOf, part, useLayout } from "@bugaboo/ui";
+import { Overlay, overlayEdge, partOf, part, useLayout, useRoomForDock } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Dialog } from "react-aria-components";
 
@@ -18,8 +18,9 @@ export function PanelShell({
   readonly children: ReactNode;
 }) {
   const layout = useLayout();
+  const room = useRoomForDock();
   const dock = useEscape<HTMLDivElement>(onClose);
-  if (layout === "computer") {
+  if (layout === "computer" && room) {
     return (
       <div ref={dock} {...partOf(part.assistantDock)}>
         <Dialog aria-label={t("assistant.title")} {...partOf(part.assistantDockBody)}>

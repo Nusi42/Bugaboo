@@ -60,6 +60,7 @@ export { TitleCarriedByBar } from "./TitleCarriedByBar.tsx";
 export {
   layoutForWidth,
   layoutModes,
+  useRoomForDock,
   useLayout,
   useShortWindow,
   useUpright,

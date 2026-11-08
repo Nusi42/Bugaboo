@@ -39,6 +39,28 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
+const roomForDock = `(min-width: ${String(breakpoints.assistantDock)}px)`;
+
+function readRoomForDock(): boolean {
+  return matchMedia(roomForDock).matches;
+}
+
+function subscribeRoomForDock(listener: () => void): () => void {
+  const watched = matchMedia(roomForDock);
+  watched.addEventListener("change", listener);
+  return () => {
+    watched.removeEventListener("change", listener);
+  };
+}
+
+/**
+ * Whether the window is wide enough for the assistant to stand beside the page: the page keeps the room it has
+ * at the computer layout. Narrower, the assistant opens as a layer from the end (the breakpoint is a token).
+ */
+export function useRoomForDock(): boolean {
+  return useSyncExternalStore(subscribeRoomForDock, readRoomForDock);
+}
+
 const upright = "(orientation: portrait)";
 
 function readUpright(): boolean {

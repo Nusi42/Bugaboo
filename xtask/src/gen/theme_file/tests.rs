@@ -219,6 +219,31 @@ fn list_beside_is_the_sum(file: &ThemeFile) -> bool {
     (token_pixels(file, "bp-list-beside") - sum).abs() < 0.5
 }
 
+/// Whether the breakpoint from which the assistant docks beside the page is the computer layout plus the width of the dock.
+fn assistant_dock_is_the_sum(file: &ThemeFile) -> bool {
+    let sum = token_pixels(file, "bp-computer") + token_pixels(file, "size-panel");
+    (token_pixels(file, "bp-assistant-dock") - sum).abs() < 0.5
+}
+
+#[test]
+fn the_breakpoint_of_the_assistant_dock_is_the_computer_layout_plus_the_dock() {
+    let repo = Repo::discover().unwrap();
+    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    assert!(assistant_dock_is_the_sum(
+        &ThemeFile::parse_base(&text).unwrap()
+    ));
+    // A dock made wider without the breakpoint is refused.
+    let wider = text.replacen(
+        "size \"size-panel\" \"420px\"",
+        "size \"size-panel\" \"480px\"",
+        1,
+    );
+    assert_ne!(wider, text, "the width of the panel is in the file");
+    assert!(!assistant_dock_is_the_sum(
+        &ThemeFile::parse_base(&wider).unwrap()
+    ));
+}
+
 #[test]
 fn the_breakpoint_of_customize_beside_the_list_is_the_room_the_two_need_at_density_1() {
     let repo = Repo::discover().unwrap();

@@ -14957,7 +14957,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai.provider.local-model", "A model on your own computers"),
     (
         "ai.provider.openai-compatible",
-        "Another provider or a model of your own (OpenAI-compatible)",
+        "Other provider or own model",
     ),
     ("ai.provider.other", "A provider on the internet"),
     ("app.name", "Bugaboo"),

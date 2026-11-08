@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import {
   appLayoutLook,
   useAppearance,
+  useRoomForDock,
   useLayout,
   partOf,
   part,
@@ -39,12 +40,13 @@ export function AppLayout() {
   useAppearance();
   const computer = layout === "computer";
   const assistantOpen = useAssistantPanelOpen();
+  const room = useRoomForDock();
   return (
     <div
       {...partOf(part.appLayout, {
         variants: [
           variantOf(layout, narrow),
-          assistantOpen && computer && appLayoutLook.assistantOpen,
+          assistantOpen && computer && room && appLayoutLook.assistantOpen,
         ],
       })}
     >

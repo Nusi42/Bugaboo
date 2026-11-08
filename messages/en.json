@@ -2862,7 +2862,7 @@
   "error.working-hours.in-the-future": "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short": "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
   "ai.provider.anthropic": "Anthropic",
-  "ai.provider.openai-compatible": "Another provider or a model of your own (OpenAI-compatible)",
+  "ai.provider.openai-compatible": "Other provider or own model",
   "ai.provider.local-model": "A model on your own computers",
   "ai.provider.other": "A provider on the internet",
   "ai.country.anthropic": "United States",

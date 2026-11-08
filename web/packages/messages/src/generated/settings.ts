@@ -389,7 +389,7 @@ export const messages = {
   "working-hours.who-not-allowed":
     "To see who holds it, you need both of these permissions: {manage}; {decide}.",
   "ai.provider.anthropic": "Anthropic",
-  "ai.provider.openai-compatible": "Another provider or a model of your own (OpenAI-compatible)",
+  "ai.provider.openai-compatible": "Other provider or own model",
   "ai.provider.local-model": "A model on your own computers",
   "ai.provider.other": "A provider on the internet",
   "ai.country.anthropic": "United States",

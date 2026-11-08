@@ -909,7 +909,8 @@ textarea,
   [data-part="bottom-sheet"] [data-part="search-bar"]::before,
   [data-part="search-suggestions"]::before,
   [data-part="side-panel.body"]::before,
-  [data-part="list-panel"]::before {
+  [data-part="list-panel"]::before,
+  [data-part="assistant-body"]::before {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -939,7 +940,8 @@ textarea,
   [data-part="bottom-sheet"] [data-part="search-bar"]::after,
   [data-part="search-suggestions"]::after,
   [data-part="side-panel.body"]::after,
-  [data-part="list-panel"]::after {
+  [data-part="list-panel"]::after,
+  [data-part="assistant-body"]::after {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
