@@ -131,6 +131,7 @@ export const messages = {
   "ai-setup.where-provider": "Provider",
   "ai-setup.where-country": "Country",
   "ai-setup.where-model": "Model",
+  "ai-setup.where-no-model": "No model chosen yet",
   "ai-setup.where-state": "AI",
   "ai-setup.where-people": "People",
   "ai-setup.where-names": "By name",

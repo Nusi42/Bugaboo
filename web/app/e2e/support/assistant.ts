@@ -109,3 +109,21 @@ export async function lowerToNormal(server: Instance, key: string): Promise<void
   });
   await admin.dispose();
 }
+
+/** An administrator switches AI off for the organization again, so a test can set it up from the start. */
+export async function switchAiOff(server: Instance): Promise<void> {
+  const admin = openSession(server.url);
+  await admin.client.POST("/api/v1/auth/sign-in", {
+    body: { email: ada.email, password: ada.password },
+  });
+  await admin.client.PUT("/api/v1/ai", { body: { enabled: false } });
+  await admin.dispose();
+}
+
+/** Flips a switch by pressing its words, as a person does (the switch itself is a hidden box). */
+export async function flip(page: Page, name: string): Promise<void> {
+  await page.getByRole("switch", { name }).evaluate((input: HTMLElement) => {
+    input.scrollIntoView({ block: "center" });
+  });
+  await page.getByText(name, { exact: true }).first().click();
+}

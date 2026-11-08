@@ -38,6 +38,9 @@ export function TurnList({
   readonly pending?: string | undefined;
 }) {
   const answers = turns.filter((turn) => turn.from === "assistant").length;
+  // The newest turn comes into view, so an answer with a card is not left below the fold: the marker
+  // at the end is made again with every turn and scrolls itself into view.
+  const lastTurn = turns.length * 2 + (pending === undefined ? 0 : 1);
   return (
     <>
       {turns.length === 0 && pending === undefined ? (
@@ -52,6 +55,12 @@ export function TurnList({
           )}
         </ol>
       )}
+      <div
+        key={lastTurn}
+        ref={(node: HTMLElement | null) => {
+          node?.scrollIntoView({ block: "end" });
+        }}
+      />
       <Announce>{answers === 0 ? "" : t("assistant.answered", { count: answers })}</Announce>
     </>
   );

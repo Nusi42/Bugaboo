@@ -11,7 +11,7 @@ import type { AssistantStatus } from "./assistant.ts";
 export function WhereFrom({ status }: { readonly status: AssistantStatus }) {
   const destination = status.destination;
   return (
-    <div {...partOf(part.stack)}>
+    <div {...partOf(part.column, { variants: ["snug"] })}>
       {destination === "anthropic" ? <p>{t("assistant.source-anthropic")}</p> : null}
       {destination === "other-provider" ? <p>{t("assistant.source-other-provider")}</p> : null}
       {destination === "local-model" ? <p>{t("assistant.source-local-model")}</p> : null}

@@ -32,7 +32,7 @@ export function AiWhatGoesWhere() {
               {countryName(shown.destination)}
             </NameValueRow>
             <NameValueRow name={t("ai-setup.where-model")}>
-              {shown.model === "" ? t("common.nothing") : shown.model}
+              {shown.model.length === 0 ? t("ai-setup.where-no-model") : shown.model}
             </NameValueRow>
             <NameValueRow name={t("ai-setup.where-state")}>
               {shown.enabled ? t("common.on") : t("common.off")}

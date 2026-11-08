@@ -6,9 +6,11 @@ import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import {
   assistantButton,
+  flip,
   openAssistant,
   quickEntryOfTheAssistant,
   setUpAssistant,
+  switchAiOff,
 } from "./support/assistant.ts";
 import { startFakeModel } from "./support/fake-model.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -46,10 +48,11 @@ test("ai_02 with AI off there is no assistant button and administrators see set 
   await model.close();
 });
 
-test("priv_08 setting up an outside provider asks for the agreement", async ({ page }) => {
+test("priv_08 setting up an outside provider asks for the agreement", async ({ page, server }) => {
+  await switchAiOff(server);
   await signIn(page, ada);
   await page.goto(paths.ai);
-  await page.getByLabel(t("setting.ai.provider.name")).selectOption({
+  await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
     label: t("ai.provider.anthropic"),
   });
   await page.getByLabel(t("setting.ai.model.name")).fill("claude-test");
@@ -61,7 +64,7 @@ test("priv_08 setting up an outside provider asks for the agreement", async ({ p
   const provider = t("ai.provider.anthropic");
   await expect(page.getByText(t("ai-setup.agreement-text", { provider }))).toBeVisible();
   await expect(page.getByText(t("ai-setup.switch-needs-agreement"))).toBeVisible();
-  await page.getByRole("switch", { name: t("setting.ai.enabled.name") }).click();
+  await flip(page, t("setting.ai.enabled.name"));
   await expect(page.getByText(t("error.ai.agreement-needed"))).toBeVisible();
   // The administrator confirms it, and it is kept with who and when.
   await page.getByRole("button", { name: t("ai-setup.agreement-confirm") }).click();
@@ -71,7 +74,7 @@ test("priv_08 setting up an outside provider asks for the agreement", async ({ p
     .waitFor();
   await page.getByRole("button", { name: t("ai-setup.agreement-yes") }).click();
   await expect(page.getByText(/^Confirmed by Ada Admin, /u)).toBeVisible();
-  await page.getByRole("switch", { name: t("setting.ai.enabled.name") }).click();
+  await flip(page, t("setting.ai.enabled.name"));
   await expect(page.getByRole("switch", { name: t("setting.ai.enabled.name") })).toBeChecked();
   // What goes where names the provider and its country from the catalog.
   await expect(page.getByText(t("ai.country.anthropic"))).toBeVisible();
@@ -83,7 +86,7 @@ test("ai_03 never sent to ai on a field shows in the panel", async ({ page, serv
   await signIn(page, ada);
   // Marked on the Fields page, one switch for each built-in field.
   await page.goto(paths.fields);
-  await page.getByRole("switch", { name: t("issue-field.description") }).click();
+  await flip(page, t("issue-field.description"));
   await expect(page.getByRole("switch", { name: t("issue-field.description") })).toBeChecked();
   const admin = await signedInAdmin(server);
   const marks = dataOf(await admin.client.GET("/api/v1/never-sent-to-ai"));
@@ -103,7 +106,7 @@ test("ai_02 a project can switch AI off for itself", async ({ page, server }) =>
   await setUpAssistant(server, model);
   await signIn(page, ada);
   await page.goto("/p/WEB/settings");
-  await page.getByRole("switch", { name: t("ai-setup.project-switch") }).click();
+  await flip(page, t("ai-setup.project-switch"));
   await expect(page.getByRole("switch", { name: t("ai-setup.project-switch") })).not.toBeChecked();
   // In that project the assistant is gone; on a page of the organization it is still there.
   await page.goto(issueAddress("WEB-1"));

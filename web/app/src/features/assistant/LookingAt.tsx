@@ -20,7 +20,10 @@ export interface LookingAtProps {
  */
 export function LookingAt({ items, onLeaveOut }: LookingAtProps) {
   return (
-    <section {...partOf(part.stack)} aria-label={t("assistant.looking-at")}>
+    <section
+      {...partOf(part.column, { variants: ["snug"] })}
+      aria-label={t("assistant.looking-at")}
+    >
       <span {...partOf(part.muted)}>{t("assistant.looking-at")}</span>
       {items.length === 0 ? (
         <span {...partOf(part.muted)}>{t("assistant.looking-nothing")}</span>

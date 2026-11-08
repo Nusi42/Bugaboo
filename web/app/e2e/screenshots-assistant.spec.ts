@@ -50,7 +50,7 @@ test("the page to set up the assistant, and the agreement for an outside provide
     await expect(page.getByRole("heading", { level: 1, name: t("ai-setup.title") })).toBeVisible();
   });
   await page.goto(paths.ai);
-  await page.getByLabel(t("setting.ai.provider.name")).selectOption({
+  await page.getByLabel(t("setting.ai.provider.name"), { exact: true }).selectOption({
     label: t("ai.provider.anthropic"),
   });
   await page.getByLabel(t("setting.ai.model.name")).fill("claude-test");

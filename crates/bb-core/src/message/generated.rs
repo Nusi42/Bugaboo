@@ -320,6 +320,9 @@ pub const AI_SETUP_WHERE_MODEL: MessageKey = MessageKey::new("ai-setup.where-mod
 /// The message `ai-setup.where-names`.
 pub const AI_SETUP_WHERE_NAMES: MessageKey = MessageKey::new("ai-setup.where-names");
 
+/// The message `ai-setup.where-no-model`.
+pub const AI_SETUP_WHERE_NO_MODEL: MessageKey = MessageKey::new("ai-setup.where-no-model");
+
 /// The message `ai-setup.where-none-off`.
 pub const AI_SETUP_WHERE_NONE_OFF: MessageKey = MessageKey::new("ai-setup.where-none-off");
 
@@ -14826,7 +14829,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "AI is off for the organization, so it is off here too.",
     ),
     ("ai-setup.project-switch", "AI in this project"),
-    ("ai-setup.project-title", "AI in this project"),
+    ("ai-setup.project-title", "AI"),
     ("ai-setup.save", "Save the setup"),
     ("ai-setup.saved", "The setup is saved."),
     ("ai-setup.set-up", "Provider and key"),
@@ -14850,6 +14853,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("ai-setup.where-model", "Model"),
     ("ai-setup.where-names", "By name"),
+    ("ai-setup.where-no-model", "No model chosen yet"),
     ("ai-setup.where-none-off", "None"),
     (
         "ai-setup.where-note",
