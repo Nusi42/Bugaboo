@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::agent_work_bodies::WorkBody;
+use super::agent_work_bodies::{StandingRuleItem, WorkBody};
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, answer_authorized,
 };
@@ -48,11 +48,15 @@ pub(crate) struct OfferedAgentBody {
 pub(crate) struct MyAgentWorkBody {
     /// The agents handed to the person that wait for them to accept.
     offered: Vec<OfferedAgentBody>,
+    /// Whether the agents handed to the person were cut at the most an agent list holds.
+    offered_truncated: bool,
     /// The work, newest first: what has not ended, and what was accepted by itself and not looked
     /// at yet.
     pieces: Vec<MyWorkBody>,
     /// Whether the list was cut at the most it holds.
     truncated: bool,
+    /// The standing rules of the person's agents that work.
+    rules: Vec<StandingRuleItem>,
 }
 
 impl Masked for MyAgentWorkBody {}
@@ -69,6 +73,8 @@ impl From<&MyAgentWork> for MyAgentWorkBody {
                     from: agent.from.clone(),
                 })
                 .collect(),
+            offered_truncated: all.offered_truncated,
+            rules: all.rules.iter().map(StandingRuleItem::from).collect(),
             pieces: all
                 .items
                 .iter()

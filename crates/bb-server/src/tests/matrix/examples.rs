@@ -305,6 +305,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeAgent", &[Quirk::NamesAMissingThing]),
     Example::with("handAgent", &[Quirk::NamesAMissingThing]),
     Example::with("acceptAgent", &[Quirk::NamesAMissingThing]),
+    Example::with("takeBackAgentOffer", &[Quirk::NamesAMissingThing]),
     Example::with(
         "createAgentKey",
         &[

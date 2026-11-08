@@ -11,7 +11,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::agents::{
     AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents,
+    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
 };
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
@@ -472,6 +472,30 @@ async fn accept_agent(
     Ok(done())
 }
 
+/// Ends the offer of an agent: its person takes it back, or the person it is offered to declines it.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/agents/{agent}/hand-over",
+    operation_id = "takeBackAgentOffer",
+    tag = "agents",
+    params(("agent" = String, Path, description = "The ID of the agent.")),
+    responses((status = 204, description = "Taken back."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+)]
+async fn take_back_agent_offer(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(agent_id): ApiPath<String>,
+) -> Result<Response, ApiError> {
+    let id: AgentId = auth
+        .after_who_asks(&info, &session_token, path_id(&agent_id))
+        .await?;
+    auth.api()?
+        .take_back_offer(info, TakeBackOffer { session_token, id })
+        .await?;
+    Ok(done())
+}
+
 /// Makes a key for an agent. The key is shown once, runs out, and is always the agent's.
 #[utoipa::path(
     post,
@@ -667,7 +691,7 @@ where
     OpenApiRouter::new()
         .routes(routes!(list_my_agents, create_agent))
         .routes(routes!(get_agent, change_agent))
-        .routes(routes!(hand_agent))
+        .routes(routes!(hand_agent, take_back_agent_offer))
         .routes(routes!(accept_agent))
         .routes(routes!(create_agent_key))
         .routes(routes!(renew_agent_key))

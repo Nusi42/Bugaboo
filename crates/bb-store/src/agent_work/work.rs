@@ -396,6 +396,7 @@ impl AgentWorkRecords for AuthStorage {
     async fn current_work_of_agents_in(
         transaction: &mut Transaction,
         agents: Vec<AgentId>,
+        person: UserId,
         limit: u64,
     ) -> Result<Vec<IssueWork>, StoreError> {
         if agents.is_empty() {
@@ -421,8 +422,21 @@ impl AgentWorkRecords for AuthStorage {
             .and_where(
                 sea_query::Cond::any()
                     .add(Expr::col(IssueWorkRow::Id).in_subquery(open_ids))
-                    .add(Expr::col(IssueWorkRow::AcceptedByItself).eq(true))
+                    .add(
+                        sea_query::Cond::all()
+                            .add(Expr::col(IssueWorkRow::AcceptedByItself).eq(true))
+                            .add(Expr::col(IssueWorkRow::Person).eq(person.stored())),
+                    )
                     .into(),
+            )
+            // What waits for a person first, so that a cut never takes it.
+            .order_by_expr(
+                Expr::col(IssueWorkRow::State)
+                    .is_in([
+                        AgentWorkState::WaitingForYou.code(),
+                        AgentWorkState::ReadyForReview.code(),
+                    ]),
+                Order::Desc,
             )
             .order_by(IssueWorkRow::Id, Order::Desc)
             .limit(limit);

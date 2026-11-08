@@ -415,6 +415,11 @@ pub(super) fn agent_request(operation: &str) -> Option<Request> {
             format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/hand-over"),
             Some(json!({"to": NOBODYS_RANDOM_ID, "version": 1})),
         ),
+        "takeBackAgentOffer" => (
+            "DELETE",
+            format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/hand-over"),
+            None,
+        ),
         "acceptAgent" => (
             "POST",
             format!("/api/v1/agents/{NOBODYS_RANDOM_ID}/accept"),

@@ -48,6 +48,30 @@ impl GrantStore for AuthStorage {
         .await
     }
 
+    async fn open_rules_of_agents_in(
+        transaction: &mut Transaction,
+        agents: Vec<AgentId>,
+        limit: u64,
+    ) -> Result<Vec<StandingRule>, StoreError> {
+        if agents.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = rule_select();
+        select
+            .and_where(
+                Expr::col(StandingRuleRow::Agent).is_in(
+                    agents
+                        .iter()
+                        .map(|agent| agent.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
+            .order_by(StandingRuleRow::Id, Order::Asc)
+            .limit(limit);
+        all(transaction, &select, read_rule).await
+    }
+
     async fn every_open_rule_in(
         transaction: &mut Transaction,
     ) -> Result<Vec<StandingRule>, StoreError> {

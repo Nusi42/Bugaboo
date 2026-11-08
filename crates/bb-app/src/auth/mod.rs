@@ -56,9 +56,9 @@ use crate::agent_work::{
 use crate::agent_work::{MyAgentWork, MyAgentWorkQuery, my_agent_work};
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
-    HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, accept_agent, agent, change_agent,
-    create_agent, hand_agent, my_agents, organization_agents, rename_agent, set_agent_limits,
-    stop_all_agents,
+    HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer, accept_agent, agent,
+    change_agent, create_agent, hand_agent, my_agents, organization_agents, rename_agent,
+    set_agent_limits, stop_all_agents, take_back_offer,
 };
 use crate::ai::assistant::{
     Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,

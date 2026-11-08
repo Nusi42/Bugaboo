@@ -32,6 +32,8 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn proposal(id: AgentNoteId) -> Option<Proposal> = proposal_in;
         /// The standing rules of one agent, by ID, after `after`, at most `limit`.
         fn rules_of_agent(agent: AgentId, after: Option<StandingRuleId>, limit: u64) -> Vec<StandingRule> = rules_of_agent_in;
+        /// The standing rules of these agents that work, by ID, at most `limit`.
+        fn open_rules_of_agents(agents: Vec<AgentId>, limit: u64) -> Vec<StandingRule> = open_rules_of_agents_in;
         /// Every standing rule that has not ended.
         fn open_rules() -> Vec<StandingRule> = every_open_rule_in;
         /// The standing rules that work in a project and have not ended.
@@ -141,7 +143,10 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// The work that is current for these agents, newest first, at most `limit`: work that has
         /// not ended and whose hand-over still gives work, and work that was accepted by itself
         /// and that nobody has looked at yet (*My agents*).
-        fn current_work_of_agents(agents: Vec<AgentId>, limit: u64) -> Vec<IssueWork> = current_work_of_agents_in;
+        ///
+        /// What waits for a person comes first, so a cut never takes it; work accepted by itself is
+        /// only that which `person` was responsible for when it was given.
+        fn current_work_of_agents(agents: Vec<AgentId>, person: UserId, limit: u64) -> Vec<IssueWork> = current_work_of_agents_in;
         /// The reviews of a piece of work, oldest first.
         fn reviews_of(work: AgentWorkId) -> Vec<Review> = reviews_of_in;
         /// The people who must hear about work: the person responsible for the agent and the person

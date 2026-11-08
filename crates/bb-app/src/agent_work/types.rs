@@ -517,8 +517,12 @@ pub struct OfferedAgent {
 pub struct MyAgentWork {
     /// The agents handed to the person that wait for them to accept.
     pub offered: Vec<OfferedAgent>,
-    /// The work, newest first.
+    /// Whether the agents handed to the person were cut at the most an agent list holds.
+    pub offered_truncated: bool,
+    /// The work, what waits for the person first, then the newest.
     pub items: Vec<MyWorkItem>,
     /// Whether the list was cut at the most *My agents* shows.
     pub truncated: bool,
+    /// The standing rules of the person's agents that work.
+    pub rules: Vec<StandingRuleView>,
 }

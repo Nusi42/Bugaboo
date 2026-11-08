@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
-import { formatDate } from "../../shared/format.ts";
+import { KeyFacts } from "../my-settings/index.ts";
+import { ActionError } from "./ActionError.tsx";
 import { useTakeKeyBack, type AgentKey } from "./agents.ts";
 
 export interface KeyRowProps {
@@ -16,15 +17,7 @@ export function KeyRow({ agent, item, stopped, onRenew }: KeyRowProps) {
   const takeBack = useTakeKeyBack();
   return (
     <li {...partOf(part.item)}>
-      <span {...partOf(part.startColumn)}>
-        <span {...partOf(part.itemTitle)}>{item.name}</span>
-        <span {...partOf(part.muted)}>
-          {t("access-keys.row.prefix", { prefix: `bb_${item.prefix}` })}
-        </span>
-        <span {...partOf(part.muted)}>
-          {t("agents.key-runs-out", { date: formatDate(item.expires_at) })}
-        </span>
-      </span>
+      <KeyFacts item={item} />
       <div {...partOf(part.agentsActions)}>
         {stopped ? null : (
           <Button aria-label={t("agents.key-renew-name", { name: item.name })} onPress={onRenew}>
@@ -43,6 +36,7 @@ export function KeyRow({ agent, item, stopped, onRenew }: KeyRowProps) {
             takeBack.mutate({ params: { path: { agent, access_key: item.id } } });
           }}
         />
+        <ActionError error={takeBack.error} />
       </div>
     </li>
   );

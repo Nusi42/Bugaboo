@@ -496,6 +496,12 @@ pub const AGENTS_CREATE_NEED: MessageKey = MessageKey::new("agents.create-need")
 /// The message `agents.create-text`.
 pub const AGENTS_CREATE_TEXT: MessageKey = MessageKey::new("agents.create-text");
 
+/// The message `agents.cut`.
+pub const AGENTS_CUT: MessageKey = MessageKey::new("agents.cut");
+
+/// The message `agents.decline`.
+pub const AGENTS_DECLINE: MessageKey = MessageKey::new("agents.decline");
+
 /// The message `agents.hand`.
 pub const AGENTS_HAND: MessageKey = MessageKey::new("agents.hand");
 
@@ -607,6 +613,9 @@ pub const AGENTS_NONE: MessageKey = MessageKey::new("agents.none");
 /// The message `agents.not-found`.
 pub const AGENTS_NOT_FOUND: MessageKey = MessageKey::new("agents.not-found");
 
+/// The message `agents.offer-take-back`.
+pub const AGENTS_OFFER_TAKE_BACK: MessageKey = MessageKey::new("agents.offer-take-back");
+
 /// The message `agents.offered`.
 pub const AGENTS_OFFERED: MessageKey = MessageKey::new("agents.offered");
 
@@ -618,6 +627,9 @@ pub const AGENTS_ORG_INTRO: MessageKey = MessageKey::new("agents.org-intro");
 
 /// The message `agents.org-list`.
 pub const AGENTS_ORG_LIST: MessageKey = MessageKey::new("agents.org-list");
+
+/// The message `agents.org-more`.
+pub const AGENTS_ORG_MORE: MessageKey = MessageKey::new("agents.org-more");
 
 /// The message `agents.org-none`.
 pub const AGENTS_ORG_NONE: MessageKey = MessageKey::new("agents.org-none");
@@ -660,9 +672,6 @@ pub const AGENTS_RULE_CREATES_IN: MessageKey = MessageKey::new("agents.rule-crea
 
 /// The message `agents.rule-days`.
 pub const AGENTS_RULE_DAYS: MessageKey = MessageKey::new("agents.rule-days");
-
-/// The message `agents.rule-ended`.
-pub const AGENTS_RULE_ENDED: MessageKey = MessageKey::new("agents.rule-ended");
 
 /// The message `agents.rule-ends-today`.
 pub const AGENTS_RULE_ENDS_TODAY: MessageKey = MessageKey::new("agents.rule-ends-today");
@@ -8687,6 +8696,15 @@ pub fn agents_create_full(most: i64) -> Message {
     )
 }
 
+/// The message `agents.decline-name`.
+#[must_use]
+pub fn agents_decline_name(agent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.decline-name"),
+        vec![("agent", Value::Text(agent.to_string()))],
+    )
+}
+
 /// The message `agents.hand-title`.
 #[must_use]
 pub fn agents_hand_title(agent: impl std::fmt::Display) -> Message {
@@ -8711,15 +8729,6 @@ pub fn agents_key_renew_text(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.key-renew-text"),
         vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `agents.key-runs-out`.
-#[must_use]
-pub fn agents_key_runs_out(date: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agents.key-runs-out"),
-        vec![("date", Value::Text(date.to_string()))],
     )
 }
 
@@ -16432,6 +16441,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.create-text",
         "Give the agent a name. Its page opens next, where you create its keys and see its limits.",
     ),
+    (
+        "agents.cut",
+        "Not everything is shown. What waits for you comes first.",
+    ),
+    ("agents.decline", "Decline"),
+    ("agents.decline-name", "Decline the agent {agent}"),
     ("agents.hand", "Hand to another person"),
     ("agents.hand-confirm", "Hand over"),
     (
@@ -16472,7 +16487,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A new key takes the place of {name}. The old key is taken back.",
     ),
     ("agents.key-renew-title", "Renew the key"),
-    ("agents.key-runs-out", "Runs out on {date}"),
     ("agents.key-shown-title", "Your new agent key"),
     ("agents.key-take-back", "Take back"),
     ("agents.key-take-back-name", "Take back the key {name}"),
@@ -16517,6 +16531,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.not-found", "There is no such agent."),
     ("agents.of", "Agent of {person}"),
+    ("agents.offer-take-back", "Take the offer back"),
     ("agents.offered", "Agents handed to you"),
     ("agents.offered-line", "{person} hands this agent to you."),
     ("agents.open", "Open"),
@@ -16526,6 +16541,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Every agent of the organization, and how much any agent may do. You can stop any agent.",
     ),
     ("agents.org-list", "Every agent"),
+    ("agents.org-more", "Show more agents"),
     ("agents.org-none", "There are no agents yet."),
     ("agents.page", "Agent"),
     ("agents.pause", "Pause"),
@@ -16554,7 +16570,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.rule-days-wrong",
         "Write a whole number of days from 1 to {most}.",
     ),
-    ("agents.rule-ended", "Ended"),
     (
         "agents.rule-ends-in",
         "{count, plural, one {Runs out in # day} other {Runs out in # days}}",

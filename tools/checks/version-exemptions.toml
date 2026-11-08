@@ -243,6 +243,7 @@ reason = "Sends one short call to the provider and changes nothing."
 routes = [
   "POST /api/v1/agents",
   "POST /api/v1/agents/{agent}/accept",
+  "DELETE /api/v1/agents/{agent}/hand-over",
   "POST /api/v1/me/agents/stop-all",
   "POST /api/v1/agents/{agent}/keys",
   "POST /api/v1/agents/{agent}/keys/{access_key}/renew",

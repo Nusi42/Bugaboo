@@ -170,6 +170,11 @@ pub(crate) struct AccessKeyBody {
     created_at: String,
     /// When it stops working.
     expires_at: String,
+    /// The last time it was used, to the minute. Left out when it was never used.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_used_at: Option<String>,
+    /// Whether it has stopped working.
+    expired: bool,
 }
 
 impl From<&AccessKeyView> for AccessKeyBody {
@@ -183,6 +188,8 @@ impl From<&AccessKeyView> for AccessKeyBody {
             projects: key.projects.iter().map(ProjectLabelBody::from).collect(),
             created_at: key.created_at.to_string(),
             expires_at: key.expires_at.to_string(),
+            last_used_at: key.last_used_at.map(|moment| moment.to_string()),
+            expired: key.expired,
         }
     }
 }

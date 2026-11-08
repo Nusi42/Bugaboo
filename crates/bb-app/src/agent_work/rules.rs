@@ -32,7 +32,7 @@ use crate::tags::{AddLabel, AddTag, add_label, add_tag};
 /// How many issues one look at a rule reads at once.
 const MATCH_PAGE: u32 = 100;
 
-fn view_of(rule: &RuleRecord) -> StandingRuleView {
+pub(super) fn view_of(rule: &RuleRecord) -> StandingRuleView {
     StandingRuleView {
         id: rule.id,
         agent: rule.agent,

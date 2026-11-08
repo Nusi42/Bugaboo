@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { formatNumber } from "../../shared/format.ts";
 import { useChangeAgent, type ListedAgent } from "./agents.ts";
+import { ActionError } from "./ActionError.tsx";
 import { draftOf, limitsOf, type Limits, type LimitsDraft } from "./limits-draft.ts";
 
 /** What the three limits are called, and where each stands in the draft. */
@@ -16,11 +17,13 @@ const FIELDS = [
 interface DialogProps {
   readonly agent: ListedAgent;
   readonly maximums: Limits;
+  readonly pending: boolean;
+  readonly onSave: (limits: Limits) => void;
   readonly onClose: () => void;
 }
 
 /** The window that changes the limits: the numbers can be anything from 1 to what the organization allows. */
-function LimitsDialog({ agent, maximums, onClose }: DialogProps) {
+function LimitsDialog({ agent, maximums, pending, onSave, onClose }: DialogProps) {
   const [draft, setDraft] = useState<LimitsDraft>(() =>
     draftOf({
       changes_a_minute: agent.changesAMinute,
@@ -28,7 +31,6 @@ function LimitsDialog({ agent, maximums, onClose }: DialogProps) {
       attempts_on_one_issue: agent.attemptsOnOneIssue,
     }),
   );
-  const change = useChangeAgent();
   const limits = limitsOf(draft, maximums);
   const most = [maximums.changes_a_minute, maximums.issues_at_once, maximums.attempts_on_one_issue];
   return (
@@ -43,14 +45,11 @@ function LimitsDialog({ agent, maximums, onClose }: DialogProps) {
       text={t("agents.limits-text")}
       confirmLabel={t("agents.limits-confirm")}
       cancelLabel={t("common.cancel")}
-      confirmDisabled={limits === undefined || change.isPending}
+      confirmDisabled={limits === undefined || pending}
       confirmHint={t("agents.limits-need")}
       onConfirm={() => {
         if (limits !== undefined) {
-          change.mutate({
-            params: { path: { agent: agent.id } },
-            body: { limits, version: agent.version },
-          });
+          onSave(limits);
         }
       }}
     >
@@ -82,6 +81,7 @@ export interface AgentLimitsProps {
  */
 export function AgentLimits({ agent, maximums }: AgentLimitsProps) {
   const [open, setOpen] = useState(false);
+  const change = useChangeAgent();
   const rows = [agent.changesAMinute, agent.issuesAtOnce, agent.attemptsOnOneIssue];
   return (
     <Card heading={t("agents.limits")} intro={t("agents.limits-intro")}>
@@ -93,6 +93,7 @@ export function AgentLimits({ agent, maximums }: AgentLimitsProps) {
           </div>
         ))}
       </dl>
+      <ActionError error={change.error} />
       {maximums === undefined || maximums === null || agent.state === "stopped" ? null : (
         <div {...partOf(part.row)}>
           <Button
@@ -106,6 +107,13 @@ export function AgentLimits({ agent, maximums }: AgentLimitsProps) {
             <LimitsDialog
               agent={agent}
               maximums={maximums}
+              pending={change.isPending}
+              onSave={(limits) => {
+                change.mutate({
+                  params: { path: { agent: agent.id } },
+                  body: { limits, version: agent.version },
+                });
+              }}
               onClose={() => {
                 setOpen(false);
               }}

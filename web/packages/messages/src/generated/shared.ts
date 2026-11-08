@@ -247,7 +247,6 @@ export const messages = {
   "nav.access-keys": "Access keys",
   "access-keys.may": "What it may do",
   "access-keys.more": "More options",
-  "access-keys.row.prefix": "Starts with {prefix}",
   "nav.connected-apps": "Connected apps",
   "nav.ai": "Set up the assistant",
   "ai-setup.never-sent": "Never sent to AI",

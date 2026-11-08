@@ -20,6 +20,7 @@ mod agent_work_writes;
 mod agents;
 mod agents_limits;
 mod agents_more;
+mod agents_offers;
 mod ai_setup;
 mod ai_tools;
 mod assistant;

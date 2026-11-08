@@ -49,6 +49,7 @@ export const messages = {
   "access-keys.copy": "Copy the key",
   "access-keys.copied": "Copied",
   "access-keys.done": "I have copied it",
+  "access-keys.row.prefix": "Starts with {prefix}",
   "access-keys.row.permissions":
     "{count, plural, one {# single permission} other {# single permissions}}",
   "access-keys.row.projects-all": "For every project",

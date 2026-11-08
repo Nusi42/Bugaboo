@@ -239,3 +239,28 @@ test("ux_01_the_sidebar_with_my_agents_fits_a_window_600_px_high", async ({ page
   expect(bottom).toBeLessThanOrEqual(600);
   await scene.admin.dispose();
 });
+
+test("ai_30_an_administrator_reaches_and_stops_every_agent_however_many_there_are", async ({
+  page,
+  server,
+}) => {
+  const bobsSession = await signInThroughApi(server, bob);
+  // More agents than one page of the list holds.
+  const names = Array.from(
+    { length: 23 },
+    (_, number) => `Helper ${String(number).padStart(2, "0")}`,
+  );
+  await Promise.all(names.map((name) => createAgent(bobsSession, name)));
+  await signIn(page, ada);
+  await page.goto(paths.organizationAgents);
+  await page.getByRole("button", { name: t("agents.org-more") }).click();
+  const last = page.getByRole("listitem").filter({ hasText: "Helper 22" });
+  await expect(last).toBeVisible();
+  await last.getByRole("button", { name: /^Stop /u }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("agents.stop"), exact: true })
+    .click();
+  await expect(last.getByRole("button", { name: /^Stop /u })).toHaveCount(0);
+  await bobsSession.dispose();
+});

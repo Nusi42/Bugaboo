@@ -16,3 +16,4 @@ export { useDraft as useKeyDraft, type Draft as KeyDraft } from "./access-keys/d
 export { Expiry as KeyExpiry } from "./access-keys/FormParts.tsx";
 export { keyEndOf } from "./access-keys/expiry-day.ts";
 export { rulesOptions as keyRulesOptions } from "./access-keys/access-keys.ts";
+export { KeyFacts } from "./access-keys/KeyFacts.tsx";

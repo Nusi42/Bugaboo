@@ -217,11 +217,17 @@ impl AgentStore for AuthStorage {
         self.database().keys_of_agent(agent).await
     }
 
-    async fn agents_offered_to(&self, person: UserId) -> Result<Vec<Agent>, StoreError> {
+    async fn agents_offered_to(
+        &self,
+        person: UserId,
+        limit: u64,
+    ) -> Result<Vec<Agent>, StoreError> {
         let mut select = agent_select();
-        select.and_where(Expr::col(AgentRow::OfferedTo).eq(person.stored()));
+        select
+            .and_where(Expr::col(AgentRow::OfferedTo).eq(person.stored()))
+            .and_where(Expr::col(AgentRow::State).ne(AgentState::Stopped.code()));
         self.database()
-            .fetch_all(&page(select, None, 100))
+            .fetch_all(&page(select, None, limit))
             .await?
             .iter()
             .map(read_agent)
@@ -294,6 +300,10 @@ impl AgentStore for AuthStorage {
         update_at(transaction, id, version, |update| {
             update.value(AgentRow::State, state.code());
             update.value(AgentRow::PausedFor, paused_for.map(LimitKind::code));
+            // A stopped agent is offered to nobody.
+            if state == AgentState::Stopped {
+                update.value(AgentRow::OfferedTo, Option::<Vec<u8>>::None);
+            }
         })
         .await
     }
@@ -359,6 +369,7 @@ impl AgentStore for AuthStorage {
             update
                 .table(AgentRow::Table)
                 .value(AgentRow::State, AgentState::Stopped.code())
+                .value(AgentRow::OfferedTo, Option::<Vec<u8>>::None)
                 .value(AgentRow::Version, Expr::col(AgentRow::Version).add(1))
                 .and_where(
                     Expr::col(AgentRow::Id)

@@ -75,6 +75,7 @@ use super::{
     Started, StatusQuery, StopAllAgents, StopSharingSearch, StopTimer, SubIssuePage,
     SubIssuesQuery, SwitchTimer, TagChangePreview, TagChangePreviewQuery, TagPage, TagSuggestions,
     TagSuggestionsQuery, TagView, TagsQuery, TakeBack, TakeLockQuery, TakeWork, TapWorkDay,
+    TakeBackOffer,
     ThrowAwayDraftQuery, ThrowAwayTimer, TimeEntryPage, TimeEntryView, TimeTotals, TimerQuery,
     TimerSaved, TimerView, TokenOutcome, TokenRequest, ToolAnswer, ToolCallQuery, ToolList,
     ToolListQuery, Tried, TryAiProvider, TryWorkflowQuery, TwoStepQuery, TwoStepStatus, UndoRun,
@@ -129,6 +130,7 @@ use super::{
     start_app_session, start_code_app, start_timer, start_upload, start_work_day, status,
     stop_all_agents, stop_many_changes_run, stop_sharing_search, stop_timer, sub_issues,
     switch_timer, tag_change_preview, tag_suggestions, tags, take_back, take_lock, take_work,
+    set_agent_limits, take_back_offer,
     tap_work_day, throw_away_draft, throw_away_timer, time_entry_defaults, timer, try_ai_provider,
     try_workflow, two_step, undo_run, unfollow_issue, unread_notifications, upload_state,
     use_workflow, web_addresses, what_goes_where, who_may_change, work_day_history, work_days,
@@ -633,6 +635,8 @@ use_cases! {
     hand_agent(HandAgent) -> Done;
     /// Accepts an agent that was handed over.
     accept_agent(AcceptAgent) -> Done;
+    /// Takes back the offer of an agent, or declines it.
+    take_back_offer(TakeBackOffer) -> Done;
     /// Opens the run of a session of an AI app.
     start_app_session(StartAppSession) -> AppSession;
     /// Closes the runs of sessions of AI apps that ended or were idle too long.

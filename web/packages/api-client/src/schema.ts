@@ -232,7 +232,8 @@ export interface paths {
     put?: never;
     /** Offers an agent to another person, who has to accept it. */
     post: operations["handAgent"];
-    delete?: never;
+    /** Ends the offer of an agent: its person takes it back, or the person it is offered to declines it. */
+    delete: operations["takeBackAgentOffer"];
     options?: never;
     head?: never;
     patch?: never;
@@ -4797,6 +4798,8 @@ export interface components {
        * @description When it was made.
        */
       created_at: string;
+      /** @description Whether it has stopped working. */
+      expired: boolean;
       /**
        * Format: date-time
        * @description When it stops working.
@@ -4804,6 +4807,11 @@ export interface components {
       expires_at: string;
       /** @description The ID of the key. */
       id: string;
+      /**
+       * Format: date-time
+       * @description The last time it was used, to the minute. Left out when it was never used.
+       */
+      last_used_at?: string | null;
       /** @description What the person called it. */
       name: string;
       /** @description The single permissions, when the choice is `permissions`. */
@@ -7905,11 +7913,15 @@ export interface components {
     MyAgentWorkBody: {
       /** @description The agents handed to the person that wait for them to accept. */
       offered: components["schemas"]["OfferedAgentBody"][];
+      /** @description Whether the agents handed to the person were cut at the most an agent list holds. */
+      offered_truncated: boolean;
       /**
        * @description The work, newest first: what has not ended, and what was accepted by itself and not looked
        *     at yet.
        */
       pieces: components["schemas"]["MyWorkBody"][];
+      /** @description The standing rules of the person's agents that work. */
+      rules: components["schemas"]["StandingRuleItem"][];
       /** @description Whether the list was cut at the most it holds. */
       truncated: boolean;
     };
@@ -11984,6 +11996,33 @@ export interface operations {
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict2"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  takeBackAgentOffer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Taken back. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

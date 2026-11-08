@@ -76,6 +76,24 @@ impl GrantStore for super::fake::FakeStore {
         Ok(tx.state.work.proposals.iter().find(|p| p.id == id).cloned())
     }
 
+    async fn open_rules_of_agents_in(
+        tx: &mut Tx,
+        agents: Vec<AgentId>,
+        limit: u64,
+    ) -> Result<Vec<StandingRule>, FakeError> {
+        Ok(page(
+            tx.state
+                .work
+                .rules
+                .iter()
+                .filter(|r| agents.contains(&r.agent) && r.state == GivingState::Open)
+                .cloned(),
+            |r| r.id,
+            None,
+            limit,
+        ))
+    }
+
     async fn rules_of_agent_in(
         tx: &mut Tx,
         agent: AgentId,
@@ -583,16 +601,27 @@ impl AgentWorkRecords for super::fake::FakeStore {
     async fn current_work_of_agents_in(
         tx: &mut Tx,
         agents: Vec<AgentId>,
+        person: UserId,
         limit: u64,
     ) -> Result<Vec<IssueWork>, FakeError> {
         let work = &tx.state.work;
         let mut found: Vec<IssueWork> = work
             .works
             .iter()
-            .filter(|w| agents.contains(&w.agent) && (work.is_open(w) || w.accepted_by_itself))
+            .filter(|w| {
+                agents.contains(&w.agent)
+                    && (work.is_open(w) || (w.accepted_by_itself && w.person == person))
+            })
             .cloned()
             .collect();
         found.reverse();
+        // What waits for a person first, as the statement of the store does.
+        found.sort_by_key(|w| {
+            !matches!(
+                w.state,
+                AgentWorkState::WaitingForYou | AgentWorkState::ReadyForReview
+            )
+        });
         found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         Ok(found)
     }

@@ -118,6 +118,25 @@ async fn ai_30_an_agent_handed_to_a_person_is_listed_for_them_until_they_accept(
         // The person who hands it over does not get it listed as offered to them.
         let own = tess.send("GET", "/api/v1/me/agents/work", None).await?;
         assert_eq!(ok(&own)?["offered"].as_array().map(Vec::len), Some(0));
+        // The one it is handed to declines; nothing is offered then, and accepting finds nothing.
+        let declined = olga
+            .send("DELETE", &format!("/api/v1/agents/{agent}/hand-over"), None)
+            .await?;
+        assert_eq!(declined.status, StatusCode::NO_CONTENT, "{}", declined.body);
+        let gone = olga.send("GET", "/api/v1/me/agents/work", None).await?;
+        assert_eq!(ok(&gone)?["offered"].as_array().map(Vec::len), Some(0));
+        let current = tess
+            .send("GET", &format!("/api/v1/agents/{agent}"), None)
+            .await?;
+        let version = ok(&current)?["version"].clone();
+        let again = tess
+            .send(
+                "POST",
+                &format!("/api/v1/agents/{agent}/hand-over"),
+                Some(json!({"to": olga_id.to_string(), "version": version})),
+            )
+            .await?;
+        assert_eq!(again.status, StatusCode::NO_CONTENT, "{}", again.body);
         let accepted = olga
             .send("POST", &format!("/api/v1/agents/{agent}/accept"), None)
             .await?;
@@ -158,7 +177,7 @@ async fn ai_37_a_person_changes_the_limits_of_an_agent_over_http() -> TestResult
         let item = &ok(&list)?["items"][0];
         assert_eq!(item["changes_a_minute"], json!(10));
         assert_eq!(item["issues_at_once"], json!(2));
-        // More than the organization allows is refused, and so is asking for two changes at once.
+        // More than the organization allows is refused.
         let too_much = tess
             .send(
                 "PATCH",

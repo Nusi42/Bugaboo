@@ -171,8 +171,15 @@ impl AgentStore for FakeStore {
         }))
     }
 
-    async fn agents_offered_to(&self, person: UserId) -> Result<Vec<Agent>, FakeError> {
-        Ok(self.read(|state| page(&state.agents, |a| a.offered_to == Some(person), None, 100)))
+    async fn agents_offered_to(&self, person: UserId, limit: u64) -> Result<Vec<Agent>, FakeError> {
+        Ok(self.read(|state| {
+            page(
+                &state.agents,
+                |a| a.offered_to == Some(person) && a.state != AgentState::Stopped,
+                None,
+                limit,
+            )
+        }))
     }
 
     async fn lock_agents_of(_tx: &mut Tx, _person: UserId) -> Result<(), FakeError> {
@@ -213,6 +220,9 @@ impl AgentStore for FakeStore {
         Ok(change(tx, id, version, |agent| {
             agent.state = state;
             agent.paused_for = paused_for;
+            if state == AgentState::Stopped {
+                agent.offered_to = None;
+            }
         }))
     }
 
@@ -255,6 +265,7 @@ impl AgentStore for FakeStore {
         for agent in &mut tx.state.agents {
             if agent.person == person && agent.state != AgentState::Stopped {
                 agent.state = AgentState::Stopped;
+                agent.offered_to = None;
                 agent.version += 1;
                 stopped.push(agent.id);
             }

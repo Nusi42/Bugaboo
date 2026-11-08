@@ -3,6 +3,7 @@ import { Button, buttonLook, ConfirmDialog, Link, partOf, part } from "@bugaboo/
 
 import { agentAddress } from "./agent-address.ts";
 import { agentLine, mayAct, useChangeAgent, type ListedAgent, type MyWorkItem } from "./agents.ts";
+import { ActionError } from "./ActionError.tsx";
 import { WorkLines } from "./WorkLines.tsx";
 
 /** *Pause* or *Resume*, and *Stop* with its question, for one agent. */
@@ -42,6 +43,7 @@ function AgentButtons({ agent }: { readonly agent: ListedAgent }) {
           send("stop");
         }}
       />
+      <ActionError error={change.error} />
     </div>
   );
 }

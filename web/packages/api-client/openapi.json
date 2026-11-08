@@ -914,6 +914,46 @@
           }
         },
         "x-permission": "own-account"
+      },
+      "delete": {
+        "tags": ["agents"],
+        "summary": "Ends the offer of an agent: its person takes it back, or the person it is offered to declines it.",
+        "operationId": "takeBackAgentOffer",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken back."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/agents/{agent}/keys": {
@@ -17716,7 +17756,8 @@
           "permissions",
           "projects",
           "created_at",
-          "expires_at"
+          "expires_at",
+          "expired"
         ],
         "properties": {
           "choice": {
@@ -17728,6 +17769,10 @@
             "description": "When it was made.",
             "format": "date-time"
           },
+          "expired": {
+            "type": "boolean",
+            "description": "Whether it has stopped working."
+          },
           "expires_at": {
             "type": "string",
             "description": "When it stops working.",
@@ -17736,6 +17781,11 @@
           "id": {
             "type": "string",
             "description": "The ID of the key."
+          },
+          "last_used_at": {
+            "type": ["string", "null"],
+            "description": "The last time it was used, to the minute. Left out when it was never used.",
+            "format": "date-time"
           },
           "name": {
             "type": "string",
@@ -23964,7 +24014,7 @@
       "MyAgentWorkBody": {
         "type": "object",
         "description": "The current work of the person's agents.",
-        "required": ["offered", "pieces", "truncated"],
+        "required": ["offered", "offered_truncated", "pieces", "truncated", "rules"],
         "properties": {
           "offered": {
             "type": "array",
@@ -23973,12 +24023,23 @@
             },
             "description": "The agents handed to the person that wait for them to accept."
           },
+          "offered_truncated": {
+            "type": "boolean",
+            "description": "Whether the agents handed to the person were cut at the most an agent list holds."
+          },
           "pieces": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MyWorkBody"
             },
             "description": "The work, newest first: what has not ended, and what was accepted by itself and not looked\nat yet."
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StandingRuleItem"
+            },
+            "description": "The standing rules of the person's agents that work."
           },
           "truncated": {
             "type": "boolean",

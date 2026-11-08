@@ -15,7 +15,9 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { SavedSearchChoice } from "../search/index.ts";
-import { listedAgents, useCreateRule, useMyAgentList, useProjectChoices } from "./agents.ts";
+import { listedAgents, useCreateRule, useMyAgentList } from "./agents.ts";
+import { projectKey } from "./project-choices.ts";
+import { ProjectSelect } from "./ProjectSelect.tsx";
 import {
   emptyRuleDraft,
   offeredFields,
@@ -43,34 +45,6 @@ function AgentSelect({ draft, onChange }: DraftProps) {
       choices={[
         { value: "", label: t("agents.rule-choose") },
         ...agents.map((agent) => ({ value: agent.id, label: agent.name })),
-      ]}
-    />
-  );
-}
-
-/** The projects the person can give agents work in. */
-function ProjectSelect({
-  label,
-  value,
-  onChange,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly onChange: (project: string) => void;
-}) {
-  const projects = useProjectChoices().data?.items ?? [];
-  return (
-    <SelectField
-      label={label}
-      value={value}
-      onChange={onChange}
-      choices={[
-        { value: "", label: t("agents.rule-choose") },
-        ...projects.flatMap((project) =>
-          project.id === undefined || project.id === null
-            ? []
-            : [{ value: project.id, label: project.name ?? project.short_name ?? project.id }],
-        ),
       ]}
     />
   );
@@ -117,6 +91,7 @@ function Powers({ draft, onChange }: DraftProps) {
       {draft.createIssues ? (
         <ProjectSelect
           label={t("agents.rule-creates-in")}
+          valueKey={projectKey.id}
           value={draft.createsIn}
           onChange={(createsIn) => {
             onChange({ createsIn });
@@ -143,6 +118,7 @@ function Fields({ draft, onChange, searchFixed }: DraftProps & { readonly search
       <AgentSelect draft={draft} onChange={onChange} />
       <ProjectSelect
         label={t("agents.rule-project")}
+        valueKey={projectKey.id}
         value={draft.project}
         onChange={(project) => {
           onChange({ project });

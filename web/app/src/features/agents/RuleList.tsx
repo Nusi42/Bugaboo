@@ -2,14 +2,9 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
 import { useNow } from "../../shared/use-now.ts";
-import {
-  agentNamed,
-  runsOutText,
-  useChangeRule,
-  type ListedAgent,
-  type Rule,
-  type RuleNames,
-} from "./agents.ts";
+import { ActionError } from "./ActionError.tsx";
+import { agentNamed, runsOutText, useChangeRule, type ListedAgent, type Rule } from "./agents.ts";
+import { type RuleNames } from "./rule-names.ts";
 import { ruleFieldText } from "./rule-draft.ts";
 
 /** What a rule may do, in words: it proposes, or it changes these fields, and it may create issues in a project. */
@@ -50,35 +45,32 @@ function RuleRow({ rule, agents, names, withAgent }: RuleRowProps) {
           {withAgent ? t("agents.rule-line", { search, agent }) : search}
         </span>
         <span {...partOf(part.muted)}>{powerText(rule, names)}</span>
-        <span {...partOf(part.muted)}>
-          {rule.state === "ended" ? t("agents.rule-ended") : runsOutText(rule.ends_at, now)}
-        </span>
+        <span {...partOf(part.muted)}>{runsOutText(rule.ends_at, now)}</span>
       </span>
-      {rule.state === "ended" ? null : (
-        <div {...partOf(part.agentsActions)}>
-          <Button
-            isPending={change.isPending}
-            aria-label={t("agents.renew-name", { agent, search })}
-            onPress={() => {
-              send("renew");
-            }}
-          >
-            {t("agents.renew")}
-          </Button>
-          <ConfirmDialog
-            triggerLabel={t("agents.rule-stop")}
-            triggerName={t("agents.rule-stop-name", { agent, search })}
-            title={t("agents.rule-stop-title")}
-            text={t("agents.rule-stop-text")}
-            confirmLabel={t("agents.rule-stop")}
-            cancelLabel={t("common.cancel")}
-            confirmLook={buttonLook.danger}
-            onConfirm={() => {
-              send("stop");
-            }}
-          />
-        </div>
-      )}
+      <div {...partOf(part.agentsActions)}>
+        <Button
+          isPending={change.isPending}
+          aria-label={t("agents.renew-name", { agent, search })}
+          onPress={() => {
+            send("renew");
+          }}
+        >
+          {t("agents.renew")}
+        </Button>
+        <ConfirmDialog
+          triggerLabel={t("agents.rule-stop")}
+          triggerName={t("agents.rule-stop-name", { agent, search })}
+          title={t("agents.rule-stop-title")}
+          text={t("agents.rule-stop-text")}
+          confirmLabel={t("agents.rule-stop")}
+          cancelLabel={t("common.cancel")}
+          confirmLook={buttonLook.danger}
+          onConfirm={() => {
+            send("stop");
+          }}
+        />
+        <ActionError error={change.error} />
+      </div>
     </li>
   );
 }

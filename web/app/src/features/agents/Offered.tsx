@@ -2,11 +2,13 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { personName } from "../../shared/person.ts";
-import { useAcceptAgent, type OfferedAgent } from "./agents.ts";
+import { ActionError } from "./ActionError.tsx";
+import { useAcceptAgent, useTakeBackOffer, type OfferedAgent } from "./agents.ts";
 
 /** The agents another person handed to this one, with *Accept*. */
 export function Offered({ offered }: { readonly offered: readonly OfferedAgent[] }) {
   const accept = useAcceptAgent();
+  const decline = useTakeBackOffer();
   if (offered.length === 0) {
     return null;
   }
@@ -30,6 +32,16 @@ export function Offered({ offered }: { readonly offered: readonly OfferedAgent[]
           >
             {t("agents.accept")}
           </Button>
+          <Button
+            isPending={decline.isPending}
+            aria-label={t("agents.decline-name", { agent: agent.name })}
+            onPress={() => {
+              decline.mutate({ params: { path: { agent: agent.id } } });
+            }}
+          >
+            {t("agents.decline")}
+          </Button>
+          <ActionError error={accept.error ?? decline.error} />
         </li>
       ))}
     </ul>

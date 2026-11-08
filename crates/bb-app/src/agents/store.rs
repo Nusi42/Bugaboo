@@ -65,8 +65,9 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn last_use_of_agents(agents: Vec<AgentId>) -> Vec<(AgentId, Timestamp)>;
         /// The keys of one agent, newest first.
         fn keys_of_agent(agent: AgentId) -> Vec<AccessKeyRecord>;
-        /// The agents handed to a person that they have not accepted yet.
-        fn agents_offered_to(person: UserId) -> Vec<Agent>;
+        /// The agents handed to a person that they have not accepted yet and that are not stopped,
+        /// by ID, at most `limit`.
+        fn agents_offered_to(person: UserId, limit: u64) -> Vec<Agent>;
     }
 
     writes! {

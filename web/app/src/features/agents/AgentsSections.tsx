@@ -1,13 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Button, partOf, part, useLayout } from "@bugaboo/ui";
-import { useState } from "react";
+import { partOf, part, useLayout } from "@bugaboo/ui";
 
-import { type ListedAgent, type MyWorkItem, type Rule, type RuleNames } from "./agents.ts";
+import { type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentSection } from "./AgentSection.tsx";
 import { CreateAgentButton } from "./CreateAgentDialog.tsx";
-import { RuleList } from "./RuleList.tsx";
 import { Section } from "./Section.tsx";
-import { StandingRuleDialog } from "./StandingRuleDialog.tsx";
 import { StopAll } from "./StopAll.tsx";
 
 export interface AgentsSectionsProps {
@@ -38,35 +35,6 @@ export function AgentList({ agents, work }: AgentsSectionsProps) {
         <CreateAgentButton count={agents.length} />
         {phone && running.length > 0 ? <StopAll agents={running} /> : null}
       </div>
-    </Section>
-  );
-}
-
-export interface RulesSectionProps {
-  readonly agents: readonly ListedAgent[];
-  readonly rules: readonly Rule[];
-  readonly names: RuleNames;
-}
-
-/** *Standing rules*: the ones that work, with *Renew* and *Stop*, and the button that makes one. */
-export function RulesSection({ agents, rules, names }: RulesSectionProps) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Section
-      heading={t("agents.rules")}
-      count={rules.filter((rule) => rule.state === "open").length}
-    >
-      <RuleList rules={rules} agents={agents} names={names} />
-      <div {...partOf(part.row)}>
-        <Button
-          onPress={() => {
-            setOpen(true);
-          }}
-        >
-          {t("agents.rule-new")}
-        </Button>
-      </div>
-      {open ? <StandingRuleDialog isOpen onOpenChange={setOpen} /> : null}
     </Section>
   );
 }

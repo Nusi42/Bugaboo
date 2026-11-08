@@ -20,7 +20,7 @@ use serde_json::json;
 
 use super::types::{
     AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents,
+    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
 };
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, change_failed, internal};
 use crate::auth::{entity, set_to};
@@ -619,6 +619,61 @@ pub async fn hand_agent<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::offer_agent(transaction, id, Some(to), version).await? {
+                    Ok(())
+                } else {
+                    Err(S::aborted())
+                }
+            })
+        })
+        .await
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)).about(
+                &entity(RecordKind::Agent, id),
+                Place::Organization,
+                person,
+            )
+        })?;
+    Ok(Done)
+}
+
+/// Ends the offer of an agent: the person responsible takes it back, or the person it is offered to
+/// declines it. The agent stays with the person responsible.
+///
+/// # Errors
+/// `resource.not-found` for an agent that is offered to nobody, or neither the person's nor offered to
+/// them.
+pub async fn take_back_offer<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: TakeBackOffer,
+) -> Result<Done, AppError> {
+    let record = ctx.active(&input.session_token).await?;
+    let person = record.person.id;
+    let found = ctx
+        .store()
+        .agent(input.id)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .filter(|agent| {
+            agent.offered_to.is_some()
+                && (agent.person == person || agent.offered_to == Some(person))
+        })
+        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let event = counted(
+        ctx,
+        person,
+        found.id,
+        vec![bb_core::event::FieldChange {
+            field: "offered_to".to_owned(),
+            before: found.offered_to.map(|to| json!(to.to_string())),
+            after: None,
+        }],
+        found.version,
+    )?;
+    let (id, version) = (found.id, found.version);
+    ctx.store()
+        .record_change(&event, move |transaction| {
+            Box::pin(async move {
+                if S::offer_agent(transaction, id, None, version).await? {
                     Ok(())
                 } else {
                     Err(S::aborted())

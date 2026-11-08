@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import { buttonLook, ConfirmDialog, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { itemsOf } from "../../shared/paged.ts";
 import { personName } from "../../shared/person.ts";
 import { QueryGate } from "../shell/index.ts";
+import { ActionError } from "./ActionError.tsx";
 import {
   agentStateText,
   listedAgents,
@@ -54,6 +56,7 @@ function Row({ agent, lastUsed }: RowProps) {
           }}
         />
       )}
+      <ActionError error={change.error} />
     </li>
   );
 }
@@ -64,31 +67,35 @@ function Row({ agent, lastUsed }: RowProps) {
  */
 export function OrganizationAgents() {
   const found = useOrganizationAgents();
-  const items = found.data?.items;
-  const lastUsed = new Map(
-    (items ?? []).flatMap((item) =>
-      item.id === undefined ||
-      item.id === null ||
-      item.last_used_at === undefined ||
-      item.last_used_at === null
-        ? []
-        : [[item.id, item.last_used_at] as const],
-    ),
-  );
+  const items = itemsOf(found.data?.pages);
+  const lastUsed = new Map<string, string>();
+  for (const item of items) {
+    if (
+      item.id !== undefined &&
+      item.id !== null &&
+      item.last_used_at !== undefined &&
+      item.last_used_at !== null
+    ) {
+      lastUsed.set(item.id, item.last_used_at);
+    }
+  }
+  const agents = listedAgents(items);
   return (
-    <QueryGate error={found.error} data={items}>
-      {(all) => {
-        const agents = listedAgents(all);
-        return agents.length === 0 ? (
+    <QueryGate error={found.error} data={found.data === undefined ? undefined : agents}>
+      {(all) =>
+        all.length === 0 ? (
           <p {...partOf(part.muted)}>{t("agents.org-none")}</p>
         ) : (
-          <ul {...partOf(part.list)} aria-label={t("agents.org-list")}>
-            {agents.map((agent) => (
-              <Row key={agent.id} agent={agent} lastUsed={lastUsed.get(agent.id)} />
-            ))}
-          </ul>
-        );
-      }}
+          <>
+            <ul {...partOf(part.list)} aria-label={t("agents.org-list")}>
+              {all.map((agent) => (
+                <Row key={agent.id} agent={agent} lastUsed={lastUsed.get(agent.id)} />
+              ))}
+            </ul>
+            <ShowMoreOf label={t("agents.org-more")} list={found} />
+          </>
+        )
+      }
     </QueryGate>
   );
 }

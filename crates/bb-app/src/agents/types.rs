@@ -81,6 +81,15 @@ pub struct HandAgent {
     pub version: i64,
 }
 
+/// Take back what was offered of an agent: the one who handed it over takes the offer back, the one it
+/// was handed to declines it.
+pub struct TakeBackOffer {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The agent.
+    pub id: AgentId,
+}
+
 /// Accept an agent that was handed to the person.
 pub struct AcceptAgent {
     /// The secret of the session of the request.

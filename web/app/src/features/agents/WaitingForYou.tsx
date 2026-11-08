@@ -12,8 +12,9 @@ import {
   type ListedAgent,
   type MyWorkItem,
   type Rule,
-  type RuleNames,
 } from "./agents.ts";
+import { type RuleNames } from "./rule-names.ts";
+import { ActionError } from "./ActionError.tsx";
 import { Section } from "./Section.tsx";
 
 /** What a row of *Waiting for you* says and what its button is called, by what the work waits for. */
@@ -94,6 +95,7 @@ function RuleRow({
       >
         {t("agents.renew")}
       </Button>
+      <ActionError error={renew.error} />
     </li>
   );
 }

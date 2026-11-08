@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { peopleOf, useAssignablePeople } from "../issues/index.ts";
-import { useHandAgent, useProjectChoices, type ListedAgent } from "./agents.ts";
+import { useHandAgent, useTakeBackOffer, type ListedAgent } from "./agents.ts";
+import { ActionError } from "./ActionError.tsx";
+import { projectKey } from "./project-choices.ts";
+import { ProjectSelect } from "./ProjectSelect.tsx";
 
 /** The people of a project that the person can name, as the choices of the window. */
 function PersonSelect({
@@ -30,29 +33,48 @@ function PersonSelect({
   );
 }
 
-/** The project whose people are offered. */
-function ProjectSelect({
+/** The project and then a person of it: the receiver of the agent. */
+function PersonChoice({
   value,
   onChange,
 }: {
   readonly value: string;
-  readonly onChange: (project: string) => void;
+  readonly onChange: (person: string) => void;
 }) {
-  const projects = useProjectChoices().data?.items ?? [];
-  const choices = [{ value: "", label: t("agents.rule-choose") }];
-  for (const one of projects) {
-    if (one.short_name !== undefined && one.short_name !== null) {
-      choices.push({ value: one.short_name, label: one.name ?? one.short_name });
-    }
-  }
+  const [project, setProject] = useState("");
   return (
-    <SelectField
-      label={t("agents.hand-project")}
-      description={t("agents.hand-project-help")}
-      value={value}
-      onChange={onChange}
-      choices={choices}
-    />
+    <>
+      <ProjectSelect
+        label={t("agents.hand-project")}
+        description={t("agents.hand-project-help")}
+        valueKey={projectKey.shortName}
+        value={project}
+        onChange={(next) => {
+          setProject(next);
+          onChange("");
+        }}
+      />
+      {project === "" ? null : <PersonSelect project={project} value={value} onChange={onChange} />}
+    </>
+  );
+}
+
+/** The note that the agent is offered, and the button that takes the offer back. */
+function OfferNote({ agent }: { readonly agent: string }) {
+  const takeBack = useTakeBackOffer();
+  return (
+    <>
+      <p>{t("agents.hand-waiting")}</p>
+      <Button
+        isPending={takeBack.isPending}
+        onPress={() => {
+          takeBack.mutate({ params: { path: { agent } } });
+        }}
+      >
+        {t("agents.offer-take-back")}
+      </Button>
+      <ActionError error={takeBack.error} />
+    </>
   );
 }
 
@@ -62,7 +84,6 @@ function ProjectSelect({
  */
 export function HandToPerson({ agent }: { readonly agent: ListedAgent }) {
   const [open, setOpen] = useState(false);
-  const [project, setProject] = useState("");
   const [person, setPerson] = useState("");
   const hand = useHandAgent();
   return (
@@ -70,7 +91,6 @@ export function HandToPerson({ agent }: { readonly agent: ListedAgent }) {
       <Button
         isDisabled={agent.state === "stopped" || agent.offered}
         onPress={() => {
-          setProject("");
           setPerson("");
           hand.reset();
           setOpen(true);
@@ -94,19 +114,10 @@ export function HandToPerson({ agent }: { readonly agent: ListedAgent }) {
           });
         }}
       >
-        <ProjectSelect
-          value={project}
-          onChange={(next) => {
-            setProject(next);
-            setPerson("");
-          }}
-        />
-        {project === "" ? null : (
-          <PersonSelect project={project} value={person} onChange={setPerson} />
-        )}
+        <PersonChoice value={person} onChange={setPerson} />
       </AskDialog>
       {hand.isError ? <Alert tone={alertTone.danger}>{messageOf(hand.error)}</Alert> : null}
-      {agent.offered ? <p>{t("agents.hand-waiting")}</p> : null}
+      {agent.offered ? <OfferNote agent={agent.id} /> : null}
     </Card>
   );
 }

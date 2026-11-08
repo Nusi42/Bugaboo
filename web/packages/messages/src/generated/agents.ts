@@ -70,7 +70,6 @@ export const messages = {
   "agents.key-create-confirm": "Create the key",
   "agents.key-name": "Name",
   "agents.key-name-help": "What the key is for, like “Fixer on the build server”.",
-  "agents.key-runs-out": "Runs out on {date}",
   "agents.key-renew-name": "Renew the key {name}",
   "agents.key-renew-title": "Renew the key",
   "agents.key-renew-text": "A new key takes the place of {name}. The old key is taken back.",
@@ -128,7 +127,6 @@ export const messages = {
   "agents.rule-power-creates": "Creates issues in {project}.",
   "agents.rule-search-gone": "A saved search you can no longer open",
   "agents.rule-project-gone": "A project you can no longer name",
-  "agents.rule-ended": "Ended",
   "agents.rule-ends-on": "Runs out on {date}",
   "agents.rule-ends-in": "{count, plural, one {Runs out in # day} other {Runs out in # days}}",
   "agents.rule-ends-today": "Runs out today",
@@ -148,6 +146,11 @@ export const messages = {
   "agents.limits-confirm": "Save the limits",
   "agents.limits-need": "Write whole numbers that are not above what your organization allows.",
   "agents.limits-most": "At most {most, number}",
+  "agents.cut": "Not everything is shown. What waits for you comes first.",
+  "agents.org-more": "Show more agents",
+  "agents.decline": "Decline",
+  "agents.decline-name": "Decline the agent {agent}",
+  "agents.offer-take-back": "Take the offer back",
 } as const;
 
 register(messages);

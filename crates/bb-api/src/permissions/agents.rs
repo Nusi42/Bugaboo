@@ -18,6 +18,7 @@ pub(super) const ROUTES: &[Route] = &[
     route("changeAgent", Declared::OwnAccount, Answer::Ordinary),
     route("handAgent", Declared::OwnAccount, Answer::Ordinary),
     route("acceptAgent", Declared::OwnAccount, Answer::Ordinary),
+    route("takeBackAgentOffer", Declared::OwnAccount, Answer::Ordinary),
     route("createAgentKey", Declared::OwnAccount, Answer::Secret),
     route("renewAgentKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAgentKey", Declared::OwnAccount, Answer::Ordinary),

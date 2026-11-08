@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 
+import { ActionError } from "./ActionError.tsx";
 import { mayAct, useChangeAgent, type ListedAgent } from "./agents.ts";
 
 /** *Pause* or *Resume*, and *Stop* with its question. */
@@ -36,6 +37,7 @@ export function StateButtons({ agent }: { readonly agent: ListedAgent }) {
           send("stop");
         }}
       />
+      <ActionError error={change.error} />
     </>
   );
 }

@@ -152,10 +152,10 @@ export interface MessageArguments {
   "agents.accepted-line": { agent: string | number; count: number };
   "agents.count": { count: string | number };
   "agents.create-full": { most: number };
+  "agents.decline-name": { agent: string | number };
   "agents.hand-title": { agent: string | number };
   "agents.key-renew-name": { name: string | number };
   "agents.key-renew-text": { name: string | number };
-  "agents.key-runs-out": { date: string | number };
   "agents.key-take-back-name": { name: string | number };
   "agents.last-used": { when: string | number };
   "agents.limits-most": { most: number };
