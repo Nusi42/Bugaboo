@@ -4,6 +4,8 @@ import type { Schema } from "@bugaboo/api-client";
 export interface AcceptChoice {
   readonly value: string;
   readonly label: string;
+  /** The workflow proposes this status: the first of the group *Done*. */
+  readonly proposed: boolean;
 }
 
 /**
@@ -24,5 +26,9 @@ export function acceptChoices(
   });
   const done = unique.filter((change) => change.to.status_group === "done");
   const rest = unique.filter((change) => change.to.status_group !== "done");
-  return [...done, ...rest].map((change) => ({ value: change.to.key, label: change.to.name }));
+  return [...done, ...rest].map((change, at) => ({
+    value: change.to.key,
+    label: change.to.name,
+    proposed: at === 0 && change.to.status_group === "done",
+  }));
 }

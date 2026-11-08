@@ -154,10 +154,24 @@ async fn ai_33_the_open_work_of_a_page_is_read_in_one_statement_and_leaves_out_w
         )
         .await?;
         // One issue has open work, the other has none, and none at all is asked for no statement.
-        let found = storage.open_work_on_issues(vec![first, second]).await?;
+        let found = storage
+            .open_work_on_issues(vec![first, second], at(1))
+            .await?;
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].issue, first);
-        assert!(storage.open_work_on_issues(Vec::new()).await?.is_empty());
+        assert!(
+            storage
+                .open_work_on_issues(Vec::new(), at(1))
+                .await?
+                .is_empty()
+        );
+        // A hand-over that ran out gives no work, whatever its job did not do yet.
+        assert!(
+            storage
+                .open_work_on_issues(vec![first], at(ENDS + 1))
+                .await?
+                .is_empty()
+        );
         // Work that ended is not on the page any more.
         made.step += 1;
         let step = made.step;
@@ -169,7 +183,12 @@ async fn ai_33_the_open_work_of_a_page_is_read_in_one_statement_and_leaves_out_w
                 })
             })
             .await?;
-        assert!(storage.open_work_on_issues(vec![first]).await?.is_empty());
+        assert!(
+            storage
+                .open_work_on_issues(vec![first], at(1))
+                .await?
+                .is_empty()
+        );
         Ok(())
     })
     .await

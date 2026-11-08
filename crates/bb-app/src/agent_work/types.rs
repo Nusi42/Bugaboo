@@ -216,6 +216,11 @@ pub struct WorkedOnBy {
 /// The agent work on an issue, and who works on it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IssueAgentWork {
+    /// The readable ID of the issue now (`WEB-142`), for a window that names ticked issues.
+    pub readable_id: String,
+    /// After how many days a hand-over ends when its maker says nothing: the setting of the
+    /// organization, for the window that says when a hand-over would run out.
+    pub hand_over_days: i64,
     /// The agents with open work on the issue. The issue keeps its person; an agent is never
     /// *Assigned to*.
     pub worked_on_by: Vec<WorkedOnBy>,

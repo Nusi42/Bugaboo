@@ -371,6 +371,17 @@ impl RuleField {
     }
 }
 
+/// The words a search names the agent that works on an issue and where its work is by, written
+/// from their codes like the words of the fields (`agent`, `agent state`): the one place they are
+/// written, for the search language and for the browser's list of words.
+#[must_use]
+pub fn agent_search_words() -> [String; 2] {
+    [
+        crate::fields::code_word("agent"),
+        crate::fields::code_word("agent-state"),
+    ]
+}
+
 /// The state of agent work after the agent is stopped or its person loses access: open work is
 /// *Stopped*, work that ended stays as it ended.
 #[must_use]

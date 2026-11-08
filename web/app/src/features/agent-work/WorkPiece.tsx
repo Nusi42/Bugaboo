@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { partOf, part } from "@bugaboo/ui";
 
 import { AttemptLines } from "./AttemptLines.tsx";
-import type { Work } from "./agent-work.ts";
+import type { BriefLack, Work } from "./agent-work.ts";
 import { Questions } from "./QuestionAnswer.tsx";
 import { Reviews } from "./Reviews.tsx";
 import { WorkActions } from "./WorkActions.tsx";
@@ -19,15 +19,18 @@ export function WorkPiece({
   work,
   issue,
   statusChanges,
+  lacking,
 }: {
   readonly work: Work;
+  /** The parts of the brief the issue lacks now. */
+  readonly lacking: readonly BriefLack[];
   readonly issue: string;
   readonly statusChanges: readonly Schema<"StatusChangeRef">[] | null | undefined;
 }) {
   return (
     <div {...partOf(part.agentWorkPiece)}>
       <WorkHead work={work} />
-      <WorkBrief work={work} />
+      <WorkBrief work={work} lacking={lacking} />
       {work.attempts.map((attempt) => (
         <AttemptLines key={attempt.id} work={work} attempt={attempt} />
       ))}

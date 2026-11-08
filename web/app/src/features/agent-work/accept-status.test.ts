@@ -17,6 +17,7 @@ describe("the statuses to accept into", () => {
       change("wontfix", "Won't fix", "done"),
     ]);
     expect(choices.map((choice) => choice.value)).toEqual(["fixed", "wontfix", "open"]);
+    expect(choices.map((choice) => choice.proposed)).toEqual([true, false, false]);
   });
 
   it("offers nothing when the issue cannot change its status", () => {

@@ -339,6 +339,45 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
 }
 
 #[tokio::test]
+async fn perf_05_a_page_with_agent_marks_runs_as_many_statements_for_forty_issues_as_for_five()
+-> TestResult {
+    each_database("perf_05_list_agents", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut keys = Vec::new();
+        for number in 0..40 {
+            keys.push(text_in(
+                ok(&site.create(&mut ada, &format!("Issue {number}")).await?)?,
+                "readable_id",
+            )?);
+        }
+        let agent = text_in(
+            ok(&ada
+                .send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
+                .await?)?,
+            "id",
+        )?;
+        ok(&ada
+            .send(
+                "POST",
+                "/api/v1/hand-overs",
+                Some(json!({"agent": agent, "issues": keys})),
+            )
+            .await?)?;
+        let path = |limit: u32| {
+            format!(
+                "{PROJECTS}/{}/issues?fields=id,title,agent_work&limit={limit}",
+                site.acme
+            )
+        };
+        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
+        assert_as_many_statements(on_five, on_forty, LIST_AT_MOST, "a longer page of marks");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn perf_05_tag_suggestions_run_as_many_statements_for_twelve_projects_as_for_two()
 -> TestResult {
     each_database("perf_05_suggestions", async |db| {

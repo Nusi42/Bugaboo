@@ -664,6 +664,7 @@ pub(super) fn search_words() -> String {
                 .iter()
                 .map(|field| field.word().to_owned()),
         )
+        .chain(bb_core::agent_work::agent_search_words())
         .collect();
     let list = words
         .iter()

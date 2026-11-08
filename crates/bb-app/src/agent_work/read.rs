@@ -287,7 +287,17 @@ pub async fn issue_agent_work<S: AuthStore>(
             made_at: proposal.made_at,
         })
         .collect();
+    let project = ctx
+        .store()
+        .project(issue.project)
+        .await
+        .map_err(failed)?
+        .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
+    let hand_over_days = ctx.hand_over_days().await?;
     Ok(held.authorize(IssueAgentWork {
+        hand_over_days,
+        readable_id: bb_core::readable_id::ReadableId::new(project.short_name, issue.code.clone())
+            .to_string(),
         worked_on_by,
         work,
         proposals,

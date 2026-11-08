@@ -24,7 +24,7 @@ export const messages = {
   "agent-work.result-check-passed": "Check {label}: passed",
   "agent-work.result-check-failed": "Check {label}: failed",
   "agent-work.checks-note": "Bugaboo does not run or verify these checks.",
-  "agent-work.attempt-reported": "As reported by the agent: {time}, {cost}",
+  "agent-work.attempt-reported": "{amount} reported by the agent",
   "agent-work.run-link": "Open the run of this attempt",
   "agent-work.gave-up": "The agent gave up: {reason}",
   "agent-work.accepted-by-itself": "Accepted by itself, because every check passed. Look at it.",
@@ -36,8 +36,6 @@ export const messages = {
   "agent-work.review-send-back": "Sent back by {person}",
   "agent-work.review-throw-away": "Thrown away by {person}",
   "agent-work.review-note": "Note: {note}",
-  "agent-work.question-asks": "{agent} asks: {question}",
-  "agent-work.question-line": "{agent}: {question}",
   "agent-work.question-answer": "Your answer",
   "agent-work.question-send": "Answer",
   "agent-work.question-answered": "Answer: {answer}",
@@ -51,7 +49,7 @@ export const messages = {
   "agent-work.review-text":
     "Results of this attempt are below. The review ends the work or starts another attempt.",
   "agent-work.review-no-results": "The attempt attached no results.",
-  "agent-work.review-choose": "Your answer",
+  "agent-work.review-choose": "Your decision",
   "agent-work.review-accept-choice": "Accept",
   "agent-work.review-send-back-choice": "Send back",
   "agent-work.review-throw-away-choice": "Throw away",
@@ -108,6 +106,16 @@ export const messages = {
   "agent-work.days-help": "Left empty, the usual number of days of your organization counts.",
   "agent-work.keeps-person": "The issue keeps its person: an agent is never assigned to an issue.",
   "agent-work.handed": "{count, plural, one {Handed over # issue.} other {Handed over # issues.}}",
+  "agent-work.review-status-proposed": "{status} (the workflow proposes it)",
+  "agent-work.amount": "€{amount}",
+  "agent-work.stays-assigned": "The issue stays assigned to {people}.",
+  "agent-work.hand-over-ends": "The hand-over runs out on {date}.",
+  "agent-work.part-description": "Description",
+  "agent-work.part-steps-to-reproduce": "Steps to reproduce",
+  "agent-work.part-done-when": "Done when",
+  "agent-work.part-note": "Note",
+  "agent-work.brief-show": "Show",
+  "agent-work.brief-hide": "Hide",
 } as const;
 
 register(messages);

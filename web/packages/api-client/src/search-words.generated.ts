@@ -24,6 +24,8 @@ export const searchWords = [
   "created",
   "changed",
   "closed",
+  "agent",
+  "agent state",
 ] as const;
 
 /** One of the words a search names a field of an issue by. */

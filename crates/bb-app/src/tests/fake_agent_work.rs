@@ -541,12 +541,20 @@ impl AgentWorkRecords for super::fake::FakeStore {
     async fn open_work_on_issues_in(
         tx: &mut Tx,
         issues: Vec<IssueId>,
+        now: Timestamp,
     ) -> Result<Vec<IssueWork>, FakeError> {
         let state = &tx.state.work;
         let mut found: Vec<IssueWork> = state
             .works
             .iter()
-            .filter(|w| issues.contains(&w.issue) && state.is_open(w))
+            .filter(|w| {
+                issues.contains(&w.issue)
+                    && state.is_open(w)
+                    && state
+                        .hand_overs
+                        .iter()
+                        .any(|held| held.id == w.hand_over && held.ends_at > now)
+            })
             .cloned()
             .collect();
         found.reverse();

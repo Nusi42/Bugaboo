@@ -8,8 +8,6 @@ export interface MoreDialogProps {
   readonly issue: IssueView;
   /** Closes the window. */
   readonly onClose: () => void;
-  /** Tells the page what refused the window's work: the window is gone by then, the page says it. */
-  readonly onProblem: (error: unknown) => void;
 }
 
 /**

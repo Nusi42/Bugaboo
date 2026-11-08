@@ -95,9 +95,6 @@ export function useMoreActions(
           onClose: () => {
             setOpen(null);
           },
-          onProblem: (error) => {
-            setRefusal(messageOf(error));
-          },
         });
   return { actions, refusal, dialog };
 }

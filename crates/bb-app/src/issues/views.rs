@@ -252,7 +252,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let only = actor.agent();
         let works: Vec<_> = self
             .store()
-            .open_work_on_issues(ids.to_vec())
+            .open_work_on_issues(ids.to_vec(), self.now())
             .await
             .map_err(internal)?
             .into_iter()

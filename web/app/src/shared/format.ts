@@ -220,8 +220,9 @@ export function formatDate(moment: string, region: Region = currentRegion()): st
 }
 
 /** A number as people write it: "1,234.5", "1.234,5" or "1 234,5". */
-export function formatNumber(value: number, region: Region = currentRegion()): string {
-  return new Intl.NumberFormat(numberLocales[region.numberFormat]).format(value);
+export function formatNumber(value: number, region = currentRegion(), places?: number): string {
+  const digits = { minimumFractionDigits: places, maximumFractionDigits: places };
+  return new Intl.NumberFormat(numberLocales[region.numberFormat], digits).format(value);
 }
 
 /** A day on the calendar ("2026-10-05") as people write it; the time zone never moves it to another day. */

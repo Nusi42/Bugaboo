@@ -400,4 +400,4 @@ reason = "The proposals that wait for a person on one issue are few and those de
 [[exempt]]
 route = "GET /api/v1/issues/{issue}/agent-work"
 property = "brief_missing"
-reason = "A brief has three parts, so the list holds at most three words of a fixed set; it is no page of records (M7-F100)."
+reason = "A brief has three parts, so the list holds at most three words of a fixed set; it is no page of records (M7-F205 holds the other lists of this answer)."

@@ -352,3 +352,8 @@ reason = "Counts only changes to issues the reader may see: the undo leaves out,
 route = "POST /api/v1/runs/{run}/undo"
 property = "skipped_count"
 reason = "Counts only changes to issues the reader may see: the undo leaves out, and counts nowhere, the changes to issues they cannot see (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/agent-work"
+property = "hand_over_days"
+reason = "The days after which a hand-over ends when nobody sets an end: a setting of the organization that every reader may see, the same for all, and it counts no record."

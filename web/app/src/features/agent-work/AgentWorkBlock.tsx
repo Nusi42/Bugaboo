@@ -4,7 +4,7 @@ import { useId } from "react";
 
 import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import type { IssueBlockProps } from "../issues/index.ts";
-import { useIssueAgentWork, type Proposal, type Work } from "./agent-work.ts";
+import { useIssueAgentWork, type BriefLack, type Proposal, type Work } from "./agent-work.ts";
 import { Proposals } from "./Proposals.tsx";
 import { WorkPiece } from "./WorkPiece.tsx";
 
@@ -28,6 +28,7 @@ export function AgentWorkBlock({
   }
   const works: readonly Work[] = all.work;
   const proposals: readonly Proposal[] = all.proposals;
+  const lacking: readonly BriefLack[] = all.brief_missing;
   const names = Object.fromEntries(works.map((work) => [work.agent, work.agent_name]));
   return (
     <section {...partOf(part.agentWork)} aria-labelledby={heading}>
@@ -40,6 +41,7 @@ export function AgentWorkBlock({
           work={work}
           issue={readableId}
           statusChanges={issue.status_changes}
+          lacking={lacking}
         />
       ))}
       <Proposals proposals={proposals} agents={names} />

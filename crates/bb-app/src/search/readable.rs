@@ -523,17 +523,14 @@ fn own_words(own: &[Definition]) -> Vec<Option<String>> {
 /// The fields of agent work (AI-33): the agent that works on an issue, by its name, and where its
 /// work is. Anybody who reads an issue reads who works on it, so every search has them.
 fn agent_fields() -> [Searchable; 2] {
+    let agent_words = bb_core::agent_work::agent_search_words();
     [
         Searchable {
-            field: SearchField::unordered(&word_of(bb_core::message::ISSUE_FIELD_AGENT)),
+            field: SearchField::unordered(&agent_words[0]),
             target: FieldTarget::Agent,
         },
         Searchable {
-            field: SearchField::new(
-                &word_of(bb_core::message::ISSUE_FIELD_AGENT_STATE),
-                FieldKind::Choice,
-            )
-            .with_choices(
+            field: SearchField::new(&agent_words[1], FieldKind::Choice).with_choices(
                 &AgentWorkState::ALL
                     .iter()
                     .map(|state| state.code())
@@ -542,11 +539,6 @@ fn agent_fields() -> [Searchable; 2] {
             target: FieldTarget::AgentState,
         },
     ]
-}
-
-/// The word of a field of the search language, written like the glossary writes the field.
-fn word_of(key: bb_core::message::MessageKey) -> String {
-    bb_core::message::Message::from(key).render().to_lowercase()
 }
 
 /// The words of the status groups in the search language.

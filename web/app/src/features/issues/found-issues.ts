@@ -51,6 +51,8 @@ const inBase: ReadonlySet<string> = new Set([
   listWord.status,
   listWord.priority,
   listWord.statusGroup,
+  listWord.agent,
+  listWord.agentState,
 ]);
 
 /** What a column of this search word asks of the server: nothing, one field, or the own fields. */

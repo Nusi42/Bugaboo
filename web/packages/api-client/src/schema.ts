@@ -6970,8 +6970,15 @@ export interface components {
     IssueAgentWorkBody: {
       /** @description The parts of a brief the issue lacks now, so a hand-over can say it before it is made. */
       brief_missing: components["schemas"]["BriefPart"][];
+      /**
+       * Format: int64
+       * @description After how many days a hand-over ends when nobody sets an end.
+       */
+      hand_over_days: number;
       /** @description The proposals of standing rules that wait for a person. */
       proposals: components["schemas"]["ProposalBody"][];
+      /** @description The readable ID of the issue now (`WEB-142`). */
+      readable_id: string;
       /** @description Whether the lists were cut at the most an issue shows. */
       truncated: boolean;
       /** @description All the work, newest first. */

@@ -59,77 +59,153 @@ export async function agentWorkOf(
   );
 }
 
+/** One result an agent attached: a link, or a check with its outcome. */
+export interface ResultScene {
+  readonly kind: "link" | "check";
+  readonly label: string;
+  readonly link?: string;
+  readonly outcome?: "passed" | "failed";
+}
+
+/** One attempt of an agent as a test puts it into the data. */
+export interface AttemptScene {
+  readonly number?: number;
+  readonly plan?: string;
+  readonly approved?: boolean;
+  readonly ended?: boolean;
+  readonly minutes?: number;
+  readonly cost?: number;
+  readonly run?: string;
+  readonly results?: readonly ResultScene[];
+}
+
 /** What a test puts on the work of an agent. No way into Bugaboo makes an agent take, report and ask before the tools of MCP. */
 export interface WorkScene {
   readonly state: Schema<"AgentWorkState">;
   readonly question?: string;
-  readonly attempt?: {
-    readonly plan?: string;
-    readonly minutes?: number;
-    readonly cost?: number;
-    readonly run?: string;
-    readonly results?: readonly {
-      readonly kind: "link" | "check";
-      readonly label: string;
-      readonly link?: string;
-      readonly outcome?: "passed" | "failed";
-    }[];
-  };
+  /** The answer to the question, when it is answered. */
+  readonly answer?: string;
+  readonly attempt?: AttemptScene;
+  /** More attempts, oldest first, that stand before `attempt`. */
+  readonly earlier?: readonly AttemptScene[];
+  /** A review that was made before: *send-back* with its note, or *accept* by itself. */
+  readonly review?: { readonly answer: "send-back" | "accept"; readonly note?: string };
+  readonly gaveUp?: string;
+  /** The result was accepted by itself and nobody looked at it. */
+  readonly acceptedByItself?: boolean;
+}
+
+/** Writes the rows of a scene into the data of a throwaway server. */
+class SceneWriter {
+  private readonly database: DatabaseSync;
+  private readonly now = Date.now() * MICROSECONDS;
+
+  constructor(server: Instance) {
+    this.database = new DatabaseSync(join(server.dataDir, databaseFile));
+    this.database.exec("PRAGMA busy_timeout = 30000");
+  }
+
+  close(): void {
+    this.database.close();
+  }
+
+  private run(sql: string, ...values: readonly (string | number | Buffer | null)[]): void {
+    this.database.prepare(sql).run(...values);
+  }
+
+  state(work: string, scene: WorkScene): void {
+    const flag = scene.acceptedByItself === true ? 1 : 0;
+    this.run(
+      "UPDATE issue_work SET state = ?, gave_up = ?, accepted_by_itself = ?, closed = ? WHERE id = ?",
+      scene.state,
+      scene.gaveUp ?? null,
+      flag,
+      flag,
+      stored(work),
+    );
+  }
+
+  question(work: string, scene: WorkScene, person?: string): void {
+    if (scene.question === undefined) {
+      return;
+    }
+    const answered = scene.answer === undefined || person === undefined ? null : stored(person);
+    this.run(
+      "INSERT INTO agent_question (id, work, text, answer, answered_by, asked_at) VALUES (?, ?, ?, ?, ?, ?)",
+      stored(randomUUID()),
+      stored(work),
+      scene.question,
+      scene.answer ?? null,
+      answered,
+      this.now,
+    );
+  }
+
+  attempt(work: string, attempt: AttemptScene): void {
+    const id = randomUUID();
+    this.run(
+      "INSERT INTO agent_attempt (id, work, number, plan, plan_approved, reported_minutes, reported_cost, started_at, ended_at, run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      stored(id),
+      stored(work),
+      attempt.number ?? 1,
+      attempt.plan ?? null,
+      attempt.approved === true ? 1 : 0,
+      attempt.minutes ?? 0,
+      attempt.cost ?? 0,
+      this.now,
+      attempt.ended === true ? this.now : null,
+      attempt.run === undefined ? null : stored(attempt.run),
+    );
+    for (const result of attempt.results ?? []) {
+      this.run(
+        "INSERT INTO agent_result (id, attempt, kind, label, link, outcome) VALUES (?, ?, ?, ?, ?, ?)",
+        stored(randomUUID()),
+        stored(id),
+        result.kind,
+        result.label,
+        result.link ?? null,
+        result.outcome ?? null,
+      );
+    }
+  }
+
+  review(work: string, scene: WorkScene, person?: string): void {
+    if (scene.review === undefined) {
+      return;
+    }
+    const by = person === undefined || scene.acceptedByItself === true ? null : stored(person);
+    this.run(
+      'INSERT INTO agent_review (id, work, answer, note, "by", at) VALUES (?, ?, ?, ?, ?, ?)',
+      stored(randomUUID()),
+      stored(work),
+      scene.review.answer,
+      scene.review.note ?? null,
+      by,
+      this.now,
+    );
+  }
 }
 
 /**
- * Sets the state of a piece of work and gives it a question and an attempt, in the data of a
+ * Sets the state of a piece of work and gives it questions, attempts and a review, in the data of a
  * throwaway server: the agent reports through MCP tools that come later, so a screen that shows
- * what an agent reported needs the rows.
+ * what an agent reported needs the rows. `person` is who answered or reviewed.
  *
- * The IDs of these records are random (version 4), not the time-ordered kind of a run. It assumes the tables `issue_work`, `agent_attempt`, `agent_result` and `agent_question`
+ * The IDs of these records are random (version 4), not the time-ordered kind of a run. It assumes
+ * the tables `issue_work`, `agent_attempt`, `agent_result`, `agent_question` and `agent_review`
  * (`crates/bb-store/src/schema/`).
  */
-export function putScene(server: Instance, work: string, scene: WorkScene): void {
-  const database = new DatabaseSync(join(server.dataDir, databaseFile));
+export function putScene(server: Instance, work: string, scene: WorkScene, person?: string): void {
+  const writer = new SceneWriter(server);
   try {
-    database.exec("PRAGMA busy_timeout = 30000");
-    const now = Date.now() * MICROSECONDS;
-    database.prepare("UPDATE issue_work SET state = ? WHERE id = ?").run(scene.state, stored(work));
-    if (scene.question !== undefined) {
-      database
-        .prepare(
-          "INSERT INTO agent_question (id, work, text, answer, answered_by, asked_at) VALUES (?, ?, ?, NULL, NULL, ?)",
-        )
-        .run(stored(randomUUID()), stored(work), scene.question, now);
+    writer.state(work, scene);
+    writer.question(work, scene, person);
+    for (const attempt of [...(scene.earlier ?? []), ...(scene.attempt ? [scene.attempt] : [])]) {
+      writer.attempt(work, attempt);
     }
-    if (scene.attempt !== undefined) {
-      const attempt = randomUUID();
-      database
-        .prepare(
-          "INSERT INTO agent_attempt (id, work, number, plan, plan_approved, reported_minutes, reported_cost, started_at, ended_at, run) VALUES (?, ?, 1, ?, 0, ?, ?, ?, NULL, ?)",
-        )
-        .run(
-          stored(attempt),
-          stored(work),
-          scene.attempt.plan ?? null,
-          scene.attempt.minutes ?? 0,
-          scene.attempt.cost ?? 0,
-          now,
-          scene.attempt.run === undefined ? null : stored(scene.attempt.run),
-        );
-      for (const result of scene.attempt.results ?? []) {
-        database
-          .prepare(
-            "INSERT INTO agent_result (id, attempt, kind, label, link, outcome) VALUES (?, ?, ?, ?, ?, ?)",
-          )
-          .run(
-            stored(randomUUID()),
-            stored(attempt),
-            result.kind,
-            result.label,
-            result.link ?? null,
-            result.outcome ?? null,
-          );
-      }
-    }
+    writer.review(work, scene, person);
   } finally {
-    database.close();
+    writer.close();
   }
 }
 
@@ -164,14 +240,14 @@ export async function topOf(element: Locator): Promise<number> {
 export async function openHandOver(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: t("issues.more"), exact: true }).click();
   await page.getByRole("button", { name: t("agent-work.hand-over"), exact: true }).click();
-  const window = page.getByRole("alertdialog");
+  const window = page.getByRole("dialog");
   await expect(window).toBeVisible();
   return window;
 }
 
 /** The window that is open (the hand-over, the review). */
 export async function openWindow(page: Page): Promise<Locator> {
-  const window = page.getByRole("alertdialog");
+  const window = page.getByRole("dialog");
   await expect(window).toBeVisible();
   return window;
 }
@@ -196,3 +272,14 @@ export async function openDetails(page: Page): Promise<void> {
 }
 
 export { readyForReview } from "./agent-work-ready.ts";
+
+/** Counts the version of a piece of work up, as if somebody else answered it meanwhile. */
+export function changeWorkBehindTheScreen(server: Instance, work: string): void {
+  const database = new DatabaseSync(join(server.dataDir, databaseFile));
+  try {
+    database.exec("PRAGMA busy_timeout = 30000");
+    database.prepare("UPDATE issue_work SET version = version + 1 WHERE id = ?").run(stored(work));
+  } finally {
+    database.close();
+  }
+}

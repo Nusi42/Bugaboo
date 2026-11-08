@@ -88,9 +88,10 @@ export interface MessageArguments {
   "access.preview-heading": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
   "agent-work.agent-of": { agent: string | number; person: string | number };
+  "agent-work.amount": { amount: string | number };
   "agent-work.attempt": { number: string | number };
   "agent-work.attempt-ended": { date: string | number };
-  "agent-work.attempt-reported": { cost: string | number; time: string | number };
+  "agent-work.attempt-reported": { amount: string | number };
   "agent-work.attempt-started": { date: string | number };
   "agent-work.ends": { date: string | number };
   "agent-work.fact-attempts": { most: string | number; number: string | number };
@@ -99,6 +100,7 @@ export interface MessageArguments {
   "agent-work.fact-time": { time: string | number };
   "agent-work.fact-time-of": { most: string | number; time: string | number };
   "agent-work.gave-up": { reason: string | number };
+  "agent-work.hand-over-ends": { date: string | number };
   "agent-work.hand-over-title": { issue: string | number };
   "agent-work.hand-over-title-many": { count: number };
   "agent-work.handed": { count: number };
@@ -112,19 +114,19 @@ export interface MessageArguments {
     field: string | number;
   };
   "agent-work.question-answered": { answer: string | number };
-  "agent-work.question-asks": { agent: string | number; question: string | number };
-  "agent-work.question-line": { agent: string | number; question: string | number };
   "agent-work.result-check-failed": { label: string | number };
   "agent-work.result-check-passed": { label: string | number };
   "agent-work.review-accept": { person: string | number };
   "agent-work.review-note": { note: string | number };
   "agent-work.review-send-back": { person: string | number };
+  "agent-work.review-status-proposed": { status: string | number };
   "agent-work.review-throw-away": { person: string | number };
   "agent-work.review-title": {
     agent: string | number;
     issue: string | number;
     number: string | number;
   };
+  "agent-work.stays-assigned": { people: string | number };
   "agent-work.summary": { address: string | number; number: string | number };
   "agent-work.throw-away-stay": { field: string | number; reason: string | number };
   "agent-work.throw-away-summary": { back: number; stay: number };

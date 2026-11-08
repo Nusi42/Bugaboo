@@ -4,7 +4,6 @@ import { partOf, part } from "@bugaboo/ui";
 import { formatDate } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import { agentStateText } from "../../shared/agent-state.ts";
-import { AgentMark } from "../../shared/AgentMark.tsx";
 import type { Work } from "./agent-work.ts";
 
 /**
@@ -28,9 +27,8 @@ export function WorkHead({ work }: { readonly work: Work }) {
           })}
         </span>
       </div>
-      <span {...partOf(part.agentWorkState)}>
+      <span {...partOf(part.agentWorkPill, { variants: [work.state] })}>
         {agentStateText(work.state)}
-        <AgentMark name={work.agent_name} state={work.state} />
       </span>
     </div>
   );

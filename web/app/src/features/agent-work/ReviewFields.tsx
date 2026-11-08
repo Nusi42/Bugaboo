@@ -22,7 +22,7 @@ export function ReviewFields({
         choices={[
           { value: "accept", label: t("agent-work.review-accept-choice") },
           { value: "send-back", label: t("agent-work.review-send-back-choice") },
-          { value: "throw-away", label: t("agent-work.review-throw-away-choice") },
+          { value: "throw-away", label: t("agent-work.review-throw-away-choice"), danger: true },
         ]}
       />
       {draft.answer === "accept" && draft.choices.length > 0 ? (
@@ -31,7 +31,12 @@ export function ReviewFields({
           value={draft.status}
           onChange={draft.setStatus}
           choices={[
-            ...draft.choices,
+            ...draft.choices.map((choice) => ({
+              value: choice.value,
+              label: choice.proposed
+                ? t("agent-work.review-status-proposed", { status: choice.label })
+                : choice.label,
+            })),
             { value: KEEP_STATUS, label: t("agent-work.review-status-keep") },
           ]}
         />

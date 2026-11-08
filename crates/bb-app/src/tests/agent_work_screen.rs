@@ -131,3 +131,46 @@ async fn ai_33_an_agent_result_link_must_be_a_web_address() -> Outcome {
     attach_result(&world.ctx(), link("https://example.test/pull/91")).await?;
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_30_a_reader_not_told_who_people_are_sees_someone_behind_an_agent() -> Outcome {
+    use bb_core::access::PeopleLevel;
+    use bb_core::people_kinds::PeopleKind;
+    use bb_policy::{PersonRef, StartingRole};
+
+    use super::scenarios::token;
+    use super::workflows_rules::{member, starting_role};
+    use crate::roles::{SetPeopleLevel, set_level};
+
+    let world = World::new().await?;
+    let given = handed(&world).await?;
+    let reader = member(
+        &world,
+        "reader@example.test",
+        StartingRole::Viewer,
+        given.project,
+    )
+    .await?;
+    let role = starting_role(&world, StartingRole::Viewer)
+        .await
+        .map_err(crate::auth::AppError::Internal)?;
+    set_level(
+        &world.ctx(),
+        SetPeopleLevel {
+            session_token: token(&world),
+            role,
+            project: None,
+            kind: PeopleKind::ProjectMembers,
+            level: Some(PeopleLevel::Hidden),
+        },
+    )
+    .await?;
+    let work = issue_agent_work(&world.ctx(), ask(&reader.session_token, &given.issue))
+        .await?
+        .into_value();
+    // Neither the person the agent works for nor the person who handed over is told.
+    assert_eq!(work.work[0].agent_person, PersonRef::Someone);
+    assert_eq!(work.work[0].handed_over_by, PersonRef::Someone);
+    assert_eq!(work.worked_on_by[0].person, PersonRef::Someone);
+    Ok(())
+}

@@ -11,6 +11,8 @@ export interface Choice<Value extends string> {
   readonly value: Value;
   /** The visible name of the choice, already in the person's language. */
   readonly label: string;
+  /** The choice takes something away: it is drawn in the color of warnings once it is chosen. */
+  readonly danger?: boolean;
 }
 
 export interface ChoiceGroupProps<Value extends string> {
@@ -81,7 +83,10 @@ function Options<Value extends string>({
   group,
 }: OptionsProps<Value>) {
   return choices.map((choice) => (
-    <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
+    <label
+      key={choice.value}
+      {...partOf(part.choiceGroupChoice, { variants: [choice.danger === true && "danger"] })}
+    >
       <input
         {...partOf(part.choiceGroupInput)}
         type={radio}

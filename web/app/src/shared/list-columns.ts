@@ -1,5 +1,4 @@
 import type { SearchWord } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
@@ -27,6 +26,8 @@ export const listWord = {
   estimatedTime: "estimated time",
   timeLeft: "time left",
   timeSpent: "time spent",
+  agent: "agent",
+  agentState: "agent state",
 } as const satisfies Readonly<Record<string, SearchWord>>;
 
 /**
@@ -142,21 +143,9 @@ const wordsWithText: ReadonlySet<string> = new Set([
   listWord.statusGroup,
 ]);
 
-/**
- * The words of the agent fields (AI-33): the agent that works on an issue and where its work is. The
- * search language names them as the catalog does, so they are read from it and not written twice.
- */
-export function agentWords(): { readonly agent: string; readonly state: string } {
-  return {
-    agent: t("issue-field.agent").toLowerCase(),
-    state: t("issue-field.agent-state").toLowerCase(),
-  };
-}
-
 /** Whether the list draws the word as text from the row, and not as a field of the organization. */
 function drawnFromRow(word: string): boolean {
-  const agent = agentWords();
-  return wordsWithText.has(word) || word === agent.agent || word === agent.state;
+  return wordsWithText.has(word) || word === listWord.agent || word === listWord.agentState;
 }
 
 /** Whether a column or a group is a field of the organization: a word with no cell of its own and no text drawn from the row. */

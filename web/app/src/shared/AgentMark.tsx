@@ -18,7 +18,7 @@ export interface AgentMarkProps {
 export function AgentMark({ name, state }: AgentMarkProps) {
   const label = t("agent-work.mark", { agent: name, state: agentStateText(state) });
   return (
-    <span title={label} {...partOf(part.agentMark, { variants: [state] })}>
+    <span title={label} {...partOf(part.agentMark)}>
       <Icon name={iconName.agent} size={iconSize.small} />
       <span {...partOf(part.visuallyHidden)}>{label}</span>
     </span>

@@ -14,20 +14,34 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { useAnswerQuestion, type Work } from "./agent-work.ts";
 
 type Question = Work["questions"][number];
 
-/** An answered question: what the agent asked and what was answered. */
+/** The words of the agent as a bubble: its name and the mark that an agent wrote them. */
+function AgentBubble({ work, text }: { readonly work: Work; readonly text: string }) {
+  return (
+    <div {...partOf(part.agentWorkBubble)}>
+      <span {...partOf(part.agentWorkBubbleHead)}>
+        <span>{work.agent_name}</span>
+        <WrittenBy mark={{ kind: "agent", agent: work.agent_name }} />
+      </span>
+      <p {...partOf(part.agentWorkWords)}>{text}</p>
+    </div>
+  );
+}
+
+/** An answered question: what the agent asked, and the answer that joined the brief. */
 function Answered({ work, question }: { readonly work: Work; readonly question: Question }) {
   return (
     <div {...partOf(part.agentWorkQuestion)}>
-      <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.question-line", { agent: work.agent_name, question: question.text })}
-      </p>
-      <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.question-answered", { answer: question.answer ?? "" })}
-      </p>
+      <AgentBubble work={work} text={question.text} />
+      <div {...partOf(part.agentWorkBubble, { variants: ["yours"] })}>
+        <p {...partOf(part.agentWorkWords)}>
+          {t("agent-work.question-answered", { answer: question.answer ?? "" })}
+        </p>
+      </div>
     </div>
   );
 }
@@ -56,9 +70,7 @@ function Unanswered({ work, question }: { readonly work: Work; readonly question
         );
       }}
     >
-      <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.question-asks", { agent: work.agent_name, question: question.text })}
-      </p>
+      <AgentBubble work={work} text={question.text} />
       <TextField
         label={t("agent-work.question-answer")}
         kind={fieldKind.multiline}

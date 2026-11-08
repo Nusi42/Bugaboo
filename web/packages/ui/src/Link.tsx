@@ -13,15 +13,24 @@ export interface LinkProps {
   readonly current?: boolean;
   /** The name of a row that opens a page: plain words, and the whole row is the link. */
   readonly row?: boolean;
+  /** The address is outside the app (a branch, a pull request): it opens in a new tab and tells that page nothing of this one. */
+  readonly external?: boolean;
 }
 
 /** A link. With a `RouterProvider` above it, links to pages of the app do not reload the page. */
-export function Link({ href, children, current = false, row = false }: LinkProps) {
+export function Link({
+  href,
+  children,
+  current = false,
+  row = false,
+  external = false,
+}: LinkProps) {
   return (
     <AriaLink
       href={href}
       {...partOf(part.link, { variants: [row && "row"] })}
       {...(current ? { "aria-current": ariaCurrent.page } : {})}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       {children}
     </AriaLink>

@@ -237,6 +237,7 @@ impl AgentWorkRecords for AuthStorage {
     async fn open_work_on_issues_in(
         transaction: &mut Transaction,
         issues: Vec<IssueId>,
+        now: Timestamp,
     ) -> Result<Vec<IssueWork>, StoreError> {
         if issues.is_empty() {
             return Ok(Vec::new());
@@ -251,8 +252,18 @@ impl AgentWorkRecords for AuthStorage {
                         .collect::<Vec<_>>(),
                 ),
             )
+            .order_by(IssueWorkRow::MadeAt, Order::Desc)
             .order_by(IssueWorkRow::Id, Order::Desc);
         only_open_work(&mut select);
+        // A hand-over that has run out gives no work, though its job did not end it yet.
+        let mut running = Query::select();
+        running
+            .column(HandOverRow::Id)
+            .from(HandOverRow::Table)
+            .and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
+        select.and_where(
+            Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(running),
+        );
         all(transaction, &select, read_work).await
     }
 

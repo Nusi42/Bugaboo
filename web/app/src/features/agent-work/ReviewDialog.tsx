@@ -1,11 +1,13 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { AskDialog, buttonLook, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, partOf, part, Window } from "@bugaboo/ui";
 
-import { lastAttempt, useReviewWork, type Verdict, type Work } from "./agent-work.ts";
+import { messageOf } from "../../shared/errors.ts";
+import { windowLabels } from "../../shared/window-labels.ts";
+import { lastAttempt, useReviewWork, type Attempt, type Verdict, type Work } from "./agent-work.ts";
 import { Results } from "./Results.tsx";
 import { ReviewFields } from "./ReviewFields.tsx";
-import { useReviewDraft } from "./use-review-draft.ts";
+import { useReviewDraft, type ReviewDraft } from "./use-review-draft.ts";
 
 export interface ReviewDialogProps {
   readonly work: Work;
@@ -15,8 +17,8 @@ export interface ReviewDialogProps {
   readonly statusChanges: readonly Schema<"StatusChangeRef">[] | null | undefined;
   readonly isOpen: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  /** Called with what refused the review; the window is gone by then, the button that opened it says it. */
-  readonly onFailed: (error: unknown) => void;
+  /** Called with what refused the review, besides the window saying it. */
+  readonly onFailed?: (error: unknown) => void;
 }
 
 const confirmOf = {
@@ -25,10 +27,52 @@ const confirmOf = {
   "throw-away": "agent-work.review-confirm-throw-away",
 } as const satisfies Record<Verdict, string>;
 
+/** What the attempt attached, or that it attached nothing. */
+function ReviewResults({ attempt }: { readonly attempt: Attempt | undefined }) {
+  if (attempt === undefined) {
+    return null;
+  }
+  return attempt.results.length > 0 ? (
+    <Results attempt={attempt} />
+  ) : (
+    <p {...partOf(part.muted)}>{t("agent-work.review-no-results")}</p>
+  );
+}
+
+/** The buttons of the window: *Cancel*, and the confirmation that is named for what was chosen. */
+function ReviewFooter({
+  draft,
+  isPending,
+  onSend,
+  onClose,
+}: {
+  readonly draft: ReviewDraft;
+  readonly isPending: boolean;
+  readonly onSend: () => void;
+  readonly onClose: () => void;
+}) {
+  return (
+    <div {...partOf(part.windowFooterActions)}>
+      <Button look={buttonLook.quiet} onPress={onClose}>
+        {t("common.cancel")}
+      </Button>
+      <Button
+        look={draft.answer === "throw-away" ? buttonLook.danger : buttonLook.primary}
+        isPending={isPending}
+        isDisabled={draft.needsNote}
+        onPress={onSend}
+      >
+        {t(confirmOf[draft.answer])}
+      </Button>
+    </div>
+  );
+}
+
 /**
- * The review window at *Ready for review* (UX §4.17): *Accept* with the status to move to (the
- * workflow's proposal first), *Send back* with a note that is needed, and *Throw away* with what
- * would go back. The results are listed, and the window says Bugaboo does not verify the checks.
+ * The review window at *Ready for review* (UX §4.17, §6.3), in the one window part of the app:
+ * *Accept* with the status to move to (the workflow's proposal first), *Send back* with a note that
+ * is needed, and *Throw away* with what would go back. The results are listed, and the window says
+ * Bugaboo does not verify the checks. A refusal is said in the window, which then stays open.
  */
 export function ReviewDialog(props: ReviewDialogProps) {
   const { work, issue, isOpen, onOpenChange } = props;
@@ -36,39 +80,45 @@ export function ReviewDialog(props: ReviewDialogProps) {
   const send = useReviewWork(props.onFailed);
   const attempt = lastAttempt(work);
   return (
-    <AskDialog
+    <Window
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      labels={windowLabels()}
       title={t("agent-work.review-title", {
         number: attempt?.number ?? work.attempts.length,
         agent: work.agent_name,
         issue,
       })}
-      text={t("agent-work.review-text")}
-      confirmLabel={t(confirmOf[draft.answer])}
-      cancelLabel={t("common.cancel")}
-      confirmLook={draft.answer === "throw-away" ? buttonLook.danger : buttonLook.primary}
-      confirmDisabled={draft.needsNote || send.isPending}
-      {...(draft.needsNote ? { confirmHint: t("agent-work.review-note-required") } : {})}
-      onConfirm={() => {
-        send.mutate(
-          {
-            params: { path: { work: work.id } },
-            body: { ...draft.body(), version: work.version },
-          },
-          {
-            onSuccess: () => {
-              onOpenChange(false);
-            },
-          },
-        );
-      }}
+      footer={
+        <ReviewFooter
+          draft={draft}
+          isPending={send.isPending}
+          onSend={() => {
+            send.mutate(
+              {
+                params: { path: { work: work.id } },
+                body: { ...draft.body(), version: work.version },
+              },
+              {
+                onSuccess: () => {
+                  onOpenChange(false);
+                },
+              },
+            );
+          }}
+          onClose={() => {
+            onOpenChange(false);
+          }}
+        />
+      }
     >
-      {attempt === undefined ? null : <Results attempt={attempt} />}
-      {attempt === undefined || attempt.results.length > 0 ? null : (
-        <p {...partOf(part.muted)}>{t("agent-work.review-no-results")}</p>
-      )}
+      <p {...partOf(part.text)}>{t("agent-work.review-text")}</p>
+      <ReviewResults attempt={attempt} />
       <ReviewFields work={work} draft={draft} />
-    </AskDialog>
+      {draft.needsNote ? (
+        <p {...partOf(part.muted)}>{t("agent-work.review-note-required")}</p>
+      ) : null}
+      {send.isError ? <Alert tone={alertTone.danger}>{messageOf(send.error)}</Alert> : null}
+    </Window>
   );
 }

@@ -6,6 +6,14 @@ import { isWebAddress } from "./web-address.ts";
 
 type Result = Attempt["results"][number];
 
+/** The links first and then the checks, the same on every screen. */
+function inOrder(results: readonly Result[]): readonly Result[] {
+  return [
+    ...results.filter((result) => result.kind !== "check"),
+    ...results.filter((result) => result.kind === "check"),
+  ];
+}
+
 /** What tells a result from the others of its attempt. */
 function keyOf(result: Result, at: number): string {
   return [at, result.kind, result.label].join("/");
@@ -26,7 +34,13 @@ function ResultLine({ result }: { readonly result: Result }) {
   const link = result.link ?? "";
   return (
     <li {...partOf(part.agentWorkResult)}>
-      {isWebAddress(link) ? <Link href={link}>{result.label}</Link> : result.label}
+      {isWebAddress(link) ? (
+        <Link href={link} external>
+          {result.label}
+        </Link>
+      ) : (
+        result.label
+      )}
     </li>
   );
 }
@@ -40,7 +54,7 @@ export function Results({ attempt }: { readonly attempt: Attempt }) {
   return (
     <div {...partOf(part.agentWorkSection)}>
       <ul {...partOf(part.agentWorkResults)} aria-label={t("agent-work.results")}>
-        {attempt.results.map((result, at) => (
+        {inOrder(attempt.results).map((result, at) => (
           <ResultLine key={keyOf(result, at)} result={result} />
         ))}
       </ul>

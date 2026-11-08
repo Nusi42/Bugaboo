@@ -123,8 +123,9 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         /// The work on an issue, newest first, at most `limit`; only the work of `agent` when it is
         /// given.
         fn work_on_issue(issue: IssueId, agent: Option<AgentId>, limit: u64) -> Vec<IssueWork> = work_on_issue_in;
-        /// The open work on these issues, newest first: what a page of a list marks (PERF-N1).
-        fn open_work_on_issues(issues: Vec<IssueId>) -> Vec<IssueWork> = open_work_on_issues_in;
+        /// The open work on these issues at `now`, newest first, by the one definition of *open* that
+        /// the answer of an issue uses too: what a page of a list marks (PERF-N1).
+        fn open_work_on_issues(issues: Vec<IssueId>, now: Timestamp) -> Vec<IssueWork> = open_work_on_issues_in;
         /// What belongs to these pieces of work, read together.
         fn details_of_works(works: Vec<IssueWork>) -> WorkDetails = details_of_works_in;
         /// Whether an agent has anything left to end: open work, an open hand-over or an open rule.

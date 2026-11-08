@@ -144,6 +144,8 @@ tokens {
     size "size-col-project" "96px"
     // The narrowest a number field of a hand-over is: three of them stand side by side where there is room.
     size "size-number-field" "120px"
+    // The room an agent-work box holds its text back by: the text of the box uses the width of a phone.
+    size "size-agent-pad" "16px" phone="8px"
     // How a row gives out its width (the browser gives the fixed columns their token before the
     // title grows): where the box is narrower than the tokens, the title gives up room first, down to
     // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give
@@ -15457,22 +15459,6 @@ part "agent-mark" {
     color "$fg-muted"
 }
 
-part "agent-mark[variant=agent-working]" "agent-mark[variant=waiting-for-the-agent]" {
-    color "$fg-muted"
-}
-
-part "agent-mark[variant=waiting-for-you]" "agent-mark[variant=ready-for-review]" {
-    color "$accent-fg"
-}
-
-part "agent-mark[variant=agent-gave-up]" {
-    color "$warning"
-}
-
-part "agent-mark[variant=stopped]" {
-    color "$fg-subtle"
-}
-
 part "agent-mark" {
     forced {
         color CanvasText
@@ -15493,7 +15479,7 @@ part "agent-work.piece" {
     flex-direction column
     gap "$space-3"
     min-width 0
-    padding "$space-3 $space-4"
+    padding "$space-3 $size-agent-pad"
 }
 
 // Who works, and where the work is: the agent and its state on one line that wraps on a narrow screen.
@@ -15513,11 +15499,40 @@ part "agent-work.who" {
     min-width 0
 }
 
-part "agent-work.state" {
+// Where the work is, as the pill of a status: the word is the state, the colors tell the groups apart.
+part "agent-work.pill" {
     display inline-flex
     align-items center
+    gap "$space-1"
+    padding "$space-1 $pad-control"
+    border-radius "$r-pill"
+    font-size "$fs-sm"
+    font-weight "$weight-regular"
+    line-height "$lh-tight"
+    white-space nowrap
+}
+
+part "agent-work.pill[variant=waiting-for-the-agent]" {
+    use "status-soft-not-started"
+}
+
+part "agent-work.pill[variant=agent-working]" {
+    use "status-soft-in-progress"
+}
+
+part "agent-work.pill[variant=waiting-for-you]" "agent-work.pill[variant=ready-for-review]" {
+    background "$accent-soft"
+    color "$accent-fg"
+}
+
+part "agent-work.pill[variant=agent-gave-up]" {
+    background "$warning-soft"
     color "$fg"
-    font-size "$fs-base"
+}
+
+part "agent-work.pill[variant=stopped]" {
+    background "$bg-sunken"
+    color "$fg-muted"
 }
 
 part "agent-work.section" {
@@ -15603,13 +15618,60 @@ part "agent-work.numbers" {
     gap "$space-3"
 }
 
-part "agent-work.missing" {
-    use "note-box"
+// What the agent asks, as a bubble with its name and the mark that an agent wrote it; an answer is a bubble of the other side.
+part "agent-work.bubble" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    max-width "$size-reading"
+    padding "$space-2 $space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-card"
+    background "$bg-raised"
 }
 
-// Nothing lacks: no box.
-part "agent-work.missing:empty" {
-    display none
+part "agent-work.bubble[variant=yours]" {
+    align-self flex-end
+    background "$accent-soft"
+}
+
+part "agent-work.bubble-head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-1" "$space-2"
+    font-size "$fs-base"
+}
+
+// The steps of a plan, one under the other, numbered.
+part "agent-work.steps" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    margin 0
+    padding-inline-start "$space-5"
+    font-size "$fs-md"
+    line-height "$lh-text"
+    overflow-wrap anywhere
+}
+
+// A choice that takes something away is drawn in the color of warnings once it is chosen.
+part "choice-group.choice[variant=danger] choice-group.input:checked + choice-group.label" {
+    border-color "$danger"
+    background "$danger-soft"
+    color "$danger"
+}
+
+// The parts the brief holds, in one line, with *Show* at its end.
+part "agent-work.parts" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-1" "$space-3"
+    margin 0
+    font-size "$fs-md"
 }
 
 // ───────────── The page that sets AI up (comes last, after the rules of alert and button it overrides) ─────────────

@@ -1,36 +1,18 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, IssueId, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { messageOf } from "../../shared/errors.ts";
-import { fieldNameOf } from "../../shared/field-names.ts";
-import { skipReasonText, useUndoPreview, type UndoSkip } from "../runs/index.ts";
+import { itemsOf } from "../../shared/paged.ts";
+import { WithWording } from "../../shared/with-wording.tsx";
+import { useRunChanges, useUndoPreview } from "../runs/index.ts";
 import { runsOf, type AttemptRun, type Work } from "./agent-work.ts";
+import { goesBackGroups, stayGroups } from "./throw-away-groups.tsx";
 
-/** What stays of one skipped field: the issue is the group, the field and why are the line. */
-function groupsOf(skipped: readonly UndoSkip[]): readonly LongPreviewGroup[] {
-  return skipped.map((skip, at) => ({
-    key: [skip.issue?.id ?? "", skip.field, at].join("/"),
-    skipped: true,
-    heading:
-      skip.issue === undefined || skip.issue === null ? null : (
-        <IssueId id={skip.issue.readable_id} />
-      ),
-    lines: [
-      {
-        key: "stay",
-        content: t("agent-work.throw-away-stay", {
-          field: fieldNameOf({ code: skip.field, name: skip.name }),
-          reason: skipReasonText(skip),
-        }),
-      },
-    ],
-  }));
-}
-
-/** What undoing the run of one attempt would do now: how many changes go back and which fields stay. */
+/** What undoing the run of one attempt would do now: what goes back, item by item, and what stays and why. */
 function RunPreview({ attempt }: { readonly attempt: AttemptRun }) {
   const read = useUndoPreview(attempt.run, true);
+  const changes = useRunChanges(attempt.run);
   const preview = read.data;
   return (
     <div {...partOf(part.agentWorkSection)}>
@@ -43,23 +25,30 @@ function RunPreview({ attempt }: { readonly attempt: AttemptRun }) {
           <p {...partOf(part.muted)}>{t("agent-work.throw-away-reading")}</p>
         )
       ) : (
-        <AppLongPreview
-          summary={t("agent-work.throw-away-summary", {
-            back: preview.goes_back,
-            stay: preview.skipped_count,
-          })}
-          groups={groupsOf(preview.skipped)}
-          label={t("agent-work.throw-away-list")}
-        />
+        <WithWording>
+          {(wording) => (
+            <AppLongPreview
+              summary={t("agent-work.throw-away-summary", {
+                back: preview.goes_back,
+                stay: preview.skipped_count,
+              })}
+              groups={[
+                ...goesBackGroups(wording, itemsOf(changes.data?.pages)),
+                ...stayGroups(preview.skipped),
+              ]}
+              label={t("agent-work.throw-away-list")}
+            />
+          )}
+        </WithWording>
       )}
     </div>
   );
 }
 
 /**
- * What *Throw away* would do (AI-35): for the run of every attempt, newest first, what goes back and
- * what is skipped, in the one long preview of the app (as *Undo the run* shows it), and the
- * sentence that a branch or anything else outside Bugaboo stays as it is.
+ * What *Throw away* would do (AI-35): for the run of every attempt, newest first, what goes back
+ * item by item and what is skipped and why, in the one long preview of the app (as *Undo the run*
+ * shows its changes), and the sentence that a branch or anything else outside Bugaboo stays as it is.
  */
 export function ThrowAwayPreview({ work }: { readonly work: Work }) {
   return (

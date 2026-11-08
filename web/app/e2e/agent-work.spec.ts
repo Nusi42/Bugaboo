@@ -11,6 +11,7 @@ import {
   openDetails,
   openHandOver,
   openWindow,
+  changeWorkBehindTheScreen,
   putScene,
   tickTwo,
   topOf,
@@ -66,6 +67,9 @@ test("ai_31 hand over from ticked issues gives each issue to the agent", async (
   await tickTwo(page);
   await page.getByRole("button", { name: t("agent-work.hand-over"), exact: true }).click();
   const window = await openWindow(page);
+  // The issues are named by their readable IDs, never by the long IDs the program keeps.
+  await expect(window.getByText("WEB-1", { exact: false }).first()).toBeVisible();
+  await expect(window).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/u);
   await window.getByLabel(t("agent-work.agent"), { exact: true }).selectOption({ label: "Sorter" });
   await window
     .getByRole("button", { name: t("agent-work.hand-over-confirm"), exact: true })
@@ -235,4 +239,29 @@ test("ai_35 accept moves the issue to the chosen status", async ({ page, server 
     .poll(async () => (await firstWorkOf(admin, issue.key)).open, { timeout: 20_000 })
     .toBe(false);
   expect((await readIssue(admin, issue)).issue.status?.key).toBe(chosen);
+});
+
+test("ai_34 an answer to work that changed meanwhile reads the work again and can be sent again", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Stale question");
+  const agent = await createAgent(admin, "Stale");
+  const work = await handOverOne(admin, agent, issue);
+  putScene(server, work, { state: "waiting-for-you", question: "Which phone?" });
+  await signIn(page, ada);
+  await page.goto(issueAddress(issue.key));
+  await expect(page.getByText("Which phone?")).toBeVisible();
+  changeWorkBehindTheScreen(server, work);
+  const answer = page.getByLabel(t("agent-work.question-answer"), { exact: true });
+  await answer.fill("An old one");
+  await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
+  // The refusal is said, the work is read again, and the same answer goes through on the new version.
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(answer).toHaveValue("An old one");
+  await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
+  await expect(
+    page.getByText(t("agent-work.question-answered", { answer: "An old one" })),
+  ).toBeVisible();
 });

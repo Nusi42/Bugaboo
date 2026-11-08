@@ -185,6 +185,7 @@ export const tokenNames = [
   "size-col-labels",
   "size-col-project",
   "size-number-field",
+  "size-agent-pad",
   "size-col-title-least",
   "size-col-least",
   "size-col-most",
@@ -925,7 +926,7 @@ export const part = {
   agentWorkPiece: "agent-work.piece",
   agentWorkHead: "agent-work.head",
   agentWorkWho: "agent-work.who",
-  agentWorkState: "agent-work.state",
+  agentWorkPill: "agent-work.pill",
   agentWorkSection: "agent-work.section",
   agentWorkLabel: "agent-work.label",
   agentWorkWords: "agent-work.words",
@@ -937,7 +938,10 @@ export const part = {
   agentWorkGroup: "agent-work.group",
   agentWorkGroupName: "agent-work.group-name",
   agentWorkNumbers: "agent-work.numbers",
-  agentWorkMissing: "agent-work.missing",
+  agentWorkBubble: "agent-work.bubble",
+  agentWorkBubbleHead: "agent-work.bubble-head",
+  agentWorkSteps: "agent-work.steps",
+  agentWorkParts: "agent-work.parts",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -988,7 +992,7 @@ export const partWords = {
   "choice-group": { variant: [], state: [] },
   "choice-group.legend": { variant: [], state: [] },
   "choice-group.choices": { variant: ["stacked", "grid"], state: [] },
-  "choice-group.choice": { variant: [], state: [] },
+  "choice-group.choice": { variant: ["danger"], state: [] },
   "choice-group.input": { variant: [], state: [] },
   "choice-group.label": { variant: [], state: [] },
   "theme-picker.tile": { variant: [], state: [] },
@@ -1620,10 +1624,15 @@ export const partWords = {
   "proposal-card": { variant: [], state: [] },
   "proposal-head": { variant: [], state: [] },
   "proposal-change": { variant: ["values"], state: [] },
-  "agent-mark": {
+  "agent-mark": { variant: [], state: [] },
+  "agent-work": { variant: [], state: [] },
+  "agent-work.piece": { variant: [], state: [] },
+  "agent-work.head": { variant: [], state: [] },
+  "agent-work.who": { variant: [], state: [] },
+  "agent-work.pill": {
     variant: [
-      "agent-working",
       "waiting-for-the-agent",
+      "agent-working",
       "waiting-for-you",
       "ready-for-review",
       "agent-gave-up",
@@ -1631,11 +1640,6 @@ export const partWords = {
     ],
     state: [],
   },
-  "agent-work": { variant: [], state: [] },
-  "agent-work.piece": { variant: [], state: [] },
-  "agent-work.head": { variant: [], state: [] },
-  "agent-work.who": { variant: [], state: [] },
-  "agent-work.state": { variant: [], state: [] },
   "agent-work.section": { variant: [], state: [] },
   "agent-work.label": { variant: [], state: [] },
   "agent-work.words": { variant: [], state: [] },
@@ -1647,7 +1651,10 @@ export const partWords = {
   "agent-work.group": { variant: ["nested"], state: [] },
   "agent-work.group-name": { variant: [], state: [] },
   "agent-work.numbers": { variant: [], state: [] },
-  "agent-work.missing": { variant: [], state: [] },
+  "agent-work.bubble": { variant: ["yours"], state: [] },
+  "agent-work.bubble-head": { variant: [], state: [] },
+  "agent-work.steps": { variant: [], state: [] },
+  "agent-work.parts": { variant: [], state: [] },
 } as const;
 
 /** The places of a window to drag: the variants of the part `window.handle`. */

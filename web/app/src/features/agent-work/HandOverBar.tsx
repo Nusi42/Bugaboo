@@ -2,7 +2,6 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
 import type { SelectionBarProps } from "../issues/index.ts";
 import { HandOverDialog } from "./HandOverDialog.tsx";
 
@@ -13,8 +12,7 @@ import { HandOverDialog } from "./HandOverDialog.tsx";
 export function HandOverBar({ selection }: SelectionBarProps) {
   const [open, setOpen] = useState(false);
   const [handed, setHanded] = useState<number | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
-  if (selection.ids.length === 0 && handed === null && problem === null) {
+  if (selection.ids.length === 0 && handed === null) {
     return null;
   }
   return (
@@ -24,7 +22,6 @@ export function HandOverBar({ selection }: SelectionBarProps) {
           <Button
             onPress={() => {
               setHanded(null);
-              setProblem(null);
               setOpen(true);
             }}
           >
@@ -37,16 +34,12 @@ export function HandOverBar({ selection }: SelectionBarProps) {
           issues={selection.ids}
           isOpen
           onOpenChange={setOpen}
-          onFailed={(error) => {
-            setProblem(messageOf(error));
-          }}
           onHandedOver={() => {
             setHanded(selection.ids.length);
             selection.clear();
           }}
         />
       ) : null}
-      {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {handed === null ? null : (
         <output>
           <Alert tone={alertTone.success}>{t("agent-work.handed", { count: handed })}</Alert>

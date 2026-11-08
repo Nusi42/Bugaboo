@@ -378,6 +378,10 @@ impl From<&ProposalView> for ProposalBody {
 /// The agent work on an issue.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct IssueAgentWorkBody {
+    /// The readable ID of the issue now (`WEB-142`).
+    pub(super) readable_id: String,
+    /// After how many days a hand-over ends when nobody sets an end.
+    pub(super) hand_over_days: i64,
     /// The agents with open work on the issue. The issue keeps its person: an agent is never
     /// *Assigned to*.
     pub(super) worked_on_by: Vec<WorkedOnByBody>,
@@ -396,6 +400,8 @@ impl Masked for IssueAgentWorkBody {}
 impl From<&IssueAgentWork> for IssueAgentWorkBody {
     fn from(all: &IssueAgentWork) -> Self {
         Self {
+            readable_id: all.readable_id.clone(),
+            hand_over_days: all.hand_over_days,
             worked_on_by: all.worked_on_by.iter().map(WorkedOnByBody::from).collect(),
             work: all.work.iter().map(WorkBody::from).collect(),
             proposals: all.proposals.iter().map(ProposalBody::from).collect(),

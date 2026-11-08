@@ -22003,7 +22003,15 @@
       "IssueAgentWorkBody": {
         "type": "object",
         "description": "The agent work on an issue.",
-        "required": ["worked_on_by", "work", "proposals", "truncated", "brief_missing"],
+        "required": [
+          "readable_id",
+          "hand_over_days",
+          "worked_on_by",
+          "work",
+          "proposals",
+          "truncated",
+          "brief_missing"
+        ],
         "properties": {
           "brief_missing": {
             "type": "array",
@@ -22012,12 +22020,21 @@
             },
             "description": "The parts of a brief the issue lacks now, so a hand-over can say it before it is made."
           },
+          "hand_over_days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "After how many days a hand-over ends when nobody sets an end."
+          },
           "proposals": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProposalBody"
             },
             "description": "The proposals of standing rules that wait for a person."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "The readable ID of the issue now (`WEB-142`)."
           },
           "truncated": {
             "type": "boolean",

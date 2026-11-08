@@ -1,9 +1,9 @@
-import type { Schema } from "@bugaboo/api-client";
+import { ApiError, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { agentWorkKeys } from "../../shared/agent-work-keys.ts";
 import { api } from "../../shared/api.ts";
-import { formatDecimal } from "../../shared/format-decimal.ts";
+import { formatNumber } from "../../shared/format.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
 import { refreshHistory, refreshIssues, refreshRoutes } from "../../shared/query-keys.ts";
 
@@ -32,6 +32,28 @@ export function refreshAgentWork(): void {
   refreshIssues();
 }
 
+/** Whether the server refused because the work changed since the version the person saw. */
+export function isStaleWork(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.problem?.code === "edit.version-changed" ||
+      error.problem?.code === "agent-work.not-ready")
+  );
+}
+
+/**
+ * What every answer to the agent does when the server refuses it: work that changed meanwhile is
+ * read again, so the screen shows what the person must answer now, and the refusal is told.
+ */
+function refused(onFailed?: (error: unknown) => void): (error: unknown) => void {
+  return (error: unknown) => {
+    if (isStaleWork(error)) {
+      refreshAgentWork();
+    }
+    onFailed?.(error);
+  };
+}
+
 /** The agents of the person, a page at a time, for the choice in the window of a hand-over. */
 export function useMyAgents() {
   const list = usePaged({
@@ -53,9 +75,7 @@ export function useHandOver(onHandedOver?: () => void, onFailed?: (error: unknow
       refreshAgentWork();
       onHandedOver?.();
     },
-    onError: (error: unknown) => {
-      onFailed?.(error);
-    },
+    onError: refused(onFailed),
   });
 }
 
@@ -63,6 +83,7 @@ export function useHandOver(onHandedOver?: () => void, onFailed?: (error: unknow
 export function useAnswerQuestion() {
   return api.query.useMutation("post", "/api/v1/agent-work/{work}/answer", {
     onSuccess: refreshAgentWork,
+    onError: refused(),
   });
 }
 
@@ -70,6 +91,7 @@ export function useAnswerQuestion() {
 export function useApprovePlan() {
   return api.query.useMutation("post", "/api/v1/agent-work/{work}/approve-plan", {
     onSuccess: refreshAgentWork,
+    onError: refused(),
   });
 }
 
@@ -78,9 +100,7 @@ export function useReviewWork(onFailed?: (error: unknown) => void) {
   // The window closes when it is confirmed, so a refusal is told to the mutation itself.
   return api.query.useMutation("post", "/api/v1/agent-work/{work}/review", {
     onSuccess: refreshAgentWork,
-    onError: (error: unknown) => {
-      onFailed?.(error);
-    },
+    onError: refused(onFailed),
   });
 }
 
@@ -113,9 +133,9 @@ export function lastAttempt(work: Work): Attempt | undefined {
   return work.attempts.at(-1);
 }
 
-/** Cents as a number with two places, in the person's way of writing numbers. */
-export function centsText(cents: number): string {
-  return formatDecimal(cents / 100, 2);
+/** Cents as an amount with two places, in the person's way of writing numbers: `€0.40`. */
+export function amountText(cents: number): string {
+  return t("agent-work.amount", { amount: formatNumber(cents / 100, undefined, 2) });
 }
 
 /** An attempt that has a run: its number and the run, which lists what the attempt changed. */
