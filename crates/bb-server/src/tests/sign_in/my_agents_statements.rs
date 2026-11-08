@@ -6,8 +6,8 @@
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_app::agent_work::{
-    AskQuestion, AttachResult, EndAttempt, ReportAttempt, ask_question, attach_result, end_attempt,
-    report_attempt,
+    AskQuestion, AttachResult, EndAttempt, ReportAttempt, TakeWork, ask_question, attach_result,
+    end_attempt, report_attempt, take_work,
 };
 use bb_core::agent::MOST_AGENTS;
 use bb_core::agent_records::ResultKind;
@@ -42,6 +42,17 @@ async fn new_agent(who: &mut Browser, name: &str) -> Result<(String, Value), Fai
 async fn agent_works(rig: &Rig, key: &str, first: &str, third: &str) -> Result<(), Failure> {
     let ctx = rig.services.ctx(Rig::info());
     for issue in [first, third] {
+        // Only taking the work starts an attempt.
+        take_work(
+            &ctx,
+            TakeWork {
+                session_token: key.to_owned(),
+                issue: (*issue).to_owned(),
+                version: None,
+            },
+        )
+        .await
+        .map_err(wrong)?;
         report_attempt(
             &ctx,
             ReportAttempt {

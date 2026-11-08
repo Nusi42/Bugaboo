@@ -2,14 +2,13 @@
 
 use bb_core::agent_work::{AgentWorkState, WaitsFor};
 
-use super::agent_work::handed;
+use super::agent_work::{handed, report_attempt};
 use super::agent_work_review::{ready, report};
 use super::agents::an_agent;
 use super::scenarios::token;
 use super::world::{Outcome, World};
 use crate::agent_work::{
     AskQuestion, MyAgentWork, MyAgentWorkQuery, ask_question, end_attempt, my_agent_work,
-    report_attempt,
 };
 use crate::auth::AppError;
 use bb_policy::Authorized;

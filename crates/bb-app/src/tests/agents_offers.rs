@@ -8,6 +8,7 @@ use bb_core::agent_work::AgentWorkState;
 use bb_core::id::AgentId;
 use bb_policy::StartingRole;
 
+use super::agent_work::report_attempt;
 use super::agent_work::{ground, plain_hand_over};
 use super::agent_work_review::report;
 use super::agents::refused;
@@ -15,9 +16,7 @@ use super::scenarios::token;
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::member;
 use super::world::{Outcome, World};
-use crate::agent_work::{
-    AskQuestion, MyAgentWorkQuery, ask_question, hand_over, my_agent_work, report_attempt,
-};
+use crate::agent_work::{AskQuestion, MyAgentWorkQuery, ask_question, hand_over, my_agent_work};
 use crate::agents::{
     AcceptAgent, AgentAction, ChangeAgent, HandAgent, SetAgentLimits, TakeBackOffer, accept_agent,
     change_agent, hand_agent, set_agent_limits, take_back_offer,
