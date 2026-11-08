@@ -300,6 +300,83 @@ pub async fn standing_rules<S: AuthStore>(
         .authorize(StandingRulePage { items, next_cursor }))
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Judges a proposal of an agent under one of its open rules: the one place that decides if it
+    /// may be made, for the use case and for its preview.
+    async fn plan_proposal(
+        &self,
+        input: &ProposeChange,
+    ) -> Result<(Actor, Proposal, std::sync::Arc<bb_policy::Evaluation>), AppError> {
+        let actor = self.actor(&input.session_token).await?;
+        let Some(agent) = actor.agent() else {
+            return Err(ErrorCode::Forbidden.into());
+        };
+        let (found, held) = self.visible_issue(&actor, &input.issue).await?;
+        let rule = self
+            .store()
+            .standing_rule(input.rule)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|rule| rule.agent == agent)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        if rule.state != GivingState::Open || rule.ends_at <= self.now() {
+            return Err(ErrorCode::AgentWorkNotReady.into());
+        }
+        if !self.chain_of(found.project).await?.contains(&rule.project) {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        // A rule that names fields proposes about those; one that names none proposes about any
+        // field of the short list.
+        if !rule.fields.is_empty() && !rule.fields.contains(&input.field) {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        // Only an issue the rule found: the agent reads others only through a hand-over.
+        if self
+            .store()
+            .known_matches(rule.id, vec![found.id])
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .is_empty()
+        {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        let before = match input.field {
+            RuleField::Type => json!(found.issue_type.to_string()),
+            _ => serde_json::Value::Null,
+        };
+        let proposal = Proposal {
+            id: AgentNoteId::generate(&mut self.ids()),
+            rule: rule.id,
+            agent,
+            issue: found.id,
+            field: input.field,
+            before,
+            after: input.after.clone(),
+            state: ProposalState::Open,
+            decided_by: None,
+            made_at: self.now(),
+        };
+        Ok((actor, proposal, held))
+    }
+
+    /// What a proposal would record, without saving anything: the field, the value now and the
+    /// value proposed.
+    ///
+    /// # Errors
+    /// What `propose_change` refuses.
+    pub(crate) async fn preview_propose_change(
+        &self,
+        input: &ProposeChange,
+    ) -> Result<Vec<bb_core::event::FieldChange>, AppError> {
+        let (_, proposal, _) = self.plan_proposal(input).await?;
+        Ok(vec![bb_core::event::FieldChange {
+            field: proposal.field.code().to_owned(),
+            before: (!proposal.before.is_null()).then_some(proposal.before),
+            after: Some(proposal.after),
+        }])
+    }
+}
+
 /// An agent proposes a change under one of its open rules to an issue the rule found. Nothing
 /// changes: the proposal is a record on the issue's agent work until a person applies or discards
 /// it.
@@ -311,60 +388,12 @@ pub async fn propose_change<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ProposeChange,
 ) -> Result<Authorized<ProposalView>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
-    let Some(agent) = actor.agent() else {
-        return Err(ErrorCode::Forbidden.into());
-    };
-    let (found, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let rule = ctx
-        .store()
-        .standing_rule(input.rule)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .filter(|rule| rule.agent == agent)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if rule.state != GivingState::Open || rule.ends_at <= ctx.now() {
-        return Err(ErrorCode::AgentWorkNotReady.into());
-    }
-    if !ctx.chain_of(found.project).await?.contains(&rule.project) {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    }
-    // A rule that names fields proposes about those; one that names none proposes about any field
-    // of the short list.
-    if !rule.fields.is_empty() && !rule.fields.contains(&input.field) {
-        return Err(ErrorCode::Forbidden.into());
-    }
-    // Only an issue the rule found: the agent reads others only through a hand-over.
-    if ctx
-        .store()
-        .known_matches(rule.id, vec![found.id])
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .is_empty()
-    {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    }
-    let before = match input.field {
-        RuleField::Type => json!(found.issue_type.to_string()),
-        _ => serde_json::Value::Null,
-    };
-    let proposal = Proposal {
-        id: AgentNoteId::generate(&mut ctx.ids()),
-        rule: rule.id,
-        agent,
-        issue: found.id,
-        field: input.field,
-        before,
-        after: input.after,
-        state: ProposalState::Open,
-        decided_by: None,
-        made_at: ctx.now(),
-    };
+    let (actor, proposal, held) = ctx.plan_proposal(&input).await?;
     let event = ctx.event(
         crate::auth::by(actor.person.id),
-        entity(RecordKind::StandingRule, rule.id),
+        entity(RecordKind::StandingRule, proposal.rule),
         vec![
-            set_to(member::ISSUE, json!(found.id.to_string())),
+            set_to(member::ISSUE, json!(proposal.issue.to_string())),
             set_to(member::PROPOSAL, json!(proposal.id.to_string())),
         ],
     )?;

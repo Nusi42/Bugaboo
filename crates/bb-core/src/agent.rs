@@ -39,6 +39,47 @@ words! {
 
 crate::words_in_api!(AgentState, "Whether an agent may act.");
 
+words! {
+    /// The limits of an agent (ADR-0029, decision 9). Reaching one pauses the agent with a
+    /// sentence that names it.
+    pub enum LimitKind {
+        /// Changes in one minute.
+        ChangesAMinute => "changes-a-minute",
+        /// Issues it works on at once.
+        IssuesAtOnce => "issues-at-once",
+        /// Attempts on one issue.
+        AttemptsOnOneIssue => "attempts-on-one-issue",
+    }
+}
+
+crate::words_in_api!(LimitKind, "Which limit of an agent it reached.");
+
+impl LimitKind {
+    /// The sentence that says an agent was paused by this limit: *"Fixer paused: 60 changes in a
+    /// minute"*.
+    #[must_use]
+    pub fn sentence(self, agent: &str, limit: i64) -> crate::message::Message {
+        use crate::message;
+        match self {
+            Self::ChangesAMinute => message::agent_paused_changes_a_minute(agent, limit),
+            Self::IssuesAtOnce => message::agent_paused_issues_at_once(agent, limit),
+            Self::AttemptsOnOneIssue => message::agent_paused_attempts_on_one_issue(agent, limit),
+        }
+    }
+}
+
+impl AgentLimits {
+    /// The number the agent may not pass for `kind`.
+    #[must_use]
+    pub const fn of(&self, kind: LimitKind) -> i64 {
+        match kind {
+            LimitKind::ChangesAMinute => self.changes_a_minute,
+            LimitKind::IssuesAtOnce => self.issues_at_once,
+            LimitKind::AttemptsOnOneIssue => self.attempts_on_one_issue,
+        }
+    }
+}
+
 /// How much an agent may do (ADR-0029, decision 9). Each is at most the organization's maximum.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AgentLimits {
@@ -75,6 +116,10 @@ pub struct Agent {
     /// Whether it may act.
     #[not_personal]
     pub state: AgentState,
+    /// The limit it reached when it was paused; none when its person paused it, or it is not
+    /// paused.
+    #[not_personal]
+    pub paused_for: Option<LimitKind>,
     /// What it may do at most: changes in a minute.
     #[not_personal]
     pub changes_a_minute: i64,

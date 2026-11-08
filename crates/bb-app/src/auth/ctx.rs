@@ -79,6 +79,8 @@ pub struct AuthServices<S> {
     pub(crate) test_ai_at: Mutex<HashMap<UserId, Timestamp>>,
     /// The calls of AI apps in the last minute, for the limits of a grant and of a person.
     pub(crate) call_rate: super::oauth_rate::CallRate,
+    /// The changes of agents in the last minute, for their limits (ADR-0029, decision 9).
+    pub(crate) agent_rate: crate::agents::AgentRate,
 }
 
 impl<S> AuthServices<S> {
@@ -116,6 +118,7 @@ impl<S> AuthServices<S> {
             test_mail_at: Mutex::default(),
             test_ai_at: Mutex::default(),
             call_rate: super::oauth_rate::CallRate::default(),
+            agent_rate: crate::agents::AgentRate::default(),
         }
     }
 
@@ -199,6 +202,8 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             policies: Mutex::default(),
             via_key: AtomicBool::new(false),
+            change_due: AtomicBool::new(false),
+            change_pending: Mutex::default(),
             channel: Mutex::default(),
             acting_agent: Mutex::default(),
             accepting: Mutex::default(),
@@ -325,6 +330,10 @@ pub struct Ctx<'a, S> {
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,
+    /// The request makes a change that an agent's limits have not counted yet (`expect_change`).
+    pub(crate) change_due: AtomicBool,
+    /// The agent whose change the request is making and the limits have not counted yet.
+    pub(crate) change_pending: Mutex<Option<AgentId>>,
     /// The channel the request was made through when it is not decided by how the person signed
     /// in: *Apply* of the assistant saves through `assistant`, an AI app through `mcp`.
     pub(crate) channel: Mutex<Option<Channel>>,

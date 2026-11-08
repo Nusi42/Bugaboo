@@ -63,6 +63,9 @@ pub(crate) enum LockClass {
     /// The agents of one person (key: four bytes of the person's ID): two changes at the same
     /// moment cannot both pass the most agents of a person.
     Agents = 14,
+    /// The taking of one issue by an agent (key: four bytes of the issue's ID): two agents who take
+    /// the same issue at the same moment cannot both start an attempt on it.
+    IssueTaking = 15,
 }
 
 impl LockClass {
@@ -86,6 +89,7 @@ impl LockClass {
             Self::SavedSearches => 11,
             Self::WorkDays => 12,
             Self::Agents => 13,
+            Self::IssueTaking => 14,
         }
     }
 }

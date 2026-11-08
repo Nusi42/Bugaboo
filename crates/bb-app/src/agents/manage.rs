@@ -85,6 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: agent.id,
             name: agent.name.clone(),
             state: agent.state,
+            paused_for: agent.paused_for,
             person,
             limits: agent.limits(),
             offered: agent.offered_to.is_some(),
@@ -147,6 +148,7 @@ pub async fn create_agent<S: AuthStore>(
         person,
         name,
         state: AgentState::Active,
+        paused_for: None,
         changes_a_minute: limits.changes_a_minute,
         issues_at_once: limits.issues_at_once,
         attempts_on_one_issue: limits.attempts_on_one_issue,
@@ -409,7 +411,7 @@ pub async fn change_agent<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::set_agent_state(transaction, id, to, version).await? {
+                if !S::set_agent_state(transaction, id, to, None, version).await? {
                     return Err(S::aborted());
                 }
                 if to == AgentState::Stopped {
@@ -428,6 +430,9 @@ pub async fn change_agent<S: AuthStore>(
                 person,
             )
         })?;
+    if input.action == AgentAction::Resume {
+        ctx.forget_agent_changes(found.id);
+    }
     if !own {
         ctx.note(
             SecurityAction::AgentStopped,

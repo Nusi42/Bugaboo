@@ -170,8 +170,17 @@ pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider")
 /// The message `ai-tool.add-comment`.
 pub const AI_TOOL_ADD_COMMENT: MessageKey = MessageKey::new("ai-tool.add-comment");
 
+/// The message `ai-tool.ask`.
+pub const AI_TOOL_ASK: MessageKey = MessageKey::new("ai-tool.ask");
+
+/// The message `ai-tool.attach`.
+pub const AI_TOOL_ATTACH: MessageKey = MessageKey::new("ai-tool.attach");
+
 /// The message `ai-tool.change-status`.
 pub const AI_TOOL_CHANGE_STATUS: MessageKey = MessageKey::new("ai-tool.change-status");
+
+/// The message `ai-tool.changes-since`.
+pub const AI_TOOL_CHANGES_SINCE: MessageKey = MessageKey::new("ai-tool.changes-since");
 
 /// The message `ai-tool.create-issue`.
 pub const AI_TOOL_CREATE_ISSUE: MessageKey = MessageKey::new("ai-tool.create-issue");
@@ -182,11 +191,20 @@ pub const AI_TOOL_GET_ISSUE: MessageKey = MessageKey::new("ai-tool.get-issue");
 /// The message `ai-tool.get-my-work`.
 pub const AI_TOOL_GET_MY_WORK: MessageKey = MessageKey::new("ai-tool.get-my-work");
 
+/// The message `ai-tool.give-up`.
+pub const AI_TOOL_GIVE_UP: MessageKey = MessageKey::new("ai-tool.give-up");
+
 /// The message `ai-tool.list-projects`.
 pub const AI_TOOL_LIST_PROJECTS: MessageKey = MessageKey::new("ai-tool.list-projects");
 
 /// The message `ai-tool.log-time`.
 pub const AI_TOOL_LOG_TIME: MessageKey = MessageKey::new("ai-tool.log-time");
+
+/// The message `ai-tool.propose`.
+pub const AI_TOOL_PROPOSE: MessageKey = MessageKey::new("ai-tool.propose");
+
+/// The message `ai-tool.report`.
+pub const AI_TOOL_REPORT: MessageKey = MessageKey::new("ai-tool.report");
 
 /// The message `ai-tool.search-issues`.
 pub const AI_TOOL_SEARCH_ISSUES: MessageKey = MessageKey::new("ai-tool.search-issues");
@@ -196,6 +214,12 @@ pub const AI_TOOL_START_TIMER: MessageKey = MessageKey::new("ai-tool.start-timer
 
 /// The message `ai-tool.stop-timer`.
 pub const AI_TOOL_STOP_TIMER: MessageKey = MessageKey::new("ai-tool.stop-timer");
+
+/// The message `ai-tool.submit`.
+pub const AI_TOOL_SUBMIT: MessageKey = MessageKey::new("ai-tool.submit");
+
+/// The message `ai-tool.take`.
+pub const AI_TOOL_TAKE: MessageKey = MessageKey::new("ai-tool.take");
 
 /// The message `ai-tool.update-issue`.
 pub const AI_TOOL_UPDATE_ISSUE: MessageKey = MessageKey::new("ai-tool.update-issue");
@@ -969,6 +993,9 @@ pub const ERROR_AGENT_WORK_BUDGET_REACHED: MessageKey =
 
 /// The message `error.agent-work.not-ready`.
 pub const ERROR_AGENT_WORK_NOT_READY: MessageKey = MessageKey::new("error.agent-work.not-ready");
+
+/// The message `error.agent.limit-reached`.
+pub const ERROR_AGENT_LIMIT_REACHED: MessageKey = MessageKey::new("error.agent.limit-reached");
 
 /// The message `error.ai.address-invalid`.
 pub const ERROR_AI_ADDRESS_INVALID: MessageKey = MessageKey::new("error.ai.address-invalid");
@@ -7156,6 +7183,42 @@ pub fn access_reset_label(
     )
 }
 
+/// The message `agent-paused.attempts-on-one-issue`.
+#[must_use]
+pub fn agent_paused_attempts_on_one_issue(agent: impl std::fmt::Display, limit: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-paused.attempts-on-one-issue"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("limit", Value::Number(limit)),
+        ],
+    )
+}
+
+/// The message `agent-paused.changes-a-minute`.
+#[must_use]
+pub fn agent_paused_changes_a_minute(agent: impl std::fmt::Display, limit: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-paused.changes-a-minute"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("limit", Value::Number(limit)),
+        ],
+    )
+}
+
+/// The message `agent-paused.issues-at-once`.
+#[must_use]
+pub fn agent_paused_issues_at_once(agent: impl std::fmt::Display, limit: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-paused.issues-at-once"),
+        vec![
+            ("agent", Value::Text(agent.to_string())),
+            ("limit", Value::Number(limit)),
+        ],
+    )
+}
+
 /// The message `agent-work.summary`.
 #[must_use]
 pub fn agent_work_summary(
@@ -10136,6 +10199,18 @@ pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message
         vec![
             ("action", Value::Text(action.to_string())),
             ("count", Value::Number(count)),
+        ],
+    )
+}
+
+/// The message `mcp.changed`.
+#[must_use]
+pub fn mcp_changed(fields: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mcp.changed"),
+        vec![
+            ("fields", Value::Text(fields.to_string())),
+            ("version", Value::Text(version.to_string())),
         ],
     )
 }
@@ -14218,6 +14293,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access.scrolls", "Scroll sideways to see the other roles."),
     (
+        "agent-paused.attempts-on-one-issue",
+        "{agent} paused: {limit, plural, one {# attempt} other {# attempts}} on one issue",
+    ),
+    (
+        "agent-paused.changes-a-minute",
+        "{agent} paused: {limit, plural, one {# change} other {# changes}} in a minute",
+    ),
+    (
+        "agent-paused.issues-at-once",
+        "{agent} paused: {limit, plural, one {# issue} other {# issues}} at once",
+    ),
+    (
         "agent-work.summary",
         "Attempt {number} is ready for review: {address}",
     ),
@@ -14227,7 +14314,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-author.member", "someone in the project"),
     ("ai-author.outsider", "someone outside"),
     ("ai-tool.add-comment", "Write a comment on an issue."),
+    (
+        "ai-tool.ask",
+        "Ask the person a question. The work waits until they answer.",
+    ),
+    (
+        "ai-tool.attach",
+        "Attach a result to your attempt: an address such as a branch or a pull request, or a check that passed or failed.",
+    ),
     ("ai-tool.change-status", "Move an issue to another status."),
+    (
+        "ai-tool.changes-since",
+        "List what changed in the issues you may see since the mark you got last time, with a new mark.",
+    ),
     ("ai-tool.create-issue", "Create a new issue in a project."),
     (
         "ai-tool.get-issue",
@@ -14237,14 +14336,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "ai-tool.get-my-work",
         "List the issues that are assigned to you.",
     ),
+    (
+        "ai-tool.give-up",
+        "Give up on the issue and say why. A person decides what happens next.",
+    ),
     ("ai-tool.list-projects", "List the projects you may see."),
     ("ai-tool.log-time", "Book your own time on an issue."),
+    (
+        "ai-tool.propose",
+        "Propose a change to an issue that your standing rule found. Nothing changes until a person applies it.",
+    ),
+    (
+        "ai-tool.report",
+        "Report a step of your attempt: the plan, the minutes and the cost so far.",
+    ),
     (
         "ai-tool.search-issues",
         "Search the issues you may read with the search language.",
     ),
     ("ai-tool.start-timer", "Start your timer on an issue."),
     ("ai-tool.stop-timer", "Stop your timer."),
+    (
+        "ai-tool.submit",
+        "Say that your attempt is ready for a person to review.",
+    ),
+    (
+        "ai-tool.take",
+        "Take an issue that was handed over to you and start an attempt. Two agents never start the same work.",
+    ),
     ("ai-tool.update-issue", "Change fields of an issue."),
     ("ai.country.anthropic", "United States"),
     (
@@ -14979,6 +15098,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.agent-work.not-ready",
         "The work is not waiting for that.",
+    ),
+    (
+        "error.agent.limit-reached",
+        "The agent reached one of its limits and is paused. Its person can let it work again.",
     ),
     (
         "error.ai.address-invalid",
@@ -16812,6 +16935,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
     (
+        "mcp.changed",
+        "The record is at version {version} now. What changed: {fields}.",
+    ),
+    (
         "mcp.error.answer-unreadable",
         "The answer could not be read.",
     ),
@@ -16919,7 +17046,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.working-hours", "Working hours"),
     ("notification.kind.agent-asks", "An agent asks you"),
     ("notification.kind.agent-gave-up", "An agent gave up"),
-    ("notification.kind.agent-stopped", "An agent was stopped"),
+    (
+        "notification.kind.agent-stopped",
+        "An agent was stopped or paused",
+    ),
     ("notification.kind.assigned", "An issue is assigned to you"),
     (
         "notification.kind.edit-notice",
@@ -16959,7 +17089,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notifications.agent-stopped",
-        "An agent of yours was stopped. Its work stopped with it.",
+        "An agent of yours was stopped or paused. Look at My agents to see which one and why.",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
@@ -19048,19 +19178,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.agent-stopped-by-mail.help",
-        "Sends you an e-mail when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
+        "Sends you an e-mail when an agent of yours is stopped by an administrator or because you lost access, or paused because it reached a limit.",
     ),
     (
         "setting.notifications.agent-stopped-by-mail.name",
-        "An agent was stopped: by e-mail",
+        "An agent was stopped or paused: by e-mail",
     ),
     (
         "setting.notifications.agent-stopped-in-app.help",
-        "Tells you when an agent of yours is stopped by an administrator, by a limit, or because you lost access.",
+        "Tells you when an agent of yours is stopped by an administrator or because you lost access, or paused because it reached a limit.",
     ),
     (
         "setting.notifications.agent-stopped-in-app.name",
-        "An agent was stopped: in the app",
+        "An agent was stopped or paused: in the app",
     ),
     (
         "setting.notifications.assigned-by-mail.help",

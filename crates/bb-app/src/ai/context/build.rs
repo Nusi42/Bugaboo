@@ -39,6 +39,9 @@ const PLAIN_MEMBERS: &[&str] = &[
     "closed_at",
     "at",
     "next_cursor",
+    "mark",
+    "work_state",
+    "rule",
 ];
 
 /// The longest a person's name is written in, in characters.

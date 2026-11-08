@@ -32,6 +32,7 @@ use bb_policy::{Permission, StartingRole};
 use serde_json::Value;
 
 use super::api_spec;
+use super::sec_matrix_tools::tool_findings;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 use crate::source::read_text;
@@ -67,7 +68,11 @@ impl Check for SecMatrix {
         let spec = api_spec::load(context.repo)?;
         let record = read(RECORD_PATH).ok();
         let examples = read(EXAMPLES_PATH)?;
-        Ok(evaluate(&spec, record.as_deref(), &examples))
+        let mut findings = evaluate(&spec, record.as_deref(), &examples);
+        if let Some(record) = record.as_deref() {
+            findings.extend(tool_findings(record));
+        }
+        Ok(findings)
     }
 }
 

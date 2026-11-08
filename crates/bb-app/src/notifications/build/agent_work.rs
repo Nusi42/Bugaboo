@@ -74,8 +74,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.deliver(round, &subject, hears).await
     }
 
-    /// An agent was stopped, by its person, by an administrator, or because its person lost access:
-    /// the person responsible for it hears of it.
+    /// An agent was stopped, by its person, by an administrator, or because its person lost access,
+    /// or paused because it reached a limit: the person responsible for it hears of it. A pause by
+    /// the person themselves is not news to them.
     pub(super) async fn agent_event(
         &self,
         round: &mut Round,
@@ -84,7 +85,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let stopped = text_set(&event.changes, "state")
             == Some(bb_core::agent::AgentState::Stopped.code())
             || text_set(&event.changes, event_member::WORK_STATE)
-                == Some(AgentWorkState::Stopped.code());
+                == Some(AgentWorkState::Stopped.code())
+            || text_set(&event.changes, event_member::PAUSED_FOR).is_some();
         if !stopped {
             return Ok(());
         }

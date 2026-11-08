@@ -395,6 +395,17 @@ impl AgentWorkState {
         !Self::ENDED.contains(&self)
     }
 
+    /// The states in which an attempt is running.
+    pub const IN_ATTEMPT: [Self; 2] = [Self::AgentWorking, Self::WaitingForYou];
+
+    /// Whether an attempt is running in this state: the agent works, or has asked and waits. Of two
+    /// pieces of work on one issue, only one is in an attempt at a time (ADR-0029, decision 9). The
+    /// one place that says it.
+    #[must_use]
+    pub const fn in_attempt(self) -> bool {
+        matches!(self, Self::AgentWorking | Self::WaitingForYou)
+    }
+
     /// The state after a question: *Waiting for you*. None for work that cannot ask: work that
     /// ended, and a result that waits for its review (the one place that says so).
     #[must_use]

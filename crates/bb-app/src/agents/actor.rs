@@ -57,6 +57,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !self.agents_on_in_the_organization().await? {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
+        // The change this request makes is counted against the limits of the agent before anything
+        // is written; over the limit the agent is paused and the request is refused.
+        self.count_agent_change(&found).await?;
         let work = self.work_of_agent_now(found.id).await?;
         let off = self.projects_with_agents_off(found.person).await?;
         *crate::auth::locked(&self.acting_agent) = Some((found.id, found.person));

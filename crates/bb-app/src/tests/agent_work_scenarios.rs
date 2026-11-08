@@ -12,8 +12,9 @@ use super::scenarios_issues::an_issue;
 use super::workflows_rules::member;
 use super::world::World;
 use crate::agent_work::{
-    AnswerQuestion, ApprovePlan, AskQuestion, LookAtWork, answer_question, approve_plan,
+    AnswerQuestion, ApprovePlan, AskQuestion, LookAtWork, TakeWork, answer_question, approve_plan,
     ask_question, attach_result, end_attempt, hand_over, look_at_work, report_attempt, review_work,
+    take_work,
 };
 
 pub(crate) async fn hand_over_scenario(world: &World) -> Added {
@@ -40,6 +41,22 @@ async fn started(world: &World) -> Result<Handed, String> {
         .await
         .map_err(text)?;
     Ok(given)
+}
+
+pub(crate) async fn take_work_scenario(world: &World) -> Added {
+    let given = handed(world).await.map_err(text)?;
+    measured(
+        &world.store,
+        take_work(
+            &world.ctx(),
+            TakeWork {
+                session_token: given.key,
+                issue: given.issue.to_string(),
+                version: None,
+            },
+        ),
+    )
+    .await
 }
 
 pub(crate) async fn report_attempt_scenario(world: &World) -> Added {

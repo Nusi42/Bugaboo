@@ -17852,6 +17852,17 @@
             "type": ["boolean", "null"],
             "description": "Whether it is offered to another person who has not accepted yet."
           },
+          "paused_for": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LimitKind",
+                "description": "The limit the agent reached when it was paused, so a person can read why: `changes-a-minute`,\n`issues-at-once` or `attempts-on-one-issue`. Left out when it was not paused by a limit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "person": {
             "oneOf": [
               {
@@ -20372,6 +20383,7 @@
           "agent-work.already-open",
           "agent-work.not-ready",
           "agent-work.budget-reached",
+          "agent.limit-reached",
           "auth.not-signed-in",
           "access.forbidden",
           "access.cannot-lift",
@@ -22780,6 +22792,11 @@
           }
         }
       },
+      "LimitKind": {
+        "type": "string",
+        "description": "Which limit of an agent it reached.",
+        "enum": ["changes-a-minute", "issues-at-once", "attempts-on-one-issue"]
+      },
       "ListLimitsBody": {
         "type": "object",
         "description": "The size of a list a text setting holds (items separated by commas).",
@@ -23941,6 +23958,10 @@
           "issue_type": {
             "type": "string",
             "description": "The ID of its issue type; a retired type takes no new issues."
+          },
+          "parent": {
+            "type": ["string", "null"],
+            "description": "The issue it is created under as a sub-issue (its ID as people write it), in the project of\nthat issue. An issue of its own when left out."
           },
           "priority": {
             "oneOf": [

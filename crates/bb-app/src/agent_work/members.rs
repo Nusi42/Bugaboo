@@ -28,6 +28,28 @@ pub(crate) mod member {
     pub(crate) const FIELDS: &str = "fields";
     /// The proposal that was applied or discarded.
     pub(crate) const PROPOSAL: &str = "proposal";
+    /// The number of an attempt that starts.
+    pub(crate) const ATTEMPT: &str = "attempt";
+    /// The plan of an attempt.
+    pub(crate) const PLAN: &str = "plan";
+    /// The minutes an agent reports.
+    pub(crate) const MINUTES: &str = "reported_minutes";
+    /// The cost an agent reports.
+    pub(crate) const COST: &str = "reported_cost";
+    /// The question of an agent.
+    pub(crate) const QUESTION: &str = "question";
+    /// A result an agent attached.
+    pub(crate) const RESULT: &str = "result";
+    /// The link of a result.
+    pub(crate) const LINK: &str = "link";
+    /// The outcome of a check.
+    pub(crate) const OUTCOME: &str = "outcome";
+    /// The reason an agent gave up.
+    pub(crate) const GAVE_UP: &str = "gave_up";
+    /// Whether the work was accepted by itself.
+    pub(crate) const ACCEPTED_BY_ITSELF: &str = "accepted_by_itself";
+    /// The limit that paused an agent.
+    pub(crate) const PAUSED_FOR: &str = "paused_for";
 }
 
 /// The members of the payloads of the jobs.
@@ -44,7 +66,7 @@ pub(crate) mod payload {
 
 /// What an event of agent work says for the reader of notifications.
 pub(crate) mod event_member {
-    pub(crate) use super::member::{ISSUE, STATE, WAITING_FOR, WORK_STATE};
+    pub(crate) use super::member::{ISSUE, PAUSED_FOR, STATE, WAITING_FOR, WORK_STATE};
 
     /// The state of a standing rule three days before its end.
     pub(crate) const ABOUT_TO_RUN_OUT: &str = "about-to-run-out";

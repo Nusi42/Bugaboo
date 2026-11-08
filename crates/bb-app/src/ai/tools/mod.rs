@@ -5,6 +5,7 @@
 //! `call.rs` is the only path in: it checks the scope, runs the tool as the actor, takes out what
 //! is kept from AI, fences the text and writes the log of tool calls (`log.rs`).
 
+mod agents;
 mod apply;
 mod call;
 mod inputs;

@@ -20,11 +20,12 @@ use serde_json::Value;
 use utoipa::PartialSchema;
 
 use super::inputs::{
-    AddCommentInput, ChangeStatusInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
-    ListProjectsInput, LogTimeInput, SearchIssuesInput, StartTimerInput, StopTimerInput,
+    AddCommentInput, AskInput, AttachInput, ChangeStatusInput, ChangesSinceInput, CreateIssueInput,
+    GetIssueInput, GetMyWorkInput, GiveUpInput, ListProjectsInput, LogTimeInput, ProposeInput,
+    ReportInput, SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput,
     UpdateIssueInput,
 };
-use super::{apply, preview, read};
+use super::{agents, apply, preview, read};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
@@ -154,7 +155,7 @@ fn changes<S: AuthStore>(
 
 /// Every tool, in the order AI apps are shown them.
 #[must_use]
-pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 11] {
+pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 19] {
     [
         reads(
             Tool::SearchIssues,
@@ -228,6 +229,61 @@ pub fn registry<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<StopTimerInput>,
             preview::stop_timer::<S>,
             apply::stop_timer::<S>,
+        ),
+        changes(
+            Tool::Take,
+            "take_work",
+            schema_of::<TakeInput>,
+            agents::preview_take::<S>,
+            agents::apply_take::<S>,
+        ),
+        changes(
+            Tool::Report,
+            "report_attempt",
+            schema_of::<ReportInput>,
+            agents::preview_report::<S>,
+            agents::apply_report::<S>,
+        ),
+        changes(
+            Tool::Ask,
+            "ask_question",
+            schema_of::<AskInput>,
+            agents::preview_ask::<S>,
+            agents::apply_ask::<S>,
+        ),
+        changes(
+            Tool::Attach,
+            "attach_result",
+            schema_of::<AttachInput>,
+            agents::preview_attach::<S>,
+            agents::apply_attach::<S>,
+        ),
+        changes(
+            Tool::Submit,
+            "end_attempt",
+            schema_of::<SubmitInput>,
+            agents::preview_submit::<S>,
+            agents::apply_submit::<S>,
+        ),
+        changes(
+            Tool::GiveUp,
+            "end_attempt",
+            schema_of::<GiveUpInput>,
+            agents::preview_give_up::<S>,
+            agents::apply_give_up::<S>,
+        ),
+        reads(
+            Tool::ChangesSince,
+            "changes_since",
+            schema_of::<ChangesSinceInput>,
+            agents::changes::<S>,
+        ),
+        changes(
+            Tool::Propose,
+            "propose_change",
+            schema_of::<ProposeInput>,
+            agents::preview_propose::<S>,
+            agents::apply_propose::<S>,
         ),
     ]
 }

@@ -21,9 +21,10 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{
-    AttemptResultRow, AttemptRow, HandOverRow, IssueRow, IssueWorkRow, ProposalRow, QuestionRow,
-    ReviewRow, RuleMatchRow, StandingRuleRow,
+    AttemptResultRow, AttemptRow, Computed, HandOverRow, IssueRow, IssueWorkRow, ProposalRow,
+    QuestionRow, ReviewRow, RuleMatchRow, StandingRuleRow,
 };
 
 /// Keeps the work that is open: its state is not an end, no review closed it, and its hand-over

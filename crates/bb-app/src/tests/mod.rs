@@ -2,6 +2,8 @@
 //! store (`fake`, `fake_policy`) has the same ports as the database adapter; `world` makes a small
 //! server on it; the files below are the tests.
 
+mod agent_tools;
+mod agent_tools_more;
 mod agent_work;
 mod agent_work_narrowing;
 mod agent_work_notices;
@@ -79,6 +81,7 @@ mod offers;
 mod offers_known_uses;
 mod offers_secrecy;
 mod prompt_injection;
+mod prompt_injection_agents;
 mod prompt_injection_assistant;
 mod recurring_jobs;
 mod rights_once;

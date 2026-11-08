@@ -61,6 +61,18 @@ fn read_review(row: &Row) -> Result<Review, StoreError> {
 }
 
 impl AgentWorkRecords for AuthStorage {
+    async fn issue_events_after(
+        &self,
+        after: i64,
+        limit: u64,
+    ) -> Result<Vec<(i64, bb_core::event::DomainEvent)>, StoreError> {
+        self.database().issue_events_after(after, limit).await
+    }
+
+    async fn last_event_place(&self) -> Result<i64, StoreError> {
+        self.database().last_event_place().await
+    }
+
     async fn issue_work_in(
         transaction: &mut Transaction,
         id: AgentWorkId,
@@ -208,6 +220,27 @@ impl AgentWorkRecords for AuthStorage {
         Ok(details)
     }
 
+    async fn working_issues_of_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+    ) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::col(IssueWorkRow::Id).count(), Computed::Total)
+            .from(IssueWorkRow::Table)
+            .and_where(Expr::col(IssueWorkRow::Agent).eq(agent.stored()))
+            .and_where(
+                Expr::col(IssueWorkRow::State)
+                    .is_in(AgentWorkState::IN_ATTEMPT.map(AgentWorkState::code)),
+            );
+        only_open_work(&mut select);
+        let count: i64 = match transaction.fetch_optional(&select).await? {
+            Some(row) => row.get(Computed::Total)?,
+            None => 0,
+        };
+        Ok(u64::try_from(count).unwrap_or(0))
+    }
+
     async fn agent_has_open_giving_in(
         transaction: &mut Transaction,
         agent: AgentId,
@@ -295,6 +328,15 @@ impl AgentWorkRecords for AuthStorage {
             }
         }
         Ok(people)
+    }
+
+    async fn lock_taking_of(
+        transaction: &mut Transaction,
+        issue: IssueId,
+    ) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock(LockClass::IssueTaking, lock_key(issue.to_bytes()))
+            .await
     }
 
     async fn insert_work(

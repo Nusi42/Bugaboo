@@ -4891,6 +4891,7 @@ export interface components {
       name?: string | null;
       /** @description Whether it is offered to another person who has not accepted yet. */
       offered?: boolean | null;
+      paused_for?: components["schemas"]["LimitKind"] | null;
       person?: components["schemas"]["PersonRef"] | null;
       state?: components["schemas"]["AgentState"] | null;
       /**
@@ -6179,6 +6180,7 @@ export interface components {
       | "agent-work.already-open"
       | "agent-work.not-ready"
       | "agent-work.budget-reached"
+      | "agent.limit-reached"
       | "auth.not-signed-in"
       | "access.forbidden"
       | "access.cannot-lift"
@@ -7368,6 +7370,11 @@ export interface components {
       /** @description The project the *No access* is on. */
       project: components["schemas"]["ProjectRef"];
     };
+    /**
+     * @description Which limit of an agent it reached.
+     * @enum {string}
+     */
+    LimitKind: "changes-a-minute" | "issues-at-once" | "attempts-on-one-issue";
     /** @description The size of a list a text setting holds (items separated by commas). */
     ListLimitsBody: {
       /**
@@ -7905,6 +7912,11 @@ export interface components {
       };
       /** @description The ID of its issue type; a retired type takes no new issues. */
       issue_type: string;
+      /**
+       * @description The issue it is created under as a sub-issue (its ID as people write it), in the project of
+       *     that issue. An issue of its own when left out.
+       */
+      parent?: string | null;
       priority?: components["schemas"]["Priority"] | null;
       /**
        * @description The key of the status it starts in. The first status of its workflow when left out; another

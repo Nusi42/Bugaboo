@@ -330,6 +330,28 @@ impl GrantStore for super::fake::FakeStore {
 }
 
 impl AgentWorkRecords for super::fake::FakeStore {
+    async fn issue_events_after(
+        &self,
+        after: i64,
+        limit: u64,
+    ) -> Result<Vec<(i64, bb_core::event::DomainEvent)>, FakeError> {
+        let shared = self.lock();
+        let issues = bb_core::event::EntityKind::from(bb_core::event::RecordKind::Issue);
+        Ok(shared
+            .events
+            .iter()
+            .enumerate()
+            .map(|(at, event)| (i64::try_from(at + 1).unwrap_or(i64::MAX), event))
+            .filter(|(place, event)| *place > after && event.entity.kind == issues)
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .map(|(place, event)| (place, event.clone()))
+            .collect())
+    }
+
+    async fn last_event_place(&self) -> Result<i64, FakeError> {
+        Ok(i64::try_from(self.lock().events.len()).unwrap_or(i64::MAX))
+    }
+
     async fn issue_work_in(tx: &mut Tx, id: AgentWorkId) -> Result<Option<IssueWork>, FakeError> {
         Ok(tx.state.work.works.iter().find(|w| w.id == id).cloned())
     }
@@ -525,6 +547,19 @@ impl AgentWorkRecords for super::fake::FakeStore {
             }
         }
         Ok(people)
+    }
+
+    async fn working_issues_of_in(tx: &mut Tx, agent: AgentId) -> Result<u64, FakeError> {
+        let state = &tx.state.work;
+        Ok(state
+            .works
+            .iter()
+            .filter(|work| work.agent == agent && work.state.in_attempt() && state.is_open(work))
+            .count() as u64)
+    }
+
+    async fn lock_taking_of(_tx: &mut Tx, _issue: IssueId) -> Result<(), FakeError> {
+        Ok(())
     }
 
     async fn insert_work(tx: &mut Tx, work: &IssueWork) -> Result<(), FakeError> {

@@ -73,6 +73,7 @@ mod m0041_assistant_references;
 mod m0042_agent_work;
 mod m0043_oauth;
 mod m0044_shown_moments;
+mod m0045_agent_pause;
 #[cfg(test)]
 mod old_rows;
 
@@ -390,6 +391,11 @@ const ALL: &[Definition] = &[
         version: 44,
         name: "shown_moments",
         steps: || Ok(m0044_shown_moments::steps()),
+    },
+    Definition {
+        version: 45,
+        name: "agent_pause",
+        steps: || Ok(m0045_agent_pause::steps()),
     },
 ];
 

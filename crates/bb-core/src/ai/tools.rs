@@ -30,15 +30,21 @@ words! {
 }
 
 impl ToolCaller {
-    /// The channel the events of what this caller saves carry; none when the way the caller signs
-    /// in decides it (an agent signs in with a key, so its events say it came through the API).
+    /// The channel the events of what this caller saves carry. An agent that calls a tool signs in
+    /// at `/mcp`, so its events say `mcp` like those of an AI app.
     #[must_use]
     pub const fn channel(self) -> Option<Channel> {
         match self {
             Self::Assistant => Some(Channel::Assistant),
-            Self::AiApp => Some(Channel::Mcp),
-            Self::Agent => None,
+            Self::AiApp | Self::Agent => Some(Channel::Mcp),
         }
+    }
+
+    /// Whether the caller makes its own changes at once (an AI app with the scope to change, an
+    /// agent), where the assistant only proposes and the person applies.
+    #[must_use]
+    pub const fn acts_by_itself(self) -> bool {
+        matches!(self, Self::AiApp | Self::Agent)
     }
 }
 
@@ -69,8 +75,50 @@ words! {
         StartTimer => "start_timer",
         /// Stop the person's timer.
         StopTimer => "stop_timer",
+        /// An agent takes an issue that was handed over to it, and starts an attempt.
+        Take => "take",
+        /// An agent reports a step of its attempt.
+        Report => "report",
+        /// An agent asks a question and waits for the answer.
+        Ask => "ask",
+        /// An agent attaches a result: a link or a check.
+        Attach => "attach",
+        /// An agent says its attempt is ready for a person to review.
+        Submit => "submit",
+        /// An agent gives up with a reason.
+        GiveUp => "give_up",
+        /// An agent asks what changed in the issues it may see since a mark it got before.
+        ChangesSince => "changes_since",
+        /// An agent that works under a standing rule proposes a change to an issue the rule found.
+        Propose => "propose",
     }
     messages description = "ai-tool.";
+}
+
+impl Tool {
+    /// Whether only an agent can use the tool: it is about the work an agent was given, which a
+    /// person or an app of a person does not have. The one place that says it.
+    #[must_use]
+    pub const fn is_for_agents(self) -> bool {
+        matches!(
+            self,
+            Self::Take
+                | Self::Report
+                | Self::Ask
+                | Self::Attach
+                | Self::Submit
+                | Self::GiveUp
+                | Self::ChangesSince
+                | Self::Propose
+        )
+    }
+
+    /// Whether only a person can use the tool: it is about the person's own time (M7-Q7: what an
+    /// agent reports is never a time entry).
+    #[must_use]
+    pub const fn is_for_people(self) -> bool {
+        matches!(self, Self::LogTime | Self::StartTimer | Self::StopTimer)
+    }
 }
 
 words! {

@@ -63,7 +63,11 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// The parts of a preview: for each change the field, the value now and the value after. A change
 /// of a field kept from AI is left out.
-fn preview_parts(run: &Run<'_>, changes: Vec<FieldChange>, before_by: AuthorKind) -> Vec<Part> {
+pub(super) fn preview_parts(
+    run: &Run<'_>,
+    changes: Vec<FieldChange>,
+    before_by: AuthorKind,
+) -> Vec<Part> {
     let mut parts = Vec::new();
     for change in changes {
         let kept = change

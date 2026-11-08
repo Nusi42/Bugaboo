@@ -1,7 +1,7 @@
 //! What the use cases of agents take and give back. Inputs that change something are named after
 //! what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 
-use bb_core::agent::{AgentLimits, AgentState};
+use bb_core::agent::{AgentLimits, AgentState, LimitKind};
 use bb_core::id::{AgentId, UserId};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
@@ -104,6 +104,8 @@ pub struct AgentView {
     pub name: String,
     /// Whether it may act.
     pub state: AgentState,
+    /// The limit it reached when it was paused; none otherwise.
+    pub paused_for: Option<LimitKind>,
     /// The person responsible for it, as *Who sees people* says for the viewer.
     pub person: PersonRef,
     /// What it may do at most.

@@ -103,10 +103,20 @@ impl Masked for ToolList {}
 /// What the actor may do with tools: a key that may only look, or an app that may only look, lists
 /// and calls no tool that changes anything (AI-04).
 fn effective_scope(actor: &Actor, granted: ToolScope) -> ToolScope {
-    if actor.may_change_own().is_err() {
+    if !actor.key_may_change() {
         ToolScope::SeeOnly
     } else {
         granted
+    }
+}
+
+/// Whether the tool is for this actor at all: a tool of agents only for an agent, and a tool about a
+/// person's own time (M7-Q7) never for an agent.
+fn offered_to(actor: &Actor, tool: bb_core::ai::Tool) -> bool {
+    if actor.agent().is_some() {
+        !tool.is_for_people()
+    } else {
+        !tool.is_for_agents()
     }
 }
 
@@ -122,7 +132,7 @@ pub async fn list_tools<S: AuthStore>(
     let scope = effective_scope(&actor, input.granted);
     let tools = registry::<S>()
         .iter()
-        .filter(|spec| scope.covers(spec.scope()))
+        .filter(|spec| scope.covers(spec.scope()) && offered_to(&actor, spec.tool))
         .map(|spec| ToolListing {
             name: spec.name(),
             description: Message::from(spec.tool.description()).render(),
@@ -157,7 +167,7 @@ pub async fn call_tool<S: AuthStore>(
     request: ToolCallQuery,
 ) -> Result<Authorized<ToolAnswer>, AppError> {
     let actor = ctx.actor(&request.session_token).await?;
-    if request.caller == ToolCaller::AiApp {
+    if request.caller.acts_by_itself() {
         // The call was counted per grant and per person at the entry of MCP (`mcp_identity`).
         ctx.enter_mcp();
     }
@@ -170,7 +180,10 @@ pub async fn call_tool<S: AuthStore>(
                 .await;
             Err(AppError::Refused(ErrorCode::NotFound))
         }
-        Some(spec) if !effective_scope(&actor, request.granted).covers(spec.scope()) => {
+        Some(spec)
+            if !effective_scope(&actor, request.granted).covers(spec.scope())
+                || !offered_to(&actor, spec.tool) =>
+        {
             ctx.note(SecurityAction::AiToolRefused, Some(actor.person.id), None)
                 .await;
             Err(AppError::Refused(ErrorCode::Forbidden))
@@ -219,7 +232,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // An AI app that was given the scope to change runs a tool that changes something at once, as
         // its own act: that is *Apply* for it. The assistant only proposes, and *Apply* is the
         // person's.
-        let mode = if request.caller == ToolCaller::AiApp
+        let mode = if request.caller.acts_by_itself()
             && request.mode == ToolMode::Run
             && spec.effect() == ToolEffect::Changes
         {
@@ -246,12 +259,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             caller: request.caller,
         };
         let parts = if mode == ToolMode::Apply {
+            // What an agent changes counts against its limits, before anything is written.
+            if actor.agent().is_some() {
+                self.expect_change();
+            }
             let applied = spec
                 .apply(self, run)
                 .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
             // What the use case records says it was made through the assistant or an AI app.
             self.act_through(request.caller.channel());
-            applied.await?
+            let parts = applied.await?;
+            self.settle_agent_change();
+            parts
         } else {
             spec.run(self, run).await?
         };

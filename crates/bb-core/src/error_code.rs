@@ -72,6 +72,9 @@ error_codes! {
     AgentWorkNotReady => ("agent-work.not-ready", 409),
     /// The agent used all the attempts the hand-over gave it.
     AgentWorkBudget => ("agent-work.budget-reached", 409),
+    /// The agent reached one of its limits and is paused until its person resumes it (ADR-0029,
+    /// decision 9). The change it asked for was not started.
+    AgentLimitReached => ("agent.limit-reached", 429),
     /// The request needs a signed-in person.
     NotSignedIn => ("auth.not-signed-in", 401),
     /// The person can see the thing but may not do this to it.

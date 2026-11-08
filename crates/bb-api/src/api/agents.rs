@@ -16,7 +16,7 @@ use bb_app::agents::{
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
-use bb_core::agent::AgentState;
+use bb_core::agent::{AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -36,10 +36,11 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an agent that can be asked for, and which of them a list holds when the request
 /// names none.
-const AGENT_FIELDS: [FieldSpec; 10] = [
+const AGENT_FIELDS: [FieldSpec; 11] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("state"),
+    FieldSpec::by_default("paused_for"),
     FieldSpec::by_default("person"),
     FieldSpec::by_default("changes_a_minute"),
     FieldSpec::by_default("issues_at_once"),
@@ -62,6 +63,10 @@ pub(crate) struct AgentItem {
     /// Whether it may act: `active`, `paused` or `stopped`.
     #[serde(skip_serializing_if = "Option::is_none")]
     state: Option<AgentState>,
+    /// The limit the agent reached when it was paused, so a person can read why: `changes-a-minute`,
+    /// `issues-at-once` or `attempts-on-one-issue`. Left out when it was not paused by a limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    paused_for: Option<LimitKind>,
     /// The person responsible for it, as *Who sees people* says for the person asking.
     #[serde(skip_serializing_if = "Option::is_none")]
     person: Option<PersonRef>,
@@ -93,6 +98,7 @@ impl From<&AgentView> for AgentItem {
             id: Some(agent.id.to_string()),
             name: Some(agent.name.clone()),
             state: Some(agent.state),
+            paused_for: agent.paused_for,
             person: Some(agent.person.clone()),
             changes_a_minute: Some(agent.limits.changes_a_minute),
             issues_at_once: Some(agent.limits.issues_at_once),

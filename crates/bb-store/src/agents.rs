@@ -3,7 +3,7 @@
 
 use bb_app::agents::AgentStore;
 use bb_app::auth::AccessKeyRecord;
-use bb_core::agent::{Agent, AgentState};
+use bb_core::agent::{Agent, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
@@ -21,6 +21,7 @@ fn agent_select() -> SelectStatement {
             AgentRow::Person,
             AgentRow::Name,
             AgentRow::State,
+            AgentRow::PausedFor,
             AgentRow::ChangesAMinute,
             AgentRow::IssuesAtOnce,
             AgentRow::AttemptsOnOneIssue,
@@ -40,6 +41,12 @@ fn read_agent(row: &Row) -> Result<Agent, StoreError> {
         name: row.get(AgentRow::Name)?,
         state: AgentState::from_code(&row.get::<String>(AgentRow::State)?)
             .ok_or(StoreError::Corrupt("an agent state"))?,
+        paused_for: row
+            .get::<Option<String>>(AgentRow::PausedFor)?
+            .map(|code| {
+                LimitKind::from_code(&code).ok_or(StoreError::Corrupt("a limit of an agent"))
+            })
+            .transpose()?,
         changes_a_minute: row.get(AgentRow::ChangesAMinute)?,
         issues_at_once: row.get(AgentRow::IssuesAtOnce)?,
         attempts_on_one_issue: row.get(AgentRow::AttemptsOnOneIssue)?,
@@ -245,10 +252,12 @@ impl AgentStore for AuthStorage {
         transaction: &mut Transaction,
         id: AgentId,
         state: AgentState,
+        paused_for: Option<LimitKind>,
         version: i64,
     ) -> Result<bool, StoreError> {
         update_at(transaction, id, version, |update| {
             update.value(AgentRow::State, state.code());
+            update.value(AgentRow::PausedFor, paused_for.map(LimitKind::code));
         })
         .await
     }

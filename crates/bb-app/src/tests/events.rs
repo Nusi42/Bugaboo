@@ -101,6 +101,7 @@ table! {
     "change_standing_rule" => super::agent_work_rules::change_standing_rule_scenario,
     "propose_change" => super::agent_work_rules::propose_change_scenario,
     "decide_proposal" => super::agent_work_rules::decide_proposal_scenario,
+    "take_work" => super::agent_work_scenarios::take_work_scenario,
     "report_attempt" => super::agent_work_scenarios::report_attempt_scenario,
     "ask_question" => super::agent_work_scenarios::ask_question_scenario,
     "attach_result" => super::agent_work_scenarios::attach_result_scenario,
@@ -270,7 +271,9 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             }
             // The first report of an attempt also opens its run; the end of an attempt closes the run
             // and writes the one comment that says the result is ready.
-            "report_attempt" => assert_eq!(added, 2, "{name} appended {added} events"),
+            "report_attempt" | "take_work" => {
+                assert_eq!(added, 2, "{name} appended {added} events");
+            }
             "end_attempt" => assert_eq!(added, 3, "{name} appended {added} events"),
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }

@@ -93,13 +93,25 @@ impl Record {
             .join(REPOSITORY_ROOT)
             .join(file);
         let text = self.text();
+        let read = std::fs::read_to_string(&path).map(|stored| stored.replace("\r\n", "\n"));
+        // The lines of the tools (entry point `mcp`) are written and compared by their own test
+        // (`tools`); they stay as they are here.
+        let tools: String = read
+            .iter()
+            .flat_map(|stored| stored.lines())
+            .filter(|line| line.starts_with(words::TOOL_LINE))
+            .map(|line| format!("{line}\n"))
+            .collect();
         if std::env::var(words::WRITE_VARIABLE).as_deref() == Ok(words::WRITE_VALUE) {
-            std::fs::write(&path, &text)?;
+            std::fs::write(&path, format!("{text}{tools}"))?;
             return Ok(());
         }
-        let stored = std::fs::read_to_string(&path)
+        let stored: String = read
             .map_err(|error| format!("could not read the record {file}: {error}"))?
-            .replace("\r\n", "\n");
+            .lines()
+            .filter(|line| !line.starts_with(words::TOOL_LINE))
+            .map(|line| format!("{line}\n"))
+            .collect();
         if stored == text {
             return Ok(());
         }

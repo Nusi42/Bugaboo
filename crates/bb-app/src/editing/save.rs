@@ -11,7 +11,7 @@ use bb_core::version::Version;
 use bb_policy::Place;
 
 use super::types::DraftText;
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal, locked};
 use crate::ports::BoxFuture;
 use crate::projects::Why;
 
@@ -95,9 +95,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         let why = Why::default();
         let stopped = why.clone();
         let (what, me, now) = (save.what.clone(), person, self.now());
+        // An agent holds no lock of an open editor: it takes one for this save only, and never when
+        // somebody else holds it (ADR-0029, decision 9).
+        let by_agent = locked(&self.acting_agent).is_some();
+        let token = if by_agent {
+            self.lock_for_one_save(person, place, &save.what).await?
+        } else {
+            save.token
+        };
         let hold = Hold {
             holder: person,
-            token: save.token,
+            token,
         };
         let saved = self
             .store()
@@ -125,6 +133,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await;
         match saved {
             Ok(done) => Ok(done),
+            Err(error) if by_agent => {
+                // The lock was for this save only, and the text of an agent is nobody's draft.
+                let _ = self.store().release_edit_lock(&save.what, hold).await;
+                Err(match why.said() {
+                    Some(ErrorCode::EditTakenOver) => {
+                        self.taken_over_by(me, place, &save.what).await
+                    }
+                    Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
+                    None => change_failed::<S>(&error, Stops::NONE),
+                })
+            }
             Err(error) => {
                 // Only a reason this function gave is a refusal of the save; whatever else the write
                 // or the store did is a failure of its own, not a stale version.

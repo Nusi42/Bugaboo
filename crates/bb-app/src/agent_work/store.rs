@@ -11,6 +11,7 @@ use bb_core::agent_records::{
     RuleMatch, StandingRule,
 };
 use bb_core::agent_work::AgentWorkState;
+use bb_core::event::DomainEvent;
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, StandingRuleId,
     UserId,
@@ -18,7 +19,7 @@ use bb_core::id::{
 use jiff::Timestamp;
 
 use crate::agents::AgentWorkStore;
-use crate::store_macros::{queries, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// What hand-overs, standing rules and what they propose need from storage.
 pub trait GrantStore: AgentWorkStore + 'static {
@@ -90,6 +91,14 @@ pub struct WorkDetails {
 
 /// What the work on an issue needs from storage.
 pub trait AgentWorkRecords: GrantStore + 'static {
+    reads! {
+        /// The events about issues that were committed after the place `after` in the order they
+        /// were committed, with their places, at most `limit`.
+        fn issue_events_after(after: i64, limit: u64) -> Vec<(i64, DomainEvent)>;
+        /// The place of the newest event in the order they were committed; 0 when there is none.
+        fn last_event_place() -> i64;
+    }
+
     queries! {
         /// The work with this ID.
         fn issue_work(id: AgentWorkId) -> Option<IssueWork> = issue_work_in;
@@ -117,6 +126,8 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn agent_has_open_giving(agent: AgentId) -> bool = agent_has_open_giving_in;
         /// The work of one agent, by ID, after `after`, at most `limit`.
         fn work_of_agent(agent: AgentId, after: Option<AgentWorkId>, limit: u64) -> Vec<IssueWork> = work_of_agent_in;
+        /// How many issues the agent has an attempt running on now (the limit of issues at once).
+        fn working_issues_of(agent: AgentId) -> u64 = working_issues_of_in;
         /// The reviews of a piece of work, oldest first.
         fn reviews_of(work: AgentWorkId) -> Vec<Review> = reviews_of_in;
         /// The people who must hear about work: the person responsible for the agent and the person
@@ -125,6 +136,9 @@ pub trait AgentWorkRecords: GrantStore + 'static {
     }
 
     writes! {
+        /// Takes the lock of the taking of one issue, so that two agents who take it at the same
+        /// moment are judged one after the other; does nothing where writes cannot overlap.
+        fn lock_taking_of(issue: IssueId) -> ();
         /// Adds the work on an issue.
         fn insert_work(work: &IssueWork) -> ();
         /// Writes the state of the work, counting its version up; whether it was at `version`.

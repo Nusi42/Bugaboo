@@ -115,8 +115,25 @@ pub mod sec_matrix {
     /// The e-mail the server sends to a person on its own, shaped for them when it is sent
     /// (NTF-02, SEC-06).
     pub const ENTRY_MAIL: &str = "e-mail";
-    /// Every entry point the record may name for a route of the API.
-    pub const ENTRY_POINTS: [&str; 1] = [ENTRY_API];
+    /// The tools of the one registry as an AI app or an agent calls them at `/mcp` (AI-21, AI-36):
+    /// every tool has a `tool` line in the record, answered for every actor of [`mcp_actors`].
+    pub const ENTRY_MCP: &str = "mcp";
+    /// Every entry point the record may name for a route of the API or a tool.
+    pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];
+    /// A line of the record that starts like this is a tool; the others are routes and deliveries.
+    pub const TOOL_LINE: &str = "tool ";
+    /// The key of an agent that was handed an issue (nothing ticked): it reaches only that issue.
+    pub const AGENT_WITH_WORK: &str = "agent-with-work";
+    /// The actors every `tool` line names: nobody, a person with each starting role (who calls with
+    /// a key that may do all they may), an agent with no work and an agent with work.
+    #[must_use]
+    pub fn mcp_actors(role_keys: &[&str]) -> Vec<String> {
+        let mut actors = vec![NOBODY.to_owned()];
+        actors.extend(role_keys.iter().map(|key| role_actor(key)));
+        actors.push(AGENT_WITHOUT_WORK.to_owned());
+        actors.push(AGENT_WITH_WORK.to_owned());
+        actors
+    }
     /// A `delivery` line says `heard=` [`YES`] or [`NO`]: whether anything reached the recipient.
     pub const YES: &str = "yes";
     /// See [`YES`].

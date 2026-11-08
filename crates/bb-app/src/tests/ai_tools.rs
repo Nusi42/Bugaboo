@@ -297,7 +297,12 @@ async fn ai_04_a_key_that_may_only_see_lists_no_tool_that_changes() -> Outcome {
     let tools = listed(see_only.clone()).await?;
     assert!(!tools.is_empty());
     assert!(tools.iter().all(|tool| tool.effect == ToolEffect::Reads));
-    assert_eq!(listed(both).await?.len(), registry::<FakeStore>().len());
+    // A person's key is offered every tool but the ones only agents have.
+    let for_people = registry::<FakeStore>()
+        .iter()
+        .filter(|spec| !spec.tool.is_for_agents())
+        .count();
+    assert_eq!(listed(both).await?.len(), for_people);
 
     // A call of a tool that changes is turned away, writes a row of the log and a security entry.
     let before = world.store.log_count();

@@ -134,6 +134,9 @@ pub(crate) struct NewIssueBody {
     /// The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.
     #[serde(default)]
     fields: BTreeMap<String, serde_json::Value>,
+    /// The issue it is created under as a sub-issue (its ID as people write it), in the project of
+    /// that issue. An issue of its own when left out.
+    parent: Option<String>,
 }
 
 /// What to change about an issue: what is left out stays as it is. The description is not here: it
@@ -331,7 +334,7 @@ async fn create_issue(
                 assigned_to,
                 estimated_time: body.estimated_time,
                 fields: body.fields,
-                parent: None,
+                parent: body.parent,
             },
         )
         .await?;

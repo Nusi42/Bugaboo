@@ -186,9 +186,13 @@ impl AgentStore for FakeStore {
         tx: &mut Tx,
         id: AgentId,
         state: AgentState,
+        paused_for: Option<bb_core::agent::LimitKind>,
         version: i64,
     ) -> Result<bool, FakeError> {
-        Ok(change(tx, id, version, |agent| agent.state = state))
+        Ok(change(tx, id, version, |agent| {
+            agent.state = state;
+            agent.paused_for = paused_for;
+        }))
     }
 
     async fn offer_agent(

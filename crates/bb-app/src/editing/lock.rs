@@ -70,7 +70,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// A new lock for the actor, with a fresh token and a lease that starts now.
     fn lock_for(
         &self,
-        actor: &Actor,
+        person: UserId,
         what: &EditWhat,
         editor: bb_core::id::EditorId,
     ) -> Result<EditLock, AppError> {
@@ -79,12 +79,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(EditLock {
             record: what.record.clone(),
             part: what.part.clone(),
-            holder: actor.person.id,
+            holder: person,
             editor,
             token: LockToken::generate(&mut self.ids()),
             taken_at: now,
             expires_at,
         })
+    }
+
+    /// The lock an agent holds for exactly one save (ADR-0029, decision 9; ADR-0019): taken now,
+    /// let go of when the save is done or refused. An agent never takes a lock that anybody holds,
+    /// its person in another window included, so it never takes over a text somebody is editing.
+    ///
+    /// # Errors
+    /// `edit.taken-over` (with who is editing, as the person may see them) when somebody holds the
+    /// lock.
+    pub(crate) async fn lock_for_one_save(
+        &self,
+        person: UserId,
+        place: Place,
+        what: &EditWhat,
+    ) -> Result<LockToken, AppError> {
+        let editor = bb_core::id::EditorId::generate(&mut self.ids());
+        let wanted = self.lock_for(person, what, editor)?;
+        match self
+            .store()
+            .take_edit_lock(&wanted, self.now())
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
+            Taking::Granted(lock) => Ok(lock.token),
+            Taking::Held(_) => Err(self.taken_over_by(person, place, what).await),
+        }
     }
 
     /// The lock that is held on the thing now, if any: an expired row is no lock.
@@ -189,7 +215,7 @@ pub async fn take_lock<S: AuthStore>(
         .facts_for_part(&actor, &input.what, Need::Change)
         .await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
-    let wanted = ctx.lock_for(&actor, &input.what, input.editor)?;
+    let wanted = ctx.lock_for(actor.person.id, &input.what, input.editor)?;
     let taking = ctx
         .store()
         .take_edit_lock(&wanted, ctx.now())
@@ -389,7 +415,7 @@ pub async fn edit_anyway<S: AuthStore>(
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;
-    let wanted = ctx.lock_for(&actor, &input.what, input.editor)?;
+    let wanted = ctx.lock_for(actor.person.id, &input.what, input.editor)?;
     let now = wanted.taken_at;
     let me = actor.person.id;
     // The person whose editing is taken over is in the event, so the notifications reader can tell

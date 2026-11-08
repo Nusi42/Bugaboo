@@ -98,11 +98,43 @@ impl<K: Hash + Eq + Clone> Window<K> {
         }
     }
 
+    /// Forgets what the key has counted, so its next event starts a new window: an agent that its
+    /// person lets work again starts from nothing.
+    pub fn forget(&self, key: &K) {
+        self.lock().entries.remove(key);
+    }
+
     /// Counts one event.
     ///
     /// # Errors
     /// The seconds to wait (at least one) when the key is over the limit.
     pub fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
+        self.hit_within(key, now, self.limit)
+    }
+
+    /// Says whether the key has room for one more event under a limit that belongs to the key, and
+    /// counts nothing.
+    ///
+    /// # Errors
+    /// The seconds to wait (at least one) when the key is over `limit`.
+    pub fn room_within(&self, key: &K, now: Instant, limit: u32) -> Result<(), u64> {
+        let table = self.lock();
+        match table.entries.get(key) {
+            Some(entry)
+                if now.duration_since(entry.started) < self.period && entry.count >= limit =>
+            {
+                Err(seconds_left(entry.started, now, self.period))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Counts one event against a limit that belongs to the key (the limit an agent has was set for
+    /// it, not for the window).
+    ///
+    /// # Errors
+    /// The seconds to wait (at least one) when the key is over `limit`.
+    pub fn hit_within(&self, key: K, now: Instant, limit: u32) -> Result<(), u64> {
         let mut table = self.lock();
         let mut key = key;
         if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
@@ -124,7 +156,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
                 count: 0,
             };
         }
-        if entry.count >= self.limit {
+        if entry.count >= limit {
             return Err(seconds_left(entry.started, now, self.period));
         }
         entry.count += 1;
@@ -164,6 +196,21 @@ mod tests {
         for key in 0..u32::try_from(MAX_CLIENTS).unwrap() {
             window.hit(key, now).unwrap();
         }
+    }
+
+    #[test]
+    fn ai_37_a_limit_of_the_key_is_counted_at_the_edge_and_forgotten_on_request() {
+        let window: Window<u32> = Window::new(u32::MAX, Overflow::Refuse);
+        let now = Instant::now();
+        for _ in 0..3 {
+            window.hit_within(1, now, 3).unwrap();
+        }
+        assert!(window.hit_within(1, now, 3).is_err());
+        // Another key has its own count, and a higher limit lets the same key go on.
+        window.hit_within(2, now, 3).unwrap();
+        window.hit_within(1, now, 4).unwrap();
+        window.forget(&1);
+        window.hit_within(1, now, 3).unwrap();
     }
 
     #[test]

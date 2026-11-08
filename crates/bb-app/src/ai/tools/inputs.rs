@@ -58,6 +58,9 @@ pub struct CreateIssueInput {
     pub description: Option<String>,
     /// `low`, `normal`, `high` or `critical`.
     pub priority: Option<String>,
+    /// The issue it is created under as a sub-issue, in the project of that issue. An agent can do
+    /// this only under an issue that was handed over to it with *create sub-issues*.
+    pub parent: Option<String>,
 }
 
 /// Change fields of an issue.
@@ -127,4 +130,99 @@ pub struct StartTimerInput {
 pub struct StopTimerInput {
     /// The version of the timer that was read.
     pub version: i64,
+}
+
+/// Take an issue that was handed over to you.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TakeInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+    /// The version of the issue you read. When it is given and the issue changed since, nothing is
+    /// taken and you are told what changed.
+    pub version: Option<i64>,
+}
+
+/// Report a step of your attempt.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReportInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+    /// Your plan, in Markdown, when you have one.
+    pub plan: Option<String>,
+    /// The minutes you spent on the attempt in all, as you count them. It is your word and never a
+    /// time entry.
+    pub minutes: u32,
+    /// The cost of the attempt in all, in cents, as you count it.
+    pub cost_cents: u32,
+}
+
+/// Ask a question.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AskInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+    /// What you ask, in plain text.
+    pub question: String,
+}
+
+/// Attach a result to your attempt.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AttachInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+    /// `link` for an address such as a branch, a pull request or a test report, `check` for a check.
+    pub kind: String,
+    /// What you call it.
+    pub label: String,
+    /// The address, for `link`.
+    pub address: Option<String>,
+    /// `passed` or `failed`, for `check`. Bugaboo does not run the check; this is your word.
+    pub outcome: Option<String>,
+}
+
+/// Give up on an issue.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GiveUpInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+    /// Why you give up, in plain text.
+    pub reason: String,
+}
+
+/// Say that your attempt is ready for review.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SubmitInput {
+    /// The issue, by its readable ID or its internal ID.
+    pub issue: String,
+}
+
+/// Ask what changed since the mark you got last time.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ChangesSinceInput {
+    /// The mark from the last answer. Leave it out the first time: nothing is told, and you get the
+    /// mark of now.
+    pub since: Option<String>,
+    /// The most changes to answer with.
+    pub limit: Option<u32>,
+}
+
+/// Propose a change under your standing rule.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProposeInput {
+    /// The ID of the standing rule.
+    pub rule: String,
+    /// The issue the rule found, by its readable ID or its internal ID.
+    pub issue: String,
+    /// `labels`, `tags`, `type`, `duplicate-of` or `found-in-release`.
+    pub field: String,
+    /// The value you propose.
+    pub value: serde_json::Value,
 }

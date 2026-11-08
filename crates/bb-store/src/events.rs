@@ -10,7 +10,7 @@
 //! transaction locks until it commits. Two changes therefore never commit out of order, so a
 //! consumer that has seen position 7 can never miss a position 6 that commits later.
 
-use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::id::{AgentId, EntityId, EventId, RunId};
 use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
@@ -180,6 +180,50 @@ impl Database {
             }
         }
         Ok(found)
+    }
+
+    /// The events about issues that were committed after the place `after` (an outbox position), in
+    /// the order they were committed, at most `limit`: what an agent asks for when it wants to know
+    /// what changed.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn issue_events_after(
+        &self,
+        after: i64,
+        limit: u64,
+    ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
+        let mut select = committed_events(Order::Asc);
+        select
+            .column((Outbox::Table, Outbox::Position))
+            .and_where(
+                Expr::col((Event::Table, Event::EntityKind))
+                    .eq(EntityKind::from(RecordKind::Issue).as_str()),
+            )
+            .and_where(Expr::col((Outbox::Table, Outbox::Position)).gt(after))
+            .limit(limit);
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| Ok((row.get(Outbox::Position)?, read_event(row)?)))
+            .collect()
+    }
+
+    /// The outbox position of the newest event; 0 when there is none.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn last_event_place(&self) -> Result<i64, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(Outbox::Position)
+            .from(Outbox::Table)
+            .order_by(Outbox::Position, Order::Desc)
+            .limit(1);
+        match self.fetch_optional(&select).await? {
+            Some(row) => row.get(Outbox::Position),
+            None => Ok(0),
+        }
     }
 
     /// Where an event stands in the order they were committed.

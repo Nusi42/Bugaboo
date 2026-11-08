@@ -127,6 +127,15 @@ The maintainer accepted every recommendation of M7-Q1 to Q10 on 2026-11-07. Deci
 - **Agent progress as comments:** buries the conversation between people under logs. Rejected; agent work is its own record with one summary comment.
 - **Bugaboo running agents:** needs heavy machines and access to code, and is out of scope (decision).
 
+## Amendment (M7, WP-09): what was built for decision 9
+
+- **The tools** `take`, `report`, `ask`, `attach`, `ready`, `give_up`, `changes_since` and `propose` are in the one registry. They are offered to agents only (`Tool::is_for_agents`); the tools of a person's own time (`log_time`, `start_timer`, `stop_timer`) are never offered to an agent (M7-Q7). Each tool that changes something answers a preview from the plan of the use case it runs (`plan_*` in `agent_work`), so what is shown is what would be saved. An agent that calls a tool signs in at `/mcp` with its key; what it changes is recorded through the channel `mcp`.
+- **Taking** is judged twice: on the work the agent reads, and again under a lock of the issue in the change that starts the attempt, so of two agents who take the same issue at the same moment one gets it. A take with the version of the issue it read is refused with what changed when the issue moved on.
+- **Limits** are counted in `agents/limits.rs` and nowhere else. A change is counted once for a request, when the key of the agent is read: the table of use cases says which inputs change something (an input that does not end in `Query`), and a tool that changes something says it for itself. Issues at once and attempts on one issue are judged where an attempt starts (`take`, the first `report`). Over a limit the request does not start, the agent is paused (`agent.paused_for` holds the limit), and its person is told through the notification *An agent was stopped or paused*. *Resume* lets the agent start again from nothing. A key counts toward its agent; the calls a key makes are counted as for every key (ADR-0042, decision 6).
+- **Edit locks:** an agent holds no lock of an open editor. A save of a long text by an agent takes a lock for that one save (`Ctx::lock_for_one_save`), never when anybody holds one, and lets go of it when the save is done or refused; a refused text of an agent is nobody's draft. Enforced by: `ai_36_an_agent_never_takes_over_a_lock` and `ai_36_an_agent_holds_a_lock_for_one_save_and_no_longer`.
+- **Author marks:** every text of an answer is fenced with the kind of its author: the note of the brief and the answers are the word of a person (*someone in the project*, *a Guest*, *someone outside*), what the agent wrote is the word of *an agent*, and a change in *changes since* carries the kind of whoever wrote what is new in it.
+- **Standing rules** reach an agent through `changes_since` (the issues that came under its rules since the mark) and `propose`, which saves a proposal on the issue and nothing else.
+
 ## Enforced by
 
 ARCH-AI-TOOLS, ARCH-PERMS, SEC-MATRIX (see `tools/checks/catalog.toml`), and the tests named above, which the M7 work packages add.

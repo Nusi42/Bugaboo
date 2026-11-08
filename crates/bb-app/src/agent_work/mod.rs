@@ -3,10 +3,12 @@
 //! `bb_core::agent_work`; this module has the port and the use cases.
 
 mod attempt;
+mod changes;
 mod finish;
 mod hand_over;
 mod members;
 mod narrow;
+mod plan;
 mod queue;
 mod read;
 mod review;
@@ -14,9 +16,11 @@ mod rules;
 mod settings;
 mod stop;
 mod store;
+mod take;
 mod types;
 
 pub use attempt::{ask_question, attach_result, end_attempt, report_attempt};
+pub use changes::{ChangeSeen, ChangesPage, ChangesSinceQuery, MatchSeen, WorkSeen, changes_since};
 pub use hand_over::hand_over;
 pub(crate) use members::{event_member, payload as job_payload, waiting_for};
 pub(crate) use narrow::issue_member;
@@ -29,4 +33,5 @@ pub use rules::{
 pub(crate) use stop::TRIES;
 pub use stop::{Closing, close_work_of};
 pub use store::{AgentWorkRecords, GrantStore, WorkDetails};
+pub use take::take_work;
 pub use types::*;

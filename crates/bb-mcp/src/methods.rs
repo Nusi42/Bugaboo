@@ -104,7 +104,11 @@ impl Caller<'_> {
                 info,
                 ToolCallQuery {
                     session_token: self.token.to_owned(),
-                    caller: ToolCaller::AiApp,
+                    caller: if self.who.agent.is_some() {
+                        ToolCaller::Agent
+                    } else {
+                        ToolCaller::AiApp
+                    },
                     app: self.who.app.clone(),
                     granted: NARROWED_BY_THE_TOKEN,
                     people: PeopleMode::AsSeen,
@@ -136,6 +140,26 @@ impl Caller<'_> {
             Err(AppError::RefusedAtField { code, .. }) => {
                 Ok(Err(Message::from(code.message()).render()))
             }
+            // A change made from an old version: the agent is told it is old, which version the
+            // record has now and which fields changed, in words of the program; the values are
+            // not told here, so no text of people is in it.
+            Err(AppError::Conflict(conflict)) => Ok(Err(format!(
+                "{} {}",
+                Message::from(ErrorCode::VersionChanged.message()).render(),
+                message::mcp_changed(
+                    conflict.fields.join(", "),
+                    conflict.version.unwrap_or_default().to_string()
+                )
+                .render()
+            ))),
+            Err(error @ (AppError::TakenOver { .. } | AppError::DayLeftOpen { .. })) => {
+                let code = error.code().unwrap_or(ErrorCode::Forbidden);
+                Ok(Err(Message::from(code.message()).render()))
+            }
+            Err(AppError::Mistakes(_)) => Ok(Err(Message::from(
+                ErrorCode::SearchInvalid.message(),
+            )
+            .render())),
             Err(other) => Err(other.into()),
         }
     }

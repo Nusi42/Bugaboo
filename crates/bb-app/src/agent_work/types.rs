@@ -10,8 +10,9 @@ use bb_core::id::{
     StandingRuleId,
 };
 use bb_core::workflow::StatusKey;
-use bb_policy::PersonRef;
+use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
+use serde::Serialize;
 
 /// Hand issues over to one of the person's agents (AI-31).
 pub struct HandOver {
@@ -78,7 +79,7 @@ pub struct AgentWorkQuery {
 }
 
 /// A result an agent attached.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ResultView {
     /// A link or a check.
     pub kind: ResultKind,
@@ -92,7 +93,7 @@ pub struct ResultView {
 
 /// One attempt with what the agent reported. The numbers are the agent's own words, never a time
 /// entry (M7-Q7).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AttemptView {
     /// The attempt.
     pub id: AttemptId,
@@ -115,7 +116,7 @@ pub struct AttemptView {
 }
 
 /// A question with its answer.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct QuestionView {
     /// The question.
     pub id: AgentNoteId,
@@ -128,7 +129,7 @@ pub struct QuestionView {
 }
 
 /// A review.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ReviewView {
     /// The answer.
     pub answer: ReviewAnswer,
@@ -141,7 +142,7 @@ pub struct ReviewView {
 }
 
 /// The agent work on one issue of one hand-over.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WorkView {
     /// The work.
     pub id: AgentWorkId,
@@ -171,6 +172,8 @@ pub struct WorkView {
     /// The version of the work.
     pub version: i64,
 }
+
+impl Masked for WorkView {}
 
 /// An agent shown on an issue as *worked on by*.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -421,4 +424,15 @@ pub struct StandingRulePage {
     pub items: Vec<StandingRuleView>,
     /// The cursor of the next page, if there is one.
     pub next_cursor: Option<String>,
+}
+
+/// An agent takes an issue that was handed over to it and starts an attempt.
+pub struct TakeWork {
+    /// The secret of the key of the agent.
+    pub session_token: String,
+    /// The issue, by its ID as people write it.
+    pub issue: String,
+    /// The version of the issue the agent read. When it is given and the issue changed since, the
+    /// agent is told what changed and takes nothing, so it never starts on an issue it did not read.
+    pub version: Option<i64>,
 }

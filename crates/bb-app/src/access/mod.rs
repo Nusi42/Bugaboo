@@ -150,13 +150,16 @@ impl Actor {
     /// `access.forbidden` for an agent and for a key that may only look.
     pub(crate) fn may_change_own(&self) -> Result<(), AppError> {
         self.ensure_not_an_agent()?;
-        if self
-            .key_scope()
-            .is_some_and(|narrowing| !narrowing.may_change())
-        {
+        if !self.key_may_change() {
             return Err(ErrorCode::Forbidden.into());
         }
         Ok(())
+    }
+
+    /// Whether the key behind the request may change things at all: a person without a key may,
+    /// a key that may only look may not. An agent's key may, within its work.
+    pub(crate) fn key_may_change(&self) -> bool {
+        self.key_scope().is_none_or(Narrowing::may_change)
     }
 }
 

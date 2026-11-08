@@ -10,7 +10,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::agent_records::{Attempt, AttemptResult, HandOver, IssueWork, Question, ResultKind};
 use bb_core::agent_work::{AgentWorkState, CheckResult};
-use bb_core::event::{DomainEvent, RecordKind};
+use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::{AgentNoteId, AgentWorkId, AttemptId};
 use bb_core::run::RunEnd;
 use bb_core::version::counted_up;
@@ -18,6 +18,7 @@ use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
 use super::members::{member, waiting_for};
+use super::plan::{Plan, set, state_change};
 use super::stop::{Closing, close_work_of, closing_again};
 use super::types::{AskQuestion, AttachResult, EndAttempt, ReportAttempt, WorkView};
 use crate::access::Actor;
@@ -41,7 +42,7 @@ pub(super) struct Mine {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The open work of the agent behind the key on the issue.
-    async fn my_work(&self, token: &str, address: &str) -> Result<Mine, AppError> {
+    pub(super) async fn my_work(&self, token: &str, address: &str) -> Result<Mine, AppError> {
         let actor = self.actor(token).await?;
         let Some(agent) = actor.agent() else {
             return Err(ErrorCode::Forbidden.into());
@@ -124,7 +125,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The work as the actor sees it after a change.
-    async fn work_after(
+    pub(super) async fn work_after(
         &self,
         mine: &Mine,
         id: AgentWorkId,
@@ -154,37 +155,6 @@ fn may_work(state: AgentWorkState) -> bool {
     )
 }
 
-/// The attempt a report goes to: the one that runs, or a new one when the hand-over has attempts
-/// left.
-fn attempt_to_report<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    mine: &Mine,
-    attempts: &[Attempt],
-) -> Result<(Attempt, bool), AppError> {
-    if let Some(found) = running(attempts) {
-        return Ok((found.clone(), false));
-    }
-    let held = i64::try_from(attempts.len()).unwrap_or(i64::MAX);
-    if held >= mine.hand_over.budget_attempts {
-        return Err(ErrorCode::AgentWorkBudget.into());
-    }
-    Ok((
-        Attempt {
-            id: AttemptId::generate(&mut ctx.ids()),
-            work: mine.work.id,
-            number: held + 1,
-            plan: None,
-            plan_approved: false,
-            reported_minutes: 0,
-            reported_cost: 0,
-            started_at: ctx.now(),
-            ended_at: None,
-            run: None,
-        },
-        true,
-    ))
-}
-
 /// Refuses a report that would take the time or the cost the agent reports past the budget of the
 /// hand-over.
 fn ensure_within_budget(
@@ -204,6 +174,155 @@ fn ensure_within_budget(
     Ok(())
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The agent behind the work, as it is stored now (its limits).
+    pub(super) async fn agent_of(&self, mine: &Mine) -> Result<bb_core::agent::Agent, AppError> {
+        self.store()
+            .agent(mine.work.agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))
+    }
+
+    /// The attempt a report goes to: the one that runs, or a new one when the agent and the
+    /// hand-over have attempts left. The one place that starts an attempt, for `take` and for the
+    /// first report.
+    pub(super) async fn attempt_to_report(
+        &self,
+        mine: &Mine,
+        attempts: &[Attempt],
+        plan: Plan,
+    ) -> Result<(Attempt, bool), AppError> {
+        if let Some(found) = running(attempts) {
+            return Ok((found.clone(), false));
+        }
+        let agent = self.agent_of(mine).await?;
+        let held = attempts.len();
+        self.ensure_agent_room(
+            &agent,
+            bb_core::agent::LimitKind::AttemptsOnOneIssue,
+            held,
+            plan == Plan::Writing,
+        )
+        .await?;
+        let held = i64::try_from(held).unwrap_or(i64::MAX);
+        if held >= mine.hand_over.budget_attempts {
+            return Err(ErrorCode::AgentWorkBudget.into());
+        }
+        Ok((
+            Attempt {
+                id: AttemptId::generate(&mut self.ids()),
+                work: mine.work.id,
+                number: held + 1,
+                plan: None,
+                plan_approved: false,
+                reported_minutes: 0,
+                reported_cost: 0,
+                started_at: self.now(),
+                ended_at: None,
+                run: None,
+            },
+            true,
+        ))
+    }
+}
+
+/// What a report would do: everything that is judged before anything is written.
+pub(super) struct ReportPlan {
+    pub(super) mine: Mine,
+    pub(super) attempt: Attempt,
+    pub(super) is_new: bool,
+    pub(super) next: AgentWorkState,
+    pub(super) waiting: Option<&'static str>,
+}
+
+impl ReportPlan {
+    /// The fields the report changes, as a preview lists them.
+    pub(super) fn changes(&self) -> Vec<FieldChange> {
+        let mut changes = vec![state_change(self.mine.work.state, self.next)];
+        if self.is_new {
+            changes.push(set(member::ATTEMPT, json!(self.attempt.number)));
+        }
+        if let Some(plan) = &self.attempt.plan {
+            changes.push(set(member::PLAN, json!(plan)));
+        }
+        changes.push(set(member::MINUTES, json!(self.attempt.reported_minutes)));
+        changes.push(set(member::COST, json!(self.attempt.reported_cost)));
+        changes
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Judges a report. Both the use case and the preview start here, so what is shown is what
+    /// would be saved.
+    pub(super) async fn plan_report(
+        &self,
+        input: &ReportAttempt,
+        mode: Plan,
+    ) -> Result<ReportPlan, AppError> {
+        let mine = self.my_work(&input.session_token, &input.issue).await?;
+        if !may_work(mine.work.state) {
+            return Err(ErrorCode::AgentWorkNotReady.into());
+        }
+        if input.minutes < 0 || input.cost < 0 {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let plan = input
+            .plan
+            .as_deref()
+            .filter(|plan| !plan.trim().is_empty())
+            .map(clean_long_text)
+            .transpose()?;
+        let attempts = self
+            .store()
+            .attempts_of(mine.work.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let (mut attempt, is_new) = self.attempt_to_report(&mine, &attempts, mode).await?;
+        ensure_within_budget(&mine.hand_over, &attempts, attempt.id, input)?;
+        if plan.is_some() {
+            attempt.plan = plan;
+        }
+        attempt.reported_minutes = input.minutes;
+        attempt.reported_cost = input.cost;
+        // With *Plan needs approval* the first step is the plan; the work then waits for a person.
+        let needs_plan = mine.hand_over.plan_needs_approval && !attempt.plan_approved;
+        if needs_plan && attempt.plan.is_none() {
+            return Err(ErrorCode::AgentWorkNotReady.into());
+        }
+        let next = if needs_plan {
+            AgentWorkState::WaitingForYou
+        } else {
+            AgentWorkState::AgentWorking
+        };
+        Ok(ReportPlan {
+            mine,
+            attempt,
+            is_new,
+            next,
+            waiting: needs_plan.then_some(waiting_for::PLAN),
+        })
+    }
+
+    /// What a report would change, without saving anything. A tool that goes on to write it asks
+    /// with `writing`, so a limit that is reached pauses the agent here as it would there.
+    ///
+    /// # Errors
+    /// What `report_attempt` refuses.
+    pub(crate) async fn preview_report_attempt(
+        &self,
+        input: &ReportAttempt,
+        writing: bool,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        let mode = if writing {
+            Plan::Writing
+        } else {
+            Plan::Preview
+        };
+        Ok(self.plan_report(input, mode).await?.changes())
+    }
+}
+
 /// Reports an attempt: the first report of a go starts the attempt, later ones add the plan and
 /// the time and cost the agent reports. With *Plan needs approval* the plan comes first and the
 /// work waits as *Waiting for you* until a person approves it.
@@ -211,50 +330,23 @@ fn ensure_within_budget(
 /// # Errors
 /// `resource.not-found` for an issue the agent was not given, `agent-work.not-ready` for work that
 /// waits for a person or has ended, `agent-work.budget-reached` when the hand-over's attempts,
-/// minutes or cost are used, `request.invalid` for a number or text that cannot be.
+/// minutes or cost are used, `agent.limit-reached` when the agent's own limit of attempts on one
+/// issue is, `request.invalid` for a number or text that cannot be.
 pub async fn report_attempt<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReportAttempt,
 ) -> Result<Authorized<WorkView>, AppError> {
-    let mine = ctx.my_work(&input.session_token, &input.issue).await?;
-    if !may_work(mine.work.state) {
-        return Err(ErrorCode::AgentWorkNotReady.into());
-    }
-    if input.minutes < 0 || input.cost < 0 {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let plan = input
-        .plan
-        .as_deref()
-        .filter(|plan| !plan.trim().is_empty())
-        .map(clean_long_text)
-        .transpose()?;
-    let attempts = ctx
-        .store()
-        .attempts_of(mine.work.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let (mut attempt, is_new) = attempt_to_report(ctx, &mine, &attempts)?;
+    let planned = ctx.plan_report(&input, Plan::Writing).await?;
+    let ReportPlan {
+        mine,
+        mut attempt,
+        is_new,
+        next,
+        waiting,
+    } = planned;
     if is_new {
         attempt.run = Some(ctx.open_attempt_run(&input.session_token, &mine).await?);
     }
-    ensure_within_budget(&mine.hand_over, &attempts, attempt.id, &input)?;
-    if plan.is_some() {
-        attempt.plan = plan;
-    }
-    attempt.reported_minutes = input.minutes;
-    attempt.reported_cost = input.cost;
-    // With *Plan needs approval* the first step is the plan; the work then waits for a person.
-    let needs_plan = mine.hand_over.plan_needs_approval && !attempt.plan_approved;
-    if needs_plan && attempt.plan.is_none() {
-        return Err(ErrorCode::AgentWorkNotReady.into());
-    }
-    let next = if needs_plan {
-        AgentWorkState::WaitingForYou
-    } else {
-        AgentWorkState::AgentWorking
-    };
-    let waiting = needs_plan.then_some(waiting_for::PLAN);
     let event = ctx.work_event_waiting(mine.actor.person.id, &mine.work, next, waiting)?;
     let (work, stored) = (mine.work.clone(), attempt);
     ctx.store()
@@ -280,6 +372,58 @@ pub async fn report_attempt<S: AuthStore>(
     ctx.work_after(&mine, mine.work.id).await
 }
 
+/// What a question would do.
+pub(super) struct AskPlan {
+    mine: Mine,
+    next: AgentWorkState,
+    question: Question,
+}
+
+impl AskPlan {
+    /// The fields the question changes, as a preview lists them.
+    pub(super) fn changes(&self) -> Vec<FieldChange> {
+        vec![
+            state_change(self.mine.work.state, self.next),
+            set(member::QUESTION, json!(self.question.text)),
+        ]
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    async fn plan_ask(&self, input: &AskQuestion) -> Result<AskPlan, AppError> {
+        let mine = self.my_work(&input.session_token, &input.issue).await?;
+        let next = mine
+            .work
+            .state
+            .after_question()
+            .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
+        let question = Question {
+            id: AgentNoteId::generate(&mut self.ids()),
+            work: mine.work.id,
+            text: clean_text(&input.text, TEXT_MAX)?,
+            answer: None,
+            answered_by: None,
+            asked_at: self.now(),
+        };
+        Ok(AskPlan {
+            mine,
+            next,
+            question,
+        })
+    }
+
+    /// What a question would change, without saving anything.
+    ///
+    /// # Errors
+    /// What `ask_question` refuses.
+    pub(crate) async fn preview_ask_question(
+        &self,
+        input: &AskQuestion,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self.plan_ask(input).await?.changes())
+    }
+}
+
 /// Asks a question: the work waits as *Waiting for you* until a person answers.
 ///
 /// # Errors
@@ -289,21 +433,11 @@ pub async fn ask_question<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AskQuestion,
 ) -> Result<Authorized<WorkView>, AppError> {
-    let mine = ctx.my_work(&input.session_token, &input.issue).await?;
-    let next = mine
-        .work
-        .state
-        .after_question()
-        .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
-    let text = clean_text(&input.text, TEXT_MAX)?;
-    let question = Question {
-        id: AgentNoteId::generate(&mut ctx.ids()),
-        work: mine.work.id,
-        text,
-        answer: None,
-        answered_by: None,
-        asked_at: ctx.now(),
-    };
+    let AskPlan {
+        mine,
+        next,
+        question,
+    } = ctx.plan_ask(&input).await?;
     let event = ctx.work_event_waiting(
         mine.actor.person.id,
         &mine.work,
@@ -327,6 +461,78 @@ pub async fn ask_question<S: AuthStore>(
     ctx.work_after(&mine, mine.work.id).await
 }
 
+/// What an attached result would do.
+pub(super) struct AttachPlan {
+    mine: Mine,
+    result: AttemptResult,
+}
+
+impl AttachPlan {
+    /// The fields the result changes, as a preview lists them.
+    pub(super) fn changes(&self) -> Vec<FieldChange> {
+        let mut changes = vec![set(member::RESULT, json!(self.result.label))];
+        if let Some(link) = &self.result.link {
+            changes.push(set(member::LINK, json!(link)));
+        }
+        if let Some(outcome) = self.result.outcome {
+            changes.push(set(member::OUTCOME, json!(outcome.code())));
+        }
+        changes
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    async fn plan_attach(&self, input: &AttachResult) -> Result<AttachPlan, AppError> {
+        let mine = self.my_work(&input.session_token, &input.issue).await?;
+        let attempts = self
+            .store()
+            .attempts_of(mine.work.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let attempt = running(&attempts)
+            .filter(|_| mine.work.state.is_open())
+            .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
+        let label = clean_text(&input.label, LABEL_MAX)?;
+        let (link, outcome) = match input.kind {
+            ResultKind::Link => (
+                Some(clean_text(
+                    input.link.as_deref().unwrap_or_default(),
+                    LINK_MAX,
+                )?),
+                None,
+            ),
+            ResultKind::Check => (
+                None,
+                Some(
+                    input
+                        .outcome
+                        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?,
+                ),
+            ),
+        };
+        let result = AttemptResult {
+            id: AgentNoteId::generate(&mut self.ids()),
+            attempt: attempt.id,
+            kind: input.kind,
+            label,
+            link,
+            outcome,
+        };
+        Ok(AttachPlan { mine, result })
+    }
+
+    /// What an attached result would change, without saving anything.
+    ///
+    /// # Errors
+    /// What `attach_result` refuses.
+    pub(crate) async fn preview_attach_result(
+        &self,
+        input: &AttachResult,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self.plan_attach(input).await?.changes())
+    }
+}
+
 /// Attaches a result to the attempt that runs: a link, or a check with *passed* or *failed*.
 /// Bugaboo does not run or verify checks (M7-Q8).
 ///
@@ -338,41 +544,7 @@ pub async fn attach_result<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AttachResult,
 ) -> Result<Authorized<WorkView>, AppError> {
-    let mine = ctx.my_work(&input.session_token, &input.issue).await?;
-    let attempts = ctx
-        .store()
-        .attempts_of(mine.work.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let attempt = running(&attempts)
-        .filter(|_| mine.work.state.is_open())
-        .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
-    let label = clean_text(&input.label, LABEL_MAX)?;
-    let (link, outcome) = match input.kind {
-        ResultKind::Link => (
-            Some(clean_text(
-                input.link.as_deref().unwrap_or_default(),
-                LINK_MAX,
-            )?),
-            None,
-        ),
-        ResultKind::Check => (
-            None,
-            Some(
-                input
-                    .outcome
-                    .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?,
-            ),
-        ),
-    };
-    let result = AttemptResult {
-        id: AgentNoteId::generate(&mut ctx.ids()),
-        attempt: attempt.id,
-        kind: input.kind,
-        label,
-        link,
-        outcome,
-    };
+    let AttachPlan { mine, result } = ctx.plan_attach(&input).await?;
     let event = ctx.work_event_unchanged(mine.actor.person.id, &mine.work)?;
     let (work, stored) = (mine.work.clone(), result);
     ctx.store()
@@ -402,6 +574,82 @@ pub async fn attach_result<S: AuthStore>(
     ctx.work_after(&mine, mine.work.id).await
 }
 
+/// What the end of an attempt would do.
+pub(super) struct EndPlan {
+    mine: Mine,
+    attempt: Attempt,
+    reason: Option<String>,
+    next: AgentWorkState,
+    by_itself: bool,
+}
+
+impl EndPlan {
+    /// The fields the end changes, as a preview lists them.
+    pub(super) fn changes(&self) -> Vec<FieldChange> {
+        let mut changes = vec![state_change(self.mine.work.state, self.next)];
+        if let Some(reason) = &self.reason {
+            changes.push(set(member::GAVE_UP, json!(reason)));
+        }
+        if self.by_itself {
+            changes.push(set(member::ACCEPTED_BY_ITSELF, json!(true)));
+        }
+        changes
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    async fn plan_end(&self, input: &EndAttempt) -> Result<EndPlan, AppError> {
+        let mine = self.my_work(&input.session_token, &input.issue).await?;
+        if mine.work.state != AgentWorkState::AgentWorking {
+            return Err(ErrorCode::AgentWorkNotReady.into());
+        }
+        let attempts = self
+            .store()
+            .attempts_of(mine.work.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut attempt = running(&attempts)
+            .cloned()
+            .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
+        let reason = input
+            .gave_up
+            .as_deref()
+            .map(|reason| clean_text(reason, TEXT_MAX))
+            .transpose()?;
+        attempt.ended_at = Some(self.now());
+        let next = if reason.is_some() {
+            AgentWorkState::AgentGaveUp
+        } else {
+            AgentWorkState::ReadyForReview
+        };
+        let results = self
+            .store()
+            .results_of(attempt.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let checks: Vec<CheckResult> = results.iter().filter_map(|result| result.outcome).collect();
+        let by_itself = reason.is_none() && self.accepts_by_itself_in(&mine, &checks).await?;
+        Ok(EndPlan {
+            mine,
+            attempt,
+            reason,
+            next,
+            by_itself,
+        })
+    }
+
+    /// What the end of an attempt would change, without saving anything.
+    ///
+    /// # Errors
+    /// What `end_attempt` refuses.
+    pub(crate) async fn preview_end_attempt(
+        &self,
+        input: &EndAttempt,
+    ) -> Result<Vec<FieldChange>, AppError> {
+        Ok(self.plan_end(input).await?.changes())
+    }
+}
+
 /// Says the attempt is ready for review, or gives up with a reason.
 ///
 /// # Errors
@@ -411,36 +659,13 @@ pub async fn end_attempt<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: EndAttempt,
 ) -> Result<Authorized<WorkView>, AppError> {
-    let mine = ctx.my_work(&input.session_token, &input.issue).await?;
-    if mine.work.state != AgentWorkState::AgentWorking {
-        return Err(ErrorCode::AgentWorkNotReady.into());
-    }
-    let attempts = ctx
-        .store()
-        .attempts_of(mine.work.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let mut attempt = running(&attempts)
-        .cloned()
-        .ok_or(AppError::Refused(ErrorCode::AgentWorkNotReady))?;
-    let reason = input
-        .gave_up
-        .as_deref()
-        .map(|reason| clean_text(reason, TEXT_MAX))
-        .transpose()?;
-    attempt.ended_at = Some(ctx.now());
-    let next = if reason.is_some() {
-        AgentWorkState::AgentGaveUp
-    } else {
-        AgentWorkState::ReadyForReview
-    };
-    let results = ctx
-        .store()
-        .results_of(attempt.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let checks: Vec<CheckResult> = results.iter().filter_map(|result| result.outcome).collect();
-    let by_itself = reason.is_none() && ctx.accepts_by_itself_in(&mine, &checks).await?;
+    let EndPlan {
+        mine,
+        attempt,
+        reason,
+        next,
+        by_itself,
+    } = ctx.plan_end(&input).await?;
     // The end is claimed first, on the version the agent read: of two requests that end the same
     // attempt at the same moment one wins, and only the winner writes the summary or moves the
     // status.
