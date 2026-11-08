@@ -142,3 +142,49 @@ async fn perf_01_a_migrated_database_has_nothing_left_to_refresh_after_one_refre
     })
     .await
 }
+
+/// Writers that come in more numbers than the busy timeout can wait for do not fail: they queue in
+/// the order they came, before they take a connection of the pool, so none is passed by again and
+/// again (the way SQLite's own waiting does) and none of them holds a connection while it waits
+/// (PERF-01).
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn perf_01_writers_in_a_crowd_queue_in_order_and_none_runs_out_of_patience()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    const WRITERS: u64 = 16;
+    let folder = tempfile::tempdir()?;
+    let file = folder.path().join("crowd.db");
+    // The whole queue takes about 16 x 40 ms, far more than the 100 ms a writer would wait for the
+    // lock of SQLite.
+    let database = Database::connect_with_busy_timeout(
+        &format!("sqlite:{}?mode=rwc", file.display()),
+        Duration::from_millis(100),
+    )
+    .await?;
+    let order = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let mut writers = Vec::new();
+    for number in 0..WRITERS {
+        let database = database.clone();
+        let order = Arc::clone(&order);
+        writers.push(tokio::spawn(async move {
+            let transaction = database.begin().await?;
+            order
+                .lock()
+                .map_err(|_| StoreError::Corrupt("the order"))?
+                .push(number);
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            transaction.commit().await?;
+            Ok::<_, StoreError>(())
+        }));
+        // One after the other, so the order they came in is known.
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    for writer in writers {
+        writer.await??;
+    }
+    let order = order
+        .lock()
+        .map_err(|_| StoreError::Corrupt("the order"))?
+        .clone();
+    assert_eq!(order, (0..WRITERS).collect::<Vec<_>>());
+    Ok(())
+}

@@ -45,6 +45,7 @@ impl Database {
             ),
             statements: std::sync::Arc::default(),
             upkeep: std::sync::Arc::default(),
+            writers: super::gate::WriterGate::default(),
         })
     }
 

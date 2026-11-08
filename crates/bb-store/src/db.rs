@@ -24,6 +24,7 @@ use crate::error::StoreError;
 use crate::locks::{Held, LockClass, Mode};
 
 mod fixed;
+mod gate;
 mod statement;
 mod statements;
 mod statistics;
@@ -34,6 +35,7 @@ pub(crate) use statement::Statement;
 use statements::Statements;
 #[cfg(any(test, feature = "testing"))]
 mod hooks;
+use gate::{Turn, WriterGate};
 #[cfg(any(test, feature = "testing"))]
 pub use hooks::UpkeepForTests;
 use upkeep::{Upkeep, while_locked};
@@ -195,6 +197,8 @@ pub struct Database {
     /// Whether the upkeep holds the database (all clones share it): a write that meets SQLite's
     /// busy answer meanwhile is tried again (`db/upkeep.rs`).
     upkeep: Arc<Upkeep>,
+    /// The queue of the writers on SQLite (`db/gate.rs`).
+    writers: WriterGate,
 }
 
 impl Database {
@@ -229,6 +233,7 @@ impl Database {
             pool,
             statements: Arc::default(),
             upkeep: Arc::default(),
+            writers: WriterGate::default(),
         })
     }
 
@@ -250,6 +255,7 @@ impl Database {
             ),
             statements: Arc::default(),
             upkeep: Arc::default(),
+            writers: WriterGate::default(),
         })
     }
 
@@ -343,6 +349,8 @@ impl Database {
     /// writers wait for each other instead of failing half way: the single writer of
     /// architecture §7 (Performance).
     pub(crate) async fn begin(&self) -> Result<Transaction, StoreError> {
+        // On SQLite the writers of this program queue first (`db/gate.rs`).
+        let turn = self.writers.wait_on(self.dialect()).await;
         Ok(Transaction {
             follow_ups: Vec::new(),
             locks: Held::default(),
@@ -357,6 +365,7 @@ impl Database {
                 ),
                 Pool::Postgres(pool) => TxInner::Postgres(pool.begin().await?),
             },
+            _turn: turn,
         })
     }
 
@@ -368,6 +377,7 @@ impl Database {
             follow_ups: Vec::new(),
             locks: Held::default(),
             statements: Arc::clone(&self.statements),
+            _turn: None,
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin().await?),
                 Pool::Postgres(pool) => TxInner::Postgres(
@@ -387,6 +397,7 @@ impl Database {
         self.statements.record(&statement, self.dialect());
         // One statement on its own is its own transaction: a try that met the busy answer
         // changed nothing.
+        let _turn = self.writers.wait_on(self.dialect()).await;
         self.upkeep
             .write(|| Connection::Pool(&self.pool).execute(statement))
             .await
@@ -586,6 +597,9 @@ pub struct Transaction {
     pub(crate) follow_ups: Vec<DomainEvent>,
     /// The advisory locks it took (also on SQLite, which needs none), to refuse a wrong order.
     locks: Held,
+    /// The turn in the queue of the writers on SQLite. Last, so it ends after the transaction has
+    /// been committed or rolled back and the next writer finds the lock free.
+    _turn: Option<Turn>,
 }
 
 impl std::fmt::Debug for Transaction {
