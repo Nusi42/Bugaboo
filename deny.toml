@@ -8,6 +8,7 @@ yanked = "deny"
 # Accepted advisories: one line each; the reason names the register (META-SUPPRESS counts them).
 ignore = [
   { id = "RUSTSEC-2023-0071", reason = "rsa has no patched release (webauthn-rs 0.6.2 uses rsa 0.10.0-rc.19, also affected); only public-key checks run, never a private key (docs/third-party/README.md § Accepted risks)" },
+  { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.37.0 bundles SQLite 3.53; sqlx-sqlite 0.9.0 allows only <0.38 and the patched 0.39 is refused; Bugaboo opens only its own database file, never one from a less trusted party (docs/third-party/README.md § Accepted risks, M7-F240)" },
 ]
 
 # Nothing from the GPL family (GPL, LGPL, AGPL) is on this list, so cargo deny refuses it, and
