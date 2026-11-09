@@ -164,6 +164,7 @@ function ownTopics(): string[] {
     t("shortcut.title"),
     t("nav.notification-settings"),
     t("nav.handle"),
+    t("nav.assistant-settings"),
     t("nav.security"),
     t("nav.sessions"),
     t("nav.access-keys"),
