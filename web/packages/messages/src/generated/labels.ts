@@ -53,7 +53,7 @@ export const messages = {
   "labels.label-taken-off": "The label {name} was taken off.",
   "labels.take-off-short": "Take off",
   "labels.tag-projects-list": "Projects of the tag",
-  "labels.take-project-off": "Take off {name} from the list",
+  "labels.take-project-off": "Take off {name}",
   "labels.show-changes": "Show what the new name changes",
   "labels.show-combine": "Show what combining changes",
   "labels.preview-truncated": "More issues change than this list shows.",

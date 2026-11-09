@@ -311,6 +311,7 @@ Rules:
 | **Written by an AI app / Written by an agent** | Labels on text written through MCP, stored with the text like *Written with the assistant* | AI-generated content (as label) |
 | **Written with the assistant** | Label on text the assistant wrote or proposed; also stored with the text | AI-generated content (as label) |
 | **Set up the assistant** | The step in *Organization settings › Connections › AI* where an administrator chooses the AI provider, the model, its address and key, and switches AI on | configure LLM, AI integration (in UI) |
+| **AI guide**             | The short guide to AI for everybody (`userDocs/ai/literacy.md`), shown as a page of the app and linked from the assistant and from *Set up the assistant* | AI literacy guide, AI manual (in UI) |
 | **AI provider**          | The service that writes the assistant's answers: *Anthropic*, *Other provider or own server* (any service that speaks the chat way of OpenAI, with its address) or *A model on your own server*, as the screen *Set up the assistant* names them | LLM, model vendor, LLM provider (in UI) |
 | **Local model**          | An AI model that runs on the organization's own server, so nothing leaves it; the private choice | self-hosted LLM, on-prem model (in UI) |
 | **Data processing agreement** | The contract with an outside AI provider about personal data (GDPR Art. 28); an administrator confirms it is in place before an outside provider is switched on | DPA, AVV (in UI) |

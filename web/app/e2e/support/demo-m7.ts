@@ -17,7 +17,7 @@ const ISSUE = "WEB-142";
 const HIDDEN_FROM_CONTRIBUTORS = "Cost center";
 
 /** An own field both people see, near the two that are hidden from Contributors. */
-const LAST_OWN_FIELD = "Severity";
+const LAST_OWN_FIELD = "Followers";
 
 /** The text an app is given for a tool of `/mcp`, with its token. */
 async function toolText(server: Instance, token: string, name: string, args: object) {

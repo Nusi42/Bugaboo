@@ -126,7 +126,7 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
         deciding.send({ allow: true, scope, projects: reach === "some" ? [...picked] : [] });
       }}
     >
-      {phone ? <p {...partOf(part.text)}>{t("connect.title", { app })}</p> : null}
+      {phone ? <h2 {...partOf(part.cardHeading)}>{t("connect.title", { app })}</h2> : null}
       <p {...partOf(part.text)}>{t("connect.acts-as", { app })}</p>
       <May choices={choices} scope={scope} onScope={setScope} />
       <ProjectsReach

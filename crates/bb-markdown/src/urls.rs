@@ -36,6 +36,16 @@ fn scheme_of(url: &str) -> Option<&str> {
     valid.then_some(scheme)
 }
 
+/// Whether a link address goes to the web or to a mailbox: the only addresses that lead anywhere
+/// from a text that is rendered away from the pages of the user docs.
+pub(crate) fn is_web_or_mail(url: &str) -> bool {
+    scheme_of(url).is_some_and(|scheme| {
+        LINK_SCHEMES
+            .iter()
+            .any(|allowed| allowed.eq_ignore_ascii_case(scheme))
+    })
+}
+
 /// Whether a link address may stay: an address of ours (no scheme, and not `//host`), or one of the
 /// allowed schemes.
 pub(crate) fn link_allowed(url: &str) -> bool {

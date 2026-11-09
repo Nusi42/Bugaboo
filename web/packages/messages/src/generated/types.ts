@@ -99,6 +99,7 @@ export interface MessageArguments {
   "agent-work.attempt-ended": { date: string | number };
   "agent-work.attempt-reported": { amount: string | number };
   "agent-work.attempt-started": { date: string | number };
+  "agent-work.brief-from-issue": { parts: string | number };
   "agent-work.brief-with-note": { parts: string | number };
   "agent-work.ends": { date: string | number };
   "agent-work.fact-attempts": { most: string | number; number: string | number };

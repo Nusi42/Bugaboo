@@ -1,5 +1,8 @@
 import { STEP_TIMEOUT_MS } from "./support/demo-m7-common.ts";
-import { theAssistantAnswersAndProposes } from "./support/demo-m7-assistant.ts";
+import {
+  theAssistantAnswersAndProposes,
+  theGuideIsAPageOfTheApp,
+} from "./support/demo-m7-assistant.ts";
 import { aContributorsAppSeesLessThanTheTeam } from "./support/demo-m7.ts";
 import { aStandingRuleProposesAndChangesNothing } from "./support/demo-m7-rule.ts";
 import {
@@ -60,4 +63,9 @@ test("5. The third agent's attempt is thrown away and its changes go back in one
 test("6. A standing rule over new bugs proposes and changes nothing", async ({ page, server }) => {
   test.setTimeout(STEP_TIMEOUT_MS);
   await aStandingRuleProposesAndChangesNothing(page, server);
+});
+
+test("7. The guide to AI is a page of the app", async ({ page }) => {
+  test.setTimeout(STEP_TIMEOUT_MS);
+  await theGuideIsAPageOfTheApp(page);
 });

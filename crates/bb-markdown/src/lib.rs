@@ -77,6 +77,9 @@ pub struct Options {
     /// the answer holds no token and nothing in it is resolved or linked on its own. The browser
     /// preview never sets it.
     pub ai_answer: bool,
+    /// Only a link to the web or to a mailbox stays a link; the words of any other link (a page of
+    /// the user docs that the app does not hold) stay as plain text. The guide to AI is rendered so.
+    pub web_links_only: bool,
 }
 
 /// The result of [`render`].

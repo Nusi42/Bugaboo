@@ -16,7 +16,7 @@ async fn comp_11_a_signed_in_person_reads_the_guide_without_a_dead_link() -> Out
     )
     .await?
     .into_value();
-    assert!(guide.html.contains("<h1>AI in Bugaboo"), "{}", guide.html);
+    assert!(guide.html.contains("<h1>The AI guide"), "{}", guide.html);
     assert!(guide.html.contains("Never sent to AI"));
     assert!(
         !guide.html.contains("href=\"numbers.md\"") && !guide.html.contains(".md\""),

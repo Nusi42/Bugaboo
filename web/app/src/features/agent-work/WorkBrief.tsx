@@ -13,7 +13,9 @@ function partsText(work: Work, lacking: readonly BriefLack[]): string {
     briefPartWords.filter((each) => !lacking.includes(each)).map((each) => briefPartText(each)),
   );
   if (work.brief.length === 0) {
-    return held === "" ? t("agent-work.brief-empty") : held;
+    return held === ""
+      ? t("agent-work.brief-empty")
+      : t("agent-work.brief-from-issue", { parts: held });
   }
   return held === ""
     ? t("agent-work.brief-note-only")

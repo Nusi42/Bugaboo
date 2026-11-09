@@ -649,6 +649,9 @@ pub const AGENTS_RULE_AGENT: MessageKey = MessageKey::new("agents.rule-agent");
 /// The message `agents.rule-change`.
 pub const AGENTS_RULE_CHANGE: MessageKey = MessageKey::new("agents.rule-change");
 
+/// The message `agents.rule-change-hint`.
+pub const AGENTS_RULE_CHANGE_HINT: MessageKey = MessageKey::new("agents.rule-change-hint");
+
 /// The message `agents.rule-choose-agent`.
 pub const AGENTS_RULE_CHOOSE_AGENT: MessageKey = MessageKey::new("agents.rule-choose-agent");
 
@@ -8299,6 +8302,15 @@ pub fn agent_work_attempt_started(date: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.attempt-started"),
         vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `agent-work.brief-from-issue`.
+#[must_use]
+pub fn agent_work_brief_from_issue(parts: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agent-work.brief-from-issue"),
+        vec![("parts", Value::Text(parts.to_string()))],
     )
 }
 
@@ -16281,10 +16293,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.brief-empty",
         "No note. The agent reads the description and the related issues.",
     ),
+    ("agent-work.brief-from-issue", "From the issue: {parts}"),
     ("agent-work.brief-hide", "Hide"),
     ("agent-work.brief-note-only", "A note"),
     ("agent-work.brief-show", "Show"),
-    ("agent-work.brief-with-note", "{parts} and a note"),
+    (
+        "agent-work.brief-with-note",
+        "From the issue: {parts}, and a note",
+    ),
     ("agent-work.budget", "Budget"),
     ("agent-work.budget-attempts", "Attempts on one issue"),
     ("agent-work.budget-cost", "Cost budget, in euros (optional)"),
@@ -16645,7 +16661,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.resume-name", "Resume {agent}"),
     ("agents.review", "Review"),
     ("agents.rule-agent", "Agent"),
-    ("agents.rule-change", "Change only these fields"),
+    ("agents.rule-change", "Propose changes to these fields only"),
+    (
+        "agents.rule-change-hint",
+        "For now the agent only proposes on these fields: nothing changes until a person applies it.",
+    ),
     ("agents.rule-choose-agent", "Choose an agent"),
     ("agents.rule-confirm", "Create the rule"),
     ("agents.rule-creates", "Create issues in one project"),
@@ -16697,7 +16717,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A rule never changes a field that holds people or the status.",
     ),
     ("agents.rule-new", "Create a standing rule"),
-    ("agents.rule-power-change", "Changes only {fields}."),
+    ("agents.rule-power-change", "Proposes changes to {fields}."),
     ("agents.rule-power-creates", "Creates issues in {project}."),
     ("agents.rule-power-propose", "Proposes only."),
     ("agents.rule-project", "Works in the project"),
@@ -16707,7 +16727,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agents.rule-propose",
-        "Propose only: nothing changes until a person applies it",
+        "Propose changes: nothing changes until a person applies it",
     ),
     ("agents.rule-search", "Saved search"),
     (
@@ -16826,7 +16846,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-setup.guide-link",
-        "Read the guide for your people: what AI can and cannot do",
+        "Read the AI guide for your people: what AI can and cannot do",
     ),
     (
         "ai-setup.intro",
@@ -17103,12 +17123,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "assistant.guide-link",
-        "What AI can and cannot do: the guide",
+        "The AI guide: what AI can and cannot do",
     ),
-    (
-        "assistant.guide-title",
-        "AI in Bugaboo: a short guide for everybody",
-    ),
+    ("assistant.guide-title", "The AI guide"),
     ("assistant.label", "Assistant"),
     ("assistant.leave-out", "Leave out {name}"),
     ("assistant.looking-at", "Looking at:"),
@@ -19303,7 +19320,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.tags-title", "Tags"),
     ("labels.take-off", "Take off {name}"),
     ("labels.take-off-short", "Take off"),
-    ("labels.take-project-off", "Take off {name} from the list"),
+    ("labels.take-project-off", "Take off {name}"),
     ("layout-kind.issue-page", "Issue page"),
     ("layout-kind.new-issue", "New-issue form"),
     ("layout.section-details", "Details"),
@@ -20669,7 +20686,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("runs.skip-line", "{issue} {field}: {reason}"),
     ("runs.skip-line-comment", "{issue} comment: {reason}"),
     ("runs.skip-not-allowed", "You may not change it."),
-    ("runs.skip-not-undoable", "It cannot be put back yet."),
+    (
+        "runs.skip-not-undoable",
+        "It stays: this kind of change cannot be taken back yet.",
+    ),
     (
         "runs.skipped-more",
         "{count, plural, one {# more is skipped.} other {# more are skipped.}}",

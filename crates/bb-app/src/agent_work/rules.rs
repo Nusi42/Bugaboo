@@ -307,27 +307,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         proposal: &Proposal,
     ) -> Result<ProposalView, AppError> {
-        let agents = self
-            .store()
-            .agents_by_ids(vec![proposal.agent])
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let agent_name = agents
-            .into_iter()
-            .next()
-            .map(|agent| agent.name)
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        Ok(ProposalView {
-            id: proposal.id,
-            rule: proposal.rule,
-            agent: proposal.agent,
-            agent_name,
-            field: proposal.field,
-            before: proposal.before.clone(),
-            after: proposal.after.clone(),
-            state: proposal.state,
-            made_at: proposal.made_at,
-        })
+        self.proposal_views(std::slice::from_ref(proposal))
+            .await?
+            .pop()
+            .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
     /// Judges a proposal of an agent under one of its open rules: the one place that decides if it

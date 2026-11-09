@@ -43,7 +43,9 @@ describe("ai_38 the words of a run", () => {
     );
     expect(skipReasonText(skip({ kind: "gone" }))).toBe("The issue is gone.");
     expect(skipReasonText(skip({ kind: "not-allowed" }))).toBe("You may not change it.");
-    expect(skipReasonText(skip({ kind: "not-undoable" }))).toBe("It cannot be put back yet.");
+    expect(skipReasonText(skip({ kind: "not-undoable" }))).toBe(
+      "It stays: this kind of change cannot be taken back yet.",
+    );
   });
 
   it("says what became of a field after the undo", () => {

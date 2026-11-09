@@ -249,7 +249,7 @@ export const messages = {
   "access-keys.more": "More options",
   "nav.connected-apps": "Connected apps",
   "nav.ai": "Set up the assistant",
-  "assistant.guide-title": "AI in Bugaboo: a short guide for everybody",
+  "assistant.guide-title": "The AI guide",
   "ai-setup.never-sent": "Never sent to AI",
   "ai-setup.never-sent-help":
     "Kept from the assistant, AI apps and agents, even for people who can read it.",

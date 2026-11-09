@@ -42,7 +42,7 @@ export const messages = {
   "runs.skip-changed": "It was changed afterwards, so that change stays.",
   "runs.skip-gone": "The issue is gone.",
   "runs.skip-not-allowed": "You may not change it.",
-  "runs.skip-not-undoable": "It cannot be put back yet.",
+  "runs.skip-not-undoable": "It stays: this kind of change cannot be taken back yet.",
   "runs.skipped-more": "{count, plural, one {# more is skipped.} other {# more are skipped.}}",
   "runs.dialog-note": "An undo never touches a field that somebody else changed afterwards.",
   "runs.confirm": "{count, plural, one {Undo # change} other {Undo # changes}}",

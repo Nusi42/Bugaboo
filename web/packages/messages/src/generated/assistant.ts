@@ -11,7 +11,7 @@ export const messages = {
   "assistant.close-yes": "Close and end it",
   "assistant.close-keep": "Keep talking",
   "assistant.guide-apps-link": "The apps you allowed, and how to take them back",
-  "assistant.guide-link": "What AI can and cannot do: the guide",
+  "assistant.guide-link": "The AI guide: what AI can and cannot do",
   "assistant.looking-at": "Looking at:",
   "assistant.looking-list": "This list",
   "assistant.looking-nothing": "Nothing. Ask about an issue, a list or a project.",

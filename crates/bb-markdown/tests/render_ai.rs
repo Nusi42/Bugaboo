@@ -79,3 +79,23 @@ fn ai_05_an_address_that_runs_code_is_no_link() {
     let html = render("[x](javascript:alert(1))", &ai()).html;
     assert!(!html.contains("<a "), "{html}");
 }
+
+#[test]
+fn comp_11_a_page_of_the_docs_keeps_its_words_and_a_link_to_the_web_stays() {
+    let options = Options {
+        web_links_only: true,
+        ..Options::default()
+    };
+    let html = render(
+        "See [the numbers](numbers.md), [more](../a/b.md), [web](https://example.com/x) and [mail](mailto:a@example.com).",
+        &options,
+    )
+    .html;
+    assert!(html.contains("the numbers"), "{html}");
+    assert!(
+        !html.contains("numbers.md") && !html.contains("b.md"),
+        "{html}"
+    );
+    assert!(html.contains("href=\"https://example.com/x\""), "{html}");
+    assert!(html.contains("href=\"mailto:a@example.com\""), "{html}");
+}

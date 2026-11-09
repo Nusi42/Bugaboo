@@ -2,9 +2,10 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { paths } from "../../src/shared/paths.ts";
 import { signInThroughApi } from "./accounts.ts";
 import { ask, assistantPanel, closePanelButton, openAssistant, proposalCard } from "./assistant.ts";
-import { adaOfTheSample, good } from "./demo-m7-common.ts";
+import { adaOfTheSample, anaOfTheSample, good } from "./demo-m7-common.ts";
 import { startFakeModel } from "./fake-model.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
 import { type Instance } from "./server.ts";
@@ -34,7 +35,10 @@ async function asksAndShowsTheSummary(
 ): Promise<void> {
   await ask(page, `Summarize ${ISSUE}`);
   await expect(panel.getByText(`Its priority is ${t("priority.normal")}.`)).toBeVisible();
-  await showsTheExchange(page, `Summarize ${ISSUE}`);
+  // The line of the people starts the picture, so no part of an item above it is cut.
+  await panel.getByText(t("assistant.names-as-seen")).evaluate((line: HTMLElement) => {
+    line.scrollIntoView({ block: "start" });
+  });
   await good(page, "02-a-the-summary");
 }
 
@@ -117,4 +121,18 @@ export async function theAssistantAnswersAndProposes(page: Page, server: Instanc
   await closesAndShowsThePriority(page);
   await model.close();
   await session.dispose();
+}
+
+/** Step 7: the guide to AI is a page of the app, from its top to its closing link. */
+export async function theGuideIsAPageOfTheApp(page: Page) {
+  await signIn(page, anaOfTheSample());
+  await page.goto(paths.aiGuide);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("assistant.guide-title") }),
+  ).toBeVisible();
+  await good(page, "07-a-the-guide-top");
+  const end = page.getByRole("link", { name: t("assistant.guide-apps-link") });
+  await end.scrollIntoViewIfNeeded();
+  await expect(end).toBeInViewport({ ratio: 1 });
+  await good(page, "07-b-the-guide-end");
 }

@@ -176,7 +176,8 @@ impl State {
                     image: None,
                     shows_address: matches!(link_type, LinkType::Autolink | LinkType::Email),
                 });
-                dropped = !urls::link_allowed(dest_url);
+                dropped = !urls::link_allowed(dest_url)
+                    || (options.web_links_only && !urls::is_web_or_mail(dest_url));
                 tag
             }
             // A block of raw HTML is shown as a block of code: text and layout as written.

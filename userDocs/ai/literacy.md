@@ -1,4 +1,4 @@
-# AI in Bugaboo: a short guide for everybody
+# The AI guide
 
 Bugaboo has three kinds of AI help. This guide says in plain words what each one can and cannot do, where your data goes, how to check what an AI wrote, and what Bugaboo never lets AI do. It is for the people who use Bugaboo and for the administrators who switch AI on. Many organizations must ensure that the people who work with AI understand it; this guide is a part of that, and not legal advice.
 
@@ -18,9 +18,9 @@ In this guide, a **tool** is what the assistant, an AI app or an agent uses to l
 
 - **The assistant** can summarize an issue, answer a question about the issues you are looking at, and propose a change, for example a priority. A proposal shows the value before and after, and a proposal that names people shows how many. It stays a proposal until you press **Apply**, and it runs out if you wait too long. After **Apply** you can undo it.
 - **An AI app** works as you. It sees what you see and changes what you may change, and nothing more. You allow it once. The app asks for *See only* or for *See and change*; you can allow less than it asks, and you can limit it to some projects.
-- **An agent** has its own key and works on **hand-overs** and **standing rules**. A hand-over gives it a few issues with a note, a budget and an end. A standing rule gives it what a saved search finds, by proposals only unless you name a few fields it may change. Everything it writes says *Written by an agent*. It changes an issue only while one of its attempts runs on it; on an issue that only a standing rule found, it reads and proposes and changes nothing.
+- **An agent** has its own key and works on **hand-overs** and **standing rules**. A hand-over gives it a few issues with a note, a budget and an end. A standing rule gives it what a saved search finds; there it only proposes. Everything it writes says *Written by an agent*. It changes an issue only while one of its attempts runs on it; on an issue that only a standing rule found, it reads and proposes and changes nothing.
 
-The numbers (how long a question may be, how many issues one hand-over holds, how long a rule lasts) are on the page [Numbers of the assistant, AI apps and agents](numbers.md).
+The numbers (how long a question may be, how many issues one hand-over holds, how long a rule lasts) are written in the user documentation, on the page *Numbers of the assistant, AI apps and agents*, which comes from the code.
 
 ## What AI cannot do
 
@@ -41,7 +41,7 @@ Only the assistant sends text to an **AI provider**. An administrator chooses th
 - **AI can be switched on or off for each project.** A project can also switch **Agents** off.
 - AI apps and agents do not send your data to a provider through Bugaboo. They run outside Bugaboo and read what you let them read, with people's names as the person behind them sees them. What they do with it is their own business, so allow only apps and agents you trust. Bugaboo cannot check the name an app gives itself.
 - **The agreement Bugaboo asks for covers only the provider of the assistant.** An AI app (such as Claude Code, which sends to Anthropic) and an agent send to their own vendor, under the agreement your organization has with that vendor, if it has one. Bugaboo is not a part of it and cannot see it. Check it before you allow an app or create an agent.
-- Bugaboo keeps a log of the tools an AI used: who, which tool, how big the answer was and when, never the content. It is kept for the number of days on the page of numbers.
+- Bugaboo keeps a log of the tools an AI used: who, which tool, how big the answer was and when, never the content. It is kept for the number of days that page of numbers names.
 
 ## How to check what an AI wrote
 
@@ -62,10 +62,10 @@ These are rules of the product, not settings.
 
 ## For administrators: a short list
 
-1. **Set up the assistant** and confirm the agreement for a provider on the internet. See [Connected apps](../access-keys/connected-apps.md) for what apps get.
+1. **Set up the assistant** and confirm the agreement for a provider on the internet. *My settings › Connected apps* shows what each app was allowed.
 2. Decide which **projects** have AI, and mark what is **Never sent to AI**.
 3. Decide whether **Agents** are on (*Organization settings › Connections › Agents*, and the switch *Agents in this project*), and the most an agent may do.
 4. Tell your people where this guide is (they reach it from *Set up the assistant* and from the assistant), and ask them to check what an AI wrote before they rely on it.
 5. You can **stop** any agent and **take back** any app.
 
-More: [Agents: hand-overs and standing rules](../agents/README.md), [Connected apps](../access-keys/connected-apps.md), [The assistant](assistant.md), [AI apps](ai-apps.md).
+More, in the user documentation: *Agents: hand-overs and standing rules*, *My agents*, *The assistant*, *AI apps* and *Connected apps*. In the app, *My agents* and *My settings › Connected apps* are in the menu.

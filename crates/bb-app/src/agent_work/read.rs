@@ -124,11 +124,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(views)
     }
 
-    /// The proposals that wait, each with the name of its agent (a rule hands nothing over, so the
-    /// name cannot come from the work).
+    /// The view of proposals, each with the name of its agent (a rule hands nothing over, so the
+    /// name cannot come from the work): the one place a `ProposalView` is made.
     pub(super) async fn proposal_views(
         &self,
-        waiting: Vec<bb_core::agent_records::Proposal>,
+        waiting: &[bb_core::agent_records::Proposal],
     ) -> Result<Vec<ProposalView>, AppError> {
         let mut agents: Vec<bb_core::id::AgentId> =
             waiting.iter().map(|proposal| proposal.agent).collect();
@@ -152,8 +152,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 agent: proposal.agent,
                 agent_name,
                 field: proposal.field,
-                before: proposal.before,
-                after: proposal.after,
+                before: proposal.before.clone(),
+                after: proposal.after.clone(),
                 state: proposal.state,
                 made_at: proposal.made_at,
             });
@@ -330,7 +330,7 @@ pub async fn issue_agent_work<S: AuthStore>(
         .map_err(failed)?;
     truncated |= waiting.len() > MOST_SHOWN_ON_AN_ISSUE;
     waiting.truncate(MOST_SHOWN_ON_AN_ISSUE);
-    let proposals = ctx.proposal_views(waiting).await?;
+    let proposals = ctx.proposal_views(&waiting).await?;
     let project = ctx
         .store()
         .project(issue.project)

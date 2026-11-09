@@ -84,7 +84,12 @@ function Powers({ draft, onChange }: DraftProps) {
           onChange({ power });
         }}
       />
-      {draft.power === "change" ? <FieldBoxes draft={draft} onChange={onChange} /> : null}
+      {draft.power === "change" ? (
+        <>
+          <p {...partOf(part.muted)}>{t("agents.rule-change-hint")}</p>
+          <FieldBoxes draft={draft} onChange={onChange} />
+        </>
+      ) : null}
       <p {...partOf(part.muted)}>{t("agents.rule-never")}</p>
       <Checkbox
         label={t("agents.rule-creates")}
