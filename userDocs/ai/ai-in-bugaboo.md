@@ -65,7 +65,7 @@ These are rules of the product, not settings. The tools that would break them do
 
 ### Known limits
 
-Not every change can be undone yet. Some tools run at once over MCP. See [Known gaps](#known-gaps-k).
+Not every change can be undone yet. See [Known gaps](#known-gaps-k).
 
 ![The AI guide inside Bugaboo](../../docs/media/ai/guide-top.jpg)
 
