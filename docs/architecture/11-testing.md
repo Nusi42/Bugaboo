@@ -179,12 +179,12 @@ M7 adds three scenarios to the nightly run (budgets in `tools/checks/perf-bench.
 
 | Scenario | SQLite p95 | PostgreSQL p95 |
 |----------|-----------:|---------------:|
-| *agent-changes-since* | **174.6 ms** (over; 331.1 ms before the fixes) | **227.5 ms** (over; 476.1 ms before) |
-| *search-agent-state* | 42.5 ms | 173.8 ms |
-| *my-agents* | 35.3 ms (73.7 ms before) | 56.8 ms (119.9 ms before) |
-| *issue-page* (control) | 35.5 ms | 43.6 ms |
+| *agent-changes-since* | **109.3 ms** (over; 331.1 ms at the first run) | **154.0 ms** (over; 476.1 ms at the first run) |
+| *search-agent-state* | 42.2 ms | 174.8 ms |
+| *my-agents* | 34.2 ms (73.7 ms at the first run) | 58.6 ms (119.9 ms at the first run) |
+| *issue-page* (control) | 34.4 ms | 45.4 ms |
 
-*agent-changes-since* is open (M7-F127). A call of an agent that does nothing (the first look of *changes since*) took 119 ms on SQLite and 48 ms on PostgreSQL before the last fix of the check of the rights, 80 ms on SQLite after it: of that, about 30 ms on SQLite and 9 ms on PostgreSQL are the projects of the open work of the agent (3,300 issues, each looked up in the table of 1 M issues, read at every request). The dataset took 41.8 minutes and 12.7 GB on SQLite and 61.1 minutes and 16.4 GB on PostgreSQL with the agent work, while other work ran on the computer.
+*agent-changes-since* is open (M7-F127). Any request through the harness costs about 30 ms (the control), so about 70 ms are left for the work of an agent. What was done: the project of the issue is kept on the piece of work (migration 47), so the projects an agent reaches are one read of its work and no lookup of 3,300 issues; the settings of AI of all projects, the rights of the authors, the issues, the projects and the people of a page of the log are read together; a request looks at 400 events at the most. What is left on PostgreSQL is the count of reads: a request still makes about 170 transactions, each a round trip for BEGIN, its statements and ROLLBACK (the work is 40 ms in the database, the rest is waiting for them). The dataset took 41.8 minutes and 12.7 GB on SQLite and 61.1 minutes and 16.4 GB on PostgreSQL with the agent work, while other work ran on the computer.
 
 The first numbers, on this computer, in a release build, at the 95th percentile (p50 and p99 in the file of the run), against the budget of 100 ms (PERF-01):
 
