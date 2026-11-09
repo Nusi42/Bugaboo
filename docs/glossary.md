@@ -306,7 +306,7 @@ Rules:
 | **Accept by itself when its checks pass** | A project setting for handed-over issues; off at the start | auto-merge, auto-accept (in UI) |
 | **My agents**            | Your agents and all their work in one place, *Waiting for you* first | agent dashboard, fleet (in UI) |
 | **Stop all my agents**   | Stop every one of your agents at once                              | kill switch (in UI) |
-| **Agents in this project** | The switch in a project's settings with the choices *As the organization* (the organization's value is shown) and *Off*; off, no agent works in that project | agents on/off, enable agents (in UI) |
+| **Agents in this project** | The switch in a project's settings: its first choice follows the level above and names it with its value (*As the organization (on)*, or *As WEB (off)* below a project), then *On* and *Off*; off, no agent works in that project | agents on/off, enable agents (in UI) |
 | **Run** (of an app, an agent or a change to many issues) | Everything one session of an AI app, one attempt of an agent or one *Change many issues* changed; shown with its progress and as a list, and undone in one step | batch, transaction (in UI) |
 | **Written by an AI app / Written by an agent** | Labels on text written through MCP, stored with the text like *Written with the assistant* | AI-generated content (as label) |
 | **Written with the assistant** | Label on text the assistant wrote or proposed; also stored with the text | AI-generated content (as label) |
