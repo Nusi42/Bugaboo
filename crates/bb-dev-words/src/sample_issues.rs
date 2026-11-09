@@ -292,6 +292,7 @@ pub(crate) mod tests {
             "projects_off": sorted(&plan.projects_off),
             "never_sent_projects": sorted(&plan.never_sent_projects),
             "never_sent_fields": sorted(&plan.never_sent_fields),
+            "never_sent_own_fields": sorted(&plan.never_sent_own_fields),
             "agents": plan.agents.iter().map(|name| json!({
                 "name": name, "person": plan.person, "keys": 1, "state": "active",
             })).collect::<Vec<_>>(),

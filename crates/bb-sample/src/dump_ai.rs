@@ -12,6 +12,7 @@ use bb_app::agent_work::{AgentWorkRecords as _, GrantStore as _};
 use bb_app::agents::AgentStore as _;
 use bb_app::ai::{AiStore as _, NeverSentStore as _};
 use bb_app::auth::OAuthStore as _;
+use bb_app::fields::FieldStore as _;
 use bb_app::projects::ProjectStore as _;
 use bb_app::runs::RunRecordStore as _;
 use bb_app::saved_searches::SavedSearchStore as _;
@@ -85,6 +86,7 @@ pub(crate) struct DumpAi {
     projects_off: Vec<String>,
     never_sent_projects: Vec<String>,
     never_sent_fields: Vec<String>,
+    never_sent_own_fields: Vec<String>,
     agents: Vec<DumpAgent>,
     agents_with_a_role: u64,
     agents_assigned: u64,
@@ -149,8 +151,17 @@ impl Sample {
         }
         ai.projects_on.sort();
         ai.projects_off.sort();
+        ai.never_sent_own_fields = self
+            .storage
+            .field_definitions()
+            .await?
+            .into_iter()
+            .filter(|definition| definition.field.never_to_assistant)
+            .map(|definition| definition.field.name)
+            .collect();
         ai.never_sent_projects.sort();
         ai.never_sent_fields.sort();
+        ai.never_sent_own_fields.sort();
         Ok(())
     }
 

@@ -8,6 +8,11 @@
 //! before the end of the sample, so that a hand-over of one day can run out (the clock moves two
 //! days on and the queued jobs run), and the rule, the keys and the hand-overs are still alive when
 //! the sample ends.
+//!
+//! Why this file is longer than ~400 lines (coding standards §3): the work is one story told in the
+//! sample's clock, and each step reads what the one before left (the work it finds, the key it
+//! uses); the steps are small functions of one `impl`, and cutting the story in two files would
+//! hide the order of the clock that makes the sample the same every time.
 
 use bb_app::access::Permission;
 use bb_app::agent_work::{

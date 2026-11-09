@@ -13,17 +13,19 @@ use bb_app::auth::{
     TokenOutcome, TokenRequest, decide_authorization, exchange_token, register_app,
     start_app_session,
 };
+use bb_app::fields::{ChangeField, FieldsQuery, change_field, fields};
 use bb_auth::pkce_challenge;
 use bb_core::access_key::KeyChoice;
 use bb_core::ai::{Destination, ProviderKind};
 use bb_core::fields::Field;
+use bb_core::own_fields::Edit;
 use bb_dev_words::sample::{AiPlan, AppPlan};
 use serde_json::json;
 
 use crate::error::{SampleError, Step};
 use crate::generate::World;
 use crate::issues::Maker;
-use crate::issues_setup::picked;
+use crate::issues_setup::{id_in, json, picked};
 
 /// The port the app says it listens on when it is sent back (the address registered has none, as
 /// an app on the computer asks the system for one).
@@ -118,6 +120,54 @@ impl Maker<'_, '_> {
             self.never_send(&token, NeverSentTarget::Field(field))
                 .await?;
         }
+        for name in &plan.never_sent_own_fields {
+            self.never_send_own_field(&token, name).await?;
+        }
+        Ok(())
+    }
+
+    /// Marks an own field *Never sent to AI*: the mark is part of the field, so it is set by
+    /// changing the field, as the field page does.
+    async fn never_send_own_field(&self, token: &str, name: &str) -> Result<(), SampleError> {
+        let ctx = self.world.services.ctx(self.world.request());
+        let listed = json(
+            fields(
+                &ctx,
+                FieldsQuery {
+                    session_token: token.to_owned(),
+                    applies_to: None,
+                    project: None,
+                    retired: false,
+                },
+            )
+            .await,
+            Step::Ai,
+        )?;
+        let found = listed["fields"]
+            .as_array()
+            .map_or(&[][..], Vec::as_slice)
+            .iter()
+            .find(|field| field["name"] == name)
+            .ok_or_else(|| SampleError::NotMade(name.to_owned()))?;
+        self.world.tick();
+        change_field(
+            &ctx,
+            ChangeField {
+                session_token: token.to_owned(),
+                field: id_in(found, "id")?,
+                version: found["version"].as_i64().unwrap_or(1),
+                name: None,
+                help: None,
+                rules: None,
+                default_value: Edit::Keep,
+                look: None,
+                never_to_assistant: Some(true),
+                scope: None,
+                retired: None,
+            },
+        )
+        .await
+        .map_err(|error| failed(&error))?;
         Ok(())
     }
 

@@ -155,6 +155,9 @@ pub struct AiPlan {
     pub never_sent_projects: Vec<String>,
     /// The codes of the built-in fields marked *Never sent to AI*.
     pub never_sent_fields: Vec<String>,
+    /// The names of the own fields marked *Never sent to AI*, through the change of the field
+    /// (the mark is part of an own field, not a mark of its own).
+    pub never_sent_own_fields: Vec<String>,
     /// The name of the Team member the agents work for.
     pub person: String,
     /// The short name of the project the agents work in.

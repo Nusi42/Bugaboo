@@ -46,6 +46,11 @@ impl AiPlan {
                 &ai["never_sent_fields"],
                 &self.never_sent_fields,
             ),
+            (
+                "own fields never sent to AI",
+                &ai["never_sent_own_fields"],
+                &self.never_sent_own_fields,
+            ),
         ] {
             let mut planned_sorted = planned.clone();
             planned_sorted.sort();
@@ -191,6 +196,7 @@ mod tests {
             ("agreement_confirmed", json!(false), "agreements"),
             ("projects_on", json!(["OPS"]), "projects with AI on"),
             ("never_sent_projects", json!([]), "never sent to AI"),
+            ("never_sent_own_fields", json!([]), "own fields never sent"),
             ("agents", json!([]), "the agents are"),
             ("agents_with_a_role", json!(1), "agents with a role"),
             ("agents_assigned", json!(1), "Assigned to"),
