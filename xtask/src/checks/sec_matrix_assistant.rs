@@ -8,79 +8,97 @@
 //!
 //! - what the assistant read is what the tool `get_issue` answered the same person at `/mcp`, and
 //!   what it could propose is what `update_issue` answered them;
-//! - the status and the author were in what the provider was given exactly as the tables of the
-//!   starting roles say (the field *Status*, the kind *Authors*), and not at all when nothing was
-//!   read;
-//! - nothing that is *Never sent to AI* was in any request to the provider;
-//! - *Apply* ran when there was a proposal, and only then.
+//! - the status, the estimate and the person it is assigned to in the issue the person read to show what is masked
+//!   for them were in what the provider was given exactly as the tables of the starting roles say
+//!   (the fields *Status* and *Estimated time*, the kind *Assigned to*), and not at all when nothing
+//!   was read;
+//! - nothing that is *Never sent to AI* was in any request to the provider, and the issue of a
+//!   project kept from AI was refused as unknown;
+//! - *Apply* ran when there was a proposal, and only then, and a reference nobody made is turned away;
+//! - there is one line for every starting role, no other and none twice.
 
-use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 use bb_api_words::sec_matrix::{self as words, RECORD_PATH};
-use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::access::PeopleLevel;
 use bb_core::ai::Tool;
 use bb_core::fields::Field;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::StartingRole;
 
 use super::Finding;
+use super::sec_matrix::{people_word, said_lines, shown_word};
 use super::sec_matrix_tools::tool_answer;
 
-/// What an `ask` line says after the colon, by name.
-type Said = BTreeMap<String, String>;
+/// The fields the lines say about: the field *Status* and the field *Estimated time*, whose levels
+/// differ from role to role (a Guest sees the one and not the other).
+const FIELDS: [(&str, Field); 2] = [
+    ("status", Field::Status),
+    ("estimate", Field::EstimatedTime),
+];
 
-/// The `ask` lines of a record, by the entry point and the person who asked, written `entry actor`.
-fn ask_lines(record: &str) -> BTreeMap<String, Said> {
-    record
-        .lines()
-        .filter_map(|line| line.strip_prefix(words::ASK_LINE))
-        .filter_map(|rest| rest.split_once(" : "))
-        .map(|(head, said)| {
-            (
-                head.split_whitespace().collect::<Vec<_>>().join(" "),
-                said.split_whitespace()
-                    .filter_map(|pair| pair.split_once('='))
-                    .map(|(name, word)| (name.to_owned(), word.to_owned()))
-                    .collect(),
-            )
-        })
-        .collect()
-}
-
-/// What the tables of the starting roles say the provider was given of an issue the person read, or
-/// nothing of it when they read none.
-fn table_words(role: StartingRole, read: bool) -> [(&'static str, &'static str); 2] {
-    let status_shown = read && role.field_level(Field::Status) != FieldLevel::Hidden;
-    let author = if read {
-        role.people_level(PeopleKind::Authors)
-    } else {
-        PeopleLevel::Hidden
-    };
-    [
-        (
-            "status",
-            if status_shown {
-                words::SHOWN
+/// What the tables of the starting roles say the provider was given of the issue the person read to
+/// show what is masked for them: nothing of it when they read none.
+fn table_words(role: StartingRole, read: bool) -> Vec<(&'static str, &'static str)> {
+    let mut wanted: Vec<(&str, &str)> = FIELDS
+        .iter()
+        .map(|(name, field)| {
+            let word = if read {
+                shown_word(role, *field)
             } else {
                 words::LEFT_OUT
-            },
-        ),
-        ("author", author.code()),
-    ]
+            };
+            (*name, word)
+        })
+        .collect();
+    wanted.push((
+        "assigned-to",
+        if read {
+            people_word(role, PeopleKind::AssignedTo)
+        } else {
+            PeopleLevel::Hidden.code()
+        },
+    ));
+    wanted
 }
 
 /// The `ask` lines of the record: one for every starting role, held against the `tool` lines and the
 /// tables of the starting roles.
 pub(super) fn assistant_findings(record: &str) -> Vec<Finding> {
-    let lines = ask_lines(record);
+    let lines = said_lines(record, words::ASK_LINE);
     let mut found = Vec::new();
+    let mut seen = BTreeSet::new();
+    let roles: Vec<String> = StartingRole::ALL
+        .iter()
+        .map(|role| {
+            format!(
+                "{} {}",
+                words::ENTRY_ASSISTANT,
+                words::role_actor(role.code())
+            )
+        })
+        .collect();
+    for (head, _) in &lines {
+        if !roles.contains(head) {
+            found.push(Finding::at(
+                RECORD_PATH,
+                format!("The record has an `ask` line `{head}` for no starting role: run the matrix again."),
+            ));
+        } else if !seen.insert(head) {
+            found.push(Finding::at(
+                RECORD_PATH,
+                format!("The record has two `ask` lines `{head}`: run the matrix again."),
+            ));
+        }
+    }
     for role in StartingRole::ALL {
         let actor = words::role_actor(role.code());
         let place = format!(
             "What `{}` gave and did for `{actor}`",
             words::ENTRY_ASSISTANT
         );
-        let Some(said) = lines.get(&format!("{} {actor}", words::ENTRY_ASSISTANT)) else {
+        let head = format!("{} {actor}", words::ENTRY_ASSISTANT);
+        let Some((_, said)) = lines.iter().find(|(each, _)| *each == head) else {
             found.push(Finding::at(
                 RECORD_PATH,
                 format!("{place} is missing from the record: run the matrix."),
@@ -100,7 +118,7 @@ pub(super) fn assistant_findings(record: &str) -> Vec<Finding> {
                 ));
             }
         }
-        for (name, wanted) in table_words(*role, word("read") == words::ALLOWED) {
+        for (name, wanted) in table_words(*role, word("mine") == words::ALLOWED) {
             if word(name) != wanted {
                 wrong(format!(
                     "{place} must have `{name}={wanted}` as the tables of the starting roles say, \
@@ -108,6 +126,21 @@ pub(super) fn assistant_findings(record: &str) -> Vec<Finding> {
                     word(name)
                 ));
             }
+        }
+        if word("read") == words::ALLOWED && word("mine") != words::ALLOWED {
+            wrong(format!(
+                "{place}: it read the issue that every role asks about, so it must have read the                  one it was asked to show too (`mine={}`).",
+                word("mine")
+            ));
+        }
+        if !matches!(
+            word("forged"),
+            words::FORBIDDEN | words::NOT_FOUND | words::INVALID_PROPOSAL
+        ) {
+            wrong(format!(
+                "{place}: *Apply* with a reference that was never made for them must be refused                  (`forged=proposal-invalid`, `forbidden` or `not-found`), not `{}`.",
+                word("forged")
+            ));
         }
         if word("kept") != words::HELD_BACK {
             wrong(format!(
@@ -152,14 +185,18 @@ mod tests {
             } else {
                 (words::NOT_FOUND, words::NOT_FOUND, words::NO_PROPOSAL)
             };
-            let [(_, status), (_, author)] = table_words(*role, sees);
+            let tables: Vec<String> = table_words(*role, sees)
+                .iter()
+                .map(|(name, word)| format!("{name}={word}"))
+                .collect();
             let _ = writeln!(
                 text,
-                "{}{} {actor} : read={read} status={status} author={author} kept={} \
-                 propose={propose} apply={apply}",
+                "{}{} {actor} : read={read} mine={read} {} kept={} forged={} propose={propose} apply={apply}",
                 words::ASK_LINE,
                 words::ENTRY_ASSISTANT,
-                words::HELD_BACK
+                tables.join(" "),
+                words::HELD_BACK,
+                words::INVALID_PROPOSAL
             );
             answers.push((actor, read, propose));
         }
@@ -207,6 +244,17 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_an_unknown_or_double_line_or_a_forged_reference_let_in() {
+        let text = record();
+        let double = format!("{text}{}", text.lines().next().unwrap_or_default());
+        assert!(says(&double, "two `ask` lines"));
+        let unknown = text.replace("ask assistant role-hr", "ask assistant role-nobody");
+        assert!(says(&unknown, "no starting role"));
+        let forged = text.replace("forged=proposal-invalid", "forged=allowed");
+        assert!(says(&forged, "never made for them"));
+    }
+
+    #[test]
     fn bad_example_what_is_never_sent_to_ai_reaches_the_provider() {
         assert!(says(
             &record().replace("kept=held-back", "kept=sent"),
@@ -217,7 +265,7 @@ mod tests {
     #[test]
     fn bad_example_the_assistant_shows_or_changes_more_than_the_person_may() {
         let text = record();
-        let shown = text.replace("status=hidden", "status=shown");
+        let shown = text.replace("estimate=hidden", "estimate=shown");
         assert!(says(&shown, "tables of the starting roles"));
         let (before, update) = text.split_once("tool update_issue").unwrap_or_default();
         let proposes = format!(

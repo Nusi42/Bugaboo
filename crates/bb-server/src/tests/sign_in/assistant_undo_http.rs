@@ -9,7 +9,7 @@ use bb_app::ai::{AiAnswer, AiToolCall};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, rig_and_app};
+use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{Site, id_of, key_of, version_of};
 use super::rig::{PASSWORD, Rig};
 
@@ -26,20 +26,58 @@ pub(super) fn local_model_on() -> Value {
     })
 }
 
-/// The model asks for one tool and then says it proposed it.
-fn will_propose(rig: &Rig, tool: &str, arguments: Value) {
+/// The model asks for these tools in its next answer, and then says it is done.
+pub(super) fn will_call(rig: &Rig, calls: &[(&str, Value)]) {
     rig.ai.will_answer(AiAnswer {
-        tool_calls: vec![AiToolCall {
-            id: "call-1".to_owned(),
-            name: tool.to_owned(),
-            arguments,
-        }],
+        tool_calls: calls
+            .iter()
+            .enumerate()
+            .map(|(at, (name, arguments))| AiToolCall {
+                id: format!("call-{}", at + 1),
+                name: (*name).to_owned(),
+                arguments: arguments.clone(),
+            })
+            .collect(),
         ..AiAnswer::default()
     });
     rig.ai.will_answer(AiAnswer {
-        text: "Proposed.".to_owned(),
+        text: "Done.".to_owned(),
         ..AiAnswer::default()
     });
+}
+
+/// Asks the question as `who` while the model asks for these tools; the answer, which has to be a
+/// success.
+pub(super) async fn ask(
+    rig: &Rig,
+    who: &mut Browser,
+    text: &str,
+    calls: &[(&str, Value)],
+) -> Result<Value, Failure> {
+    will_call(rig, calls);
+    let asked = who
+        .send(
+            "POST",
+            "/api/v1/assistant/questions",
+            Some(json!({"text": text})),
+        )
+        .await?;
+    assert_eq!(asked.status, StatusCode::OK, "{}", asked.body);
+    Ok(asked.body)
+}
+
+/// *Apply* of a proposal, as `who`: the reply, whatever it is.
+pub(super) async fn apply(who: &mut Browser, proposal: &Value) -> Result<Reply, Failure> {
+    who.send(
+        "POST",
+        "/api/v1/assistant/apply",
+        Some(json!({
+            "reference": proposal["reference"],
+            "tool": proposal["tool"],
+            "input": proposal["input"],
+        })),
+    )
+    .await
 }
 
 /// Asks the question as `who` and applies the first proposal; the answer of *Apply*.
@@ -50,36 +88,17 @@ pub(super) async fn ask_and_apply(
     tool: &str,
     input: Value,
 ) -> Result<Value, Failure> {
-    will_propose(rig, tool, input);
-    let asked = who
-        .send(
-            "POST",
-            "/api/v1/assistant/questions",
-            Some(json!({"text": text})),
-        )
-        .await?;
-    assert_eq!(asked.status, StatusCode::OK, "{}", asked.body);
-    let proposal = asked.body["proposals"][0].clone();
+    let asked = ask(rig, who, text, &[(tool, input)]).await?;
+    let proposal = asked["proposals"][0].clone();
     assert!(
         proposal.is_object(),
-        "no proposal for {tool}: {} {:?}",
-        asked.body,
+        "no proposal for {tool}: {asked} {:?}",
         rig.ai
             .calls()
             .last()
             .map(|call| format!("{:?}", call.request.turns))
     );
-    let applied = who
-        .send(
-            "POST",
-            "/api/v1/assistant/apply",
-            Some(json!({
-                "reference": proposal["reference"],
-                "tool": proposal["tool"],
-                "input": proposal["input"],
-            })),
-        )
-        .await?;
+    let applied = apply(who, &proposal).await?;
     assert_eq!(applied.status, StatusCode::OK, "{}", applied.body);
     Ok(applied.body)
 }

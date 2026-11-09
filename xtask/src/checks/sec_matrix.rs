@@ -113,28 +113,36 @@ struct Line {
     answers: BTreeMap<String, String>,
 }
 
-/// What a `delivery` line says after the colon, by name (`heard`, `status`, `author`).
-type Said = BTreeMap<String, String>;
+/// What a `delivery` or an `ask` line says after the colon, by name (`heard`, `status`, `author`).
+pub(super) type Said = BTreeMap<String, String>;
+
+/// The lines of the record that start with `prefix` and have the form `prefix head : name=word ...`:
+/// the head (its words joined by one space) and what the line says, in the order of the file.
+pub(super) fn said_lines(record: &str, prefix: &str) -> Vec<(String, Said)> {
+    record
+        .lines()
+        .filter_map(|line| line.strip_prefix(prefix))
+        .filter_map(|rest| rest.split_once(" : "))
+        .map(|(head, said)| {
+            (
+                head.split_whitespace().collect::<Vec<_>>().join(" "),
+                said.split_whitespace()
+                    .filter_map(|pair| pair.split_once('='))
+                    .map(|(name, word)| (name.to_owned(), word.to_owned()))
+                    .collect(),
+            )
+        })
+        .collect()
+}
 
 /// The actors, the routes and the deliveries of a record. A delivery is keyed by its entry point
 /// and its recipient, written as `entry recipient`.
 fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>, BTreeMap<String, Said>) {
     let mut actors = Vec::new();
     let mut lines = BTreeMap::new();
-    let mut deliveries = BTreeMap::new();
     for line in record.lines().filter(|line| !line.starts_with('#')) {
         if let Some(rest) = line.strip_prefix("actors ") {
             actors = rest.split_whitespace().map(str::to_owned).collect();
-        } else if let Some(rest) = line.strip_prefix("delivery ")
-            && let Some((head, said)) = rest.split_once(" : ")
-        {
-            deliveries.insert(
-                head.split_whitespace().collect::<Vec<_>>().join(" "),
-                said.split_whitespace()
-                    .filter_map(|pair| pair.split_once('='))
-                    .map(|(name, word)| (name.to_owned(), word.to_owned()))
-                    .collect(),
-            );
         } else if let Some(rest) = line.strip_prefix("route ")
             && let Some((head, answers)) = rest.split_once(" : ")
         {
@@ -164,7 +172,11 @@ fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>, BTreeMap<String,
             );
         }
     }
-    (actors, lines, deliveries)
+    (
+        actors,
+        lines,
+        said_lines(record, "delivery ").into_iter().collect(),
+    )
 }
 
 /// The operations that have a row in the table of examples.
@@ -214,11 +226,6 @@ fn actor_findings(actors: &[String], routes: &[Route]) -> Vec<Finding> {
 /// What a recipient with this starting role may be told, in the words of the record: the tables
 /// of the starting roles are the one place that says it.
 fn delivery_words(role: StartingRole) -> [(&'static str, &'static str); 3] {
-    let status = if role.field_level(Field::Status) == FieldLevel::Hidden {
-        words::LEFT_OUT
-    } else {
-        words::SHOWN
-    };
     // A role that sees no project follows no issue, so it hears of none (*HR*, ADR-0035).
     let heard = if role.permissions().contains(&Permission::SeeProjects) {
         words::YES
@@ -227,9 +234,24 @@ fn delivery_words(role: StartingRole) -> [(&'static str, &'static str); 3] {
     };
     [
         ("heard", heard),
-        ("status", status),
-        ("author", role.people_level(PeopleKind::Authors).code()),
+        ("status", shown_word(role, Field::Status)),
+        ("author", people_word(role, PeopleKind::Authors)),
     ]
+}
+
+/// Whether the tables of the starting roles let the role see a field, in the words of the record.
+pub(super) fn shown_word(role: StartingRole, field: Field) -> &'static str {
+    if role.field_level(field) == FieldLevel::Hidden {
+        words::LEFT_OUT
+    } else {
+        words::SHOWN
+    }
+}
+
+/// How the tables of the starting roles let the role see a kind of people information, in the words
+/// of the record.
+pub(super) fn people_word(role: StartingRole, kind: PeopleKind) -> &'static str {
+    role.people_level(kind).code()
 }
 
 /// Every starting role as the recipient has a line for each entry point of what the server sends

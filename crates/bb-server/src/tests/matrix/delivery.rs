@@ -22,7 +22,7 @@ use crate::sign_in_tests::issues_site::{ISSUES, Site, key_of, version_of};
 use crate::sign_in_tests::rig::Rig;
 
 /// The name of the administrator who makes the change.
-const CHANGER: &str = "Ada Admin";
+pub(super) const CHANGER: &str = "Ada Admin";
 
 /// How long the server waits before it sends the e-mail of a change, plus a little: the clock goes
 /// this far before the jobs run.
@@ -58,7 +58,7 @@ impl Delivered {
 
 /// Whether a person with the role can follow an issue at all: *HR* sees no project, so it follows
 /// nothing and hears of no issue (ADR-0035, decision 8).
-fn follows_issues(role: StartingRole) -> bool {
+pub(super) fn follows_issues(role: StartingRole) -> bool {
     role.permissions().contains(&Permission::SeeProjects)
 }
 
@@ -85,8 +85,8 @@ async fn issue_of(
 }
 
 /// How an author showed in a text: by name, by the label of the role, or not at all.
-pub(super) fn author_in(text: &str, role_label_part: &str) -> PeopleLevel {
-    if text.contains(CHANGER) {
+pub(super) fn author_in(text: &str, name: &str, role_label_part: &str) -> PeopleLevel {
+    if text.contains(name) {
         PeopleLevel::Names
     } else if text.contains(role_label_part) {
         PeopleLevel::RoleOnly
@@ -142,7 +142,7 @@ async fn in_the_app(role: StartingRole, person: &mut Browser) -> Result<Delivere
         role,
         heard: !items.is_empty(),
         status_shown,
-        author: author_in(&text, "Administrator"),
+        author: author_in(&text, CHANGER, "Administrator"),
     })
 }
 
@@ -158,7 +158,7 @@ fn by_mail(rig: &Rig, role: StartingRole) -> Delivered {
         heard: mail.is_some(),
         // The e-mail says the status in words, the same words as the screen (the catalog).
         status_shown: text.contains(&Message::from(STATUS_DONE).render()),
-        author: author_in(&text, "Administrator"),
+        author: author_in(&text, CHANGER, "Administrator"),
     }
 }
 

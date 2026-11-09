@@ -130,8 +130,12 @@ pub mod sec_matrix {
     pub const SENT: &str = "sent";
     /// An `ask` line says `apply=` [`NO_PROPOSAL`] when the assistant made no proposal to apply.
     pub const NO_PROPOSAL: &str = "none";
-    /// Every entry point the record may name for a route of the API or a tool.
-    pub const ENTRY_POINTS: [&str; 3] = [ENTRY_API, ENTRY_MCP, ENTRY_ASSISTANT];
+    /// An `ask` line says `forged=` [`INVALID_PROPOSAL`] when *Apply* turned away a reference that
+    /// this server never made for the person (`ai.proposal-invalid`).
+    pub const INVALID_PROPOSAL: &str = "proposal-invalid";
+    /// Every entry point the record may name for a route of the API or a tool. The assistant has
+    /// lines of its own ([`ENTRY_ASSISTANT`]), which name no route.
+    pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];
     /// A line of the record that starts like this is a tool; the others are routes and deliveries.
     pub const TOOL_LINE: &str = "tool ";
     /// The key of an agent that was handed an issue (nothing ticked) and has not taken it: it

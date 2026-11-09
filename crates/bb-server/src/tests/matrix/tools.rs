@@ -13,8 +13,6 @@
 //! `not-found` is no answer of the matrix: the test fails with it, so an example that does not reach
 //! the use case cannot pass as an allowance.
 
-use std::fmt::Write as _;
-
 use axum::http::StatusCode;
 use bb_api_words::sec_matrix as words;
 use bb_app::access::StartingRole;
@@ -26,13 +24,11 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::examples_time::timer_version;
+use super::record::{matches_the_repository_for, refusal_word};
 use crate::sign_in_tests::ai_mcp_rig::{Answer, Mcp, ai_on, an_agent_with_a_key, sign_in_app};
 use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::issues_site::{ISSUES, Site, key_of, ok};
 use crate::sign_in_tests::rig::{PASSWORD, Rig};
-
-/// The root of the repository, from the folder of this crate.
-const REPOSITORY_ROOT: &str = "../..";
 
 /// What an example of a tool needs to know besides the issue.
 struct Ground<'a> {
@@ -89,21 +85,14 @@ fn word_of(tool: Tool, answer: &Answer) -> Result<&'static str, String> {
     let text = answer.json["result"]["content"][0]["text"]
         .as_str()
         .unwrap_or_default();
-    let said = |code: ErrorCode| Message::from(code.message()).render();
     // A person who could not start a timer has none to stop: there is nothing of theirs to find.
-    if text == said(ErrorCode::NotFound)
-        || (tool == Tool::StopTimer && text == said(ErrorCode::TimerNotRunning))
+    if tool == Tool::StopTimer
+        && text == Message::from(ErrorCode::TimerNotRunning.message()).render()
     {
         return Ok(words::NOT_FOUND);
     }
-    if text == said(ErrorCode::Forbidden) {
-        Ok(words::FORBIDDEN)
-    } else {
-        Err(format!(
-            "a refusal that is no answer of the matrix: {}",
-            answer.json
-        ))
-    }
+    refusal_word(text)
+        .ok_or_else(|| format!("a refusal that is no answer of the matrix: {}", answer.json))
 }
 
 async fn call(
@@ -423,69 +412,12 @@ async fn scene<'a>(
     })
 }
 
-/// The tool lines of a text.
-fn tool_lines(text: &str) -> Vec<&str> {
-    text.lines()
-        .filter(|line| line.starts_with(words::TOOL_LINE))
-        .collect()
-}
-
-/// Compares the lines with the file of the repository, or writes them when asked to.
-fn matches_the_repository(found: &[String]) -> Result<(), Failure> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(REPOSITORY_ROOT)
-        .join(words::RECORD_PATH);
-    let stored = std::fs::read_to_string(&path)
-        .map_err(|error| format!("could not read the record: {error}"))?
-        .replace("\r\n", "\n");
-    if std::env::var(words::WRITE_VARIABLE).as_deref() == Ok(words::WRITE_VALUE) {
-        let mut text: String = stored
-            .lines()
-            .filter(|line| !line.starts_with(words::TOOL_LINE))
-            .fold(String::new(), |mut text, line| {
-                let _ = writeln!(text, "{line}");
-                text
-            });
-        for line in found {
-            let _ = writeln!(text, "{line}");
-        }
-        std::fs::write(&path, text)?;
-        return Ok(());
-    }
-    let wanted: Vec<&str> = found.iter().map(String::as_str).collect();
-    let kept = tool_lines(&stored);
-    if kept == wanted {
-        return Ok(());
-    }
-    let place = kept
-        .iter()
-        .zip(&wanted)
-        .enumerate()
-        .find(|(_, (before, now))| before != now)
-        .map_or_else(
-            || "one has more tool lines than the other".to_owned(),
-            |(at, (before, now))| {
-                format!(
-                    "tool line {}: the file has `{before}`, the matrix ran `{now}`",
-                    at + 1
-                )
-            },
-        );
-    Err(format!(
-        "the tool lines of the record differ from what the matrix ran ({place}). Write them again \
-         with {}={}.",
-        words::WRITE_VARIABLE,
-        words::WRITE_VALUE
-    )
-    .into())
-}
-
 #[tokio::test]
 async fn sec_01_every_tool_answers_every_actor_as_the_tables_say() -> TestResult {
     each_database("sec_matrix_tools", async |db| {
         let found = lines(db).await?;
         assert_eq!(found.len(), registry::<bb_store::AuthStorage>().len());
-        matches_the_repository(&found)
+        matches_the_repository_for(words::TOOL_LINE, &found)
     })
     .await
 }
