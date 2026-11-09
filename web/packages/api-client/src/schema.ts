@@ -1693,6 +1693,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/help/ai-guide": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The guide to AI for everybody (`userDocs/ai/literacy.md`), rendered as safe HTML. Every signed-in
+     *     person may read it: it holds no data of the organization.
+     */
+    get: operations["getAiGuide"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issue-types": {
     parameters: {
       query?: never;
@@ -5022,6 +5042,11 @@ export interface components {
      * @enum {string}
      */
     AgreementStatus: "not-needed" | "needed" | "confirmed";
+    /** @description The guide to AI. */
+    AiGuideBody: {
+      /** @description The guide as safe HTML, made from the text of the user docs when the program was built. */
+      html: SafeHtml;
+    };
     /** @description The key of the provider. */
     AiKeyBody: {
       /**
@@ -9303,6 +9328,8 @@ export interface components {
       after: Record<string, unknown>;
       /** @description The agent. */
       agent: string;
+      /** @description The name of the agent. */
+      agent_name: string;
       /** @description The value now. */
       before: Record<string, unknown>;
       /** @description The field. */
@@ -14925,6 +14952,32 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getAiGuide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The guide. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AiGuideBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

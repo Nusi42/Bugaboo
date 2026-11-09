@@ -338,15 +338,6 @@ pub const AGENT_WORK_POWER_CHANGE_STATUS: MessageKey =
 pub const AGENT_WORK_POWER_CREATE_SUB_ISSUES: MessageKey =
     MessageKey::new("agent-work.power-create-sub-issues");
 
-/// The message `agent-work.proposal-apply`.
-pub const AGENT_WORK_PROPOSAL_APPLY: MessageKey = MessageKey::new("agent-work.proposal-apply");
-
-/// The message `agent-work.proposal-discard`.
-pub const AGENT_WORK_PROPOSAL_DISCARD: MessageKey = MessageKey::new("agent-work.proposal-discard");
-
-/// The message `agent-work.proposal-empty`.
-pub const AGENT_WORK_PROPOSAL_EMPTY: MessageKey = MessageKey::new("agent-work.proposal-empty");
-
 /// The message `agent-work.proposals`.
 pub const AGENT_WORK_PROPOSALS: MessageKey = MessageKey::new("agent-work.proposals");
 
@@ -864,6 +855,9 @@ pub const AI_SETUP_APPS: MessageKey = MessageKey::new("ai-setup.apps");
 /// The message `ai-setup.apps-intro`.
 pub const AI_SETUP_APPS_INTRO: MessageKey = MessageKey::new("ai-setup.apps-intro");
 
+/// The message `ai-setup.guide-link`.
+pub const AI_SETUP_GUIDE_LINK: MessageKey = MessageKey::new("ai-setup.guide-link");
+
 /// The message `ai-setup.intro`.
 pub const AI_SETUP_INTRO: MessageKey = MessageKey::new("ai-setup.intro");
 
@@ -1260,6 +1254,15 @@ pub const ASSISTANT_CONVERSATION: MessageKey = MessageKey::new("assistant.conver
 
 /// The message `assistant.empty`.
 pub const ASSISTANT_EMPTY: MessageKey = MessageKey::new("assistant.empty");
+
+/// The message `assistant.guide-apps-link`.
+pub const ASSISTANT_GUIDE_APPS_LINK: MessageKey = MessageKey::new("assistant.guide-apps-link");
+
+/// The message `assistant.guide-link`.
+pub const ASSISTANT_GUIDE_LINK: MessageKey = MessageKey::new("assistant.guide-link");
+
+/// The message `assistant.guide-title`.
+pub const ASSISTANT_GUIDE_TITLE: MessageKey = MessageKey::new("assistant.guide-title");
 
 /// The message `assistant.label`.
 pub const ASSISTANT_LABEL: MessageKey = MessageKey::new("assistant.label");
@@ -1782,6 +1785,21 @@ pub const CONNECT_OFF: MessageKey = MessageKey::new("connect.off");
 
 /// The message `connect.page`.
 pub const CONNECT_PAGE: MessageKey = MessageKey::new("connect.page");
+
+/// The message `connect.reach`.
+pub const CONNECT_REACH: MessageKey = MessageKey::new("connect.reach");
+
+/// The message `connect.reach-all`.
+pub const CONNECT_REACH_ALL: MessageKey = MessageKey::new("connect.reach-all");
+
+/// The message `connect.reach-none-ticked`.
+pub const CONNECT_REACH_NONE_TICKED: MessageKey = MessageKey::new("connect.reach-none-ticked");
+
+/// The message `connect.reach-some`.
+pub const CONNECT_REACH_SOME: MessageKey = MessageKey::new("connect.reach-some");
+
+/// The message `connect.reach-some-help`.
+pub const CONNECT_REACH_SOME_HELP: MessageKey = MessageKey::new("connect.reach-some-help");
 
 /// The message `connect.take-back-note`.
 pub const CONNECT_TAKE_BACK_NOTE: MessageKey = MessageKey::new("connect.take-back-note");
@@ -8431,22 +8449,12 @@ pub fn agent_work_missing_next(part: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `agent-work.proposal-line`.
+/// The message `agent-work.proposal-from`.
 #[must_use]
-pub fn agent_work_proposal_line(
-    after: impl std::fmt::Display,
-    agent: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_proposal_from(agent: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("agent-work.proposal-line"),
-        vec![
-            ("after", Value::Text(after.to_string())),
-            ("agent", Value::Text(agent.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("field", Value::Text(field.to_string())),
-        ],
+        MessageKey::new("agent-work.proposal-from"),
+        vec![("agent", Value::Text(agent.to_string()))],
     )
 }
 
@@ -14757,10 +14765,16 @@ pub fn sub_issues_added(key: impl std::fmt::Display) -> Message {
 
 /// The message `sub-issues.not-part-of`.
 #[must_use]
-pub fn sub_issues_not_part_of(key: impl std::fmt::Display) -> Message {
+pub fn sub_issues_not_part_of(
+    key: impl std::fmt::Display,
+    parent: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
         MessageKey::new("sub-issues.not-part-of"),
-        vec![("key", Value::Text(key.to_string()))],
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("parent", Value::Text(parent.to_string())),
+        ],
     )
 }
 
@@ -16185,7 +16199,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {# single permission} other {# single permissions}}",
     ),
     ("access-keys.row.prefix", "Starts with {prefix}"),
-    ("access-keys.row.projects-all", "For every project"),
+    ("access-keys.row.projects-all", "All projects"),
     ("access-keys.row.projects-some", "Only for {names}"),
     (
         "access-keys.shown-once",
@@ -16376,12 +16390,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agent-work.power-change-fields", "Change these fields"),
     ("agent-work.power-change-status", "Change the status"),
     ("agent-work.power-create-sub-issues", "Create sub-issues"),
-    ("agent-work.proposal-apply", "Apply"),
-    ("agent-work.proposal-discard", "Discard"),
-    ("agent-work.proposal-empty", "nothing"),
     (
-        "agent-work.proposal-line",
-        "{agent} proposes: {field}, {before} to {after}",
+        "agent-work.proposal-from",
+        "From {agent}, by a standing rule",
     ),
     ("agent-work.proposals", "Proposals of standing rules"),
     ("agent-work.question-answer", "Your answer"),
@@ -16426,7 +16437,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agent-work.review-text",
-        "Results of this attempt are below. The review ends the work or starts another attempt.",
+        "The review ends the work or starts another attempt.",
     ),
     ("agent-work.review-throw-away", "Thrown away by {person}"),
     ("agent-work.review-throw-away-choice", "Throw away"),
@@ -16478,7 +16489,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agent-work.throw-away-outside",
-        "A branch, a pull request or anything else outside Bugaboo stays as it is.",
+        "Anything done outside Bugaboo, such as work in a code repository, stays as it is.",
     ),
     (
         "agent-work.throw-away-reading",
@@ -16814,8 +16825,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Outside AI apps that people connect to their accounts.",
     ),
     (
+        "ai-setup.guide-link",
+        "Read the guide for your people: what AI can and cannot do",
+    ),
+    (
         "ai-setup.intro",
-        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it. The guide for your people on what the assistant can and cannot do is linked here once it is published.",
+        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
     ),
     ("ai-setup.key", "Key of the provider"),
     (
@@ -17081,6 +17096,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "assistant.empty",
         "Ask about what you are looking at, for example: “Summarize the comments on this issue.”",
+    ),
+    (
+        "assistant.guide-apps-link",
+        "The apps you allowed, and how to take them back",
+    ),
+    (
+        "assistant.guide-link",
+        "What AI can and cannot do: the guide",
+    ),
+    (
+        "assistant.guide-title",
+        "AI in Bugaboo: a short guide for everybody",
     ),
     ("assistant.label", "Assistant"),
     ("assistant.leave-out", "Leave out {name}"),
@@ -17623,7 +17650,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "connect.off",
         "AI apps are switched off in this organization, so nothing was allowed.",
     ),
-    ("connect.page", "Connect an app"),
+    ("connect.page", "Connect"),
+    ("connect.reach", "Projects it may work in"),
+    ("connect.reach-all", "All projects I can see"),
+    ("connect.reach-none-ticked", "Tick at least one project."),
+    ("connect.reach-some", "Only some projects"),
+    (
+        "connect.reach-some-help",
+        "It works in the projects you tick and in the projects inside them.",
+    ),
     (
         "connect.take-back-note",
         "You can take this back at any time in My settings, under Connected apps.",
@@ -19266,9 +19301,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.tags-nothing", "No tag has that name."),
     ("labels.tags-search", "Search tags"),
     ("labels.tags-title", "Tags"),
-    ("labels.take-off", "Take {name} off"),
+    ("labels.take-off", "Take off {name}"),
     ("labels.take-off-short", "Take off"),
-    ("labels.take-project-off", "Take {name} off the list"),
+    ("labels.take-project-off", "Take off {name} from the list"),
     ("layout-kind.issue-page", "Issue page"),
     ("layout-kind.new-issue", "New-issue form"),
     ("layout.section-details", "Details"),
@@ -22577,7 +22612,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sub-issues.added", "{key} is now a sub-issue."),
     ("sub-issues.more", "Show more sub-issues"),
     ("sub-issues.none", "No sub-issues yet."),
-    ("sub-issues.not-part-of", "Take this issue out of {key}"),
+    ("sub-issues.not-part-of", "Take {key} out of {parent}"),
     ("sub-issues.progress", "{done} of {total} done"),
     ("sub-issues.progress-label", "How far the sub-issues are"),
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),

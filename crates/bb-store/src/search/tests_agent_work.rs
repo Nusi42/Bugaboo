@@ -636,6 +636,60 @@ async fn ai_33_the_details_of_a_page_of_work_are_read_together_and_in_order() ->
 }
 
 #[tokio::test]
+async fn ai_35_the_reviews_of_a_work_come_oldest_first_whatever_their_random_ids_say() -> TestResult
+{
+    each_database("ai_35_reviews_in_time", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let (_, works) = hand_over(
+            storage,
+            &mut made,
+            (owner, fixer),
+            &[data.issues[0].id],
+            (Vec::new(), Vec::new()),
+        )
+        .await?;
+        // The older review has the greater ID, so an order by ID would put it last.
+        let (one, two) = (
+            AgentNoteId::from_random(made.bytes()),
+            AgentNoteId::from_random(made.bytes()),
+        );
+        let (low, high) = if one < two { (one, two) } else { (two, one) };
+        let review = |id, answer, when| Review {
+            id,
+            work: works[0].id,
+            answer,
+            note: None,
+            by: Some(owner),
+            at: at(when),
+        };
+        let older = review(high, ReviewAnswer::SendBack, 5);
+        let newer = review(low, ReviewAnswer::Accept, 6);
+        made.step += 1;
+        let step = made.step;
+        let (first, second) = (older.clone(), newer.clone());
+        storage
+            .record_change(&event(&mut made.source, step), move |transaction| {
+                Box::pin(async move {
+                    AuthStorage::insert_review(transaction, &second).await?;
+                    AuthStorage::insert_review(transaction, &first).await
+                })
+            })
+            .await?;
+        let details = storage.details_of_works(vec![works[0].clone()]).await?;
+        assert_eq!(details.reviews, [older, newer]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_33_writes_of_work_count_versions_and_end_only_what_is_open() -> TestResult {
     each_database("ai_33_versions", async |db| {
         let Given {

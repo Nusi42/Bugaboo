@@ -5,12 +5,15 @@ import { expect, type Page } from "@playwright/test";
 import { issueAddress } from "../../src/shared/paths.ts";
 import { tool } from "../../../tooling/load/agents.ts";
 import { signInThroughApi } from "./accounts.ts";
-import { adaOfTheSample, benOfTheSample, shot } from "./demo-m7-common.ts";
+import { adaOfTheSample, benOfTheSample, good } from "./demo-m7-common.ts";
 import { signIn } from "./flows.ts";
 import { sampleAgents } from "./sample-agents.ts";
 import { type Instance } from "./server.ts";
 
 // Step 6 of the exit demo of M7 (`m7-exit-demo.spec.ts`): the standing rule of the sample.
+
+/** The tag the rule proposes: a word a person would use for it. */
+const TAG = "needs-triage";
 
 /** Step 6: a standing rule over new bugs proposes and changes nothing until Ada presses Apply. */
 export async function aStandingRuleProposesAndChangesNothing(page: Page, server: Instance) {
@@ -37,20 +40,26 @@ export async function aStandingRuleProposesAndChangesNothing(page: Page, server:
     rule,
     issue,
     field: "tags",
-    value: "from-the-rule",
+    value: TAG,
   });
   expect(proposed.kept).toBe(true);
   await signIn(page, adaOfTheSample());
   await page.goto(issueAddress(issue));
-  await expect(page.getByText(/from-the-rule/u).first()).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: t("agent-work.proposal-apply"), exact: true }),
-  ).toBeVisible();
+  // The proposal is the card of the assistant's proposals, and it says which agent it comes from.
+  const card = page.getByRole("region", { name: t("assistant.card.title") });
+  await expect(card).toBeVisible();
+  await expect(card.getByText(TAG)).toBeVisible();
+  await expect(card.getByText(t("agent-work.proposal-from", { agent: "Sorter" }))).toBeVisible();
+  await expect(card.getByRole("button", { name: t("assistant.card.apply") })).toBeVisible();
+  await card.evaluate((node: HTMLElement) => {
+    node.scrollIntoView({ block: "center" });
+  });
   const issueNow = dataOf(
     await ada.client.GET("/api/v1/issues/{issue}", { params: { path: { issue } } }),
   );
-  expect(JSON.stringify(issueNow.issue)).not.toContain("from-the-rule");
-  await shot(page, "05-the-rule-proposes");
+  expect(JSON.stringify(issueNow.issue)).not.toContain(TAG);
+  await expect(card).toBeInViewport({ ratio: 1 });
+  await good(page, "06-the-rule-proposes");
   await ben.dispose();
   await ada.dispose();
 }

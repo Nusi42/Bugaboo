@@ -23,6 +23,7 @@ mod agents_limits;
 mod agents_more;
 mod agents_offers;
 mod agents_order;
+mod ai_guide;
 mod ai_setup;
 mod ai_tools;
 mod assistant;

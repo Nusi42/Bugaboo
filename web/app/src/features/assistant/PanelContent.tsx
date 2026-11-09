@@ -14,9 +14,8 @@ import {
 
 import type { AssistantStatus } from "./assistant.ts";
 import { AskBox } from "./AskBox.tsx";
-import { LookingAt } from "./LookingAt.tsx";
 import type { LookingAtItem } from "./looking-at.ts";
-import { NeverSent } from "./NeverSent.tsx";
+import { PanelTop } from "./PanelTop.tsx";
 import { TurnList } from "./TurnList.tsx";
 import type { Conversation } from "./use-conversation.ts";
 import { WhereFrom } from "./WhereFrom.tsx";
@@ -32,7 +31,8 @@ export interface PanelContentProps {
 
 /**
  * What stands in the panel: its title and close button, on top what it looks at, where its answers
- * come from and what is never sent to AI, then the turns, and at the foot the box to ask.
+ * come from and what is never sent to AI, then the turns, and at the foot the box to ask. On a
+ * phone only where the answers come from stays on top, and the rest scrolls with the turns.
  */
 export function PanelContent({
   status,
@@ -46,11 +46,7 @@ export function PanelContent({
   // screen; where the answers come from always stays in view, as the panel promises (COMP-08).
   const phone = useLayout() === "phone";
   const top = (
-    <div {...partOf(part.assistantTop)}>
-      <LookingAt items={items} onLeaveOut={onLeaveOut} />
-      {phone ? null : <WhereFrom status={status} />}
-      <NeverSent />
-    </div>
+    <PanelTop status={status} items={items} onLeaveOut={onLeaveOut} sourceAbove={phone} />
   );
   return (
     <div {...partOf(part.assistantPanel)}>
@@ -67,7 +63,7 @@ export function PanelContent({
           <IconButton icon={iconName.close} label={t("assistant.close")} onPress={onClose} />
         )}
       </div>
-      {phone ? <WhereFrom status={status} /> : top}
+      {phone ? <WhereFrom status={status} names={false} /> : top}
       {here ? null : <Alert tone={alertTone.warning}>{t("assistant.off-here")}</Alert>}
       <div {...partOf(part.assistantBody)}>
         {phone ? top : null}
@@ -80,7 +76,6 @@ export function PanelContent({
         answeredCount={conversation.turns.length}
         onAsk={conversation.ask}
       />
-      {phone ? <p {...partOf(part.muted)}>{t("assistant.close-text")}</p> : null}
     </div>
   );
 }

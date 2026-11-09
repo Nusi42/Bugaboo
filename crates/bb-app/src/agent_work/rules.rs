@@ -302,6 +302,34 @@ pub async fn standing_rules<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// A proposal with the name of its agent.
+    pub(super) async fn proposal_view(
+        &self,
+        proposal: &Proposal,
+    ) -> Result<ProposalView, AppError> {
+        let agents = self
+            .store()
+            .agents_by_ids(vec![proposal.agent])
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let agent_name = agents
+            .into_iter()
+            .next()
+            .map(|agent| agent.name)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        Ok(ProposalView {
+            id: proposal.id,
+            rule: proposal.rule,
+            agent: proposal.agent,
+            agent_name,
+            field: proposal.field,
+            before: proposal.before.clone(),
+            after: proposal.after.clone(),
+            state: proposal.state,
+            made_at: proposal.made_at,
+        })
+    }
+
     /// Judges a proposal of an agent under one of its open rules: the one place that decides if it
     /// may be made, for the use case and for its preview.
     async fn plan_proposal(
@@ -405,20 +433,7 @@ pub async fn propose_change<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    Ok(held.authorize(proposal_view(&proposal)))
-}
-
-fn proposal_view(proposal: &Proposal) -> ProposalView {
-    ProposalView {
-        id: proposal.id,
-        rule: proposal.rule,
-        agent: proposal.agent,
-        field: proposal.field,
-        before: proposal.before.clone(),
-        after: proposal.after.clone(),
-        state: proposal.state,
-        made_at: proposal.made_at,
-    }
+    Ok(held.authorize(ctx.proposal_view(&proposal).await?))
 }
 
 /// Applies or discards a proposal. Applying changes the issue as the person, through the one
@@ -484,7 +499,7 @@ pub async fn decide_proposal<S: AuthStore>(
     let (_, held) = ctx
         .visible_issue(&actor, &decided.issue.to_string())
         .await?;
-    Ok(held.authorize(proposal_view(&decided)))
+    Ok(held.authorize(ctx.proposal_view(&decided).await?))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

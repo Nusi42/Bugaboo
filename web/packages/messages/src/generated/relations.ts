@@ -13,7 +13,7 @@ export const messages = {
   "sub-issues.progress": "{done} of {total} done",
   "sub-issues.take-out": "Take {key} out of the sub-issues",
   "sub-issues.take-out-short": "Take {key} out",
-  "sub-issues.not-part-of": "Take this issue out of {key}",
+  "sub-issues.not-part-of": "Take {key} out of {parent}",
   "related-issues.title": "Related issues",
   "related-issues.none": "No related issues yet.",
   "related-issues.more": "Show more related issues",

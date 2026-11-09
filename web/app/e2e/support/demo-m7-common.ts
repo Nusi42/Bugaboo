@@ -1,7 +1,6 @@
 import { type Page } from "@playwright/test";
 
 import { goodWindowInFourThemes } from "./demo.ts";
-import { inFourThemesAsWindow } from "./four-themes.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
 
 // What the steps of the exit demo of M7 share (`m7-exit-demo.spec.ts`): the pictures and the people.
@@ -10,7 +9,7 @@ import { sampleNamed, type SamplePerson } from "./sample.ts";
 export const STEP_TIMEOUT_MS = 300_000;
 
 /** The pictures of the demo, in the folder of the screenshots. */
-const DEMO_M7 = "M7/exit-demo";
+const DEMO_M7 = "M7/exit-demo-r2";
 
 /** The screen is good in the four themes and is in the pictures of this demo. */
 export function good(page: Page, step: string): Promise<void> {
@@ -30,13 +29,4 @@ export function anaOfTheSample(): SamplePerson {
 /** Ben Hale, the Team member whose two agents the sample holds. */
 export function benOfTheSample(): SamplePerson {
   return sampleNamed("Ben Hale");
-}
-
-/**
- * The screen is in the pictures of this demo in the four themes, without the check of the names of
- * controls: the issue page has label chips whose visible words are not in their names, and the
- * assistant panel its *Leave out* buttons (M7-F126).
- */
-export function shot(page: Page, step: string): Promise<void> {
-  return inFourThemesAsWindow(page, step, DEMO_M7);
 }

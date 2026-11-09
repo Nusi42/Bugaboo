@@ -241,9 +241,7 @@ impl AgentWorkRecords for AuthStorage {
             details.results = all(transaction, &results, read_result).await?;
         }
         let mut reviews = reviews_select();
-        reviews
-            .and_where(Expr::col(ReviewRow::Work).is_in(work_ids))
-            .order_by(ReviewRow::Id, Order::Asc);
+        reviews.and_where(Expr::col(ReviewRow::Work).is_in(work_ids));
         details.reviews = all(transaction, &reviews, read_review).await?;
         Ok(details)
     }
@@ -369,9 +367,7 @@ impl AgentWorkRecords for AuthStorage {
         work: AgentWorkId,
     ) -> Result<Vec<Review>, StoreError> {
         let mut select = reviews_select();
-        select
-            .and_where(Expr::col(ReviewRow::Work).eq(work.stored()))
-            .order_by(ReviewRow::Id, Order::Asc);
+        select.and_where(Expr::col(ReviewRow::Work).eq(work.stored()));
         all(transaction, &select, read_review).await
     }
 

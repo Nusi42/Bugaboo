@@ -52,7 +52,7 @@ export const messages = {
   "access-keys.row.prefix": "Starts with {prefix}",
   "access-keys.row.permissions":
     "{count, plural, one {# single permission} other {# single permissions}}",
-  "access-keys.row.projects-all": "For every project",
+  "access-keys.row.projects-all": "All projects",
   "access-keys.row.projects-some": "Only for {names}",
   "access-keys.row.hidden-project": "a project you cannot see",
   "access-keys.row.expires": "Runs out on {when}",

@@ -63,6 +63,7 @@ pub(super) async fn ai_request(
             "/api/v1/assistant/apply".to_owned(),
             Some(json!({"reference": "AAAA", "tool": "update_issue", "input": {}})),
         ),
+        "getAiGuide" => ("GET", "/api/v1/help/ai-guide".to_owned(), None),
         "listNeverSentToAi" => ("GET", "/api/v1/never-sent-to-ai".to_owned(), None),
         "setFieldNeverSentToAi" => (
             "PUT",

@@ -358,6 +358,8 @@ pub(crate) struct ProposalBody {
     pub(super) rule: String,
     /// The agent.
     pub(super) agent: String,
+    /// The name of the agent.
+    pub(super) agent_name: String,
     /// The field.
     pub(super) field: RuleField,
     /// The value now.
@@ -380,6 +382,7 @@ impl From<&ProposalView> for ProposalBody {
             id: proposal.id.to_string(),
             rule: proposal.rule.to_string(),
             agent: proposal.agent.to_string(),
+            agent_name: proposal.agent_name.clone(),
             field: proposal.field,
             before: proposal.before.clone(),
             after: proposal.after.clone(),

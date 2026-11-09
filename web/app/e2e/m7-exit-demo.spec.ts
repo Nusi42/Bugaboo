@@ -13,12 +13,12 @@ import { test } from "./support/fixtures.ts";
 // repeat it by hand with `cargo xtask dev --sample`: an AI app of a Contributor does not see what is
 // hidden from Contributors; the assistant answers "Summarize WEB-142" (a fake model on this
 // computer) and proposes a priority that is saved only after Apply; Ada hands issues to two agents,
-// one asks a question that Ada answers, the other is sent back once and then accepted; a third
+// one asks a question that Ada answers, the other is sent back once and then accepted; the third agent's
 // attempt is thrown away and its changes go back in one step; a standing rule over new bugs
 // proposes and changes nothing. The agents work through their tools over `/mcp`, so no row is put
 // into the database by the test (M7-F108). Every step is good in the four themes on a phone and on
 // a computer, and with `BB_SCREENSHOT_DIR` set the same run takes the pictures
-// (`<folder>/M7/exit-demo/<step>-<phone|computer>-<theme>.png`).
+// (`<folder>/M7/exit-demo-r2/<step>-<phone|computer>-<theme>.png`).
 
 test.use({ sample: true });
 test.describe.configure({ mode: "serial" });
@@ -49,7 +49,7 @@ test("4. Another agent is sent back once and then accepted", async ({ page, serv
   await anAgentIsSentBackOnceAndThenAccepted(page, server);
 });
 
-test("5. A third attempt is thrown away and its changes go back in one step", async ({
+test("5. The third agent's attempt is thrown away and its changes go back in one step", async ({
   page,
   server,
 }) => {

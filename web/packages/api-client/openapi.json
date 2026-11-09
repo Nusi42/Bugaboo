@@ -5901,6 +5901,46 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/help/ai-guide": {
+      "get": {
+        "tags": ["ai"],
+        "summary": "The guide to AI for everybody (`userDocs/ai/literacy.md`), rendered as safe HTML. Every signed-in\nperson may read it: it holds no data of the organization.",
+        "operationId": "getAiGuide",
+        "responses": {
+          "200": {
+            "description": "The guide.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiGuideBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/issue-types": {
       "get": {
         "tags": ["issue-types"],
@@ -18177,6 +18217,18 @@
         "description": "Where the agreement for the provider stands: not needed (a model on the organization's own network), needed (and not confirmed for this provider), or confirmed.",
         "enum": ["not-needed", "needed", "confirmed"]
       },
+      "AiGuideBody": {
+        "type": "object",
+        "description": "The guide to AI.",
+        "required": ["html"],
+        "properties": {
+          "html": {
+            "type": "string",
+            "description": "The guide as safe HTML, made from the text of the user docs when the program was built.",
+            "x-safe-html": true
+          }
+        }
+      },
       "AiKeyBody": {
         "type": "object",
         "description": "The key of the provider.",
@@ -26920,7 +26972,17 @@
       "ProposalBody": {
         "type": "object",
         "description": "A change a standing rule proposes.",
-        "required": ["id", "rule", "agent", "field", "before", "after", "state", "proposed_at"],
+        "required": [
+          "id",
+          "rule",
+          "agent",
+          "agent_name",
+          "field",
+          "before",
+          "after",
+          "state",
+          "proposed_at"
+        ],
         "properties": {
           "after": {
             "type": "object",
@@ -26929,6 +26991,10 @@
           "agent": {
             "type": "string",
             "description": "The agent."
+          },
+          "agent_name": {
+            "type": "string",
+            "description": "The name of the agent."
           },
           "before": {
             "type": "object",

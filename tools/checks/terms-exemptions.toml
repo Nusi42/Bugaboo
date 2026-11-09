@@ -146,11 +146,6 @@ at = ["api:parameter state", "api:property AuthorizationParams.state"]
 reason = "The name of the parameter of OAuth (RFC 6749) that an app wants back unchanged, which no screen shows. Not the status of an issue."
 
 [[allow]]
-term = "discard"
-at = ["messages/en.json#agent-work.proposal-discard"]
-reason = "The glossary names the two answers to a proposed change Apply and Discard (the word Throw away is for a timer). The proposal of a standing rule is answered the same way."
-
-[[allow]]
 term = "state"
 at = [
   "api:property AgentMarkRefBody.state",
@@ -181,5 +176,9 @@ reason = "The states of agent work (Waiting for the agent, Agent working, Waitin
 
 [[allow]]
 term = "discard"
-at = ["messages/en.json#assistant.card.discard", "userDocs/ai/assistant.md"]
+at = [
+  "messages/en.json#assistant.card.discard",
+  "userDocs/ai/assistant.md",
+  "userDocs/agents/README.md",
+]
 reason = "The glossary names Apply and Discard as the two answers to a proposed change (the entry Apply / Discard). Not the throwing away of a timer, which is Throw away."

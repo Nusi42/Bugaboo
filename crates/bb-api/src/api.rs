@@ -46,6 +46,7 @@ mod admin;
 mod agent_work;
 mod agent_work_bodies;
 mod agents;
+mod ai_guide;
 mod ai_setup;
 mod assignments;
 mod assistant;
@@ -183,6 +184,7 @@ where
         .merge(projects::routes())
         .merge(fields::routes())
         .merge(issue_types::routes())
+        .merge(ai_guide::routes())
         .merge(never_sent::routes())
         .merge(oauth::routes())
         .merge(offers::routes())

@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part } from "@bugaboo/ui";
 
-import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useAiSetup } from "./ai.ts";
 import { AiAgreement } from "./AiAgreement.tsx";
+import { AiIntro } from "./AiIntro.tsx";
 import { AiAppsCard } from "./AiAppsCard.tsx";
 import { AiSetupForm } from "./AiSetupForm.tsx";
 import { AiSwitches } from "./AiSwitches.tsx";
@@ -17,11 +17,10 @@ import { AiWhatGoesWhere } from "./AiWhatGoesWhere.tsx";
  * that may sign in. AI stays off until it is switched on here.
  */
 export function AiPage() {
-  usePageTitle(t("ai-setup.title"));
   const setup = useAiSetup();
   return (
     <div {...partOf(part.aiPage)}>
-      <Card heading={t("ai-setup.title")} level={1} intro={t("ai-setup.intro")} />
+      <AiIntro />
       <QueryGate error={setup.error} data={setup.data} loading={null}>
         {(shown) => (
           <>

@@ -157,7 +157,7 @@ function PartOf({
         {mayChange ? (
           <TakeOut
             child={readableId}
-            label={t("sub-issues.not-part-of", { key: above.readable_id })}
+            label={t("sub-issues.not-part-of", { key: readableId, parent: above.readable_id })}
           />
         ) : null}
       </IssueRefLine>

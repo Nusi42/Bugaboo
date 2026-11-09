@@ -97,8 +97,9 @@ export const messages = {
   "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
   "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "ai-setup.title": "Set up the assistant",
+  "ai-setup.guide-link": "Read the guide for your people: what AI can and cannot do",
   "ai-setup.intro":
-    "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it. The guide for your people on what the assistant can and cannot do is linked here once it is published.",
+    "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
   "ai-setup.set-up": "Provider and key",
   "ai-setup.set-up-intro":
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",

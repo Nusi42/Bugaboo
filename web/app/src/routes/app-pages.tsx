@@ -112,6 +112,13 @@ export const connectRoute = createRoute({
   component: lazyRouteComponent(() => import("../features/connect/index.ts"), "ConnectScreen"),
 });
 
+/** The guide to AI for everybody (COMP-11), linked from the assistant and from *Set up the assistant*. */
+export const aiGuideRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.aiGuide,
+  component: lazyRouteComponent(() => import("../features/assistant/index.ts"), "AiGuidePage"),
+});
+
 /** Where *Organization settings* starts. */
 export const organizationSettingsIndexRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,

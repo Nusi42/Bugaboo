@@ -112,12 +112,7 @@ export interface MessageArguments {
   "agent-work.missing-first": { part: string | number };
   "agent-work.missing-many": { issue: string | number; parts: string | number };
   "agent-work.missing-next": { part: string | number };
-  "agent-work.proposal-line": {
-    after: string | number;
-    agent: string | number;
-    before: string | number;
-    field: string | number;
-  };
+  "agent-work.proposal-from": { agent: string | number };
   "agent-work.result-check-failed": { label: string | number };
   "agent-work.result-check-passed": { label: string | number };
   "agent-work.review-accept": { person: string | number };
@@ -731,7 +726,7 @@ export interface MessageArguments {
   "sign-up.resend-in": { minutes: number };
   "sign-up.resent": { email: string | number };
   "sub-issues.added": { key: string | number };
-  "sub-issues.not-part-of": { key: string | number };
+  "sub-issues.not-part-of": { key: string | number; parent: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };

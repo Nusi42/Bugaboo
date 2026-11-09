@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { issueAddress } from "../../src/shared/paths.ts";
 import { tool } from "../../../tooling/load/agents.ts";
 import { type ApiSession } from "./api.ts";
-import { shot, adaOfTheSample } from "./demo-m7-common.ts";
+import { adaOfTheSample, good } from "./demo-m7-common.ts";
 import { signIn } from "./flows.ts";
 import { openHandOver, openWindow } from "./agent-work.ts";
 import { type Instance } from "./server.ts";
@@ -66,13 +66,49 @@ export async function priorityOf(ada: ApiSession, issue: string) {
   return { priority: found.issue.priority ?? "", version: found.issue.version ?? 1 };
 }
 
+/**
+ * Ada moves the issue along `path` with the status buttons of the page, one status after the other,
+ * each only when the workflow offers it from where the issue is.
+ */
+export async function movesAlong(ada: ApiSession, issue: string, path: readonly string[]) {
+  const [status, ...rest] = path;
+  if (status === undefined) {
+    return;
+  }
+  const found = dataOf(
+    await ada.client.GET("/api/v1/issues/{issue}", { params: { path: { issue } } }),
+  ).issue;
+  let offered = false;
+  for (const change of found.status_changes ?? []) {
+    offered ||= change.to.key === status;
+  }
+  if (found.status?.key !== status && offered) {
+    dataOf(
+      await ada.client.PATCH("/api/v1/issues/{issue}", {
+        params: { path: { issue } },
+        body: { version: found.version ?? 1, status },
+      }),
+    );
+  }
+  await movesAlong(ada, issue, rest);
+}
+
+/** Brings the part of the issue page that has `text` into view, so a picture shows it. */
+export async function showsOnThePage(page: Page, text: string, exact = false) {
+  const place = page.getByText(text, { exact }).first();
+  await place.evaluate((node: HTMLElement) => {
+    node.scrollIntoView({ block: "center" });
+  });
+  await expect(place).toBeInViewport({ ratio: 1 });
+}
+
 /** Ada hands the issue over to the agent in the window of the page, as a person does. */
 export async function handsOverInTheWindow(page: Page, agent: string, issue: string) {
   await signIn(page, adaOfTheSample());
   await page.goto(issueAddress(issue));
   const window = await openHandOver(page);
   await window.getByLabel(t("agent-work.agent"), { exact: true }).selectOption({ label: agent });
-  await shot(page, "03-a-the-hand-over");
+  await good(page, "03-a-the-hand-over");
   await window
     .getByRole("button", { name: t("agent-work.hand-over-confirm"), exact: true })
     .click();
@@ -101,17 +137,25 @@ export async function handsOverWithPriority(
 /** Ada answers the question of the agent on the issue page (on a phone when the test runs on one). */
 export async function answers(page: Page, issue: string, question: string, answer: string) {
   await page.goto(issueAddress(issue));
-  await expect(page.getByText(question, { exact: false })).toBeVisible();
-  await shot(page, "03-b-the-question");
-  await page.getByLabel(t("agent-work.question-answer"), { exact: true }).fill(answer);
+  await showsOnThePage(page, question);
+  await good(page, "03-b-the-question");
+  const field = page.getByLabel(t("agent-work.question-answer"), { exact: true });
+  await field.fill(answer);
+  await field.evaluate((node: HTMLElement) => {
+    node.scrollIntoView({ block: "center" });
+  });
+  await expect(field).toBeInViewport({ ratio: 1 });
+  await good(page, "03-c-ada-answers");
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  await expect(page.getByText(t("agent-work.answered-by", { person: "Ada Brandt" }))).toBeVisible();
-  await shot(page, "03-c-the-answer");
+  const done = t("agent-work.answered-by", { person: "Ada Brandt" });
+  await showsOnThePage(page, done);
+  await good(page, "03-d-the-answer");
 }
 
 /** Ada reviews the result: opens the window, chooses what to do, and confirms. */
 export async function reviews(
   page: Page,
+  step: string,
   issue: string,
   choice: "send-back" | "throw-away" | "accept",
   note?: string,
@@ -125,7 +169,7 @@ export async function reviews(
   if (note !== undefined) {
     await window.getByLabel(t("agent-work.review-note-label")).fill(note);
   }
-  await shot(page, `04-${choice}`);
+  await good(page, `${step}-${choice}`);
   await window
     .getByRole("button", {
       name: t(

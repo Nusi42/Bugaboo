@@ -20,6 +20,15 @@ describe("the statuses to accept into", () => {
     expect(choices.map((choice) => choice.proposed)).toEqual([true, false, false]);
   });
 
+  it("proposes Done in test, where the workflow Bug offers Done before Won't fix", () => {
+    const choices = acceptChoices([
+      change("done", "Done", "done"),
+      change("in-progress", "In progress", "in-progress"),
+      change("wont-fix", "Won't fix", "done"),
+    ]);
+    expect(choices.find((choice) => choice.proposed)?.label).toBe("Done");
+  });
+
   it("offers nothing when the issue cannot change its status", () => {
     expect(acceptChoices(null)).toEqual([]);
   });

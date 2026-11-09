@@ -66,11 +66,11 @@ use crate::ai::assistant::{
 };
 use crate::ai::tools::{ToolAnswer, ToolCallQuery, ToolList, ToolListQuery, call_tool, list_tools};
 use crate::ai::{
-    AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi, ConfirmAiAgreement, NeverSentList,
-    NeverSentQuery, ProjectAi, ProjectAiQuery, SetAiKey, SetNeverSent, TryAiProvider,
-    WhatGoesWhere, WhatGoesWhereQuery, ai_setup, change_ai_setup, change_project_ai,
-    confirm_ai_agreement, never_sent_list, project_ai, set_ai_key, set_never_sent, try_ai_provider,
-    what_goes_where,
+    AiGuide, AiGuideQuery, AiSetup, AiSetupQuery, ChangeAiSetup, ChangeProjectAi,
+    ConfirmAiAgreement, NeverSentList, NeverSentQuery, ProjectAi, ProjectAiQuery, SetAiKey,
+    SetNeverSent, TryAiProvider, WhatGoesWhere, WhatGoesWhereQuery, ai_guide, ai_setup,
+    change_ai_setup, change_project_ai, confirm_ai_agreement, never_sent_list, project_ai,
+    set_ai_key, set_never_sent, try_ai_provider, what_goes_where,
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,

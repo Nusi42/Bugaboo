@@ -145,6 +145,7 @@ pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
     ("NotificationEntry", "html"),
     ("OwnHtmlBody", "html"),
     ("AssistantAnswerBody", "html"),
+    ("AiGuideBody", "html"),
 ];
 
 /// The schema of a page of `item` and the path to the property inside its items: a page holds its

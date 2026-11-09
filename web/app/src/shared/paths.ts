@@ -27,6 +27,7 @@ export const paths = {
   myAgents: "/me/agents",
   agent: "/me/agents/$agent",
   connect: appPaths.connect,
+  aiGuide: "/help/ai",
   organizationSettings: "/settings",
   people: "/settings/people",
   person: "/settings/people/$person",

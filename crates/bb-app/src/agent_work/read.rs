@@ -124,6 +124,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(views)
     }
 
+    /// The proposals that wait, each with the name of its agent (a rule hands nothing over, so the
+    /// name cannot come from the work).
+    pub(super) async fn proposal_views(
+        &self,
+        waiting: Vec<bb_core::agent_records::Proposal>,
+    ) -> Result<Vec<ProposalView>, AppError> {
+        let mut agents: Vec<bb_core::id::AgentId> =
+            waiting.iter().map(|proposal| proposal.agent).collect();
+        agents.sort_unstable();
+        agents.dedup();
+        let named = self
+            .store()
+            .agents_by_ids(agents)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut views = Vec::with_capacity(waiting.len());
+        for proposal in waiting {
+            let agent_name = named
+                .iter()
+                .find(|found| found.id == proposal.agent)
+                .map(|found| found.name.clone())
+                .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
+            views.push(ProposalView {
+                id: proposal.id,
+                rule: proposal.rule,
+                agent: proposal.agent,
+                agent_name,
+                field: proposal.field,
+                before: proposal.before,
+                after: proposal.after,
+                state: proposal.state,
+                made_at: proposal.made_at,
+            });
+        }
+        Ok(views)
+    }
+
     async fn work_view_in(
         &self,
         viewer: &Evaluation,
@@ -293,19 +330,7 @@ pub async fn issue_agent_work<S: AuthStore>(
         .map_err(failed)?;
     truncated |= waiting.len() > MOST_SHOWN_ON_AN_ISSUE;
     waiting.truncate(MOST_SHOWN_ON_AN_ISSUE);
-    let proposals = waiting
-        .into_iter()
-        .map(|proposal| ProposalView {
-            id: proposal.id,
-            rule: proposal.rule,
-            agent: proposal.agent,
-            field: proposal.field,
-            before: proposal.before,
-            after: proposal.after,
-            state: proposal.state,
-            made_at: proposal.made_at,
-        })
-        .collect();
+    let proposals = ctx.proposal_views(waiting).await?;
     let project = ctx
         .store()
         .project(issue.project)

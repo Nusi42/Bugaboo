@@ -1,7 +1,9 @@
 import { dataOf } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { tool } from "../../../tooling/load/agents.ts";
+import { issueAddress } from "../../src/shared/paths.ts";
 import { signInThroughApi } from "./accounts.ts";
 import {
   ISSUES,
@@ -9,13 +11,15 @@ import {
   answers,
   handsOverInTheWindow,
   handsOverWithPriority,
+  movesAlong,
   priorityOf,
   reviews,
+  showsOnThePage,
   startsWork,
   submits,
 } from "./demo-m7-agents.ts";
-import { adaOfTheSample } from "./demo-m7-common.ts";
-import { signIn } from "./flows.ts";
+import { adaOfTheSample, good } from "./demo-m7-common.ts";
+import { openIssueWithDetails, signIn } from "./flows.ts";
 import { type Instance } from "./server.ts";
 
 // Steps 3 to 5 of the exit demo of M7 (`m7-exit-demo.spec.ts`): Ada's agents and a standing rule.
@@ -55,6 +59,8 @@ export async function anAgentIsSentBackOnceAndThenAccepted(page: Page, server: I
   const ada = await signInThroughApi(server, adaOfTheSample());
   await signIn(page, adaOfTheSample());
   const sorter = await adasAgent(ada, "Sorter");
+  // The bug is in test, where the workflow offers both ways out: Done is the one it proposes.
+  await movesAlong(ada, ISSUES.sentBack, ["in-progress", "testing"]);
   dataOf(
     await ada.client.POST("/api/v1/hand-overs", {
       body: { agent: sorter.id, issues: [ISSUES.sentBack], note: "Please look at this" },
@@ -62,18 +68,21 @@ export async function anAgentIsSentBackOnceAndThenAccepted(page: Page, server: I
   );
   await startsWork(server, sorter, ISSUES.sentBack);
   await submits(server, sorter, ISSUES.sentBack);
-  await reviews(page, ISSUES.sentBack, "send-back", "Please also check the narrow layout");
+  await reviews(page, "04", ISSUES.sentBack, "send-back", "Please also check the narrow layout");
   await expect
     .poll(async () => (await workStateOf(server, ISSUES.sentBack)).state)
     .toBe("waiting-for-the-agent");
   await startsWork(server, sorter, ISSUES.sentBack);
   await submits(server, sorter, ISSUES.sentBack);
-  await reviews(page, ISSUES.sentBack, "accept");
+  await reviews(page, "04", ISSUES.sentBack, "accept");
   await expect.poll(async () => (await workStateOf(server, ISSUES.sentBack)).open).toBe(false);
+  await page.goto(issueAddress(ISSUES.sentBack));
+  await showsOnThePage(page, t("agent-work.review-accept", { person: "Ada Brandt" }));
+  await good(page, "04-the-accepted-issue");
   await ada.dispose();
 }
 
-/** Step 5: a third attempt is thrown away and its changes are undone in one step. */
+/** Step 5: the third agent's attempt is thrown away and its changes are undone in one step. */
 export async function aThirdAttemptIsThrownAway(page: Page, server: Instance) {
   const ada = await signInThroughApi(server, adaOfTheSample());
   await signIn(page, adaOfTheSample());
@@ -89,9 +98,12 @@ export async function aThirdAttemptIsThrownAway(page: Page, server: Instance) {
   expect(changed.kept).toBe(true);
   await submits(server, helper, ISSUES.thrown);
   expect((await priorityOf(ada, ISSUES.thrown)).priority).not.toBe(before.priority);
-  await reviews(page, ISSUES.thrown, "throw-away");
+  await reviews(page, "05", ISSUES.thrown, "throw-away");
   await expect
     .poll(async () => (await priorityOf(ada, ISSUES.thrown)).priority, { timeout: 20_000 })
     .toBe(before.priority);
+  await openIssueWithDetails(page, ISSUES.thrown);
+  await showsOnThePage(page, t("issue-field.priority"), true);
+  await good(page, "05-the-priority-is-back");
   await ada.dispose();
 }

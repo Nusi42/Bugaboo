@@ -255,6 +255,8 @@ pub struct ProposalView {
     pub rule: StandingRuleId,
     /// The agent.
     pub agent: AgentId,
+    /// The name of the agent.
+    pub agent_name: String,
     /// The field.
     pub field: RuleField,
     /// The value now.

@@ -42,10 +42,12 @@ export interface ProjectPickerProps {
   readonly picked: readonly string[];
   /** A project was ticked or unticked. */
   readonly onPick: (project: string, on: boolean) => void;
+  /** What the choice means, where the page says it in its own words; the words of a key by default. */
+  readonly help?: string;
 }
 
 /** The projects a key or an app can be limited to, one box for each: the one picker of both. */
-export function ProjectPicker({ picked, onPick }: ProjectPickerProps) {
+export function ProjectPicker({ picked, onPick, help }: ProjectPickerProps) {
   const projects: readonly Schema<"ProjectChoiceItem">[] =
     useQuery(projectsOptions()).data?.items ?? [];
   if (projects.length === 0) {
@@ -54,7 +56,7 @@ export function ProjectPicker({ picked, onPick }: ProjectPickerProps) {
   return (
     <fieldset {...partOf(part.accessKeysGroup)}>
       <legend {...partOf(part.accessKeysLegend)}>{t("access-keys.projects")}</legend>
-      <p {...partOf(part.muted)}>{t("access-keys.projects-help")}</p>
+      <p {...partOf(part.muted)}>{help ?? t("access-keys.projects-help")}</p>
       {projects.map((project) => (
         <Checkbox
           key={project.id}

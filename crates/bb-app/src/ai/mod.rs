@@ -12,6 +12,7 @@ mod call;
 pub mod context;
 #[cfg(any(test, feature = "testing"))]
 mod fake;
+mod guide;
 mod never_sent;
 mod setup;
 mod setup_view;
@@ -27,6 +28,7 @@ use zeroize::Zeroizing;
 
 use crate::ports::BoxFuture;
 
+pub use guide::{AiGuide, AiGuideQuery, ai_guide};
 pub use never_sent::{
     NEVER_SENT_PROJECTS_MAX, NeverSentField, NeverSentList, NeverSentProject, NeverSentQuery,
     NeverSentStore, NeverSentTarget, SetNeverSent, Withheld, never_sent_list, set_never_sent,

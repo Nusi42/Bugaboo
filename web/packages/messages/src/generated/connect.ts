@@ -10,6 +10,11 @@ export const messages = {
   "connect.name-unchecked": "The name is the app’s own; Bugaboo can’t check it.",
   "connect.take-back-note":
     "You can take this back at any time in My settings, under Connected apps.",
+  "connect.reach": "Projects it may work in",
+  "connect.reach-all": "All projects I can see",
+  "connect.reach-some": "Only some projects",
+  "connect.reach-some-help": "It works in the projects you tick and in the projects inside them.",
+  "connect.reach-none-ticked": "Tick at least one project.",
   "connect.choice-help": "{choice}: {what}",
   "connect.may-only":
     "It asked to see only, so it may only look: it can see what you can see and change nothing.",

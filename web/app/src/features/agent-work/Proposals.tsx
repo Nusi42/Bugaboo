@@ -1,60 +1,55 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 import { useId } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { fieldNameOf } from "../../shared/field-names.ts";
+import { ProposalCard, type CardState } from "../assistant/index.ts";
 import { useDecideProposal, type Proposal } from "./agent-work.ts";
-import { valueText } from "./value-text.ts";
+
+/** Where a proposal of a standing rule stands: waiting, being saved, or refused with the reason. */
+function stateOf(isPending: boolean, failure: { readonly error: unknown } | null): CardState {
+  if (isPending) {
+    return { kind: "saving" };
+  }
+  return failure === null
+    ? { kind: "open" }
+    : { kind: "refused", problem: messageOf(failure.error) };
+}
 
 /**
- * One proposal of a standing rule: what would change, with *Apply* and *Discard*. It changes
- * nothing until a person applies it, through the one path the assistant's proposals take.
- *
- * This is the seam for the proposal card of the assistant (WP-10): once that card is on `main`,
- * it is drawn here and this line goes.
+ * One proposal of a standing rule, drawn as the *Proposed change* card of the assistant (UX §4.12):
+ * the one look for a change that waits for a person. It changes nothing until a person applies it,
+ * through the one path of proposals, and says which agent it comes from.
  */
-function ProposalLine({
+function RuleProposal({
   proposal,
-  agent,
+  issue,
 }: {
   readonly proposal: Proposal;
-  readonly agent: string;
+  readonly issue: string;
 }) {
   const decide = useDecideProposal();
   const decideWith = (apply: boolean): void => {
     decide.mutate({ params: { path: { proposal: proposal.id } }, body: { apply } });
   };
   return (
-    <li {...partOf(part.agentWorkQuestion)}>
-      <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.proposal-line", {
-          agent,
-          field: fieldNameOf({ code: proposal.field }),
-          before: valueText(proposal.before),
-          after: valueText(proposal.after),
-        })}
-      </p>
-      {decide.isError ? <Alert tone={alertTone.danger}>{messageOf(decide.error)}</Alert> : null}
-      <div {...partOf(part.agentWorkActions)}>
-        <Button
-          look={buttonLook.primary}
-          isPending={decide.isPending}
-          onPress={() => {
-            decideWith(true);
-          }}
-        >
-          {t("agent-work.proposal-apply")}
-        </Button>
-        <Button
-          isPending={decide.isPending}
-          onPress={() => {
-            decideWith(false);
-          }}
-        >
-          {t("agent-work.proposal-discard")}
-        </Button>
-      </div>
+    <li>
+      <ProposalCard
+        issue={issue}
+        changes={[{ field: proposal.field, before: proposal.before, after: proposal.after }]}
+        state={stateOf(decide.isPending, decide.isError ? { error: decide.error } : null)}
+        source={
+          <span {...partOf(part.muted)}>
+            {t("agent-work.proposal-from", { agent: proposal.agent_name })}
+          </span>
+        }
+        onApply={() => {
+          decideWith(true);
+        }}
+        onDiscard={() => {
+          decideWith(false);
+        }}
+      />
     </li>
   );
 }
@@ -62,11 +57,11 @@ function ProposalLine({
 /** The proposals of standing rules that wait for a person. Nothing to show leaves no heading. */
 export function Proposals({
   proposals,
-  agents,
+  issue,
 }: {
   readonly proposals: readonly Proposal[];
-  /** The names of the agents by their ID. */
-  readonly agents: Readonly<Record<string, string>>;
+  /** The readable ID of the issue they are about. */
+  readonly issue: string;
 }) {
   const heading = useId();
   if (proposals.length === 0) {
@@ -79,11 +74,7 @@ export function Proposals({
       </h3>
       <ul {...partOf(part.list)}>
         {proposals.map((proposal) => (
-          <ProposalLine
-            key={proposal.id}
-            proposal={proposal}
-            agent={agents[proposal.agent] ?? ""}
-          />
+          <RuleProposal key={proposal.id} proposal={proposal} issue={issue} />
         ))}
       </ul>
     </section>

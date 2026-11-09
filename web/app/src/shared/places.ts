@@ -40,6 +40,14 @@ export const places: readonly Place[] = [
     listed: false,
   },
   {
+    // The guide to AI (COMP-11): linked from the assistant and from *Set up the assistant*.
+    path: paths.aiGuide,
+    name: "assistant.guide-title",
+    icon: iconName.assistant,
+    parent: paths.home,
+    listed: false,
+  },
+  {
     // The search over every project, and a saved search: reached from the menu's *Saved searches*.
     path: paths.search,
     name: "search.page.title",

@@ -195,3 +195,24 @@ async fn ai_32_opening_a_proposal_again_that_nobody_claimed_writes_no_event() ->
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_32_a_proposal_on_the_issue_names_its_agent_without_any_hand_over() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let made = proposed(&world, &given, Vec::new(), RuleField::Labels, json!("x")).await??;
+    assert_eq!(made.agent_name, "Fixer");
+    let on_the_issue = crate::agent_work::issue_agent_work(
+        &world.ctx(),
+        crate::agent_work::AgentWorkQuery {
+            session_token: given.team.session_token.clone(),
+            issue: given.issue.to_string(),
+        },
+    )
+    .await?
+    .into_value();
+    assert!(on_the_issue.work.is_empty(), "a rule hands nothing over");
+    assert_eq!(on_the_issue.proposals.len(), 1);
+    assert_eq!(on_the_issue.proposals[0].agent_name, "Fixer");
+    Ok(())
+}

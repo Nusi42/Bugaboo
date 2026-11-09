@@ -52,6 +52,8 @@ pub(super) const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("listNeverSentToAi", Declared::SignedIn, Answer::Ordinary),
+    // The guide holds no data of the organization; it is the page of a signed-in person.
+    route("getAiGuide", Declared::SignedIn, Answer::Ordinary),
     // The assistant lets in whoever is signed in: it reads and changes only as the person, through
     // the tools (AI-10). A change is never kept by a cache anyway.
     route(

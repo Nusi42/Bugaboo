@@ -61,8 +61,7 @@ export const messages = {
   "agent-work.plan-answer": "Answer with the note",
   "agent-work.review": "Review",
   "agent-work.review-title": "Review attempt {number} of {agent} on {issue}",
-  "agent-work.review-text":
-    "Results of this attempt are below. The review ends the work or starts another attempt.",
+  "agent-work.review-text": "The review ends the work or starts another attempt.",
   "agent-work.review-no-results": "The attempt attached no results.",
   "agent-work.review-choose": "Your decision",
   "agent-work.review-accept-choice": "Accept",
@@ -76,7 +75,7 @@ export const messages = {
   "agent-work.throw-away-summary":
     "{back, plural, =0 {No change goes back} one {# change goes back} other {# changes go back}}, {stay, plural, =0 {none stays} one {# stays} other {# stay}}.",
   "agent-work.throw-away-outside":
-    "A branch, a pull request or anything else outside Bugaboo stays as it is.",
+    "Anything done outside Bugaboo, such as work in a code repository, stays as it is.",
   "agent-work.throw-away-unlisted":
     "{count, plural, one {# more field stays than is listed} other {# more fields stay than are listed}}. Every other change of this attempt goes back.",
   "agent-work.throw-away-back": "{field} goes back from {from} to {to}",
@@ -86,10 +85,7 @@ export const messages = {
   "agent-work.review-confirm-send-back": "Send back",
   "agent-work.review-confirm-throw-away": "Throw away",
   "agent-work.proposals": "Proposals of standing rules",
-  "agent-work.proposal-line": "{agent} proposes: {field}, {before} to {after}",
-  "agent-work.proposal-apply": "Apply",
-  "agent-work.proposal-discard": "Discard",
-  "agent-work.proposal-empty": "nothing",
+  "agent-work.proposal-from": "From {agent}, by a standing rule",
   "agent-work.hand-over": "Hand over to an agent",
   "agent-work.hand-over-title": "Hand over {issue} to an agent",
   "agent-work.hand-over-title-many":

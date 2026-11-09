@@ -44,3 +44,19 @@ test("a11y the page to set up the assistant at paths.ai", async ({ page, server 
   await expectGoodInEveryLook(page);
   await model.close();
 });
+
+test("a11y the guide to AI at paths.aiGuide, from the link of the setup page", async ({
+  page,
+  server,
+}) => {
+  const model = await startFakeModel();
+  await setUpAssistant(server, model);
+  await signIn(page, ada);
+  await page.goto(paths.ai);
+  await page.getByRole("link", { name: t("ai-setup.guide-link") }).click();
+  await expect(page).toHaveURL(new RegExp(`${paths.aiGuide}$`, "u"));
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText(t("ai-setup.guide-link"))).toHaveCount(0);
+  await expectGoodInEveryLook(page);
+  await model.close();
+});

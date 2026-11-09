@@ -9,11 +9,13 @@ import {
   SubmitButton,
   partOf,
   part,
+  useLayout,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { toggled } from "../../shared/toggled.ts";
-import { choiceName, ProjectLimitPicker } from "../my-settings/index.ts";
+import { choiceName } from "../my-settings/index.ts";
+import { ProjectsReach, type Reach } from "./ProjectsReach.tsx";
 import type { ConnectRequest } from "./request.ts";
 import { useDecision } from "./use-decision.ts";
 
@@ -72,21 +74,64 @@ function May({ choices, scope, onScope }: MayProps) {
   );
 }
 
+export interface ButtonsProps {
+  readonly phone: boolean;
+  readonly isPending: boolean;
+  /** The answer is on its way back to the app. */
+  readonly leaving: boolean;
+  /** Only some projects is chosen and none is ticked yet. */
+  readonly waitsForProjects: boolean;
+  readonly onCancel: () => void;
+}
+
+/**
+ * *Cancel* at the start and the main button at the end; on a phone the main button fills the width
+ * and *Cancel* stands under it (UX §6).
+ */
+function Buttons({ phone, isPending, leaving, waitsForProjects, onCancel }: ButtonsProps) {
+  const allow = (
+    <SubmitButton wide={phone} isPending={isPending} isDisabled={waitsForProjects}>
+      {t("connect.allow")}
+    </SubmitButton>
+  );
+  const cancel = (
+    <Button wide={phone} onPress={onCancel} isDisabled={isPending || leaving}>
+      {t("connect.cancel")}
+    </Button>
+  );
+  return phone ? (
+    <div {...partOf(part.stack)}>
+      {allow}
+      {cancel}
+    </div>
+  ) : (
+    <div {...partOf(part.row)}>
+      {cancel}
+      <span {...partOf(part.rowEnd)}>{allow}</span>
+    </div>
+  );
+}
+
 /** *Allow* and *Cancel*, with what the app may do and in which projects. */
 export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProps) {
   const choices = offered(asked);
   const [scope, setScope] = useState<Scope>(choices[0] ?? "see-only");
   const [picked, setPicked] = useState<readonly string[]>([]);
+  const [reach, setReach] = useState<Reach>("all");
+  const phone = useLayout() === "phone";
   const deciding = useDecision(request);
   return (
     <Form
       onSubmit={() => {
-        deciding.send({ allow: true, scope, projects: [...picked] });
+        deciding.send({ allow: true, scope, projects: reach === "some" ? [...picked] : [] });
       }}
     >
+      {phone ? <p {...partOf(part.text)}>{t("connect.title", { app })}</p> : null}
       <p {...partOf(part.text)}>{t("connect.acts-as", { app })}</p>
       <May choices={choices} scope={scope} onScope={setScope} />
-      <ProjectLimitPicker
+      <ProjectsReach
+        reach={reach}
+        onReach={setReach}
         picked={picked}
         onPick={(project, on) => {
           setPicked((now) => toggled(now, project, on));
@@ -105,17 +150,15 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
           {t("connect.going-back")} {t("connect.going-back-help")}
         </Alert>
       ) : null}
-      <div {...partOf(part.row, { variants: ["stretch"] })}>
-        <SubmitButton isPending={deciding.isPending}>{t("connect.allow")}</SubmitButton>
-        <Button
-          onPress={() => {
-            deciding.send({ allow: false, scope, projects: [] });
-          }}
-          isDisabled={deciding.isPending || deciding.leaving}
-        >
-          {t("connect.cancel")}
-        </Button>
-      </div>
+      <Buttons
+        phone={phone}
+        isPending={deciding.isPending}
+        leaving={deciding.leaving}
+        waitsForProjects={reach === "some" && picked.length === 0}
+        onCancel={() => {
+          deciding.send({ allow: false, scope, projects: [] });
+        }}
+      />
     </Form>
   );
 }

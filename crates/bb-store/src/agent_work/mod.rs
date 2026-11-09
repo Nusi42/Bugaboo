@@ -376,7 +376,8 @@ pub(super) fn read_result(row: &Row) -> Result<AttemptResult, StoreError> {
     })
 }
 
-/// The columns of the reviews of work.
+/// The columns of the reviews of work, oldest first: the IDs of agent work are random, so the order
+/// of the reviews is the order of their time (a review ends the attempt that came before it).
 pub(super) fn reviews_select() -> SelectStatement {
     let mut select = Query::select();
     select
@@ -388,7 +389,9 @@ pub(super) fn reviews_select() -> SelectStatement {
             ReviewRow::By,
             ReviewRow::At,
         ])
-        .from(ReviewRow::Table);
+        .from(ReviewRow::Table)
+        .order_by(ReviewRow::At, Order::Asc)
+        .order_by(ReviewRow::Id, Order::Asc);
     select
 }
 
