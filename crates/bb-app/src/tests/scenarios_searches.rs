@@ -284,7 +284,12 @@ pub(crate) async fn share_search_scenario(world: &World) -> Added {
     let project = a_project(world, "ACME").await?;
     measured(
         &world.store,
-        share(world, &token(world), made.id, ShareTarget::Project(project)),
+        Box::pin(share(
+            world,
+            &token(world),
+            made.id,
+            ShareTarget::Project(project),
+        )),
     )
     .await
 }
