@@ -85,7 +85,7 @@ async fn issue_of(
 }
 
 /// How an author showed in a text: by name, by the label of the role, or not at all.
-fn author_in(text: &str, role_label_part: &str) -> PeopleLevel {
+pub(super) fn author_in(text: &str, role_label_part: &str) -> PeopleLevel {
     if text.contains(CHANGER) {
         PeopleLevel::Names
     } else if text.contains(role_label_part) {

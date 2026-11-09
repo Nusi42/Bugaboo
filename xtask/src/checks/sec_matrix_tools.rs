@@ -52,6 +52,14 @@ fn tool_lines(record: &str) -> BTreeMap<String, ToolLine> {
     lines
 }
 
+/// What a tool answered an actor in the record, in the words of the record: the other entry points
+/// hold themselves to it (the assistant may do no more than the person's own tool call).
+pub(super) fn tool_answer(record: &str, tool: Tool, actor: &str) -> Option<String> {
+    tool_lines(record)
+        .remove(tool.code())
+        .and_then(|mut line| line.answers.remove(actor))
+}
+
 /// The tools of the registry at `/mcp` (M7-F41): every tool has a line, every actor was answered,
 /// nobody signed in is turned away, a tool of agents is not for a person, a tool about the own time
 /// of a person is not for an agent, and an agent with no work changes nothing.

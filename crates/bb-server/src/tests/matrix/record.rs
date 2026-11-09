@@ -94,12 +94,12 @@ impl Record {
             .join(file);
         let text = self.text();
         let read = std::fs::read_to_string(&path).map(|stored| stored.replace("\r\n", "\n"));
-        // The lines of the tools (entry point `mcp`) are written and compared by their own test
-        // (`tools`); they stay as they are here.
+        // The lines of the tools (entry point `mcp`) and of the assistant are written and compared by
+        // their own tests (`tools`, `assistant`); they stay as they are here.
         let tools: String = read
             .iter()
             .flat_map(|stored| stored.lines())
-            .filter(|line| line.starts_with(words::TOOL_LINE))
+            .filter(|line| is_of_another_test(line))
             .fold(String::new(), |mut text, line| {
                 let _ = writeln!(text, "{line}");
                 text
@@ -111,7 +111,7 @@ impl Record {
         let stored: String = read
             .map_err(|error| format!("could not read the record {file}: {error}"))?
             .lines()
-            .filter(|line| !line.starts_with(words::TOOL_LINE))
+            .filter(|line| !is_of_another_test(line))
             .fold(String::new(), |mut text, line| {
                 let _ = writeln!(text, "{line}");
                 text
@@ -141,6 +141,11 @@ impl Record {
         )
         .into())
     }
+}
+
+/// Whether a line of the record is written by the test of the tools or by the test of the assistant.
+fn is_of_another_test(line: &str) -> bool {
+    line.starts_with(words::TOOL_LINE) || line.starts_with(words::ASK_LINE)
 }
 
 /// How an answer is written in the record.

@@ -13,6 +13,7 @@
 
 mod actors;
 mod agent_actor;
+mod assistant;
 mod delivery;
 mod examples;
 mod examples_agent_work;

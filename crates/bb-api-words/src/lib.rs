@@ -118,8 +118,20 @@ pub mod sec_matrix {
     /// The tools of the one registry as an AI app or an agent calls them at `/mcp` (AI-21, AI-36):
     /// every tool has a `tool` line in the record, answered for every actor of [`mcp_actors`].
     pub const ENTRY_MCP: &str = "mcp";
+    /// The assistant of the panel (AI-10, AI-05): for every starting role as the person who asks, an
+    /// `ask` line says what the fake provider was given and what the assistant could propose and apply.
+    pub const ENTRY_ASSISTANT: &str = "assistant";
+    /// A line of the record that starts like this is an `assistant` row.
+    pub const ASK_LINE: &str = "ask ";
+    /// An `ask` line says `kept=` [`HELD_BACK`] or [`SENT`]: whether anything that is *Never sent to
+    /// AI* was in a request to the provider.
+    pub const HELD_BACK: &str = "held-back";
+    /// See [`HELD_BACK`].
+    pub const SENT: &str = "sent";
+    /// An `ask` line says `apply=` [`NO_PROPOSAL`] when the assistant made no proposal to apply.
+    pub const NO_PROPOSAL: &str = "none";
     /// Every entry point the record may name for a route of the API or a tool.
-    pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];
+    pub const ENTRY_POINTS: [&str; 3] = [ENTRY_API, ENTRY_MCP, ENTRY_ASSISTANT];
     /// A line of the record that starts like this is a tool; the others are routes and deliveries.
     pub const TOOL_LINE: &str = "tool ";
     /// The key of an agent that was handed an issue (nothing ticked) and has not taken it: it
