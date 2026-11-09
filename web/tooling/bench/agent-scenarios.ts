@@ -8,6 +8,9 @@ import { type Context, type Scenario } from "./scenarios.ts";
 
 const RUNS = 200;
 
+/** How many calls of an agent were made, to take the keys in turn. */
+let calls = 0;
+
 /** The agent work that waits for its agent: the biggest share of what is handed over. */
 const WAITING_FOR_THE_AGENT = 'agent state is "waiting-for-the-agent"';
 
@@ -17,9 +20,15 @@ const WAITING_FOR_THE_AGENT = 'agent state is "waiting-for-the-agent"';
  * rules of the agent, so the time does not grow with the log.
  */
 async function agentChangesSince(context: Context): Promise<number> {
+  const key = context.agent.keys[calls % context.agent.keys.length] ?? context.agent.key;
+  calls += 1;
   const asked = await timed(() =>
-    tool(context.agent.server, context.agent.key, "changes_since", { since: "0.0" }),
+    tool(context.agent.server, key, "changes_since", { since: "0.0" }),
   );
+  // A refused request is fast: it must not count as a time.
+  if (!asked.value.kept) {
+    throw new Error("changes_since of the agent was refused.");
+  }
   return asked.ms;
 }
 

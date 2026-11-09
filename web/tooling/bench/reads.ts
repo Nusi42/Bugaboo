@@ -108,5 +108,8 @@ export async function agentOf(folder: string, server: Instance): Promise<Context
   if (agent === undefined || person === undefined) {
     throw new Error("The dataset has no agent: make it again with cargo xtask dataset large.");
   }
-  return { server, key: agent.key, person: await signInThroughApi(server, person) };
+  const keys = agentsIn(folder)
+    .filter((each) => each.email === agent.email)
+    .map((each) => each.key);
+  return { server, key: agent.key, keys, person: await signInThroughApi(server, person) };
 }

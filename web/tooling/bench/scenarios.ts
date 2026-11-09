@@ -30,6 +30,11 @@ export interface Context {
   readonly agent: {
     readonly server: Instance;
     readonly key: string;
+    /**
+     * The keys of all the agents of that person. A key may make 120 calls a minute and a person 240
+     * (ADR-0042), so the scenarios take the keys in turn: a refused call is fast and must not count.
+     */
+    readonly keys: readonly string[];
     /** The person the agents work for, signed in. */
     readonly person: ApiSession;
   };
