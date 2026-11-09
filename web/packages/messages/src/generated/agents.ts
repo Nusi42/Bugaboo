@@ -124,7 +124,7 @@ export const messages = {
   "agents.choose-project": "Choose a project",
   "agents.rule-may": "What the rule does with what it finds",
   "agents.rule-propose": "Propose changes: nothing changes until a person applies it",
-  "agents.rule-hand-over": "Hand over what it finds: each issue becomes a hand-over to the agent",
+  "agents.rule-hand-over": "Hand over what it finds: each issue becomes a hand-over",
   "agents.rule-hand-over-help":
     "Each issue the saved search finds is handed over once, now and later. The agent works on it in attempts and you review every result. The agent never has more open hand-overs than its limit of issues at once.",
   "agents.rule-accept-by-itself": "Accept by itself when its checks pass",

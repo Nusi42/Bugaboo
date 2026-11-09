@@ -16704,7 +16704,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-ends-today", "Runs out today"),
     (
         "agents.rule-hand-over",
-        "Hand over what it finds: each issue becomes a hand-over to the agent",
+        "Hand over what it finds: each issue becomes a hand-over",
     ),
     (
         "agents.rule-hand-over-help",
