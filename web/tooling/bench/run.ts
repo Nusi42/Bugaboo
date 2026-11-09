@@ -40,7 +40,7 @@ export async function run(folder: string, database: string, server: Instance): P
     issues: await someIssues(session, projects),
     many: await firstIssues(session, places.big, manyChangesIssuesMax),
     week,
-    agent: agentOf(folder, server),
+    agent: await agentOf(folder, server),
     ...places,
   };
   const measured: Record<string, unknown> = {};

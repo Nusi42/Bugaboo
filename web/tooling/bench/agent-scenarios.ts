@@ -34,6 +34,11 @@ async function searchAgentState(context: Context): Promise<number> {
   ).ms;
 }
 
+/** *My agents* of the person who has the agents: what waits for them and the work in progress (AI-37). */
+async function myAgents(context: Context): Promise<number> {
+  return (await timed(() => context.agent.person.client.GET("/api/v1/me/agents/work"))).ms;
+}
+
 export const agentScenarios: readonly Scenario[] = [
   {
     // What an agent that comes back asks first (AI-36): within the budget of a page.
@@ -48,5 +53,12 @@ export const agentScenarios: readonly Scenario[] = [
     budget: "search",
     runs: RUNS,
     once: searchAgentState,
+  },
+  {
+    // The answer of *My agents* for a person with three agents and many hand-overs.
+    name: "my-agents",
+    budget: "page",
+    runs: RUNS,
+    once: myAgents,
   },
 ];

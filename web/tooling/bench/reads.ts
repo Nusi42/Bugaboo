@@ -3,6 +3,8 @@ import { dataOf, msPerDay } from "@bugaboo/api-client";
 import { type ApiSession } from "../../app/e2e/support/api.ts";
 import { listPage } from "../../app/e2e/support/perf-reads.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
+import { signInThroughApi } from "../../app/e2e/support/accounts.ts";
+import { peopleIn } from "../../app/e2e/support/sample.ts";
 import { agentsIn } from "../../app/e2e/support/sample-agents.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { type Context } from "./scenarios.ts";
@@ -100,10 +102,11 @@ export async function lastWeek(session: ApiSession): Promise<Context["week"]> {
 }
 
 /** The server and the key of the first agent of the dataset in `folder`. */
-export function agentOf(folder: string, server: Instance): Context["agent"] {
+export async function agentOf(folder: string, server: Instance): Promise<Context["agent"]> {
   const agent = agentsIn(folder)[0];
-  if (agent === undefined) {
+  const person = peopleIn(folder).find((each) => each.email === agent?.email);
+  if (agent === undefined || person === undefined) {
     throw new Error("The dataset has no agent: make it again with cargo xtask dataset large.");
   }
-  return { server, key: agent.key };
+  return { server, key: agent.key, person: await signInThroughApi(server, person) };
 }

@@ -27,7 +27,12 @@ export interface Context {
   /** The last week the person worked: its first and last date. */
   readonly week: { readonly first: string; readonly last: string };
   /** The server, and the key of an agent of the dataset (M7 WP-13). */
-  readonly agent: { readonly server: Instance; readonly key: string };
+  readonly agent: {
+    readonly server: Instance;
+    readonly key: string;
+    /** The person the agents work for, signed in. */
+    readonly person: ApiSession;
+  };
 }
 
 /** One kind of read, repeated `runs` times after the warm-up. */
