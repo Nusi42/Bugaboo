@@ -136,6 +136,19 @@ impl Shape {
 }
 
 impl Rig {
+    /// Waits until every mark that a use left on a session is made. The marks are made on their
+    /// own, so a test that moves the clock far right after a request waits for them first: the
+    /// mark belongs to the moment of the use.
+    pub(crate) async fn touches_done(&self) {
+        let waited = tokio::time::timeout(Duration::from_mins(1), async {
+            while self.storage.touches_pending() > 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert!(waited.is_ok(), "a mark of a session never ended");
+    }
+
     /// A server with the default number of failed tries allowed.
     pub(super) async fn start(db: &TestDatabase) -> Result<Self, Failure> {
         Self::start_new(db, Shape::NEW).await

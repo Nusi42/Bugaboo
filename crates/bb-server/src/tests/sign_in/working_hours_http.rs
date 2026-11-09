@@ -76,6 +76,7 @@ async fn pass(rig: &Rig, browser: &mut Browser, seconds: i64) -> Result<(), Fail
         rig.clock.advance(step);
         left -= step;
         browser.send("GET", "/api/v1/auth/me", None).await?;
+        rig.touches_done().await;
     }
     Ok(())
 }
