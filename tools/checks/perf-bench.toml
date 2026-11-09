@@ -43,3 +43,13 @@ reason = "the totals of the biggest project sum the minutes spent with one probe
 p95_ms_at_most = 600
 follow_up = "M6-F186"
 reason = "the same cause as on SQLite: one probe of the entries by issue for each issue of the biggest project (numbers and cause: architecture section 11, M6-F186)"
+
+[known_gaps.agent-changes-since.sqlite]
+p95_ms_at_most = 250
+follow_up = "M7-F127"
+reason = "a look at the changes of an agent makes many small reads, each in a transaction of its own (on PostgreSQL about 170 round trips); one read snapshot per request comes in the M7 exit wave (numbers and cause: architecture section 11, M7-F127)"
+
+[known_gaps.agent-changes-since.postgres]
+p95_ms_at_most = 250
+follow_up = "M7-F127"
+reason = "a look at the changes of an agent makes many small reads, each in a transaction of its own (on PostgreSQL about 170 round trips); one read snapshot per request comes in the M7 exit wave (numbers and cause: architecture section 11, M7-F127)"

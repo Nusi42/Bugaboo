@@ -6,7 +6,9 @@
 //! budget with the scenario, the number and the budget.
 
 use super::{Check, Context, Finding};
-use crate::bench_budgets::{BUDGETS_PATH, Budgets, SCENARIOS_PATH, problems, scenarios};
+use crate::bench_budgets::{
+    AGENT_SCENARIOS_PATH, BUDGETS_PATH, Budgets, SCENARIOS_PATH, problems, scenarios,
+};
 use crate::source::read_text;
 
 pub(crate) struct PerfBench;
@@ -20,7 +22,11 @@ impl Check for PerfBench {
         let repo = context.repo;
         evaluate(
             &read_text(repo, BUDGETS_PATH)?,
-            &read_text(repo, SCENARIOS_PATH)?,
+            &format!(
+                "{}\n{}",
+                read_text(repo, SCENARIOS_PATH)?,
+                read_text(repo, AGENT_SCENARIOS_PATH)?
+            ),
         )
     }
 }
