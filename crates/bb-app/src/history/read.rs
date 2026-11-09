@@ -572,12 +572,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         id: bb_core::id::ProjectId,
     ) -> Result<Option<ProjectRef>, AppError> {
-        let Some(found) = self
-            .store()
-            .project(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
+        let Some(found) = self.project_known(id).await? else {
             return Ok(None);
         };
         let held = self

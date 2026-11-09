@@ -617,10 +617,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(ProjectLabel::Hidden);
         }
         Ok(self
-            .store()
-            .project(project)
-            .await
-            .map_err(|error| internal::<S>(&error))?
+            .project_known(project)
+            .await?
             .as_ref()
             .map_or(ProjectLabel::Hidden, ProjectLabel::of))
     }

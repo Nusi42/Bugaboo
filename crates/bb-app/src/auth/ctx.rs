@@ -314,6 +314,9 @@ pub(crate) struct Known {
 pub(crate) struct KnownProjects {
     pub(crate) by_address: HashMap<bb_core::project::ShortName, Option<crate::projects::Found>>,
     pub(crate) chains: HashMap<bb_core::id::ProjectId, Vec<bb_core::id::ProjectId>>,
+    /// The projects looked up by ID, as they were when the request first asked; `None` for a
+    /// project that is not there.
+    pub(crate) by_id: HashMap<bb_core::id::ProjectId, Option<bb_core::project::Project>>,
 }
 
 /// The services plus the request, which is what a use case takes.

@@ -74,4 +74,48 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(())
     }
+
+    /// The project with this ID, looked up once for the request.
+    pub(crate) async fn project_known(
+        &self,
+        id: ProjectId,
+    ) -> Result<Option<bb_core::project::Project>, AppError> {
+        if let Some(known) = locked(&self.known.projects).by_id.get(&id).cloned() {
+            return Ok(known);
+        }
+        let found = self
+            .store()
+            .project(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        locked(&self.known.projects).by_id.insert(id, found.clone());
+        Ok(found)
+    }
+
+    /// Reads the projects of a page in one go (the whole tree is one read), so the lookups of each
+    /// of them (`project_known`) find them read already.
+    pub(crate) async fn preload_projects(&self, ids: &[ProjectId]) -> Result<(), AppError> {
+        let wanted: std::collections::BTreeSet<ProjectId> = {
+            let known = locked(&self.known.projects);
+            ids.iter()
+                .copied()
+                .filter(|id| !known.by_id.contains_key(id))
+                .collect()
+        };
+        if wanted.len() < 2 {
+            return Ok(());
+        }
+        let all = self
+            .store()
+            .project_tree()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut known = locked(&self.known.projects);
+        for id in wanted {
+            known
+                .by_id
+                .insert(id, all.iter().find(|project| project.id == id).cloned());
+        }
+        Ok(())
+    }
 }

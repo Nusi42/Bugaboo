@@ -349,6 +349,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| internal::<S>(&error))?;
             maker.know_stored(&projects, &all);
             reader_maker.know_stored(&projects, &all);
+            self.preload_projects(&projects).await?;
         }
         self.evaluate_projects(actor.person.id, &projects).await?;
         let mut authors: std::collections::BTreeSet<(UserId, ProjectId)> =

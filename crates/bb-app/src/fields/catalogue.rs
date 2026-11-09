@@ -38,13 +38,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(known) = seen.get(&project) {
             return Ok(known.clone());
         }
-        let found = match self.store().project(project).await {
+        let found = match self.project_known(project).await {
             Ok(Some(found)) => {
                 let held = self.evaluation_of(actor, Place::Project(project)).await?;
                 held.sees_project().then(|| ProjectRef::from(&found))
             }
             Ok(None) => None,
-            Err(error) => return Err(internal::<S>(&error)),
+            Err(error) => return Err(error),
         };
         seen.insert(project, found.clone());
         Ok(found)
