@@ -122,8 +122,11 @@ pub mod sec_matrix {
     pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];
     /// A line of the record that starts like this is a tool; the others are routes and deliveries.
     pub const TOOL_LINE: &str = "tool ";
-    /// The key of an agent that was handed an issue (nothing ticked): it reaches only that issue.
+    /// The key of an agent that was handed an issue (nothing ticked) and has not taken it: it
+    /// reaches only that issue, and writes there only after it took it.
     pub const AGENT_WITH_WORK: &str = "agent-with-work";
+    /// The key of an agent that was handed an issue and took it, so an attempt of it runs.
+    pub const AGENT_WITH_AN_ATTEMPT: &str = "agent-with-an-attempt";
     /// The key of an agent that was handed an issue, and calls a tool about another one.
     pub const AGENT_ON_ANOTHER_ISSUE: &str = "agent-on-another-issue";
     /// The key of an agent under a standing rule that found the issue: it proposes and nothing else.
@@ -155,7 +158,7 @@ pub mod sec_matrix {
         }
     }
     /// The actors every `tool` line names: nobody, a person with each starting role (who calls with
-    /// a key that may do all they may), a person signed in through an app, and five kinds of agent.
+    /// a key that may do all they may), a person signed in through an app, and six kinds of agent.
     #[must_use]
     pub fn mcp_actors(role_keys: &[&str]) -> Vec<String> {
         let mut actors = vec![NOBODY.to_owned()];
@@ -165,6 +168,7 @@ pub mod sec_matrix {
                 PERSON_VIA_APP,
                 AGENT_WITHOUT_WORK,
                 AGENT_WITH_WORK,
+                AGENT_WITH_AN_ATTEMPT,
                 AGENT_ON_ANOTHER_ISSUE,
                 AGENT_UNDER_A_RULE,
                 AGENT_IN_AN_AI_OFF_PROJECT,

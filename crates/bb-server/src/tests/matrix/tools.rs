@@ -129,6 +129,9 @@ struct Who {
     browser: Option<Browser>,
 }
 
+/// How many agents the matrix makes for one team member, well below the most one may have.
+const AGENTS_OF_A_PERSON: usize = 40;
+
 /// Everything the actors need that is not a person: the issues, the rule, and the agents that are
 /// made again for each tool because a tool changes the state the next one needs.
 struct Scene<'a> {
@@ -141,6 +144,8 @@ struct Scene<'a> {
     off_agent: String,
     rule_agent: String,
     made: usize,
+    /// Team members for the agents beyond the most one person may have.
+    more_teams: Vec<Browser>,
 }
 
 impl Scene<'_> {
@@ -148,17 +153,33 @@ impl Scene<'_> {
     async fn agent(&mut self, handed: Option<&str>) -> Result<String, Failure> {
         self.made += 1;
         let name = format!("Matrix agent {}", self.made);
-        Ok(an_agent_with_a_key(&mut self.team, &name, handed).await?.1)
+        // One person may have only so many agents: the next team member takes over.
+        let wanted = self.made / AGENTS_OF_A_PERSON;
+        while self.more_teams.len() < wanted {
+            let who = format!("matrix-team-{}", self.more_teams.len() + 2);
+            let (person, _) = self.site.person(StartingRole::TeamMember, &who).await?;
+            self.more_teams.push(person);
+        }
+        let team = match wanted {
+            0 => &mut self.team,
+            _ => &mut self.more_teams[wanted - 1],
+        };
+        Ok(an_agent_with_a_key(team, &name, handed).await?.1)
     }
 
     /// An agent that was handed `handed`, and for what works on an attempt one that has taken it.
-    async fn agent_with_work(&mut self, tool: Tool, handed: &str) -> Result<String, Failure> {
+    async fn agent_with_work(
+        &mut self,
+        tool: Tool,
+        handed: &str,
+        taken: bool,
+    ) -> Result<String, Failure> {
         let key = self.agent(Some(handed)).await?;
         let works_on_an_attempt = matches!(
             tool,
             Tool::Report | Tool::Ask | Tool::Attach | Tool::Submit | Tool::GiveUp
         );
-        if works_on_an_attempt {
+        if (taken && tool != Tool::Take) || works_on_an_attempt {
             let mcp = Mcp::new(self.site.app);
             let taken = call(&mcp, Some(&key), Tool::Take, json!({"issue": handed})).await?;
             if word_of(Tool::Take, &taken)? != words::ALLOWED {
@@ -232,11 +253,15 @@ async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
                 words::AGENT_WITHOUT_WORK => (Some(idle.clone()), issue),
                 words::AGENT_WITH_WORK => {
                     let own = scene.new_issue("Handed to the agent of the matrix").await?;
-                    (Some(scene.agent_with_work(tool, &own).await?), own)
+                    (Some(scene.agent_with_work(tool, &own, false).await?), own)
+                }
+                words::AGENT_WITH_AN_ATTEMPT => {
+                    let own = scene.new_issue("Taken by the agent of the matrix").await?;
+                    (Some(scene.agent_with_work(tool, &own, true).await?), own)
                 }
                 words::AGENT_ON_ANOTHER_ISSUE => {
                     let own = scene.new_issue("Handed to another agent").await?;
-                    (Some(scene.agent_with_work(tool, &own).await?), issue)
+                    (Some(scene.agent_with_work(tool, &own, false).await?), issue)
                 }
                 words::AGENT_UNDER_A_RULE => (Some(scene.rule_agent.clone()), issue),
                 words::AGENT_IN_AN_AI_OFF_PROJECT => {
@@ -388,6 +413,7 @@ async fn scene<'a>(
         off_agent,
         rule_agent,
         made: 0,
+        more_teams: Vec::new(),
     })
 }
 
