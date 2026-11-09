@@ -2,6 +2,8 @@
 //! assistant (`ai.enabled`), AI apps (`ai-apps.enabled`) and agents (`agents.enabled`) follow only
 //! their own switch along the chain of a project; *Never sent to AI* holds for all three.
 
+use std::collections::BTreeMap;
+
 use bb_core::ErrorCode;
 use bb_core::ai::ToolCaller;
 use bb_core::id::ProjectId;
@@ -104,7 +106,7 @@ async fn a_world_with_an_issue() -> Result<(World, ProjectId, String), String> {
     let world = World::new().await?;
     let project = a_project(&world, "OPS").await?;
     ai_on(&world).await.map_err(|error| error.to_string())?;
-    let issue = issue_with(&world, "OPS", "Pager", "plain", Default::default()).await?;
+    let issue = issue_with(&world, "OPS", "Pager", "plain", BTreeMap::default()).await?;
     Ok((world, project, issue))
 }
 
@@ -140,7 +142,7 @@ async fn m7_wp15_a_switch_follows_the_nearest_value_along_the_project_chain() ->
     .map_err(|error| format!("{error:?}"))?
     .into_value()
     .id;
-    let night = issue_with(&world, "NIGHT", "Alarm", "plain", Default::default()).await?;
+    let night = issue_with(&world, "NIGHT", "Alarm", "plain", BTreeMap::default()).await?;
     // Off in the parent: the sub-project is off, for that kind only.
     set(
         &world,
