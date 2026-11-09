@@ -421,7 +421,10 @@ async fn ai_31_the_allowance_follows_the_ticks_and_ends_with_the_hand_over_and_t
         assert!(of(a).status && !of(a).sub_issues);
         assert!(of(b).fields.is_empty() && !of(b).status, "ticks not given");
         assert!(of(c).sub_issues && of(c).fields.is_empty());
-        assert_eq!(of(d).fields, ["issue-type"], "a rule gives its fields only");
+        assert!(
+            of(d).fields.is_empty() && !of(d).status,
+            "a rule gives an issue to read and nothing to change"
+        );
         assert_eq!(reached.len(), 4);
         assert!(!reached[&d].handed, "a rule hands nothing over");
         assert!(

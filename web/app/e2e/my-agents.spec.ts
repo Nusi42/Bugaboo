@@ -147,7 +147,7 @@ test("m7_wp14_a_standing_rule_proposes_or_hands_over_and_has_no_option_to_change
   // Handing over asks what the agent may do in the hand-overs, as the window of a hand-over does,
   // and never offers a field that holds people.
   await window.getByLabel(t("agents.rule-hand-over")).check();
-  await window.getByLabel(t("agent-work.power-change-fields")).check();
+  await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
   const names = await window
     .getByRole("group", { name: t("agent-work.may-do") })
     .locator("label")

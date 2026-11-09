@@ -119,7 +119,7 @@ test("The window of a standing rule that hands over what it finds", async ({ pag
       await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
       const window = page.getByRole("alertdialog");
       await window.getByLabel(t("agents.rule-hand-over")).check();
-      await window.getByLabel(t("agent-work.power-change-fields")).check();
+      await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
       // On a phone the powers are below the first screen of the window: they are in the picture.
       await window.getByRole("group", { name: t("agent-work.may-do") }).scrollIntoViewIfNeeded();
     },

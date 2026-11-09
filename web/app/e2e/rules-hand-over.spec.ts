@@ -50,7 +50,7 @@ test("m7_wp14_a_rule_that_never_runs_out_is_offered_only_where_an_administrator_
   await allowNever(scene.admin, true);
   await fillTopOfRule(page, scene.names.sorter);
   await expect(window.getByLabel(t("agents.rule-days"))).toBeVisible();
-  await window.getByLabel(t("agents.rule-never-ends")).check();
+  await window.getByText(t("agents.rule-never-ends"), { exact: true }).click();
   // The days give way to the sentence that says what it means.
   await expect(window.getByLabel(t("agents.rule-days"))).toHaveCount(0);
   await expect(window.getByText(t("agents.rule-never-ends-help"))).toBeVisible();

@@ -24,8 +24,8 @@ test("The window of a rule that hands over", async ({ page, server }) => {
     await fillTopOfRule(page, scene.names.sorter);
     const window = page.getByRole("alertdialog");
     await window.getByLabel(t("agents.rule-hand-over")).check();
-    await window.getByLabel(t("agent-work.power-change-fields")).check();
-    await window.getByLabel(t("agents.rule-accept-by-itself")).check();
+    await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
+    await window.getByText(t("agents.rule-accept-by-itself"), { exact: true }).click();
     await window.getByText(t("agents.rule-accept-by-itself-help")).scrollIntoViewIfNeeded();
   });
   await scene.dispose();
@@ -38,7 +38,7 @@ test("The end of the window where rules may never run out", async ({ page, serve
   await inFourChosenThemes(page, "window-never-runs-out", MILESTONE, paths.appearance, async () => {
     await fillTopOfRule(page, scene.names.sorter);
     const window = page.getByRole("alertdialog");
-    await window.getByLabel(t("agents.rule-never-ends")).check();
+    await window.getByText(t("agents.rule-never-ends"), { exact: true }).click();
     await window.getByText(t("agents.rule-never-ends-help")).scrollIntoViewIfNeeded();
   });
   await allowNever(scene.admin, false);
