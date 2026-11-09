@@ -46,6 +46,18 @@ impl LineMaker {
     }
 }
 
+impl LineMaker {
+    /// Takes the projects of `wanted` that are not known yet from `all`, the projects as they are
+    /// stored, which one read gave.
+    pub(crate) fn know_stored(&mut self, wanted: &[ProjectId], all: &[Project]) {
+        for id in wanted {
+            if let Entry::Vacant(slot) = self.projects.entry(*id) {
+                slot.insert(all.iter().find(|project| project.id == *id).cloned());
+            }
+        }
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {

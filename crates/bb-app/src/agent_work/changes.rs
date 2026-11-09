@@ -30,7 +30,7 @@ use crate::relations::{IssueLine, LineMaker};
 /// How many events one look at the log reads.
 const SCAN: u64 = 200;
 /// How many looks one request makes at the most: it never reads the whole log for one page.
-const SCANS: usize = 4;
+const SCANS: usize = 2;
 /// How many pieces of open work one answer lists at the most.
 const MOST_WORK_SEEN: u64 = 100;
 
@@ -139,6 +139,15 @@ pub struct ChangesPage {
 }
 
 impl Masked for ChangesPage {}
+
+/// The people a value of a change names: a person, or a list of them.
+fn people_named(value: &serde_json::Value) -> Vec<UserId> {
+    match value {
+        serde_json::Value::String(text) => text.parse().into_iter().collect(),
+        serde_json::Value::Array(items) => items.iter().flat_map(people_named).collect(),
+        _ => Vec::new(),
+    }
+}
 
 /// The issues one request has looked at, each once.
 struct Seen {
@@ -312,7 +321,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn read_reached(
         &self,
         actor: &Actor,
-        maker: &mut LineMaker,
+        (maker, reader_maker): (&mut LineMaker, &mut LineMaker),
         seen: &Seen,
         events: &[(i64, DomainEvent)],
         named: &[IssueId],
@@ -330,9 +339,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|issue| (issue.id, issue))
             .collect();
         let projects: Vec<ProjectId> = loaded.values().map(|issue| issue.project).collect();
-        if let Some(read) = self.evaluate_projects(actor.person.id, &projects).await? {
-            maker.know_projects(&projects, &read);
+        // The projects of the lines, of this request and of the history it reads, in one read.
+        let distinct: std::collections::BTreeSet<ProjectId> = projects.iter().copied().collect();
+        if distinct.len() > 1 {
+            let all = self
+                .store()
+                .project_tree()
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            maker.know_stored(&projects, &all);
+            reader_maker.know_stored(&projects, &all);
         }
+        self.evaluate_projects(actor.person.id, &projects).await?;
         let mut authors: std::collections::BTreeSet<(UserId, ProjectId)> =
             std::collections::BTreeSet::new();
         for (_, event) in events {
@@ -345,7 +363,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // The authors: who they are and what they may do, each read together with the others.
         let authors: Vec<(UserId, ProjectId)> = authors.into_iter().collect();
-        let people: Vec<UserId> = authors.iter().map(|(person, _)| *person).collect();
+        // Besides the authors, the people the changes name (assigned people, reporters).
+        let mut people: Vec<UserId> = authors.iter().map(|(person, _)| *person).collect();
+        for (_, event) in events {
+            if IssueId::from_bytes(event.entity.id.to_bytes())
+                .is_ok_and(|id| loaded.contains_key(&id))
+            {
+                for change in &event.changes {
+                    for value in [&change.before, &change.after].into_iter().flatten() {
+                        people.extend(people_named(value));
+                    }
+                }
+            }
+        }
         self.preload_people(&people).await?;
         self.evaluate_people_in(&authors).await?;
         Ok(loaded)
@@ -385,7 +415,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .collect();
             let reach = self.holds_of_agent_on(agent, &named).await?;
             let mut loaded = self
-                .read_reached(actor, maker, seen, &events, &named, &reach)
+                .read_reached(
+                    actor,
+                    (&mut *maker, reader.maker_mut()),
+                    seen,
+                    &events,
+                    &named,
+                    &reach,
+                )
                 .await?;
             for (at, event) in events {
                 let reached = IssueId::from_bytes(event.entity.id.to_bytes())

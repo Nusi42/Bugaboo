@@ -167,6 +167,11 @@ pub(crate) struct ChangeReader {
 }
 
 impl ChangeReader {
+    /// The maker of lines the reader keeps for the issues it names.
+    pub(crate) fn maker_mut(&mut self) -> &mut LineMaker {
+        &mut self.maker
+    }
+
     /// The name of the own field a stored field key names; none for a built-in field.
     pub(crate) fn own_field_name(&self, key: &str) -> Option<String> {
         let id = key.parse::<FieldId>().ok()?;
