@@ -118,3 +118,18 @@ describe("test_concurrent the book of a run holds the searches", () => {
     expect(book.counts()).toMatchObject({ searches: 1 });
   });
 });
+
+describe("test_concurrent_ai_30 the book of a run keeps what the agents did", () => {
+  it("writes the agents, the hand-overs, the races and the lost access into the file", () => {
+    const book = newBook();
+    book.agent({ agent: "a1", person: "p1" });
+    book.handed({ agent: "a1", key: "LOAD-9" });
+    book.raced({ key: "LOAD-9", askers: ["a1", "a2"], winners: ["a1"] });
+    book.lost({ agent: "a2", person: "p2", kept_after: 0 });
+    const file = book.file([]);
+    expect(file.agents).toEqual([{ agent: "a1", person: "p1" }]);
+    expect(file.handed).toEqual([{ agent: "a1", key: "LOAD-9" }]);
+    expect(file.races?.[0]?.winners).toEqual(["a1"]);
+    expect(file.lost?.[0]?.kept_after).toBe(0);
+  });
+});
