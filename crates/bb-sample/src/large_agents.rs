@@ -53,7 +53,7 @@ impl Goes {
             Self::Ends
         } else if open >= plan.open_per_agent {
             Self::Waits
-        } else if open % 2 == 0 {
+        } else if open.is_multiple_of(2) {
             Self::Works
         } else {
             Self::Asks

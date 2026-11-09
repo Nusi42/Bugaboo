@@ -8,7 +8,7 @@
 //! second, so no two changes have the same moment and the order of the records is the same every
 //! time.
 
-use std::fmt;
+use std::fmt::{self, Write as _};
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
@@ -280,10 +280,11 @@ impl Sample {
         }
         // The keys of the agents follow as comment lines, so a reader of the people skips them.
         for agent in &self.left_behind.agent_keys {
-            text.push_str(&format!(
-                "{}\t{}\t{}\t{}\n",
+            let _ = writeln!(
+                text,
+                "{}\t{}\t{}\t{}",
                 agent.mark, agent.agent, agent.email, agent.key
-            ));
+            );
         }
         text
     }

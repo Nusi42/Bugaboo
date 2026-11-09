@@ -209,7 +209,7 @@ async fn review(crew: &mut Crew, answer: &str, note: Option<&str>) -> Result<(),
 /// One person and their agent, by their number: `number % 3` decides how the review goes.
 async fn work_of_one(floor: Arc<Floor>, mut crew: Crew) -> Result<(), Failure> {
     hand_over(&mut crew, &floor.book).await?;
-    let asks = crew.number % 2 == 0;
+    let asks = crew.number.is_multiple_of(2);
     // The change comes with the run of the attempt, so it is the agent's, within its person.
     let before = version_of(&mut crew).await?;
     floor.attempt(&mut crew, asks, true).await?;

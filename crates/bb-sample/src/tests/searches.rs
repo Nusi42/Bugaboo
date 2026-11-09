@@ -45,7 +45,7 @@ impl Later for Reading {
     }
 
     async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
-        self.everything.after_people(world).await?;
+        Box::pin(self.everything.after_people(world)).await?;
         let step = |error: &dyn std::fmt::Display| SampleError::step(Step::SavedSearches, &error);
         for made in world.people.iter().filter(|made| !made.person.code_app) {
             let ctx = world.services.ctx(world.request());

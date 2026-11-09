@@ -83,7 +83,7 @@ impl Later for Reading {
     }
 
     async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
-        self.everything.after_people(world).await?;
+        Box::pin(self.everything.after_people(world)).await?;
         let step = |error: &dyn std::fmt::Display| SampleError::step(Step::Time, &error);
         let last = world.start.to_zoned(jiff::tz::TimeZone::UTC).date();
         // The days of the first people, each reading their own.

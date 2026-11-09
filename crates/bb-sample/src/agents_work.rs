@@ -296,7 +296,7 @@ impl World<'_> {
             }
             Case::Accepted => {
                 self.accepted_after_a_send_back(plan, token, key, issue, work)
-                    .await?
+                    .await?;
             }
             Case::ThrownAway => {
                 self.finish(plan, key, issue, None).await?;

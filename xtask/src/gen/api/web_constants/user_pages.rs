@@ -297,29 +297,31 @@ See [Time](../time/README.md) and [The timesheet](../time/timesheet.md).
     Ok(out)
 }
 
-/// The numbers of the assistant, of AI apps and of agents, in plain words. They come from the
-/// constants of `bb-core` that the code works by, so the guide never writes one a second time.
-fn ai_numbers() -> anyhow::Result<String> {
-    use bb_core::agent::{
-        DEFAULT_ATTEMPTS_ON_ONE_ISSUE, DEFAULT_CHANGES_A_MINUTE, DEFAULT_ISSUES_AT_ONCE,
-        MOST_AGENT_KEYS, MOST_AGENTS, MOST_ISSUES_OF_ONE_CHANGE,
-    };
-    use bb_core::agent_work::{
-        DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER,
-        MOST_RULE_DAYS, RULE_WARNING_DAYS,
-    };
+/// A table of what and number, from pairs.
+fn pairs(rows: Vec<(&str, String)>) -> Vec<Vec<String>> {
+    rows.into_iter()
+        .map(|(what, number)| vec![what.to_owned(), number])
+        .collect()
+}
+
+/// A number of days, in words.
+fn days(days: i64) -> anyhow::Result<String> {
+    Ok(counted(
+        u128::try_from(days).context("a number of days is below zero")?,
+        "day",
+        "days",
+    ))
+}
+
+/// The limits of the assistant, from the constants of `bb-core`.
+fn assistant_rows() -> anyhow::Result<Vec<Vec<String>>> {
     use bb_core::ai::{
         PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, TOOL_CALL_KEEP_DAYS,
         TOOL_CALLS_MAX, TURN_CHARS_MAX, TURNS_MAX,
     };
     let minutes = u128::try_from(PROPOSAL_LIFETIME_SECONDS / 60)
         .context("the life of a proposal is below zero")?;
-    let rows = |rows: Vec<(&str, String)>| -> Vec<Vec<String>> {
-        rows.into_iter()
-            .map(|(what, number)| vec![what.to_owned(), number])
-            .collect()
-    };
-    let assistant = rows(vec![
+    Ok(pairs(vec![
         (
             "A question to the assistant is at most",
             counted(QUESTION_CHARS_MAX as u128, "character", "characters"),
@@ -349,21 +351,27 @@ fn ai_numbers() -> anyhow::Result<String> {
         ),
         (
             "The calls of tools are kept for",
-            counted(
-                u128::try_from(TOOL_CALL_KEEP_DAYS).context("the keep period is below zero")?,
-                "day",
-                "days",
-            ),
+            days(TOOL_CALL_KEEP_DAYS)?,
         ),
-    ]);
-    let day = |days: i64| -> anyhow::Result<String> {
-        Ok(counted(
-            u128::try_from(days).context("a number of days is below zero")?,
-            "day",
-            "days",
-        ))
+    ]))
+}
+
+/// A whole number of the code that is not below zero.
+fn whole(number: i64) -> anyhow::Result<u128> {
+    u128::try_from(number).context("a number of the code is below zero")
+}
+
+/// The limits of agents, hand-overs and standing rules, from the constants of `bb-core`.
+fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
+    use bb_core::agent::{
+        DEFAULT_ATTEMPTS_ON_ONE_ISSUE, DEFAULT_CHANGES_A_MINUTE, DEFAULT_ISSUES_AT_ONCE,
+        MOST_AGENT_KEYS, MOST_AGENTS, MOST_ISSUES_OF_ONE_CHANGE,
     };
-    let agents = rows(vec![
+    use bb_core::agent_work::{
+        DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER,
+        MOST_RULE_DAYS, RULE_WARNING_DAYS,
+    };
+    Ok(pairs(vec![
         (
             "A person has at most",
             counted(MOST_AGENTS as u128, "agent", "agents"),
@@ -376,31 +384,19 @@ fn ai_numbers() -> anyhow::Result<String> {
             "A new agent is held to at most",
             format!(
                 "{} a minute",
-                counted(
-                    u128::try_from(DEFAULT_CHANGES_A_MINUTE).context("below zero")?,
-                    "change",
-                    "changes"
-                )
+                counted(whole(DEFAULT_CHANGES_A_MINUTE)?, "change", "changes")
             ),
         ),
         (
             "A new agent works on at most",
             format!(
                 "{} at once",
-                counted(
-                    u128::try_from(DEFAULT_ISSUES_AT_ONCE).context("below zero")?,
-                    "issue",
-                    "issues"
-                )
+                counted(whole(DEFAULT_ISSUES_AT_ONCE)?, "issue", "issues")
             ),
         ),
         (
             "A new agent may try one issue at most",
-            counted(
-                u128::try_from(DEFAULT_ATTEMPTS_ON_ONE_ISSUE).context("below zero")?,
-                "time",
-                "times",
-            ),
+            counted(whole(DEFAULT_ATTEMPTS_ON_ONE_ISSUE)?, "time", "times"),
         ),
         (
             "One hand-over names at most",
@@ -410,29 +406,34 @@ fn ai_numbers() -> anyhow::Result<String> {
             "A hand-over ends after",
             format!(
                 "{} unless you choose another end, at most {}",
-                day(DEFAULT_HAND_OVER_DAYS)?,
-                day(MOST_HAND_OVER_DAYS)?
+                days(DEFAULT_HAND_OVER_DAYS)?,
+                days(MOST_HAND_OVER_DAYS)?
             ),
         ),
         (
             "A standing rule ends after",
             format!(
                 "{} unless you choose another end, at most {}; you are told {} before",
-                day(DEFAULT_RULE_DAYS)?,
-                day(MOST_RULE_DAYS)?,
-                day(RULE_WARNING_DAYS)?
+                days(DEFAULT_RULE_DAYS)?,
+                days(MOST_RULE_DAYS)?,
+                days(RULE_WARNING_DAYS)?
             ),
         ),
         (
             "A change to many issues, also by an agent, names at most",
             counted(MOST_ISSUES_OF_ONE_CHANGE as u128, "issue", "issues"),
         ),
-    ]);
+    ]))
+}
+
+/// The numbers of the assistant, of AI apps and of agents, in plain words. They come from the
+/// constants of `bb-core` that the code works by, so the guide never writes one a second time.
+fn ai_numbers() -> anyhow::Result<String> {
     let mut out = header("Numbers of the assistant, AI apps and agents");
     out.push_str("The limits of the assistant and of agents, as Bugaboo works by them. An administrator can set a lower maximum for what an agent may do (*Organization settings › Connections › Agents*).\n\n## The assistant\n\n");
-    out.push_str(&table(&["What", "Number"], &assistant));
+    out.push_str(&table(&["What", "Number"], &assistant_rows()?));
     out.push_str("\n## Agents\n\n");
-    out.push_str(&table(&["What", "Number"], &agents));
+    out.push_str(&table(&["What", "Number"], &agent_rows()?));
     out.push_str("\nSee [The AI literacy guide](literacy.md) and [Agents](../agents/README.md).\n");
     Ok(out)
 }

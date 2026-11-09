@@ -54,7 +54,7 @@ impl AiPlan {
             }
         }
         self.judge_agents(judge, ai);
-        self.judge_work(judge, &ai["work"]);
+        Self::judge_work(judge, &ai["work"]);
         self.judge_rules(judge, &ai["rules"]);
         judge.present("AI apps allowed by a Contributor", number(&ai["apps"]));
         let marks = &ai["marks"];
@@ -101,7 +101,7 @@ impl AiPlan {
 
     /// The agent work: every state is there, with a question, a plan, an answer, a sent-back
     /// attempt and an accepted one, and none is on an issue the person cannot change.
-    fn judge_work(&self, judge: &mut Judge<'_>, work: &Value) {
+    fn judge_work(judge: &mut Judge<'_>, work: &Value) {
         let number = |value: &Value| value.as_u64().unwrap_or(0);
         for state in AgentWorkState::ALL {
             judge.present(

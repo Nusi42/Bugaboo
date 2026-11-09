@@ -140,7 +140,7 @@ impl Sample {
             }
             match mark.subject {
                 NeverSentSubject::Field(field) => {
-                    ai.never_sent_fields.push(field.code().to_owned())
+                    ai.never_sent_fields.push(field.code().to_owned());
                 }
                 NeverSentSubject::Project(id) => {
                     ai.never_sent_projects.extend(projects.get(&id).cloned());
