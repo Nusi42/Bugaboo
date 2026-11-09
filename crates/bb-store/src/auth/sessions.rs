@@ -46,6 +46,18 @@ impl Touches {
     }
 }
 
+/// The place of one marking in [`Touches`]; it is given back when this is dropped.
+struct TouchPlace {
+    touches: Arc<Touches>,
+    id: SessionId,
+}
+
+impl Drop for TouchPlace {
+    fn drop(&mut self) {
+        self.touches.end(self.id);
+    }
+}
+
 impl AuthStorage {
     /// How many sessions are being marked as used (the tests wait for none, so that a clock they
     /// move on does not pass a mark that is still on its way).
@@ -121,22 +133,28 @@ impl SessionStore for AuthStorage {
 
     /// Marks the session as used without making the request wait for it: the write runs on its own,
     /// and only one runs for a session at a time. A mark that is not made is lost without harm, the
-    /// next request makes it (M7-F222).
+    /// next request makes it (M7-F222). It must run inside a Tokio runtime.
     async fn touch_session(&self, id: SessionId, at: Timestamp) -> Result<(), StoreError> {
         if !self.touches.begin(id) {
             return Ok(());
         }
         let database = self.database.clone();
-        let touches = Arc::clone(&self.touches);
+        // Ends the place of the marking whichever way the task ends, also a panic or a cancel.
+        let place = TouchPlace {
+            touches: Arc::clone(&self.touches),
+            id,
+        };
         tokio::spawn(async move {
+            let _place = place;
             let mut update = Query::update();
             update
                 .table(SessionColumns::Table)
                 .value(SessionColumns::LastSeenAt, to_micros(at))
                 .and_where(Expr::col(SessionColumns::Id).eq(id.stored()))
                 .and_where(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(at)));
-            database.execute(&update).await.ok();
-            touches.end(id);
+            if let Err(error) = database.execute(&update).await {
+                tracing::warn!(?error, "a session could not be marked as used");
+            }
         });
         Ok(())
     }

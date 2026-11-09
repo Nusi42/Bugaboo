@@ -189,9 +189,13 @@ async fn ada_with_a_stale_session(
 
 /// Waits until no marking of a session as used is on its way.
 async fn until_the_touches_are_done(storage: &AuthStorage) {
-    while storage.touches_pending() > 0 {
-        tokio::task::yield_now().await;
-    }
+    let waited = tokio::time::timeout(std::time::Duration::from_mins(1), async {
+        while storage.touches_pending() > 0 {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await;
+    assert!(waited.is_ok(), "a mark of a session never ended");
 }
 
 /// Three requests of one browser that come together on a session that has not been marked as used

@@ -31,9 +31,13 @@ async fn signed_in(rig: &Rig, token: &str) -> bool {
         )
         .await
         .is_ok();
-    while rig.storage.touches_pending() > 0 {
-        tokio::task::yield_now().await;
-    }
+    let waited = tokio::time::timeout(std::time::Duration::from_mins(1), async {
+        while rig.storage.touches_pending() > 0 {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await;
+    assert!(waited.is_ok(), "a mark of a session never ended");
     answered
 }
 
