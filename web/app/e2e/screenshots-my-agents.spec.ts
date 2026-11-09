@@ -135,7 +135,9 @@ test("The end of the window of a standing rule", async ({ page, server }) => {
     await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
     const window = page.getByRole("alertdialog");
     await window.getByLabel(t("agents.rule-search")).selectOption({ label: ruleSearchName });
-    await window.getByLabel(t("agents.rule-agent")).selectOption({ label: scene.names.fixer });
+    await window
+      .getByLabel(t("agents.rule-agent"), { exact: true })
+      .selectOption({ label: scene.names.fixer });
     await window.getByLabel(t("agents.rule-project")).selectOption({ index: 1 });
     await expect(window.getByLabel(t("agents.rule-propose"))).toBeChecked();
     await scrollToEnd(window);

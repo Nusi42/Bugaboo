@@ -71,14 +71,13 @@ test("m7_wp14_nothing_behind_the_window_of_a_rule_can_be_pressed", async ({ page
   const scene = await agentsScene(server);
   await signIn(page, ada);
   await fillTopOfRule(page, scene.names.sorter);
-  // The window covers the page, the bottom bar of a phone too: a press on the page behind does not
-  // reach it.
-  await expect(
-    page
-      .getByRole("link", { name: t("nav.home"), exact: true })
-      .first()
-      .click({ trial: true, timeout: 2000 }),
-  ).rejects.toThrow();
+  // The window covers the page, the bottom bar of a phone too: a press on a link that shows behind
+  // the window does not reach it.
+  const behind = page
+    .getByRole("link", { name: t("nav.home"), exact: true })
+    .filter({ visible: true });
+  await expect(behind.first()).toBeVisible();
+  await expect(behind.first().click({ trial: true, timeout: 2000 })).rejects.toThrow();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await scene.dispose();
 });

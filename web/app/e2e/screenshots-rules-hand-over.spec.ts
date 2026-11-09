@@ -12,6 +12,7 @@ import {
   fillTopOfRule,
   handingRuleWithNoEnd,
   handOverWithOneField,
+  scrollInWindow,
   scrollToWay,
 } from "./support/rules-hand-over.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -52,7 +53,7 @@ test("The window of a rule that hands over: the end of it, with accepting by its
     const window = page.getByRole("alertdialog");
     await handOverWithOneField(page);
     await window.getByText(t("agents.rule-accept-by-itself"), { exact: true }).click();
-    await window.getByText(t("agents.rule-accept-by-itself-help")).scrollIntoViewIfNeeded();
+    await scrollInWindow(page, t("agents.rule-accept-by-itself-help"));
     await expect(window.getByRole("button", { name: t("agents.rule-confirm") })).toBeEnabled();
   });
   await scene.dispose();
@@ -94,7 +95,7 @@ test("The end of the window where rules may never run out, for a rule that hands
       await handOverWithOneField(page);
       await window.getByText(t("agents.rule-accept-by-itself"), { exact: true }).click();
       await window.getByText(t("agents.rule-never-ends"), { exact: true }).click();
-      await window.getByRole("status").scrollIntoViewIfNeeded();
+      await scrollInWindow(page, t("agents.rule-never-ends"));
       await expect(window.getByRole("button", { name: t("agents.rule-confirm") })).toBeEnabled();
     },
   );

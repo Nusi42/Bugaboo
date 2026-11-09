@@ -24,7 +24,9 @@ export async function fillTopOfRule(page: Page, agentName: string): Promise<void
   await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
   const window = page.getByRole("alertdialog");
   await window.getByLabel(t("agents.rule-search")).selectOption({ label: ruleSearchName });
-  await window.getByLabel(t("agents.rule-agent")).selectOption({ label: agentName });
+  await window
+    .getByLabel(t("agents.rule-agent"), { exact: true })
+    .selectOption({ label: agentName });
   await window.getByLabel(t("agents.rule-project")).selectOption({ index: 1 });
 }
 
@@ -61,12 +63,46 @@ export async function handOverWithOneField(page: Page): Promise<void> {
   await window.getByText(t("issue-field.title"), { exact: true }).click();
 }
 
-/** Shows the way section at the top of the window: the choice, its help and what the agent may do. */
-export async function scrollToWay(page: Page): Promise<void> {
+/**
+ * Scrolls the body of the window, never the page behind it, so that the text is at the top of what
+ * the window shows (the window keeps its place and the layer behind it covers the page).
+ */
+export async function scrollInWindow(page: Page, text: string): Promise<void> {
+  await pageBackToTop(page);
   await page
     .getByRole("alertdialog")
-    .getByText(t("agents.rule-may"), { exact: true })
+    .getByText(text, { exact: true })
     .evaluate((node: HTMLElement) => {
-      node.scrollIntoView({ block: "start" });
+      const window = node.closest("[role='alertdialog']");
+      let scroller: HTMLElement | null = node.parentElement;
+      while (
+        scroller !== null &&
+        scroller !== window &&
+        scroller.scrollHeight <= scroller.clientHeight
+      ) {
+        scroller = scroller.parentElement;
+      }
+      if (scroller !== null && scroller !== window) {
+        scroller.scrollTop +=
+          node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      }
     });
+}
+
+/** Puts the page behind the window back to its top, as a person who has not scrolled it sees it. */
+export async function pageBackToTop(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const window = document.querySelector("[role='alertdialog']");
+    for (const element of document.querySelectorAll("*")) {
+      if (element.scrollTop > 0 && window?.contains(element) !== true) {
+        element.scrollTop = 0;
+      }
+    }
+  });
+}
+
+/** Shows the way section at the top of the window: the choice, its help and what the agent may do. */
+export async function scrollToWay(page: Page): Promise<void> {
+  await pageBackToTop(page);
+  await scrollInWindow(page, t("agents.rule-may"));
 }
