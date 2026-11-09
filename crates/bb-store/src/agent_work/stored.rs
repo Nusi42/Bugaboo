@@ -1,5 +1,5 @@
 //! What the check after a load run reads of agent work (TEST-CONCURRENT).
-use super::*;
+use super::{Attempt, AuthStorage, IssueId, IssueWork, StoreError};
 
 /// The most pieces of work on one issue the check reads: agents hold one each, a handful at most.
 const MOST_WORK_ON_AN_ISSUE: u64 = 100;
