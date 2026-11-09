@@ -333,19 +333,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(read) = self.evaluate_projects(actor.person.id, &projects).await? {
             maker.know_projects(&projects, &read);
         }
-        let mut authors: std::collections::BTreeSet<UserId> = std::collections::BTreeSet::new();
+        let mut authors: std::collections::BTreeSet<(UserId, ProjectId)> =
+            std::collections::BTreeSet::new();
         for (_, event) in events {
             if let EventActor::Person(person) = event.actor
                 && let Ok(id) = IssueId::from_bytes(event.entity.id.to_bytes())
-                && loaded.contains_key(&id)
+                && let Some(issue) = loaded.get(&id)
             {
-                authors.insert(person);
+                authors.insert((person, issue.project));
             }
         }
         // The authors: who they are and what they may do, each read together with the others.
-        let authors: Vec<UserId> = authors.into_iter().collect();
-        self.preload_people(&authors).await?;
-        self.preload_policies(&authors).await?;
+        let authors: Vec<(UserId, ProjectId)> = authors.into_iter().collect();
+        let people: Vec<UserId> = authors.iter().map(|(person, _)| *person).collect();
+        self.preload_people(&people).await?;
+        self.evaluate_people_in(&authors).await?;
         Ok(loaded)
     }
 
