@@ -40,7 +40,7 @@ A project can allow **Accept by itself when its checks pass**. It is off at the 
 A **standing rule** lets one of your agents work on everything a saved search finds in a project, for example "every new bug in Website". It is narrower than a hand-over, because anybody who changes an issue so that it matches gives the agent that issue.
 
 - By default the agent only **proposes**. A proposal shows on the issue as a *Proposed change* card with the name of the agent, the value before and after, and *Apply* and *Discard*. Nothing changes until you press *Apply*, as with the assistant. On an issue that only the rule found, the agent has no attempt: it reads the issue and proposes, and changes nothing there.
-- In the window, a rule may instead be set to **change only these fields** (*Labels, Tags, Type, Duplicate of* and *Found in release*), or to **create issues in one project**.
+- In the window, a rule may instead be set to **change only these fields** (*Labels, Tags, Type, Duplicate of* and *Found in release*), or to **create issues in one project**. *Change only these fields* changes nothing on its own: an issue that only the rule found has no attempt, so the agent still only proposes there. A later version replaces it with rules that hand the issues over.
 - A rule never changes a field that holds people and never the status.
 - A rule ends after 30 days unless you choose another end, and never lasts more than 90 days. You are told three days before it ends, and *Renew* gives it a new end.
 
