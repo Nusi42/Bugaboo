@@ -2,6 +2,11 @@
 //! number a second time: the limits of a search (`userDocs/issues/search-limits.md`) and the times
 //! and counts of notifications, e-mail, signing up and handles (`userDocs/notifications/numbers.md`).
 //! The numbers are read from the Rust source like those of the constants for the browser.
+//!
+//! Why this file is longer than ~400 lines (coding standards §3): every page here is one function
+//! that reads its numbers with the same four small helpers (`number`, `counted`, `header`, `pairs`)
+//! and is listed once in `pages`; a page per file would repeat those helpers or make them a module
+//! of their own for nothing else. Before a page grows past the next hundred lines it is split.
 
 use std::fmt::Write as _;
 
