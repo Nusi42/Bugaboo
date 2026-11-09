@@ -71,7 +71,7 @@ async fn m7_wp15_the_most_look_ups_is_eight_at_the_start() -> Outcome {
 }
 
 #[tokio::test]
-async fn m7_wp15_no_limit_lets_a_question_look_up_more_than_the_usual_most() -> Outcome {
+async fn m7_wp15_no_limit_lets_a_question_look_up_past_a_hundred() -> Outcome {
     let (world, _) = with_an_issue().await?;
     set(
         &world,
@@ -80,11 +80,15 @@ async fn m7_wp15_no_limit_lets_a_question_look_up_more_than_the_usual_most() -> 
         "no-limit",
     )
     .await?;
-    will_look_up(&world, 12);
+    will_look_up(&world, 105);
     super::assistant::will_say(&world, "Done.");
     let answer = ask(&world, question(&token(&world), "Look at everything")).await?;
     assert_eq!(answer.text, "Done.");
-    assert_eq!(world.store.lock().tool_calls.len(), 12);
+    assert_eq!(
+        world.store.lock().tool_calls.len(),
+        105,
+        "no limit is no limit"
+    );
     Ok(())
 }
 

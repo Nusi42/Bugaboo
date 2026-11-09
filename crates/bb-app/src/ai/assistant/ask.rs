@@ -237,9 +237,9 @@ pub async fn ask_assistant<S: AuthStore>(
         look_ups,
     );
     let mut turns = conversation(&input);
-    for round in 1..=rounds {
+    for round in 1.. {
         // The last round is given no tools, so the model has to answer with what it has.
-        let last = round == rounds;
+        let last = rounds.is_some_and(|most| round >= most);
         let answer = ctx
             .call_provider(
                 &state,

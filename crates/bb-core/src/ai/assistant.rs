@@ -26,10 +26,6 @@ pub const LOOKING_AT_CHARS_MAX: usize = 500;
 /// gets a sentence for an answer and runs nothing.
 pub const TOOL_CALLS_AT_START: usize = 8;
 
-/// The most tools one question runs even where an administrator chose *No limit*: a model that never
-/// stops asking must not call the provider for good.
-pub const TOOL_CALLS_BACKSTOP: usize = 100;
-
 /// The most proposals one answer carries.
 pub const PROPOSALS_MAX: usize = 10;
 
@@ -95,7 +91,7 @@ impl crate::personal::NotPersonal for ReferenceWord {}
 pub enum LookUps {
     /// At most this many tools.
     Most(usize),
-    /// No limit of the administrator; [`TOOL_CALLS_BACKSTOP`] still holds.
+    /// No limit: nothing stops the look-ups of a question.
     NoLimit,
 }
 
@@ -119,20 +115,23 @@ impl LookUps {
         code.parse().ok().filter(|most| *most > 0).map(Self::Most)
     }
 
-    /// The tools one question may run: the number, or the backstop for no limit.
+    /// The tools one question may run, or `None` for no limit.
     #[must_use]
-    pub const fn calls(self) -> usize {
+    pub const fn calls(self) -> Option<usize> {
         match self {
-            Self::Most(most) if most < TOOL_CALLS_BACKSTOP => most,
-            Self::Most(_) | Self::NoLimit => TOOL_CALLS_BACKSTOP,
+            Self::Most(most) => Some(most),
+            Self::NoLimit => None,
         }
     }
 
-    /// The most calls to the provider for one question: every round but the last runs at least one
-    /// tool, and the last is given none.
+    /// The most calls to the provider for one question, or `None` for no limit: every round but the
+    /// last runs at least one tool, and the last is given none.
     #[must_use]
-    pub const fn rounds(self) -> usize {
-        self.calls() + 1
+    pub const fn rounds(self) -> Option<usize> {
+        match self {
+            Self::Most(most) => Some(most + 1),
+            Self::NoLimit => None,
+        }
     }
 
     /// What counts for a person: the lower of the organization's and their own choice, so nobody
@@ -166,10 +165,11 @@ mod look_up_tests {
     }
 
     #[test]
-    fn m7_wp15_no_limit_still_stops_at_the_backstop() {
-        assert_eq!(LookUps::NoLimit.calls(), TOOL_CALLS_BACKSTOP);
-        assert_eq!(LookUps::Most(1_000).calls(), TOOL_CALLS_BACKSTOP);
-        assert_eq!(LookUps::Most(3).rounds(), 4);
+    fn m7_wp15_no_limit_has_no_number_at_all() {
+        assert_eq!(LookUps::NoLimit.calls(), None);
+        assert_eq!(LookUps::NoLimit.rounds(), None);
+        assert_eq!(LookUps::Most(1_000).calls(), Some(1_000));
+        assert_eq!(LookUps::Most(3).rounds(), Some(4));
     }
 
     #[test]

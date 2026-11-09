@@ -438,7 +438,7 @@ export const messages = {
     "As the organization (or the project above, when it has its own choice): AI apps may work here while they may work there. Off: no AI app reads or changes anything in this project. On: they may work here although the project above has them off.",
   "setting.assistant.look-ups-most.name": "Most look-ups for one question",
   "setting.assistant.look-ups-most.help":
-    "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, the assistant still stops at a number that protects the provider from a question that never ends.",
+    "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the assistant, so a question can cost more.",
   "setting.assistant.look-ups.name": "Look-ups for my questions",
   "setting.assistant.look-ups.help":
     "How many times the assistant may look something up in Bugaboo to answer one of your questions. A lower number makes answers quicker and cheaper. It never goes above the most your administrators set.",

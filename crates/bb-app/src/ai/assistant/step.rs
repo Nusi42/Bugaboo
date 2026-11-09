@@ -60,7 +60,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
 
     /// What the model reads of this call.
     pub(super) async fn call(&mut self, call: &AiToolCall) -> String {
-        if self.used >= self.look_ups.calls() {
+        if self.look_ups.calls().is_some_and(|most| self.used >= most) {
             return LIMIT_REACHED.to_owned();
         }
         self.used += 1;

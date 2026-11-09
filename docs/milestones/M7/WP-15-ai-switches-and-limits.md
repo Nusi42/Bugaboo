@@ -17,14 +17,14 @@ Agents, AI apps and the assistant are three kinds of AI, and each is its own swi
 - **One rule for the chain.** The nearest value along the chain of a project decides; the code is written once (`Ctx::projects_with_kind_off`) and used by the narrowing of agents and by `withheld(kind)`, which every tool, the context builder and MCP read. `ToolCaller` is the kind.
 - **The doors.** OAuth and an access key at `/mcp` follow `ai-apps.enabled`; an agent key follows `agents.enabled`; the assistant follows `ai.enabled`.
 - **The project settings** show the three switches in one card *Agents, AI apps and the assistant*, in the order agents, AI apps, assistant, each named for its kind, with an intro that says each can be switched by itself and that *Never sent to AI* holds for all three. Agents and AI apps are the registry settings drawn with the choice *As the organization (on|off)* / *On* / *Off*; the assistant keeps its switch.
-- **The look-ups.** `assistant.look-ups-most` (organization, administrators; 2, 4, 8, 12, 20, 50, *No limit*; 8 at the start) and `assistant.look-ups` (each person, *My settings › Assistant*; *As the organization* or a number). The lower of the two counts, read when the question is asked. *No limit* still stops at 100 tools: a model that never stops asking must not call the provider for good. No help text writes a bound.
+- **The look-ups.** `assistant.look-ups-most` (organization, administrators; 2, 4, 8, 12, 20, 50, *No limit*; 8 at the start) and `assistant.look-ups` (each person, *My settings › Assistant*; *As the organization* or a number). The lower of the two counts, read when the question is asked. *No limit* is no limit: nothing stops the look-ups of a question. No help text writes a bound.
 - **Order and words.** Agents, AI apps, the assistant, in the guide, the README of `userDocs/ai`, the page of numbers, the pages of settings and the glossary (new words: *Kinds of AI*, *AI apps in this project*, *Assistant in this project*, *Look-up*).
 - **Pictures.** One place (`pictureLightTheme` in `screenshots.ts`) decides that the light look of a picture is *Paper*. The specs that picture the themes themselves (`inFourThemes` and the like) keep all four.
 
 ## Tasks
 
 1. **Write first** (this file, the README of M7, the amendments of the ADRs, the glossary, the follow-ups), then **tests first** on both databases (below).
-2. **Core:** `LookUps` (`Most(n)`, `NoLimit`, `lowered_by`, `calls`, `rounds`), `TOOL_CALLS_AT_START` and `TOOL_CALLS_BACKSTOP` replace `TOOL_CALLS_MAX` and `ROUNDS_MAX`; the settings and their words; `ai-apps.enabled` at the project level.
+2. **Core:** `LookUps` (`Most(n)`, `NoLimit`, `lowered_by`, `calls`, `rounds`), `TOOL_CALLS_AT_START` replaces `TOOL_CALLS_MAX` and `ROUNDS_MAX`; the settings and their words; `ai-apps.enabled` at the project level.
 3. **App:** `kinds.rs`; `withheld(kind)`; the door of AI apps and of `/mcp`; the assistant reads its look-ups once for a question.
 4. **Screens:** the card *Agents, AI apps and the assistant*; the page *Set up the assistant* (AI apps first, then the assistant with its look-ups, a link to the page of agents); the page *My settings › Assistant*; the intro of the agents page.
 5. **Docs:** `userDocs/ai/*`, the generated page of numbers, the AI guide at `/help/ai` (it renders `literacy.md`).

@@ -22002,7 +22002,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.assistant.look-ups-most.help",
-        "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, the assistant still stops at a number that protects the provider from a question that never ends.",
+        "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the assistant, so a question can cost more.",
     ),
     (
         "setting.assistant.look-ups-most.name",

@@ -224,7 +224,7 @@ async fn ai_10_the_turns_so_far_come_from_the_browser_and_nothing_is_stored() ->
 async fn ai_10_one_question_runs_at_most_a_named_number_of_tools() -> Outcome {
     let (world, _) = with_an_issue().await?;
     // The model asks for two tools in every round and never answers.
-    for _ in 0..LookUps::default().rounds() + 2 {
+    for _ in 0..LookUps::default().rounds().unwrap_or_default() + 2 {
         world.ai.will_answer(AiAnswer {
             tool_calls: (0..2)
                 .map(|n| AiToolCall {
@@ -240,10 +240,13 @@ async fn ai_10_one_question_runs_at_most_a_named_number_of_tools() -> Outcome {
         .await
         .unwrap_err();
     assert_eq!(error, AppError::Refused(ErrorCode::AiUnavailable));
-    assert_eq!(world.ai.calls().len(), LookUps::default().rounds());
+    assert_eq!(
+        world.ai.calls().len(),
+        LookUps::default().rounds().unwrap_or_default()
+    );
     // The last round is given no tools to ask for.
     assert!(
-        world.ai.calls()[LookUps::default().rounds() - 1]
+        world.ai.calls()[LookUps::default().rounds().unwrap_or_default() - 1]
             .request
             .tools
             .is_empty()
@@ -251,7 +254,7 @@ async fn ai_10_one_question_runs_at_most_a_named_number_of_tools() -> Outcome {
     let rows = world.store.lock().tool_calls.len();
     assert_eq!(
         rows,
-        LookUps::default().calls(),
+        LookUps::default().calls().unwrap_or_default(),
         "a call over the limit runs nothing"
     );
     Ok(())
