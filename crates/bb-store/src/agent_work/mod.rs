@@ -53,13 +53,24 @@ fn work_not_ended(select: &mut SelectStatement) {
         );
 }
 
-/// The hand-overs that are open: the one definition of a hand-over that still gives work, before its
-/// end is looked at.
+/// A hand-over that is open: the one definition of a hand-over that still gives work, before its
+/// end is looked at. The columns name their table, so it serves a subquery and a join.
+fn hand_over_is_open() -> sea_query::Cond {
+    sea_query::Cond::all()
+        .add(Expr::col((HandOverRow::Table, HandOverRow::State)).eq(GivingState::Open.code()))
+}
+
+/// A hand-over that still gives work at `now`: open, and not run out.
+fn hand_over_gives_work_at(now: Timestamp) -> sea_query::Cond {
+    hand_over_is_open().add(Expr::col((HandOverRow::Table, HandOverRow::EndsAt)).gt(to_micros(now)))
+}
+
+/// The hand-overs that are open.
 fn open_hand_overs() -> SelectStatement {
     let mut open = Query::select();
     open.column(HandOverRow::Id)
         .from(HandOverRow::Table)
-        .and_where(Expr::col(HandOverRow::State).eq(GivingState::Open.code()));
+        .cond_where(hand_over_is_open());
     open
 }
 
@@ -76,8 +87,11 @@ pub(super) fn only_open_work_at(select: &mut SelectStatement, now: Timestamp) {
 
 /// The hand-overs that still give work at `now`: open, and not run out.
 pub(super) fn hand_overs_giving_work_at(now: Timestamp) -> SelectStatement {
-    let mut giving = open_hand_overs();
-    giving.and_where(Expr::col(HandOverRow::EndsAt).gt(to_micros(now)));
+    let mut giving = Query::select();
+    giving
+        .column(HandOverRow::Id)
+        .from(HandOverRow::Table)
+        .cond_where(hand_over_gives_work_at(now));
     giving
 }
 
@@ -96,9 +110,7 @@ pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatem
     // The hand-over is joined, so its state and end are read from the row and not asked about
     // again with a subquery that the database would have to build an index for on every call.
     work_not_ended(&mut select);
-    select
-        .and_where(Expr::col((HandOverRow::Table, HandOverRow::State)).eq(GivingState::Open.code()))
-        .and_where(Expr::col((HandOverRow::Table, HandOverRow::EndsAt)).gt(to_micros(now)));
+    select.cond_where(hand_over_gives_work_at(now));
     select
 }
 

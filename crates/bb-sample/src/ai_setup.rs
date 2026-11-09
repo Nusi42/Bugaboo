@@ -155,7 +155,9 @@ impl Maker<'_, '_> {
             ChangeField {
                 session_token: token.to_owned(),
                 field: id_in(found, "id")?,
-                version: found["version"].as_i64().unwrap_or(1),
+                version: found["version"]
+                    .as_i64()
+                    .ok_or_else(|| SampleError::NotMade("version".to_owned()))?,
                 name: None,
                 help: None,
                 rules: None,
