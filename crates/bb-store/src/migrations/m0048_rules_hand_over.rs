@@ -1,7 +1,7 @@
 //! Migration 48: how a standing rule works, and a rule with no end (AI-32, ADR-0029, amendment
 //! "Rules that hand over").
 //!
-//! `standing_rule.way` holds the word of the way (`proposals` or `hand-over`), `powers` the powers
+//! `standing_rule.way` holds the word of the way (`propose` or `hand-over`), `powers` the powers
 //! of each hand-over the rule makes (a list of words), `accept_by_itself` whether those hand-overs
 //! may be accepted by themselves. `standing_rule.fields` held the fields of the dropped option
 //! "change only these fields"; it now holds the fields a hand-over of the rule may change, as
@@ -18,7 +18,7 @@ use crate::schema::StandingRuleRow;
 
 pub(super) fn steps() -> Vec<Step> {
     let mut way = ColumnDef::new(StandingRuleRow::Way);
-    way.text().not_null().default("proposals");
+    way.text().not_null().default("propose");
     let mut powers = ColumnDef::new(StandingRuleRow::Powers);
     powers.text().not_null().default("[]");
     let mut accept = ColumnDef::new(StandingRuleRow::AcceptByItself);
@@ -106,7 +106,7 @@ mod tests {
             let rows = database.fetch_all(&select).await?;
             assert_eq!(rows.len(), 1);
             // It proposes, with nothing of a hand-over, and keeps its end.
-            assert_eq!(rows[0].get::<String>(StandingRuleRow::Way)?, "proposals");
+            assert_eq!(rows[0].get::<String>(StandingRuleRow::Way)?, "propose");
             assert_eq!(rows[0].get::<String>(StandingRuleRow::Powers)?, "[]");
             assert!(!rows[0].get::<bool>(StandingRuleRow::AcceptByItself)?);
             assert_eq!(rows[0].get::<String>(StandingRuleRow::Fields)?, "[]");

@@ -3,12 +3,13 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::{GivingState, StandingRule as RuleRecord};
-use bb_core::agent_work::RuleWay;
+use bb_core::agent_work::{MOST_RULE_DAYS, RuleWay, rule_end};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{IssueId, StandingRuleId};
 use serde_json::json;
 
 use super::members::{member, payload};
+use super::queue::queue;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, nothing_if_aborted, set_to};
 use crate::search::SearchScope;
@@ -139,7 +140,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let agent_on = self.store().agent(rule.agent).await.map_err(failed)?;
         if !agent_on
             .as_ref()
-            .is_some_and(|agent| agent.may_act() && agent.person == rule.person)
+            .is_some_and(|agent| agent.works_for(rule.person))
         {
             return Ok(());
         }
@@ -225,5 +226,59 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .await
             .map_err(|error| internal::<S>(&error))
+    }
+
+    /// The work of the job that follows the switching off of *Allow rules that never run out*:
+    /// each open rule with no end gets one, the most days (90) from now, with the jobs of an end,
+    /// so the usual warning comes before it runs out. A setting that is on again by now leaves the
+    /// rules as they are.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn run_rules_get_an_end(&self) -> Result<(), AppError> {
+        if self.rules_never_run_out().await? {
+            return Ok(());
+        }
+        let now = self.now();
+        let ends_at = rule_end(now, Some(MOST_RULE_DAYS))
+            .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
+        let open = self
+            .store()
+            .open_rules()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        for rule in open.into_iter().filter(|rule| rule.ends_at.is_none()) {
+            let next = RuleRecord {
+                ends_at: Some(ends_at),
+                version: rule.version + 1,
+                ..rule.clone()
+            };
+            let jobs = self.rule_jobs(&next)?;
+            let event = self.event(
+                EventActor::System,
+                entity(RecordKind::StandingRule, rule.id),
+                vec![
+                    set_to(member::ENDS_AT, json!(ends_at.to_string())),
+                    bb_core::version::counted_up(rule.version),
+                ],
+            )?;
+            let (id, version) = (rule.id, rule.version);
+            let result = self
+                .store()
+                .record_change(&event, move |transaction| {
+                    Box::pin(async move {
+                        if !S::set_rule_end(transaction, id, Some(ends_at), false, version).await? {
+                            return Err(S::aborted());
+                        }
+                        for job in &jobs {
+                            queue::<S>(transaction, job, now).await?;
+                        }
+                        Ok(())
+                    })
+                })
+                .await;
+            nothing_if_aborted::<S>(result)?;
+        }
+        Ok(())
     }
 }

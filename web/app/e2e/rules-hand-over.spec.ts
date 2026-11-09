@@ -24,7 +24,9 @@ test("m7_wp14_a_rule_that_hands_over_gives_its_agent_each_issue_it_finds", async
   await fillTopOfRule(page, scene.names.sorter);
   const window = page.getByRole("alertdialog");
   await window.getByLabel(t("agents.rule-hand-over")).check();
-  await expect(window.getByText(t("agents.rule-hand-over-help"))).toBeVisible();
+  await expect(
+    window.getByText(t("agents.rule-hand-over-help", { agent: scene.names.sorter, limit: 5 })),
+  ).toBeVisible();
   await window.getByRole("button", { name: t("agents.rule-confirm") }).click();
   await expect(window).toHaveCount(0);
   // The job that looks at the rules hands the issues of the project over, one hand-over for each, to
@@ -53,12 +55,30 @@ test("m7_wp14_a_rule_that_never_runs_out_is_offered_only_where_an_administrator_
   await window.getByText(t("agents.rule-never-ends"), { exact: true }).click();
   // The days give way to the sentence that says what it means.
   await expect(window.getByLabel(t("agents.rule-days"))).toHaveCount(0);
-  await expect(window.getByText(t("agents.rule-never-ends-help"))).toBeVisible();
+  await expect(
+    window.getByText(t("agents.rule-never-ends-help", { agent: scene.names.sorter })),
+  ).toBeVisible();
   await window.getByRole("button", { name: t("agents.rule-confirm") }).click();
   await expect(window).toHaveCount(0);
   await page.goto(paths.myAgents);
-  await expect(page.getByText(t("agents.rule-ends-never")).first()).toBeVisible();
+  await expect(page.getByText(t("agents.rule-never-ends")).first()).toBeVisible();
   await expectGoodInEveryLook(page);
   await allowNever(scene.admin, false);
+  await scene.dispose();
+});
+
+test("m7_wp14_nothing_behind_the_window_of_a_rule_can_be_pressed", async ({ page, server }) => {
+  const scene = await agentsScene(server);
+  await signIn(page, ada);
+  await fillTopOfRule(page, scene.names.sorter);
+  // The window covers the page, the bottom bar of a phone too: a press on the page behind does not
+  // reach it.
+  await expect(
+    page
+      .getByRole("link", { name: t("nav.home"), exact: true })
+      .first()
+      .click({ trial: true, timeout: 2000 }),
+  ).rejects.toThrow();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
   await scene.dispose();
 });

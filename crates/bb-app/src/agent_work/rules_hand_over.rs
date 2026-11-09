@@ -7,7 +7,7 @@ use bb_core::agent::Agent;
 use bb_core::agent_records::StandingRule;
 use bb_core::id::IssueId;
 
-use super::hand_over::{ByRule, Giving};
+use super::hand_over::{ByRule, Giving, Reach};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
 
@@ -17,20 +17,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         agent: &Agent,
+        reach: &Reach,
         giving: Giving,
         issue: IssueId,
         by: ByRule,
     ) -> Result<(), AppError> {
-        let plan = self
-            .plan_hand_over(actor, agent, giving, &[issue.to_string()], Some(by))
-            .await?;
-        let writes = plan.writes.clone();
-        self.store()
-            .record_change(&plan.event, move |transaction| {
-                Box::pin(async move { writes.apply::<S>(transaction).await })
-            })
+        self.plan_hand_over(actor, agent, reach, giving, &[issue.to_string()], Some(by))
+            .await?
+            .record_change(self.store())
             .await
-            .map_err(|error| plan.writes.answer::<S>(&error))
+            .map(drop)
     }
 
     /// Hands over the issues a rule found that it did not know yet, one hand-over for each, as the
@@ -56,12 +52,13 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(), AppError> {
         let most_open = usize::try_from(agent.issues_at_once).unwrap_or(0);
         let mut already: Vec<IssueId> = Vec::new();
+        let reach = self.hand_over_reach(rule.person).await?;
         for issue in fresh {
             let giving = Giving {
                 note: String::new(),
                 powers: rule.powers.clone(),
                 fields: rule.fields.clone(),
-                budget_attempts: agent.attempts_on_one_issue,
+                budget_attempts: None,
                 budget_minutes: None,
                 budget_cost: None,
                 plan_needs_approval: false,
@@ -72,7 +69,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 rule: rule.id,
                 most_open,
             };
-            match self.hand_over_one(actor, agent, giving, issue, by).await {
+            match self
+                .hand_over_one(actor, agent, &reach, giving, issue, by)
+                .await
+            {
                 // Handed over, or left out for the person's rights of now (looked at again later).
                 Ok(()) | Err(AppError::Refused(ErrorCode::Forbidden | ErrorCode::NotFound)) => {}
                 Err(AppError::Refused(ErrorCode::AgentLimitReached)) => break,

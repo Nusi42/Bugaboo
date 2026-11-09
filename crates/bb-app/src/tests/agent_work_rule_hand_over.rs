@@ -471,3 +471,55 @@ async fn m7_wp14_an_accept_by_itself_of_a_hand_over_of_a_rule_is_listed_in_my_ag
     );
     Ok(())
 }
+
+fn jobs_of_kind(world: &World, kind: &str) -> usize {
+    world
+        .store
+        .lock()
+        .state
+        .jobs
+        .iter()
+        .filter(|job| job.kind.as_str() == kind)
+        .count()
+}
+
+#[tokio::test]
+async fn m7_f236_switching_the_setting_off_gives_a_rule_that_never_runs_out_an_end() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    allow_never(&world, true).await?;
+    let never = create_standing_rule(
+        &world.ctx(),
+        CreateStandingRule {
+            never_ends: true,
+            ..rule_request(&given)
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(never.ends_at, None);
+    // Another change of the setting queues nothing.
+    assert_eq!(jobs_of_kind(&world, "agents.rules-get-an-end"), 0);
+    allow_never(&world, false).await?;
+    assert_eq!(jobs_of_kind(&world, "agents.rules-get-an-end"), 1);
+    // Still no end until the job ran, and the job leaves it alone while the setting is on again.
+    allow_never(&world, true).await?;
+    world.ctx().run_rules_get_an_end().await?;
+    assert_eq!(world.store.lock().state.work.rules[0].ends_at, None);
+    allow_never(&world, false).await?;
+    world.ctx().run_rules_get_an_end().await?;
+    let rule = world.store.lock().state.work.rules[0].clone();
+    // The most days (90) from now, with the jobs of an end: it runs out, and it is told before.
+    let end = rule.ends_at.expect("the rule has an end now");
+    assert_eq!(
+        end.as_second() - world.ctx().now().as_second(),
+        90 * 24 * 3600
+    );
+    assert_eq!(rule.version, never.version + 1);
+    assert_eq!(jobs_of_kind(&world, "agents.rule-runs-out"), 1);
+    assert_eq!(jobs_of_kind(&world, "agents.rule-about-to-run-out"), 1);
+    // A second run finds nothing to do.
+    world.ctx().run_rules_get_an_end().await?;
+    assert_eq!(world.store.lock().state.work.rules[0].version, rule.version);
+    Ok(())
+}

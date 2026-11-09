@@ -202,6 +202,13 @@ impl Agent {
     pub fn may_act(&self) -> bool {
         self.state == AgentState::Active
     }
+
+    /// Whether it may act now for this person: the one definition of an agent that a hand-over or
+    /// a standing rule of the person can give work to.
+    #[must_use]
+    pub fn works_for(&self, person: UserId) -> bool {
+        self.may_act() && self.person == person
+    }
 }
 
 #[cfg(test)]

@@ -199,8 +199,8 @@ export const messages = {
     "When a person hands issues to an agent and sets no end, the hand-over ends after this many days.",
   "setting.agents.rule-days.name": "Days until a standing rule ends",
   "setting.agents.rule-days.help":
-    "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed, unless rules that never run out are allowed.",
-  "setting.agents.rules-never-run-out.name": "Allow standing rules that never run out",
+    "When a person creates a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed. Where rules that never run out are allowed, a person can choose no end instead.",
+  "setting.agents.rules-never-run-out.name": "Allow rules that never run out",
   "setting.agents.rules-never-run-out.help":
     "Off: every standing rule ends, after 90 days at most. On: a person can create a standing rule that never runs out, so that an agent keeps working with nobody watching. Such a rule can be stopped at any time and the limits of its agent still apply.",
   "setting.files.max-megabytes.name": "Biggest file",

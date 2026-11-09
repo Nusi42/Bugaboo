@@ -391,13 +391,21 @@ impl AgentWorkRecords for super::fake::FakeStore {
     async fn open_work_count_of_in(
         tx: &mut Tx,
         agent: AgentId,
-        _now: Timestamp,
+        now: Timestamp,
     ) -> Result<u64, FakeError> {
         let state = &tx.state.work;
+        // As the store counts: open work whose hand-over still gives work and has not run out.
         Ok(state
             .works
             .iter()
-            .filter(|work| work.agent == agent && state.is_open(work))
+            .filter(|work| {
+                work.agent == agent
+                    && state.is_open(work)
+                    && state
+                        .hand_overs
+                        .iter()
+                        .any(|held| held.id == work.hand_over && held.ends_at > now)
+            })
             .count() as u64)
     }
 

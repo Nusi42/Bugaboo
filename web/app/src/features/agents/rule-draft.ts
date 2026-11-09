@@ -33,7 +33,7 @@ export function emptyRuleDraft(start: Partial<RuleDraft> = {}): RuleDraft {
     search: "",
     agent: "",
     project: "",
-    way: "proposals",
+    way: "propose",
     handOver: emptyDraft,
     createIssues: false,
     createsIn: "",

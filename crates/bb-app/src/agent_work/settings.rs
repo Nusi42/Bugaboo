@@ -50,6 +50,31 @@ impl<S: AuthStore> Ctx<'_, S> {
             .unwrap_or(bb_core::agent_work::DEFAULT_RULE_DAYS))
     }
 
+    /// The job that gives the rules that never run out an end, queued with the change of the
+    /// setting that forbids them: none for any other change.
+    ///
+    /// # Errors
+    /// An internal error when the job cannot be made.
+    pub(crate) fn rules_get_an_end_job(
+        &self,
+        scope: bb_core::settings::Scope,
+        key: &str,
+        value: &SettingValue,
+    ) -> Result<Option<crate::jobs::QueuedJob>, AppError> {
+        let forbids = scope == bb_core::settings::Scope::Organization
+            && key == AGENTS_RULES_NEVER_RUN_OUT.definition().key()
+            && *value == SettingValue::Bool(false);
+        forbids
+            .then(|| {
+                self.queued(
+                    crate::jobs::JobKind::RulesGetAnEnd,
+                    serde_json::json!({}),
+                    self.now(),
+                )
+            })
+            .transpose()
+    }
+
     /// Whether the organization allows standing rules that never run out (off at the start).
     pub(crate) async fn rules_never_run_out(&self) -> Result<bool, AppError> {
         let layers = self.setting_layers_of(None).await?;

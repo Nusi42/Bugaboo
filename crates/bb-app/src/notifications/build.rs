@@ -304,12 +304,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::Agent => self.agent_event(round, event).await,
             RecordKind::AgentWork => self.agent_work_event(round, event).await,
             RecordKind::StandingRule => self.standing_rule_event(round, event).await,
+            RecordKind::HandOver => self.hand_over_event(round, event).await,
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
-            | RecordKind::HandOver
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower

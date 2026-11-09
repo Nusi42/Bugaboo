@@ -52,3 +52,21 @@ export async function handingRuleWithNoEnd(scene: AgentsScene, agent: string): P
     }),
   );
 }
+
+/** Chooses *Hand over what it finds* and ticks one field the agent may change, so the window can be sent. */
+export async function handOverWithOneField(page: Page): Promise<void> {
+  const window = page.getByRole("alertdialog");
+  await window.getByLabel(t("agents.rule-hand-over")).check();
+  await window.getByText(t("agent-work.power-change-fields"), { exact: true }).click();
+  await window.getByText(t("issue-field.title"), { exact: true }).click();
+}
+
+/** Shows the way section at the top of the window: the choice, its help and what the agent may do. */
+export async function scrollToWay(page: Page): Promise<void> {
+  await page
+    .getByRole("alertdialog")
+    .getByText(t("agents.rule-may"), { exact: true })
+    .evaluate((node: HTMLElement) => {
+      node.scrollIntoView({ block: "start" });
+    });
+}

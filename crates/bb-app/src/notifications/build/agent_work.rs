@@ -5,15 +5,19 @@
 //! The responsible person and the person who handed the issue over hear of the first four; the
 //! reader skips an issue a person no longer sees like any other (decision 2).
 
-use bb_core::agent_work::AgentWorkState;
+use bb_core::agent_records::GivingState;
+use bb_core::agent_work::{AgentWorkState, ReviewAnswer, RuleWay};
 use bb_core::event::DomainEvent;
-use bb_core::id::{AgentId, AgentWorkId, IssueId, StandingRuleId};
+use bb_core::id::{AgentId, AgentWorkId, HandOverId, IssueId, StandingRuleId};
 use bb_core::notification::{NotificationKind, Once};
 
 use super::{Hears, Keeps, Round, Subject};
 use crate::agent_work::{event_member, waiting_for};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::event_members::text_set;
+
+/// The most rules of one agent the look for room reads.
+const MOST_RULES_OF_AN_AGENT: u64 = 100;
 
 /// The kind a new state of agent work is told as, if it is told at all.
 fn kind_of(state: &str, waiting: Option<&str>) -> Option<NotificationKind> {
@@ -36,6 +40,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
+        self.note_room_of_work(round, event).await?;
         let Some(state) = text_set(&event.changes, event_member::WORK_STATE) else {
             return Ok(());
         };
@@ -82,6 +87,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
+        if let Ok(agent) = AgentId::from_bytes(event.entity.id.to_bytes())
+            && text_set(&event.changes, event_member::WORK_STATE)
+                == Some(AgentWorkState::Stopped.code())
+        {
+            self.note_room_of(round, agent).await?;
+        }
         let stopped = text_set(&event.changes, "state")
             == Some(bb_core::agent::AgentState::Stopped.code())
             || text_set(&event.changes, event_member::WORK_STATE)
@@ -114,6 +125,86 @@ impl<S: AuthStore> Ctx<'_, S> {
             once: Once::Event(event.id),
         }];
         self.deliver(round, &subject, hears).await
+    }
+
+    /// A hand-over ended, by a person, by its end or with its last piece of work: its agent has
+    /// room, so the rules of the agent that hand over look again.
+    pub(super) async fn hand_over_event(
+        &self,
+        round: &mut Round,
+        event: &DomainEvent,
+    ) -> Result<(), AppError> {
+        if text_set(&event.changes, event_member::STATE) != Some(GivingState::Ended.code()) {
+            return Ok(());
+        }
+        let Ok(id) = HandOverId::from_bytes(event.entity.id.to_bytes()) else {
+            return Ok(());
+        };
+        if let Some(found) = self
+            .store()
+            .hand_over(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
+            self.note_room_of(round, found.agent).await?;
+        }
+        Ok(())
+    }
+
+    /// Work ended: stopped, given up, reviewed to its end or accepted by itself. The agent has
+    /// room, so the rules of the agent that hand over look again.
+    async fn note_room_of_work(
+        &self,
+        round: &mut Round,
+        event: &DomainEvent,
+    ) -> Result<(), AppError> {
+        let state =
+            text_set(&event.changes, event_member::WORK_STATE).and_then(AgentWorkState::from_code);
+        let reviewed = text_set(&event.changes, event_member::REVIEW)
+            .and_then(ReviewAnswer::from_code)
+            .is_some_and(|answer| answer != ReviewAnswer::SendBack);
+        let accepted = event
+            .changes
+            .iter()
+            .any(|change| change.field == event_member::ACCEPTED_BY_ITSELF);
+        let ended = matches!(
+            state,
+            Some(AgentWorkState::Stopped | AgentWorkState::AgentGaveUp)
+        );
+        if !(ended || reviewed || accepted) {
+            return Ok(());
+        }
+        let Ok(id) = AgentWorkId::from_bytes(event.entity.id.to_bytes()) else {
+            return Ok(());
+        };
+        if let Some(work) = self
+            .store()
+            .issue_work(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
+            self.note_room_of(round, work.agent).await?;
+        }
+        Ok(())
+    }
+
+    /// Remembers the projects where a rule of the agent hands over what it finds, so the job of the
+    /// matches is queued for them after the round: the issues that waited for room are handed over
+    /// then (ADR-0029, amendment M7, WP-14).
+    async fn note_room_of(&self, round: &mut Round, agent: AgentId) -> Result<(), AppError> {
+        let rules = self
+            .store()
+            .open_rules_of_agents(vec![agent], MOST_RULES_OF_AN_AGENT)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let now = self.now();
+        round.rule_projects.extend(
+            rules
+                .into_iter()
+                .filter(|rule| rule.way == RuleWay::HandOver && rule.works_at(now))
+                .map(|rule| rule.project),
+        );
+        Ok(())
     }
 
     /// Three days before a standing rule runs out its person is told, once.

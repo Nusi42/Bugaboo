@@ -247,13 +247,18 @@ export function ruleDaysLeft(rule: Pick<Rule, "ends_at">, nowMs: number): number
 /** When a rule runs out, in words: *in 4 days*, *today*, the date when it is further away, or that it never does. */
 export function runsOutText(endsAt: string | null | undefined, nowMs: number): string {
   if (endsAt === undefined || endsAt === null) {
-    return t("agents.rule-ends-never");
+    return t("agents.rule-never-ends");
   }
   const days = daysUntil(endsAt, nowMs);
   if (days > agentRuleWarningDays) {
     return t("agents.rule-ends-on", { date: formatDate(endsAt) });
   }
   return days <= 0 ? t("agents.rule-ends-today") : t("agents.rule-ends-in", { count: days });
+}
+
+/** The agent of the person with this ID, once the list is read; none for an empty ID. */
+export function useAgentNamed(id: string): ListedAgent | undefined {
+  return agentNamed(listedAgents(useMyAgentList().data?.items), id);
 }
 
 /** The agent with this ID among the person's agents. */

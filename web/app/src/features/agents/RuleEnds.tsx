@@ -1,9 +1,24 @@
 import { agentRuleDaysDefault, agentRuleDaysMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Checkbox, TextField, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Checkbox, TextField, partOf, part } from "@bugaboo/ui";
 
-import { useMyAgentWork } from "./agents.ts";
+import { useAgentNamed, useMyAgentWork } from "./agents.ts";
 import { daysAreRight, type DraftProps } from "./rule-draft.ts";
+
+/**
+ * What a rule with no end means, in the caution color: it goes on handing work to the agent until
+ * the person stops it, also when nobody looks; and more strongly when it hands over and accepts
+ * results by itself.
+ */
+function NeverWarning({ draft }: Pick<DraftProps, "draft">) {
+  const agent = useAgentNamed(draft.agent)?.name ?? t("agents.rule-its-agent");
+  const alone = draft.way === "hand-over" && draft.handOver.acceptByItself;
+  return (
+    <Alert tone={alertTone.warning}>
+      {t(alone ? "agents.rule-never-ends-alone" : "agents.rule-never-ends-help", { agent })}
+    </Alert>
+  );
+}
 
 /** When the rule runs out: the days, or *Never runs out* where an administrator allows it. */
 export function RuleEnds({ draft, onChange }: DraftProps) {
@@ -20,7 +35,7 @@ export function RuleEnds({ draft, onChange }: DraftProps) {
         />
       ) : null}
       {allowed && draft.neverEnds ? (
-        <p {...partOf(part.muted)}>{t("agents.rule-never-ends-help")}</p>
+        <NeverWarning draft={draft} />
       ) : (
         <TextField
           label={t("agents.rule-days")}

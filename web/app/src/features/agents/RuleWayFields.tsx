@@ -4,13 +4,26 @@ import { Checkbox, ChoiceGroup, choiceGroupLook, partOf, part } from "@bugaboo/u
 import { HandOverPowers } from "../agent-work/index.ts";
 import { projectKey } from "./project-choices.ts";
 import { ProjectSelect } from "./ProjectSelect.tsx";
+import { useAgentNamed } from "./agents.ts";
 import { type DraftProps } from "./rule-draft.ts";
+
+/** What handing over means for this agent: how many of the issues it works on at a time, and that the rest wait. */
+function HandOverHelp({ draft }: Pick<DraftProps, "draft">) {
+  const agent = useAgentNamed(draft.agent);
+  return (
+    <p {...partOf(part.muted)}>
+      {agent === undefined
+        ? t("agents.rule-hand-over-help-any")
+        : t("agents.rule-hand-over-help", { agent: agent.name, limit: agent.issuesAtOnce })}
+    </p>
+  );
+}
 
 /** The powers of the hand-overs of a rule that hands over, and whether they may be accepted by themselves. */
 function HandOverFields({ draft, onChange }: DraftProps) {
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.muted)}>{t("agents.rule-hand-over-help")}</p>
+      <HandOverHelp draft={draft} />
       <HandOverPowers
         draft={draft.handOver}
         onChange={(change) => {
@@ -37,7 +50,7 @@ export function RuleWayFields({ draft, onChange }: DraftProps) {
         legend={t("agents.rule-may")}
         look={choiceGroupLook.radios}
         choices={[
-          { value: "proposals", label: t("agents.rule-propose") },
+          { value: "propose", label: t("agents.rule-propose") },
           { value: "hand-over", label: t("agents.rule-hand-over") },
         ]}
         value={draft.way}

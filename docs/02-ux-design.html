@@ -870,7 +870,7 @@ sort by priority, highest first</div>
       <li><b>Never assigned:</b> the issue stays <i>Assigned to</i> its person and shows <i>"worked on by Fixer"</i>. Text an agent wrote is marked <i>Written by an agent</i> (§4.12).</li>
       <li><b>My agents</b> (computer and phone): one person can drive several agents. <i>Waiting for you</i> is at the top (questions, plans to approve, reviews, <i>Accepted by itself</i>, standing rules about to run out), then each agent with its state, what it works on, and <i>Pause</i> (or <i>Resume</i>) and <i>Stop</i>. <i>Stop all my agents</i> stops every one at once.</li>
       <li><b>An agent's page:</b> its person, its agent keys (each runs out; <i>Create an agent key</i>, <i>Take back</i>), its <i>Limits</i> (changes a minute, issues at once, attempts on one issue; at the start 60, 5 and 5, never more than the organization's maximum), <i>Pause</i> and <i>Stop</i>. Reaching a limit pauses the agent with a sentence that says which.</li>
-      <li><b>Standing rules:</b> a saved search an agent watches; at the start it only proposes, or changes a few named fields; never people fields or the status. It runs out after 30 days unless renewed (at most 90).</li>
+      <li><b>Standing rules:</b> a saved search an agent works on, in one of two ways. <i>Propose changes</i> (the start): the agent reads what the search finds and proposes, and a person applies each proposal. <i>Hand over what it finds</i>: each issue the search finds, now and later, becomes a hand-over to the agent, once, with the powers and the setting <i>Accept by itself</i> chosen in the window as in the hand-over window; the agent works on at most as many of them at a time as its limit of issues at once, and the others wait until it has room. Never a field that holds people. The rule runs out after 30 days unless renewed (at most 90); where an administrator allows <i>Rules that never run out</i> (<i>Organization settings › Connections › Agents</i>, off at the start), the window offers <i>Never runs out</i> with a warning in the caution color that the rule keeps handing issues over until it is stopped, also when nobody looks. Stopping a rule ends the rule, not the hand-overs it has made. The card of a rule says its way, its powers, whether it accepts by itself and when it runs out (<i>Never runs out</i> in the caution color).</li>
     </ul>
 
     <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Hand over to an agent</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Hand over WEB-142 to an agent</div><div class="db">
@@ -904,12 +904,19 @@ sort by priority, highest first</div>
       <div class="df"><span class="btn sm danger">Throw away</span><span class="btn sm">Send back</span><span class="btn sm primary">Accept</span></div></div></div></div></div>
     <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Standing rule</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">New standing rule for Sorter</div><div class="db">
       <div class="field"><label>Saved search</label><select><option>New bugs in Website</option></select></div>
-      <div class="u-font-size-12-5px"><b>What it may do</b></div>
-      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb" checked> Propose only (nothing changes until a person applies it)</label>
-      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb"> Change only: Labels, Tags, Type, Duplicate of, Found in release</label>
+      <div class="field"><label>Agent</label><select><option>Sorter</option></select></div>
+      <div class="u-font-size-12-5px"><b>What the rule does with what it finds</b></div>
+      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb"> Propose changes: a person applies each one</label>
+      <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb" checked> Hand over what it finds: the agent works on each issue by itself</label>
+      <div class="muted u-font-size-11px">Sorter works on at most 5 of these issues at a time; the others wait until it has room. Each issue is handed over once. You review every result.</div>
+      <div class="u-font-size-12-5px"><b>What the agent may do</b> <span class="muted">Always: read the issue and what it links to, comment, report its work, attach results, link related issues.</span></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Change the status</label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Change these fields: Labels, Tags</label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Accept by itself when its checks pass</label>
       <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Create issues in one project: <i>Operations</i></label>
       <div class="field"><label>Runs out after</label><input type="text" value="30 days" readonly></div>
-      <div class="muted u-font-size-11px">Never changes a field that holds people or the status. At most 90 days; <i>Renew</i> starts again. Every issue that newly comes under the rule is written down.</div></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Never runs out <span class="muted">(only where an administrator allows it)</span></label>
+      <div class="muted u-font-size-11px">At most 90 days; <i>Renew</i> starts again. Never changes a field that holds people. Every issue that newly comes under the rule is written down.</div></div>
       <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Create the rule</span></div></div></div></div></div></div>
 
     <div class="demo"><div class="frame"><div class="frame-cap">My agents · computer</div><div class="frame-body"><div class="scr u-padding-10px">

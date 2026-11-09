@@ -16,6 +16,24 @@ function powerText(rule: Rule, names: RuleNames): string {
     : `${power} ${t("agents.rule-power-creates", { project: names.project(rule.creates_in) })}`;
 }
 
+/** The strong settings of a rule that hands over: what its hand-overs may do besides what an agent always may, and accepting by itself. */
+function HandOverFacts({ rule }: { readonly rule: Rule }) {
+  if (rule.way !== "hand-over") {
+    return null;
+  }
+  const powers = rule.powers.map((power) => t(`agent-work.power-${power}`)).join(", ");
+  return (
+    <>
+      {powers === "" ? null : (
+        <span {...partOf(part.muted)}>{t("agents.rule-powers", { powers })}</span>
+      )}
+      {rule.accept_by_itself ? (
+        <span {...partOf(part.muted)}>{t("agents.rule-accepts")}</span>
+      ) : null}
+    </>
+  );
+}
+
 interface RuleRowProps {
   readonly rule: Rule;
   readonly agents: readonly ListedAgent[];
@@ -84,7 +102,14 @@ function RuleRow({ rule, agents, names, withAgent, canChange }: RuleRowProps) {
           {withAgent ? t("agents.rule-line", { search, agent }) : search}
         </span>
         <span {...partOf(part.muted)}>{powerText(rule, names)}</span>
-        <span {...partOf(part.muted)}>
+        <HandOverFacts rule={rule} />
+        <span
+          {...partOf(
+            rule.state === "open" && (rule.ends_at === undefined || rule.ends_at === null)
+              ? part.agentsNeverEnds
+              : part.muted,
+          )}
+        >
           {rule.state === "ended" ? t("agents.rule-ended") : runsOutText(rule.ends_at, now)}
         </span>
       </span>

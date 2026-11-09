@@ -44,6 +44,22 @@ const DESIGNED_OUT_PATHS: [&str; 4] = [
     "bb_app::roles",
 ];
 /// The code that lists and calls tools through the registry and must not reach past it.
+/// Places where a word that is also the name of a tool means something else, each with the word
+/// and the reason: the word `propose` is the way of a standing rule that proposes (ADR-0029), not
+/// the tool. Exact entries only: any other file that writes a tool name as a string is still found.
+const OTHER_MEANING: [(&str, &str, &str); 2] = [
+    (
+        "crates/bb-core/src/agent_work.rs",
+        "propose",
+        "the word of the way of a standing rule (`RuleWay::Propose`)",
+    ),
+    (
+        "crates/bb-store/src/migrations/m0048_rules_hand_over.rs",
+        "propose",
+        "the start value of the way of a standing rule that is stored",
+    ),
+];
+
 const OUTSIDE_FOLDERS: [&str; 2] = ["crates/bb-mcp/", "crates/bb-ai/"];
 
 pub(crate) struct ArchAiTools;
@@ -431,7 +447,10 @@ fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> 
             ));
         }
         for tool in tools {
-            if code.contains(&format!("\"{}\"", tool.word)) {
+            let other = OTHER_MEANING
+                .iter()
+                .any(|(file, word, _)| *file == path && *word == tool.word);
+            if !other && code.contains(&format!("\"{}\"", tool.word)) {
                 found.push(Finding::at(
                     path,
                     format!(

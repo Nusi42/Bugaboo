@@ -123,10 +123,10 @@ export const messages = {
   "agents.rule-project": "Works in the project",
   "agents.choose-project": "Choose a project",
   "agents.rule-may": "What the rule does with what it finds",
-  "agents.rule-propose": "Propose changes: nothing changes until a person applies it",
-  "agents.rule-hand-over": "Hand over what it finds: each issue becomes a hand-over",
+  "agents.rule-propose": "Propose changes: a person applies each one",
+  "agents.rule-hand-over": "Hand over what it finds: the agent works on each issue by itself",
   "agents.rule-hand-over-help":
-    "Each issue the saved search finds is handed over once, now and later. The agent works on it in attempts and you review every result. The agent never has more open hand-overs than its limit of issues at once.",
+    "{agent} works on at most {limit, plural, one {# of these issues} other {# of these issues}} at a time; the others wait until it has room. Each issue is handed over once. You review every result.",
   "agents.rule-accept-by-itself": "Accept by itself when its checks pass",
   "agents.rule-accept-by-itself-help":
     "Off: you review every result. On: a result whose checks all passed is accepted without you where the project allows it, and waits under Accepted by itself until you have looked at it.",
@@ -146,15 +146,21 @@ export const messages = {
   "agents.rule-ends-on": "Runs out on {date}",
   "agents.rule-ends-in": "{count, plural, one {Runs out in # day} other {Runs out in # days}}",
   "agents.rule-ends-today": "Runs out today",
-  "agents.rule-ends-never": "Never runs out",
   "agents.rule-never-ends": "Never runs out",
+  "agents.rule-hand-over-help-any":
+    "The agent works on at most as many of these issues at a time as its limit allows; the others wait until it has room. Each issue is handed over once. You review every result.",
+  "agents.rule-never-ends-alone":
+    "This rule hands issues to {agent} and accepts results by itself, until you stop it, also when nobody looks. Only the limits of the agent hold it back. You can stop it under My agents, in Standing rules.",
+  "agents.rule-its-agent": "its agent",
+  "agents.rule-accepts": "Accepts by itself when its checks pass.",
+  "agents.rule-powers": "May also: {powers}.",
   "agents.rule-never-ends-help":
-    "Your administrators allow rules that never run out. You can stop the rule at any time, and the limits of the agent still apply.",
+    "This rule keeps giving work to {agent} until you stop it, also when nobody looks. You can stop it under My agents, in Standing rules.",
   "agents.rule-stop": "Stop the rule",
   "agents.rule-stop-name": "Stop the rule {search} of {agent}",
   "agents.rule-stop-title": "Stop this standing rule?",
   "agents.rule-stop-text":
-    "The agent stops working on what the saved search finds. This cannot be undone; create a new rule to go on.",
+    "The rule stops looking for new issues. Issues it has already handed over stay with the agent until they end or you stop them. This cannot be undone; create a new rule to go on.",
   "agents.org-none": "There are no agents yet.",
   "agents.limits-change": "Change the limits",
   "agents.limits-title": "Limits of {agent}",

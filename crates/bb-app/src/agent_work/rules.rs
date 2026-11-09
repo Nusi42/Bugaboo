@@ -46,7 +46,7 @@ pub(super) fn view_of(rule: &RuleRecord) -> StandingRuleView {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The jobs that go with the end of a rule: it runs out, and three days before it tells.
-    fn rule_jobs(&self, rule: &RuleRecord) -> Result<Vec<QueuedJob>, AppError> {
+    pub(super) fn rule_jobs(&self, rule: &RuleRecord) -> Result<Vec<QueuedJob>, AppError> {
         // A rule that never runs out has no end to run out at, and nothing to warn of.
         let Some(ends_at) = rule.ends_at else {
             return Ok(Vec::new());

@@ -8702,6 +8702,10 @@ textarea,
   color: var(--fg-muted);
 }
 
+[data-part="agents.never-ends"] {
+  color: var(--warning);
+}
+
 [data-part="agents.fact-value"] {
   margin: 0;
   color: var(--fg);

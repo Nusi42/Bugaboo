@@ -66,8 +66,10 @@ pub(crate) enum LockClass {
     /// The taking of one issue by an agent (key: four bytes of the issue's ID): two agents who take
     /// the same issue at the same moment cannot both start an attempt on it.
     IssueTaking = 15,
-    /// The attempts of one agent (key: four bytes of the agent's ID): two takes of one agent at the
-    /// same moment cannot both pass its limit of issues at once. Taken after `IssueTaking`.
+    /// The open work of one agent (key: four bytes of the agent's ID): two takes of one agent at the
+    /// same moment cannot both pass its limit of issues at once, and two hand-overs that standing
+    /// rules make for it at the same moment cannot both pass that limit for its open work. Taken
+    /// after `IssueTaking`.
     AgentTaking = 16,
 }
 

@@ -16,13 +16,13 @@ const handing = { ...complete, way: "hand-over" } as const;
 
 describe("m7_wp14 the way of a standing rule", () => {
   it("proposes at the start and sends nothing of a hand-over", () => {
-    expect(complete.way).toBe("proposals");
+    expect(complete.way).toBe("propose");
     const body = ruleBody({
       ...complete,
       handOver: { ...emptyDraft, changeStatus: true, changeFields: true, fields: ["title"] },
     });
     expect(body).toMatchObject({
-      way: "proposals",
+      way: "propose",
       powers: [],
       fields: [],
       accept_by_itself: false,

@@ -9,17 +9,23 @@ import type { MyWorkItem } from "./agents.ts";
 export function WorkLines({ work }: { readonly work: readonly MyWorkItem[] }) {
   return (
     <ul {...partOf(part.agentsWork)}>
-      {work.map((item) => (
-        <li key={item.work.id} {...partOf(part.agentsWorkLine)}>
-          <Link href={issueAddress(item.issue.readable_id)}>
-            <IssueId id={item.issue.readable_id} /> {item.issue.title ?? ""}
-          </Link>
-          <span {...partOf(part.muted)}>
-            {t("agents.work-state", { state: t(`agent-work.state.${item.work.state}`) })}
-            <AgentMark name={item.work.agent_name} state={item.work.state} />
-          </span>
-        </li>
-      ))}
+      {work
+        .toSorted((one, other) =>
+          one.issue.readable_id.localeCompare(other.issue.readable_id, undefined, {
+            numeric: true,
+          }),
+        )
+        .map((item) => (
+          <li key={item.work.id} {...partOf(part.agentsWorkLine)}>
+            <Link href={issueAddress(item.issue.readable_id)}>
+              <IssueId id={item.issue.readable_id} /> {item.issue.title ?? ""}
+            </Link>
+            <span {...partOf(part.muted)}>
+              {t("agents.work-state", { state: t(`agent-work.state.${item.work.state}`) })}
+              <AgentMark name={item.work.agent_name} state={item.work.state} />
+            </span>
+          </li>
+        ))}
     </ul>
   );
 }

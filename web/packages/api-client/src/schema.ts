@@ -9832,7 +9832,7 @@ export interface components {
      * @description How a standing rule works on what it finds.
      * @enum {string}
      */
-    RuleWay: "proposals" | "hand-over";
+    RuleWay: "propose" | "hand-over";
     /**
      * @description The rules a value has to keep. Which rules a type can have is decided by
      *     `FieldType`; `Rules::check_definition` refuses a rule the type cannot have.

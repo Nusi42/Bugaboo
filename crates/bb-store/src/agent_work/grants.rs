@@ -90,6 +90,8 @@ impl GrantStore for AuthStorage {
                 ),
             )
             .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()))
+            // Newest first, as the rules of one agent are listed; the ID breaks a tie.
+            .order_by(StandingRuleRow::MadeAt, Order::Desc)
             .order_by(StandingRuleRow::Id, Order::Asc)
             .limit(limit);
         all(transaction, &select, read_rule).await

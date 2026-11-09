@@ -957,6 +957,7 @@ export const part = {
   agentsSearchName: "agents.search-name",
   agentsStateLine: "agents.state-line",
   agentsLimitSentence: "agents.limit-sentence",
+  agentsNeverEnds: "agents.never-ends",
   agentsFactValue: "agents.fact-value",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
@@ -1691,6 +1692,7 @@ export const partWords = {
   "agents.search-name": { variant: [], state: [] },
   "agents.state-line": { variant: [], state: [] },
   "agents.limit-sentence": { variant: [], state: [] },
+  "agents.never-ends": { variant: [], state: [] },
   "agents.fact-value": { variant: [], state: [] },
 } as const;
 

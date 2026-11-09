@@ -70,7 +70,9 @@ pub(crate) mod payload {
 
 /// What an event of agent work says for the reader of notifications.
 pub(crate) mod event_member {
-    pub(crate) use super::member::{ISSUE, PAUSED_FOR, STATE, WAITING_FOR, WORK_STATE};
+    pub(crate) use super::member::{
+        ACCEPTED_BY_ITSELF, ISSUE, PAUSED_FOR, REVIEW, STATE, WAITING_FOR, WORK_STATE,
+    };
 
     /// The state of a standing rule three days before its end.
     pub(crate) const ABOUT_TO_RUN_OUT: &str = "about-to-run-out";

@@ -531,6 +531,7 @@ pub(crate) struct StandingRuleItem {
     /// Whether it still works.
     pub(super) state: GivingState,
     /// When it ends; left out for a rule that never runs out.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) ends_at: Option<String>,
     /// The version of the rule; send it back with a change.
     pub(super) version: i64,

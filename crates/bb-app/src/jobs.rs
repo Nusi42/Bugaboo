@@ -83,6 +83,10 @@ bb_core::words! {
         /// Writing down what newly came under the standing rules of a project, once for each issue
         /// (ADR-0029, decision 3): queued by the outbox after an event that changes an issue.
         RuleMatches => "agents.rule-matches",
+        /// Giving each standing rule that never runs out an end when an administrator switches
+        /// *Allow rules that never run out* off (ADR-0029, amendment M7, WP-14): queued in the same
+        /// change as the setting; it does nothing when the setting is on again by then.
+        RulesGetAnEnd => "agents.rules-get-an-end",
     }
 }
 
@@ -109,7 +113,8 @@ impl JobKind {
             | Self::HandOverRunsOut
             | Self::RuleRunsOut
             | Self::RuleAboutToRunOut
-            | Self::RuleMatches => false,
+            | Self::RuleMatches
+            | Self::RulesGetAnEnd => false,
         }
     }
 
@@ -136,7 +141,8 @@ impl JobKind {
             | Self::HandOverRunsOut
             | Self::RuleRunsOut
             | Self::RuleAboutToRunOut
-            | Self::RuleMatches => Rhythm::FromTheStart,
+            | Self::RuleMatches
+            | Self::RulesGetAnEnd => Rhythm::FromTheStart,
         }
     }
 
@@ -396,6 +402,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a standing rule could not be told");
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::RulesGetAnEnd => Box::pin(self.run_rules_get_an_end())
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "the rules that never ran out could not get an end");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             JobKind::RuleMatches => Box::pin(self.run_rule_matches(&job.payload))
                 .await
                 .map_err(|error| {
@@ -507,7 +519,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::HandOverRunsOut
             | JobKind::RuleRunsOut
             | JobKind::RuleAboutToRunOut
-            | JobKind::RuleMatches => Err(misrouted(job, kind)),
+            | JobKind::RuleMatches
+            | JobKind::RulesGetAnEnd => Err(misrouted(job, kind)),
         }
     }
 
@@ -547,7 +560,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::HandOverRunsOut
                 | JobKind::RuleRunsOut
                 | JobKind::RuleAboutToRunOut
-                | JobKind::RuleMatches,
+                | JobKind::RuleMatches
+                | JobKind::RulesGetAnEnd,
             )
             | None => Ok(()),
         };

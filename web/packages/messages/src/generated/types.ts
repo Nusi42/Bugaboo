@@ -161,8 +161,12 @@ export interface MessageArguments {
   "agents.rule-days-wrong": { most: string | number };
   "agents.rule-ends-in": { count: number };
   "agents.rule-ends-on": { date: string | number };
+  "agents.rule-hand-over-help": { agent: string | number; limit: number };
   "agents.rule-line": { agent: string | number; search: string | number };
+  "agents.rule-never-ends-alone": { agent: string | number };
+  "agents.rule-never-ends-help": { agent: string | number };
   "agents.rule-power-creates": { project: string | number };
+  "agents.rule-powers": { powers: string | number };
   "agents.rule-search-named": { search: string | number };
   "agents.rule-stop-name": { agent: string | number; search: string | number };
   "agents.stop-name": { agent: string | number };

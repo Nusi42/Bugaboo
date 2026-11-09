@@ -117,7 +117,7 @@ words! {
     /// hand over"). It is chosen when the rule is made and does not change.
     pub enum RuleWay {
         /// The agent reads what the rule finds and proposes; nothing changes until a person applies it.
-        Propose => "proposals",
+        Propose => "propose",
         /// Each issue the rule finds is handed over to the agent, once.
         HandOver => "hand-over",
     }

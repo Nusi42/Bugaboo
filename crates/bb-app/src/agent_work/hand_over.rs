@@ -11,7 +11,7 @@ use bb_core::agent_work::{
 };
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::{AgentWorkId, EntityId, HandOverId, IssueId, StandingRuleId};
+use bb_core::id::{AgentWorkId, EntityId, HandOverId, IssueId, ProjectId, StandingRuleId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldFor;
 use bb_policy::{Authorized, Permission, Place};
@@ -123,7 +123,28 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// Where a person may give agents work: the projects with *Create agents that work for you* and
+/// the projects where agents are switched off. Read once for a hand-over, or once for a look of a
+/// rule at what it found, never for each issue.
+pub(super) struct Reach {
+    may_create: BTreeSet<ProjectId>,
+    off: BTreeSet<ProjectId>,
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Reads where the person may give agents work.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(super) async fn hand_over_reach(&self, person: UserId) -> Result<Reach, AppError> {
+        Ok(Reach {
+            may_create: self
+                .projects_where(person, Permission::CreateAgents)
+                .await?,
+            off: self.projects_with_agents_off(person).await?,
+        })
+    }
+
     /// The work a hand-over gives, one piece for each distinct issue, and what each brief lacks.
     /// The person needs to change each issue and to create agents in its project, where agents
     /// are not switched off; one issue that fails stops the whole hand-over.
@@ -131,15 +152,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         agent: &bb_core::agent::Agent,
+        reach: &Reach,
         hand_over: HandOverId,
         addresses: &[String],
         now: jiff::Timestamp,
     ) -> Result<(Vec<IssueWork>, Vec<HandedIssue>), AppError> {
         let person = actor.person.id;
-        let may_create = self
-            .projects_where(person, Permission::CreateAgents)
-            .await?;
-        let off = self.projects_with_agents_off(person).await?;
+        let (may_create, off) = (&reach.may_create, &reach.off);
         let mut works: Vec<IssueWork> = Vec::new();
         let mut issues = Vec::new();
         let mut seen: BTreeSet<IssueId> = BTreeSet::new();
@@ -229,7 +248,8 @@ pub(super) struct Giving {
     pub(super) note: String,
     pub(super) powers: Vec<bb_core::agent_work::HandOverPower>,
     pub(super) fields: Vec<String>,
-    pub(super) budget_attempts: i64,
+    /// The most attempts on one issue; the limit of the agent when none is named.
+    pub(super) budget_attempts: Option<i64>,
     pub(super) budget_minutes: Option<i64>,
     pub(super) budget_cost: Option<i64>,
     pub(super) plan_needs_approval: bool,
@@ -317,25 +337,65 @@ pub(super) struct HandOverPlan {
     pub(super) view: HandOverView,
 }
 
+impl HandOverPlan {
+    /// Writes the hand-over, its work and the job of its end in one change with its event; the
+    /// answer when it is written. The one place that writes a hand-over, for a person and for a
+    /// standing rule.
+    ///
+    /// # Errors
+    /// `agent.limit-reached` for a rule whose agent has no room left, `agent-work.already-open`
+    /// for an issue the agent has open work on, an internal error when the store fails.
+    pub(super) async fn record_change<S: AuthStore>(
+        self,
+        store: &S,
+    ) -> Result<HandOverView, AppError> {
+        let writes = self.writes.clone();
+        store
+            .record_change(&self.event, move |transaction| {
+                Box::pin(async move { writes.apply::<S>(transaction).await })
+            })
+            .await
+            .map_err(|error| self.writes.answer::<S>(&error))?;
+        Ok(self.view)
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Judges the hand-over of `issues` to `agent` for the person of `actor`: the one place that
     /// builds a hand-over, for the window of a person and for a standing rule that hands over what
-    /// it finds. The person needs *Change issues* (or *Change the issues they reported*) on each
-    /// issue and *Create agents that work for you* in its project; an agent has one open hand-over
-    /// for an issue. The caller writes it through `record_change` with the event.
+    /// it finds. The agent must be the person's and able to act, its fields must be ones an agent
+    /// can be given and the budget within its limits. The person needs *Change issues* (or *Change
+    /// the issues they reported*) on each issue and *Create agents that work for you* in its
+    /// project; an agent has one open hand-over for an issue. The plan is written with
+    /// [`HandOverPlan::record_change`].
     ///
     /// # Errors
     /// `resource.not-found` for an issue they cannot see, `access.forbidden` where they may not
-    /// hand over, `request.invalid` for an end out of range.
+    /// hand over, `request.invalid` for an agent that cannot act for them, a field no agent can be
+    /// given, a budget or an end out of range.
     pub(super) async fn plan_hand_over(
         &self,
         actor: &Actor,
         agent: &bb_core::agent::Agent,
+        reach: &Reach,
         giving: Giving,
         issues: &[String],
         by_rule: Option<ByRule>,
     ) -> Result<HandOverPlan, AppError> {
         let person = actor.person.id;
+        if !agent.works_for(person) {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let budget_attempts = giving
+            .budget_attempts
+            .unwrap_or(agent.attempts_on_one_issue);
+        if !(1..=agent.attempts_on_one_issue).contains(&budget_attempts)
+            || giving.budget_minutes.is_some_and(|minutes| minutes < 1)
+            || giving.budget_cost.is_some_and(|cost| cost < 0)
+        {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        self.ensure_nameable(&giving.fields).await?;
         let now = self.now();
         let days = match giving.days {
             Some(days) => days,
@@ -345,7 +405,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
         let id = HandOverId::generate(&mut self.ids());
         let (works, handed) = self
-            .works_to_hand_over(actor, agent, id, issues, now)
+            .works_to_hand_over(actor, agent, reach, id, issues, now)
             .await?;
         let hand_over = HandOverRecord {
             id,
@@ -354,7 +414,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             note: giving.note,
             powers: giving.powers,
             fields: giving.fields,
-            budget_attempts: giving.budget_attempts,
+            budget_attempts,
             budget_minutes: giving.budget_minutes,
             budget_cost: giving.budget_cost,
             plan_needs_approval: giving.plan_needs_approval,
@@ -413,40 +473,25 @@ pub async fn hand_over<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .filter(|found| found.person == person)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if !agent.may_act() {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let budget_attempts = input.budget_attempts.unwrap_or(agent.attempts_on_one_issue);
-    if !(1..=agent.attempts_on_one_issue).contains(&budget_attempts)
-        || input.budget_minutes.is_some_and(|minutes| minutes < 1)
-        || input.budget_cost.is_some_and(|cost| cost < 0)
-    {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    ctx.ensure_nameable(&input.fields).await?;
     let giving = Giving {
         note: note_of(&input.note)?,
         powers: input.powers,
         fields: input.fields,
-        budget_attempts,
+        budget_attempts: input.budget_attempts,
         budget_minutes: input.budget_minutes,
         budget_cost: input.budget_cost,
         plan_needs_approval: input.plan_needs_approval,
         accept_by_itself: input.accept_by_itself,
         days: input.days,
     };
-    let plan = ctx
-        .plan_hand_over(&actor, &agent, giving, &input.issues, None)
+    let reach = ctx.hand_over_reach(person).await?;
+    let view = ctx
+        .plan_hand_over(&actor, &agent, &reach, giving, &input.issues, None)
+        .await?
+        .record_change(ctx.store())
         .await?;
-    let writes = plan.writes.clone();
-    ctx.store()
-        .record_change(&plan.event, move |transaction| {
-            Box::pin(async move { writes.apply::<S>(transaction).await })
-        })
-        .await
-        .map_err(|error| plan.writes.answer::<S>(&error))?;
     Ok(ctx
         .evaluate(person, Place::Organization)
         .await?
-        .authorize(plan.view))
+        .authorize(view))
 }

@@ -317,6 +317,8 @@ pub(super) mod tests_agent;
 #[cfg(test)]
 mod tests_agent_work;
 #[cfg(test)]
+mod tests_agent_work_count;
+#[cfg(test)]
 mod tests_agent_work_current;
 #[cfg(test)]
 mod tests_agent_work_more;

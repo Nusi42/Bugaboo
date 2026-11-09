@@ -15905,6 +15905,11 @@ part "agents.limit-sentence" {
     color "$fg-muted"
 }
 
+// *Never runs out* on the card of a rule: said in the caution color, as the window says it.
+part "agents.never-ends" {
+    color "$warning"
+}
+
 part "agents.fact-value" {
     margin 0
     color "$fg"

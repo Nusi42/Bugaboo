@@ -311,7 +311,7 @@ pub(crate) mod tests {
             },
             "rules": [{
                 "search": plan.rule.search,
-                "way": "proposals",
+                "way": "propose",
                 "days_ahead": plan.rule.days,
                 "fields": [],
                 "names_a_people_field": false,

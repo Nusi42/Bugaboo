@@ -534,6 +534,8 @@ pub async fn change_setting<S: AuthStore>(
     let stopped = why.clone();
     let mode_change = ModeChange::Set(value.clone());
     let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
+    // Rules that never run out get an end in the change that forbids them (WP-14).
+    let rules_get_an_end = ctx.rules_get_an_end_job(scope, store_key, &value)?;
     let written = ctx
         .store()
         .record_change(&event, move |transaction| {
@@ -551,6 +553,17 @@ pub async fn change_setting<S: AuthStore>(
                 for renewal in &renewals {
                     renew_or_queue_in::<S>(transaction, renewal, &mut source, &events, person, now)
                         .await?;
+                }
+                if let Some(job) = &rules_get_an_end {
+                    S::enqueue_job(
+                        transaction,
+                        job.id,
+                        &job.kind,
+                        &job.payload,
+                        job.run_at,
+                        now,
+                    )
+                    .await?;
                 }
                 Ok(())
             })
