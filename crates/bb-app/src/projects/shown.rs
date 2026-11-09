@@ -302,6 +302,13 @@ impl Shown {
             .any(|project| self.tree.is_within(*project, outside))
     }
 
+    /// Whether the person holds the permission in any project; stops at the first one.
+    pub(crate) fn holds_anywhere(&self, permission: Permission) -> bool {
+        self.projects
+            .keys()
+            .any(|project| self.allows(*project, permission))
+    }
+
     /// Every project, known or not, where the person holds the permission.
     pub(crate) fn holding(&self, permission: Permission) -> Vec<ProjectId> {
         self.projects

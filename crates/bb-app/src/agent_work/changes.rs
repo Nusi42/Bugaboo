@@ -21,6 +21,7 @@ use jiff::Timestamp;
 use serde::Serialize;
 
 use crate::access::Actor;
+use crate::agents::Hold;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::history::FieldChangeView;
 use crate::issues::Where;
@@ -305,6 +306,49 @@ struct Scanned {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The issues of the events that the agent reaches and the request has not looked at yet, read
+    /// together, with the rights of the person and of the authors in their projects and the
+    /// projects themselves: one read each, however many projects the issues are in (PERF-N1).
+    async fn read_reached(
+        &self,
+        actor: &Actor,
+        maker: &mut LineMaker,
+        seen: &Seen,
+        events: &[(i64, DomainEvent)],
+        named: &[IssueId],
+        reach: &std::collections::BTreeMap<IssueId, Hold>,
+    ) -> Result<HashMap<IssueId, Issue>, AppError> {
+        let fresh: Vec<IssueId> = named
+            .iter()
+            .copied()
+            .filter(|id| reach.contains_key(id) && !seen.issues.contains_key(id))
+            .collect();
+        let loaded: HashMap<IssueId, Issue> = self
+            .issues_named(&fresh)
+            .await?
+            .into_iter()
+            .map(|issue| (issue.id, issue))
+            .collect();
+        let projects: Vec<ProjectId> = loaded.values().map(|issue| issue.project).collect();
+        if let Some(read) = self.evaluate_projects(actor.person.id, &projects).await? {
+            maker.know_projects(&projects, &read);
+        }
+        let mut authors: std::collections::BTreeSet<UserId> = std::collections::BTreeSet::new();
+        for (_, event) in events {
+            if let EventActor::Person(person) = event.actor
+                && let Ok(id) = IssueId::from_bytes(event.entity.id.to_bytes())
+                && loaded.contains_key(&id)
+            {
+                authors.insert(person);
+            }
+        }
+        // The authors: who they are and what they may do, each read together with the others.
+        let authors: Vec<UserId> = authors.into_iter().collect();
+        self.preload_people(&authors).await?;
+        self.preload_policies(&authors).await?;
+        Ok(loaded)
+    }
+
     /// Reads the log of changes of issues after `from`, for the issues the agent reaches, one page.
     async fn scan_changes(
         &self,
@@ -338,6 +382,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .into_iter()
                 .collect();
             let reach = self.holds_of_agent_on(agent, &named).await?;
+            let mut loaded = self
+                .read_reached(actor, maker, seen, &events, &named, &reach)
+                .await?;
             for (at, event) in events {
                 let reached = IssueId::from_bytes(event.entity.id.to_bytes())
                     .ok()
@@ -345,8 +392,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 // The issues the work and the rules of the agent reach are looked at first, so an
                 // event of any other issue costs nothing.
                 if let Some(id) = reached
-                    && let Some((issue, in_project, key)) =
-                        self.seen_once(actor, maker, seen, id).await?.cloned()
+                    && let Some((issue, in_project, key)) = match loaded.remove(&id) {
+                        Some(issue) => self.seen_loaded(actor, maker, seen, issue).await?,
+                        None => self.seen_once(actor, maker, seen, id).await?,
+                    }
+                    .cloned()
                 {
                     let shown = self
                         .changes_as_read(&mut reader, actor, &in_project, &issue, &event.changes)

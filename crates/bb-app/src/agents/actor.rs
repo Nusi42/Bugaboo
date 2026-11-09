@@ -44,11 +44,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         // A person who holds the permission to create agents in no project any more has lost the
         // right to agents: the agent's next request is refused (AI-30).
-        if self
-            .projects_where(found.person, Permission::CreateAgents)
-            .await?
-            .is_empty()
-        {
+        let shown = self.shown_with_levels(found.person, None).await?;
+        if !shown.holds_anywhere(Permission::CreateAgents) {
             // The person has lost the right to agents: the work they gave stops (AI-33).
             self.stop_work_of_agent(found.id, StopCause::AccessLost)
                 .await?;
@@ -63,7 +60,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // is written; over the limit the agent is paused and the request is refused.
         self.count_agent_change(&found).await?;
         let reach = self.reach_of_agent_now(found.id).await?;
-        let off = self.projects_with_agents_off(found.person).await?;
+        let off = self.agents_off_in(&shown).await?;
         *crate::auth::locked(&self.acting_agent) = Some((found.id, found.person));
         Ok(Narrowing::agent(reach.projects.clone(), off))
     }
@@ -136,6 +133,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         person: UserId,
     ) -> Result<BTreeSet<ProjectId>, AppError> {
+        let shown = self.shown_with_levels(person, None).await?;
+        self.agents_off_in(&shown).await
+    }
+
+    /// The same from a view of the person that is read already.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn agents_off_in(
+        &self,
+        shown: &crate::projects::Shown,
+    ) -> Result<BTreeSet<ProjectId>, AppError> {
         let own: std::collections::BTreeMap<ProjectId, bool> = self
             .store()
             .project_values(AGENTS_ENABLED.definition())
@@ -148,7 +157,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .collect();
         let organization_on = self.agents_on_in_the_organization().await?;
-        let shown = self.shown_with_levels(person, None).await?;
         let tree = shown.tree();
         Ok(tree
             .projects()

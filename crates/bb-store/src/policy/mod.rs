@@ -28,7 +28,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use self::levels::Which;
-pub(crate) use self::loading::{Wanted, load_policy, person_policy_in};
+pub(crate) use self::loading::{Wanted, load_policy, people_policy_in, person_policy_in};
 use crate::auth::AuthStorage;
 use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
@@ -155,6 +155,11 @@ impl PolicyStore for AuthStorage {
     async fn person_policy(&self, person: UserId) -> Result<Policy, StoreError> {
         let mut transaction = self.database().begin_read().await?;
         person_policy_in(&mut transaction, person).await
+    }
+
+    async fn people_policy(&self, people: Vec<UserId>) -> Result<Policy, StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        people_policy_in(&mut transaction, &people).await
     }
 
     async fn legacy_administrators(&self) -> Result<Vec<UserId>, StoreError> {

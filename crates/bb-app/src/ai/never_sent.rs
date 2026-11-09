@@ -17,10 +17,12 @@ use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::ProjectId;
 use bb_core::project::Project;
+use bb_core::settings::{AI_ENABLED, Layers, SettingValue};
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Authorized, Masked, Permission, Place};
+use bb_policy::{Authorized, Masked, Permission, Place, Tree};
 use serde::Serialize;
 
+use crate::ai::call::AiState;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
 };
@@ -201,13 +203,51 @@ impl<S: AuthStore> Ctx<'_, S> {
         // and agents honour the switch from this one read (M7-F50). While the organization has AI
         // off, the ways in refuse before they read anything.
         if self.ai_state_at(None).await?.organization_on {
-            for project in &tree {
-                if !self.ai_state_at(Some(project.id)).await?.counts() {
-                    withheld.projects.insert(project.id);
-                }
-            }
+            withheld
+                .projects
+                .extend(self.projects_with_ai_off(&tree).await?);
         }
         Ok(withheld)
+    }
+
+    /// The projects where AI does not count, decided from one read of the organization's values
+    /// and one of the values of the projects, the way `ai_state_at` decides for one project, not
+    /// one read for each of the projects.
+    async fn projects_with_ai_off(&self, tree: &[Project]) -> Result<Vec<ProjectId>, AppError> {
+        let organization = self.setting_layers_of(None).await?.organization;
+        let definition = AI_ENABLED.definition();
+        let own: std::collections::BTreeMap<ProjectId, SettingValue> = self
+            .store()
+            .project_values(definition)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .collect();
+        let shape = Tree::of(tree);
+        Ok(tree
+            .iter()
+            .map(|project| project.id)
+            .filter(|project| {
+                // The chain runs from the top down; layers list the nearest project first.
+                let projects = shape
+                    .chain(*project)
+                    .unwrap_or_else(|| vec![*project])
+                    .into_iter()
+                    .rev()
+                    .filter_map(|each| {
+                        own.get(&each).map(|value| {
+                            (each, [(definition.key().to_owned(), value.clone())].into())
+                        })
+                    })
+                    .collect();
+                !AiState::of(&Layers {
+                    organization: organization.clone(),
+                    projects,
+                    ..Layers::default()
+                })
+                .counts()
+            })
+            .collect())
     }
 }
 

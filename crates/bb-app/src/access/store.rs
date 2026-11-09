@@ -102,6 +102,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// place is decided by the engine (`Policy::inputs_from_rows`), so a request reads it
         /// once and decides every place from it.
         fn person_policy(person: UserId) -> Policy;
+        /// The same for many people at once, in one snapshot: what a page that names many people
+        /// decides each of them from.
+        fn people_policy(people: Vec<UserId>) -> Policy;
         /// The people who were administrators in M1 and have not got the role yet.
         fn legacy_administrators() -> Vec<UserId>;
         /// Every role with its permissions, in the order of roles.

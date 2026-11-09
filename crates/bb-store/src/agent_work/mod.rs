@@ -36,14 +36,19 @@ use crate::schema::{
 /// Keeps the work that is open: its state is not an end, no review closed it, and its hand-over
 /// still gives work (an accepted hand-over ended, and its work with it).
 pub(super) fn only_open_work(select: &mut SelectStatement) {
+    work_not_ended(select);
+    select.and_where(
+        Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open_hand_overs()),
+    );
+}
+
+/// Keeps the work whose state is not an end and that no review closed.
+fn work_not_ended(select: &mut SelectStatement) {
     select
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Closed)).eq(false))
         .and_where(
             Expr::col((IssueWorkRow::Table, IssueWorkRow::State))
                 .is_not_in(AgentWorkState::ENDED.map(AgentWorkState::code)),
-        )
-        .and_where(
-            Expr::col((IssueWorkRow::Table, IssueWorkRow::HandOver)).in_subquery(open_hand_overs()),
         );
 }
 
@@ -87,7 +92,12 @@ pub(super) fn open_work_of_agent(agent: AgentId, now: Timestamp) -> SelectStatem
                 .equals((IssueWorkRow::Table, IssueWorkRow::HandOver)),
         )
         .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()));
-    only_open_work_at(&mut select, now);
+    // The hand-over is joined, so its state and end are read from the row and not asked about
+    // again with a subquery that the database would have to build an index for on every call.
+    work_not_ended(&mut select);
+    select
+        .and_where(Expr::col((HandOverRow::Table, HandOverRow::State)).eq(GivingState::Open.code()))
+        .and_where(Expr::col((HandOverRow::Table, HandOverRow::EndsAt)).gt(to_micros(now)));
     select
 }
 

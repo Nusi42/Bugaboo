@@ -92,13 +92,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         viewer: &Evaluation,
         works: &[IssueWork],
     ) -> Result<Vec<WorkView>, AppError> {
+        let each: Vec<(&Evaluation, &IssueWork)> =
+            works.iter().map(|work| (viewer, work)).collect();
+        self.work_views_each(&each).await
+    }
+
+    /// The same for pieces that each have a viewer of their own (the rights of the person in the
+    /// project of the issue): still one read of everything that belongs to them.
+    pub(crate) async fn work_views_each(
+        &self,
+        works: &[(&Evaluation, &IssueWork)],
+    ) -> Result<Vec<WorkView>, AppError> {
         let details = self
             .store()
-            .details_of_works(works.to_vec())
+            .details_of_works(works.iter().map(|(_, work)| (*work).clone()).collect())
             .await
             .map_err(|error| internal::<S>(&error))?;
         let mut agent_ids: Vec<bb_core::id::AgentId> =
-            works.iter().map(|work| work.agent).collect();
+            works.iter().map(|(_, work)| work.agent).collect();
         agent_ids.sort_unstable();
         agent_ids.dedup();
         let agents = self
@@ -107,7 +118,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         let mut views = Vec::with_capacity(works.len());
-        for work in works {
+        for (viewer, work) in works {
             views.push(self.work_view_in(viewer, work, &details, &agents).await?);
         }
         Ok(views)

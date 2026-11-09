@@ -1,12 +1,12 @@
 //! The work of a person's own agents in one list (AI-37, *My agents*): what waits for the person,
 //! the work in progress, and the work that was accepted by itself and that nobody has looked at.
 
-use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use bb_core::agent::MOST_AGENTS;
 use bb_core::agent_records::IssueWork;
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, PeopleContext, Place};
+use bb_policy::{Authorized, Evaluation, PeopleContext, Place};
 
 use super::rules::view_of;
 use super::types::{MyAgentWork, MyAgentWorkQuery, MyWorkItem, OfferedAgent};
@@ -21,7 +21,7 @@ pub const MOST_SHOWN_IN_MY_AGENTS: usize = 200;
 
 /// A piece of work with the line of its issue, in the place it stood in the store's list.
 struct Seen<'a> {
-    at: usize,
+    held: Arc<Evaluation>,
     work: &'a IssueWork,
     line: IssueLine,
 }
@@ -29,7 +29,7 @@ struct Seen<'a> {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The pieces of work whose issue the person sees, as items. The people in each piece (who handed
     /// it over, whose agent it is) are shown as *Who sees people* says in the project of its issue
-    /// (ADR-0035), the pieces of one project read together (PERF-N1).
+    /// (ADR-0035), all pieces read together (PERF-N1).
     async fn my_items(
         &self,
         actor: &Actor,
@@ -38,8 +38,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let ids: Vec<_> = works.iter().map(|work| work.issue).collect();
         let issues = self.issues_named(&ids).await?;
         let mut maker = self.line_maker().await?;
-        let mut by_project: BTreeMap<_, (_, Vec<Seen<'_>>)> = BTreeMap::new();
-        for (at, work) in works.iter().enumerate() {
+        let mut seen = Vec::with_capacity(works.len());
+        for work in works {
             let Some(issue) = issues.iter().find(|found| found.id == work.issue) else {
                 continue;
             };
@@ -49,38 +49,29 @@ impl<S: AuthStore> Ctx<'_, S> {
             let Some(line) = self.line_of(actor, &mut maker, issue).await? else {
                 continue;
             };
-            by_project
-                .entry(issue.project)
-                .or_insert_with(|| (held, Vec::new()))
-                .1
-                .push(Seen { at, work, line });
+            seen.push(Seen { held, work, line });
         }
-        let mut items = Vec::with_capacity(works.len());
-        for (held, seen) in by_project.into_values() {
-            let group: Vec<IssueWork> = seen.iter().map(|one| one.work.clone()).collect();
-            let views = self.work_views(&held, &group).await?;
-            for (one, view) in seen.into_iter().zip(views) {
-                let question_open = view
-                    .questions
-                    .iter()
-                    .any(|question| question.answer.is_none());
-                items.push((
-                    one.at,
-                    MyWorkItem {
-                        // Work that was accepted or thrown away waits for nobody.
-                        waits_for: if view.open {
-                            view.state.waits_for(question_open)
-                        } else {
-                            None
-                        },
-                        work: view,
-                        issue: one.line,
-                    },
-                ));
-            }
+        // One read for all of them, each seen with the rights of its project.
+        let each: Vec<_> = seen.iter().map(|one| (&*one.held, one.work)).collect();
+        let views = self.work_views_each(&each).await?;
+        let mut items = Vec::with_capacity(seen.len());
+        for (one, view) in seen.into_iter().zip(views) {
+            let question_open = view
+                .questions
+                .iter()
+                .any(|question| question.answer.is_none());
+            items.push(MyWorkItem {
+                // Work that was accepted or thrown away waits for nobody.
+                waits_for: if view.open {
+                    view.state.waits_for(question_open)
+                } else {
+                    None
+                },
+                work: view,
+                issue: one.line,
+            });
         }
-        items.sort_by_key(|(at, _)| *at);
-        Ok(items.into_iter().map(|(_, item)| item).collect())
+        Ok(items)
     }
 }
 

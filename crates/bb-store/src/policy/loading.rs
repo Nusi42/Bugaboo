@@ -180,6 +180,18 @@ pub(crate) async fn person_policy_in(
     Ok(policy)
 }
 
+/// The same for many people at once: their rows (their own and their groups') wherever they are,
+/// the roles those name and the levels of those roles, in one snapshot. The engine decides for each
+/// person from it as it does from the policy of that person alone.
+pub(crate) async fn people_policy_in(
+    reader: &mut impl Reader,
+    people: &[UserId],
+) -> Result<Policy, StoreError> {
+    let mut policy = load_policy(reader, Wanted::People(people)).await?;
+    policy.rules = level_rules_of_roles_in(reader, policy.role_ids()).await?;
+    Ok(policy)
+}
+
 /// The levels of nobody: no rule, and the own fields there are, so that each has a level in an
 /// evaluation (closed when no role says otherwise). What every read of levels gives for no role
 /// (see `level_rules_of_roles_in`).

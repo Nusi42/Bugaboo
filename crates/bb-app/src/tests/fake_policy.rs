@@ -66,6 +66,23 @@ impl PolicyStore for FakeStore {
         }))
     }
 
+    async fn people_policy(&self, _people: Vec<UserId>) -> Result<Policy, FakeError> {
+        {
+            let mut shared = self.lock();
+            if shared.policy_reads_fail {
+                return Err(FakeError::Failed);
+            }
+            shared.policy_loads += 1;
+        }
+        // Everybody's rows are a superset of theirs: the engine decides for each person alone.
+        Ok(self.read(|state| {
+            let mut policy = policy_of(state, None);
+            let roles = policy.role_ids().into_iter().collect();
+            policy.rules = state.rules.of_roles(&roles);
+            policy
+        }))
+    }
+
     async fn legacy_administrators(&self) -> Result<Vec<UserId>, FakeError> {
         Ok(self.read(|state| state.legacy_administrators.clone()))
     }

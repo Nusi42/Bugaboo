@@ -414,6 +414,35 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(policy)
     }
 
+    /// Reads the rights of these people in one go, so the evaluation of each of them finds them
+    /// read already (`person_policy`).
+    pub(crate) async fn preload_policies(&self, people: &[UserId]) -> Result<(), AppError> {
+        let mut wanted: Vec<UserId> = {
+            let known = locked(&self.policies);
+            people
+                .iter()
+                .copied()
+                .filter(|person| !known.contains_key(person))
+                .collect()
+        };
+        wanted.sort();
+        wanted.dedup();
+        if wanted.len() < 2 {
+            return Ok(());
+        }
+        let policy = Arc::new(
+            self.store()
+                .people_policy(wanted.clone())
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        );
+        let mut known = locked(&self.policies);
+        for person in wanted {
+            known.entry(person).or_insert_with(|| Arc::clone(&policy));
+        }
+        Ok(())
+    }
+
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {
         // A lock that a panic poisoned still holds a map that is whole: it only ever gets whole
         // insertions.
