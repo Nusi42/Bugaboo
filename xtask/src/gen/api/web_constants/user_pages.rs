@@ -19,6 +19,9 @@ pub(crate) const SEARCH_LIMITS_PAGE: &str = "userDocs/issues/search-limits.md";
 /// The user page about the times and counts of notifications.
 pub(crate) const NOTIFICATION_NUMBERS_PAGE: &str = "userDocs/notifications/numbers.md";
 
+/// The user page about the numbers of AI, apps and agents (M7 WP-13).
+pub(crate) const AI_NUMBERS_PAGE: &str = "userDocs/ai/numbers.md";
+
 /// The user page about the numbers of time and working hours.
 pub(crate) const TIME_NUMBERS_PAGE: &str = "userDocs/working-hours/numbers.md";
 
@@ -294,12 +297,153 @@ See [Time](../time/README.md) and [The timesheet](../time/timesheet.md).
     Ok(out)
 }
 
+/// The numbers of the assistant, of AI apps and of agents, in plain words. They come from the
+/// constants of `bb-core` that the code works by, so the guide never writes one a second time.
+fn ai_numbers() -> anyhow::Result<String> {
+    use bb_core::agent::{
+        DEFAULT_ATTEMPTS_ON_ONE_ISSUE, DEFAULT_CHANGES_A_MINUTE, DEFAULT_ISSUES_AT_ONCE,
+        MOST_AGENT_KEYS, MOST_AGENTS, MOST_ISSUES_OF_ONE_CHANGE,
+    };
+    use bb_core::agent_work::{
+        DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER,
+        MOST_RULE_DAYS, RULE_WARNING_DAYS,
+    };
+    use bb_core::ai::{
+        PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, TOOL_CALL_KEEP_DAYS,
+        TOOL_CALLS_MAX, TURN_CHARS_MAX, TURNS_MAX,
+    };
+    let minutes = u128::try_from(PROPOSAL_LIFETIME_SECONDS / 60)
+        .context("the life of a proposal is below zero")?;
+    let rows = |rows: Vec<(&str, String)>| -> Vec<Vec<String>> {
+        rows.into_iter()
+            .map(|(what, number)| vec![what.to_owned(), number])
+            .collect()
+    };
+    let assistant = rows(vec![
+        (
+            "A question to the assistant is at most",
+            counted(QUESTION_CHARS_MAX as u128, "character", "characters"),
+        ),
+        (
+            "A conversation keeps at most",
+            counted(TURNS_MAX as u128, "turn", "turns"),
+        ),
+        (
+            "A turn is at most",
+            counted(TURN_CHARS_MAX as u128, "character", "characters"),
+        ),
+        (
+            "The assistant looks things up at most",
+            format!(
+                "{} for one question",
+                counted(TOOL_CALLS_MAX as u128, "time", "times")
+            ),
+        ),
+        (
+            "The assistant proposes at most",
+            format!(
+                "{} at once; a proposal waits {} for *Apply*",
+                counted(PROPOSALS_MAX as u128, "change", "changes"),
+                counted(minutes, "minute", "minutes")
+            ),
+        ),
+        (
+            "The calls of tools are kept for",
+            counted(
+                u128::try_from(TOOL_CALL_KEEP_DAYS).context("the keep period is below zero")?,
+                "day",
+                "days",
+            ),
+        ),
+    ]);
+    let day = |days: i64| -> anyhow::Result<String> {
+        Ok(counted(
+            u128::try_from(days).context("a number of days is below zero")?,
+            "day",
+            "days",
+        ))
+    };
+    let agents = rows(vec![
+        (
+            "A person has at most",
+            counted(MOST_AGENTS as u128, "agent", "agents"),
+        ),
+        (
+            "An agent has at most",
+            counted(MOST_AGENT_KEYS as u128, "key", "keys"),
+        ),
+        (
+            "A new agent is held to at most",
+            format!(
+                "{} a minute",
+                counted(
+                    u128::try_from(DEFAULT_CHANGES_A_MINUTE).context("below zero")?,
+                    "change",
+                    "changes"
+                )
+            ),
+        ),
+        (
+            "A new agent works on at most",
+            format!(
+                "{} at once",
+                counted(
+                    u128::try_from(DEFAULT_ISSUES_AT_ONCE).context("below zero")?,
+                    "issue",
+                    "issues"
+                )
+            ),
+        ),
+        (
+            "A new agent may try one issue at most",
+            counted(
+                u128::try_from(DEFAULT_ATTEMPTS_ON_ONE_ISSUE).context("below zero")?,
+                "time",
+                "times",
+            ),
+        ),
+        (
+            "One hand-over names at most",
+            counted(MOST_ISSUES_OF_A_HAND_OVER as u128, "issue", "issues"),
+        ),
+        (
+            "A hand-over ends after",
+            format!(
+                "{} unless you choose another end, at most {}",
+                day(DEFAULT_HAND_OVER_DAYS)?,
+                day(MOST_HAND_OVER_DAYS)?
+            ),
+        ),
+        (
+            "A standing rule ends after",
+            format!(
+                "{} unless you choose another end, at most {}; you are told {} before",
+                day(DEFAULT_RULE_DAYS)?,
+                day(MOST_RULE_DAYS)?,
+                day(RULE_WARNING_DAYS)?
+            ),
+        ),
+        (
+            "A change to many issues, also by an agent, names at most",
+            counted(MOST_ISSUES_OF_ONE_CHANGE as u128, "issue", "issues"),
+        ),
+    ]);
+    let mut out = header("Numbers of the assistant, AI apps and agents");
+    out.push_str("The limits of the assistant and of agents, as Bugaboo works by them. An administrator can set a lower maximum for what an agent may do (*Organization settings › Connections › Agents*).\n\n## The assistant\n\n");
+    out.push_str(&table(&["What", "Number"], &assistant));
+    out.push_str("\n## Agents\n\n");
+    out.push_str(&table(&["What", "Number"], &agents));
+    out.push_str("\nSee [The AI literacy guide](literacy.md) and [Agents](../agents/README.md).\n");
+    Ok(out)
+}
+
 /// The pages, each with its path.
 pub(crate) fn pages(sources: &[Source]) -> anyhow::Result<Vec<(&'static str, String)>> {
     Ok(vec![
         (SEARCH_LIMITS_PAGE, search_limits(sources)?),
         (NOTIFICATION_NUMBERS_PAGE, notification_numbers(sources)?),
         (TIME_NUMBERS_PAGE, time_numbers(sources)?),
+        (AI_NUMBERS_PAGE, ai_numbers()?),
     ])
 }
 
@@ -393,6 +537,23 @@ mod tests {
         assert!(page.contains("200 at most"), "{page}");
         assert!(page.contains("24 hours"), "{page}");
         assert!(page.contains("never less than 2 years"), "{page}");
+    }
+
+    #[test]
+    fn the_page_of_ai_says_the_limits_of_the_code() {
+        let pages = pages(&sources()).unwrap();
+        let page = pages
+            .iter()
+            .find(|(each, _)| *each == AI_NUMBERS_PAGE)
+            .map(|(_, text)| text.clone())
+            .unwrap();
+        assert!(
+            page.contains("| A question to the assistant is at most"),
+            "{page}"
+        );
+        assert!(page.contains("100 issues"), "{page}");
+        assert!(page.contains("at most 90 days"), "{page}");
+        assert!(page.contains("you are told 3 days before"), "{page}");
     }
 
     #[test]

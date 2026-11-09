@@ -24,6 +24,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Connected apps](access-keys/connected-apps.md): AI apps you allowed to work with your account, and taking them back
 - [Time](time/README.md): the timer, adding time by hand, and the work day
 - [Agents](agents/README.md): handing issues over, agent work on an issue, the review, and standing rules
+- [AI in Bugaboo](ai/README.md): [the AI guide](ai/literacy.md), [the assistant](ai/assistant.md), [AI apps](ai/ai-apps.md) and [the numbers](ai/numbers.md)
 - [Cookies we use](cookies.md)
 
 Planned sections:
@@ -31,5 +32,4 @@ Planned sections:
 - Using Bugaboo (searches, boards, Gantt, time tracking)
 - Search language reference
 - Administration (themes)
-- AI assistant and MCP integration
 - Security hardening, backup and upgrade

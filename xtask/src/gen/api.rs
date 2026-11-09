@@ -147,6 +147,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         web_constants::user_pages::SEARCH_LIMITS_PAGE,
         web_constants::user_pages::NOTIFICATION_NUMBERS_PAGE,
         web_constants::user_pages::TIME_NUMBERS_PAGE,
+        web_constants::user_pages::AI_NUMBERS_PAGE,
     ]
 }
 
