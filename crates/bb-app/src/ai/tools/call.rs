@@ -242,7 +242,14 @@ pub async fn call_tool<S: AuthStore>(
         caller: request.caller,
         app: request.app.as_deref(),
         tool: found.map(|spec| spec.tool),
-        effect: found.map(ToolSpec::effect),
+        // A preview changes nothing, so the log calls it a read.
+        effect: found.map(|spec| {
+            if request.mode == ToolMode::Preview {
+                ToolEffect::Reads
+            } else {
+                spec.effect()
+            }
+        }),
         bytes_in,
         bytes_out: result.as_ref().map_or(0, |answer| answer.text.len()),
         outcome,

@@ -4138,6 +4138,9 @@ pub const MCP_ERROR_NOT_AN_ADDRESS: MessageKey = MessageKey::new("mcp.error.not-
 /// The message `mcp.error.not-json`.
 pub const MCP_ERROR_NOT_JSON: MessageKey = MessageKey::new("mcp.error.not-json");
 
+/// The message `mcp.error.preview`.
+pub const MCP_ERROR_PREVIEW: MessageKey = MessageKey::new("mcp.error.preview");
+
 /// The message `mcp.error.prompt-issue`.
 pub const MCP_ERROR_PROMPT_ISSUE: MessageKey = MessageKey::new("mcp.error.prompt-issue");
 
@@ -4189,6 +4192,9 @@ pub const MCP_RESOURCE_PROJECTS: MessageKey = MessageKey::new("mcp.resource.proj
 
 /// The message `mcp.resource.projects-help`.
 pub const MCP_RESOURCE_PROJECTS_HELP: MessageKey = MessageKey::new("mcp.resource.projects-help");
+
+/// The message `mcp.tool.preview-argument`.
+pub const MCP_TOOL_PREVIEW_ARGUMENT: MessageKey = MessageKey::new("mcp.tool.preview-argument");
 
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
@@ -19881,6 +19887,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("mcp.error.not-json", "The message is not JSON."),
     (
+        "mcp.error.preview",
+        "The argument preview is true or false.",
+    ),
+    (
         "mcp.error.prompt-issue",
         "This starting text needs the issue.",
     ),
@@ -19917,6 +19927,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "mcp.resource.projects-help",
         "The list of projects the person may see.",
+    ),
+    (
+        "mcp.tool.preview-argument",
+        "Set to true to see what this call would change, as before and after, without saving anything.",
     ),
     (
         "mcp.wait",

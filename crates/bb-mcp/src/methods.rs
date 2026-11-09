@@ -24,6 +24,30 @@ use crate::protocol::{Fault, Message as Request, sentence};
 const SCHEME: &str = "bugaboo://";
 /// The text kind of every answer.
 const TEXT: &str = "text/plain";
+/// The argument every tool that changes something takes over MCP (ADR-0029, decision 9): `true` says
+/// what the call would change and saves nothing.
+const PREVIEW: &str = "preview";
+
+/// The schema of a tool as an app is shown it: a tool that changes something also takes `preview`.
+/// This is the one place that adds it, from the effect the registry names.
+fn offered(tool: &Value) -> Value {
+    let mut schema = tool["input_schema"].clone();
+    if tool["effect"] == "changes"
+        && let Some(object) = schema.as_object_mut()
+    {
+        let properties = object.entry("properties").or_insert_with(|| json!({}));
+        if let Some(properties) = properties.as_object_mut() {
+            properties.insert(
+                PREVIEW.to_owned(),
+                json!({
+                    "type": "boolean",
+                    "description": sentence(message::MCP_TOOL_PREVIEW_ARGUMENT),
+                }),
+            );
+        }
+    }
+    schema
+}
 
 /// Why a message could not be answered with a result.
 pub(crate) enum Failure {
@@ -94,7 +118,12 @@ pub(crate) fn initialize(asked: Option<&str>) -> Value {
 
 impl Caller<'_> {
     /// Calls the tool as the person and gives the text the AI reads, or the sentence of the refusal.
-    async fn call(&self, tool: &str, input: Value) -> Result<Result<String, String>, Failure> {
+    async fn call(
+        &self,
+        tool: &str,
+        input: Value,
+        mode: ToolMode,
+    ) -> Result<Result<String, String>, Failure> {
         // What the call changes carries the run of the session (RequestInfo::run).
         let mut info = self.info.clone();
         info.run = self.run;
@@ -114,7 +143,7 @@ impl Caller<'_> {
                     people: PeopleMode::AsSeen,
                     tool: tool.to_owned(),
                     input,
-                    mode: ToolMode::Run,
+                    mode,
                 },
             )
             .await;
@@ -189,7 +218,7 @@ impl Caller<'_> {
                         json!({
                             "name": tool["name"],
                             "description": tool["description"],
-                            "inputSchema": tool["input_schema"],
+                            "inputSchema": offered(tool),
                             "annotations": {
                                 "readOnlyHint": tool["effect"] == "reads",
                             },
@@ -206,7 +235,7 @@ impl Caller<'_> {
         let name = request
             .text("name")
             .ok_or_else(|| Failure::fault(Fault::InvalidParams, message::MCP_ERROR_TOOL_NAME))?;
-        let arguments = match request.params.get("arguments") {
+        let mut arguments = match request.params.get("arguments") {
             None | Some(Value::Null) => json!({}),
             Some(arguments @ Value::Object(_)) => arguments.clone(),
             Some(_) => {
@@ -216,7 +245,21 @@ impl Caller<'_> {
                 ));
             }
         };
-        Ok(match self.call(name, arguments).await? {
+        // `preview` is not an input of the tool: it says how to call it.
+        let mode = match arguments
+            .as_object_mut()
+            .and_then(|map| map.remove(PREVIEW))
+        {
+            None | Some(Value::Bool(false)) => ToolMode::Run,
+            Some(Value::Bool(true)) => ToolMode::Preview,
+            Some(_) => {
+                return Err(Failure::fault(
+                    Fault::InvalidParams,
+                    message::MCP_ERROR_PREVIEW,
+                ));
+            }
+        };
+        Ok(match self.call(name, arguments, mode).await? {
             Ok(text) => json!({ "content": [{ "type": "text", "text": text }], "isError": false }),
             Err(sentence) => {
                 json!({ "content": [{ "type": "text", "text": sentence }], "isError": true })
@@ -274,7 +317,7 @@ impl Caller<'_> {
                 ));
             }
         };
-        let text = match self.call(tool.code(), input).await? {
+        let text = match self.call(tool.code(), input, ToolMode::Run).await? {
             Ok(text) | Err(text) => text,
         };
         Ok(json!({ "contents": [{ "uri": uri, "mimeType": TEXT, "text": text }] }))

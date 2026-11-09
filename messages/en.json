@@ -2960,6 +2960,8 @@
   "mcp.error.tools-unreadable": "The tools could not be read.",
   "mcp.error.tool-name": "A tool call names its tool.",
   "mcp.error.arguments": "The arguments of a tool call are an object.",
+  "mcp.error.preview": "The argument preview is true or false.",
+  "mcp.tool.preview-argument": "Set to true to see what this call would change, as before and after, without saving anything.",
   "mcp.error.resource-address": "A read names its address.",
   "mcp.error.not-an-address": "That is not an address of this server.",
   "mcp.error.prompt-issue": "This starting text needs the issue.",

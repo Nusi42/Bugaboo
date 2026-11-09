@@ -521,3 +521,126 @@ async fn ai_23_an_access_key_works_over_mcp_as_the_person_narrowed_by_it() -> Te
     })
     .await
 }
+
+/// The tools of an app, by name.
+async fn listed(mcp: &Mcp<'_>, signed: &Signed) -> Result<Vec<serde_json::Value>, Failure> {
+    let listed = mcp
+        .post(
+            Some(&signed.access),
+            json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}),
+        )
+        .await?;
+    Ok(listed.json["result"]["tools"]
+        .as_array()
+        .ok_or("no tools")?
+        .clone())
+}
+
+/// An issue titled "Old title" in the first project, and its key.
+async fn old_titled(site: &Site<'_>, ada: &mut super::http::Browser) -> Result<String, Failure> {
+    let made = ada
+        .send(
+            "POST",
+            &format!("/api/v1/projects/{}/issues", site.acme),
+            Some(json!({"issue_type": site.kind, "title": "Old title"})),
+        )
+        .await?;
+    Ok(made.body["readable_id"]
+        .as_str()
+        .ok_or("no key")?
+        .to_owned())
+}
+
+#[tokio::test]
+async fn m7_f225_a_preview_is_offered_on_change_tools_only() -> TestResult {
+    each_database("m7_f225_offer_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let signed = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        let tools = listed(&mcp, &signed).await?;
+        let offers = |tool: &serde_json::Value| {
+            tool["inputSchema"]["properties"]["preview"]["type"] == json!("boolean")
+        };
+        let mut changing = 0;
+        for tool in &tools {
+            let reads = tool["annotations"]["readOnlyHint"] == json!(true);
+            assert_eq!(offers(tool), !reads, "{}", tool["name"]);
+            changing += usize::from(!reads);
+        }
+        assert!(changing > 0, "there are change tools");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m7_f225_a_preview_over_mcp_changes_nothing_and_the_same_call_without_it_does() -> TestResult
+{
+    each_database("m7_f225_preview_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let key = old_titled(&site, &mut ada).await?;
+        let version = super::issues_site::version_of(&mut ada, &key).await?;
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-and-change", "see-and-change")
+            .await?;
+        let input = |preview: bool| {
+            json!({"issue": key, "version": version, "title": "New title", "preview": preview})
+        };
+        let previewed = mcp.call_tool(&signed, "update_issue", input(true)).await?;
+        assert_eq!(previewed.json["result"]["isError"], json!(false), "{}", previewed.json);
+        let text = previewed.json["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap_or_default();
+        assert!(text.contains("Old title") && text.contains("New title"), "{text}");
+        let title = async |ada: &mut super::http::Browser| -> Result<serde_json::Value, Failure> {
+            Ok(ada.send("GET", &format!("/api/v1/issues/{key}"), None).await?.body["issue"]["title"].clone())
+        };
+        assert_eq!(title(&mut ada).await?, json!("Old title"));
+        assert!(
+            rig.database.runs_with_events(RunKind::AppSession).await?.iter().all(|run| run.1.is_empty()),
+            "a preview writes no entry of a run"
+        );
+        // The same call without the preview changes.
+        let done = mcp.call_tool(&signed, "update_issue", input(false)).await?;
+        assert_eq!(done.json["result"]["isError"], json!(false), "{}", done.json);
+        assert_eq!(title(&mut ada).await?, json!("New title"));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m7_f225_a_preview_of_what_the_caller_may_not_change_is_refused_like_a_run() -> TestResult {
+    each_database("m7_f225_refused_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let key = old_titled(&site, &mut ada).await?;
+        let signed = sign_in_app(&mcp, &mut ada, "Looker", "see-and-change", "see-only").await?;
+        let input =
+            |preview: bool| json!({"issue": key, "version": 1, "title": "X", "preview": preview});
+        let run = mcp.call_tool(&signed, "update_issue", input(false)).await?;
+        let preview = mcp.call_tool(&signed, "update_issue", input(true)).await?;
+        assert_eq!(
+            preview.json["result"]["isError"],
+            json!(true),
+            "{}",
+            preview.json
+        );
+        assert_eq!(preview.json["result"], run.json["result"]);
+        Ok(())
+    })
+    .await
+}

@@ -23,6 +23,7 @@ Claude Code runs on your own computer, so nobody has to set it up for it: it tel
 - Each session of the app is one **run**. You can see its changes and undo them in one step with **Undo the run**.
 - What the app writes is marked **Written by an AI app**, with its name.
 - It can look at what you may look at. If you allowed *See and change*, it can also change what you may change, with the limits in [the AI guide](literacy.md).
+- Every tool that changes something takes an extra argument `preview`. With `preview` set to true the app only asks what the call would change: Bugaboo answers with what the issue is now and what it would be, saves nothing and writes no entry in the history or in the run. The same call without `preview` changes. A preview is checked against your rights like the change itself, so a *See only* app is refused, and it counts toward the same limit of calls.
 - You see the apps you allowed in *My settings*, under *Connected apps*, and press **Take back** to end one at once.
 - Your data goes where the app sends it. Bugaboo's agreement with the provider of the assistant does not cover it: an app such as Claude Code sends to its own vendor, under your organization's own agreement with that vendor.
 
