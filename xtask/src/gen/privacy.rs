@@ -83,6 +83,11 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
     let mut listed = Vec::new();
     let mut vocabulary = Vocabulary::default();
     for (path, text) in sources {
+        // Only a file that names `Entity` can derive it, and the two files of the words and the
+        // list are always read: parsing the other files cannot change the model.
+        if !may_hold_marks(path, text) {
+            continue;
+        }
         let file = syn::parse_file(text).with_context(|| format!("{path} is not valid Rust"))?;
         visit(&file.items, path, &mut entities);
         if path == VOCABULARY_PATH {
@@ -98,6 +103,12 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         listed,
         vocabulary,
     })
+}
+
+/// Whether the file can add to the model: it is the file of the words or of the list, or it names
+/// `Entity` (the derive). A cheap text search that spares parsing every other file.
+fn may_hold_marks(path: &str, text: &str) -> bool {
+    path == VOCABULARY_PATH || path == LIST_PATH || text.contains("Entity")
 }
 
 fn visit(items: &[Item], path: &str, entities: &mut Vec<EntityDef>) {
@@ -502,6 +513,25 @@ words! { pub enum Basis {
     Contract => "contract",
 } }
 "#;
+
+    #[test]
+    fn only_files_that_can_hold_marks_are_parsed() {
+        let person =
+            "#[derive(Entity)]\npub struct Person {\n    #[not_personal]\n    pub id: u32,\n}\n";
+        let mut sources = vec![
+            (VOCABULARY_PATH.to_owned(), VOCABULARY.to_owned()),
+            ("crates/bb-core/src/person.rs".to_owned(), person.to_owned()),
+            // Without `Entity` it cannot add an entity, so it is not even parsed.
+            ("crates/bb-core/src/other.rs".to_owned(), "fn {".to_owned()),
+        ];
+        assert_eq!(read_model(&sources).unwrap().entities.len(), 1);
+        // With `Entity` in it the file is read, so its mistakes are still found.
+        sources.push((
+            "crates/bb-core/src/broken.rs".to_owned(),
+            "#[derive(Entity)] fn {".to_owned(),
+        ));
+        assert!(read_model(&sources).is_err());
+    }
 
     fn model(entity: &str) -> Model {
         read_model(&[
