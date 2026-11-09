@@ -183,6 +183,7 @@ const organizationTopics: readonly Place[] = [
  */
 const organizationSettings: Place = {
   path: paths.organizationSettings,
+  area: "settings",
   name: "nav.organization-settings",
   icon: iconName.organization,
   parent: paths.home,

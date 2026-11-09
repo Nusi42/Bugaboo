@@ -2,6 +2,8 @@ import { Icon, type IconName, RowChevron, partOf, part, ariaCurrent } from "@bug
 import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
+import { areaAt } from "../../shared/places.ts";
+
 /** Words of React Aria Components, not text for people. */
 const tooltipSide = { end: "end" } as const;
 
@@ -105,7 +107,7 @@ export function NavLink({
   return (
     <WithTooltip narrow={narrow} label={label}>
       <Link
-        {...partOf(part.navItem)}
+        {...partOf(part.navItem, { variants: [areaAt(href)] })}
         href={href}
         {...(current ? { "aria-current": ariaCurrent.page } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}

@@ -4685,6 +4685,66 @@ textarea,
   }
 }
 
+[data-part="nav-item"][data-variant~="issues"] [data-part="icon"] {
+  color: var(--area-issues);
+}
+
+[data-part="nav-item"][data-variant~="issues"][data-current] {
+  background: var(--area-issues-soft);
+  color: var(--fg);
+  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-issues);
+}
+
+[data-part="top-bar"][data-variant~="issues"] {
+  background: var(--area-issues-soft);
+  border-bottom-color: var(--area-issues);
+}
+
+[data-part="nav-item"][data-variant~="time"] [data-part="icon"] {
+  color: var(--area-time);
+}
+
+[data-part="nav-item"][data-variant~="time"][data-current] {
+  background: var(--area-time-soft);
+  color: var(--fg);
+  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-time);
+}
+
+[data-part="top-bar"][data-variant~="time"] {
+  background: var(--area-time-soft);
+  border-bottom-color: var(--area-time);
+}
+
+[data-part="nav-item"][data-variant~="agents"] [data-part="icon"] {
+  color: var(--area-agents);
+}
+
+[data-part="nav-item"][data-variant~="agents"][data-current] {
+  background: var(--area-agents-soft);
+  color: var(--fg);
+  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-agents);
+}
+
+[data-part="top-bar"][data-variant~="agents"] {
+  background: var(--area-agents-soft);
+  border-bottom-color: var(--area-agents);
+}
+
+[data-part="nav-item"][data-variant~="settings"] [data-part="icon"] {
+  color: var(--area-settings);
+}
+
+[data-part="nav-item"][data-variant~="settings"][data-current] {
+  background: var(--area-settings-soft);
+  color: var(--fg);
+  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-settings);
+}
+
+[data-part="top-bar"][data-variant~="settings"] {
+  background: var(--area-settings-soft);
+  border-bottom-color: var(--area-settings);
+}
+
 [data-part="nav-item"][data-state~="busy"] {
   cursor: progress;
   opacity: var(--opacity-busy);

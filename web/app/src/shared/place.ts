@@ -4,6 +4,9 @@ import type { IconName } from "@bugaboo/ui/icons";
 import type { Path } from "./paths.ts";
 import type { PermissionKey } from "./permissions.ts";
 
+/** The area of the app a screen belongs to; each has its own color in a light theme (UX §6). */
+export type Area = "issues" | "time" | "agents" | "settings";
+
 /**
  * One screen of the signed-in app, as the menus, the top bar and quick search know it. The list
  * below is the one place that says which screens exist, where they sit and what they are called
@@ -19,6 +22,8 @@ export interface Place {
   readonly anyOf?: readonly PermissionKey[];
   /** For a topic of a settings frame: the heading it is listed under in the left menu. */
   readonly group?: MessageKey;
+  /** The area this screen starts; the screens under it (by `parent`) share it. Without one, a screen is in its parent's. */
+  readonly area?: Area;
   /** Whether menus and quick search list it. A screen reached only from another one is not. */
   readonly listed: boolean;
 }

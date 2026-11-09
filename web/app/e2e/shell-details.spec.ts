@@ -5,7 +5,7 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
-import { partIn } from "./support/parts.ts";
+import { ariaCurrent, partIn } from "./support/parts.ts";
 import { paths } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -137,4 +137,35 @@ test("ux_01 the content is named for the router, so going back brings the page t
 }) => {
   await signIn(page, ada);
   await expect(page.locator("main")).toHaveAttribute("data-scroll-restoration-id", "content");
+});
+
+/** The area of the pages, as the part names its variant (not a color: the theme files own the colors). */
+const area = { issues: "issues", time: "time", agents: "agents", settings: "settings" } as const;
+
+async function topBarIsOf(page: Page, address: string, variant: string): Promise<void> {
+  await page.goto(address);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(partIn(page, "top-bar", variant)).toHaveCount(1);
+}
+
+async function menuItemIsOf(page: Page, address: string, variant: string): Promise<void> {
+  await page.goto(address);
+  await expect(
+    partIn(mainMenu(page), "nav-item", variant).and(
+      page.locator(`[aria-current="${ariaCurrent.page}"]`),
+    ),
+  ).toHaveCount(1);
+}
+
+test("ux_04 the top bar and the open menu item carry the area of the page", async ({ page }) => {
+  await signIn(page, ada);
+  await topBarIsOf(page, paths.home, area.issues);
+  await topBarIsOf(page, paths.time, area.time);
+  await topBarIsOf(page, paths.appearance, area.settings);
+  await onThisLayout(page, {
+    computer: () => menuItemIsOf(page, paths.time, area.time),
+    // The menu of a tablet is closed until it is opened, and a phone has the bar below and the sheet *More*.
+    tablet: () => Promise.resolve(),
+    phone: () => Promise.resolve(),
+  });
 });

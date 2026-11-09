@@ -81,5 +81,13 @@ theme "midnight" extends="default" kind="dark" {
         color "cat11-mark" "#9a9ea6"
         color "cat12-mark" "#d4b483"
         shadow "shadow" "0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
+        color "area-issues" "$fg-muted"
+        color "area-issues-soft" "$bg-surface"
+        color "area-time" "$fg-muted"
+        color "area-time-soft" "$bg-surface"
+        color "area-agents" "$fg-muted"
+        color "area-agents-soft" "$bg-surface"
+        color "area-settings" "$fg-muted"
+        color "area-settings-soft" "$bg-surface"
     }
 }

@@ -5,7 +5,7 @@ import { organizationPlaces } from "./organization-places.ts";
 import { ownPlaces } from "./own-places.ts";
 import { isAtOrUnder, partsOfAddress, paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
-import type { Place } from "./place.ts";
+import type { Area, Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
 
 export type { Place } from "./place.ts";
@@ -67,6 +67,16 @@ export const places: readonly Place[] = [
 /** The screen at an address, if there is one. */
 export function placeAt(path: string): Place | undefined {
   return places.find((place) => place.path === path);
+}
+
+/** The area of the app the screen at an address is in: its own, or that of the screen it sits under; issues otherwise. */
+export function areaAt(pathname: string): Area {
+  const open = places.find((place) => partsOfAddress(place.path, pathname) !== undefined);
+  const started =
+    open === undefined
+      ? undefined
+      : trailTo(open.path).findLast((place) => place.area !== undefined);
+  return started?.area ?? "issues";
 }
 
 /**

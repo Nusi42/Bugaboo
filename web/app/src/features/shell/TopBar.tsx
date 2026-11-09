@@ -13,6 +13,9 @@ import {
 } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Link } from "react-aria-components";
+import { useLocation } from "@tanstack/react-router";
+
+import { areaAt } from "../../shared/places.ts";
 
 import { openOverlay } from "./overlay-state.ts";
 import type { TrailStep } from "./page-trail.ts";
@@ -66,8 +69,9 @@ export function TopBar({ layout, children }: TopBarProps) {
   const { steps, hasUp, goBack } = useTopBar();
   const phone = layout === "phone";
   const last = steps.at(-1);
+  const { pathname } = useLocation();
   return (
-    <header {...partOf(part.topBar)}>
+    <header {...partOf(part.topBar, { variants: [areaAt(pathname)] })}>
       {layout === "tablet" ? (
         <Button
           onPress={() => {

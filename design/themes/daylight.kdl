@@ -4,7 +4,16 @@
 // comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
 // when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
+// Proposal C (more colour, M7-F241): each area has its own color (issues, time, agents, settings), in its menu icon, its open menu item and the top bar of its pages. Needs the new tokens and parts of C-theme.kdl.patch; the colors of A stay as they are.
 theme "daylight" extends="default" kind="light" {
     tokens {
+        color "area-issues" "#5b3fd9"
+        color "area-issues-soft" "#efebfe"
+        color "area-time" "#0a7a72"
+        color "area-time-soft" "#e1f4f1"
+        color "area-agents" "#b02f6c"
+        color "area-agents-soft" "#fce8f1"
+        color "area-settings" "#a35700"
+        color "area-settings-soft" "#fcf0de"
     }
 }

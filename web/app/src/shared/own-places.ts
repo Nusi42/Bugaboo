@@ -22,6 +22,7 @@ export const ownPlaces: readonly Place[] = [
   },
   {
     path: paths.time,
+    area: "time",
     name: "nav.timesheet",
     icon: iconName.clock,
     // A destination of the menu like the start page: it has no Back.
@@ -48,6 +49,7 @@ export const ownPlaces: readonly Place[] = [
   {
     // *My agents*: in the sidebar and the sheet *More* only for a person who has an agent or may make one.
     path: paths.myAgents,
+    area: "agents",
     name: "nav.my-agents",
     icon: iconName.agent,
     parent: null,
@@ -62,6 +64,7 @@ export const ownPlaces: readonly Place[] = [
   },
   {
     path: paths.mySettings,
+    area: "settings",
     name: "nav.my-settings",
     icon: iconName.settings,
     parent: paths.home,

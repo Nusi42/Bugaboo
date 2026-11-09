@@ -447,6 +447,16 @@ tokens {
     color "cat10-mark" "#6a9410"
     color "cat11-mark" "#80858b"
     color "cat12-mark" "#9c7a4c"
+    // Proposal C: the color of each area (issues, time, agents, settings), in its menu icon, its open menu item and
+    // the top bar of its pages; the soft one is the fill.
+    color "area-issues" "#5b3fd9"
+    color "area-issues-soft" "#efebfe"
+    color "area-time" "#0a7a72"
+    color "area-time-soft" "#e1f4f1"
+    color "area-agents" "#b02f6c"
+    color "area-agents-soft" "#fce8f1"
+    color "area-settings" "#a35700"
+    color "area-settings-soft" "#fcf0de"
 
     // The shadow of things that float
     shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14"
@@ -456,7 +466,7 @@ tokens {
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "on-disabled" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "disabled-fill" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "disabled-fill" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg" "area-issues-soft" "area-time-soft" "area-agents-soft" "area-settings-soft"
     restricted "on-disabled" on="disabled-fill" reason="The words of a main button that cannot be pressed are only ever drawn on its grey fill."
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
@@ -479,6 +489,10 @@ contrast min=4.5 {
     exclude reason="The grey fill of a main button that cannot be pressed carries only its own words, on-disabled." {
         text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
         on "disabled-fill"
+    }
+    exclude reason="Proposal C: the fill of an area carries the words of the menu, the top bar and its links only." {
+        text "fg-subtle" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
+        on "area-*-soft"
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
@@ -518,6 +532,12 @@ contrast min=4.5 {
     lines min=3 reason="The edge of a box to tick and of the track of a switch is a line a person has to see: WCAG 1.4.11 asks 3:1 against every surface in every theme." {
         colors "border-control"
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
+    }
+
+    non-text "area-issues" "area-time" "area-agents" "area-settings" reason="Proposal C: the color of an area is an icon and a line; kept at 3:1 by the `lines` rule below."
+    lines min=3 reason="Proposal C: the icon of an area and the line of its open menu item are seen at 3:1 on the menu and on the fill of the area." {
+        colors "area-issues" "area-time" "area-agents" "area-settings"
+        on "bg-canvas" "bg-surface" "bg-raised" "bg-hover" "area-issues-soft" "area-time-soft" "area-agents-soft" "area-settings-soft"
     }
 
     non-text "cue" reason="The shadow at the end of a scrolling box is a shade, not text; it is kept clear by the `distinct` rule below and measured in the browser (edge-cue-strength.spec.ts)."
@@ -5547,6 +5567,66 @@ part "nav-item[current]" {
 
 part "nav-item[focus-visible]" {
     use "ring"
+}
+
+part "nav-item[variant=issues] icon" {
+    color "$area-issues"
+}
+
+part "nav-item[variant=issues][current]" {
+    background "$area-issues-soft"
+    color "$fg"
+    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-issues"
+}
+
+part "top-bar[variant=issues]" {
+    background "$area-issues-soft"
+    border-bottom-color "$area-issues"
+}
+
+part "nav-item[variant=time] icon" {
+    color "$area-time"
+}
+
+part "nav-item[variant=time][current]" {
+    background "$area-time-soft"
+    color "$fg"
+    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-time"
+}
+
+part "top-bar[variant=time]" {
+    background "$area-time-soft"
+    border-bottom-color "$area-time"
+}
+
+part "nav-item[variant=agents] icon" {
+    color "$area-agents"
+}
+
+part "nav-item[variant=agents][current]" {
+    background "$area-agents-soft"
+    color "$fg"
+    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-agents"
+}
+
+part "top-bar[variant=agents]" {
+    background "$area-agents-soft"
+    border-bottom-color "$area-agents"
+}
+
+part "nav-item[variant=settings] icon" {
+    color "$area-settings"
+}
+
+part "nav-item[variant=settings][current]" {
+    background "$area-settings-soft"
+    color "$fg"
+    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-settings"
+}
+
+part "top-bar[variant=settings]" {
+    background "$area-settings-soft"
+    border-bottom-color "$area-settings"
 }
 
 part "nav-item[state=busy]" {
