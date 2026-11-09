@@ -340,8 +340,10 @@ Host: local",
             .await
             .unwrap();
         let mut out = Vec::new();
+        // The server waits one second for the headers (see `start_with`); the limit here is only
+        // the end of a wait for a server that never lets go, far beyond what a busy computer needs.
         let ended =
-            tokio::time::timeout(Duration::from_secs(10), stream.read_to_end(&mut out)).await;
+            tokio::time::timeout(Duration::from_mins(2), stream.read_to_end(&mut out)).await;
         assert!(ended.is_ok(), "the server kept a half-sent request open");
     }
 

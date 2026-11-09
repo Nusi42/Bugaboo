@@ -102,7 +102,7 @@ pub enum PreviewOutcome {
 ///
 /// # Errors
 /// The error of the system when the child cannot be started or the preview cannot be written.
-pub(crate) async fn create(
+pub async fn create(
     command: &PreviewCommand,
     kind: PreviewKind,
     input: &Path,

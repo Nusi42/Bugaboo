@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
-import { tickBox } from "./issues.ts";
+import { tickIssue } from "./tick.ts";
 import { inOrder } from "./sequence.ts";
 import { serverWord } from "./server-words.ts";
 
@@ -15,12 +15,7 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
   // One after another, as a person does: the next box is ticked when the last one shows it.
   await inOrder(
     keys.map((key) => async () => {
-      // A person clicks the box they see, with its key next to it, not the input behind it.
-      await page
-        .locator("label")
-        .filter({ hasText: new RegExp(`^${t("issues.select-issue", { key })}$`, "u") })
-        .click();
-      await expect(tickBox(page, key)).toBeChecked();
+      await tickIssue(page, key);
     }),
   );
   await expect(

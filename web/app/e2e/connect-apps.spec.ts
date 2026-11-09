@@ -88,6 +88,8 @@ test("ai_22 taking an app back ends what it may do at once", async ({ page, serv
     })
     .click();
   await expect(row).toHaveCount(0);
+  // The row leaves the list before the server has answered (UX-06); the app is taken back once the page says it is saved.
+  await expect(page.getByText(t("connected-apps.taken-back"), { exact: true })).toBeVisible();
   expect(await pingStatus(page, server.url, tokens.access)).toBe(401);
 });
 

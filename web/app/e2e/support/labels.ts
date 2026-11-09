@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
-import { tickBox } from "./issues.ts";
+import { tickIssue } from "./tick.ts";
 import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
@@ -42,21 +42,15 @@ export async function labelNamesOf(admin: ApiSession, issue: string): Promise<st
   return (labelsAndTags.labels ?? []).map((label) => label.name);
 }
 
-/** How long one try to tick a box waits before the click is made again. */
-const TICK_TRY_MS = 2000;
-
 /** Opens the list of the project WEB and ticks its first two issues. */
 export async function tickTwo(page: Page): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
-  await tickBox(page, "WEB-1").check({ force: true });
+  await tickIssue(page, "WEB-1");
   // The bar of the ticked issues shifts the rows on a phone: the second box is ticked once it stands still.
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 1 }) }),
   ).toBeVisible();
-  // A click that lands while the row is drawn again changes nothing: it is made again.
-  await expect(async () => {
-    await tickBox(page, "WEB-2").check({ force: true, timeout: TICK_TRY_MS });
-  }).toPass();
+  await tickIssue(page, "WEB-2");
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 2 }) }),
   ).toBeVisible();

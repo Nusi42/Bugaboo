@@ -34,8 +34,7 @@ use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PreviewKind};
 pub use limits::{
     ChildAllocator, MAX_CHILD_ADDRESS_SPACE_BYTES, MAX_CHILD_MEMORY_BYTES, child_allocator,
 };
-pub(crate) use spawn::create;
-pub use spawn::{PreviewCommand, PreviewOutcome};
+pub use spawn::{PreviewCommand, PreviewOutcome, create};
 
 /// The longest side of a preview, in pixels. Big enough to see what a screenshot shows in the row
 /// of the *Files* block and in the larger view, small enough to send at once.

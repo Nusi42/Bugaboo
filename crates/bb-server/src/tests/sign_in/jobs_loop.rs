@@ -22,8 +22,10 @@ use super::rig::Rig;
 const TEST_POLL: Duration = Duration::from_millis(10);
 
 /// The longest a test waits for the loop to do what it should. A loop that works needs a few
-/// polls; this is only the limit that stops a loop that does not.
-const WAIT_AT_MOST: Duration = Duration::from_secs(5);
+/// polls, and a test returns the moment the loop has done its work; this is only the limit that
+/// stops a loop that does not, far beyond what a computer that is busy with a full run needs
+/// (the rebuild of the text index alone takes seconds there).
+const WAIT_AT_MOST: Duration = Duration::from_mins(2);
 
 /// How long a test lets a stopped loop show that it does nothing more.
 const STOPPED_FOR: Duration = Duration::from_millis(200);

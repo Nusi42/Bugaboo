@@ -165,8 +165,21 @@ async fn perf_01_writers_in_a_crowd_queue_in_order_and_none_runs_out_of_patience
     for number in 0..WRITERS {
         let database = database.clone();
         let order = Arc::clone(&order);
+        let (queued, in_line) = tokio::sync::oneshot::channel::<()>();
         writers.push(tokio::spawn(async move {
-            let transaction = database.begin().await?;
+            // The first poll of `begin` takes the place in the queue; the writer says so then, and
+            // not before.
+            let begin = database.begin();
+            tokio::pin!(begin);
+            let mut queued = Some(queued);
+            let transaction = std::future::poll_fn(|cx| {
+                let polled = begin.as_mut().poll(cx);
+                if let Some(queued) = queued.take() {
+                    let _ = queued.send(());
+                }
+                polled
+            })
+            .await?;
             order
                 .lock()
                 .map_err(|_| StoreError::Corrupt("the order"))?
@@ -175,8 +188,9 @@ async fn perf_01_writers_in_a_crowd_queue_in_order_and_none_runs_out_of_patience
             transaction.commit().await?;
             Ok::<_, StoreError>(())
         }));
-        // One after the other, so the order they came in is known.
-        tokio::time::sleep(Duration::from_millis(5)).await;
+        // One after the other, so the order they came in is known: the next one starts when this
+        // one stands in the queue, however busy the computer is.
+        in_line.await?;
     }
     for writer in writers {
         writer.await??;

@@ -372,18 +372,29 @@ mod tests {
             base: folder,
         })?;
         let (stop, stopped) = tokio::sync::oneshot::channel::<()>();
-        let server = serve_settings(settings, WebSource::Embedded, false, async move {
-            let _ = stopped.await;
-        });
+        // Whether the server has ended, which it does without a stop only when it could not start.
+        let ended = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let server = {
+            let ended = Arc::clone(&ended);
+            async move {
+                let served = serve_settings(settings, WebSource::Embedded, false, async move {
+                    let _ = stopped.await;
+                })
+                .await;
+                ended.store(true, std::sync::atomic::Ordering::SeqCst);
+                served
+            }
+        };
         // Another thread connects the moment the port opens, without waiting: the file must be
-        // there already.
+        // there already. It waits for the port as long as the server is starting (on a busy
+        // computer that takes as long as it takes) and gives up when the server has ended.
         let client = std::thread::spawn(move || {
-            let started = std::time::Instant::now();
             while std::net::TcpStream::connect((address, port)).is_err() {
                 assert!(
-                    started.elapsed().as_secs() < 30,
-                    "the server did not listen"
+                    !ended.load(std::sync::atomic::Ordering::SeqCst),
+                    "the server ended and did not listen"
                 );
+                std::thread::yield_now();
             }
             let code = std::fs::read_to_string(data.join("setup-code.txt"));
             let _ = stop.send(());

@@ -52,7 +52,7 @@ mod preview {
     use bb_core::id::UploadId;
     use bb_core::security_log::Digest;
     use bb_files::fixtures::{Format, PDF, pdf_bomb, picture, pretending_png};
-    use bb_files::preview::{MAX_CHILD_MEMORY_BYTES, TIME_LIMIT};
+    use bb_files::preview::{MAX_CHILD_MEMORY_BYTES, PreviewOutcome, TIME_LIMIT};
     use bb_files::{DiskFiles, PreviewCommand, PreviewRefusal};
 
     /// The program the server starts for a preview.
@@ -140,14 +140,30 @@ mod preview {
             &pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2),
         )
         .await;
-        let started = std::time::Instant::now();
         assert_eq!(
             files.create_preview(bomb, PreviewKind::Pdf).await.unwrap(),
             PreviewStatus::Without
         );
+        // Whether it ended by its limit or by the clock is read from the outcome of the child, not
+        // from how long it took, which a busy computer stretches: the same bomb, with a clock long
+        // enough that only the memory can stop it.
+        let input = folder.path().join("bomb.pdf");
+        std::fs::write(
+            &input,
+            pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2),
+        )
+        .unwrap();
+        let outcome = bb_files::preview::create(
+            &PreviewCommand::new(PROGRAM, &["preview"]).within(TIME_LIMIT * 10),
+            PreviewKind::Pdf,
+            &input,
+            &folder.path().join("bomb.png"),
+        )
+        .await
+        .unwrap();
         assert!(
-            started.elapsed() < TIME_LIMIT,
-            "it ended by its limit, not by the clock"
+            matches!(outcome, PreviewOutcome::Without(_)),
+            "it ended by its limit, not by the clock: {outcome:?}"
         );
         assert!(preview_png(&files, bomb).await.is_none());
         let work = folder.path().join("previews").join("work");

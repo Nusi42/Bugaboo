@@ -1,10 +1,12 @@
 //! A person who guesses addresses must not be able to tell from the time an answer takes whether
 //! an account exists (AUTH-01, threat model: "finding out which e-mail addresses have accounts").
 //!
-//! The test is statistical and tolerant: it compares the middle of many timings of a wrong
+//! The test is statistical and tolerant: it compares the fastest of many timings of a wrong
 //! password for an account that exists with a password for one that does not. Both do the same
-//! Argon2id work, so the middle values are close; if the unknown account were answered at once,
-//! it would be many times faster.
+//! Argon2id work, so the fastest values are close; if the unknown account were answered at once,
+//! it would be many times faster. The fastest, not the middle: a busy computer only ever adds
+//! time to a try (the other tests of a full run take turns on the same cores), so the fastest try
+//! is the one that shows the work itself.
 
 use std::time::{Duration, Instant};
 
@@ -13,12 +15,11 @@ use bb_testing::{TestResult, each_database};
 use super::http::ADA_EMAIL;
 use super::rig::{PASSWORD, Rig, Tries};
 
-/// How many tries of each kind. Odd, so the middle is one measurement.
+/// How many tries of each kind.
 const TRIES: usize = 15;
 
-fn middle(mut times: Vec<Duration>) -> Duration {
-    times.sort();
-    times[times.len() / 2]
+fn fastest(times: Vec<Duration>) -> Duration {
+    times.into_iter().min().unwrap_or_default()
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -46,9 +47,9 @@ async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> TestR
             );
             unknown.push(start.elapsed());
         }
-        let (known, unknown) = (middle(known), middle(unknown));
+        let (known, unknown) = (fastest(known), fastest(unknown));
         let ratio = unknown.as_secs_f64() / known.as_secs_f64();
-        // The work is the same, so the middles are close. Hashing 19 MiB takes milliseconds;
+        // The work is the same, so the fastest tries are close. Hashing 19 MiB takes milliseconds;
         // an answer that skipped it would be far outside this range.
         assert!(
             known > Duration::from_millis(1),

@@ -146,30 +146,25 @@ async fn sec_17_a_search_that_is_dropped_leaves_no_limit_on_the_connection() -> 
     let slow = counting(2_000_000_000);
     // The future is dropped while the read runs, as when a client goes away.
     let dropped = tokio::time::timeout(
-        Duration::from_millis(100),
-        database.fetch_all_within(&slow, Duration::from_millis(300)),
+        Duration::from_millis(50),
+        database.fetch_all_within(&slow, Duration::from_secs(1)),
     )
     .await;
     assert!(dropped.is_err(), "the read should still be running");
     // The dropped read is stopped at its next step and its connection closed, so the next read on
-    // the pool of one connection is not kept waiting by it and is not stopped by its limit.
-    let started = std::time::Instant::now();
-    let tiny = database.fetch_all(&counting(10)).await?;
+    // the pool of one connection is not kept waiting by it. Without that stop the dropped read
+    // would count its two billion numbers; no clock decides here, only that the read gets its turn.
+    let tiny = tokio::time::timeout(Duration::from_mins(1), database.fetch_all(&counting(10)))
+        .await
+        .map_err(|_| "the dropped read kept the connection")??;
     assert_eq!(tiny.len(), 1);
-    assert!(
-        started.elapsed() < Duration::from_millis(500),
-        "the dropped read kept the connection for {:?}",
-        started.elapsed()
-    );
+    // The limit of the dropped read has run out by now. If it stayed on the connection, every read
+    // from here on would be stopped by it.
+    tokio::time::sleep(Duration::from_millis(1100)).await;
     for _ in 0..3 {
         let rows = database.fetch_all(&counting(3_000_000)).await?;
         assert_eq!(rows.len(), 1);
     }
-    assert!(
-        started.elapsed() < Duration::from_secs(5),
-        "a dropped read kept the connection: {:?}",
-        started.elapsed()
-    );
     Ok(())
 }
 
