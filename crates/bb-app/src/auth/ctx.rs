@@ -49,6 +49,10 @@ pub struct RequestInfo {
     pub origin_seen: String,
 }
 
+/// What `mcp_identity` leaves for the next step of a message: the actor of an agent, the rights of
+/// its person (read for the actor) and when it was left.
+pub(crate) type Handoff = (ActingPerson, Option<Arc<Policy>>, std::time::Instant);
+
 /// Everything the sign-in use cases share. Built once at start-up (`bb-server`).
 pub struct AuthServices<S> {
     pub(crate) store: S,
@@ -81,6 +85,10 @@ pub struct AuthServices<S> {
     pub(crate) call_rate: super::oauth_rate::CallRate,
     /// The changes of agents in the last minute, for their limits (ADR-0029, decision 9).
     pub(crate) agent_rate: crate::agents::AgentRate,
+    /// The actor of an agent that `mcp_identity` found for a message, until the call of the tool
+    /// of that message takes it (once, within a few seconds), so the key, its owner and the rights
+    /// of the agent are looked up once for the message and not once for each step (M7-F127).
+    pub(crate) agent_handoff: Mutex<HashMap<String, Handoff>>,
 }
 
 impl<S> AuthServices<S> {
@@ -119,6 +127,7 @@ impl<S> AuthServices<S> {
             test_ai_at: Mutex::default(),
             call_rate: super::oauth_rate::CallRate::default(),
             agent_rate: crate::agents::AgentRate::default(),
+            agent_handoff: Mutex::default(),
         }
     }
 

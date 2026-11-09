@@ -213,6 +213,7 @@ pub async fn mcp_identity<S: AuthStore>(
     if !apps_on && !ctx.agents_on_in_the_organization().await? {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
     }
+    ctx.clear_handoff(&input.token);
     let actor = ctx.actor(&input.token).await?;
     if !apps_on && actor.agent().is_none() {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
@@ -226,6 +227,9 @@ pub async fn mcp_identity<S: AuthStore>(
         ctx.note(SecurityAction::AiCallLimited, Some(actor.person.id), None)
             .await;
         return Err(error);
+    }
+    if actor.agent().is_some() {
+        ctx.hand_off(&input.token, &actor);
     }
     Ok(McpIdentity {
         person: actor.person.id,

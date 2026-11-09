@@ -196,6 +196,11 @@ impl Shown {
         }
     }
 
+    /// The rights of the person the view was made from.
+    pub(crate) const fn policy(&self) -> &Policy {
+        &self.policy
+    }
+
     /// The tree of projects the view was made with.
     pub(crate) const fn tree(&self) -> &Tree {
         &self.tree

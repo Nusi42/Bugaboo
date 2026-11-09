@@ -46,6 +46,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         // A person who holds the permission to create agents in no project any more has lost the
         // right to agents: the agent's next request is refused (AI-30).
         let shown = self.shown_with_levels(found.person, None).await?;
+        // The rights read for the view are the rights of the person at every place: the request
+        // decides from them and does not read them again.
+        self.remember_policy(found.person, shown.policy());
         if !shown.holds_anywhere(Permission::CreateAgents) {
             // The person has lost the right to agents: the work they gave stops (AI-33).
             self.stop_work_of_agent(found.id, StopCause::AccessLost)

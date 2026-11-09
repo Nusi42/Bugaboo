@@ -12,10 +12,10 @@ use super::ai_mcp_rig::{Mcp, ai_on};
 use super::issues_site::{Site, key_of};
 use super::rules_hand_over_http::{agent_with_limit, look_again, rule_over};
 
-/// The most transactions one look may start, however many matches it lists (27 measured: the key of
+/// The most transactions one look may start, however many matches it lists (17 measured: the key of
 /// the agent, its rights and the reads of the catalogs come first, and the rest is one read each of
 /// the matches, the issues, the people, the projects and the rights).
-const AT_MOST: u64 = 27;
+const AT_MOST: u64 = 17;
 
 /// The text of an answer of the MCP server.
 fn text_of(answer: &super::ai_mcp_rig::Answer) -> &str {
@@ -81,6 +81,49 @@ async fn m7_f127_a_look_at_the_changes_starts_as_many_transactions_for_many_matc
             "{} transactions",
             transactions[1]
         );
+        Ok::<(), Failure>(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m7_f127_a_key_that_was_taken_away_after_a_message_is_refused_at_the_next() -> TestResult {
+    each_database("m7_f127_key_taken_away", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        let made = tess
+            .send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
+            .await?;
+        let agent = made.body["id"].as_str().ok_or("no agent ID")?.to_owned();
+        let made = tess
+            .send(
+                "POST",
+                &format!("/api/v1/agents/{agent}/keys"),
+                Some(json!({"password": super::rig::PASSWORD, "name": "Key"})),
+            )
+            .await?;
+        let key = made.body["secret"].as_str().ok_or("no secret")?.to_owned();
+        let id = made.body["key"]["id"]
+            .as_str()
+            .ok_or("no key ID")?
+            .to_owned();
+        let mcp = Mcp::new(&app);
+        // A message that runs no tool looks the key up and leaves nothing to be taken by a later one.
+        let ping = mcp
+            .post(
+                Some(&key),
+                json!({"jsonrpc": "2.0", "id": 1, "method": "ping"}),
+            )
+            .await?;
+        assert!(ping.status.is_success(), "{}", ping.json);
+        let gone = tess
+            .send("DELETE", &format!("/api/v1/agents/{agent}/keys/{id}"), None)
+            .await?;
+        assert!(gone.status.is_success(), "{}", gone.body);
+        let after = call(&mcp, &key, "changes_since", json!({})).await?;
+        assert!(!after.status.is_success(), "{}", after.json);
         Ok::<(), Failure>(())
     })
     .await
