@@ -94,6 +94,18 @@ The pictures and recordings show the theme Paper. The app has four themes, two l
 
 Time on issues with a timer or by hand, estimates, a weekly timesheet and the daily start and end of work, with plain warnings for the working-time rules; signing in with a password, a passkey or a two-step code; invitations and groups; notifications in the app and by e-mail; files with previews; saved searches you can share; keyboard shortcuts you can change; and a security log that shows when somebody tampered with it.
 
+## AI in Bugaboo
+
+AI can help with issues in three ways, and each can be switched on or off by itself:
+
+- **Agents** work on their own on issues a person hands over. A person reviews the result.
+- **AI apps**, such as Claude Code, work as you, with at most your rights.
+- **The assistant** is a helper in a panel. It only proposes; nothing is saved until you press **Apply**.
+
+The assistant is off at the start. Nothing marked *Never sent to AI* leaves Bugaboo. Every change an AI makes is marked and can be undone in one step.
+
+[How AI works in Bugaboo](userDocs/ai/ai-in-bugaboo.md)
+
 ## AI agents and Bugaboo as shared memory
 
 *Being built now, in milestone M7 of the [roadmap](docs/04-milestones.md). Built so far: the **assistant** beside the page, which answers questions about an issue and proposes a change that you see before and after, apply, and can undo; the page where an administrator sets AI up (the provider or a model on your own server, the agreement, what goes where); AI apps that sign in through MCP; runs of an app that can be undone in one step; and agent work on the issue: *Hand over* to an agent, its attempts, questions and plan, and the review that accepts, sends back or throws away; and *My agents*, where a person sees what their agents do and wait for, pauses or stops them, sets their limits and makes standing rules, with a page for each agent and a list of every agent for administrators; standing rules that hand over what a saved search finds, so an agent can work with nobody watching; and a guide to AI inside the app. It is not finished.*

@@ -6,6 +6,7 @@ import { cargoBikeStory, createJob } from "./readme-issues.ts";
 import { cargoBike, company, projects, savedSearches } from "./readme-organization-data.ts";
 import { jobs } from "./readme-organization-jobs.ts";
 import { setUpWork } from "./readme-work.ts";
+import { pictureLightTheme } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 
@@ -32,7 +33,7 @@ export const readmeRepairs = projects.repairs.shortName;
  * The theme of every picture and recording of the front page but the first, which shows all four:
  * Paper, the second light theme, so the pages look the same whatever the reader's GitHub shows.
  */
-export const readmeTheme: SettingChoice<"appearanceLightTheme"> = "paper";
+export const readmeTheme: SettingChoice<"appearanceLightTheme"> = pictureLightTheme;
 
 /** Marta sees the app always light, in the theme of the pictures (*My settings › Appearance*). */
 async function showReadmeTheme(admin: ApiSession): Promise<void> {

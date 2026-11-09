@@ -2,6 +2,7 @@
 
 Bugaboo has **agents**, **AI apps** and the **assistant**. Each of the three can be switched on or off by itself, for the whole organization and for each project. Switching one off never switches another off. The assistant is off until an administrator switches it on; agents and AI apps are on at the start.
 
+- [AI in Bugaboo, with pictures](ai-in-bugaboo.md): how agents, AI apps and the assistant work, step by step, with the rules and the known gaps.
 - [The AI guide](literacy.md): what each kind can and cannot do, where your data goes, how to check what an AI wrote, and what Bugaboo never lets AI do. Start here.
 - [Agents](../agents/README.md): hand-overs, agent work on an issue, the review and standing rules.
 - [My agents](../agents/my-agents.md): creating an agent, its keys and limits, and what waits for you.
