@@ -5,7 +5,7 @@ import { type Locator, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
 import { settingDefaults } from "@bugaboo/api-client";
-import { expectLook } from "./checks.ts";
+import { expectLook, putOnTheme, themes } from "./checks.ts";
 
 /** The folder the screenshots go to, from `BB_SCREENSHOT_DIR`; `undefined` when none are wanted. */
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
@@ -47,6 +47,28 @@ const themeOf = {
   dark: settingDefaults.appearanceDarkTheme,
 } as const;
 
+/**
+ * The light theme every picture is taken in, in one place: *Paper*, not the standard *Daylight*
+ * (the maintainer, 2026-11-09). The specs that picture the themes themselves take all four themes
+ * and do not come through here.
+ */
+export const pictureLightTheme = "paper" as const;
+
+/** The theme the pictures of a look are taken in. */
+function pictureThemeOf(look: (typeof looks)[number]): string {
+  return look === "light" ? pictureLightTheme : themeOf.dark;
+}
+
+/** Puts the page on the theme its pictures are taken in, once the app showed the one of the device. */
+async function onThePictureTheme(page: Page, look: (typeof looks)[number]): Promise<void> {
+  const theme = themes.find((each) => each.id === pictureThemeOf(look));
+  if (theme === undefined) {
+    throw new TypeError(`The theme of the pictures is a built-in theme: ${pictureThemeOf(look)}.`);
+  }
+  await putOnTheme(page, theme);
+  await expectLook(page, theme.id);
+}
+
 /** The look the device does not ask for: asking for it first makes the app notice the change. */
 const otherThan = { light: "dark", dark: "light" } as const;
 
@@ -78,6 +100,7 @@ export async function shootLooksInto(
       await page.emulateMedia({ colorScheme: otherThan[look] });
       await page.emulateMedia({ colorScheme: look });
       await expectLook(page, themeOf[look]);
+      await onThePictureTheme(page, look);
       await page.screenshot({
         path: join(target, `${name}-${look}.png`),
         fullPage: shown === "page" && !(await coversThePage(page)),
@@ -213,7 +236,9 @@ export async function shootWindowAs(
   }
   await pointerAway(page);
   await expectLook(page, theme);
-  await page.screenshot({ path: join(folderOf(milestone), `${name}-${theme}.png`) });
+  await page.screenshot({
+    path: join(folderOf(milestone), `${name}-${theme}.png`),
+  });
 }
 
 /** How long a sheet, a menu or a list takes to settle; the picture is taken when it has stopped. */

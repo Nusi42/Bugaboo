@@ -2,7 +2,7 @@
 
 An **AI app** is a tool outside Bugaboo, such as Claude Code or Claude Desktop, that works with your account through **MCP**, the open way in which AI tools talk to a program such as Bugaboo. It always works as you and never does more than you can. [The AI guide](literacy.md) says what that means; [Connected apps](../access-keys/connected-apps.md) says how you allow an app and how you take it back.
 
-AI apps work only while an administrator has switched AI on for the organization. They are switched off with it.
+AI apps are on at the start, and an administrator can switch them off for the whole organization (*Organization settings › Connections › AI*) or for one project (the switch *AI apps in this project* in its settings). The assistant and agents have switches of their own: switching the assistant off does not switch AI apps off.
 
 ## Connecting Claude Code
 

@@ -21,12 +21,14 @@ pub const LOOKING_AT_MAX: usize = 5;
 /// The longest name of what the panel looks at (an issue ID, a short name, a search), in characters.
 pub const LOOKING_AT_CHARS_MAX: usize = 500;
 
-/// The most tools one question may run. A tool that asks for the same again counts, a call over
-/// the limit gets a sentence for an answer and runs nothing.
-pub const TOOL_CALLS_MAX: usize = 8;
+/// The most tools one question may run until an administrator sets another most (the setting
+/// `assistant.look-ups-most`). A tool that asks for the same again counts, a call over the limit
+/// gets a sentence for an answer and runs nothing.
+pub const TOOL_CALLS_AT_START: usize = 8;
 
-/// The most times one question calls the provider: every round but the last runs at least one tool.
-pub const ROUNDS_MAX: usize = TOOL_CALLS_MAX + 1;
+/// The most tools one question runs even where an administrator chose *No limit*: a model that never
+/// stops asking must not call the provider for good.
+pub const TOOL_CALLS_BACKSTOP: usize = 100;
 
 /// The most proposals one answer carries.
 pub const PROPOSALS_MAX: usize = 10;
@@ -86,3 +88,98 @@ pub struct UsedReference {
 pub struct ReferenceWord(pub String);
 
 impl crate::personal::NotPersonal for ReferenceWord {}
+
+/// How many tools the assistant may run for one question: a number, or no limit the administrator
+/// set. The organization sets the most; a person may choose a lower one for themselves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LookUps {
+    /// At most this many tools.
+    Most(usize),
+    /// No limit of the administrator; [`TOOL_CALLS_BACKSTOP`] still holds.
+    NoLimit,
+}
+
+/// The stored word of *No limit*.
+pub const LOOK_UPS_NO_LIMIT: &str = "no-limit";
+
+impl Default for LookUps {
+    fn default() -> Self {
+        Self::Most(TOOL_CALLS_AT_START)
+    }
+}
+
+impl LookUps {
+    /// The look-ups a stored word means: a whole number or `no-limit`; `None` for anything else
+    /// (the word of a person who follows the organization is no look-up).
+    #[must_use]
+    pub fn of_code(code: &str) -> Option<Self> {
+        if code == LOOK_UPS_NO_LIMIT {
+            return Some(Self::NoLimit);
+        }
+        code.parse().ok().filter(|most| *most > 0).map(Self::Most)
+    }
+
+    /// The tools one question may run: the number, or the backstop for no limit.
+    #[must_use]
+    pub const fn calls(self) -> usize {
+        match self {
+            Self::Most(most) if most < TOOL_CALLS_BACKSTOP => most,
+            Self::Most(_) | Self::NoLimit => TOOL_CALLS_BACKSTOP,
+        }
+    }
+
+    /// The most calls to the provider for one question: every round but the last runs at least one
+    /// tool, and the last is given none.
+    #[must_use]
+    pub const fn rounds(self) -> usize {
+        self.calls() + 1
+    }
+
+    /// What counts for a person: the lower of the organization's and their own choice, so nobody
+    /// goes above the most of the organization. A person who chose nothing gets the organization's.
+    #[must_use]
+    pub const fn lowered_by(self, person: Option<Self>) -> Self {
+        match (self, person) {
+            (organization, None) | (organization @ Self::Most(_), Some(Self::NoLimit)) => {
+                organization
+            }
+            (Self::NoLimit, Some(own)) => own,
+            (Self::Most(most), Some(Self::Most(own))) => {
+                Self::Most(if own < most { own } else { most })
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod look_up_tests {
+    use super::*;
+
+    #[test]
+    fn m7_wp15_look_ups_are_read_from_their_words() {
+        assert_eq!(LookUps::of_code("8"), Some(LookUps::Most(8)));
+        assert_eq!(LookUps::of_code("no-limit"), Some(LookUps::NoLimit));
+        for bad in ["", "0", "-1", "many", "as-organization", "8 "] {
+            assert_eq!(LookUps::of_code(bad), None, "{bad:?}");
+        }
+        assert_eq!(LookUps::default(), LookUps::Most(TOOL_CALLS_AT_START));
+    }
+
+    #[test]
+    fn m7_wp15_no_limit_still_stops_at_the_backstop() {
+        assert_eq!(LookUps::NoLimit.calls(), TOOL_CALLS_BACKSTOP);
+        assert_eq!(LookUps::Most(1_000).calls(), TOOL_CALLS_BACKSTOP);
+        assert_eq!(LookUps::Most(3).rounds(), 4);
+    }
+
+    #[test]
+    fn m7_wp15_a_person_never_goes_above_the_organization() {
+        let most = |n| LookUps::Most(n);
+        assert_eq!(most(8).lowered_by(None), most(8));
+        assert_eq!(most(8).lowered_by(Some(most(3))), most(3));
+        assert_eq!(most(4).lowered_by(Some(most(20))), most(4));
+        assert_eq!(most(4).lowered_by(Some(LookUps::NoLimit)), most(4));
+        assert_eq!(LookUps::NoLimit.lowered_by(Some(most(5))), most(5));
+        assert_eq!(LookUps::NoLimit.lowered_by(None), LookUps::NoLimit);
+    }
+}

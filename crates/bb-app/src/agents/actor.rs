@@ -6,11 +6,12 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::agent::{AgentLimits, AgentState, MOST_AGENT_KEYS};
 use bb_core::agent_work::StopCause;
+use bb_core::ai::ToolCaller;
 use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::person::Person;
 use bb_core::settings::{
-    AGENTS_ENABLED, AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE, AGENTS_MAXIMUM_CHANGES_A_MINUTE,
-    AGENTS_MAXIMUM_ISSUES_AT_ONCE, SettingValue,
+    AGENTS_MAXIMUM_ATTEMPTS_ON_ONE_ISSUE, AGENTS_MAXIMUM_CHANGES_A_MINUTE,
+    AGENTS_MAXIMUM_ISSUES_AT_ONCE,
 };
 use bb_policy::{Narrowing, Permission};
 
@@ -118,8 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// An internal error when the store fails.
     pub(crate) async fn agents_on_in_the_organization(&self) -> Result<bool, AppError> {
-        let layers = self.setting_layers_of(None).await?;
-        Ok(layers.get(&AGENTS_ENABLED).unwrap_or(true))
+        self.kind_on_in_the_organization(ToolCaller::Agent).await
     }
 
     /// The projects, of those the person sees, where agents are switched off: the nearest value in
@@ -145,32 +145,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<ProjectId>, AppError> {
-        let own: std::collections::BTreeMap<ProjectId, bool> = self
-            .store()
-            .project_values(AGENTS_ENABLED.definition())
+        self.projects_with_kind_off(ToolCaller::Agent, shown.tree())
             .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .filter_map(|(project, value)| match value {
-                SettingValue::Bool(on) => Some((project, on)),
-                _ => None,
-            })
-            .collect();
-        let organization_on = self.agents_on_in_the_organization().await?;
-        let tree = shown.tree();
-        Ok(tree
-            .projects()
-            .filter(|project| {
-                let chain = tree.chain(*project).unwrap_or_else(|| vec![*project]);
-                // `chain` runs from the top down: the nearest value is the last one set.
-                let on = chain
-                    .iter()
-                    .rev()
-                    .find_map(|each| own.get(each).copied())
-                    .unwrap_or(organization_on);
-                !on
-            })
-            .collect())
     }
 
     /// The most any agent can be given as its limits: the maximums that the organization set.

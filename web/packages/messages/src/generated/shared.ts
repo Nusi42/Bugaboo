@@ -252,7 +252,7 @@ export const messages = {
   "assistant.guide-title": "The AI guide",
   "ai-setup.never-sent": "Never sent to AI",
   "ai-setup.never-sent-help":
-    "Kept from the assistant, AI apps and agents, even for people who can read it.",
+    "Kept from agents, AI apps and the assistant, even for people who can read it.",
   "connect.page": "Connect",
   "permission.see-projects": "See the project and what is in it",
   "permission.see-issues": "See every issue of the project, not only the ones they reported",
@@ -730,6 +730,7 @@ export const messages = {
     "A work day records what has happened. Times later than now cannot be saved yet.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
+  "nav.assistant-settings": "Assistant",
   "agent-work.summary": "Attempt {number} is ready for review: {address}",
   "error.agent-work.already-open": "This agent already has this issue handed over.",
   "error.agent-work.not-ready": "The work is not waiting for that.",

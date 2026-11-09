@@ -16,6 +16,7 @@ export const paths = {
   mySettings: "/me",
   appearance: "/me/appearance",
   region: "/me/region",
+  assistantSettings: "/me/assistant",
   notificationSettings: "/me/notifications",
   handle: "/me/handle",
   startPage: "/me/start-page",

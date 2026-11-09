@@ -856,6 +856,9 @@ pub const AI_SETUP_ADDRESSES_LIST: MessageKey = MessageKey::new("ai-setup.addres
 /// The message `ai-setup.addresses-none`.
 pub const AI_SETUP_ADDRESSES_NONE: MessageKey = MessageKey::new("ai-setup.addresses-none");
 
+/// The message `ai-setup.agents-link`.
+pub const AI_SETUP_AGENTS_LINK: MessageKey = MessageKey::new("ai-setup.agents-link");
+
 /// The message `ai-setup.agreement`.
 pub const AI_SETUP_AGREEMENT: MessageKey = MessageKey::new("ai-setup.agreement");
 
@@ -877,6 +880,12 @@ pub const AI_SETUP_APPS: MessageKey = MessageKey::new("ai-setup.apps");
 
 /// The message `ai-setup.apps-intro`.
 pub const AI_SETUP_APPS_INTRO: MessageKey = MessageKey::new("ai-setup.apps-intro");
+
+/// The message `ai-setup.assistant`.
+pub const AI_SETUP_ASSISTANT: MessageKey = MessageKey::new("ai-setup.assistant");
+
+/// The message `ai-setup.assistant-intro`.
+pub const AI_SETUP_ASSISTANT_INTRO: MessageKey = MessageKey::new("ai-setup.assistant-intro");
 
 /// The message `ai-setup.guide-link`.
 pub const AI_SETUP_GUIDE_LINK: MessageKey = MessageKey::new("ai-setup.guide-link");
@@ -4190,6 +4199,9 @@ pub const NAV_AI: MessageKey = MessageKey::new("nav.ai");
 /// The message `nav.appearance`.
 pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
 
+/// The message `nav.assistant-settings`.
+pub const NAV_ASSISTANT_SETTINGS: MessageKey = MessageKey::new("nav.assistant-settings");
+
 /// The message `nav.check-access`.
 pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
 
@@ -6374,6 +6386,14 @@ pub const SETTING_AI_APPS_ENABLED_HELP_ON: MessageKey =
 pub const SETTING_AI_APPS_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.ai-apps.enabled.name");
 
+/// The message `setting.ai-apps.project-help`.
+pub const SETTING_AI_APPS_PROJECT_HELP: MessageKey =
+    MessageKey::new("setting.ai-apps.project-help");
+
+/// The message `setting.ai-apps.project-switch`.
+pub const SETTING_AI_APPS_PROJECT_SWITCH: MessageKey =
+    MessageKey::new("setting.ai-apps.project-switch");
+
 /// The message `setting.ai.address.help`.
 pub const SETTING_AI_ADDRESS_HELP: MessageKey = MessageKey::new("setting.ai.address.help");
 
@@ -6435,6 +6455,54 @@ pub const SETTING_APPEARANCE_MODE_HELP: MessageKey =
 /// The message `setting.appearance.spacing.help`.
 pub const SETTING_APPEARANCE_SPACING_HELP: MessageKey =
     MessageKey::new("setting.appearance.spacing.help");
+
+/// The message `setting.assistant.look-ups-12`.
+pub const SETTING_ASSISTANT_LOOK_UPS_12: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-12");
+
+/// The message `setting.assistant.look-ups-2`.
+pub const SETTING_ASSISTANT_LOOK_UPS_2: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-2");
+
+/// The message `setting.assistant.look-ups-20`.
+pub const SETTING_ASSISTANT_LOOK_UPS_20: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-20");
+
+/// The message `setting.assistant.look-ups-4`.
+pub const SETTING_ASSISTANT_LOOK_UPS_4: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-4");
+
+/// The message `setting.assistant.look-ups-50`.
+pub const SETTING_ASSISTANT_LOOK_UPS_50: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-50");
+
+/// The message `setting.assistant.look-ups-8`.
+pub const SETTING_ASSISTANT_LOOK_UPS_8: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-8");
+
+/// The message `setting.assistant.look-ups-as-organization`.
+pub const SETTING_ASSISTANT_LOOK_UPS_AS_ORGANIZATION: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-as-organization");
+
+/// The message `setting.assistant.look-ups-most.help`.
+pub const SETTING_ASSISTANT_LOOK_UPS_MOST_HELP: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-most.help");
+
+/// The message `setting.assistant.look-ups-most.name`.
+pub const SETTING_ASSISTANT_LOOK_UPS_MOST_NAME: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-most.name");
+
+/// The message `setting.assistant.look-ups-no-limit`.
+pub const SETTING_ASSISTANT_LOOK_UPS_NO_LIMIT: MessageKey =
+    MessageKey::new("setting.assistant.look-ups-no-limit");
+
+/// The message `setting.assistant.look-ups.help`.
+pub const SETTING_ASSISTANT_LOOK_UPS_HELP: MessageKey =
+    MessageKey::new("setting.assistant.look-ups.help");
+
+/// The message `setting.assistant.look-ups.name`.
+pub const SETTING_ASSISTANT_LOOK_UPS_NAME: MessageKey =
+    MessageKey::new("setting.assistant.look-ups.name");
 
 /// The message `setting.auth.access-key-default-days.help`.
 pub const SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_HELP: MessageKey =
@@ -6797,6 +6865,10 @@ pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_HELP: MessageKey =
 /// The message `setting.notifications.work-day-changed-in-app.name`.
 pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.work-day-changed-in-app.name");
+
+/// The message `setting.page.assistant-intro`.
+pub const SETTING_PAGE_ASSISTANT_INTRO: MessageKey =
+    MessageKey::new("setting.page.assistant-intro");
 
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
@@ -16711,7 +16783,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.open-name", "Open {issue}"),
     (
         "agents.org-intro",
-        "Every agent of the organization, and how much any agent may do. You can stop any agent.",
+        "Every agent of the organization, and how much any agent may do. You can stop any agent. Agents, AI apps and the assistant can each be switched on or off by themselves.",
     ),
     ("agents.org-list", "Every agent"),
     ("agents.org-more", "Show more agents"),
@@ -16906,6 +16978,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("ai-setup.addresses-list", "Allowed web addresses"),
     ("ai-setup.addresses-none", "No web address is allowed."),
+    (
+        "ai-setup.agents-link",
+        "Set up agents: Organization settings › Connections › Agents",
+    ),
     ("ai-setup.agreement", "Agreement with the provider"),
     ("ai-setup.agreement-confirm", "Confirm the agreement"),
     (
@@ -16942,13 +17018,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "ai-setup.apps-intro",
         "Outside AI apps that people connect to their accounts.",
     ),
+    ("ai-setup.assistant", "The assistant"),
+    (
+        "ai-setup.assistant-intro",
+        "The assistant is the helper in the panel beside the page. Everything below is only about the assistant: agents and AI apps are not switched by it. How much it may look up for one question is set here.",
+    ),
     (
         "ai-setup.guide-link",
         "Read the AI guide for your people: what AI can and cannot do",
     ),
     (
         "ai-setup.intro",
-        "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
+        "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the assistant, which answers questions about your work and proposes changes, and the AI apps that may sign in. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
     ),
     ("ai-setup.key", "Key of the provider"),
     (
@@ -16963,7 +17044,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-setup.never-sent", "Never sent to AI"),
     (
         "ai-setup.never-sent-help",
-        "Kept from the assistant, AI apps and agents, even for people who can read it.",
+        "Kept from agents, AI apps and the assistant, even for people who can read it.",
     ),
     (
         "ai-setup.never-sent-intro",
@@ -16972,7 +17053,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-setup.never-sent-own", "Own fields"),
     (
         "ai-setup.never-sent-project-help",
-        "Kept from the assistant, AI apps and agents, with every project inside this one, even for people who can read it.",
+        "Kept from agents, AI apps and the assistant, with every project inside this one, even for people who can read it.",
     ),
     ("ai-setup.password", "Your password"),
     (
@@ -16983,18 +17064,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-setup.project-follow", "Follow the organization again"),
     (
         "ai-setup.project-help",
-        "Follows the choice of the organization until you switch it here.",
+        "Follows the choice of the organization until you switch it here. Only the assistant: agents and AI apps have their own switches above.",
     ),
     (
         "ai-setup.project-intro",
-        "The assistant and AI apps work in a project only while the organization and the project both have AI on.",
+        "Agents, AI apps and the assistant can each be switched on or off for this project by themselves. Each follows the choice of the organization until you switch it here. What is marked Never sent to AI stays out of all three.",
     ),
     (
         "ai-setup.project-organization-off",
-        "AI is off for the organization, so it is off here too.",
+        "The assistant is off for the organization, so it is off here too.",
     ),
-    ("ai-setup.project-switch", "AI in this project"),
-    ("ai-setup.project-title", "AI"),
+    ("ai-setup.project-switch", "Assistant in this project"),
+    (
+        "ai-setup.project-title",
+        "Agents, AI apps and the assistant",
+    ),
     ("ai-setup.save", "Save the setup"),
     ("ai-setup.saved", "The setup is saved."),
     ("ai-setup.set-up", "Provider and key"),
@@ -17024,7 +17108,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "ai-setup.where-note",
         "Only what a person may read goes to the provider, and never what is marked Never sent to AI.",
     ),
-    ("ai-setup.where-off", "Projects with AI off"),
+    ("ai-setup.where-off", "Projects with the assistant off"),
     ("ai-setup.where-off-more", "{names} and more"),
     ("ai-setup.where-people", "People"),
     ("ai-setup.where-provider", "Provider"),
@@ -19841,6 +19925,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.access-keys", "Access keys"),
     ("nav.ai", "Set up the assistant"),
     ("nav.appearance", "Appearance"),
+    ("nav.assistant-settings", "Assistant"),
     ("nav.check-access", "Check access"),
     ("nav.connected-apps", "Connected apps"),
     ("nav.field-permissions", "Field permissions"),
@@ -21762,7 +21847,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.agents.enabled.help",
-        "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
+        "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
     ),
     ("setting.agents.enabled.name", "Agents may work"),
     (
@@ -21843,9 +21928,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.ai-apps.enabled.help-on",
-        "People can connect AI apps to their accounts, and each app does at most what its person may do.",
+        "People can connect AI apps to their accounts, and each app does at most what its person may do. A project can switch AI apps off for itself. Agents and the assistant have switches of their own.",
     ),
     ("setting.ai-apps.enabled.name", "Let AI apps sign in"),
+    (
+        "setting.ai-apps.project-help",
+        "As the organization (or the project above, when it has its own choice): AI apps may work here while they may work there. Off: no AI app reads or changes anything in this project. On: they may work here although the project above has them off.",
+    ),
+    ("setting.ai-apps.project-switch", "AI apps in this project"),
     (
         "setting.ai.address.help",
         "The web address of the model, like https://models.example.com/v1. A model on your own server may use http://; any other has to use https://.",
@@ -21853,9 +21943,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ai.address.name", "Address of the model"),
     (
         "setting.ai.enabled.help",
-        "Switches AI on for the organization. AI works in a project only when the organization and the project both have it on.",
+        "Switches the assistant on for the organization. It works in a project only when the organization and the project both have it on. Agents and AI apps have switches of their own.",
     ),
-    ("setting.ai.enabled.name", "Use AI"),
+    ("setting.ai.enabled.name", "Use the assistant"),
     (
         "setting.ai.model.help",
         "The name of the model, as the provider writes it.",
@@ -21899,6 +21989,33 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.appearance.spacing.help",
         "How close together things are. Compact fits more on a page.",
+    ),
+    ("setting.assistant.look-ups-12", "12 look-ups"),
+    ("setting.assistant.look-ups-2", "2 look-ups"),
+    ("setting.assistant.look-ups-20", "20 look-ups"),
+    ("setting.assistant.look-ups-4", "4 look-ups"),
+    ("setting.assistant.look-ups-50", "50 look-ups"),
+    ("setting.assistant.look-ups-8", "8 look-ups"),
+    (
+        "setting.assistant.look-ups-as-organization",
+        "As the organization",
+    ),
+    (
+        "setting.assistant.look-ups-most.help",
+        "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, the assistant still stops at a number that protects the provider from a question that never ends.",
+    ),
+    (
+        "setting.assistant.look-ups-most.name",
+        "Most look-ups for one question",
+    ),
+    ("setting.assistant.look-ups-no-limit", "No limit"),
+    (
+        "setting.assistant.look-ups.help",
+        "How many times the assistant may look something up in Bugaboo to answer one of your questions. A lower number makes answers quicker and cheaper. It never goes above the most your administrators set.",
+    ),
+    (
+        "setting.assistant.look-ups.name",
+        "Look-ups for my questions",
     ),
     (
         "setting.auth.access-key-default-days.help",
@@ -22246,6 +22363,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.notifications.work-day-changed-in-app.name",
         "Your work day was changed: in the app",
+    ),
+    (
+        "setting.page.assistant-intro",
+        "How much the assistant looks up in Bugaboo to answer your questions. This page is only about the assistant; agents and AI apps are not changed by it.",
     ),
     (
         "setting.page.region-intro",

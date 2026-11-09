@@ -5,7 +5,13 @@ import type { Place } from "./place.ts";
 
 /** The screens of the person themselves: the start page and *My settings*. */
 export const ownPlaces: readonly Place[] = [
-  { path: paths.home, name: "nav.home", icon: iconName.home, parent: null, listed: true },
+  {
+    path: paths.home,
+    name: "nav.home",
+    icon: iconName.home,
+    parent: null,
+    listed: true,
+  },
   {
     path: paths.notifications,
     name: "nav.notifications",
@@ -139,6 +145,14 @@ export const ownPlaces: readonly Place[] = [
     icon: iconName["connected-apps"],
     parent: paths.mySettings,
     group: "nav.group.sign-in",
+    listed: true,
+  },
+  {
+    path: paths.assistantSettings,
+    name: "nav.assistant-settings",
+    icon: iconName.assistant,
+    parent: paths.mySettings,
+    group: "nav.group.hearing",
     listed: true,
   },
 ];

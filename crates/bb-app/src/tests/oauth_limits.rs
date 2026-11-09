@@ -15,7 +15,7 @@ use crate::auth::{
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
-async fn apps_on(world: &World, on: bool) -> Result<(), AppError> {
+pub(super) async fn apps_on(world: &World, on: bool) -> Result<(), AppError> {
     change_setting(
         &world.ctx(),
         ChangeSetting {
@@ -267,7 +267,7 @@ async fn ai_22_apps_switched_off_is_no_failed_try_at_registration_or_the_token_e
 }
 
 #[tokio::test]
-async fn ai_22_an_access_key_and_an_agent_key_are_turned_away_at_mcp_while_apps_or_ai_are_off()
+async fn ai_22_an_access_key_is_turned_away_at_mcp_while_apps_are_off_and_an_agent_key_while_agents_are()
 -> Outcome {
     use super::agents::{an_agent, key_of};
     let world = World::new().await?;
@@ -307,16 +307,18 @@ async fn ai_22_an_access_key_and_an_agent_key_are_turned_away_at_mcp_while_apps_
             .map_err(|e| format!("first {e:?}"))?;
     }
     let refused = Some(AppError::Refused(ErrorCode::NotSignedIn));
-    // AI apps switched off.
+    // AI apps switched off: an access key is turned away, an agent key still comes in (agents have
+    // a switch of their own).
     apps_on(&world, false).await?;
-    for secret in [&key, &agent_key] {
-        assert_eq!(
-            mcp_identity(&world.ctx(), identity(secret)).await.err(),
-            refused
-        );
-    }
+    assert_eq!(
+        mcp_identity(&world.ctx(), identity(&key)).await.err(),
+        refused
+    );
+    mcp_identity(&world.ctx(), identity(&agent_key))
+        .await
+        .map_err(|e| format!("agent key with apps off {e:?}"))?;
     apps_on(&world, true).await?;
-    // AI itself switched off for the organization.
+    // The assistant switched off for the organization changes neither.
     crate::ai::change_ai_setup(
         &world.ctx(),
         crate::ai::ChangeAiSetup {
@@ -326,10 +328,28 @@ async fn ai_22_an_access_key_and_an_agent_key_are_turned_away_at_mcp_while_apps_
     )
     .await?;
     for secret in [&key, &agent_key] {
-        assert_eq!(
-            mcp_identity(&world.ctx(), identity(secret)).await.err(),
-            refused
-        );
+        mcp_identity(&world.ctx(), identity(secret))
+            .await
+            .map_err(|e| format!("with the assistant off {e:?}"))?;
     }
+    // Agents switched off: the agent key is turned away, the access key is not.
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: token(&world),
+            scope: SettingsScope::Organization,
+            key: "agents.enabled".to_owned(),
+            value: bb_core::settings::SettingValue::Bool(false),
+        },
+    )
+    .await?;
+    mcp_identity(&world.ctx(), identity(&key))
+        .await
+        .map_err(|e| format!("access key with agents off {e:?}"))?;
+    assert_eq!(
+        mcp_identity(&world.ctx(), identity(&agent_key)).await.err(),
+        refused
+    );
     Ok(())
 }

@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use bb_core::ai::{
-    PROPOSAL_INPUT_BYTES_MAX, PROPOSALS_MAX, TOOL_CALLS_MAX, ToolCaller, ToolEffect, ToolScope,
+    LookUps, PROPOSAL_INPUT_BYTES_MAX, PROPOSALS_MAX, ToolCaller, ToolEffect, ToolScope,
 };
 use bb_core::message::Message;
 use bb_policy::{Authorized, Place};
@@ -30,6 +30,7 @@ pub(super) struct Tools<'a, S: AuthStore> {
     question: &'a str,
     people: PeopleMode,
     effects: HashMap<String, ToolEffect>,
+    look_ups: LookUps,
     used: usize,
     pub(super) proposals: Vec<Proposal>,
 }
@@ -42,6 +43,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
         question: &'a str,
         people: PeopleMode,
         effects: HashMap<String, ToolEffect>,
+        look_ups: LookUps,
     ) -> Self {
         Self {
             ctx,
@@ -50,6 +52,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
             question,
             people,
             effects,
+            look_ups,
             used: 0,
             proposals: Vec::new(),
         }
@@ -57,7 +60,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
 
     /// What the model reads of this call.
     pub(super) async fn call(&mut self, call: &AiToolCall) -> String {
-        if self.used >= TOOL_CALLS_MAX {
+        if self.used >= self.look_ups.calls() {
             return LIMIT_REACHED.to_owned();
         }
         self.used += 1;

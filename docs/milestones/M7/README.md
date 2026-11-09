@@ -33,6 +33,7 @@ M7 runs in **five waves**, then the exit visual pass and the exit waves. A wave 
 | 3 | [WP-12](WP-12-my-agents-and-agent-pages.md) | *My agents* on computer and phone, an agent's page, standing rules, *Organization settings › Connections › Agents* | Builder | `bugaboo.win5` / `WIN5` |
 | 4 | [WP-13](WP-13-sample-load-speed-and-exit-demo.md) | Sample organization part 6, agents under load, speed, the AI literacy guide, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 | 5 | [WP-14](WP-14-rules-that-hand-over.md) | Standing rules that hand over, and rules with no end | Builder | `bugaboo.win5` / `WIN5` |
+| 5 | [WP-15](WP-15-ai-switches-and-limits.md) | Each kind of AI its own switch, the look-ups of the assistant as a setting, the order of the three, pictures in Paper | Builder | `bugaboo.win6` / `WIN6` |
 
 Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). WP-01 writes the decision records, the words and the port of runs before any builder of wave 2 starts; wave 1's code packages need only what is decided already (ADR-0013, ADR-0029 and the placement below) and start while the lead writes the rest.
 

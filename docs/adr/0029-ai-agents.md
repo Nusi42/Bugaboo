@@ -125,6 +125,10 @@ The maintainer decided on 2026-11-09 that Bugaboo must be able to run agents wit
 - **Rules that never run out.** A rule keeps 30 days by default and 90 days at most (the bound of the setting `agents.rule-days`). The organization setting `agents.rules-never-run-out` (*Allow rules that never run out*, administrators only, off at the start; ADR-0018) lets a person choose *Never runs out*. Such a rule can be stopped at any time and the limits of its agent still apply. Switching the setting off gives each rule that never runs out an end at the most days (90) from then, with the usual warning (the job `agents.rules-get-an-end`, queued in the change of the setting). Enforced by: `m7_wp14_a_rule_that_never_runs_out_needs_the_setting`, ARCH-SETTINGS and SEC-MATRIX.
 - **Nothing waits for a person by design.** With *Accept by itself when its checks pass* (decision 6) the loop of a rule that hands over runs with nobody watching; *Accepted by itself* in *My agents* lists those attempts until a person has looked at them. Questions and plans that need approval still wait, as the agent or the hand-over asks. Enforced by: `m7_wp14_an_accept_by_itself_of_a_hand_over_of_a_rule_is_listed_in_my_agents`.
 
+## Amendment (M7, WP-15): agents have a switch of their own
+
+`agents.enabled` is the switch of agents for the organization and for each project, as before, and it is now the only switch that decides about agents: the switch of the assistant (`ai.enabled`) no longer shuts agents out of a project, and the switch of AI apps does not either. *Never sent to AI* still keeps agents out. The project chain is read by the one rule of ADR-0013 (amendment WP-15). The project settings and the guide name agents first among the three kinds.
+
 ## Consequences
 
 - One new kind of actor in `bb-policy` (*agent*), evaluated as the intersection of its person's rights, its work and its limits. The access-key narrowing of ADR-0025, decision 8, is reused for agent keys.

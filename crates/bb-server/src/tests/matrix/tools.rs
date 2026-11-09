@@ -337,7 +337,8 @@ async fn scene<'a>(
     mut team: Browser,
 ) -> Result<Scene<'a>, Failure> {
     let issue = key_of(&site.create(&mut ada, "The issue of the matrix").await?)?;
-    // A project where AI will be off, with an issue handed over before it is switched off.
+    // A project where agents will be off (WP-15: each kind of AI has its own switch), with an issue
+    // handed over before it is switched off.
     let off_project = ada
         .send(
             "POST",
@@ -362,8 +363,8 @@ async fn scene<'a>(
     let switched = ada
         .send(
             "PUT",
-            &format!("/api/v1/projects/{off_project}/ai"),
-            Some(json!({"enabled": false})),
+            &format!("/api/v1/projects/{off_project}/settings/agents.enabled"),
+            Some(json!({"value": false})),
         )
         .await?;
     ok(&switched)?;

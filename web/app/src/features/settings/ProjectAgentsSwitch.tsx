@@ -8,6 +8,8 @@ import {
 } from "./project-agents-choice.ts";
 
 export interface ProjectAgentsSwitchProps {
+  /** What the switch is called: *Agents in this project*, or *AI apps in this project*. */
+  readonly label: string;
   readonly value: ProjectAgentsValue;
   /** The project switches its agents off. */
   readonly onOff: () => void;
@@ -17,8 +19,14 @@ export interface ProjectAgentsSwitchProps {
   readonly onFollow: () => void;
 }
 
-/** *Agents in this project* (UX §5.1): *As the organization* (or the project above, with its value), *Off*, and *On* where the project chose it. */
-export function ProjectAgentsSwitch({ value, onOff, onOn, onFollow }: ProjectAgentsSwitchProps) {
+/** *Agents in this project* or *AI apps in this project* (UX §5.1): *As the organization* (or the project above, with its value), *Off*, and *On* where the project chose it. */
+export function ProjectAgentsSwitch({
+  label,
+  value,
+  onOff,
+  onOn,
+  onFollow,
+}: ProjectAgentsSwitchProps) {
   const { selected, follows, hasOn } = projectAgentsChoice(value);
   const pick = {
     [agentsChoice.follow]: onFollow,
@@ -27,7 +35,7 @@ export function ProjectAgentsSwitch({ value, onOff, onOn, onFollow }: ProjectAge
   };
   return (
     <SelectField
-      label={t("setting.agents.project-switch")}
+      label={label}
       value={selected}
       onChange={(picked) => {
         pick[picked]();

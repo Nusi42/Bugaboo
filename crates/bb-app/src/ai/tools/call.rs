@@ -346,7 +346,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(AppError::Refused(ErrorCode::Forbidden));
         }
         // What is kept from AI is read first, for a preview as for a read.
-        let withheld = self.withheld().await?;
+        let withheld = self.withheld(request.caller).await?;
         let run = Run {
             actor,
             token: request.session_token.as_str(),

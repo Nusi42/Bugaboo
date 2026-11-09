@@ -14,6 +14,8 @@ export const settingKeys = {
   notificationsRuleRunsOutSoonByMail: "notifications.rule-runs-out-soon-by-mail",
   notificationsAgentStoppedInApp: "notifications.agent-stopped-in-app",
   notificationsAgentStoppedByMail: "notifications.agent-stopped-by-mail",
+  assistantLookUpsMost: "assistant.look-ups-most",
+  assistantLookUps: "assistant.look-ups",
   appearanceMode: "appearance.mode",
   appearanceLightTheme: "appearance.light-theme",
   appearanceDarkTheme: "appearance.dark-theme",
@@ -86,6 +88,8 @@ export type SettingKey = (typeof settingKeys)[keyof typeof settingKeys];
 
 /** The choices of every setting that holds one of a list, in the order of the registry. */
 export const settingChoices = {
+  assistantLookUpsMost: ["2", "4", "8", "12", "20", "50", "no-limit"],
+  assistantLookUps: ["as-organization", "2", "4", "8", "12", "20", "50"],
   appearanceMode: ["device", "light", "dark"],
   appearanceLightTheme: ["daylight", "paper"],
   appearanceDarkTheme: ["dusk", "midnight"],
@@ -114,6 +118,8 @@ export const settingDefaults = {
   notificationsRuleRunsOutSoonByMail: false,
   notificationsAgentStoppedInApp: true,
   notificationsAgentStoppedByMail: false,
+  assistantLookUpsMost: "8",
+  assistantLookUps: "as-organization",
   appearanceMode: "device",
   appearanceLightTheme: "daylight",
   appearanceDarkTheme: "dusk",

@@ -580,6 +580,11 @@ fn both_actors() -> Vec<Actor> {
 
 /// Runs every route as every actor; the record of what ran.
 pub(super) async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
+    // AI apps are off in the matrix: the sign-in of an app answers an actor who is let in that apps
+    // are off, which is no refusal of a permission (the switch of the assistant no longer decides
+    // this, WP-15).
+    rig.set_organization_switch("ai-apps.enabled", false)
+        .await?;
     let fixture = Fixture::start(rig).await?;
     let routes = operations();
     // Besides the actors of the list, each route is run by the person who holds exactly the

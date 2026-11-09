@@ -106,6 +106,8 @@ export const messages = {
   "handle.rule-weekly": "You can change it once in {days, plural, one {# day} other {# days}}.",
   "handle.rule-kept":
     "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
+  "setting.page.assistant-intro":
+    "How much the assistant looks up in Bugaboo to answer your questions. This page is only about the assistant; agents and AI apps are not changed by it.",
 } as const;
 
 register(messages);

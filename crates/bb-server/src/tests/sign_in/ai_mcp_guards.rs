@@ -455,7 +455,7 @@ async fn ai_23_two_first_calls_at_once_start_one_run() -> TestResult {
 }
 
 #[tokio::test]
-async fn ai_02_a_project_with_ai_off_and_the_organization_with_ai_off_are_kept_from_an_app()
+async fn m7_wp15_a_project_with_apps_off_and_the_organization_with_apps_off_are_kept_from_an_app()
 -> TestResult {
     each_database("ai_02_withheld_http", async |db| {
         let (rig, app) = Mcp::start(db).await?;
@@ -475,6 +475,19 @@ async fn ai_02_a_project_with_ai_off_and_the_organization_with_ai_off_are_kept_f
                 "PUT",
                 &format!("/api/v1/projects/{beta}/ai"),
                 Some(json!({"enabled": false})),
+            )
+            .await?;
+        assert!(off.status.is_success(), "{}", off.body);
+        // The assistant is off in the project: an AI app has a switch of its own and still reads it.
+        let still = mcp
+            .call_tool(&signed, "get_issue", json!({"issue": key}))
+            .await?;
+        assert_eq!(still.json["result"]["isError"], json!(false), "{}", still.json);
+        let off = ada
+            .send(
+                "PUT",
+                &format!("/api/v1/projects/{beta}/settings/ai-apps.enabled"),
+                Some(json!({"value": false})),
             )
             .await?;
         assert!(off.status.is_success(), "{}", off.body);
@@ -518,8 +531,14 @@ async fn ai_02_a_project_with_ai_off_and_the_organization_with_ai_off_are_kept_f
             )
             .await?;
         assert_eq!(fine.json["result"]["isError"], json!(false), "{}", fine.json);
-        // With AI off for the organization the app is turned away at the door.
+        // With the assistant off for the organization the app still comes in; with AI apps off it is
+        // turned away at the door.
         rig.set_organization_switch("ai.enabled", false).await?;
+        let open = mcp
+            .post(Some(&signed.access), json!({"jsonrpc":"2.0","id":5,"method":"ping"}))
+            .await?;
+        assert_eq!(open.status, StatusCode::OK);
+        rig.set_organization_switch("ai-apps.enabled", false).await?;
         let door = mcp
             .post(Some(&signed.access), json!({"jsonrpc":"2.0","id":5,"method":"ping"}))
             .await?;

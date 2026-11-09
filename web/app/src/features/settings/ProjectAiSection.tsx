@@ -4,9 +4,11 @@ import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui"
 import { messageOf } from "../../shared/errors.ts";
 import { QueryGate } from "../shell/index.ts";
 import { SwitchBox } from "./ControlWithHint.tsx";
+import { projectShows } from "./project-kinds.ts";
+import { ProjectSettingsSection } from "./ProjectSettingsSection.tsx";
 import { useChangeProjectAi, useMarkProject, useNeverSentMarks, useProjectAi } from "./ai.ts";
 
-/** The switch *AI in this project*; the project follows the one of the organization until it has its own. */
+/** The switch *Assistant in this project*; the project follows the one of the organization until it has its own. */
 function ProjectSwitch({ project }: { readonly project: string }) {
   const found = useProjectAi(project);
   const change = useChangeProjectAi();
@@ -67,12 +69,21 @@ function ProjectMark({ project }: { readonly project: string }) {
 }
 
 /**
- * The AI part of a project's settings (AI-02, AI-03): the switch *AI in this project* (it follows
- * the organization's) and *Never sent to AI*, which holds even for people who can read the project.
+ * The AI part of a project's settings (AI-02, AI-03, WP-15): one switch for each of the three kinds
+ * of AI, in the order agents, AI apps, the assistant last (each follows the organization's until the
+ * project has its own, and none switches another off), and *Never sent to AI*, which holds for all
+ * three even for people who can read the project.
  */
-export function ProjectAiSection({ project }: { readonly project: string }) {
+export function ProjectAiSection({
+  project,
+  projectId,
+}: {
+  readonly project: string;
+  readonly projectId: string;
+}) {
   return (
     <div {...partOf(part.stack)}>
+      <ProjectSettingsSection projectId={projectId} show={projectShows.kindsOfAi} />
       <ProjectSwitch project={project} />
       <ProjectMark project={project} />
     </div>

@@ -13,6 +13,7 @@ pub mod context;
 #[cfg(any(test, feature = "testing"))]
 mod fake;
 mod guide;
+mod kinds;
 mod never_sent;
 mod setup;
 mod setup_view;

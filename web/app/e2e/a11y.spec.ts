@@ -160,6 +160,7 @@ const visits: readonly Visit[] = [
   { address: paths.mySettings, open: signedIn(paths.mySettings), guest: false },
   { address: paths.appearance, open: signedIn(paths.appearance), guest: false },
   { address: paths.region, open: signedIn(paths.region), guest: false },
+  { address: paths.assistantSettings, open: signedIn(paths.assistantSettings), guest: false },
   { address: paths.startPage, open: signedIn(paths.startPage), guest: false },
   { address: paths.notifications, open: signedIn(paths.notifications), guest: false },
   { address: paths.notificationSettings, open: signedIn(paths.notificationSettings), guest: false },

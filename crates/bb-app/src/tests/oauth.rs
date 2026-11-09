@@ -211,18 +211,21 @@ async fn ai_22_an_app_on_this_computer_registers_and_the_person_allows_it() -> O
 }
 
 #[tokio::test]
-async fn ai_22_apps_are_refused_while_ai_is_off_or_apps_are_switched_off() -> Outcome {
+async fn ai_22_apps_are_refused_while_apps_are_switched_off_and_not_while_the_assistant_is()
+-> Outcome {
     let world = World::new().await?;
-    let off = register_app(
-        &world.ctx(),
-        RegisterApp {
-            name: "Claude Code".to_owned(),
-            return_addresses: vec![LOOPBACK.to_owned()],
-        },
-    )
-    .await?;
+    let register = || RegisterApp {
+        name: "Claude Code".to_owned(),
+        return_addresses: vec![LOOPBACK.to_owned()],
+    };
+    // The assistant is off at the start; AI apps have a switch of their own (WP-15).
+    assert!(matches!(
+        register_app(&world.ctx(), register()).await?,
+        RegisterOutcome::Registered(_)
+    ));
+    super::oauth_limits::apps_on(&world, false).await?;
     assert_eq!(
-        off,
+        register_app(&world.ctx(), register()).await?,
         RegisterOutcome::Refused(OAuthProblem::TemporarilyUnavailable)
     );
     Ok(())

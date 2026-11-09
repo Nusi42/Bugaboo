@@ -7,8 +7,7 @@ use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
 use bb_core::ai::{
-    ChatFrom, Destination, LookingAtKind, PROPOSAL_LIFETIME_SECONDS, QUESTION_CHARS_MAX,
-    ROUNDS_MAX, TOOL_CALLS_MAX,
+    ChatFrom, Destination, LookUps, LookingAtKind, PROPOSAL_LIFETIME_SECONDS, QUESTION_CHARS_MAX,
 };
 use bb_core::event::Channel;
 use bb_core::fields::Field;
@@ -225,7 +224,7 @@ async fn ai_10_the_turns_so_far_come_from_the_browser_and_nothing_is_stored() ->
 async fn ai_10_one_question_runs_at_most_a_named_number_of_tools() -> Outcome {
     let (world, _) = with_an_issue().await?;
     // The model asks for two tools in every round and never answers.
-    for _ in 0..ROUNDS_MAX + 2 {
+    for _ in 0..LookUps::default().rounds() + 2 {
         world.ai.will_answer(AiAnswer {
             tool_calls: (0..2)
                 .map(|n| AiToolCall {
@@ -241,11 +240,20 @@ async fn ai_10_one_question_runs_at_most_a_named_number_of_tools() -> Outcome {
         .await
         .unwrap_err();
     assert_eq!(error, AppError::Refused(ErrorCode::AiUnavailable));
-    assert_eq!(world.ai.calls().len(), ROUNDS_MAX);
+    assert_eq!(world.ai.calls().len(), LookUps::default().rounds());
     // The last round is given no tools to ask for.
-    assert!(world.ai.calls()[ROUNDS_MAX - 1].request.tools.is_empty());
+    assert!(
+        world.ai.calls()[LookUps::default().rounds() - 1]
+            .request
+            .tools
+            .is_empty()
+    );
     let rows = world.store.lock().tool_calls.len();
-    assert_eq!(rows, TOOL_CALLS_MAX, "a call over the limit runs nothing");
+    assert_eq!(
+        rows,
+        LookUps::default().calls(),
+        "a call over the limit runs nothing"
+    );
     Ok(())
 }
 

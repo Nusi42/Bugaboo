@@ -21,6 +21,7 @@ use std::collections::BTreeSet;
 use bb_auth::{OAuthKind, OAuthSecret, is_pkce_challenge};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
+use bb_core::ai::ToolCaller;
 use bb_core::event::RecordKind;
 use bb_core::id::{GrantId, OAuthClientId, ProjectId};
 use bb_core::oauth::{
@@ -28,7 +29,6 @@ use bb_core::oauth::{
     OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD, ReturnAddress, ReturnKind,
     code_life, is_registered, with_query,
 };
-use bb_core::settings::AI_APPS_ENABLED;
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::days;
 use bb_policy::{Authorized, Place};
@@ -61,13 +61,10 @@ fn asked_scope(text: &str) -> Option<KeyChoice> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether AI apps may register and sign in now: AI is on for the organization and an
-    /// administrator has not switched apps off.
+    /// Whether AI apps may register and sign in now: an administrator has not switched apps off.
+    /// The assistant has its own switch and does not decide this (WP-15).
     pub(crate) async fn apps_may_sign_in(&self) -> Result<bool, AppError> {
-        if !self.ai_state_at(None).await?.organization_on {
-            return Ok(false);
-        }
-        Ok(self.setting_layers_of(None).await?.yes(&AI_APPS_ENABLED))
+        self.kind_on_in_the_organization(ToolCaller::AiApp).await
     }
 
     /// The return addresses administrators allowed.

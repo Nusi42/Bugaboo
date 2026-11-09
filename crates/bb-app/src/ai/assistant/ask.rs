@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::ai::{
     ANSWER_TOKENS_MAX, ChatFrom, LOOKING_AT_CHARS_MAX, LOOKING_AT_MAX, LookingAtKind,
-    QUESTION_CHARS_MAX, ROUNDS_MAX, TURN_CHARS_MAX, TURNS_MAX, ToolEffect, ToolScope,
+    QUESTION_CHARS_MAX, TURN_CHARS_MAX, TURNS_MAX, ToolCaller, ToolEffect, ToolScope,
 };
 use bb_core::id::ProjectId;
 use bb_policy::{Authorized, Place};
@@ -197,7 +197,7 @@ pub async fn ask_assistant<S: AuthStore>(
     if !state.counts() {
         return Err(ErrorCode::AiOff.into());
     }
-    let withheld = ctx.withheld().await?;
+    let withheld = ctx.withheld(ToolCaller::Assistant).await?;
     let projects = ctx
         .projects_looked_at(&actor, &input.looking_at, &withheld)
         .await?;
@@ -225,6 +225,8 @@ pub async fn ask_assistant<S: AuthStore>(
     )
     .await?;
     let (specs, effects) = tools_of(&listed)?;
+    let look_ups = ctx.look_ups_of(actor.person.id).await?;
+    let rounds = look_ups.rounds();
     let mut tools = Tools::new(
         ctx,
         &actor,
@@ -232,11 +234,12 @@ pub async fn ask_assistant<S: AuthStore>(
         &input.text,
         people,
         effects,
+        look_ups,
     );
     let mut turns = conversation(&input);
-    for round in 1..=ROUNDS_MAX {
+    for round in 1..=rounds {
         // The last round is given no tools, so the model has to answer with what it has.
-        let last = round == ROUNDS_MAX;
+        let last = round == rounds;
         let answer = ctx
             .call_provider(
                 &state,

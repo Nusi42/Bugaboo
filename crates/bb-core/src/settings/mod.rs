@@ -24,6 +24,8 @@ pub mod working_hours;
 pub use ai::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, is_ai_setting};
 pub mod ai_apps;
 pub use ai_apps::AI_APPS_ENABLED;
+pub mod assistant;
+pub use assistant::{ASSISTANT_LOOK_UPS, ASSISTANT_LOOK_UPS_MOST};
 pub mod agent_notices;
 pub mod agents;
 pub use agent_notices::{
@@ -647,6 +649,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
         .chain(working_hours::ALL)
         .chain(ai::ALL)
         .chain(ai_apps::ALL)
+        .chain(assistant::ALL)
         .chain(agent_notices::ALL)
         .chain(agents::ALL)
         .copied()

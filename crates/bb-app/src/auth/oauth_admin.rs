@@ -206,12 +206,17 @@ pub async fn mcp_identity<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: McpIdentityQuery,
 ) -> Result<McpIdentity, AppError> {
-    // AI apps off (or AI off for the organization) turns away every way in to MCP, whatever the
-    // credential: an app, an access key or an agent key. It is no guess of a network.
-    if !ctx.apps_may_sign_in().await? {
+    // Each kind follows its own switch (WP-15): AI apps off turns away an app and an access key, agents
+    // off turns away an agent key (`ctx.actor` does it), and the assistant has no way in here. When
+    // both are off nothing is read at all, so it is no guess of a network.
+    let apps_on = ctx.apps_may_sign_in().await?;
+    if !apps_on && !ctx.agents_on_in_the_organization().await? {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
     }
     let actor = ctx.actor(&input.token).await?;
+    if !apps_on && actor.agent().is_none() {
+        return Err(AppError::Refused(ErrorCode::NotSignedIn));
+    }
     // Only a credential for programs opens MCP: the secret of a session of the browser does not.
     if actor.key.is_none() {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));

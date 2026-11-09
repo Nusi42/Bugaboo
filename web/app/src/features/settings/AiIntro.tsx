@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link } from "@bugaboo/ui";
+import { Card, Link, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -9,7 +9,10 @@ export function AiIntro() {
   usePageTitle(t("ai-setup.title"));
   return (
     <Card heading={t("ai-setup.title")} level={1} intro={t("ai-setup.intro")}>
-      <Link href={paths.aiGuide}>{t("ai-setup.guide-link")}</Link>
+      <div {...partOf(part.stack)}>
+        <Link href={paths.organizationAgents}>{t("ai-setup.agents-link")}</Link>
+        <Link href={paths.aiGuide}>{t("ai-setup.guide-link")}</Link>
+      </div>
     </Card>
   );
 }

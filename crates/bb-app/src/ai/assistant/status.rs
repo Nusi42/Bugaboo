@@ -3,7 +3,7 @@
 //! whether names of people go with them, so the panel can always tell (UX §4.12). It reads the
 //! settings as every other way in does ([`Ctx::ai_state_at`]) and sends nothing.
 
-use bb_core::ai::{Destination, LookingAtKind};
+use bb_core::ai::{Destination, LookingAtKind, ToolCaller};
 use bb_policy::{Authorized, Masked, Place};
 
 use super::{LookingAt, session_only};
@@ -59,7 +59,7 @@ pub async fn assistant_status<S: AuthStore>(
         return Ok(held.authorize(AssistantStatus::gone()));
     }
     if let Some(project) = input.project {
-        let withheld = ctx.withheld().await?;
+        let withheld = ctx.withheld(ToolCaller::Assistant).await?;
         let looked_at = [LookingAt {
             kind: LookingAtKind::Project,
             value: project,

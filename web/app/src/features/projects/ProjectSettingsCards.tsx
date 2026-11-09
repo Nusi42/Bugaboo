@@ -17,7 +17,7 @@ export function ProjectSettingsCards({ project }: { readonly project: OneProject
         <ProjectSettingsSection projectId={project.project.id} />
       </Card>
       <Card heading={t("ai-setup.project-title")} intro={t("ai-setup.project-intro")}>
-        <ProjectAiSection project={project.project.short_name} />
+        <ProjectAiSection project={project.project.short_name} projectId={project.project.id} />
       </Card>
       <TimeDefaultsOfProject project={project} />
     </>

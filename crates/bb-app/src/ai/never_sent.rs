@@ -12,17 +12,15 @@ use std::collections::BTreeSet;
 use std::future::Future;
 
 use bb_core::ErrorCode;
-use bb_core::ai::{NeverSentMark, NeverSentSubject};
+use bb_core::ai::{NeverSentMark, NeverSentSubject, ToolCaller};
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::ProjectId;
 use bb_core::project::Project;
-use bb_core::settings::{AI_ENABLED, Layers, SettingValue};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Permission, Place, Tree};
 use serde::Serialize;
 
-use crate::ai::call::AiState;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
 };
@@ -179,13 +177,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(None)
     }
 
-    /// What is kept from AI in this organization: the marks, and the projects where AI does not
-    /// count. It does not depend on who asks: the mark applies even when the person can read the
-    /// field.
+    /// What is kept from AI in this organization, for one kind of AI: the marks, and the projects
+    /// where that kind is switched off. It does not depend on who asks: the mark applies even when
+    /// the person can read the field. Each kind follows only its own switch (WP-15): a project with
+    /// the assistant off is kept from the assistant and not from AI apps or agents, while a mark
+    /// keeps all three out.
     ///
     /// # Errors
     /// An internal error when the store fails.
-    pub(crate) async fn withheld(&self) -> Result<Withheld, AppError> {
+    pub(crate) async fn withheld(&self, kind: ToolCaller) -> Result<Withheld, AppError> {
         let failed = |error| internal::<S>(&error);
         let marks = self.store().never_sent_marks().await.map_err(failed)?;
         let own = self
@@ -198,56 +198,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|definition| FieldKey::Own(definition.field.id));
         let tree = self.store().project_tree().await.map_err(failed)?;
         let mut withheld = Withheld::of(&marks, own, &tree);
-        // A project whose own switch keeps AI out, while the organization has it on, is kept from
-        // AI in the same way as a project with the mark, so every tool, the context builder, MCP
-        // and agents honour the switch from this one read (M7-F50). While the organization has AI
-        // off, the ways in refuse before they read anything.
-        if self.ai_state_at(None).await?.organization_on {
+        // A project whose own switch keeps the kind out, while the organization has it on, is kept
+        // from AI in the same way as a project with the mark, so every tool, the context builder,
+        // MCP and agents honour the switch from this one read (M7-F50). While the organization has
+        // the kind off, the ways in refuse before they read anything.
+        if self.kind_on_in_the_organization(kind).await? {
             withheld
                 .projects
-                .extend(self.projects_with_ai_off(&tree).await?);
+                .extend(self.projects_with_kind_off(kind, &Tree::of(&tree)).await?);
         }
         Ok(withheld)
-    }
-
-    /// The projects where AI does not count, decided from one read of the organization's values
-    /// and one of the values of the projects, the way `ai_state_at` decides for one project, not
-    /// one read for each of the projects.
-    async fn projects_with_ai_off(&self, tree: &[Project]) -> Result<Vec<ProjectId>, AppError> {
-        let organization = self.setting_layers_of(None).await?.organization;
-        let definition = AI_ENABLED.definition();
-        let own: std::collections::BTreeMap<ProjectId, SettingValue> = self
-            .store()
-            .project_values(definition)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .collect();
-        let shape = Tree::of(tree);
-        Ok(tree
-            .iter()
-            .map(|project| project.id)
-            .filter(|project| {
-                // The chain runs from the top down; layers list the nearest project first.
-                let projects = shape
-                    .chain(*project)
-                    .unwrap_or_else(|| vec![*project])
-                    .into_iter()
-                    .rev()
-                    .filter_map(|each| {
-                        own.get(&each).map(|value| {
-                            (each, [(definition.key().to_owned(), value.clone())].into())
-                        })
-                    })
-                    .collect();
-                !AiState::of(&Layers {
-                    organization: organization.clone(),
-                    projects,
-                    ..Layers::default()
-                })
-                .counts()
-            })
-            .collect())
     }
 }
 

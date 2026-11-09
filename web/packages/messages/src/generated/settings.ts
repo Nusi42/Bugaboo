@@ -97,9 +97,13 @@ export const messages = {
   "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
   "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "ai-setup.title": "Set up the assistant",
+  "ai-setup.agents-link": "Set up agents: Organization settings › Connections › Agents",
+  "ai-setup.assistant": "The assistant",
+  "ai-setup.assistant-intro":
+    "The assistant is the helper in the panel beside the page. Everything below is only about the assistant: agents and AI apps are not switched by it. How much it may look up for one question is set here.",
   "ai-setup.guide-link": "Read the AI guide for your people: what AI can and cannot do",
   "ai-setup.intro":
-    "The assistant answers questions about your work and proposes changes. AI is off until you switch it on here. Nothing is saved until a person applies it.",
+    "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the assistant, which answers questions about your work and proposes changes, and the AI apps that may sign in. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
   "ai-setup.set-up": "Provider and key",
   "ai-setup.set-up-intro":
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",
@@ -140,7 +144,7 @@ export const messages = {
   "ai-setup.where-people": "People",
   "ai-setup.where-names": "By name",
   "ai-setup.where-roles": "As their role",
-  "ai-setup.where-off": "Projects with AI off",
+  "ai-setup.where-off": "Projects with the assistant off",
   "ai-setup.where-none-off": "None",
   "ai-setup.where-off-more": "{names} and more",
   "ai-setup.where-note":
@@ -163,15 +167,17 @@ export const messages = {
   "ai-setup.address-remove-title": "Take this address away?",
   "ai-setup.address-remove-text":
     "Apps that signed in from this address are refused at their next sign-in. Nothing they did is undone.",
-  "ai-setup.project-switch": "AI in this project",
-  "ai-setup.project-help": "Follows the choice of the organization until you switch it here.",
-  "ai-setup.project-organization-off": "AI is off for the organization, so it is off here too.",
+  "ai-setup.project-switch": "Assistant in this project",
+  "ai-setup.project-help":
+    "Follows the choice of the organization until you switch it here. Only the assistant: agents and AI apps have their own switches above.",
+  "ai-setup.project-organization-off":
+    "The assistant is off for the organization, so it is off here too.",
   "ai-setup.project-follow": "Follow the organization again",
   "ai-setup.never-sent-project-help":
-    "Kept from the assistant, AI apps and agents, with every project inside this one, even for people who can read it.",
+    "Kept from agents, AI apps and the assistant, with every project inside this one, even for people who can read it.",
   "setting.agents.enabled.name": "Agents may work",
   "setting.agents.enabled.help":
-    "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization.",
+    "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
   "setting.agents.project-switch": "Agents in this project",
   "setting.agents.project-follows": "As the organization",
   "setting.agents.project-follows-on": "As the organization (on)",
@@ -411,9 +417,9 @@ export const messages = {
   "ai.country.anthropic": "United States",
   "ai.country.local-model": "Nowhere: the data stays on your own server",
   "ai.country.other": "Not known to Bugaboo: ask the provider where it works",
-  "setting.ai.enabled.name": "Use AI",
+  "setting.ai.enabled.name": "Use the assistant",
   "setting.ai.enabled.help":
-    "Switches AI on for the organization. AI works in a project only when the organization and the project both have it on.",
+    "Switches the assistant on for the organization. It works in a project only when the organization and the project both have it on. Agents and AI apps have switches of their own.",
   "setting.ai.provider.name": "Provider",
   "setting.ai.provider.help":
     "Which kind of AI provider answers. Anthropic has a fixed address; any other provider or a model on your own server is reached at the web address you enter.",
@@ -424,14 +430,31 @@ export const messages = {
     "The web address of the model, like https://models.example.com/v1. A model on your own server may use http://; any other has to use https://.",
   "setting.ai-apps.enabled.name": "Let AI apps sign in",
   "setting.ai-apps.enabled.help-on":
-    "People can connect AI apps to their accounts, and each app does at most what its person may do.",
+    "People can connect AI apps to their accounts, and each app does at most what its person may do. A project can switch AI apps off for itself. Agents and the assistant have switches of their own.",
   "setting.ai-apps.enabled.help-off":
     "No AI app can connect, and the apps people allowed before are refused until you switch this on again.",
+  "setting.ai-apps.project-switch": "AI apps in this project",
+  "setting.ai-apps.project-help":
+    "As the organization (or the project above, when it has its own choice): AI apps may work here while they may work there. Off: no AI app reads or changes anything in this project. On: they may work here although the project above has them off.",
+  "setting.assistant.look-ups-most.name": "Most look-ups for one question",
+  "setting.assistant.look-ups-most.help":
+    "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, the assistant still stops at a number that protects the provider from a question that never ends.",
+  "setting.assistant.look-ups.name": "Look-ups for my questions",
+  "setting.assistant.look-ups.help":
+    "How many times the assistant may look something up in Bugaboo to answer one of your questions. A lower number makes answers quicker and cheaper. It never goes above the most your administrators set.",
+  "setting.assistant.look-ups-2": "2 look-ups",
+  "setting.assistant.look-ups-4": "4 look-ups",
+  "setting.assistant.look-ups-8": "8 look-ups",
+  "setting.assistant.look-ups-12": "12 look-ups",
+  "setting.assistant.look-ups-20": "20 look-ups",
+  "setting.assistant.look-ups-50": "50 look-ups",
+  "setting.assistant.look-ups-no-limit": "No limit",
+  "setting.assistant.look-ups-as-organization": "As the organization",
   "setting.ai.send-names.name": "Send names of people",
   "setting.ai.send-names.help":
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own server always gets the names each person may see.",
   "agents.org-intro":
-    "Every agent of the organization, and how much any agent may do. You can stop any agent.",
+    "Every agent of the organization, and how much any agent may do. You can stop any agent. Agents, AI apps and the assistant can each be switched on or off by themselves.",
 } as const;
 
 register(messages);
