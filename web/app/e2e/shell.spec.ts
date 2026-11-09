@@ -238,6 +238,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.working-hours"),
     t("nav.mail-server"),
     t("nav.ai"),
+    t("nav.organization-agents"),
     t("nav.organization-security"),
     t("nav.status"),
   ]);
