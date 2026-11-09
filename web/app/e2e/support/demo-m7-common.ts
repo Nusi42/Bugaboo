@@ -35,7 +35,7 @@ export function benOfTheSample(): SamplePerson {
 /**
  * The screen is in the pictures of this demo in the four themes, without the check of the names of
  * controls: the issue page has label chips whose visible words are not in their names, and the
- * assistant panel its *Leave out* buttons (M7-F225).
+ * assistant panel its *Leave out* buttons (M7-F126).
  */
 export function shot(page: Page, step: string): Promise<void> {
   return inFourThemesAsWindow(page, step, DEMO_M7);
