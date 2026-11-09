@@ -33,7 +33,10 @@ fn id_text<T: std::str::FromStr>(text: &str) -> Result<T, Failure> {
 }
 
 /// The agent of the person, with its key and the limit of issues at once.
-async fn agent_with_limit(tess: &mut Browser, limit: i64) -> Result<(String, String), Failure> {
+pub(super) async fn agent_with_limit(
+    tess: &mut Browser,
+    limit: i64,
+) -> Result<(String, String), Failure> {
     let made = tess
         .send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
         .await?;
@@ -66,7 +69,7 @@ async fn agent_with_limit(tess: &mut Browser, limit: i64) -> Result<(String, Str
 }
 
 /// A saved search of the person and a rule of the agent over it that hands over what it finds.
-async fn rule_over(
+pub(super) async fn rule_over(
     site: &Site<'_>,
     tess: &mut Browser,
     agent: &str,
@@ -154,7 +157,7 @@ async fn works_on(tess: &mut Browser, issue: &str) -> Result<usize, Failure> {
 
 /// The jobs that look at the rules: what the notification round queues after the changes, then
 /// the jobs run, as the server's workers do.
-async fn look_again(rig: &Rig) -> Result<(), Failure> {
+pub(super) async fn look_again(rig: &Rig) -> Result<(), Failure> {
     rig.services
         .ctx(Rig::info())
         .catch_up_notifications()

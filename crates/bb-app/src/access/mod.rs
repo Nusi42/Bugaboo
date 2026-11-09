@@ -269,7 +269,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(acting.clone());
         }
         if looks_like_access_key(token_text) {
-            return self.key_actor(token_text).await;
+            // A change counts against the limits of the agent when its key is looked up (`expect_change`
+            // asks for it), so a request that is about to change something looks the key up again.
+            if let Some((text, known)) = &*locked(&self.agent_actor)
+                && text == token_text
+                && !self.change_due.load(std::sync::atomic::Ordering::Relaxed)
+            {
+                return Ok(known.clone());
+            }
+            let actor = self.key_actor(token_text).await?;
+            if actor.agent().is_some() {
+                *locked(&self.agent_actor) = Some((token_text.to_owned(), actor.clone()));
+            }
+            return Ok(actor);
         }
         if looks_like_oauth_access_token(token_text) {
             return self.grant_actor(token_text).await;

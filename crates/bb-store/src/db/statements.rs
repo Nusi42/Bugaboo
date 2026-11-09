@@ -11,6 +11,8 @@ use super::{Dialect, Statement};
 #[derive(Debug, Default)]
 pub(super) struct Statements {
     count: AtomicU64,
+    /// How many transactions were started: each is a round trip for its start and one for its end.
+    transactions: AtomicU64,
     /// The text of the statements since the last `take`; `None` while no capture is on.
     #[cfg(feature = "testing")]
     captured: std::sync::Mutex<Option<Vec<String>>>,
@@ -19,6 +21,14 @@ pub(super) struct Statements {
 impl Statements {
     pub(super) fn count(&self) -> u64 {
         self.count.load(Ordering::Relaxed)
+    }
+
+    pub(super) fn transactions(&self) -> u64 {
+        self.transactions.load(Ordering::Relaxed)
+    }
+
+    pub(super) fn record_transaction(&self) {
+        self.transactions.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(not(feature = "testing"))]
@@ -60,6 +70,39 @@ impl Statements {
     }
 }
 
+impl super::Database {
+    /// How many statements this database has run since it was opened: a counter for the tests of
+    /// PERF-05 (no N+1 queries). Statements that change the schema or take a lock are not counted.
+    #[must_use]
+    pub fn statements_run(&self) -> u64 {
+        self.statements.count()
+    }
+
+    /// How many transactions this database has started since it was opened (reads and changes): each
+    /// costs a round trip to start and one to end, so a test holds a request to a few of them.
+    #[must_use]
+    pub fn transactions_run(&self) -> u64 {
+        self.statements.transactions()
+    }
+
+    /// Starts keeping the text of every statement this database runs, until the next `take_statements`
+    /// (test builds only): a test that counts the statements of a window and sees a different number
+    /// says which ones differ. Nothing is kept before it is asked for.
+    #[cfg(feature = "testing")]
+    pub fn capture_statements(&self) {
+        self.statements.start_capture();
+    }
+
+    /// How many statements this database has run, and the text of those since the capture started or
+    /// the last call, in the order they ran (test builds only); the text is emptied. The count and the
+    /// text are read together.
+    #[cfg(feature = "testing")]
+    #[must_use]
+    pub fn take_statements(&self) -> (u64, Vec<String>) {
+        self.statements.take()
+    }
+}
+
 #[cfg(all(test, feature = "testing"))]
 mod tests {
     use sea_query::SelectStatement;
@@ -84,6 +127,8 @@ mod tests {
         let (count, texts) = statements.take();
         assert_eq!(count, 3);
         assert_eq!(texts.len(), 2, "one text for each statement of the capture");
+        statements.record_transaction();
+        assert_eq!(statements.transactions(), 1);
         assert!(texts[0].contains("SELECT"));
         assert_eq!(
             statements.take(),

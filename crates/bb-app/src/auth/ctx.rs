@@ -211,6 +211,7 @@ impl<S> AuthServices<S> {
             marks: Mutex::default(),
             agent_reach: Mutex::default(),
             agent_holds: Mutex::default(),
+            agent_actor: Mutex::default(),
             image_hosts: Mutex::default(),
             known: Known::default(),
             acting: None,
@@ -360,6 +361,10 @@ pub struct Ctx<'a, S> {
     /// asks whether it is part of its work), read once for all the issues asked together; `None`
     /// for an issue the agent does not reach.
     pub(crate) agent_holds: Mutex<HashMap<(AgentId, bb_core::id::IssueId), Option<Hold>>>,
+    /// The actor an agent's key made in this request, with the text of the key: the request asks who
+    /// acts in the tool call and again in the use case the tool runs, and the key is looked up, its
+    /// owner and the rights of the agent read once (M7-F127). Only the key of an agent is kept.
+    pub(crate) agent_actor: Mutex<Option<(String, crate::access::Actor)>>,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,

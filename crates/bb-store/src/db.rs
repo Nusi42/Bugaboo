@@ -268,30 +268,6 @@ impl Database {
         }
     }
 
-    /// How many statements this database has run since it was opened: a counter for the tests of
-    /// PERF-05 (no N+1 queries). Statements that change the schema or take a lock are not counted.
-    #[must_use]
-    pub fn statements_run(&self) -> u64 {
-        self.statements.count()
-    }
-
-    /// Starts keeping the text of every statement this database runs, until the next `take_statements`
-    /// (test builds only): a test that counts the statements of a window and sees a different number
-    /// says which ones differ. Nothing is kept before it is asked for.
-    #[cfg(feature = "testing")]
-    pub fn capture_statements(&self) {
-        self.statements.start_capture();
-    }
-
-    /// How many statements this database has run, and the text of those since the capture started or
-    /// the last call, in the order they ran (test builds only); the text is emptied. The count and the
-    /// text are read together.
-    #[cfg(feature = "testing")]
-    #[must_use]
-    pub fn take_statements(&self) -> (u64, Vec<String>) {
-        self.statements.take()
-    }
-
     /// Closes all connections.
     pub async fn close(&self) {
         match &self.pool {
@@ -351,6 +327,7 @@ impl Database {
     pub(crate) async fn begin(&self) -> Result<Transaction, StoreError> {
         // On SQLite the writers of this program queue first (`db/gate.rs`).
         let turn = self.writers.wait_on(self.dialect()).await;
+        self.statements.record_transaction();
         Ok(Transaction {
             follow_ups: Vec::new(),
             locks: Held::default(),
@@ -373,6 +350,7 @@ impl Database {
     /// on SQLite (readers and the writer do not wait for each other in WAL mode) and uses
     /// repeatable read on PostgreSQL.
     pub(crate) async fn begin_read(&self) -> Result<Transaction, StoreError> {
+        self.statements.record_transaction();
         Ok(Transaction {
             follow_ups: Vec::new(),
             locks: Held::default(),

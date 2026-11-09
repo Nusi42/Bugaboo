@@ -227,6 +227,66 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// Gets everything the lines of these issues need in a few reads, whatever the number of
+    /// projects they are in: the projects (for every maker), and what the person may do in each
+    /// (PERF-N1). Nothing is read for one project.
+    async fn prepare_lines(
+        &self,
+        actor: &Actor,
+        makers: &mut [&mut LineMaker],
+        projects: &[ProjectId],
+    ) -> Result<(), AppError> {
+        let distinct: std::collections::BTreeSet<ProjectId> = projects.iter().copied().collect();
+        if distinct.len() > 1 {
+            let all = self
+                .store()
+                .project_tree()
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            for maker in makers.iter_mut() {
+                maker.know_stored(projects, &all);
+            }
+            self.preload_projects(projects).await?;
+        }
+        self.evaluate_projects(actor.person.id, projects).await?;
+        Ok(())
+    }
+
+    /// The issues with these IDs that the request has not looked at yet, read together and looked at
+    /// each once: what the agent holds on them, the issues, their projects and the rights in them
+    /// are one read each. An issue that is not there is not seen.
+    async fn seen_together(
+        &self,
+        actor: &Actor,
+        maker: &mut LineMaker,
+        seen: &mut Seen,
+        agent: bb_core::id::AgentId,
+        ids: &[IssueId],
+    ) -> Result<(), AppError> {
+        let fresh: Vec<IssueId> = ids
+            .iter()
+            .copied()
+            .filter(|id| !seen.issues.contains_key(id))
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        if fresh.is_empty() {
+            return Ok(());
+        }
+        self.holds_of_agent_on(agent, &fresh).await?;
+        let loaded = self.issues_named(&fresh).await?;
+        let projects: Vec<ProjectId> = loaded.iter().map(|issue| issue.project).collect();
+        self.prepare_lines(actor, &mut [&mut *maker], &projects)
+            .await?;
+        for issue in loaded {
+            self.seen_loaded(actor, maker, seen, issue).await?;
+        }
+        for id in fresh {
+            seen.issues.entry(id).or_insert(None);
+        }
+        Ok(())
+    }
+
     /// The work of the agent that is not at its end, on the issues it may see.
     async fn open_work_seen(
         &self,
@@ -244,6 +304,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let ids: Vec<IssueId> = works.iter().map(|work| work.issue).collect();
         self.holds_of_agent_on(agent, &ids).await?;
         let mut issues = self.issues_named(&ids).await?;
+        let projects: Vec<ProjectId> = issues.iter().map(|issue| issue.project).collect();
+        self.prepare_lines(actor, &mut [&mut *maker], &projects)
+            .await?;
         let mut found = Vec::new();
         for work in &works {
             let Some(at) = issues.iter().position(|issue| issue.id == work.issue) else {
@@ -288,6 +351,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .map(|each| (each.at, each.issue, each.rule))
             })
             .flatten();
+        let named: Vec<IssueId> = cut.items.iter().map(|each| each.issue).collect();
+        self.seen_together(actor, maker, seen, agent, &named)
+            .await?;
         let mut found = Vec::new();
         for each in &cut.items {
             if let Some((issue, _, key)) = self.seen_once(actor, maker, seen, each.issue).await? {
@@ -340,18 +406,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect();
         let projects: Vec<ProjectId> = loaded.values().map(|issue| issue.project).collect();
         // The projects of the lines, of this request and of the history it reads, in one read.
-        let distinct: std::collections::BTreeSet<ProjectId> = projects.iter().copied().collect();
-        if distinct.len() > 1 {
-            let all = self
-                .store()
-                .project_tree()
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            maker.know_stored(&projects, &all);
-            reader_maker.know_stored(&projects, &all);
-            self.preload_projects(&projects).await?;
-        }
-        self.evaluate_projects(actor.person.id, &projects).await?;
+        self.prepare_lines(actor, &mut [maker, reader_maker], &projects)
+            .await?;
         let mut authors: std::collections::BTreeSet<(UserId, ProjectId)> =
             std::collections::BTreeSet::new();
         for (_, event) in events {
