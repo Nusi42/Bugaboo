@@ -2,3 +2,5 @@
 import "@bugaboo/messages/parts/agent-work";
 
 export { registerAgentWork } from "./register.ts";
+export { emptyDraft, powersOf, type HandOverDraft } from "./hand-over-draft.ts";
+export { HandOverPowers } from "./HandOverPowers.tsx";

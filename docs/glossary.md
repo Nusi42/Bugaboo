@@ -296,7 +296,9 @@ Rules:
 | **Worked on by …**       | Shown on an issue while an agent works on it: *worked on by Fixer* | — |
 | **Brief**                | What an agent is given with a hand-over: the issue's text, its steps, *Done when*, a note, and the answers to its questions | prompt, spec, ticket context (in UI) |
 | **Done when**            | The part of a brief that says how to check the work is done        | acceptance criteria, definition of done (in UI) |
-| **Standing rule**        | Lets one of your agents work on everything a saved search finds, by proposals or by changing a few named fields; it runs out | trigger, subscription, watch rule (in UI) |
+| **Standing rule**        | Lets one of your agents work on everything a saved search finds, by proposals or by handing over what it finds; it runs out (30 days, at most 90) unless an administrator allows rules that never run out | trigger, subscription, watch rule, automation, change only these fields (in UI) |
+| **Hand over what it finds** | The way of working of a standing rule that makes a hand-over of each issue the saved search finds, once, within the limits of the agent. The other way is *Propose changes* | auto-assign, auto-dispatch, fully automatic (in UI) |
+| **Never runs out**       | The choice of a standing rule that has no end. It is offered only when an administrator has switched on *Allow rules that never run out*; it can be stopped at any time | forever, permanent, unlimited (in UI) |
 | **Agent work**           | The record on an issue of what an agent did: the brief, its attempts, questions and the review. Kept apart from the comments | agent log, transcript (in UI) |
 | **Attempt**              | One go of an agent at a handed-over issue: plan, steps, results    | iteration, job (in UI) |
 | **Waiting for the agent / Agent working / Waiting for you / Ready for review / Agent gave up / Stopped** | The states of agent work. *Waiting for you* means a question or a plan waits for a person | needs input, idle (in UI) |

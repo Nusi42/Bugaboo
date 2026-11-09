@@ -229,16 +229,26 @@ export function mayAct(agent: Pick<ListedAgent, "state">): boolean {
 
 /** Whether a standing rule is about to run out: it works, and its end is the warning days away or nearer. */
 export function runsOutSoon(rule: Pick<Rule, "state" | "ends_at">, nowMs: number): boolean {
-  return rule.state === "open" && daysUntil(rule.ends_at, nowMs) <= agentRuleWarningDays;
+  return (
+    rule.state === "open" &&
+    rule.ends_at !== undefined &&
+    rule.ends_at !== null &&
+    daysUntil(rule.ends_at, nowMs) <= agentRuleWarningDays
+  );
 }
 
 /** The whole days until a rule runs out, none below zero. */
 export function ruleDaysLeft(rule: Pick<Rule, "ends_at">, nowMs: number): number {
-  return Math.max(daysUntil(rule.ends_at, nowMs), 0);
+  return rule.ends_at === undefined || rule.ends_at === null
+    ? Number.POSITIVE_INFINITY
+    : Math.max(daysUntil(rule.ends_at, nowMs), 0);
 }
 
-/** When a rule runs out, in words: *in 4 days*, *today*, or the date when it is further away. */
-export function runsOutText(endsAt: string, nowMs: number): string {
+/** When a rule runs out, in words: *in 4 days*, *today*, the date when it is further away, or that it never does. */
+export function runsOutText(endsAt: string | null | undefined, nowMs: number): string {
+  if (endsAt === undefined || endsAt === null) {
+    return t("agents.rule-ends-never");
+  }
   const days = daysUntil(endsAt, nowMs);
   if (days > agentRuleWarningDays) {
     return t("agents.rule-ends-on", { date: formatDate(endsAt) });

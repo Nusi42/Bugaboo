@@ -10,7 +10,7 @@ use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Question, ResultKind, Review,
     RuleMatch, StandingRule,
 };
-use bb_core::agent_work::{AgentWorkState, CheckResult, HandOverPower, ReviewAnswer, RuleField};
+use bb_core::agent_work::{AgentWorkState, CheckResult, HandOverPower, ReviewAnswer, RuleWay};
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, SavedSearchId,
     SequentialIds, StandingRuleId, UserId,
@@ -156,10 +156,13 @@ pub(super) async fn rule_that_found(
         search: SavedSearchId::generate(&mut made.source)
             .map_err(|_| crate::StoreError::Corrupt("a saved search ID"))?,
         project: data.project,
-        fields: vec![RuleField::Type],
+        way: RuleWay::Propose,
+        powers: Vec::new(),
+        accept_by_itself: false,
+        fields: Vec::new(),
         creates_in: None,
         state: GivingState::Open,
-        ends_at,
+        ends_at: Some(ends_at),
         made_at: at(0),
         version: 1,
     };
@@ -217,7 +220,7 @@ pub(super) async fn close(
 }
 
 /// What the agent holds on these issues, as a read asks for them.
-async fn holds(
+pub(super) async fn holds(
     storage: &AuthStorage,
     agent: AgentId,
     now: Timestamp,

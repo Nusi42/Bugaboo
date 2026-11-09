@@ -45,7 +45,7 @@ test("a11y the window of a standing rule", async ({ page, server }) => {
   await signIn(page, ada);
   await page.goto(paths.myAgents);
   await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
-  await page.getByRole("alertdialog").getByLabel(t("agents.rule-change")).check();
+  await page.getByRole("alertdialog").getByLabel(t("agents.rule-hand-over")).check();
   await expectGoodInEveryLook(page);
   await scene.dispose();
 });

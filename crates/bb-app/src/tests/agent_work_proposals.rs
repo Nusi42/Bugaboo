@@ -15,15 +15,14 @@ use crate::agent_work::{
 };
 use crate::auth::AppError;
 
-/// A rule that works with these fields, the issue it found, and the proposal the agent made.
+/// A rule that proposes, the issue it found, and the proposal the agent made.
 async fn proposed(
     world: &World,
     given: &RuleWorld,
-    fields: Vec<RuleField>,
     field: RuleField,
     after: serde_json::Value,
 ) -> Result<Result<crate::agent_work::ProposalView, AppError>, AppError> {
-    let rule = create_standing_rule(&world.ctx(), rule_request(given, fields))
+    let rule = create_standing_rule(&world.ctx(), rule_request(given))
         .await?
         .into_value();
     found_by_search(world);
@@ -46,32 +45,12 @@ async fn proposed(
 }
 
 #[tokio::test]
-async fn ai_32_a_rule_proposes_only_the_fields_it_names() -> Outcome {
-    let world = World::new().await?;
-    let given = rule_world(&world).await?;
-    let refusal = proposed(
-        &world,
-        &given,
-        vec![RuleField::Labels],
-        RuleField::Type,
-        json!("x"),
-    )
-    .await?;
-    assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
-    // The field it names is proposed; a rule that names none proposes any field of the list.
-    let world = World::new().await?;
-    let given = rule_world(&world).await?;
-    proposed(
-        &world,
-        &given,
-        vec![RuleField::Labels],
-        RuleField::Labels,
-        json!("x"),
-    )
-    .await??;
-    let world = World::new().await?;
-    let given = rule_world(&world).await?;
-    proposed(&world, &given, Vec::new(), RuleField::Type, json!("x")).await??;
+async fn ai_32_a_rule_that_proposes_may_propose_any_field_of_the_list() -> Outcome {
+    for field in [RuleField::Type, RuleField::Labels, RuleField::Tags] {
+        let world = World::new().await?;
+        let given = rule_world(&world).await?;
+        proposed(&world, &given, field, json!("x")).await??;
+    }
     Ok(())
 }
 
@@ -80,14 +59,7 @@ async fn ai_32_a_proposal_that_cannot_be_carried_out_is_open_again() -> Outcome 
     let world = World::new().await?;
     let given = rule_world(&world).await?;
     // A type that is no ID: the change fails after the proposal was claimed.
-    let proposal = proposed(
-        &world,
-        &given,
-        Vec::new(),
-        RuleField::Type,
-        json!("nonsense"),
-    )
-    .await??;
+    let proposal = proposed(&world, &given, RuleField::Type, json!("nonsense")).await??;
     let decided = decide_proposal(
         &world.ctx(),
         DecideProposal {
@@ -121,14 +93,7 @@ async fn ai_32_a_proposal_that_asks_for_something_not_applied_yet_is_open_again(
     let world = World::new().await?;
     let given = rule_world(&world).await?;
     // *Duplicate of* is not carried out yet: the decision to apply it fails after the claim.
-    let proposal = proposed(
-        &world,
-        &given,
-        Vec::new(),
-        RuleField::DuplicateOf,
-        json!("x"),
-    )
-    .await??;
+    let proposal = proposed(&world, &given, RuleField::DuplicateOf, json!("x")).await??;
     let decide = |apply| DecideProposal {
         session_token: given.team.session_token.clone(),
         proposal: proposal.id,
@@ -174,7 +139,7 @@ async fn ai_31_ending_a_hand_over_that_keeps_changing_fails_for_the_job_to_run_a
 async fn ai_32_opening_a_proposal_again_that_nobody_claimed_writes_no_event() -> Outcome {
     let world = World::new().await?;
     let given = rule_world(&world).await?;
-    proposed(&world, &given, Vec::new(), RuleField::Type, json!("x")).await??;
+    proposed(&world, &given, RuleField::Type, json!("x")).await??;
     let (rule, proposal) = {
         let shared = world.store.lock();
         (
@@ -200,7 +165,7 @@ async fn ai_32_opening_a_proposal_again_that_nobody_claimed_writes_no_event() ->
 async fn ai_32_a_proposal_on_the_issue_names_its_agent_without_any_hand_over() -> Outcome {
     let world = World::new().await?;
     let given = rule_world(&world).await?;
-    let made = proposed(&world, &given, Vec::new(), RuleField::Labels, json!("x")).await??;
+    let made = proposed(&world, &given, RuleField::Labels, json!("x")).await??;
     assert_eq!(made.agent_name, "Fixer");
     let on_the_issue = crate::agent_work::issue_agent_work(
         &world.ctx(),

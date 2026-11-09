@@ -131,7 +131,7 @@ test("ai_30_an_agent_key_is_shown_once_and_can_be_taken_back", async ({ page, se
   await scene.dispose();
 });
 
-test("ai_32_a_standing_rule_offers_only_the_fields_of_the_short_list_and_never_people_or_the_status", async ({
+test("m7_wp14_a_standing_rule_proposes_or_hands_over_and_has_no_option_to_change_only_some_fields", async ({
   page,
   server,
 }) => {
@@ -140,14 +140,24 @@ test("ai_32_a_standing_rule_offers_only_the_fields_of_the_short_list_and_never_p
   await page.goto(paths.myAgents);
   await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
   const window = page.getByRole("alertdialog");
-  await window.getByLabel(t("agents.rule-change")).check();
-  const fields = window.getByRole("group", { name: t("agents.rule-fields") });
-  const names = await fields.locator("label").allTextContents();
-  expect(names).toHaveLength(5);
+  // Two ways, the first is the start; there is no third one that changes some fields.
+  await expect(window.getByLabel(t("agents.rule-propose"))).toBeChecked();
+  await expect(window.getByLabel(t("agents.rule-hand-over"))).not.toBeChecked();
+  await expect(window.getByText("Change only these fields", { exact: false })).toHaveCount(0);
+  // Handing over asks what the agent may do in the hand-overs, as the window of a hand-over does,
+  // and never offers a field that holds people.
+  await window.getByLabel(t("agents.rule-hand-over")).check();
+  await window.getByLabel(t("agent-work.power-change-fields")).check();
+  const names = await window
+    .getByRole("group", { name: t("agent-work.may-do") })
+    .locator("label")
+    .allTextContents();
   for (const forbidden of [t("issue-field.assigned-to"), t("issue-field.status")]) {
     expect(names).not.toContain(forbidden);
   }
   await expect(window.getByText(t("agents.rule-never"))).toBeVisible();
+  // *Never runs out* is not offered while the organization does not allow it.
+  await expect(window.getByLabel(t("agents.rule-never-ends"))).toHaveCount(0);
   await scene.dispose();
 });
 

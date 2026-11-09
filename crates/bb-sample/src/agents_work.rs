@@ -29,7 +29,7 @@ use bb_app::roles::{CheckAccessQuery, check_access};
 use bb_app::saved_searches::{SaveSearch, save_search};
 use bb_core::access_key::KeyChoice;
 use bb_core::agent_records::ResultKind;
-use bb_core::agent_work::{CheckResult, MOST_HAND_OVER_DAYS, ReviewAnswer};
+use bb_core::agent_work::{CheckResult, MOST_HAND_OVER_DAYS, ReviewAnswer, RuleWay};
 use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, SavedSearchId, StandingRuleId};
 use bb_core::saved_search::Presentation;
 use bb_core::time::SECONDS_PER_DAY;
@@ -609,9 +609,13 @@ impl World<'_> {
                     agent: agent.id,
                     search,
                     project,
+                    way: RuleWay::Propose,
+                    powers: Vec::new(),
                     fields: Vec::new(),
+                    accept_by_itself: false,
                     creates_in: None,
                     days: Some(plan.rule.days),
+                    never_ends: false,
                 },
             )
             .await,

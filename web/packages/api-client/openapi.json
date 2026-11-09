@@ -19529,6 +19529,10 @@
             "format": "int64",
             "description": "With `renew`: after how many days the rule ends (at most 90)."
           },
+          "never_ends": {
+            "type": "boolean",
+            "description": "With `renew`: the rule never runs out; only where an administrator allows it."
+          },
           "version": {
             "type": "integer",
             "format": "int64",
@@ -24076,7 +24080,8 @@
           "pieces",
           "truncated",
           "rules",
-          "rules_truncated"
+          "rules_truncated",
+          "rules_never_run_out"
         ],
         "properties": {
           "offered": {
@@ -24103,6 +24108,10 @@
               "$ref": "#/components/schemas/StandingRuleItem"
             },
             "description": "The standing rules of the person's agents that work."
+          },
+          "rules_never_run_out": {
+            "type": "boolean",
+            "description": "Whether the organization allows standing rules that never run out."
           },
           "rules_truncated": {
             "type": "boolean",
@@ -27891,7 +27900,7 @@
       },
       "RuleField": {
         "type": "string",
-        "description": "A field a standing rule may change.",
+        "description": "A field a standing rule may propose a change to.",
         "enum": ["labels", "tags", "type", "duplicate-of", "found-in-release"]
       },
       "RuleFieldBody": {
@@ -27912,6 +27921,11 @@
             "description": "The name of an own field; a built-in field is named by its word."
           }
         }
+      },
+      "RuleWay": {
+        "type": "string",
+        "description": "How a standing rule works on what it finds.",
+        "enum": ["proposals", "hand-over"]
       },
       "Rules": {
         "type": "object",
@@ -29276,6 +29290,10 @@
         "description": "Make a standing rule.",
         "required": ["agent", "search", "project"],
         "properties": {
+          "accept_by_itself": {
+            "type": "boolean",
+            "description": "With `hand-over`: whether each hand-over may be accepted by itself (when the project allows\nit too)."
+          },
           "agent": {
             "type": "string",
             "description": "The ID of the agent."
@@ -29292,9 +29310,20 @@
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RuleField"
+              "type": "string"
             },
-            "description": "The fields the rule may change; none means it only proposes."
+            "description": "With `hand-over` and `change-fields`: the fields each hand-over may change, by their keys."
+          },
+          "never_ends": {
+            "type": "boolean",
+            "description": "The rule never runs out; only where an administrator allows it, and without `days`."
+          },
+          "powers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HandOverPower"
+            },
+            "description": "With `hand-over`: what each hand-over of the rule lets the agent do besides what it always\nmay."
           },
           "project": {
             "type": "string",
@@ -29303,14 +29332,33 @@
           "search": {
             "type": "string",
             "description": "The ID of the saved search."
+          },
+          "way": {
+            "$ref": "#/components/schemas/RuleWay",
+            "description": "How the rule works on what it finds: `proposals` (the start) or `hand-over`."
           }
         }
       },
       "StandingRuleItem": {
         "type": "object",
         "description": "A standing rule.",
-        "required": ["id", "agent", "search", "project", "fields", "state", "ends_at", "version"],
+        "required": [
+          "id",
+          "agent",
+          "search",
+          "project",
+          "way",
+          "powers",
+          "fields",
+          "accept_by_itself",
+          "state",
+          "version"
+        ],
         "properties": {
+          "accept_by_itself": {
+            "type": "boolean",
+            "description": "Whether each of its hand-overs may be accepted by itself."
+          },
           "agent": {
             "type": "string",
             "description": "The agent."
@@ -29320,20 +29368,27 @@
             "description": "The project in which it may create issues."
           },
           "ends_at": {
-            "type": "string",
-            "description": "When it ends.",
+            "type": ["string", "null"],
+            "description": "When it ends; left out for a rule that never runs out.",
             "format": "date-time"
           },
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RuleField"
+              "type": "string"
             },
-            "description": "The fields it may change."
+            "description": "The fields each of its hand-overs lets the agent change, by their keys."
           },
           "id": {
             "type": "string",
             "description": "The ID of the rule."
+          },
+          "powers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HandOverPower"
+            },
+            "description": "What each of its hand-overs lets the agent do besides what it always may."
           },
           "project": {
             "type": "string",
@@ -29351,6 +29406,10 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the rule; send it back with a change."
+          },
+          "way": {
+            "$ref": "#/components/schemas/RuleWay",
+            "description": "How it works on what it finds."
           }
         }
       },

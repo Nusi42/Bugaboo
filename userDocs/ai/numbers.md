@@ -17,16 +17,16 @@ These are the limits of the assistant and of agents, as Bugaboo works by them. A
 
 ## Agents
 
-| What                                                     | Number                                                                             |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| A person has at most                                     | 50 agents                                                                          |
-| An agent has at most                                     | 20 keys                                                                            |
-| A new agent is held to at most                           | 60 changes a minute                                                                |
-| A new agent works on at most                             | 5 issues at once                                                                   |
-| A new agent may try one issue at most                    | 5 times                                                                            |
-| One hand-over names at most                              | 100 issues                                                                         |
-| A hand-over ends after                                   | 14 days unless you choose another end, at most 90 days                             |
-| A standing rule ends after                               | 30 days unless you choose another end, at most 90 days; you are told 3 days before |
-| A change to many issues, also by an agent, names at most | 1000 issues                                                                        |
+| What                                                     | Number                                                                                                                                               |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A person has at most                                     | 50 agents                                                                                                                                            |
+| An agent has at most                                     | 20 keys                                                                                                                                              |
+| A new agent is held to at most                           | 60 changes a minute                                                                                                                                  |
+| A new agent works on at most                             | 5 issues at once                                                                                                                                     |
+| A new agent may try one issue at most                    | 5 times                                                                                                                                              |
+| One hand-over names at most                              | 100 issues                                                                                                                                           |
+| A hand-over ends after                                   | 14 days unless you choose another end, at most 90 days                                                                                               |
+| A standing rule ends after                               | 30 days unless you choose another end, at most 90 days (no end where your administrators allow rules that never run out); you are told 3 days before |
+| A change to many issues, also by an agent, names at most | 1000 issues                                                                                                                                          |
 
 See [The AI guide](literacy.md) and [Agents](../agents/README.md).

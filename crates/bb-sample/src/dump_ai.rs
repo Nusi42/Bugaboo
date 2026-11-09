@@ -23,7 +23,7 @@ use bb_core::event::{Actor, DomainEvent, EntityKind, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{AgentId, EntityId, ProjectId};
 use bb_core::mark::WrittenBy;
-use bb_core::settings::{AI_ENABLED, SettingValue};
+use bb_core::settings::{AGENTS_RULES_NEVER_RUN_OUT, AI_ENABLED, SettingValue};
 use serde::Serialize;
 
 use crate::error::SampleError;
@@ -61,9 +61,12 @@ struct DumpAgentWork {
 #[derive(Debug, Serialize)]
 struct DumpRule {
     search: String,
-    /// How many days after the start of the sample it runs out.
-    days_ahead: i64,
-    fields: Vec<&'static str>,
+    /// How the rule works: `proposals` or `hand-over`.
+    way: &'static str,
+    /// How many days after the start of the sample it runs out; none for a rule that never does.
+    days_ahead: Option<i64>,
+    /// The members of an issue its hand-overs may change, by their keys.
+    fields: Vec<String>,
     names_a_people_field: bool,
     matches: u64,
 }
@@ -92,6 +95,8 @@ pub(crate) struct DumpAi {
     agents_assigned: u64,
     work: DumpAgentWork,
     rules: Vec<DumpRule>,
+    /// Whether the organization allows standing rules that never run out.
+    rules_never_run_out: bool,
     /// AI apps people allowed, by grants that have not run out.
     apps: u64,
     marks: DumpMarks,
@@ -114,6 +119,7 @@ impl Sample {
     async fn ai_setup_of(&self, ai: &mut DumpAi) -> Result<(), SampleError> {
         let organization = self.storage.setting_layers(None, None).await?;
         ai.enabled = organization.yes(&AI_ENABLED);
+        ai.rules_never_run_out = organization.yes(&AGENTS_RULES_NEVER_RUN_OUT);
         ai.agreement_confirmed = self.storage.ai_agreement().await?.is_some();
         let projects: BTreeMap<ProjectId, String> = self
             .storage
@@ -266,15 +272,18 @@ impl Sample {
                 .map(|search| search.name)
                 .unwrap_or_default();
             let matches = self.storage.matches_of(rule.id, None, LIMIT).await?;
-            let ahead = rule.ends_at.as_second() - self.options.start.as_second();
+            let ahead = rule.ends_at.map(|end| {
+                (end.as_second() - self.options.start.as_second())
+                    .div_euclid(bb_core::time::SECONDS_PER_DAY)
+            });
             ai.rules.push(DumpRule {
                 search,
-                days_ahead: ahead.div_euclid(bb_core::time::SECONDS_PER_DAY),
-                fields: rule.fields.iter().map(|field| field.code()).collect(),
+                way: rule.way.code(),
+                days_ahead: ahead,
                 names_a_people_field: rule.fields.iter().any(|field| {
-                    Field::from_code(field.code())
-                        .is_some_and(|field| field.person_kind().is_some())
+                    Field::from_code(field).is_some_and(|field| field.person_kind().is_some())
                 }),
+                fields: rule.fields,
                 matches: matches.len() as u64,
             });
         }

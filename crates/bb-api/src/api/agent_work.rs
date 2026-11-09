@@ -335,9 +335,13 @@ async fn create_standing_rule(
                 agent,
                 search,
                 project,
+                way: body.way,
+                powers: body.powers,
                 fields: body.fields,
+                accept_by_itself: body.accept_by_itself,
                 creates_in,
                 days: body.days,
+                never_ends: body.never_ends,
             },
         )
         .await?;
@@ -378,6 +382,7 @@ async fn change_standing_rule(
                 rule,
                 renew: matches!(body.action, RuleAction::Renew),
                 days: body.days,
+                never_ends: body.never_ends,
                 version: body.version,
             },
         )

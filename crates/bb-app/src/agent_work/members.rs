@@ -24,7 +24,11 @@ pub(crate) mod member {
     pub(crate) const SEARCH: &str = "search";
     /// The project of a rule.
     pub(crate) const PROJECT: &str = "project";
-    /// The fields a rule may change.
+    /// How a standing rule works.
+    pub(crate) const WAY: &str = "way";
+    /// The standing rule that made a hand-over.
+    pub(crate) const RULE: &str = "rule";
+    /// The fields a rule's hand-overs may change.
     pub(crate) const FIELDS: &str = "fields";
     /// The proposal that was applied or discarded.
     pub(crate) const PROPOSAL: &str = "proposal";

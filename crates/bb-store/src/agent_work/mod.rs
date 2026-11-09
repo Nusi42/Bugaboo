@@ -2,6 +2,7 @@
 //! work on an issue and what belongs to it (AI-31 to AI-35, ADR-0029). `grants` holds hand-overs,
 //! rules and proposals; `work` the work on an issue.
 
+mod counts;
 mod current;
 mod grants;
 #[cfg(any(test, feature = "testing"))]
@@ -26,7 +27,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{
@@ -210,6 +211,9 @@ pub(super) fn rule_select() -> SelectStatement {
             StandingRuleRow::Person,
             StandingRuleRow::Search,
             StandingRuleRow::Project,
+            StandingRuleRow::Way,
+            StandingRuleRow::Powers,
+            StandingRuleRow::AcceptByItself,
             StandingRuleRow::Fields,
             StandingRuleRow::CreatesIn,
             StandingRuleRow::State,
@@ -221,6 +225,24 @@ pub(super) fn rule_select() -> SelectStatement {
     select
 }
 
+/// What `standing_rule.ends_at` holds for a rule that never runs out: the greatest number the
+/// column holds, so that "ends after now" is true for it in every statement that asks (the open
+/// rules, the rules an agent reaches). The one place that writes or reads it.
+pub(super) const NEVER_ENDS: i64 = i64::MAX;
+
+/// The end of a rule as the column holds it.
+pub(super) fn rule_end_stored(ends_at: Option<Timestamp>) -> i64 {
+    ends_at.map_or(NEVER_ENDS, to_micros)
+}
+
+/// The end of a rule from the column: none for [`NEVER_ENDS`].
+fn rule_end_read(micros: i64) -> Result<Option<Timestamp>, StoreError> {
+    if micros == NEVER_ENDS {
+        return Ok(None);
+    }
+    from_micros(micros).map(Some)
+}
+
 pub(super) fn read_rule(row: &Row) -> Result<StandingRule, StoreError> {
     Ok(StandingRule {
         id: row.id(StandingRuleRow::Id)?,
@@ -228,10 +250,13 @@ pub(super) fn read_rule(row: &Row) -> Result<StandingRule, StoreError> {
         person: row.id(StandingRuleRow::Person)?,
         search: row.id::<SavedSearchId>(StandingRuleRow::Search)?,
         project: row.id(StandingRuleRow::Project)?,
+        way: word(row, StandingRuleRow::Way)?,
+        powers: serde_json::from_str(&row.get::<String>(StandingRuleRow::Powers)?)?,
+        accept_by_itself: row.get(StandingRuleRow::AcceptByItself)?,
         fields: serde_json::from_str(&row.get::<String>(StandingRuleRow::Fields)?)?,
         creates_in: row.optional_id(StandingRuleRow::CreatesIn)?,
         state: word(row, StandingRuleRow::State)?,
-        ends_at: row.time(StandingRuleRow::EndsAt)?,
+        ends_at: rule_end_read(row.get(StandingRuleRow::EndsAt)?)?,
         made_at: row.time(StandingRuleRow::MadeAt)?,
         version: row.get(StandingRuleRow::Version)?,
     })
@@ -581,16 +606,12 @@ impl AgentWorkStore for AuthStorage {
                 ),
             )
             .and_where(Expr::col(RuleMatchRow::Issue).is_in(named));
+        // An issue a rule found is read-only: the agent holds it with nothing to change (the
+        // allowance of a rule is empty, ADR-0029, M7-F120).
         for row in self.database().fetch_all(&found).await? {
-            let rule = row.id::<StandingRuleId>(RuleMatchRow::Rule)?;
-            let Some(rule) = rules.iter().find(|held| held.id == rule) else {
-                continue;
-            };
             holds
                 .entry(row.id::<IssueId>(RuleMatchRow::Issue)?)
-                .or_default()
-                .allowance
-                .add(Allowance::of_rule(&rule.fields));
+                .or_default();
         }
         Ok(holds)
     }

@@ -150,5 +150,6 @@ pub async fn my_agent_work<S: AuthStore>(
         truncated,
         rules,
         rules_truncated,
+        rules_never_run_out: ctx.rules_never_run_out().await?,
     }))
 }

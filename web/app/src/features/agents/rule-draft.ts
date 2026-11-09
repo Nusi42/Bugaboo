@@ -1,23 +1,25 @@
-import { agentRuleDaysMost, ruleFieldWords, type Schema } from "@bugaboo/api-client";
-import { t, type MessageKey } from "@bugaboo/messages";
+import { agentRuleDaysMost, type Schema } from "@bugaboo/api-client";
+import type { MessageKey } from "@bugaboo/messages";
 
-/** A field a standing rule may be told to change: the short list of the server, never people, never the status. */
-export type RuleFieldWord = Schema<"RuleField">;
+import { emptyDraft, powersOf, type HandOverDraft } from "../agent-work/index.ts";
 
-/** What a standing rule may do: only propose, or change the fields it names. */
-export type RulePower = "propose" | "change";
+/** How a standing rule works on what it finds: it proposes, or it hands each issue over. */
+export type RuleWayWord = Schema<"RuleWay">;
 
-/** What the person filled in the window of a standing rule. */
+/** What the person filled in in the window of a standing rule. */
 export interface RuleDraft {
   readonly search: string;
   readonly agent: string;
   readonly project: string;
-  readonly power: RulePower;
-  readonly fields: readonly RuleFieldWord[];
+  readonly way: RuleWayWord;
+  /** The powers of the hand-overs of a rule that hands over: the ticks, the fields, accepting by itself. */
+  readonly handOver: HandOverDraft;
   readonly createIssues: boolean;
   readonly createsIn: string;
   /** The days the rule lasts, as typed; empty is the usual number of the organization. */
   readonly days: string;
+  /** The rule never runs out (only where an administrator allows it). */
+  readonly neverEnds: boolean;
 }
 
 export interface DraftProps {
@@ -25,20 +27,18 @@ export interface DraftProps {
   readonly onChange: (change: Partial<RuleDraft>) => void;
 }
 
-/** The fields the window offers, in the order of the server's list. */
-export const offeredFields: readonly RuleFieldWord[] = ruleFieldWords;
-
 /** The window before anything is filled in; a rule only proposes at the start. */
 export function emptyRuleDraft(start: Partial<RuleDraft> = {}): RuleDraft {
   return {
     search: "",
     agent: "",
     project: "",
-    power: "propose",
-    fields: [],
+    way: "proposals",
+    handOver: emptyDraft,
     createIssues: false,
     createsIn: "",
     days: "",
+    neverEnds: false,
     ...start,
   };
 }
@@ -58,9 +58,16 @@ export function daysAreRight(text: string): boolean {
   return days === null || (days >= 1 && days <= agentRuleDaysMost);
 }
 
+/** Whether a rule that hands over asks to change fields and names none. */
+function namesNoField(draft: RuleDraft): boolean {
+  return (
+    draft.way === "hand-over" && draft.handOver.changeFields && draft.handOver.fields.length === 0
+  );
+}
+
 /**
  * Why *Create the rule* waits, as the line above the button says it: the first thing that is
- * missing or wrong, in the order of the window; none when the rule can be made.
+ * missing or wrong, in the order of the window; none when the rule can be created.
  */
 export function ruleWaitsFor(draft: RuleDraft): MessageKey | undefined {
   if (draft.search === "" && draft.agent === "") {
@@ -75,13 +82,13 @@ export function ruleWaitsFor(draft: RuleDraft): MessageKey | undefined {
   if (draft.project === "") {
     return "agents.rule-need-project";
   }
-  if (draft.power === "change" && draft.fields.length === 0) {
+  if (namesNoField(draft)) {
     return "agents.rule-need-fields";
   }
   if (draft.createIssues && draft.createsIn === "") {
     return "agents.rule-need-creates-in";
   }
-  return daysAreRight(draft.days) ? undefined : "agents.rule-need-days";
+  return draft.neverEnds || daysAreRight(draft.days) ? undefined : "agents.rule-need-days";
 }
 
 /** Whether the window may be confirmed: nothing is missing or wrong. */
@@ -89,41 +96,19 @@ export function ruleIsComplete(draft: RuleDraft): boolean {
   return ruleWaitsFor(draft) === undefined;
 }
 
-/** What the window sends. Only the fields of the short list can be in it: the list is closed. */
+/** What the window sends: nothing of a hand-over for a rule that proposes, and no days for a rule that never runs out. */
 export function ruleBody(draft: RuleDraft) {
   const days = daysOf(draft.days);
-  const fields =
-    draft.power === "change" ? draft.fields.filter((field) => offeredFields.includes(field)) : [];
+  const handing = draft.way === "hand-over";
   return {
     agent: draft.agent,
     search: draft.search,
     project: draft.project,
-    fields: [...fields],
+    way: draft.way,
+    powers: handing ? powersOf(draft.handOver) : [],
+    fields: handing && draft.handOver.changeFields ? [...draft.handOver.fields] : [],
+    accept_by_itself: handing && draft.handOver.acceptByItself,
     ...(draft.createIssues ? { creates_in: draft.createsIn } : {}),
-    ...(days === null ? {} : { days }),
+    ...(draft.neverEnds ? { never_ends: true } : days === null ? {} : { days }),
   };
-}
-
-/** Ticks or unticks one field, keeping the order of the server's list. */
-export function withField(
-  fields: readonly RuleFieldWord[],
-  field: RuleFieldWord,
-  on: boolean,
-): RuleFieldWord[] {
-  const keptSet = new Set(fields.filter((one) => one !== field));
-  return offeredFields.filter((one) => (one === field ? on : keptSet.has(one)));
-}
-
-/** The names of the fields of the short list: the names the issue page uses, and *Duplicate of* for the relation. */
-const FIELD_NAMES = {
-  labels: "issue-field.labels",
-  tags: "issue-field.tags",
-  type: "issue-field.issue-type",
-  "duplicate-of": "agents.rule-field.duplicate-of",
-  "found-in-release": "issue-field.found-in-release",
-} as const satisfies Record<RuleFieldWord, MessageKey>;
-
-/** The name of a field of the short list, in words. */
-export function ruleFieldText(field: RuleFieldWord): string {
-  return t(FIELD_NAMES[field]);
 }

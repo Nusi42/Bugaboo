@@ -5,9 +5,9 @@
 ## What the page shows
 
 1. **Waiting for you**, first. A question to answer, a plan to approve, a result to review, a standing rule that runs out soon. Each line has a button that opens the issue. *Nothing waits for you.* is what you read when it is empty.
-2. **Accepted by itself.** Results that were accepted without you because the project allows it and every check passed. Look at them and press **I looked at it**.
+2. **Accepted by itself.** Results that were accepted without you because the project allows it and every check passed, also those of hand-overs that a standing rule gave to the agent. Look at them and press **I looked at it**.
 3. **Each agent** with what it works on, and the buttons **Pause**, **Resume** and **Stop**.
-4. **Standing rules**, with **Renew** and a button to create one. See [Agents](README.md). A rule set to *Change only these fields* changes nothing on its own; the agent still only proposes.
+4. **Standing rules**, with **Renew** (a rule that never runs out has none) and a button to create one. A rule says whether it proposes changes or hands over what it finds. See [Agents](README.md).
 
 **Stop all my agents** stops every agent of yours at once, takes their keys back and ends the work they were given. A stopped agent never works again.
 

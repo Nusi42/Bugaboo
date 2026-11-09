@@ -110,9 +110,9 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn touch_hand_over(id: HandOverId, version: i64) -> bool;
         /// Adds a standing rule.
         fn insert_standing_rule(rule: &StandingRule) -> ();
-        /// Ends a rule, or renews it to `ends_at`, counting its version up; whether it was at
+        /// Ends a rule, or renews it to `ends_at` (none: it never runs out), counting its version up; whether it was at
         /// `version`.
-        fn set_rule_end(id: StandingRuleId, ends_at: Timestamp, ended: bool, version: i64) -> bool;
+        fn set_rule_end(id: StandingRuleId, ends_at: Option<Timestamp>, ended: bool, version: i64) -> bool;
         /// Adds a proposal.
         fn insert_proposal(proposal: &Proposal) -> ();
         /// Writes what became of a proposal that was open; whether it was open.
@@ -192,6 +192,10 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn current_work_of_agent(agent: AgentId, now: Timestamp, limit: u64) -> Vec<IssueWork> = current_work_of_agent_in;
         /// How many issues the agent has an attempt running on now (the limit of issues at once).
         fn working_issues_of(agent: AgentId) -> u64 = working_issues_of_in;
+        /// How many pieces of work the agent has open at `now` (the definition of *open at `now`*
+        /// of `open_work_on_issues`): what the limit of issues at once caps for the rules that hand
+        /// over.
+        fn open_work_count_of(agent: AgentId, now: Timestamp) -> u64 = open_work_count_of_in;
         /// Whether another piece of work on the issue has an attempt running (all the work on the
     /// issue is looked at, however much there is).
     fn another_in_attempt(issue: IssueId, except: AgentWorkId) -> bool = another_in_attempt_in;

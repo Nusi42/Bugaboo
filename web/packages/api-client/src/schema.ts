@@ -5680,6 +5680,8 @@ export interface components {
        * @description With `renew`: after how many days the rule ends (at most 90).
        */
       days?: number | null;
+      /** @description With `renew`: the rule never runs out; only where an administrator allows it. */
+      never_ends?: boolean;
       /**
        * Format: int64
        * @description The version the person saw.
@@ -7949,6 +7951,8 @@ export interface components {
       pieces: components["schemas"]["MyWorkBody"][];
       /** @description The standing rules of the person's agents that work. */
       rules: components["schemas"]["StandingRuleItem"][];
+      /** @description Whether the organization allows standing rules that never run out. */
+      rules_never_run_out: boolean;
       /** @description Whether the rules were cut at the most it holds. */
       rules_truncated: boolean;
       /** @description Whether the list was cut at the most it holds. */
@@ -9808,7 +9812,7 @@ export interface components {
      */
     RuleAction: "renew" | "stop";
     /**
-     * @description A field a standing rule may change.
+     * @description A field a standing rule may propose a change to.
      * @enum {string}
      */
     RuleField: "labels" | "tags" | "type" | "duplicate-of" | "found-in-release";
@@ -9824,6 +9828,11 @@ export interface components {
       /** @description The name of an own field; a built-in field is named by its word. */
       name?: string | null;
     };
+    /**
+     * @description How a standing rule works on what it finds.
+     * @enum {string}
+     */
+    RuleWay: "proposals" | "hand-over";
     /**
      * @description The rules a value has to keep. Which rules a type can have is decided by
      *     `FieldType`; `Rules::check_definition` refuses a rule the type cannot have.
@@ -10524,6 +10533,11 @@ export interface components {
     };
     /** @description Make a standing rule. */
     StandingRuleBody: {
+      /**
+       * @description With `hand-over`: whether each hand-over may be accepted by itself (when the project allows
+       *     it too).
+       */
+      accept_by_itself?: boolean;
       /** @description The ID of the agent. */
       agent: string;
       /** @description The project in which the rule may create issues. */
@@ -10534,28 +10548,41 @@ export interface components {
        *     out.
        */
       days?: number | null;
-      /** @description The fields the rule may change; none means it only proposes. */
-      fields?: components["schemas"]["RuleField"][];
+      /** @description With `hand-over` and `change-fields`: the fields each hand-over may change, by their keys. */
+      fields?: string[];
+      /** @description The rule never runs out; only where an administrator allows it, and without `days`. */
+      never_ends?: boolean;
+      /**
+       * @description With `hand-over`: what each hand-over of the rule lets the agent do besides what it always
+       *     may.
+       */
+      powers?: components["schemas"]["HandOverPower"][];
       /** @description The ID of the project the rule works in. */
       project: string;
       /** @description The ID of the saved search. */
       search: string;
+      /** @description How the rule works on what it finds: `proposals` (the start) or `hand-over`. */
+      way?: components["schemas"]["RuleWay"];
     };
     /** @description A standing rule. */
     StandingRuleItem: {
+      /** @description Whether each of its hand-overs may be accepted by itself. */
+      accept_by_itself: boolean;
       /** @description The agent. */
       agent: string;
       /** @description The project in which it may create issues. */
       creates_in?: string | null;
       /**
        * Format: date-time
-       * @description When it ends.
+       * @description When it ends; left out for a rule that never runs out.
        */
-      ends_at: string;
-      /** @description The fields it may change. */
-      fields: components["schemas"]["RuleField"][];
+      ends_at?: string | null;
+      /** @description The fields each of its hand-overs lets the agent change, by their keys. */
+      fields: string[];
       /** @description The ID of the rule. */
       id: string;
+      /** @description What each of its hand-overs lets the agent do besides what it always may. */
+      powers: components["schemas"]["HandOverPower"][];
       /** @description The project of the rule. */
       project: string;
       /** @description The saved search. */
@@ -10567,6 +10594,8 @@ export interface components {
        * @description The version of the rule; send it back with a change.
        */
       version: number;
+      /** @description How it works on what it finds. */
+      way: components["schemas"]["RuleWay"];
     };
     /** @description What *Start work day* may say. */
     StartBody: {

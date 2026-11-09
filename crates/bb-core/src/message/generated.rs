@@ -643,14 +643,16 @@ pub const AGENTS_RESUME: MessageKey = MessageKey::new("agents.resume");
 /// The message `agents.review`.
 pub const AGENTS_REVIEW: MessageKey = MessageKey::new("agents.review");
 
+/// The message `agents.rule-accept-by-itself`.
+pub const AGENTS_RULE_ACCEPT_BY_ITSELF: MessageKey =
+    MessageKey::new("agents.rule-accept-by-itself");
+
+/// The message `agents.rule-accept-by-itself-help`.
+pub const AGENTS_RULE_ACCEPT_BY_ITSELF_HELP: MessageKey =
+    MessageKey::new("agents.rule-accept-by-itself-help");
+
 /// The message `agents.rule-agent`.
 pub const AGENTS_RULE_AGENT: MessageKey = MessageKey::new("agents.rule-agent");
-
-/// The message `agents.rule-change`.
-pub const AGENTS_RULE_CHANGE: MessageKey = MessageKey::new("agents.rule-change");
-
-/// The message `agents.rule-change-hint`.
-pub const AGENTS_RULE_CHANGE_HINT: MessageKey = MessageKey::new("agents.rule-change-hint");
 
 /// The message `agents.rule-choose-agent`.
 pub const AGENTS_RULE_CHOOSE_AGENT: MessageKey = MessageKey::new("agents.rule-choose-agent");
@@ -670,15 +672,17 @@ pub const AGENTS_RULE_DAYS: MessageKey = MessageKey::new("agents.rule-days");
 /// The message `agents.rule-ended`.
 pub const AGENTS_RULE_ENDED: MessageKey = MessageKey::new("agents.rule-ended");
 
+/// The message `agents.rule-ends-never`.
+pub const AGENTS_RULE_ENDS_NEVER: MessageKey = MessageKey::new("agents.rule-ends-never");
+
 /// The message `agents.rule-ends-today`.
 pub const AGENTS_RULE_ENDS_TODAY: MessageKey = MessageKey::new("agents.rule-ends-today");
 
-/// The message `agents.rule-field.duplicate-of`.
-pub const AGENTS_RULE_FIELD_DUPLICATE_OF: MessageKey =
-    MessageKey::new("agents.rule-field.duplicate-of");
+/// The message `agents.rule-hand-over`.
+pub const AGENTS_RULE_HAND_OVER: MessageKey = MessageKey::new("agents.rule-hand-over");
 
-/// The message `agents.rule-fields`.
-pub const AGENTS_RULE_FIELDS: MessageKey = MessageKey::new("agents.rule-fields");
+/// The message `agents.rule-hand-over-help`.
+pub const AGENTS_RULE_HAND_OVER_HELP: MessageKey = MessageKey::new("agents.rule-hand-over-help");
 
 /// The message `agents.rule-may`.
 pub const AGENTS_RULE_MAY: MessageKey = MessageKey::new("agents.rule-may");
@@ -708,8 +712,17 @@ pub const AGENTS_RULE_NEED_SEARCH_AGENT: MessageKey =
 /// The message `agents.rule-never`.
 pub const AGENTS_RULE_NEVER: MessageKey = MessageKey::new("agents.rule-never");
 
+/// The message `agents.rule-never-ends`.
+pub const AGENTS_RULE_NEVER_ENDS: MessageKey = MessageKey::new("agents.rule-never-ends");
+
+/// The message `agents.rule-never-ends-help`.
+pub const AGENTS_RULE_NEVER_ENDS_HELP: MessageKey = MessageKey::new("agents.rule-never-ends-help");
+
 /// The message `agents.rule-new`.
 pub const AGENTS_RULE_NEW: MessageKey = MessageKey::new("agents.rule-new");
+
+/// The message `agents.rule-power-hand-over`.
+pub const AGENTS_RULE_POWER_HAND_OVER: MessageKey = MessageKey::new("agents.rule-power-hand-over");
 
 /// The message `agents.rule-power-propose`.
 pub const AGENTS_RULE_POWER_PROPOSE: MessageKey = MessageKey::new("agents.rule-power-propose");
@@ -6334,6 +6347,14 @@ pub const SETTING_AGENTS_RULE_DAYS_HELP: MessageKey =
 pub const SETTING_AGENTS_RULE_DAYS_NAME: MessageKey =
     MessageKey::new("setting.agents.rule-days.name");
 
+/// The message `setting.agents.rules-never-run-out.help`.
+pub const SETTING_AGENTS_RULES_NEVER_RUN_OUT_HELP: MessageKey =
+    MessageKey::new("setting.agents.rules-never-run-out.help");
+
+/// The message `setting.agents.rules-never-run-out.name`.
+pub const SETTING_AGENTS_RULES_NEVER_RUN_OUT_NAME: MessageKey =
+    MessageKey::new("setting.agents.rules-never-run-out.name");
+
 /// The message `setting.ai-apps.enabled.help-off`.
 pub const SETTING_AI_APPS_ENABLED_HELP_OFF: MessageKey =
     MessageKey::new("setting.ai-apps.enabled.help-off");
@@ -8870,15 +8891,6 @@ pub fn agents_rule_line(agent: impl std::fmt::Display, search: impl std::fmt::Di
             ("agent", Value::Text(agent.to_string())),
             ("search", Value::Text(search.to_string())),
         ],
-    )
-}
-
-/// The message `agents.rule-power-change`.
-#[must_use]
-pub fn agents_rule_power_change(fields: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("agents.rule-power-change"),
-        vec![("fields", Value::Text(fields.to_string()))],
     )
 }
 
@@ -16660,12 +16672,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.resume", "Resume"),
     ("agents.resume-name", "Resume {agent}"),
     ("agents.review", "Review"),
-    ("agents.rule-agent", "Agent"),
-    ("agents.rule-change", "Propose changes to these fields only"),
     (
-        "agents.rule-change-hint",
-        "For now the agent only proposes on these fields: nothing changes until a person applies it.",
+        "agents.rule-accept-by-itself",
+        "Accept by itself when its checks pass",
     ),
+    (
+        "agents.rule-accept-by-itself-help",
+        "Off: you review every result. On: a result whose checks all passed is accepted without you where the project allows it, and waits under Accepted by itself until you have looked at it.",
+    ),
+    ("agents.rule-agent", "Agent"),
     ("agents.rule-choose-agent", "Choose an agent"),
     ("agents.rule-confirm", "Create the rule"),
     ("agents.rule-creates", "Create issues in one project"),
@@ -16684,12 +16699,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.rule-ends-in",
         "{count, plural, one {Runs out in # day} other {Runs out in # days}}",
     ),
+    ("agents.rule-ends-never", "Never runs out"),
     ("agents.rule-ends-on", "Runs out on {date}"),
     ("agents.rule-ends-today", "Runs out today"),
-    ("agents.rule-field.duplicate-of", "Duplicate of"),
-    ("agents.rule-fields", "Fields"),
+    (
+        "agents.rule-hand-over",
+        "Hand over what it finds: each issue becomes a hand-over to the agent",
+    ),
+    (
+        "agents.rule-hand-over-help",
+        "Each issue the saved search finds is handed over once, now and later. The agent works on it in attempts and you review every result. The agent never has more open hand-overs than its limit of issues at once.",
+    ),
     ("agents.rule-line", "{search} (agent {agent})"),
-    ("agents.rule-may", "What it may do"),
+    ("agents.rule-may", "What the rule does with what it finds"),
     ("agents.rule-need-agent", "Choose an agent first."),
     (
         "agents.rule-need-creates-in",
@@ -16714,12 +16736,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "agents.rule-never",
-        "A rule never changes a field that holds people or the status.",
+        "A rule never changes a field that holds people.",
+    ),
+    ("agents.rule-never-ends", "Never runs out"),
+    (
+        "agents.rule-never-ends-help",
+        "Your administrators allow rules that never run out. You can stop the rule at any time, and the limits of the agent still apply.",
     ),
     ("agents.rule-new", "Create a standing rule"),
-    ("agents.rule-power-change", "Proposes changes to {fields}."),
     ("agents.rule-power-creates", "Creates issues in {project}."),
-    ("agents.rule-power-propose", "Proposes only."),
+    ("agents.rule-power-hand-over", "Hands over what it finds."),
+    ("agents.rule-power-propose", "Proposes changes."),
     ("agents.rule-project", "Works in the project"),
     (
         "agents.rule-project-gone",
@@ -21725,11 +21752,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.agents.project-switch", "Agents in this project"),
     (
         "setting.agents.rule-days.help",
-        "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed.",
+        "When a person makes a standing rule and sets no end, it ends after this many days. It is never longer than 90 days, however often it is renewed, unless rules that never run out are allowed.",
     ),
     (
         "setting.agents.rule-days.name",
         "Days until a standing rule ends",
+    ),
+    (
+        "setting.agents.rules-never-run-out.help",
+        "Off: every standing rule ends, after 90 days at most. On: a person can create a standing rule that never runs out, so that an agent keeps working with nobody watching. Such a rule can be stopped at any time and the limits of its agent still apply.",
+    ),
+    (
+        "setting.agents.rules-never-run-out.name",
+        "Allow standing rules that never run out",
     ),
     (
         "setting.ai-apps.enabled.help-off",

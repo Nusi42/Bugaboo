@@ -224,7 +224,7 @@ impl GrantStore for super::fake::FakeStore {
     async fn set_rule_end(
         tx: &mut Tx,
         id: StandingRuleId,
-        ends_at: Timestamp,
+        ends_at: Option<Timestamp>,
         ended: bool,
         version: i64,
     ) -> Result<bool, FakeError> {

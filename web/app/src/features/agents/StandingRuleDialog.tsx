@@ -1,116 +1,20 @@
-import { agentRuleDaysDefault, agentRuleDaysMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import {
-  AskDialog,
-  Checkbox,
-  ChoiceGroup,
-  choiceGroupLook,
-  SelectField,
-  TextField,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { AskDialog, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { SavedSearchChoice } from "../search/index.ts";
 import { ActionError } from "./ActionError.tsx";
-import { listedAgents, useCreateRule, useMyAgentList } from "./agents.ts";
-import { projectKey } from "./project-choices.ts";
-import { ProjectSelect } from "./ProjectSelect.tsx";
+import { useCreateRule } from "./agents.ts";
+import { RuleEnds } from "./RuleEnds.tsx";
+import { RuleWayFields } from "./RuleWayFields.tsx";
+import { RuleWhere } from "./RuleWhere.tsx";
 import {
   emptyRuleDraft,
-  offeredFields,
   ruleBody,
-  ruleFieldText,
   ruleWaitsFor,
-  withField,
-  daysAreRight,
   type DraftProps,
   type RuleDraft,
 } from "./rule-draft.ts";
-
-/** The agents of the person that can work, as the choices of the window. */
-function AgentSelect({ draft, onChange }: DraftProps) {
-  const agents = listedAgents(useMyAgentList().data?.items).filter(
-    (agent) => agent.state === "active",
-  );
-  return (
-    <SelectField
-      label={t("agents.rule-agent")}
-      value={draft.agent}
-      onChange={(agent) => {
-        onChange({ agent });
-      }}
-      choices={[
-        { value: "", label: t("agents.rule-choose-agent") },
-        ...agents.map((agent) => ({ value: agent.id, label: agent.name })),
-      ]}
-    />
-  );
-}
-
-/** The fields of the short list, one box each, for a rule that changes fields. */
-function FieldBoxes({ draft, onChange }: DraftProps) {
-  return (
-    <fieldset {...partOf(part.agentWorkGroup)}>
-      <legend {...partOf(part.agentWorkGroupName)}>{t("agents.rule-fields")}</legend>
-      {offeredFields.map((field) => (
-        <Checkbox
-          key={field}
-          label={ruleFieldText(field)}
-          isSelected={draft.fields.includes(field)}
-          onChange={(on) => {
-            onChange({ fields: withField(draft.fields, field, on) });
-          }}
-        />
-      ))}
-    </fieldset>
-  );
-}
-
-/** What the rule may do: only propose, or change the fields of the short list, and create issues in a project. */
-function Powers({ draft, onChange }: DraftProps) {
-  return (
-    <div {...partOf(part.stack)}>
-      <ChoiceGroup
-        legend={t("agents.rule-may")}
-        look={choiceGroupLook.radios}
-        choices={[
-          { value: "propose", label: t("agents.rule-propose") },
-          { value: "change", label: t("agents.rule-change") },
-        ]}
-        value={draft.power}
-        onChange={(power) => {
-          onChange({ power });
-        }}
-      />
-      {draft.power === "change" ? (
-        <>
-          <p {...partOf(part.muted)}>{t("agents.rule-change-hint")}</p>
-          <FieldBoxes draft={draft} onChange={onChange} />
-        </>
-      ) : null}
-      <p {...partOf(part.muted)}>{t("agents.rule-never")}</p>
-      <Checkbox
-        label={t("agents.rule-creates")}
-        isSelected={draft.createIssues}
-        onChange={(on) => {
-          onChange({ createIssues: on });
-        }}
-      />
-      {draft.createIssues ? (
-        <ProjectSelect
-          label={t("agents.rule-creates-in")}
-          valueKey={projectKey.id}
-          value={draft.createsIn}
-          onChange={(createsIn) => {
-            onChange({ createsIn });
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
 
 /** The fields of the window. */
 function Fields({
@@ -131,32 +35,9 @@ function Fields({
       ) : (
         <p {...partOf(part.text)}>{t("agents.rule-search-named", { search: searchName })}</p>
       )}
-      <AgentSelect draft={draft} onChange={onChange} />
-      <ProjectSelect
-        label={t("agents.rule-project")}
-        valueKey={projectKey.id}
-        value={draft.project}
-        onChange={(project) => {
-          onChange({ project });
-        }}
-      />
-      <Powers draft={draft} onChange={onChange} />
-      <TextField
-        label={t("agents.rule-days")}
-        description={t("agents.rule-days-help", {
-          usual: agentRuleDaysDefault,
-          most: agentRuleDaysMost,
-        })}
-        errorMessage={
-          daysAreRight(draft.days)
-            ? undefined
-            : t("agents.rule-days-wrong", { most: agentRuleDaysMost })
-        }
-        value={draft.days}
-        onChange={(days) => {
-          onChange({ days });
-        }}
-      />
+      <RuleWhere draft={draft} onChange={onChange} />
+      <RuleWayFields draft={draft} onChange={onChange} />
+      <RuleEnds draft={draft} onChange={onChange} />
     </div>
   );
 }
@@ -174,9 +55,10 @@ export interface StandingRuleDialogProps {
 const noStart: Partial<RuleDraft> = {};
 
 /**
- * The window of a standing rule (UX §4.17, §6.3): the saved search, the agent, what it may do (only
- * propose, or change the fields of a short list, never people or the status; or create issues in a
- * project), and when it runs out (30 days, at most 90).
+ * The window of a standing rule (UX §4.17, §6.3): the saved search, the agent, what it does with
+ * what it finds (propose changes, or hand over each issue it finds with the powers of a hand-over;
+ * and create issues in a project), and when it runs out (30 days, at most 90, or never where an
+ * administrator allows it).
  */
 export function StandingRuleDialog({
   isOpen,

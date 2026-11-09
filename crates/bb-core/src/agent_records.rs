@@ -6,7 +6,9 @@
 
 use jiff::Timestamp;
 
-use crate::agent_work::{AgentWorkState, CheckResult, HandOverPower, ReviewAnswer, RuleField};
+use crate::agent_work::{
+    AgentWorkState, CheckResult, HandOverPower, ReviewAnswer, RuleField, RuleWay,
+};
 use crate::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId, UserId,
@@ -107,7 +109,7 @@ pub struct HandOver {
     pub version: i64,
 }
 
-/// A saved search an agent works on, with narrow powers (AI-32).
+/// A saved search an agent works on (AI-32): by proposals, or by a hand-over of each issue it finds.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct StandingRule {
     /// The ID of the rule.
@@ -125,18 +127,30 @@ pub struct StandingRule {
     /// The project of the search; the rule works only there.
     #[not_personal]
     pub project: ProjectId,
-    /// The fields the rule may change; empty means it only proposes.
+    /// How the rule works on what it finds.
     #[not_personal]
-    pub fields: Vec<RuleField>,
+    pub way: RuleWay,
+    /// What each hand-over of the rule lets the agent do besides what it always may; empty for a
+    /// rule that proposes.
+    #[not_personal]
+    pub powers: Vec<HandOverPower>,
+    /// Whether each hand-over of the rule may be accepted by itself (when the project allows it
+    /// too); false for a rule that proposes.
+    #[not_personal]
+    pub accept_by_itself: bool,
+    /// The fields each hand-over of the rule lets the agent change, as their keys; empty for a
+    /// rule that proposes.
+    #[personal(category = "content", basis = "contract")]
+    pub fields: Vec<String>,
     /// The project in which the rule may create issues.
     #[not_personal]
     pub creates_in: Option<ProjectId>,
     /// Whether it still works.
     #[not_personal]
     pub state: GivingState,
-    /// When it ends.
+    /// When it ends; none for a rule that never runs out.
     #[not_personal]
-    pub ends_at: Timestamp,
+    pub ends_at: Option<Timestamp>,
     /// When it was made.
     #[not_personal]
     pub made_at: Timestamp,
@@ -193,6 +207,16 @@ pub struct IssueWork {
     /// The version of the record.
     #[not_personal]
     pub version: i64,
+}
+
+impl StandingRule {
+    /// Whether the rule works at `now`: it was not stopped or ended, and it has no end or has not
+    /// reached it. The one definition the views and the jobs use; the store's statements say the
+    /// same (`working_rule`).
+    #[must_use]
+    pub fn works_at(&self, now: Timestamp) -> bool {
+        self.state == GivingState::Open && self.ends_at.is_none_or(|end| end > now)
+    }
 }
 
 impl IssueWork {

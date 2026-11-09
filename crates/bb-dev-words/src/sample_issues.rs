@@ -311,11 +311,13 @@ pub(crate) mod tests {
             },
             "rules": [{
                 "search": plan.rule.search,
+                "way": "proposals",
                 "days_ahead": plan.rule.days,
                 "fields": [],
                 "names_a_people_field": false,
                 "matches": 3,
             }],
+            "rules_never_run_out": false,
             "apps": 1,
             "marks": { "agent": 4, "matching_events": 4 },
         })

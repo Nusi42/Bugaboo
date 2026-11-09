@@ -93,4 +93,17 @@ settings! {
         lockable: false,
         bounds: (1, 90),
     }
+
+    /// Whether a person may make a standing rule that never runs out (ADR-0029, amendment M7,
+    /// WP-14): off at the start, so every rule ends within the longest time of `agents.rule-days`
+    /// until an administrator allows rules that go on for good.
+    AGENTS_RULES_NEVER_RUN_OUT: Bool = {
+        key: "agents.rules-never-run-out",
+        name: message::SETTING_AGENTS_RULES_NEVER_RUN_OUT_NAME,
+        default: false,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_AGENTS_RULES_NEVER_RUN_OUT_HELP,
+        lockable: false,
+    }
 }

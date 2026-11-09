@@ -5,15 +5,12 @@ import { useNow } from "../../shared/use-now.ts";
 import { ActionError } from "./ActionError.tsx";
 import { agentNamed, runsOutText, useChangeRule, type ListedAgent, type Rule } from "./agents.ts";
 import { type RuleNames } from "./rule-names.ts";
-import { ruleFieldText } from "./rule-draft.ts";
 import { AgentRow } from "./AgentRow.tsx";
 
-/** What a rule may do, in words: it proposes, or it changes these fields, and it may create issues in a project. */
+/** What a rule does, in words: it proposes, or it hands over what it finds, and it may create issues in a project. */
 function powerText(rule: Rule, names: RuleNames): string {
   const power =
-    rule.fields.length === 0
-      ? t("agents.rule-power-propose")
-      : t("agents.rule-power-change", { fields: rule.fields.map(ruleFieldText).join(", ") });
+    rule.way === "hand-over" ? t("agents.rule-power-hand-over") : t("agents.rule-power-propose");
   return rule.creates_in === undefined || rule.creates_in === null
     ? power
     : `${power} ${t("agents.rule-power-creates", { project: names.project(rule.creates_in) })}`;
@@ -40,15 +37,17 @@ function RuleActions({ rule, agent, search }: ActionsProps) {
   };
   return (
     <div {...partOf(part.agentsActions)}>
-      <Button
-        isPending={change.isPending}
-        aria-label={t("agents.renew-name", { agent, search })}
-        onPress={() => {
-          send("renew");
-        }}
-      >
-        {t("agents.renew")}
-      </Button>
+      {rule.ends_at === undefined || rule.ends_at === null ? null : (
+        <Button
+          isPending={change.isPending}
+          aria-label={t("agents.renew-name", { agent, search })}
+          onPress={() => {
+            send("renew");
+          }}
+        >
+          {t("agents.renew")}
+        </Button>
+      )}
       <ConfirmDialog
         triggerLabel={t("agents.rule-stop")}
         triggerName={t("agents.rule-stop-name", { agent, search })}

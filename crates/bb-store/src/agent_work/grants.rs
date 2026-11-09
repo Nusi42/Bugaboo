@@ -289,6 +289,9 @@ impl GrantStore for AuthStorage {
                 StandingRuleRow::Person,
                 StandingRuleRow::Search,
                 StandingRuleRow::Project,
+                StandingRuleRow::Way,
+                StandingRuleRow::Powers,
+                StandingRuleRow::AcceptByItself,
                 StandingRuleRow::Fields,
                 StandingRuleRow::CreatesIn,
                 StandingRuleRow::State,
@@ -302,10 +305,13 @@ impl GrantStore for AuthStorage {
                 Expr::val(rule.person.stored()),
                 Expr::val(rule.search.stored()),
                 Expr::val(rule.project.stored()),
+                Expr::val(rule.way.code()),
+                Expr::val(serde_json::to_string(&rule.powers)?),
+                Expr::val(rule.accept_by_itself),
                 Expr::val(serde_json::to_string(&rule.fields)?),
                 Expr::val(rule.creates_in.map(StoredId::stored)),
                 Expr::val(rule.state.code()),
-                Expr::val(to_micros(rule.ends_at)),
+                Expr::val(rule_end_stored(rule.ends_at)),
                 Expr::val(to_micros(rule.made_at)),
                 Expr::val(rule.version),
             ])
@@ -317,7 +323,7 @@ impl GrantStore for AuthStorage {
     async fn set_rule_end(
         transaction: &mut Transaction,
         id: StandingRuleId,
-        ends_at: Timestamp,
+        ends_at: Option<Timestamp>,
         ended: bool,
         version: i64,
     ) -> Result<bool, StoreError> {
@@ -336,7 +342,7 @@ impl GrantStore for AuthStorage {
             |update| {
                 update
                     .value(StandingRuleRow::State, state.code())
-                    .value(StandingRuleRow::EndsAt, to_micros(ends_at));
+                    .value(StandingRuleRow::EndsAt, rule_end_stored(ends_at));
             },
         )
         .await

@@ -86,7 +86,7 @@ export function numbersAreRight(draft: HandOverDraft): boolean {
 }
 
 /** The powers that are ticked. */
-function powersOf(draft: HandOverDraft): Power[] {
+export function powersOf(draft: HandOverDraft): Power[] {
   return [
     ...(draft.changeFields ? (["change-fields"] as const) : []),
     ...(draft.changeStatus ? (["change-status"] as const) : []),

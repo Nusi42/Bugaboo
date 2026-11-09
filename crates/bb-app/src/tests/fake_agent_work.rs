@@ -92,10 +92,7 @@ impl AgentWorkRecords for super::fake::FakeStore {
                             (found.issue, found.rule) > (issue, rule)
                         })))
                     && records.rules.iter().any(|rule| {
-                        rule.id == found.rule
-                            && rule.agent == agent
-                            && rule.state == GivingState::Open
-                            && rule.ends_at > now
+                        rule.id == found.rule && rule.agent == agent && rule.works_at(now)
                     })
             })
             .cloned()
@@ -388,6 +385,19 @@ impl AgentWorkRecords for super::fake::FakeStore {
             .works
             .iter()
             .filter(|work| work.agent == agent && work.state.in_attempt() && state.is_open(work))
+            .count() as u64)
+    }
+
+    async fn open_work_count_of_in(
+        tx: &mut Tx,
+        agent: AgentId,
+        _now: Timestamp,
+    ) -> Result<u64, FakeError> {
+        let state = &tx.state.work;
+        Ok(state
+            .works
+            .iter()
+            .filter(|work| work.agent == agent && state.is_open(work))
             .count() as u64)
     }
 

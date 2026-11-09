@@ -2,6 +2,7 @@
 
 use bb_app::agent_work::{AgentWorkRecords, WorkDetails};
 
+use super::counts;
 use super::*;
 
 impl AgentWorkRecords for AuthStorage {
@@ -270,21 +271,15 @@ impl AgentWorkRecords for AuthStorage {
         transaction: &mut Transaction,
         agent: AgentId,
     ) -> Result<u64, StoreError> {
-        let mut select = Query::select();
-        select
-            .expr_as(Expr::col(IssueWorkRow::Id).count(), Computed::Total)
-            .from(IssueWorkRow::Table)
-            .and_where(Expr::col(IssueWorkRow::Agent).eq(agent.stored()))
-            .and_where(
-                Expr::col(IssueWorkRow::State)
-                    .is_in(AgentWorkState::IN_ATTEMPT.map(AgentWorkState::code)),
-            );
-        only_open_work(&mut select);
-        let count: i64 = match transaction.fetch_optional(&select).await? {
-            Some(row) => row.get(Computed::Total)?,
-            None => 0,
-        };
-        Ok(u64::try_from(count).unwrap_or(0))
+        counts::working_issues(transaction, agent).await
+    }
+
+    async fn open_work_count_of_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+        now: Timestamp,
+    ) -> Result<u64, StoreError> {
+        counts::open_work(transaction, agent, now).await
     }
 
     async fn agent_has_open_giving_in(

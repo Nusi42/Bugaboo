@@ -2,7 +2,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::agent_records::{GivingState, ProposalState};
-use bb_core::agent_work::{HandOverPower, RuleField};
+use bb_core::agent_work::{HandOverPower, RuleField, RuleWay};
 use bb_core::id::{AgentId, IssueId, IssueTypeId, ProjectId};
 use serde_json::json;
 
@@ -150,24 +150,27 @@ pub(super) async fn rule_world(world: &World) -> Result<RuleWorld, AppError> {
     })
 }
 
-pub(super) fn rule_request(given: &RuleWorld, fields: Vec<RuleField>) -> CreateStandingRule {
+/// A rule that proposes, with the usual end.
+pub(super) fn rule_request(given: &RuleWorld) -> CreateStandingRule {
     CreateStandingRule {
         session_token: given.team.session_token.clone(),
         agent: given.agent,
         search: given.search,
         project: given.project,
-        fields,
+        way: RuleWay::Propose,
+        powers: Vec::new(),
+        fields: Vec::new(),
+        accept_by_itself: false,
         creates_in: None,
         days: None,
+        never_ends: false,
     }
 }
 
 pub(super) async fn made(world: &World, given: &RuleWorld) -> Result<StandingRuleView, AppError> {
-    Ok(
-        create_standing_rule(&world.ctx(), rule_request(given, Vec::new()))
-            .await?
-            .into_value(),
-    )
+    Ok(create_standing_rule(&world.ctx(), rule_request(given))
+        .await?
+        .into_value())
 }
 
 /// What the saved search finds: every issue the store has (the in-memory store does not search).
@@ -184,7 +187,7 @@ pub(super) fn found_by_search(world: &World) {
 }
 
 pub(super) fn payload_of(rule: &StandingRuleView) -> serde_json::Value {
-    json!({ "rule": rule.id.to_string(), "ends_at": rule.ends_at.to_string() })
+    json!({ "rule": rule.id.to_string(), "ends_at": rule.ends_at.map(|end| end.to_string()) })
 }
 
 #[tokio::test]
@@ -192,9 +195,9 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
     let world = World::new().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
-    let thirty = rule.ends_at.as_second() - world.ctx().now().as_second();
+    let thirty = rule.ends_at.unwrap().as_second() - world.ctx().now().as_second();
     assert_eq!(thirty, 30 * 24 * 3600);
-    let mut too_long = rule_request(&given, Vec::new());
+    let mut too_long = rule_request(&given);
     too_long.days = Some(91);
     assert!(refused(
         &create_standing_rule(&world.ctx(), too_long)
@@ -217,12 +220,13 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
             rule: rule.id,
             renew: true,
             days: Some(90),
+            never_ends: false,
             version: rule.version,
         },
     )
     .await?
     .into_value();
-    world.store.lock().state.work.rules[0].ends_at = world.ctx().now();
+    world.store.lock().state.work.rules[0].ends_at = Some(world.ctx().now());
     world.ctx().run_rule_runs_out(&stale).await?;
     assert_eq!(
         world.store.lock().state.work.rules[0].state,
@@ -230,7 +234,7 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
     );
     // At its end the rule ends.
     let current = StandingRuleView {
-        ends_at: world.ctx().now(),
+        ends_at: Some(world.ctx().now()),
         ..renewed
     };
     world.ctx().run_rule_runs_out(&payload_of(&current)).await?;
@@ -303,9 +307,9 @@ async fn another_type(world: &World, current: IssueTypeId) -> Result<IssueTypeId
 async fn m7_f120_an_agent_changes_nothing_on_an_issue_only_a_standing_rule_found() -> Outcome {
     let world = World::new().await?;
     let given = rule_world(&world).await?;
-    // The rule names the field *Type*, and its search finds the issue: still no hand-over, no
-    // attempt and so no run, which is why the agent only reads and proposes there.
-    create_standing_rule(&world.ctx(), rule_request(&given, vec![RuleField::Type])).await?;
+    // The search of the rule finds the issue: still no hand-over, no attempt and so no run, which
+    // is why the agent only reads and proposes there.
+    create_standing_rule(&world.ctx(), rule_request(&given)).await?;
     found_by_search(&world);
     world
         .ctx()
@@ -397,7 +401,7 @@ pub(crate) async fn create_standing_rule_scenario(world: &World) -> Added {
     let given = rule_world(world).await.map_err(text)?;
     measured(
         &world.store,
-        create_standing_rule(&world.ctx(), rule_request(&given, Vec::new())),
+        create_standing_rule(&world.ctx(), rule_request(&given)),
     )
     .await
 }
@@ -414,6 +418,7 @@ pub(crate) async fn change_standing_rule_scenario(world: &World) -> Added {
                 rule: rule.id,
                 renew: false,
                 days: None,
+                never_ends: false,
                 version: rule.version,
             },
         ),
@@ -590,6 +595,7 @@ async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome 
         rule: rule.id,
         renew: true,
         days: None,
+        never_ends: false,
         version,
     };
     // Off for the project the rule works in: no renewal, but it can be stopped.
@@ -606,11 +612,11 @@ async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome 
     let team_role =
         super::workflows_rules::starting_role(&world, bb_policy::StartingRole::TeamMember).await?;
     super::workflows_rules::assign(&world, &given.team, team_role, other).await?;
-    let mut creating = rule_request(&given, Vec::new());
+    let mut creating = rule_request(&given);
     creating.creates_in = Some(other);
     create_standing_rule(&world.ctx(), creating).await?;
     switch_agents(&world, SettingsScope::Project(other), false).await?;
-    let mut off = rule_request(&given, Vec::new());
+    let mut off = rule_request(&given);
     off.creates_in = Some(other);
     let refusal = create_standing_rule(&world.ctx(), off).await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
@@ -623,7 +629,7 @@ async fn ai_32_a_rule_that_creates_in_a_project_gives_top_level_issues_with_no_m
     use crate::issues::{CreateIssue, create_issue};
     let world = World::new().await?;
     let given = rule_world(&world).await?;
-    let mut request = rule_request(&given, Vec::new());
+    let mut request = rule_request(&given);
     request.creates_in = Some(given.project);
     create_standing_rule(&world.ctx(), request).await?;
     let issue_type = super::scenarios_issues::a_type(&world)

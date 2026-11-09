@@ -106,17 +106,24 @@ test("The window of a standing rule", async ({ page, server }) => {
   await scene.dispose();
 });
 
-test("The window of a standing rule that changes fields", async ({ page, server }) => {
+test("The window of a standing rule that hands over what it finds", async ({ page, server }) => {
   const scene = await agentsScene(server);
   await signIn(page, ada);
-  await inFourChosenThemes(page, "standing-rule-change", MILESTONE, paths.appearance, async () => {
-    await page.goto(paths.myAgents);
-    await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
-    const window = page.getByRole("alertdialog");
-    await window.getByLabel(t("agents.rule-change")).check();
-    // On a phone the list of fields is below the first screen of the window: it is in the picture.
-    await window.getByRole("group", { name: t("agents.rule-fields") }).scrollIntoViewIfNeeded();
-  });
+  await inFourChosenThemes(
+    page,
+    "standing-rule-hand-over",
+    MILESTONE,
+    paths.appearance,
+    async () => {
+      await page.goto(paths.myAgents);
+      await page.getByRole("button", { name: t("agents.rule-new"), exact: true }).click();
+      const window = page.getByRole("alertdialog");
+      await window.getByLabel(t("agents.rule-hand-over")).check();
+      await window.getByLabel(t("agent-work.power-change-fields")).check();
+      // On a phone the powers are below the first screen of the window: they are in the picture.
+      await window.getByRole("group", { name: t("agent-work.may-do") }).scrollIntoViewIfNeeded();
+    },
+  );
   await scene.dispose();
 });
 

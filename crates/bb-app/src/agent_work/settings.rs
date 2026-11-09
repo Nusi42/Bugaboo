@@ -2,7 +2,8 @@
 
 use bb_core::id::ProjectId;
 use bb_core::settings::{
-    AGENTS_ACCEPT_BY_ITSELF, AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, SettingValue,
+    AGENTS_ACCEPT_BY_ITSELF, AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, AGENTS_RULES_NEVER_RUN_OUT,
+    SettingValue,
 };
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -47,5 +48,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(layers
             .get(&AGENTS_RULE_DAYS)
             .unwrap_or(bb_core::agent_work::DEFAULT_RULE_DAYS))
+    }
+
+    /// Whether the organization allows standing rules that never run out (off at the start).
+    pub(crate) async fn rules_never_run_out(&self) -> Result<bool, AppError> {
+        let layers = self.setting_layers_of(None).await?;
+        Ok(layers.get(&AGENTS_RULES_NEVER_RUN_OUT).unwrap_or(false))
     }
 }

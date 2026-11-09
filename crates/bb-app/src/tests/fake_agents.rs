@@ -63,19 +63,17 @@ impl FakeStore {
                         .map(|issue| issue.project),
                 );
             }
-            for rule in records.rules.iter().filter(|r| {
-                r.agent == agent
-                    && r.state == bb_core::agent_records::GivingState::Open
-                    && r.ends_at > now
-            }) {
+            for rule in records
+                .rules
+                .iter()
+                .filter(|r| r.agent == agent && r.works_at(now))
+            {
                 work.projects.insert(rule.project);
                 work.creates_in.extend(rule.creates_in);
                 for found in records.matches.iter().filter(|m| m.rule == rule.id) {
                     work.issues.insert(found.issue);
-                    work.allowances
-                        .entry(found.issue)
-                        .or_default()
-                        .add(Allowance::of_rule(&rule.fields));
+                    // A rule gives the agent the issue to read and nothing to change.
+                    work.allowances.entry(found.issue).or_default();
                 }
             }
             work

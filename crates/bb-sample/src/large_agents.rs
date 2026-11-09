@@ -9,7 +9,9 @@
 
 use bb_app::agent_work::{CreateStandingRule, HandOver, create_standing_rule, hand_over};
 use bb_app::saved_searches::{SaveSearch, save_search};
-use bb_core::agent_work::{MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER, MOST_RULE_DAYS};
+use bb_core::agent_work::{
+    MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER, MOST_RULE_DAYS, RuleWay,
+};
 use bb_core::saved_search::Presentation;
 use bb_dev_words::sample::AiPlan;
 use bb_dev_words::{LargeAgents, LargePlan};
@@ -229,9 +231,13 @@ async fn create_rules(
                 agent: agent.id,
                 search: id_in(&saved, "id")?,
                 project,
+                way: RuleWay::Propose,
+                powers: Vec::new(),
                 fields: Vec::new(),
+                accept_by_itself: false,
                 creates_in: None,
                 days: Some(MOST_RULE_DAYS),
+                never_ends: false,
             },
         )
         .await

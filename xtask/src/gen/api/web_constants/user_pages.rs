@@ -418,7 +418,7 @@ fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
         (
             "A standing rule ends after",
             format!(
-                "{} unless you choose another end, at most {}; you are told {} before",
+                "{} unless you choose another end, at most {} (no end where your administrators allow rules that never run out); you are told {} before",
                 days(DEFAULT_RULE_DAYS)?,
                 days(MOST_RULE_DAYS)?,
                 days(RULE_WARNING_DAYS)?

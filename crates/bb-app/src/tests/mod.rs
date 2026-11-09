@@ -13,6 +13,7 @@ mod agent_work_narrowing;
 mod agent_work_notices;
 mod agent_work_proposals;
 mod agent_work_review;
+mod agent_work_rule_hand_over;
 mod agent_work_rules;
 mod agent_work_runs;
 mod agent_work_scenarios;

@@ -1,15 +1,13 @@
-//! Standing rules (AI-32, ADR-0029, decision 3): a saved search an agent works on with narrow
-//! powers. A rule proposes by default; it changes only the fields it names from a short list, and
-//! never a field that holds people and never the status. It runs out after 30 days unless set
-//! otherwise (at most 90) and is renewed with one click.
+//! Standing rules (AI-32, ADR-0029, decision 3): a saved search an agent works on. A rule proposes
+//! by default, or hands over each issue it finds (`rules_hand_over.rs`); it never changes an issue
+//! by itself. It runs out after 30 days unless set otherwise (at most 90, or never where the
+//! organization allows it) and is renewed with one click.
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::{
-    GivingState, Proposal, ProposalState, RuleMatch, StandingRule as RuleRecord,
-};
-use bb_core::agent_work::{RuleField, rule_end, rule_warning_at};
-use bb_core::event::{Actor as EventActor, RecordKind};
-use bb_core::id::{AgentNoteId, IssueId, StandingRuleId};
+use bb_core::agent_records::{GivingState, Proposal, ProposalState, StandingRule as RuleRecord};
+use bb_core::agent_work::{EndError, RuleField, RuleWay, rule_end_asked, rule_warning_at};
+use bb_core::event::RecordKind;
+use bb_core::id::{AgentNoteId, StandingRuleId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
@@ -27,11 +25,7 @@ use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, intern
 use crate::input::cursor_or_invalid;
 use crate::issues::{ChangeIssue, change_issue};
 use crate::jobs::{JobKind, QueuedJob};
-use crate::search::SearchScope;
 use crate::tags::{AddLabel, AddTag, add_label, add_tag};
-
-/// How many issues one look at a rule reads at once.
-const MATCH_PAGE: u32 = 100;
 
 pub(super) fn view_of(rule: &RuleRecord) -> StandingRuleView {
     StandingRuleView {
@@ -39,7 +33,10 @@ pub(super) fn view_of(rule: &RuleRecord) -> StandingRuleView {
         agent: rule.agent,
         search: rule.search,
         project: rule.project,
+        way: rule.way,
+        powers: rule.powers.clone(),
         fields: rule.fields.clone(),
+        accept_by_itself: rule.accept_by_itself,
         creates_in: rule.creates_in,
         state: rule.state,
         ends_at: rule.ends_at,
@@ -50,15 +47,37 @@ pub(super) fn view_of(rule: &RuleRecord) -> StandingRuleView {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The jobs that go with the end of a rule: it runs out, and three days before it tells.
     fn rule_jobs(&self, rule: &RuleRecord) -> Result<Vec<QueuedJob>, AppError> {
+        // A rule that never runs out has no end to run out at, and nothing to warn of.
+        let Some(ends_at) = rule.ends_at else {
+            return Ok(Vec::new());
+        };
         let end = json!({
             payload::RULE: rule.id.to_string(),
-            payload::ENDS_AT: rule.ends_at.to_string(),
+            payload::ENDS_AT: ends_at.to_string(),
         });
-        let mut jobs = vec![self.queued(JobKind::RuleRunsOut, end.clone(), rule.ends_at)?];
-        if let Some(at) = rule_warning_at(rule.ends_at).filter(|at| *at > self.now()) {
+        let mut jobs = vec![self.queued(JobKind::RuleRunsOut, end.clone(), ends_at)?];
+        if let Some(at) = rule_warning_at(ends_at).filter(|at| *at > self.now()) {
             jobs.push(self.queued(JobKind::RuleAboutToRunOut, end, at)?);
         }
         Ok(jobs)
+    }
+
+    /// The end of a rule as its maker asked for it: the days (the usual number of the organization
+    /// when none are named) or none at all where the organization allows rules that never run out.
+    async fn end_asked(
+        &self,
+        days: Option<i64>,
+        never: bool,
+    ) -> Result<Option<jiff::Timestamp>, AppError> {
+        let days = match (days, never) {
+            (None, false) => Some(self.rule_days().await?),
+            (days, _) => days,
+        };
+        let allowed = self.rules_never_run_out().await?;
+        rule_end_asked(self.now(), days, never, allowed).map_err(|error| match error {
+            EndError::NotAllowed => AppError::Refused(ErrorCode::Forbidden),
+            EndError::OutOfRange => AppError::Refused(ErrorCode::InvalidRequest),
+        })
     }
 
     /// Refuses a rule that could not be made now, for the making and for a renewal: the agent is
@@ -84,6 +103,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             |project: bb_core::id::ProjectId| allowed.contains(&project) && !off.contains(&project);
         if !in_reach(rule.project) || !rule.creates_in.is_none_or(in_reach) {
             return Err(ErrorCode::Forbidden.into());
+        }
+        // A rule that proposes holds nothing of a hand-over; one that hands over names members an
+        // agent can be given (COMP-10: never a field that holds people).
+        match rule.way {
+            RuleWay::Propose => {
+                if !rule.powers.is_empty() || !rule.fields.is_empty() || rule.accept_by_itself {
+                    return Err(ErrorCode::InvalidRequest.into());
+                }
+            }
+            RuleWay::HandOver => self.ensure_nameable(&rule.fields).await?,
         }
         // The person must be able to open the search; anybody else's is one answer for all.
         self.open_search(actor, rule.search).await?;
@@ -112,7 +141,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// # Errors
 /// `resource.not-found` for an agent that is not the person's, a search they cannot open or a
 /// project they do not see, `access.forbidden` where they may not give agents work,
-/// `request.invalid` for an end beyond 90 days.
+/// `request.invalid` for an end beyond 90 days or powers on a rule that proposes, `access.forbidden`
+/// for a rule that never runs out where the organization does not allow it.
 pub async fn create_standing_rule<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateStandingRule,
@@ -120,22 +150,23 @@ pub async fn create_standing_rule<S: AuthStore>(
     let actor = ctx.session_actor(&input.session_token).await?;
     let person = actor.person.id;
     let now = ctx.now();
-    let days = match input.days {
-        Some(days) => days,
-        None => ctx.rule_days().await?,
-    };
-    let ends_at =
-        rule_end(now, Some(days)).map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
+    let ends_at = ctx.end_asked(input.days, input.never_ends).await?;
     let mut fields = input.fields;
     fields.sort();
     fields.dedup();
+    let mut powers = input.powers;
+    powers.sort();
+    powers.dedup();
     let rule = RuleRecord {
         id: StandingRuleId::generate(&mut ctx.ids()),
         agent: input.agent,
         person,
         search: input.search,
         project: input.project,
+        way: input.way,
+        powers,
         fields,
+        accept_by_itself: input.accept_by_itself,
         creates_in: input.creates_in,
         state: GivingState::Open,
         ends_at,
@@ -156,11 +187,9 @@ pub async fn create_standing_rule<S: AuthStore>(
             set_to(member::AGENT, json!(rule.agent.to_string())),
             set_to(member::SEARCH, json!(rule.search.to_string())),
             set_to(member::PROJECT, json!(rule.project.to_string())),
-            set_to(
-                member::FIELDS,
-                json!(rule.fields.iter().map(|f| f.code()).collect::<Vec<_>>()),
-            ),
-            set_to(member::ENDS_AT, json!(ends_at.to_string())),
+            set_to(member::WAY, json!(rule.way.code())),
+            set_to(member::FIELDS, json!(rule.fields)),
+            set_to(member::ENDS_AT, json!(ends_at.map(|end| end.to_string()))),
             set_to(bb_core::version::FIELD, json!(1)),
         ],
     )?;
@@ -183,7 +212,8 @@ pub async fn create_standing_rule<S: AuthStore>(
         .authorize(view_of(&rule)))
 }
 
-/// Renews a standing rule (a new end, 30 days from now unless set, at most 90) or stops it.
+/// Renews a standing rule (a new end, 30 days from now unless set, at most 90, or none where the
+/// organization allows it) or stops it.
 ///
 /// # Errors
 /// `resource.not-found` for a rule that is not the person's, `request.invalid` for an end beyond
@@ -210,16 +240,9 @@ pub async fn change_standing_rule<S: AuthStore>(
         ctx.ensure_rule_may_work(&actor, &found).await?;
     }
     let (ends_at, ended) = if input.renew {
-        let days = match input.days {
-            Some(days) => days,
-            None => ctx.rule_days().await?,
-        };
-        (
-            rule_end(now, Some(days)).map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?,
-            false,
-        )
+        (ctx.end_asked(input.days, input.never_ends).await?, false)
     } else {
-        (found.ends_at.min(now), true)
+        (Some(found.ends_at.map_or(now, |end| end.min(now))), true)
     };
     let next = RuleRecord {
         ends_at,
@@ -241,7 +264,7 @@ pub async fn change_standing_rule<S: AuthStore>(
         entity(RecordKind::StandingRule, found.id),
         vec![
             set_to(member::STATE, json!(next.state.code())),
-            set_to(member::ENDS_AT, json!(ends_at.to_string())),
+            set_to(member::ENDS_AT, json!(ends_at.map(|end| end.to_string()))),
             bb_core::version::counted_up(found.version),
         ],
     )?;
@@ -331,16 +354,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .filter(|rule| rule.agent == agent)
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        if rule.state != GivingState::Open || rule.ends_at <= self.now() {
+        if !rule.works_at(self.now()) {
             return Err(ErrorCode::AgentWorkNotReady.into());
+        }
+        // A rule that hands over gives the agent the issue itself: it changes it in its attempts.
+        if rule.way != RuleWay::Propose {
+            return Err(ErrorCode::Forbidden.into());
         }
         if !self.chain_of(found.project).await?.contains(&rule.project) {
             return Err(AppError::Refused(ErrorCode::NotFound));
-        }
-        // A rule that names fields proposes about those; one that names none proposes about any
-        // field of the short list.
-        if !rule.fields.is_empty() && !rule.fields.contains(&input.field) {
-            return Err(ErrorCode::Forbidden.into());
         }
         // Only an issue the rule found: the agent reads others only through a hand-over.
         if self
@@ -587,188 +609,5 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(ErrorCode::InvalidRequest.into())
             }
         }
-    }
-
-    /// The work of the job of a rule that ran out: ends the rule if it is the end the job was
-    /// queued for. A rule that was renewed, stopped or is not there leaves nothing to do.
-    ///
-    /// # Errors
-    /// `request.invalid` for a payload that names no rule, an internal error when the store fails.
-    pub(crate) async fn run_rule_runs_out(&self, job: &serde_json::Value) -> Result<(), AppError> {
-        let Some(rule) = self.rule_of_job(job).await? else {
-            return Ok(());
-        };
-        if rule.ends_at > self.now() {
-            return Ok(());
-        }
-        let event = self.event(
-            EventActor::System,
-            entity(RecordKind::StandingRule, rule.id),
-            vec![
-                set_to(member::STATE, json!(GivingState::Ended.code())),
-                bb_core::version::counted_up(rule.version),
-            ],
-        )?;
-        let (id, ends_at, version) = (rule.id, rule.ends_at, rule.version);
-        let result = self
-            .store()
-            .record_change(&event, move |transaction| {
-                Box::pin(async move {
-                    if S::set_rule_end(transaction, id, ends_at, true, version).await? {
-                        Ok(())
-                    } else {
-                        Err(S::aborted())
-                    }
-                })
-            })
-            .await;
-        nothing_if_aborted::<S>(result)
-    }
-
-    /// The work of the job three days before a rule runs out: writes the event the notification
-    /// *A standing rule runs out soon* is built from, once, if the rule still ends then.
-    ///
-    /// # Errors
-    /// `request.invalid` for a payload that names no rule, an internal error when the store fails.
-    pub(crate) async fn run_rule_about_to_run_out(
-        &self,
-        job: &serde_json::Value,
-    ) -> Result<(), AppError> {
-        let Some(rule) = self.rule_of_job(job).await? else {
-            return Ok(());
-        };
-        let event = self.event(
-            EventActor::System,
-            entity(RecordKind::StandingRule, rule.id),
-            vec![
-                set_to(member::STATE, json!("about-to-run-out")),
-                set_to(member::AGENT, json!(rule.agent.to_string())),
-                set_to(member::ENDS_AT, json!(rule.ends_at.to_string())),
-            ],
-        )?;
-        self.store()
-            .record_change(&event, move |_| Box::pin(async move { Ok(()) }))
-            .await
-            .map_err(|error| internal::<S>(&error))
-    }
-
-    /// The rule a job names, when it is still open and still ends when the job was queued for.
-    async fn rule_of_job(&self, job: &serde_json::Value) -> Result<Option<RuleRecord>, AppError> {
-        let id: StandingRuleId = job
-            .get(payload::RULE)
-            .and_then(serde_json::Value::as_str)
-            .and_then(|text| text.parse().ok())
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-        let ends: Option<jiff::Timestamp> = job
-            .get(payload::ENDS_AT)
-            .and_then(serde_json::Value::as_str)
-            .and_then(|text| text.parse().ok());
-        Ok(self
-            .store()
-            .standing_rule(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|rule| rule.state == GivingState::Open && ends == Some(rule.ends_at)))
-    }
-
-    /// The work of the job that writes down what newly came under the rules of a project: it runs
-    /// each open rule's saved search as the person who made the rule, and writes down each issue
-    /// that is new to the rule, with the moment. An issue the agent may not read is not written
-    /// down.
-    ///
-    /// # Errors
-    /// `request.invalid` for a payload that names no project, an internal error when the store
-    /// fails.
-    pub(crate) async fn run_rule_matches(&self, job: &serde_json::Value) -> Result<(), AppError> {
-        let project: bb_core::id::ProjectId = job
-            .get(payload::PROJECT)
-            .and_then(serde_json::Value::as_str)
-            .and_then(|text| text.parse().ok())
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-        let rules = self
-            .store()
-            .open_rules_in(project)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        for rule in rules.into_iter().filter(|rule| rule.ends_at > self.now()) {
-            self.match_rule(&rule).await?;
-        }
-        Ok(())
-    }
-
-    async fn match_rule(&self, rule: &RuleRecord) -> Result<(), AppError> {
-        let failed = |error| internal::<S>(&error);
-        let Some(person) = self.person_known(rule.person).await? else {
-            return Ok(());
-        };
-        let agent_on = self.store().agent(rule.agent).await.map_err(failed)?;
-        if !agent_on.is_some_and(|agent| agent.may_act() && agent.person == rule.person) {
-            return Ok(());
-        }
-        let actor = Actor { person, key: None };
-        let opened = self.open_search(&actor, rule.search).await;
-        let Ok(opened) = opened else {
-            return Ok(());
-        };
-        let text = opened.stored.search.text.clone();
-        let mut prepared = self
-            .prepare_search(&actor, &text, SearchScope::Within(rule.project))
-            .await?;
-        let mut fresh: Vec<IssueId> = Vec::new();
-        prepared.request.limit = u64::from(MATCH_PAGE);
-        loop {
-            let hits = self
-                .store()
-                .search_page(&prepared.request)
-                .await
-                .map_err(crate::search::stopped)?;
-            let last = hits.last().map(|hit| hit.issue.id);
-            // Which of this page the rule knows already: read for the page, never for all.
-            let page: Vec<IssueId> = hits.iter().map(|hit| hit.issue.id).collect();
-            let known = self
-                .store()
-                .known_matches(rule.id, page.clone())
-                .await
-                .map_err(failed)?;
-            fresh.extend(page.into_iter().filter(|issue| !known.contains(issue)));
-            match last {
-                Some(last) if hits.len() as u64 >= prepared.request.limit => {
-                    prepared.request.after = Some(last);
-                }
-                _ => break,
-            }
-        }
-        let now = self.now();
-        if fresh.is_empty() {
-            return Ok(());
-        }
-        let event = self.event(
-            EventActor::System,
-            entity(RecordKind::StandingRule, rule.id),
-            vec![set_to(
-                member::ISSUES,
-                json!(fresh.iter().map(ToString::to_string).collect::<Vec<_>>()),
-            )],
-        )?;
-        let rule_id = rule.id;
-        self.store()
-            .record_change(&event, move |transaction| {
-                Box::pin(async move {
-                    for issue in &fresh {
-                        S::insert_match(
-                            transaction,
-                            &RuleMatch {
-                                rule: rule_id,
-                                issue: *issue,
-                                at: now,
-                            },
-                        )
-                        .await?;
-                    }
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(failed)
     }
 }

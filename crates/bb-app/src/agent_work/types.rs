@@ -3,8 +3,8 @@
 
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, StopCause,
-    WaitsFor,
+    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, RuleWay,
+    StopCause, WaitsFor,
 };
 use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
@@ -331,12 +331,23 @@ pub struct CreateStandingRule {
     /// The project the rule works in: the search runs inside it, and the person needs *Create
     /// agents that work for you* there.
     pub project: ProjectId,
-    /// The fields the rule may change; empty means it only proposes.
-    pub fields: Vec<RuleField>,
+    /// How the rule works on what it finds.
+    pub way: RuleWay,
+    /// What each hand-over of the rule lets the agent do besides what it always may; empty for a
+    /// rule that proposes.
+    pub powers: Vec<HandOverPower>,
+    /// The fields each hand-over of the rule lets the agent change, as their keys; empty for a
+    /// rule that proposes.
+    pub fields: Vec<String>,
+    /// Whether each hand-over of the rule may be accepted by itself; false for a rule that
+    /// proposes.
+    pub accept_by_itself: bool,
     /// The project in which it may create issues.
     pub creates_in: Option<ProjectId>,
     /// After how many days the rule ends; 30 when empty, at most 90.
     pub days: Option<i64>,
+    /// Whether the rule never runs out; only where the organization allows it, and with no days.
+    pub never_ends: bool,
 }
 
 /// *Renew* a standing rule, or stop it.
@@ -349,6 +360,8 @@ pub struct ChangeStandingRule {
     pub renew: bool,
     /// After how many days the renewed rule ends.
     pub days: Option<i64>,
+    /// Whether the renewed rule never runs out (as for a new rule).
+    pub never_ends: bool,
     /// The version the person saw.
     pub version: i64,
 }
@@ -364,14 +377,20 @@ pub struct StandingRuleView {
     pub search: SavedSearchId,
     /// The project of the search.
     pub project: ProjectId,
-    /// The fields it may change.
-    pub fields: Vec<RuleField>,
+    /// How it works on what it finds.
+    pub way: RuleWay,
+    /// What each of its hand-overs lets the agent do besides what it always may.
+    pub powers: Vec<HandOverPower>,
+    /// The fields each of its hand-overs lets the agent change, as their keys.
+    pub fields: Vec<String>,
+    /// Whether each of its hand-overs may be accepted by itself.
+    pub accept_by_itself: bool,
     /// The project in which it may create issues.
     pub creates_in: Option<ProjectId>,
     /// Whether it still works.
     pub state: GivingState,
-    /// When it ends.
-    pub ends_at: Timestamp,
+    /// When it ends; none for a rule that never runs out.
+    pub ends_at: Option<Timestamp>,
     /// The version of the record.
     pub version: i64,
 }
@@ -531,4 +550,7 @@ pub struct MyAgentWork {
     pub rules: Vec<StandingRuleView>,
     /// Whether the rules were cut at the most *My agents* shows.
     pub rules_truncated: bool,
+    /// Whether the organization allows standing rules that never run out (the rule window
+    /// offers *Never runs out* only then).
+    pub rules_never_run_out: bool,
 }

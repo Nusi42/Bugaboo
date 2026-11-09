@@ -14,11 +14,59 @@ use tokio::sync::Notify;
 
 use super::tests::request_with;
 use super::tests_agent::{agent_fields, an_agent};
-use super::tests_agent_work::{ENDS, Given, Made, given, hand_over, rule_that_found};
+use super::tests_agent_work::{ENDS, Given, Made, given, hand_over, holds, rule_that_found};
 use super::tests_more::titles_of;
 use crate::AuthStorage;
 use crate::test_support::{at, event};
 use bb_app::ports::ChangeStore as _;
+
+#[tokio::test]
+async fn m7_wp14_a_rule_with_no_end_is_read_back_without_one_and_always_works() -> TestResult {
+    each_database("m7_wp14_rule_no_end", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let issue = data.issues[0].id;
+        let rule = rule_that_found(
+            storage,
+            &mut made,
+            (owner, fixer),
+            &data,
+            &[issue],
+            at(ENDS),
+        )
+        .await?;
+        made.step += 1;
+        let step = made.step;
+        let (id, version) = (rule.id, rule.version);
+        storage
+            .record_change(&event(&mut made.source, step), move |transaction| {
+                Box::pin(async move {
+                    assert!(
+                        AuthStorage::set_rule_end(transaction, id, None, false, version).await?
+                    );
+                    Ok(())
+                })
+            })
+            .await?;
+        assert_eq!(
+            storage.standing_rule(id).await?.map(|r| r.ends_at),
+            Some(None)
+        );
+        // Long after any end a rule could have had, it still works and still gives the issue.
+        let far = at(ENDS * 1_000_000);
+        let reached = holds(storage, fixer, far, &[issue]).await?;
+        assert!(reached.contains_key(&issue));
+        assert!(storage.open_rules().await?.iter().any(|r| r.id == id));
+        Ok(())
+    })
+    .await
+}
 
 #[tokio::test]
 async fn ai_33_agent_state_finds_every_state_until_a_review_and_agent_only_who_still_works()

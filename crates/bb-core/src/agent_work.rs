@@ -2,9 +2,9 @@
 //! written once and free of storage.
 //!
 //! A person gives an agent work in two ways only: a hand-over of issues by their IDs, or a standing
-//! rule over a saved search with narrow powers. What the agent does on an issue is its own record.
+//! rule over a saved search that proposes or hands over what it finds. What the agent does on an issue is its own record.
 //! The functions here answer the questions both the use cases and the jobs ask: when does it end,
-//! may a rule change this field, what is missing in the brief, is an attempt accepted by itself.
+//! what is missing in the brief, is an attempt accepted by itself.
 
 use jiff::{SignedDuration, Timestamp};
 
@@ -32,7 +32,8 @@ pub const DEFAULT_HAND_OVER_DAYS: i64 = default_days(AGENTS_HAND_OVER_DAYS.defin
 /// The longest a hand-over can last, so no work stays open for good (the bound of the setting).
 pub const MOST_HAND_OVER_DAYS: i64 = most_days(AGENTS_HAND_OVER_DAYS.definition());
 /// A standing rule runs out after this many days unless set otherwise (the default of the setting
-/// `agents.rule-days`).
+/// `agents.rule-days`); with the setting `agents.rules-never-run-out` on, a rule can also have no
+/// end.
 pub const DEFAULT_RULE_DAYS: i64 = default_days(AGENTS_RULE_DAYS.definition());
 /// The longest a standing rule can last, however often it is set or renewed (the bound of the
 /// setting).
@@ -112,7 +113,20 @@ crate::words_in_api!(
 );
 
 words! {
-    /// The fields a standing rule may be told to change. Never a field that holds people, never the
+    /// How a standing rule works on what its saved search finds (ADR-0029, amendment "Rules that
+    /// hand over"). It is chosen when the rule is made and does not change.
+    pub enum RuleWay {
+        /// The agent reads what the rule finds and proposes; nothing changes until a person applies it.
+        Propose => "proposals",
+        /// Each issue the rule finds is handed over to the agent, once.
+        HandOver => "hand-over",
+    }
+}
+
+crate::words_in_api!(RuleWay, "How a standing rule works on what it finds.");
+
+words! {
+    /// The fields a standing rule may propose a change to. Never a field that holds people, never the
     /// status: the list is closed, so there is no word for them (COMP-10).
     pub enum RuleField {
         /// Labels.
@@ -128,7 +142,10 @@ words! {
     }
 }
 
-crate::words_in_api!(RuleField, "A field a standing rule may change.");
+crate::words_in_api!(
+    RuleField,
+    "A field a standing rule may propose a change to."
+);
 
 words! {
     /// The answers of a review.
@@ -199,6 +216,8 @@ pub fn missing_in_brief(
 pub enum EndError {
     /// The end is not after the start, or is further away than the longest.
     OutOfRange,
+    /// A rule with no end was asked for where the organization does not allow it.
+    NotAllowed,
 }
 
 /// The end of something that lasts `days` from `start`, for `days` of `1..=most`; `None` takes the
@@ -234,29 +253,32 @@ pub fn rule_end(start: Timestamp, days: Option<i64>) -> Result<Timestamp, EndErr
     end_after(start, days, DEFAULT_RULE_DAYS, MOST_RULE_DAYS)
 }
 
+/// The end of a standing rule as a person asked for it: `never` is a rule with no end (`None`),
+/// allowed only where the organization allows it; otherwise the end after `days` (30 unless set,
+/// at most 90).
+///
+/// # Errors
+/// [`EndError::NotAllowed`] for `never` where it is not allowed, [`EndError::OutOfRange`] for days
+/// out of range (also with `never`, which names no days).
+pub fn rule_end_asked(
+    start: Timestamp,
+    days: Option<i64>,
+    never: bool,
+    never_allowed: bool,
+) -> Result<Option<Timestamp>, EndError> {
+    match (never, days) {
+        (true, Some(_)) => Err(EndError::OutOfRange),
+        (true, None) if never_allowed => Ok(None),
+        (true, None) => Err(EndError::NotAllowed),
+        (false, days) => rule_end(start, days).map(Some),
+    }
+}
+
 /// When the warning that a rule runs out comes: three days before its end.
 #[must_use]
 pub fn rule_warning_at(end: Timestamp) -> Option<Timestamp> {
     end.checked_sub(SignedDuration::from_hours(24 * RULE_WARNING_DAYS))
         .ok()
-}
-
-/// What a standing rule may do (AI-32). `Propose` is the start: nothing changes until a person
-/// applies it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum RulePower {
-    /// Write proposals only.
-    Propose,
-    /// Change only these fields.
-    ChangeFields(Vec<RuleField>),
-}
-
-impl RulePower {
-    /// Whether the rule may change `field` by itself.
-    #[must_use]
-    pub fn may_change(&self, field: RuleField) -> bool {
-        matches!(self, Self::ChangeFields(fields) if fields.contains(&field))
-    }
 }
 
 /// The members of an issue an agent can be given to change, by their keys: the word of the field
@@ -347,21 +369,7 @@ impl Allowance {
         }
     }
 
-    /// The allowance a standing rule gives: only the fields it names, and only those that are
-    /// members of an issue.
-    #[must_use]
-    pub fn of_rule(fields: &[RuleField]) -> Self {
-        Self {
-            fields: fields
-                .iter()
-                .filter_map(|field| field.issue_member())
-                .map(str::to_owned)
-                .collect(),
-            ..Self::default()
-        }
-    }
-
-    /// Adds what another hand-over or rule allows on the same issue.
+    /// Adds what another hand-over allows on the same issue.
     pub fn add(&mut self, other: Self) {
         for field in other.fields {
             if !self.fields.contains(&field) {
@@ -383,21 +391,6 @@ impl Allowance {
             return self.status;
         }
         self.fields.iter().any(|field| field == member)
-    }
-}
-
-impl RuleField {
-    /// The member of an issue that a change of this field writes, when it has one. *Duplicate of*
-    /// and *Found in release* are changed through a relation and an own field, which an agent
-    /// reaches only as the links of related issues and the fields a hand-over names.
-    #[must_use]
-    pub const fn issue_member(self) -> Option<&'static str> {
-        match self {
-            Self::Type => Some(issue_member::ISSUE_TYPE),
-            Self::Labels => Some(issue_member::LABELS),
-            Self::Tags => Some(issue_member::TAGS),
-            Self::DuplicateOf | Self::FoundInRelease => None,
-        }
     }
 }
 
@@ -585,6 +578,29 @@ mod tests {
     }
 
     #[test]
+    fn m7_wp14_a_rule_has_no_end_only_where_the_organization_allows_it() {
+        let start = at("2026-11-01T00:00:00Z");
+        assert_eq!(rule_end_asked(start, None, true, true), Ok(None));
+        assert_eq!(
+            rule_end_asked(start, None, true, false),
+            Err(EndError::NotAllowed)
+        );
+        assert_eq!(
+            rule_end_asked(start, Some(10), true, true),
+            Err(EndError::OutOfRange)
+        );
+        assert_eq!(
+            rule_end_asked(start, None, false, false),
+            Ok(Some(at("2026-12-01T00:00:00Z")))
+        );
+        // The allowance does not lift the bound of days.
+        assert_eq!(
+            rule_end_asked(start, Some(91), false, true),
+            Err(EndError::OutOfRange)
+        );
+    }
+
+    #[test]
     fn ai_32_a_standing_rule_never_changes_people_fields() {
         // The list of fields is closed: no word names a field of people or the status.
         for field in RuleField::ALL {
@@ -593,9 +609,6 @@ mod tests {
                 assert_ne!(code, forbidden);
             }
         }
-        assert!(!RulePower::Propose.may_change(RuleField::Labels));
-        assert!(RulePower::ChangeFields(vec![RuleField::Labels]).may_change(RuleField::Labels));
-        assert!(!RulePower::ChangeFields(vec![RuleField::Labels]).may_change(RuleField::Tags));
     }
 
     #[test]
@@ -616,9 +629,6 @@ mod tests {
         assert!(!hand_over.may_change("priority", "status"), "not named");
         let status = Allowance::of_hand_over(&[HandOverPower::ChangeStatus], &[]);
         assert!(status.may_change("status", "status"));
-        let rule = Allowance::of_rule(&[RuleField::Type, RuleField::Labels]);
-        assert!(rule.may_change("issue-type", "status"));
-        assert!(!rule.may_change("status", "status"));
     }
 
     #[test]

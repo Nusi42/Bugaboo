@@ -60,7 +60,7 @@ impl AiPlan {
         }
         self.judge_agents(judge, ai);
         Self::judge_work(judge, &ai["work"]);
-        self.judge_rules(judge, &ai["rules"]);
+        self.judge_rules(judge, ai);
         judge.present("AI apps allowed by a Contributor", number(&ai["apps"]));
         let marks = &ai["marks"];
         judge.present("marks of text written by an agent", number(&marks["agent"]));
@@ -138,8 +138,11 @@ impl AiPlan {
         );
     }
 
-    /// The standing rules: the one of the plan, proposing only, ending within the limit.
-    fn judge_rules(&self, judge: &mut Judge<'_>, rules: &Value) {
+    /// The standing rules: the one of the plan, proposing only, ending within the limit, or with no
+    /// end only where the organization allows rules that never run out.
+    fn judge_rules(&self, judge: &mut Judge<'_>, ai: &Value) {
+        let rules = &ai["rules"];
+        let never_allowed = ai["rules_never_run_out"] == true;
         let number = |value: &Value| value.as_u64().unwrap_or(0);
         let rules = rules.as_array().map_or(&[][..], Vec::as_slice);
         judge.exactly("standing rules", rules.len() as u64, 1);
@@ -147,12 +150,21 @@ impl AiPlan {
             if rule["search"] != self.rule.search.as_str() {
                 judge.problem(&format!("the standing rule runs over {}", rule["search"]));
             }
-            let ahead = rule["days_ahead"].as_i64().unwrap_or(-1);
-            if !(0..=MOST_RULE_DAYS).contains(&ahead) {
-                judge.problem(&format!(
+            match rule["days_ahead"].as_i64() {
+                Some(ahead) if (0..=MOST_RULE_DAYS).contains(&ahead) => {}
+                Some(ahead) => judge.problem(&format!(
                     "a standing rule runs out in {ahead} days, the most is {MOST_RULE_DAYS}"
-                ));
+                )),
+                None if never_allowed => {}
+                None => judge.problem(
+                    "a standing rule never runs out, and the organization does not allow it",
+                ),
             }
+            judge.exactly(
+                "standing rules that hand over",
+                u64::from(rule["way"] == "hand-over"),
+                0,
+            );
             judge.exactly(
                 "standing rules that name a field of people",
                 u64::from(rule["names_a_people_field"] == true),
@@ -189,6 +201,15 @@ mod tests {
     }
 
     #[test]
+    fn a_rule_with_no_end_is_accepted_where_the_organization_allows_it() {
+        let (plan, asked, mut dump) = ok();
+        let ai = &mut dump["issues"]["work"]["ai"];
+        ai["rules"][0]["days_ahead"] = json!(null);
+        ai["rules_never_run_out"] = json!(true);
+        assert_eq!(plan.problems(asked, "run", &dump), Vec::<String>::new());
+    }
+
+    #[test]
     fn what_breaks_the_rules_of_agents_is_named() {
         let (plan, asked, ok) = ok();
         for (path, bad, word) in [
@@ -210,6 +231,8 @@ mod tests {
             ),
             ("rules", json!([]), "standing rules"),
             ("rules.0.days_ahead", json!(91), "runs out in 91 days"),
+            ("rules.0.days_ahead", json!(null), "never runs out"),
+            ("rules.0.way", json!("hand-over"), "hand over"),
             (
                 "rules.0.names_a_people_field",
                 json!(true),

@@ -59,6 +59,8 @@ pub(crate) struct MyAgentWorkBody {
     rules: Vec<StandingRuleItem>,
     /// Whether the rules were cut at the most it holds.
     rules_truncated: bool,
+    /// Whether the organization allows standing rules that never run out.
+    rules_never_run_out: bool,
 }
 
 impl Masked for MyAgentWorkBody {}
@@ -77,6 +79,7 @@ impl From<&MyAgentWork> for MyAgentWorkBody {
                 .collect(),
             offered_truncated: all.offered_truncated,
             rules_truncated: all.rules_truncated,
+            rules_never_run_out: all.rules_never_run_out,
             rules: all.rules.iter().map(StandingRuleItem::from).collect(),
             pieces: all
                 .items

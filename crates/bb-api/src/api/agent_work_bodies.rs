@@ -6,7 +6,8 @@ use bb_app::agent_work::{
 };
 use bb_core::agent_records::{GivingState, ProposalState, ResultKind};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, StopCause,
+    AgentWorkState, BriefPart, CheckResult, HandOverPower, ReviewAnswer, RuleField, RuleWay,
+    StopCause,
 };
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -475,9 +476,20 @@ pub(crate) struct StandingRuleBody {
     pub(super) search: String,
     /// The ID of the project the rule works in.
     pub(super) project: String,
-    /// The fields the rule may change; none means it only proposes.
+    /// How the rule works on what it finds: `proposals` (the start) or `hand-over`.
+    #[serde(default = "propose_way")]
+    pub(super) way: RuleWay,
+    /// With `hand-over`: what each hand-over of the rule lets the agent do besides what it always
+    /// may.
     #[serde(default)]
-    pub(super) fields: Vec<RuleField>,
+    pub(super) powers: Vec<HandOverPower>,
+    /// With `hand-over` and `change-fields`: the fields each hand-over may change, by their keys.
+    #[serde(default)]
+    pub(super) fields: Vec<String>,
+    /// With `hand-over`: whether each hand-over may be accepted by itself (when the project allows
+    /// it too).
+    #[serde(default)]
+    pub(super) accept_by_itself: bool,
     /// The project in which the rule may create issues.
     #[serde(default)]
     pub(super) creates_in: Option<String>,
@@ -485,6 +497,14 @@ pub(crate) struct StandingRuleBody {
     /// out.
     #[serde(default)]
     pub(super) days: Option<i64>,
+    /// The rule never runs out; only where an administrator allows it, and without `days`.
+    #[serde(default)]
+    pub(super) never_ends: bool,
+}
+
+/// A rule that does not say how it works proposes.
+fn propose_way() -> RuleWay {
+    RuleWay::Propose
 }
 
 /// A standing rule.
@@ -498,14 +518,20 @@ pub(crate) struct StandingRuleItem {
     pub(super) search: String,
     /// The project of the rule.
     pub(super) project: String,
-    /// The fields it may change.
-    pub(super) fields: Vec<RuleField>,
+    /// How it works on what it finds.
+    pub(super) way: RuleWay,
+    /// What each of its hand-overs lets the agent do besides what it always may.
+    pub(super) powers: Vec<HandOverPower>,
+    /// The fields each of its hand-overs lets the agent change, by their keys.
+    pub(super) fields: Vec<String>,
+    /// Whether each of its hand-overs may be accepted by itself.
+    pub(super) accept_by_itself: bool,
     /// The project in which it may create issues.
     pub(super) creates_in: Option<String>,
     /// Whether it still works.
     pub(super) state: GivingState,
-    /// When it ends.
-    pub(super) ends_at: String,
+    /// When it ends; left out for a rule that never runs out.
+    pub(super) ends_at: Option<String>,
     /// The version of the rule; send it back with a change.
     pub(super) version: i64,
 }
@@ -519,10 +545,13 @@ impl From<&StandingRuleView> for StandingRuleItem {
             agent: rule.agent.to_string(),
             search: rule.search.to_string(),
             project: rule.project.to_string(),
+            way: rule.way,
+            powers: rule.powers.clone(),
             fields: rule.fields.clone(),
+            accept_by_itself: rule.accept_by_itself,
             creates_in: rule.creates_in.map(|project| project.to_string()),
             state: rule.state,
-            ends_at: rule.ends_at.to_string(),
+            ends_at: rule.ends_at.map(|end| end.to_string()),
             version: rule.version,
         }
     }
@@ -536,6 +565,9 @@ pub(crate) struct ChangeRuleBody {
     /// With `renew`: after how many days the rule ends (at most 90).
     #[serde(default)]
     pub(super) days: Option<i64>,
+    /// With `renew`: the rule never runs out; only where an administrator allows it.
+    #[serde(default)]
+    pub(super) never_ends: bool,
     /// The version the person saw.
     pub(super) version: i64,
 }
