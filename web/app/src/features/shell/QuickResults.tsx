@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { IssueId, partOf, part } from "@bugaboo/ui";
+import { IssueId, partOf, part, rowStates } from "@bugaboo/ui";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
 import { busyKeys, resultKey } from "./quick-search-collect.ts";
+import type { QuickResult } from "./quick-search-sources.ts";
 import type { QuickFound } from "./use-quick-results.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
@@ -16,6 +17,46 @@ export interface QuickResultsProps {
   readonly listKey: number;
   /** Opens a result by its name. */
   readonly onOpen: (key: string | number) => void;
+}
+
+interface QuickItemProps {
+  /** The name of the result among all of them. */
+  readonly id: string;
+  readonly result: QuickResult;
+}
+
+/**
+ * One result. An issue reads as in every row of issues, tinted and edged as it: its status, ID and
+ * type first, then its title, then its priority (R9).
+ */
+function QuickItem({ id, result }: QuickItemProps) {
+  const { issue } = result;
+  return (
+    <ListBoxItem
+      id={id}
+      textValue={result.title}
+      {...partOf(part.quickSearchItem, { states: issue === undefined ? [] : rowStates(issue) })}
+    >
+      <span {...partOf(part.quickSearchTitle)}>
+        {issue === undefined ? (
+          result.issueId === undefined ? null : (
+            <IssueId id={result.issueId} />
+          )
+        ) : (
+          issue.lead
+        )}
+        <span {...partOf(part.quickSearchName)}>{result.title}</span>
+        {issue === undefined ? null : (
+          <span {...partOf(part.quickSearchPriority)}>{issue.end}</span>
+        )}
+      </span>
+      {result.hint === undefined ? null : (
+        <Text slot={descriptionSlot} {...partOf(part.hint)}>
+          {result.hint}
+        </Text>
+      )}
+    </ListBoxItem>
+  );
 }
 
 /** What quick search found, grouped by where it was found. */
@@ -43,23 +84,11 @@ export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
           <ListBoxSection key={group.id} {...partOf(part.column)}>
             <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
             {group.results.map((result) => (
-              <ListBoxItem
+              <QuickItem
                 key={resultKey(group, result)}
                 id={resultKey(group, result)}
-                textValue={result.title}
-                {...partOf(part.quickSearchItem)}
-              >
-                {/* An issue reads as in every row of issues: its ID first, then its title (R9). */}
-                <span {...partOf(part.quickSearchTitle)}>
-                  {result.issueId === undefined ? null : <IssueId id={result.issueId} />}
-                  {result.title}
-                </span>
-                {result.hint === undefined ? null : (
-                  <Text slot={descriptionSlot} {...partOf(part.hint)}>
-                    {result.hint}
-                  </Text>
-                )}
-              </ListBoxItem>
+                result={result}
+              />
             ))}
           </ListBoxSection>
         ))}

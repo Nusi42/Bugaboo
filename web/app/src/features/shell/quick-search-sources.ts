@@ -1,5 +1,20 @@
+import type { RowStateInput } from "@bugaboo/ui";
+import type { ReactNode } from "react";
+
 import type { Permissions } from "../../shared/permissions.ts";
 import { createRegistry, useRegistry } from "./registry.ts";
+
+/**
+ * How a result that is an issue looks like a row of the issue list (R9): the group of its status and
+ * its priority tint and edge the row; the cells are the ones the list draws, which the issues area
+ * makes, so the shell holds no second drawing of them.
+ */
+export interface QuickIssue extends RowStateInput {
+  /** The status icon, the ID and the type icon, before the title. */
+  readonly lead: ReactNode;
+  /** The priority, after the title. */
+  readonly end: ReactNode;
+}
 
 /** What is shown of one thing quick search found. */
 export interface QuickShown {
@@ -11,6 +26,8 @@ export interface QuickShown {
   readonly hint?: string;
   /** The ID of the issue the result is, shown before its title as in every row of issues. */
   readonly issueId?: string;
+  /** The issue the result is, drawn as a row of the list; none where the answer did not carry what the row needs. */
+  readonly issue?: QuickIssue;
 }
 
 /** What opening a result does: it goes to an address of the app, or it runs an action. */

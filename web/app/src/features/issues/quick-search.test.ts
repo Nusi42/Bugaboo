@@ -112,6 +112,44 @@ describe("cfg_08 an ID opens the issue", () => {
   });
 });
 
+/** The fields the lean request asks for, so a row can look as one of the list. */
+const WITH_LOOK = "id,readable_id,title,status,priority,issue_type";
+
+/** The request for the words "login": the title only, the lean fields, ten at most. */
+const ASKED = { params: { query: { q: 'title contains "login"', fields: WITH_LOOK, limit: 10 } } };
+
+const FULL = {
+  id: "i5",
+  readable_id: "WEB-5",
+  title: "Login slow",
+  status: { id: "s1", name: "In review", status_group: "in-progress" },
+  priority: "critical",
+  issue_type: { id: "t1", name: "Bug", icon: "bug" },
+};
+
+describe("quick search shows an issue as a row of the list", () => {
+  it("carries the group of the status and the priority that tint and edge the row", async () => {
+    answers({ [SEARCH]: { items: [FULL] } });
+    const [found] = await issuesSource.search("login", asker);
+    expect(found?.issue).toMatchObject({ group: "in-progress", priority: "critical" });
+    expect(found?.issue?.lead).toBeDefined();
+    expect(found?.issue?.end).toBeDefined();
+  });
+
+  it("carries the same for the issue found by its ID", async () => {
+    answers({ [ISSUE]: { issue: FULL }, [SEARCH]: { items: [] } });
+    const [found] = await issuesSource.search("WEB-12", asker);
+    expect(found?.issue).toMatchObject({ group: "in-progress", priority: "critical" });
+  });
+
+  it("is a plain line, still found, where the answer lacks the status", async () => {
+    answers({ [SEARCH]: { items: [{ readable_id: "WEB-6", title: "No status" }] } });
+    const [found] = await issuesSource.search("login", asker);
+    expect(found?.id).toBe("WEB-6");
+    expect(found?.issue).toBeUndefined();
+  });
+});
+
 describe("cfg_08 words find issues by title", () => {
   it("cfg_08_words_find_issues_by_title: searches the title only, ten issues at most, and lists them", async () => {
     answers({
@@ -126,9 +164,7 @@ describe("cfg_08 words find issues by title", () => {
     const found = await issuesSource.search("login", asker);
     expect(found.map((one) => one.path)).toEqual(["/issues/WEB-1", "/issues/API-7"]);
     expect(get).toHaveBeenCalledOnce();
-    expect(get).toHaveBeenCalledWith(SEARCH, {
-      params: { query: { q: 'title contains "login"', fields: "readable_id,title", limit: 10 } },
-    });
+    expect(get).toHaveBeenCalledWith(SEARCH, ASKED);
     expect(print.mock.calls[0]?.[0]).toMatchObject({
       filter: {
         field: { word: "title" },

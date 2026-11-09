@@ -1,12 +1,11 @@
-import { t } from "@bugaboo/messages";
-import { IssueTypeIcon, listShowsWord, Priority } from "@bugaboo/ui";
+import { IssueTypeIcon } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { formatAgo } from "../../shared/format.ts";
 import { cellOf, type ColumnCell } from "../../shared/list-columns.ts";
 import type { FoundLine } from "./found-issues.ts";
 import { agentValueOf, isAgentWord } from "./agent-value.ts";
-import { issueCells } from "./issue-cells.tsx";
+import { issueCells, priorityCell } from "./issue-cells.tsx";
 import type { OwnColumns } from "./own-columns.ts";
 import { assignedPeople, labelsOf, valueOf } from "./value-cell.tsx";
 
@@ -45,13 +44,7 @@ const contentOf: Readonly<Record<ColumnCell, (input: CellInput) => ReactNode>> =
     ),
   title: ({ start }) => start.title,
   labels: ({ line }) => labelsOf(line),
-  priority: ({ line }) => (
-    <Priority
-      priority={line.priority}
-      label={t(`priority.${line.priority}`)}
-      showWord={listShowsWord(line.priority)}
-    />
-  ),
+  priority: ({ line }) => priorityCell(line.priority),
   person: ({ line }) => (line.assignedTo.length === 0 ? undefined : assignedPeople(line)),
   changed: ({ line, context }) =>
     line.changedAt === undefined ? undefined : formatAgo(line.changedAt, context.now),

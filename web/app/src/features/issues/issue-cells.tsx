@@ -1,5 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
-import { IssueId, IssueTypeIcon, Link, StatusIcon, iconSize, type ListColumn } from "@bugaboo/ui";
+import { t } from "@bugaboo/messages";
+import {
+  IssueId,
+  IssueTypeIcon,
+  Link,
+  Priority,
+  StatusIcon,
+  iconSize,
+  listShowsWord,
+  type ListColumn,
+} from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { AgentMark } from "../../shared/AgentMark.tsx";
@@ -26,6 +36,17 @@ export interface CellOptions {
   readonly before?: ReactNode;
   /** The issue is the one that is open: its link is the current page. */
   readonly current?: boolean;
+}
+
+/** The priority cell of every row that shows one (R9): the icon, and the word only where the list shows it (UX §4.2). */
+export function priorityCell(priority: Schema<"Priority">): ReactNode {
+  return (
+    <Priority
+      priority={priority}
+      label={t(`priority.${priority}`)}
+      showWord={listShowsWord(priority)}
+    />
+  );
 }
 
 /**

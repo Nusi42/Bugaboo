@@ -2407,32 +2407,53 @@ textarea,
   height: var(--size-icon-small);
 }
 
+[data-part="quick-search.item"] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  min-height: var(--size-control);
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--r-ctl);
+  border-inline-start: var(--size-edge) solid transparent;
+  outline: none;
+}
+
 [data-part="list-row"][data-state~="group-not-started"],
 [data-part="issue-row"][data-state~="group-not-started"],
+[data-part="quick-search.item"][data-state~="group-not-started"],
 [data-part="timeline-bar"][data-state~="group-not-started"] {
   background: var(--tint-ns);
 }
 
 [data-part="list-row"][data-state~="group-in-progress"],
 [data-part="issue-row"][data-state~="group-in-progress"],
+[data-part="quick-search.item"][data-state~="group-in-progress"],
 [data-part="timeline-bar"][data-state~="group-in-progress"] {
   background: var(--tint-ip);
 }
 
 [data-part="list-row"][data-state~="group-done"],
 [data-part="issue-row"][data-state~="group-done"],
+[data-part="quick-search.item"][data-state~="group-done"],
 [data-part="timeline-bar"][data-state~="group-done"] {
   background: var(--tint-done);
 }
 
 [data-part="list-row"][data-state~="priority-critical"],
 [data-part="issue-row"][data-state~="priority-critical"],
+[data-part="quick-search.item"][data-state~="priority-critical"],
 [data-part="timeline-bar"][data-state~="priority-critical"] {
   border-inline-start: var(--size-edge) solid var(--danger);
 }
 
 [data-part="list-row"][data-state~="priority-high"],
 [data-part="issue-row"][data-state~="priority-high"],
+[data-part="quick-search.item"][data-state~="priority-high"],
 [data-part="timeline-bar"][data-state~="priority-high"] {
   border-inline-start: var(--size-edge) solid var(--edge-high);
 }
@@ -2440,6 +2461,7 @@ textarea,
 @media (forced-colors: active) {
   [data-part="list-row"][data-state~="priority-critical"],
   [data-part="issue-row"][data-state~="priority-critical"],
+  [data-part="quick-search.item"][data-state~="priority-critical"],
   [data-part="timeline-bar"][data-state~="priority-critical"] {
     border-inline-start-style: double;
     border-inline-start-color: CanvasText;
@@ -2449,6 +2471,7 @@ textarea,
 @media (forced-colors: active) {
   [data-part="list-row"][data-state~="priority-high"],
   [data-part="issue-row"][data-state~="priority-high"],
+  [data-part="quick-search.item"][data-state~="priority-high"],
   [data-part="timeline-bar"][data-state~="priority-high"] {
     border-inline-start-color: CanvasText;
   }
@@ -5902,23 +5925,8 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="quick-search.item"] {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-1);
-  box-sizing: border-box;
-  min-height: var(--size-control);
-  padding: var(--space-2) var(--space-3);
-  color: var(--fg);
-  text-decoration: none;
-  cursor: pointer;
-  border-radius: var(--r-ctl);
-  outline: none;
-}
-
 [data-part="quick-search.item"][data-hovered] {
-  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 var(--border-width) var(--hover-line);
 }
 
 [data-part="quick-search.item"][data-disabled] {
@@ -5932,12 +5940,26 @@ textarea,
 }
 
 [data-part="quick-search.title"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--fs-md);
   font-weight: var(--weight-regular);
 }
 
+[data-part="quick-search.name"] {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-part="quick-search.priority"] {
+  flex: none;
+  margin-inline-start: auto;
+}
+
 [data-part="quick-search.title"] [data-part="issue-id"] {
-  margin-inline-end: var(--space-2);
+  flex: none;
 }
 
 [data-part="quick-search.empty"] {

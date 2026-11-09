@@ -1,12 +1,12 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { doNothing } from "../../src/shared/do-nothing.ts";
 import { createPeopleWithRoles, giveRole, roleName } from "./access.ts";
 import { bob, createAdmin, ownId, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
-import { countIssueIds, createIssue } from "./issues.ts";
+import { countIssueIds, createIssue, setStatusAndPriority, versionOf } from "./issues.ts";
 import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 
@@ -20,7 +20,15 @@ export const titles = {
   secret: "Secret login plans",
   mail: "E-mail bounces",
   random: "Random kind issue",
+  colourQueued: "Colour check queued",
+  colourRunning: "Colour check running",
+  colourDone: "Colour check finished",
+  colourLow: "Colour check later",
 } as const;
+
+/** The status and the priority the login issue and the passkey issue get: the groups In progress and Done, Critical and High. */
+const loginLook = { status: "in-progress", priority: "critical" } as const;
+const passkeyLook = { status: "done", priority: "high" } as const;
 
 /** The name of the saved search of the administrator, which nobody else may open. */
 export const savedSearchName = "Login bugs";
@@ -48,9 +56,29 @@ export async function prepareScene(server: Instance): Promise<void> {
   await countIssueIds(admin);
   await createProject(admin, "WEB", "Website");
   await createProject(admin, "SECRET", "Secret plans");
-  await createIssue(admin, "WEB", titles.login);
-  await createIssue(admin, "WEB", titles.passkey);
+  const login = await createIssue(admin, "WEB", titles.login);
+  const passkey = await createIssue(admin, "WEB", titles.passkey);
   await createIssue(admin, "WEB", titles.mail);
+  // One issue of each status group and of different priorities, so the rows of the results differ as the rows of the list.
+  await setStatusAndPriority(admin, login, await versionOf(admin, login), loginLook);
+  await setStatusAndPriority(admin, passkey, await versionOf(admin, passkey), passkeyLook);
+  await createIssue(admin, "WEB", titles.colourQueued);
+  const running = await createIssue(admin, "WEB", titles.colourRunning);
+  const finished = await createIssue(admin, "WEB", titles.colourDone);
+  const later = await createIssue(admin, "WEB", titles.colourLow);
+  await setStatusAndPriority(admin, running, await versionOf(admin, running), {
+    status: "in-progress",
+    priority: "high",
+  });
+  await setStatusAndPriority(admin, finished, await versionOf(admin, finished), {
+    status: "done",
+    priority: "critical",
+  });
+  // It stays Not started: only its priority changes.
+  await admin.client.PATCH("/api/v1/issues/{issue}", {
+    params: { path: { issue: later.key } },
+    body: { version: await versionOf(admin, later), priority: "low" },
+  });
   await createIssue(admin, "SECRET", titles.secret);
   await createPeopleWithRoles(server, admin, [
     { person: bob, role: roleName.teamMember, project: "WEB" },
@@ -64,6 +92,7 @@ export async function prepareScene(server: Instance): Promise<void> {
   });
   await expect.poll(() => titleIsFound(admin, "secret")).toBe(true);
   await expect.poll(() => titleIsFound(admin, "passkey")).toBe(true);
+  await expect.poll(() => titleIsFound(admin, "colour")).toBe(true);
   await expect.poll(() => titleIsFound(admin, "random")).toBe(true);
   await admin.dispose();
 }
@@ -93,6 +122,19 @@ export function list(page: Page) {
 /** The empty state under the box: its text is said once more by the announcement, so it is found by its part. */
 export function nothingFound(page: Page) {
   return dialog(page).locator("[data-part='quick-search.empty']");
+}
+
+/**
+ * What a result that is an issue shows as the row of the list does (R4, R9), found by parts and names, not by colors:
+ * the tint of its status group and the edge of its priority are states of the row; the priority is an icon named by its word.
+ */
+export function rowLook(option: Locator) {
+  return {
+    option,
+    statusIcon: option.locator("[data-part='status-icon']"),
+    priority: option.locator("[data-part='priority']"),
+    typeIcon: option.locator("[data-part='icon'][role='img']"),
+  };
 }
 
 /** The results of the list that say this text. */

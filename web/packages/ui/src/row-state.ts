@@ -4,12 +4,12 @@ import type { PriorityWord, StatusGroup } from "./status.ts";
 type WordsOf<Row extends keyof typeof partWords> = (typeof partWords)[Row]["state"][number];
 
 /**
- * The words of the state that every row can carry (the list row, the issue row and the bar of the
- * timeline): the tint of a status group and the edge of a priority. The theme file styles them.
+ * The words of the state that every row can carry (the list row, the issue row, the bar of the
+ * timeline and a result of quick search): the tint of a status group and the edge of a priority. The theme file styles them.
  */
 export type RowStateWord = Extract<
-  Extract<WordsOf<"list-row">, WordsOf<"issue-row">>,
-  WordsOf<"timeline-bar">
+  Extract<Extract<WordsOf<"list-row">, WordsOf<"issue-row">>, WordsOf<"timeline-bar">>,
+  WordsOf<"quick-search.item">
 >;
 
 /** Every status group has its tint; the rows of a normal or low priority have no edge. */

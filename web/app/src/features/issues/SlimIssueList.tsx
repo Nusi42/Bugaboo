@@ -1,8 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { listRowLook, listShowsWord, ListGrid, ListRow, Priority } from "@bugaboo/ui";
+import { listRowLook, ListGrid, ListRow } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
-import { issueCells } from "./issue-cells.tsx";
+import { issueCells, priorityCell } from "./issue-cells.tsx";
 import type { IssueLine } from "./issues.ts";
 import { slimColumns } from "./slim-columns.ts";
 
@@ -41,13 +41,7 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
               issueAddress(line.key),
               { current: line.key === open },
             ),
-            priority: (
-              <Priority
-                priority={line.priority}
-                label={t(`priority.${line.priority}`)}
-                showWord={listShowsWord(line.priority)}
-              />
-            ),
+            priority: priorityCell(line.priority),
           }}
         />
       ))}

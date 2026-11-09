@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { issueAddress } from "../src/shared/paths.ts";
+import { expectGoodWithRingsInEveryTheme } from "./support/checks.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
@@ -15,6 +16,7 @@ import {
   nothingFound,
   prepareScene,
   result,
+  rowLook,
   savedSearchName,
   statusOfIssue,
   titles,
@@ -47,6 +49,38 @@ test("cfg_08_words_find_issues_by_title", async ({ page }) => {
   await expect(result(page, titles.login)).toHaveCount(0);
   await found.click();
   await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-2")));
+});
+
+test("cfg_08_issues_look_like_rows_of_the_list", async ({ page }) => {
+  await signIn(page, bob);
+  await ask(page, "login");
+  const critical = result(page, titles.login);
+  await expect(critical).toBeVisible();
+  // The tint and the edge are the states of the row, the same words as a row of the list (R4); the status and the priority are named, never color alone (R5).
+  await expect(critical).toHaveAttribute("data-state", /group-in-progress/u);
+  await expect(critical).toHaveAttribute("data-state", /priority-critical/u);
+  await expect(rowLook(critical).statusIcon).toHaveAttribute("data-variant", /in-progress/u);
+  await expect(rowLook(critical).priority).toContainText(t("priority.critical"));
+  await expect(rowLook(critical).typeIcon.first()).toBeVisible();
+  await box(page).fill("passkey");
+  const done = result(page, titles.passkey);
+  await expect(done).toHaveAttribute("data-state", /group-done/u);
+  await expect(done).toHaveAttribute("data-state", /priority-high/u);
+  await expect(done.getByRole("img", { name: t("priority.high"), exact: true })).toBeVisible();
+  await box(page).fill("bounces");
+  const plain = result(page, titles.mail);
+  await expect(plain).toHaveAttribute("data-state", /group-not-started/u);
+  await expect(plain).not.toHaveAttribute("data-state", /priority-/u);
+  await expect(plain.getByRole("img", { name: t("priority.normal"), exact: true })).toBeVisible();
+});
+
+test("cfg_08_tinted_results_have_no_accessibility_problems_in_the_four_themes", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await ask(page, "colour");
+  await expect(result(page, titles.colourQueued)).toBeVisible();
+  await expectGoodWithRingsInEveryTheme(page);
 });
 
 test("cfg_08 the start of a word finds the issues with the word", async ({ page }) => {
@@ -182,6 +216,11 @@ test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
   await expect(result(page, savedSearchName)).toBeVisible();
   await expect(result(page, titles.secret)).toBeVisible();
   await inFourThemes(page, "found");
+  // Issues of the groups Not started, In progress and Done and of different priorities, tinted as the rows of the list.
+  await box(page).fill("colour");
+  await expect(result(page, titles.colourQueued)).toBeVisible();
+  await expect(result(page, titles.colourLow)).toBeVisible();
+  await inFourThemes(page, "tinted");
   await box(page).fill("web-1");
   await expect(result(page, titles.login)).toBeVisible();
   await inFourThemes(page, "id");

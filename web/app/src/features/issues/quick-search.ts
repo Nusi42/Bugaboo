@@ -1,13 +1,13 @@
-import { ApiError, type ReadonlyDeep } from "@bugaboo/api-client";
+import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
 import { api } from "../../shared/api.ts";
 import { isInvalidSearch } from "../../shared/errors.ts";
 import { fieldList } from "../../shared/paged.ts";
-import { issueAddress } from "../../shared/paths.ts";
 import type { QuickResult, QuickSearchSource } from "../shell/index.ts";
 import type { ListedIssue } from "./issues.ts";
+import { resultOf, type FoundIssue } from "./quick-issue.tsx";
 import { titleSearchText } from "../../shared/title-search.ts";
 
 /** How many issues quick search shows for words (M5-Q3). */
@@ -32,17 +32,6 @@ async function searchLanguage(): Promise<SearchLanguage> {
  */
 export function issueIdIn(words: string): string | undefined {
   return language?.issueIdOf(words);
-}
-
-/** What a line of the answer needs: the readable ID and the title. */
-type Line = ReadonlyDeep<Pick<ListedIssue, "readable_id" | "title">>;
-
-function resultOf(item: Line): QuickResult[] {
-  const key = item.readable_id;
-  const title = item.title;
-  return typeof key === "string" && typeof title === "string"
-    ? [{ id: key, title, issueId: key, path: issueAddress(key) }]
-    : [];
 }
 
 /** The status with which the server says there is no such issue, or none the person may see. */
@@ -90,12 +79,19 @@ async function issuesWithWords(
       params: {
         query: {
           q,
-          fields: fieldList<ListedIssue>(["readable_id", "title"]),
+          fields: fieldList<ListedIssue>([
+            "id",
+            "readable_id",
+            "title",
+            "status",
+            "priority",
+            "issue_type",
+          ]),
           limit: ISSUE_RESULTS,
         },
       },
     });
-    return (data?.items ?? []).flatMap((item: Line) => resultOf(item));
+    return (data?.items ?? []).flatMap((item: FoundIssue) => resultOf(item));
   } catch (error) {
     if (isRefusedText(error)) {
       return [];
