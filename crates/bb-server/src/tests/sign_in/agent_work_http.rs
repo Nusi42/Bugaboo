@@ -59,6 +59,21 @@ async fn given(site: &Site<'_>, ada: &mut Browser) -> Result<Given, Failure> {
     })
 }
 
+/// The agent with `key` takes the issue, so an attempt runs on it.
+async fn take(rig: &Rig, key: &str, issue: &str) -> Result<(), Failure> {
+    take_work(
+        &rig.services.ctx(Rig::info()),
+        TakeWork {
+            session_token: key.to_owned(),
+            issue: issue.to_owned(),
+            version: None,
+        },
+    )
+    .await
+    .map(drop)
+    .map_err(|error| format!("{error:?}").into())
+}
+
 #[tokio::test]
 async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_ticked() -> TestResult {
     each_database("sec_01_agent_with_work", async |db| {
@@ -96,16 +111,7 @@ async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_tick
         );
         // It changes the title, which was ticked, and not the priority, which was not: only while
         // an attempt runs, so it takes the issue first.
-        take_work(
-            &rig.services.ctx(Rig::info()),
-            TakeWork {
-                session_token: given.key.clone(),
-                issue: given.handed.clone(),
-                version: None,
-            },
-        )
-        .await
-        .map_err(|error| format!("{error:?}"))?;
+        take(&rig, &given.key, &given.handed).await?;
         let version = version_of(&mut given.person, &given.handed).await?;
         let title = script
             .script(
