@@ -100,15 +100,11 @@ async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_tick
             )
             .await?;
         assert_eq!(hidden.code(), "resource.not-found", "{}", hidden.body);
-        assert!(
-            given
-                .person
-                .send("GET", &format!("{ISSUES}/{}", given.other), None)
-                .await?
-                .status
-                == StatusCode::OK,
-            "its person reads both"
-        );
+        let both = given
+            .person
+            .send("GET", &format!("{ISSUES}/{}", given.other), None)
+            .await?;
+        assert_eq!(both.status, StatusCode::OK, "its person reads both");
         // It changes the title, which was ticked, and not the priority, which was not: only while
         // an attempt runs, so it takes the issue first.
         take(&rig, &given.key, &given.handed).await?;
