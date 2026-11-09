@@ -24,8 +24,8 @@ use bb_app::roles::{CheckAccessQuery, check_access};
 use bb_app::saved_searches::{SaveSearch, save_search};
 use bb_core::access_key::KeyChoice;
 use bb_core::agent_records::ResultKind;
-use bb_core::agent_work::{CheckResult, ReviewAnswer};
-use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, IssueId, SavedSearchId, StandingRuleId};
+use bb_core::agent_work::{CheckResult, MOST_HAND_OVER_DAYS, ReviewAnswer};
+use bb_core::id::{AgentId, AgentNoteId, AgentWorkId, SavedSearchId, StandingRuleId};
 use bb_core::saved_search::Presentation;
 use bb_core::time::SECONDS_PER_DAY;
 use bb_dev_words::sample::AiPlan;
@@ -33,7 +33,7 @@ use bb_dev_words::sample::AiPlan;
 use serde_json::{Value, json};
 
 use crate::error::{SampleError, Step};
-use crate::generate::{AgentKey, plain_text};
+use crate::generate::{AgentKey, World, plain_text};
 use crate::issues::Maker;
 use crate::issues_setup::{id_in, json, picked};
 
@@ -93,9 +93,9 @@ fn failed(error: &dyn std::fmt::Display) -> SampleError {
 }
 
 /// An agent that was made, with its key.
-struct Made {
-    id: AgentId,
-    key: String,
+pub(crate) struct Made {
+    pub(crate) id: AgentId,
+    pub(crate) key: String,
 }
 
 impl Maker<'_, '_> {
@@ -113,22 +113,23 @@ impl Maker<'_, '_> {
             .iter()
             .position(|made| made.person.name == plan.person)
             .ok_or_else(|| SampleError::NotMade(plan.person.clone()))?;
-        let token = self.session_of(person).await?;
+        let token = self.world.session_of(person).await?;
         let mut agents = Vec::new();
         for name in &plan.agents {
-            agents.push(self.new_agent(&token, person, name).await?);
+            agents.push(self.world.new_agent(&token, person, name).await?);
         }
         let issues = self.issues_of(&plan.project)?;
         for ((agent, case), (issue, _)) in CASES.iter().zip(&issues) {
             let made = agents.get(*agent).ok_or(SampleError::PersonMissing)?;
-            self.carry_out_case(plan, &token, made, *case, *issue)
+            self.world
+                .carry_out_case(plan, &token, made, *case, issue)
                 .await?;
         }
-        self.standing_rule(plan, &token, &agents).await?;
+        self.world.standing_rule(plan, &token, &agents).await?;
         self.world
             .move_clock_to(self.world.clock.now().as_second() + MOVES_ON)?;
-        self.run_the_jobs().await?;
-        let unchangeable = self.cannot_change(person, &issues).await?;
+        self.world.run_the_jobs().await?;
+        let unchangeable = self.world.cannot_change(person, &issues).await?;
         let email = self.world.people[person].person.email.clone();
         Ok((
             plan.agents
@@ -145,24 +146,52 @@ impl Maker<'_, '_> {
         ))
     }
 
+    /// The issues of the project (and its sub-projects) that were made, the first [`ISSUES`].
+    fn issues_of(&self, project: &str) -> Result<Vec<(String, String)>, SampleError> {
+        let family = self
+            .names
+            .projects
+            .iter()
+            .position(|candidate| candidate.short_name == project)
+            .ok_or_else(|| SampleError::NotMade(project.to_owned()))?;
+        let found: Vec<(String, String)> = self
+            .plan
+            .issues
+            .iter()
+            .enumerate()
+            .filter(|(_, planned)| planned.family == family)
+            .filter_map(|(at, planned)| {
+                let made = self.issues.get(at).and_then(Option::as_ref)?;
+                Some((made.id.to_string(), planned.place.clone()))
+            })
+            .take(ISSUES)
+            .collect();
+        if found.len() < CASES.len() {
+            return Err(SampleError::NotMade(project.to_owned()));
+        }
+        Ok(found)
+    }
+}
+
+impl World<'_> {
     /// How many of the issues handed over the person may not change (*Check access* as the
     /// administrator asks it): a hand-over needs *Change issues* on each, so there must be none.
     async fn cannot_change(
         &self,
         person: usize,
-        issues: &[(IssueId, String)],
+        issues: &[(String, String)],
     ) -> Result<u64, SampleError> {
         let administrator = self.administrator()?;
         let token = self.session_of(administrator).await?;
         let mut cannot = 0;
         for (_, place) in issues.iter().take(CASES.len()) {
-            let project = self.world.project_named(place).await?;
+            let project = self.project_named(place).await?;
             let answer = json(
                 check_access(
-                    &self.world.services.ctx(self.world.request()),
+                    &self.services.ctx(self.request()),
                     CheckAccessQuery {
                         session_token: token.clone(),
-                        person: self.world.people[person].id,
+                        person: self.people[person].id,
                         place: Some(project),
                         issue_type: None,
                     },
@@ -182,15 +211,11 @@ impl Maker<'_, '_> {
     }
 
     /// A session of the person, signed in now.
-    async fn session_of(&self, person: usize) -> Result<String, SampleError> {
-        let made = self
-            .world
-            .people
-            .get(person)
-            .ok_or(SampleError::PersonMissing)?;
-        self.world.tick();
+    pub(crate) async fn session_of(&self, person: usize) -> Result<String, SampleError> {
+        let made = self.people.get(person).ok_or(SampleError::PersonMissing)?;
+        self.tick();
         let started = sign_in(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             SignIn {
                 email: made.person.email.clone(),
                 password: made.password.clone(),
@@ -203,9 +228,14 @@ impl Maker<'_, '_> {
     }
 
     /// An agent of the person, and its key (made as the person does, with the password).
-    async fn new_agent(&self, token: &str, person: usize, name: &str) -> Result<Made, SampleError> {
-        let ctx = self.world.services.ctx(self.world.request());
-        self.world.tick();
+    pub(crate) async fn new_agent(
+        &self,
+        token: &str,
+        person: usize,
+        name: &str,
+    ) -> Result<Made, SampleError> {
+        let ctx = self.services.ctx(self.request());
+        self.tick();
         let made = picked(
             create_agent(
                 &ctx,
@@ -219,12 +249,12 @@ impl Maker<'_, '_> {
             |agent| json!({ "id": agent.id.to_string() }),
         )?;
         let id: AgentId = id_in(&made, "id")?;
-        self.world.tick();
+        self.tick();
         let key = create_access_key(
             &ctx,
             CreateAccessKey {
                 session_token: token.to_owned(),
-                password: self.world.people[person].password.clone(),
+                password: self.people[person].password.clone(),
                 name: format!("{name} key"),
                 choice: KeyChoice::SeeAndChange,
                 permissions: Vec::new(),
@@ -240,32 +270,6 @@ impl Maker<'_, '_> {
         Ok(Made { id, key })
     }
 
-    /// The issues of the project (and its sub-projects) that were made, the first [`ISSUES`].
-    fn issues_of(&self, project: &str) -> Result<Vec<(IssueId, String)>, SampleError> {
-        let family = self
-            .names
-            .projects
-            .iter()
-            .position(|candidate| candidate.short_name == project)
-            .ok_or_else(|| SampleError::NotMade(project.to_owned()))?;
-        let found: Vec<(IssueId, String)> = self
-            .plan
-            .issues
-            .iter()
-            .enumerate()
-            .filter(|(_, planned)| planned.family == family)
-            .filter_map(|(at, planned)| {
-                let made = self.issues.get(at).and_then(Option::as_ref)?;
-                Some((made.id, planned.place.clone()))
-            })
-            .take(ISSUES)
-            .collect();
-        if found.len() < CASES.len() {
-            return Err(SampleError::NotMade(project.to_owned()));
-        }
-        Ok(found)
-    }
-
     /// Hands the issue over to the agent and takes the case as far as it goes.
     async fn carry_out_case(
         &self,
@@ -273,7 +277,7 @@ impl Maker<'_, '_> {
         token: &str,
         agent: &Made,
         case: Case,
-        issue: IssueId,
+        issue: &str,
     ) -> Result<(), SampleError> {
         let work = self.hand(plan, token, agent, case, issue).await?;
         let key = agent.key.as_str();
@@ -310,16 +314,16 @@ impl Maker<'_, '_> {
         token: &str,
         agent: &Made,
         case: Case,
-        issue: IssueId,
+        issue: &str,
     ) -> Result<AgentWorkId, SampleError> {
-        self.world.tick();
+        self.tick();
         let given = picked(
             hand_over(
-                &self.world.services.ctx(self.world.request()),
+                &self.services.ctx(self.request()),
                 HandOver {
                     session_token: token.to_owned(),
                     agent: agent.id,
-                    issues: vec![issue.to_string()],
+                    issues: vec![issue.to_owned()],
                     note: plan.note.clone(),
                     powers: Vec::new(),
                     fields: Vec::new(),
@@ -328,7 +332,11 @@ impl Maker<'_, '_> {
                     budget_cost: None,
                     plan_needs_approval: case == Case::Planning,
                     accept_by_itself: false,
-                    days: (case == Case::RunsOut).then_some(SHORT_HAND_OVER_DAYS),
+                    days: Some(if case == Case::RunsOut {
+                        SHORT_HAND_OVER_DAYS
+                    } else {
+                        MOST_HAND_OVER_DAYS
+                    }),
                 },
             )
             .await,
@@ -340,29 +348,29 @@ impl Maker<'_, '_> {
 
     /// The agent takes the work, which starts an attempt, and reports it (the first, or a new one
     /// after a send-back).
-    async fn report_an_attempt(
+    pub(crate) async fn report_an_attempt(
         &self,
         key: &str,
-        issue: IssueId,
+        issue: &str,
         plan: Option<&str>,
     ) -> Result<(), SampleError> {
-        self.world.tick();
+        self.tick();
         take_work(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             TakeWork {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 version: None,
             },
         )
         .await
         .map_err(|error| failed(&error))?;
-        self.world.tick();
+        self.tick();
         report_attempt(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             ReportAttempt {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 plan: plan.map(str::to_owned),
                 minutes: MINUTES,
                 cost: COST,
@@ -373,13 +381,13 @@ impl Maker<'_, '_> {
         Ok(())
     }
 
-    async fn ask(&self, key: &str, issue: IssueId, text: &str) -> Result<(), SampleError> {
-        self.world.tick();
+    pub(crate) async fn ask(&self, key: &str, issue: &str, text: &str) -> Result<(), SampleError> {
+        self.tick();
         ask_question(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             AskQuestion {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 text: text.to_owned(),
             },
         )
@@ -389,18 +397,18 @@ impl Maker<'_, '_> {
     }
 
     /// The agent ends the attempt: ready for the review, or given up with its reason.
-    async fn end(
+    pub(crate) async fn end(
         &self,
         key: &str,
-        issue: IssueId,
+        issue: &str,
         gave_up: Option<String>,
     ) -> Result<(), SampleError> {
-        self.world.tick();
+        self.tick();
         Box::pin(end_attempt(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             EndAttempt {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 gave_up,
             },
         ))
@@ -410,32 +418,32 @@ impl Maker<'_, '_> {
     }
 
     /// An attempt from its report to its end: a comment, a passed check, ready for the review.
-    async fn finish(
+    pub(crate) async fn finish(
         &self,
         plan: &AiPlan,
         key: &str,
-        issue: IssueId,
+        issue: &str,
         note: Option<&str>,
     ) -> Result<(), SampleError> {
         self.report_an_attempt(key, issue, note).await?;
-        self.world.tick();
-        let ctx = self.world.services.ctx(self.world.request());
+        self.tick();
+        let ctx = self.services.ctx(self.request());
         add_comment(
             &ctx,
             AddComment {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 text: COMMENT.to_owned(),
             },
         )
         .await
         .map_err(|error| failed(&error))?;
-        self.world.tick();
+        self.tick();
         attach_result(
             &ctx,
             AttachResult {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 kind: ResultKind::Check,
                 label: plan.check_label.clone(),
                 link: None,
@@ -453,16 +461,16 @@ impl Maker<'_, '_> {
         plan: &AiPlan,
         token: &str,
         key: &str,
-        issue: IssueId,
+        issue: &str,
         work: AgentWorkId,
     ) -> Result<(), SampleError> {
         self.report_an_attempt(key, issue, None).await?;
         self.ask(key, issue, &plan.question).await?;
         let asked = self.work_of(token, issue).await?;
         let question: AgentNoteId = id_in(&asked, "question")?;
-        self.world.tick();
+        self.tick();
         answer_question(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             AnswerQuestion {
                 session_token: token.to_owned(),
                 work,
@@ -492,14 +500,14 @@ impl Maker<'_, '_> {
         &self,
         plan: &AiPlan,
         key: &str,
-        issue: IssueId,
+        issue: &str,
     ) -> Result<(), SampleError> {
-        self.world.tick();
+        self.tick();
         attach_result(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             AttachResult {
                 session_token: key.to_owned(),
-                issue: issue.to_string(),
+                issue: issue.to_owned(),
                 kind: ResultKind::Check,
                 label: plan.check_label.clone(),
                 link: None,
@@ -512,13 +520,13 @@ impl Maker<'_, '_> {
     }
 
     /// The work on the issue, as the person reads it.
-    async fn work_of(&self, token: &str, issue: IssueId) -> Result<Value, SampleError> {
+    async fn work_of(&self, token: &str, issue: &str) -> Result<Value, SampleError> {
         let read = picked(
             issue_agent_work(
-                &self.world.services.ctx(self.world.request()),
+                &self.services.ctx(self.request()),
                 AgentWorkQuery {
                     session_token: token.to_owned(),
-                    issue: issue.to_string(),
+                    issue: issue.to_owned(),
                 },
             )
             .await,
@@ -539,14 +547,14 @@ impl Maker<'_, '_> {
         &self,
         token: &str,
         work: AgentWorkId,
-        issue: IssueId,
+        issue: &str,
         verdict: ReviewAnswer,
         note: Option<&str>,
     ) -> Result<(), SampleError> {
         let seen = self.work_of(token, issue).await?;
-        self.world.tick();
+        self.tick();
         Box::pin(review_work(
-            &self.world.services.ctx(self.world.request()),
+            &self.services.ctx(self.request()),
             ReviewWork {
                 session_token: token.to_owned(),
                 work,
@@ -569,8 +577,8 @@ impl Maker<'_, '_> {
         token: &str,
         agents: &[Made],
     ) -> Result<StandingRuleId, SampleError> {
-        let ctx = self.world.services.ctx(self.world.request());
-        self.world.tick();
+        let ctx = self.services.ctx(self.request());
+        self.tick();
         let saved = json(
             save_search(
                 &ctx,
@@ -586,8 +594,8 @@ impl Maker<'_, '_> {
         )?;
         let search: SavedSearchId = id_in(&saved, "id")?;
         let agent = agents.get(1).ok_or(SampleError::PersonMissing)?;
-        let project = self.world.project_named(&plan.project).await?;
-        self.world.tick();
+        let project = self.project_named(&plan.project).await?;
+        self.tick();
         let rule = picked(
             create_standing_rule(
                 &ctx,

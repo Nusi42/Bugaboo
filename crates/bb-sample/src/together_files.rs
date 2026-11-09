@@ -16,9 +16,6 @@ use crate::together::Work;
 /// The sides of a picture, in pixels: small, but big enough to have something to show.
 const PICTURE_SIDE_MIN: u32 = 160;
 const PICTURE_SIDE_SPAN: usize = 240;
-/// The most rounds of the job runner a sample waits for: each takes five jobs, and the runner
-/// stops when none is due.
-const ROUNDS_MAX: usize = 100_000;
 
 /// Whether the file with this number is one of the `percent` of every hundred: the shares come out
 /// exactly, however few files there are.
@@ -139,18 +136,7 @@ impl Maker<'_, '_> {
     /// Runs the jobs that were queued (the previews of the files, the notifications and their
     /// e-mail) until none is due, the way a server does round after round.
     pub(crate) async fn run_the_jobs(&mut self) -> Result<(), SampleError> {
-        let ctx = self.world.services.ctx(self.world.request());
-        for _ in 0..ROUNDS_MAX {
-            self.world.tick();
-            let taken = ctx
-                .run_due_jobs()
-                .await
-                .map_err(|error| SampleError::step(Step::Jobs, &error))?;
-            if taken == 0 {
-                return Ok(());
-            }
-        }
-        Err(SampleError::NotMade("the jobs were not done".to_owned()))
+        self.world.run_the_jobs().await
     }
 }
 

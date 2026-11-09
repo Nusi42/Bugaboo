@@ -11,6 +11,8 @@
 //!   nor a Contributor is told the value of *Cost center*. Every notification read is
 //!   held against it; in a run of `--check` (every event makes its notifications) the rule also
 //!   fails when it read none for a kind of person, so it cannot pass without looking.
+//! - **Agent work (M7):** the agents have work in the shares the plan says, every piece of it has
+//!   its hand-over, and the standing rules found issues in a dataset big enough for the search.
 //!
 //! Every issue is read when there are few; with many, every n-th, so the check stays a matter of
 //! minutes.
@@ -19,6 +21,8 @@ use std::collections::BTreeMap;
 use std::hash::{Hash as _, Hasher as _};
 
 use bb_app::access::StartingRole;
+use bb_app::agent_work::{AgentWorkRecords as _, GrantStore as _};
+use bb_app::agents::AgentStore as _;
 use bb_app::comments::CommentStore as _;
 use bb_app::history::HistoryStore as _;
 use bb_app::notifications::NotificationStore as _;
@@ -44,6 +48,11 @@ const SAMPLED_AT_MOST: usize = 20_000;
 const NOTIFICATIONS_AT_MOST: u64 = 200;
 /// The most events and history rows read for one issue.
 const ROWS_AT_MOST: u64 = 500;
+/// The most agents and the most pieces of work of one agent that the check reads.
+const AGENTS_AT_MOST: u64 = 100;
+const WORK_AT_MOST: u64 = 1_000_000;
+/// From how many issues on the search of the standing rules has to find some.
+const RULES_NEED_ISSUES: usize = 100_000;
 /// What a tag or a label with no name in the dataset counts as in the fingerprint, so that one the
 /// check cannot name still changes it.
 const UNKNOWN_NAME: &str = "<unknown>";
@@ -170,6 +179,8 @@ impl Sample {
         }
         self.check_told(facts, &issues, check, &mut problems)
             .await?;
+        self.check_agents(issues.len(), &mut hasher, &mut problems)
+            .await?;
         Ok(Report {
             problems,
             fingerprint: hasher.finish(),
@@ -285,6 +296,36 @@ impl Sample {
             .collect();
         labels.sort();
         (tags, labels).hash(hasher);
+        Ok(())
+    }
+
+    /// The agent work: it is there, by state, and the standing rules found issues when the dataset
+    /// is big enough for their search to find any. What is counted goes into the fingerprint.
+    async fn check_agents(
+        &self,
+        issues: usize,
+        hasher: &mut std::collections::hash_map::DefaultHasher,
+        problems: &mut Vec<String>,
+    ) -> Result<(), SampleError> {
+        let storage = &self.storage;
+        let mut by_state: BTreeMap<&'static str, u64> = BTreeMap::new();
+        for agent in storage.all_agents(None, AGENTS_AT_MOST).await? {
+            for work in storage.work_of_agent(agent.id, None, WORK_AT_MOST).await? {
+                *by_state.entry(work.state.code()).or_default() += 1;
+            }
+        }
+        by_state.hash(hasher);
+        if by_state.is_empty() {
+            problems.push("no agent has work, so the speed of agent work was not made".to_owned());
+        }
+        let mut matches = 0_u64;
+        for rule in storage.open_rules().await? {
+            matches += storage.matches_of(rule.id, None, WORK_AT_MOST).await?.len() as u64;
+        }
+        matches.hash(hasher);
+        if matches == 0 && issues >= RULES_NEED_ISSUES {
+            problems.push("the standing rules found no issue".to_owned());
+        }
         Ok(())
     }
 

@@ -84,6 +84,30 @@ pub struct LargePlan {
     pub batch: u32,
     /// How many of 100 issues are in the biggest tenth of the projects.
     pub big_projects_share: u32,
+    /// The agents and their work (M7 WP-13, PERF-01: *changes since*, the search of agent states and
+    /// *My agents*).
+    pub agents: LargeAgents,
+}
+
+/// The agent work of the large dataset: made by the use cases of agents, so the data is made by the
+/// code that the benchmarks measure.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LargeAgents {
+    /// How many agents the one person who works for them has.
+    pub agents: u32,
+    /// How many of 100 issues are handed over to an agent.
+    pub work_percent: u32,
+    /// How many issues each agent holds in an attempt that has not ended: half are being worked
+    /// on, the rest wait for an answer to a question. An agent holds at most
+    /// `DEFAULT_ISSUES_AT_ONCE` (5) of them, so this stays below it.
+    pub open_per_agent: u32,
+    /// Of the issues handed over, how many of 100 an agent ended with a result for the review.
+    pub ready_percent: u32,
+    /// How many standing rules there are, each over its own search in the biggest project.
+    pub rules: u32,
+    /// The search text of the standing rules: selective, so the match record is a few thousand.
+    pub rule_search: String,
 }
 
 /// The folder every folder of the large dataset is inside of, relative to the work folder: the
@@ -132,6 +156,8 @@ impl LargePlan {
             ("notifiedPercent", self.notified_percent),
             ("checkNotifiedPercent", self.check_notified_percent),
             ("bigProjectsShare", self.big_projects_share),
+            ("agents.workPercent", self.agents.work_percent),
+            ("agents.readyPercent", self.agents.ready_percent),
         ];
         if let Some((name, _)) = percents.iter().find(|(_, value)| *value > 100) {
             return Err(LayoutError::new(format!(
@@ -145,6 +171,7 @@ impl LargePlan {
             ("projects", self.projects),
             ("months", self.months),
             ("batch", self.batch),
+            ("agents.agents", self.agents.agents),
         ];
         if let Some((name, _)) = positive.iter().find(|(_, value)| *value == 0) {
             return Err(LayoutError::new(format!("large.{name} must be at least 1")));

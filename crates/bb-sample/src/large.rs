@@ -12,7 +12,7 @@ use bb_core::time::SECONDS_PER_DAY;
 use bb_dev_words::sample::{FieldPlan, IssuePlan, Layout};
 
 use crate::error::{SampleError, Step};
-use crate::generate::{Later, World};
+use crate::generate::{AgentKey, Later, LeftBehind, World};
 use crate::issues_setup::{Setup, create_one_field, project_ids};
 use crate::large_check::Facts;
 use crate::large_org::Words;
@@ -32,6 +32,8 @@ pub struct Large {
     /// A run of `--check`: every event makes its notifications, and the check fails when it found
     /// nothing to look at in what Guests and Contributors are told.
     check: bool,
+    /// The keys of the agents, for `sign-in.txt`.
+    agent_keys: Vec<AgentKey>,
 }
 
 impl Large {
@@ -47,6 +49,7 @@ impl Large {
             layout,
             facts: Facts::default(),
             check,
+            agent_keys: Vec::new(),
         })
     }
 
@@ -72,6 +75,13 @@ impl Large {
 impl Later for Large {
     fn history_seconds(&self) -> i64 {
         i64::from(self.layout.large.months) * MONTH_DAYS * SECONDS_PER_DAY + END_ROOM
+    }
+
+    fn left_behind(&self) -> LeftBehind {
+        LeftBehind {
+            agent_keys: self.agent_keys.clone(),
+            ..LeftBehind::default()
+        }
     }
 
     async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
@@ -122,7 +132,10 @@ impl Later for Large {
                 end,
             },
         )
-        .await
+        .await?;
+        self.agent_keys =
+            crate::large_agents::give_work(world, &org, &plan, &names.work.ai).await?;
+        Ok(())
     }
 }
 

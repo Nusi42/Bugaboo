@@ -3,6 +3,8 @@ import { dataOf, msPerDay } from "@bugaboo/api-client";
 import { type ApiSession } from "../../app/e2e/support/api.ts";
 import { listPage } from "../../app/e2e/support/perf-reads.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
+import { agentsIn } from "../../app/e2e/support/sample-agents.ts";
+import { type Instance } from "../../app/e2e/support/server.ts";
 import { type Context } from "./scenarios.ts";
 
 /** How many projects the issues to read are taken from, and how many pages of each. */
@@ -95,4 +97,13 @@ export async function lastWeek(session: ApiSession): Promise<Context["week"]> {
     throw new Error("The dataset has no work day of the Administrator to measure the timesheet.");
   }
   return { first: addDays(last, 1 - WEEK_DAYS), last };
+}
+
+/** The server and the key of the first agent of the dataset in `folder`. */
+export function agentOf(folder: string, server: Instance): Context["agent"] {
+  const agent = agentsIn(folder)[0];
+  if (agent === undefined) {
+    throw new Error("The dataset has no agent: make it again with cargo xtask dataset large.");
+  }
+  return { server, key: agent.key };
 }

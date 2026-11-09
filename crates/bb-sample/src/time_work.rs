@@ -222,13 +222,7 @@ impl Maker<'_, '_> {
 
     /// The first administrator's place in the plan of the people.
     pub(crate) fn administrator(&self) -> Result<usize, SampleError> {
-        self.world
-            .people
-            .iter()
-            .position(|made| {
-                made.person.role == StartingRole::Administrator && !made.person.code_app
-            })
-            .ok_or(SampleError::PersonMissing)
+        self.world.administrator()
     }
 
     /// The IDs of *Activity* and *Cost center* and of their choices, as the entries need them.

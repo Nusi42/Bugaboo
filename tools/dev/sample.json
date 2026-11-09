@@ -274,7 +274,7 @@
         "rule": {
           "search": "New bugs in Website",
           "text": "type is Bug and statusGroup is not Done",
-          "days": 30
+          "days": 90
         },
         "app": {
           "name": "Claude Code",
@@ -316,6 +316,14 @@
     "leavePercent": 6,
     "longDayPercent": 5,
     "batch": 2000,
-    "bigProjectsShare": 60
+    "bigProjectsShare": 60,
+    "agents": {
+      "agents": 3,
+      "workPercent": 1,
+      "openPerAgent": 4,
+      "readyPercent": 10,
+      "rules": 2,
+      "ruleSearch": "priority is critical and statusGroup is not Done"
+    }
   }
 }

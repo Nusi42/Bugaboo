@@ -18,5 +18,5 @@ mod sample_large;
 mod sample_time;
 mod sample_work;
 
-pub use sample_large::LargePlan;
+pub use sample_large::{LargeAgents, LargePlan};
 pub use sample_work::WorkCounts;

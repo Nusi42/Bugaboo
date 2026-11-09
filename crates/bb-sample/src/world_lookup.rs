@@ -13,7 +13,38 @@ use bb_core::technical::TechnicalName;
 use crate::error::{SampleError, Step};
 use crate::generate::World;
 
+/// The most rounds of the job runner a sample waits for: each takes five jobs, and the runner
+/// stops when none is due.
+const ROUNDS_MAX: usize = 100_000;
+
 impl World<'_> {
+    /// Runs the jobs that were queued (the previews of the files, the notifications and their
+    /// e-mail) until none is due, the way a server does round after round.
+    pub(crate) async fn run_the_jobs(&self) -> Result<(), SampleError> {
+        let ctx = self.services.ctx(self.request());
+        for _ in 0..ROUNDS_MAX {
+            self.tick();
+            let taken = ctx
+                .run_due_jobs()
+                .await
+                .map_err(|error| SampleError::step(Step::Jobs, &error))?;
+            if taken == 0 {
+                return Ok(());
+            }
+        }
+        Err(SampleError::NotMade("the jobs were not done".to_owned()))
+    }
+
+    /// The first administrator's place in the plan of the people.
+    pub(crate) fn administrator(&self) -> Result<usize, SampleError> {
+        self.people
+            .iter()
+            .position(|made| {
+                made.person.role == StartingRole::Administrator && !made.person.code_app
+            })
+            .ok_or(SampleError::PersonMissing)
+    }
+
     /// The group with this name.
     pub(crate) async fn group_named(&self, name: &str) -> Result<GroupId, SampleError> {
         self.storage

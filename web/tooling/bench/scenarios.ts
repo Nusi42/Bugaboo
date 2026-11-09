@@ -1,10 +1,12 @@
 import { pageSizeMax } from "@bugaboo/api-client";
 
 import { type ApiSession } from "../../app/e2e/support/api.ts";
+import { type Instance } from "../../app/e2e/support/server.ts";
 import { previewStatus } from "../../app/e2e/support/many-changes.ts";
 import { listPage, pageReads } from "../../app/e2e/support/perf-reads.ts";
 import { NOTIFICATIONS_PAGE } from "../../app/e2e/support/perf-work.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
+import { agentScenarios } from "./agent-scenarios.ts";
 import { type BudgetName } from "./budgets.generated.ts";
 
 // The scenarios of the benchmarks (PERF-01, architecture §11, "Large dataset"): registered here and
@@ -24,6 +26,8 @@ export interface Context {
   readonly many: readonly string[];
   /** The last week the person worked: its first and last date. */
   readonly week: { readonly first: string; readonly last: string };
+  /** The server, and the key of an agent of the dataset (M7 WP-13). */
+  readonly agent: { readonly server: Instance; readonly key: string };
 }
 
 /** One kind of read, repeated `runs` times after the warm-up. */
@@ -132,6 +136,7 @@ async function previewMany(context: Context): Promise<number> {
 const COMPLEX = "statusGroup is not Done and priority is high";
 
 export const scenarios: readonly Scenario[] = [
+  ...agentScenarios,
   {
     name: "issue-page",
     budget: "page",

@@ -21,6 +21,7 @@ use bb_dev_words::sample::{AiPlan, AppPlan};
 use serde_json::json;
 
 use crate::error::{SampleError, Step};
+use crate::generate::World;
 use crate::issues::Maker;
 use crate::issues_setup::picked;
 
@@ -36,6 +37,54 @@ fn failed(error: &dyn std::fmt::Display) -> SampleError {
     SampleError::step(Step::Ai, &error)
 }
 
+/// The administrator whose session is `token` sets up the provider, confirms the agreement and
+/// switches AI on for the organization.
+pub(crate) async fn switch_on_ai(
+    world: &World<'_>,
+    token: &str,
+    password: &str,
+    plan: &AiPlan,
+) -> Result<(), SampleError> {
+    let ctx = world.services.ctx(world.request());
+    let provider = ChangeAiSetup {
+        session_token: token.to_owned(),
+        enabled: None,
+        provider: Some(ProviderKind::OpenAiCompatible),
+        model: Some(plan.model.clone()),
+        address: Some(plan.address.clone()),
+        send_names: None,
+        password: Some(password.to_owned()),
+    };
+    world.tick();
+    change_ai_setup(&ctx, provider)
+        .await
+        .map_err(|error| failed(&error))?;
+    world.tick();
+    confirm_ai_agreement(
+        &ctx,
+        ConfirmAiAgreement {
+            session_token: token.to_owned(),
+            destination: Destination::OtherProvider,
+        },
+    )
+    .await
+    .map_err(|error| failed(&error))?;
+    world.tick();
+    let on = ChangeAiSetup {
+        session_token: token.to_owned(),
+        enabled: Some(true),
+        provider: None,
+        model: None,
+        address: None,
+        send_names: None,
+        password: None,
+    };
+    change_ai_setup(&ctx, on)
+        .await
+        .map_err(|error| failed(&error))?;
+    Ok(())
+}
+
 impl Maker<'_, '_> {
     /// The administrator sets up the provider, confirms the agreement, switches AI on for the
     /// organization and for the projects the plan names, and marks what is never sent to AI.
@@ -43,43 +92,8 @@ impl Maker<'_, '_> {
         let administrator = self.administrator()?;
         let token = self.hands.token(administrator).await?;
         let password = self.world.people[administrator].password.clone();
+        switch_on_ai(self.world, &token, &password, plan).await?;
         let ctx = self.world.services.ctx(self.world.request());
-        let provider = ChangeAiSetup {
-            session_token: token.clone(),
-            enabled: None,
-            provider: Some(ProviderKind::OpenAiCompatible),
-            model: Some(plan.model.clone()),
-            address: Some(plan.address.clone()),
-            send_names: None,
-            password: Some(password),
-        };
-        self.world.tick();
-        change_ai_setup(&ctx, provider)
-            .await
-            .map_err(|error| failed(&error))?;
-        self.world.tick();
-        confirm_ai_agreement(
-            &ctx,
-            ConfirmAiAgreement {
-                session_token: token.clone(),
-                destination: Destination::OtherProvider,
-            },
-        )
-        .await
-        .map_err(|error| failed(&error))?;
-        self.world.tick();
-        let on = ChangeAiSetup {
-            session_token: token.clone(),
-            enabled: Some(true),
-            provider: None,
-            model: None,
-            address: None,
-            send_names: None,
-            password: None,
-        };
-        change_ai_setup(&ctx, on)
-            .await
-            .map_err(|error| failed(&error))?;
         for (projects, enabled) in [(&plan.projects_on, true), (&plan.projects_off, false)] {
             for project in projects {
                 self.world.tick();

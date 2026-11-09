@@ -42,6 +42,7 @@ mod issues_text;
 mod issues_time;
 mod issues_words;
 mod large;
+mod large_agents;
 mod large_build;
 mod large_check;
 mod large_files;

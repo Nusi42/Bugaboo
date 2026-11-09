@@ -18,8 +18,13 @@ export interface SampleAgent {
 export function sampleAgents(): readonly SampleAgent[] {
   // Fails with what to do when the sample was not made.
   samplePeople();
+  return agentsIn(sampleFolder());
+}
+
+/** The agents of a sample or of a large dataset made in `folder`, from its `sign-in.txt`. */
+export function agentsIn(folder: string): readonly SampleAgent[] {
   const mark = `${layout.issues.work.ai.agentKeyMark}\t`;
-  return readFileSync(join(sampleFolder(), layout.signInFile), "utf8")
+  return readFileSync(join(folder, layout.signInFile), "utf8")
     .split("\n")
     .map((line) => line.replace(/\r$/u, ""))
     .filter((line) => line.startsWith(mark))
