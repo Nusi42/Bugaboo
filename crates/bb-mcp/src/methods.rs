@@ -230,6 +230,16 @@ impl Caller<'_> {
         Ok(json!({ "tools": tools }))
     }
 
+    /// Whether the tool is one that changes something, as `tools/list` shows it to this token.
+    async fn changes_something(&self, name: &str) -> Result<bool, Failure> {
+        let listed = self.list_tools().await?;
+        Ok(listed["tools"].as_array().is_some_and(|tools| {
+            tools
+                .iter()
+                .any(|tool| tool["name"] == name && tool["annotations"]["readOnlyHint"] == false)
+        }))
+    }
+
     /// `tools/call`.
     pub(crate) async fn call_tool(&self, request: &Request) -> Result<Value, Failure> {
         let name = request
@@ -245,20 +255,25 @@ impl Caller<'_> {
                 ));
             }
         };
-        // `preview` is not an input of the tool: it says how to call it.
-        let mode = match arguments
-            .as_object_mut()
-            .and_then(|map| map.remove(PREVIEW))
-        {
-            None | Some(Value::Bool(false)) => ToolMode::Run,
-            Some(Value::Bool(true)) => ToolMode::Preview,
-            Some(_) => {
-                return Err(Failure::fault(
-                    Fault::InvalidParams,
-                    message::MCP_ERROR_PREVIEW,
-                ));
-            }
-        };
+        // `preview` is an argument of the tools that change something only (it says how to call
+        // them, not what to do); a tool that reads keeps it as an input it does not have, and
+        // refuses it.
+        let mut mode = ToolMode::Run;
+        if arguments.get(PREVIEW).is_some() && self.changes_something(name).await? {
+            mode = match arguments
+                .as_object_mut()
+                .and_then(|map| map.remove(PREVIEW))
+            {
+                Some(Value::Bool(true)) => ToolMode::Preview,
+                Some(Value::Bool(false)) => ToolMode::Run,
+                _ => {
+                    return Err(Failure::fault(
+                        Fault::InvalidParams,
+                        message::MCP_ERROR_PREVIEW,
+                    ));
+                }
+            };
+        }
         Ok(match self.call(name, arguments, mode).await? {
             Ok(text) => json!({ "content": [{ "type": "text", "text": text }], "isError": false }),
             Err(sentence) => {

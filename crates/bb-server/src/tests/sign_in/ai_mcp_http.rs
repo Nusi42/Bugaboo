@@ -615,6 +615,59 @@ async fn m7_f225_a_preview_over_mcp_changes_nothing_and_the_same_call_without_it
         let done = mcp.call_tool(&signed, "update_issue", input(false)).await?;
         assert_eq!(done.json["result"]["isError"], json!(false), "{}", done.json);
         assert_eq!(title(&mut ada).await?, json!("New title"));
+        let runs = rig.database.runs_with_events(RunKind::AppSession).await?;
+        assert!(
+            runs.iter().any(|run| !run.1.is_empty()),
+            "the call without a preview is an entry of the run"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m7_f225_preview_must_be_true_or_false_and_only_a_change_tool_takes_it() -> TestResult {
+    each_database("m7_f225_argument_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let key = old_titled(&site, &mut ada).await?;
+        let signed = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        // Not true or false: a fault of the call, whatever the value.
+        let word = mcp
+            .call_tool(
+                &signed,
+                "update_issue",
+                json!({"issue": key, "version": 1, "title": "X", "preview": "yes"}),
+            )
+            .await?;
+        assert_eq!(word.json["error"]["code"], json!(-32602), "{}", word.json);
+        // A tool that only reads has no such argument, and refuses it like any unknown one.
+        let read = mcp
+            .call_tool(&signed, "get_issue", json!({"issue": key, "preview": true}))
+            .await?;
+        assert!(
+            read.json["error"].is_object() || read.json["result"]["isError"] == json!(true),
+            "{}",
+            read.json
+        );
+        let plain = mcp
+            .call_tool(&signed, "get_issue", json!({"issue": key}))
+            .await?;
+        assert_eq!(
+            plain.json["result"]["isError"],
+            json!(false),
+            "{}",
+            plain.json
+        );
         Ok(())
     })
     .await

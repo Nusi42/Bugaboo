@@ -309,7 +309,7 @@ add_comment   WEB-1  "…"                → saved, marked "Written by an AI ap
 
 - **Works as you.** At most your rights, at that place. Never more. An app may see less than you. (A3, D1)
 - **See only, or See and change.** You choose when you press Allow, and you can limit it to some projects. (B4)
-- **Changes happen at once.** With *See and change* there is no Apply step, unless the app asks for a preview first (`preview` set to true on a change tool: it shows before and after and saves nothing). Every change is marked and in the history. (B6, B7, K2)
+- **Changes happen at once.** With *See and change* there is no Apply step, unless the app asks for a preview first (`preview` set to true on a change tool: it shows before and after and saves nothing). Every change is marked and in the history. (B6, B7)
 - **Undo the run.** One run per session. One step puts back what the app changed. (G4)
 - **Fields kept from AI stay kept.** A field marked *Never sent to AI* is not given to the app, even if you may read it. (C5)
 - **The app's vendor sees what it reads.** It passes on what it reads under your own agreement with that vendor. (C7)
@@ -547,7 +547,6 @@ Many trackers now add AI. They choose differently, and each choice has a reason.
 What is not done yet and matters for understanding the above.
 
 - **K1** **Not every change can be undone yet.** *Undo the run* and *Throw away* put back the fields of an issue (title, status, priority, times, *Assigned to*, type, own fields). The text of a description, comments, files, relations, labels and tags, and a newly created record stay, and are named as "cannot be taken back yet" (P31 shows it). (M7-F60)
-- **K2** **Over MCP, a change tool can be previewed.** Every tool that changes something takes the argument `preview`. Set to true, it answers what would change (before and after, as in the assistant's *Proposed change*), saves nothing and writes no entry of a run. It is checked against the rights like the change itself, counts toward the same limits and is recorded as a read. Without `preview` the tool runs at once. Tools that only read do not offer it. Done as M7-F225.
 - **K3** **`changes_since` sees only changes of issue fields.** A new comment, file or relation is not in its answer. (M7-F82)
 - **K4** **The block does not say who stopped work or who approved a plan.** It is not stored yet. (M7-F216)
 - **K5** **Proposal cards name people only by number** ("2 people"), not by name. (M7-F232)

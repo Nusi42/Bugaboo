@@ -121,7 +121,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         input: &CreateIssue,
-    ) -> Result<(Arc<Evaluation>, NewIssue), AppError> {
+    ) -> Result<(Arc<Evaluation>, NewIssue, Option<IssueId>), AppError> {
         let project = self
             .find_project(&input.project)
             .await?
@@ -211,6 +211,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             deleted_at: None,
             version: FIRST_VERSION,
         };
+        // The parent and what an agent may do under it are judged here, so the preview and the
+        // real call refuse alike.
+        let parent = self.parent_for_create(actor, input, project.id).await?;
         Ok((
             access,
             NewIssue {
@@ -219,8 +222,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 assigned_people,
                 own,
             },
+            parent,
         ))
     }
+}
+
+/// The change that sets the parent of a new issue, when it has one.
+fn parent_change(parent: Option<IssueId>) -> Option<FieldChange> {
+    parent.map(|parent| FieldChange {
+        field: crate::issues::member::PARENT.to_owned(),
+        before: None,
+        after: Some(serde_json::json!(parent.to_string())),
+    })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -234,7 +247,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         input: &CreateIssue,
     ) -> Result<Vec<FieldChange>, AppError> {
-        Ok(self.plan_new_issue(actor, input).await?.1.changes())
+        let (_, new, parent) = self.plan_new_issue(actor, input).await?;
+        let mut changes = new.changes();
+        changes.extend(parent_change(parent));
+        Ok(changes)
     }
 }
 
@@ -251,20 +267,11 @@ pub async fn create_issue<S: AuthStore>(
     input: CreateIssue,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
-    let parent = ctx
-        .parent_for_create(&actor, &input, new.issue.project)
-        .await?;
+    let (access, new, parent) = ctx.plan_new_issue(&actor, &input).await?;
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
     let mut changes = new.changes();
-    if let Some(parent) = parent {
-        changes.push(FieldChange {
-            field: crate::issues::member::PARENT.to_owned(),
-            before: None,
-            after: Some(serde_json::json!(parent.to_string())),
-        });
-    }
+    changes.extend(parent_change(parent));
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {

@@ -26,7 +26,7 @@ The **agent work** is a record of its own on the issue, apart from the comments:
 - With **plan needs approval**, the work waits after the agent's plan for you. Press **Approve plan** to let the agent start. If you write a note first, the button becomes **Answer with the note**: the plan is not approved, and the agent makes another plan.
 - An agent changes an issue handed over to it only while an attempt of it runs on that issue. Before it takes the issue, and after it has submitted its result, a change of the agent is refused, so that **Throw away** can undo what it did. The one change without an attempt is the move of the status after a result is accepted by itself: Bugaboo makes it, not the agent.
 - When a result is ready, one short comment marked *Written by an agent* says so and points to the agent work.
-- An agent can ask what a change would do before it makes it: every tool that changes something takes the argument `preview`. With `preview` set to true the answer shows before and after, nothing is saved and no entry is written in the run of the attempt. It is checked against the agent's rights like the change, counts toward the agent's limit of calls, and the agent's key needs the same right as for the change.
+- An agent can ask what a change would do before it makes it: every tool that changes something takes the argument `preview`. With `preview` set to true the answer shows before and after, nothing is saved and no entry is written in the run of the attempt. It is checked against the agent's rights like the change, counts toward the agent's limit of calls and is not counted as a change, and the agent's key needs the same right as for the change.
 
 ## Reviewing
 
