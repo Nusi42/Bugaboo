@@ -11,6 +11,7 @@
 
 mod candidates;
 mod changers;
+mod handoff;
 mod own_loss;
 mod starting;
 mod store;
@@ -37,6 +38,7 @@ pub use bb_policy::{
 pub(crate) use candidates::{Members, names_other_people, position_of};
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use changers::{ChangingRole, WhoMayChange, WhoMayChangeQuery, who_may_change};
+pub(crate) use handoff::Handoff;
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
 pub use starting::{CreateStartingRoles, create_starting_roles};
 pub use store::{PlaceLevels, PolicyStore, RoleRecord};
@@ -277,10 +279,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             {
                 return Ok(known.clone());
             }
-            let actor = match self.take_handoff(token_text) {
-                Some(handed) => handed,
-                None => self.key_actor(token_text).await?,
-            };
+            let actor = self.key_actor(token_text).await?;
             if actor.agent().is_some() {
                 *locked(&self.agent_actor) = Some((token_text.to_owned(), actor.clone()));
             }
@@ -298,45 +297,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         locked(&self.policies)
             .entry(person)
             .or_insert_with(|| Arc::new(policy.clone()));
-    }
-
-    /// Leaves the actor of an agent for the next step of the same message, which asks for it by the
-    /// text of the key (`take_handoff`). It waits two seconds at the most and is taken once.
-    pub(crate) fn hand_off(&self, token_text: &str, actor: &Actor) {
-        const WAIT: std::time::Duration = std::time::Duration::from_secs(2);
-        const MOST: usize = 1024;
-        let now = std::time::Instant::now();
-        let mut left = locked(&self.services.agent_handoff);
-        left.retain(|_, (_, _, at)| now.duration_since(*at) < WAIT);
-        if left.len() < MOST {
-            let rights = locked(&self.policies).get(&actor.person.id).cloned();
-            left.insert(token_text.to_owned(), (actor.clone(), rights, now));
-        }
-    }
-
-    /// Throws away what an earlier message left for this key: a message looks the key up anew.
-    pub(crate) fn clear_handoff(&self, token_text: &str) {
-        locked(&self.services.agent_handoff).remove(token_text);
-    }
-
-    /// The actor `hand_off` left for this key, when there is one still waiting: the request does what
-    /// looking up the key does to it (the key is used, the agent acts).
-    fn take_handoff(&self, token_text: &str) -> Option<Actor> {
-        const WAIT: std::time::Duration = std::time::Duration::from_secs(2);
-        let (actor, rights, at) = locked(&self.services.agent_handoff).remove(token_text)?;
-        if at.elapsed() >= WAIT {
-            return None;
-        }
-        let agent = actor.agent()?;
-        if let Some(rights) = rights {
-            locked(&self.policies)
-                .entry(actor.person.id)
-                .or_insert(rights);
-        }
-        self.via_key
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-        *locked(&self.acting_agent) = Some((agent, actor.person.id));
-        Some(actor)
     }
 
     /// The signed-in person behind a cookie as the actor, never the owner of an access key: what

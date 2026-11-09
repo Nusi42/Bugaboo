@@ -297,6 +297,8 @@ pub struct McpIdentity {
     /// The agent, when an agent key signed in: its calls belong to the run of its attempt, not to
     /// a run of the session.
     pub agent: Option<bb_core::id::AgentId>,
+    /// The handle of what the entry left for the calls of this message: only they take it, once.
+    pub handoff: Option<String>,
 }
 
 /// Ask where the sign-in of AI apps is: for the two metadata documents. The address the request

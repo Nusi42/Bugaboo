@@ -36,6 +36,7 @@ async fn m7_f127_a_look_at_the_changes_starts_as_many_transactions_for_many_matc
         rule_over(&site, &mut tess, &agent, ("", "Everything"), false).await?;
         let mcp = Mcp::new(&app);
         let mut transactions = Vec::new();
+        let mut statements = Vec::new();
         let mut matches = Vec::new();
         let mut issues = 0_usize;
         for more in [2_usize, 8] {
@@ -64,10 +65,14 @@ async fn m7_f127_a_look_at_the_changes_starts_as_many_transactions_for_many_matc
             };
             // The first look warms what is kept across requests and is not counted.
             assert!(!failed(&ask().await?));
-            let before = rig.database.transactions_run();
+            let (before, before_statements) = (
+                rig.database.transactions_run(),
+                rig.database.statements_run(),
+            );
             let looked = ask().await?;
             assert!(!failed(&looked), "{}", looked.json);
             transactions.push(rig.database.transactions_run() - before);
+            statements.push(rig.database.statements_run() - before_statements);
             matches.push(text_of(&looked).matches("rule:").count());
         }
         assert!(matches[1] > matches[0], "{matches:?} matches");
@@ -75,6 +80,10 @@ async fn m7_f127_a_look_at_the_changes_starts_as_many_transactions_for_many_matc
         assert_eq!(
             transactions[0], transactions[1],
             "{matches:?} matches start {transactions:?} transactions"
+        );
+        assert_eq!(
+            statements[0], statements[1],
+            "{matches:?} matches run {statements:?} statements"
         );
         assert!(
             transactions[1] <= AT_MOST,
@@ -110,7 +119,7 @@ async fn m7_f127_a_key_that_was_taken_away_after_a_message_is_refused_at_the_nex
             .ok_or("no key ID")?
             .to_owned();
         let mcp = Mcp::new(&app);
-        // A message that runs no tool looks the key up and leaves nothing to be taken by a later one.
+        // A message that runs no tool leaves what its entry looked up, and no later request takes it.
         let ping = mcp
             .post(
                 Some(&key),
@@ -122,6 +131,11 @@ async fn m7_f127_a_key_that_was_taken_away_after_a_message_is_refused_at_the_nex
             .send("DELETE", &format!("/api/v1/agents/{agent}/keys/{id}"), None)
             .await?;
         assert!(gone.status.is_success(), "{}", gone.body);
+        let mut script = super::http::Browser::new(&app, &super::http::called());
+        let rest = script
+            .script("GET", &format!("/api/v1/agents/{agent}"), None, &key)
+            .await?;
+        assert!(!rest.status.is_success(), "{}", rest.body);
         let after = call(&mcp, &key, "changes_since", json!({})).await?;
         assert!(!after.status.is_success(), "{}", after.json);
         Ok::<(), Failure>(())

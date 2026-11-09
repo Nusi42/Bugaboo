@@ -170,7 +170,7 @@ pub async fn list_tools<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ToolListQuery,
 ) -> Result<Authorized<ToolList>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.actor_of_message(&input.session_token).await?;
     let scope = effective_scope(&actor, input.granted);
     let tools = registry::<S>()
         .iter()
@@ -208,7 +208,7 @@ pub async fn call_tool<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     request: ToolCallQuery,
 ) -> Result<Authorized<ToolAnswer>, AppError> {
-    let actor = ctx.actor(&request.session_token).await?;
+    let actor = ctx.actor_of_message(&request.session_token).await?;
     if request.caller.acts_by_itself() {
         // The call was counted per grant and per person at the entry of MCP (`mcp_identity`).
         ctx.enter_mcp();

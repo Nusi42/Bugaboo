@@ -127,6 +127,7 @@ impl Caller<'_> {
         // What the call changes carries the run of the session (RequestInfo::run).
         let mut info = self.info.clone();
         info.run = self.run;
+        info.handoff.clone_from(&self.who.handoff);
         let answer = self
             .api
             .call_tool(
@@ -195,10 +196,12 @@ impl Caller<'_> {
 
     /// `tools/list`: the tools the scope of this token allows, with their schemas.
     pub(crate) async fn list_tools(&self) -> Result<Value, Failure> {
+        let mut info = self.info.clone();
+        info.handoff.clone_from(&self.who.handoff);
         let listed = self
             .api
             .list_tools(
-                self.info.clone(),
+                info,
                 ToolListQuery {
                     session_token: self.token.to_owned(),
                     granted: NARROWED_BY_THE_TOKEN,

@@ -2,6 +2,7 @@
 //! store (`fake`, `fake_policy`) has the same ports as the database adapter; `world` makes a small
 //! server on it; the files below are the tests.
 
+mod agent_handoff;
 mod agent_limits;
 mod agent_tools;
 mod agent_tools_more;

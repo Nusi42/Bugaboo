@@ -213,7 +213,6 @@ pub async fn mcp_identity<S: AuthStore>(
     if !apps_on && !ctx.agents_on_in_the_organization().await? {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
     }
-    ctx.clear_handoff(&input.token);
     let actor = ctx.actor(&input.token).await?;
     if !apps_on && actor.agent().is_none() {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
@@ -228,14 +227,17 @@ pub async fn mcp_identity<S: AuthStore>(
             .await;
         return Err(error);
     }
-    if actor.agent().is_some() {
-        ctx.hand_off(&input.token, &actor);
-    }
+    let handoff = if actor.agent().is_some() {
+        ctx.hand_off(&input.token, &actor)
+    } else {
+        None
+    };
     Ok(McpIdentity {
         person: actor.person.id,
         credential: actor.credential_key(),
         app: actor.app_name(),
         agent: actor.agent(),
+        handoff,
     })
 }
 
