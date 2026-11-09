@@ -129,7 +129,7 @@ impl LookUps {
     #[must_use]
     pub const fn rounds(self) -> Option<usize> {
         match self {
-            Self::Most(most) => Some(most + 1),
+            Self::Most(most) => Some(most.saturating_add(1)),
             Self::NoLimit => None,
         }
     }

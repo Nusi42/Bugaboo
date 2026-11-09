@@ -33,6 +33,13 @@ test("The three switches of a project and the page of the assistant, with the lo
     page.getByLabel(t("setting.assistant.look-ups-most.name"), { exact: true }),
   ).toBeVisible();
   await shotWhole(page, `organization-ai-${layout}`, MILESTONE);
+  // *No limit* chosen, as saved.
+  const most = page.getByLabel(t("setting.assistant.look-ups-most.name"), { exact: true });
+  await Promise.all([
+    page.waitForResponse((answer) => answer.request().method() === "PUT"),
+    most.selectOption({ label: t("setting.assistant.look-ups-no-limit") }),
+  ]);
+  await shotWhole(page, `organization-ai-no-limit-${layout}`, MILESTONE);
   await page.goto(paths.organizationAgents);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await shotWhole(page, `organization-agents-${layout}`, MILESTONE);

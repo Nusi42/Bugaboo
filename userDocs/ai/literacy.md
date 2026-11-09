@@ -33,7 +33,7 @@ The numbers (how long a question may be, how many issues one hand-over holds, ho
 
 ## Where your data goes
 
-Only the assistant sends text to an **AI provider**. An administrator chooses the provider under *Organization settings › Connections › AI* (**Set up the assistant**): *Anthropic*, *Other provider or own server*, or *A model on your own server*. The part *What goes where* on the same page shows the provider and its country.
+Only the assistant sends text to an **AI provider**. An administrator chooses the provider under *Organization settings › Connections › Set up the assistant*: *Anthropic*, *Other provider or own server*, or *A model on your own server*. The part *What goes where* on the same page shows the provider and its country.
 
 - For a provider on the internet, an administrator must **confirm that a data processing agreement is in place** before AI can be switched on. Bugaboo keeps who confirmed it and when. A model on your own servers needs none, because nothing leaves your organization.
 - What goes to the provider is the question, the conversation and what you are looking at, and only what you may see. **People** go to a provider on the internet as their role ("a Team member"), not by name, unless an administrator switches *Send names of people* on. With a model on your own server, nothing leaves the organization and people are shown as you see them.
@@ -62,7 +62,7 @@ These are rules of the product, not settings.
 
 ## For administrators: a short list
 
-1. Decide for each kind whether it is on: **agents** (*Organization settings › Connections › Agents*, and the most an agent may do), **AI apps** (*Organization settings › Connections › AI*; *My settings › Connected apps* shows what each app was allowed) and **the assistant** (**Set up the assistant** on the same page as AI apps; confirm the agreement for a provider on the internet).
+1. Decide for each kind whether it is on: **agents** (*Organization settings › Connections › Agents*, and the most an agent may do), **AI apps** (the card *AI apps* on *Organization settings › Connections › Set up the assistant*; *My settings › Connected apps* shows what each app was allowed) and **the assistant** (**Set up the assistant** on the same page as AI apps; confirm the agreement for a provider on the internet).
 2. Decide which **projects** have each kind (each project has a switch for each of the three), and mark what is **Never sent to AI**.
 3. Decide how many look-ups the assistant may use for one question (*Most look-ups for one question*, also *No limit*). Each person may choose a lower number for themselves under *My settings › Assistant*.
 4. Tell your people where this guide is (they reach it from *Set up the assistant* and from the assistant), and ask them to check what an AI wrote before they rely on it.

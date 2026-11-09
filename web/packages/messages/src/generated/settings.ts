@@ -103,7 +103,7 @@ export const messages = {
     "The assistant is the helper in the panel beside the page. Everything below is only about the assistant: agents and AI apps are not switched by it. How much it may look up for one question is set here.",
   "ai-setup.guide-link": "Read the AI guide for your people: what AI can and cannot do",
   "ai-setup.intro":
-    "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the assistant, which answers questions about your work and proposes changes, and the AI apps that may sign in. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
+    "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the AI apps that may sign in, and the assistant, which answers questions about your work and proposes changes. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
   "ai-setup.set-up": "Provider and key",
   "ai-setup.set-up-intro":
     "Choose who writes the answers. The key is stored encrypted and is never shown again.",
@@ -140,7 +140,7 @@ export const messages = {
   "ai-setup.where-country": "Country",
   "ai-setup.where-model": "Model",
   "ai-setup.where-no-model": "No model chosen yet",
-  "ai-setup.where-state": "AI",
+  "ai-setup.where-state": "The assistant",
   "ai-setup.where-people": "People",
   "ai-setup.where-names": "By name",
   "ai-setup.where-roles": "As their role",
@@ -438,7 +438,7 @@ export const messages = {
     "As the organization (or the project above, when it has its own choice): AI apps may work here while they may work there. Off: no AI app reads or changes anything in this project. On: they may work here although the project above has them off.",
   "setting.assistant.look-ups-most.name": "Most look-ups for one question",
   "setting.assistant.look-ups-most.help":
-    "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the assistant, so a question can cost more.",
+    "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the look-ups of a question, and the provider charges for each one.",
   "setting.assistant.look-ups.name": "Look-ups for my questions",
   "setting.assistant.look-ups.help":
     "How many times the assistant may look something up in Bugaboo to answer one of your questions. A lower number makes answers quicker and cheaper. It never goes above the most your administrators set.",

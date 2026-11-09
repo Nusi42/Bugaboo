@@ -28,13 +28,13 @@ When the assistant wants to change something, it shows a **proposed change**: wh
 
 ## For administrators: setting it up
 
-*Organization settings › Connections › AI*, **Set up the assistant**:
+*Organization settings › Connections › Set up the assistant*:
 
 1. Choose the **provider** and the model: *Anthropic*, *Other provider or own server* (enter its address), or *A model on your own server*.
 2. Enter the **key** of the provider (stored encrypted; never shown again). Changing the provider or the address asks for your password again, and a new provider never gets the key of the old one.
 3. For a provider on the internet, **confirm the agreement**: that a data processing agreement is in place. Bugaboo keeps who confirmed it and when. Changing the provider takes the confirmation away.
 4. Press **Try the provider**. It makes one short call and says whether the provider answered.
-5. Switch the assistant **on**. Then choose, for each project, whether the assistant is on there. Agents and AI apps have their own switches (*Connections › Agents* and, on the same page, *AI apps*), also for each project.
+5. Switch the assistant **on**. Then choose, for each project, whether the assistant is on there. Agents have their own switch on *Connections › Agents* and AI apps on the card *AI apps* of this page, also for each project.
 6. Under *Most look-ups for one question* on the same page, choose how many times the assistant may look something up for one question.
 
 Mark what is **Never sent to AI** on the same page: built-in fields, own fields and whole projects. *Send names of people* stays off unless you decide otherwise.

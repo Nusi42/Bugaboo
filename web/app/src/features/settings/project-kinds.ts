@@ -1,11 +1,14 @@
+import { agentsEnabledKey, aiAppsEnabledKey } from "./agents-switch.tsx";
+
 /**
  * The settings of a project that are the switches of a kind of AI (WP-15): agents, then AI apps. The
  * assistant has a switch of its own on its own route, and is drawn after these two (the order of the
- * three everywhere: agents, AI apps, the assistant last). Written here because the generated list
- * `settingKeys` holds only the settings of `settings/catalog.rs`; these are declared in
- * `settings/agents.rs` and `settings/ai_apps.rs` (the settings registry, ADR-0018).
+ * three everywhere: agents, AI apps, the assistant last). The keys are written once, in
+ * `agents-switch.tsx`: these two settings are declared in `settings/agents.rs` and
+ * `settings/ai_apps.rs`, which the generated list `settingKeys` does not read (it reads the files
+ * named `catalog.rs` of the registry).
  */
-export const projectKindKeys = ["agents.enabled", "ai-apps.enabled"] as const;
+export const projectKindKeys = [agentsEnabledKey, aiAppsEnabledKey] as const;
 
 /** Which settings of a project a section draws: the ones that are not a kind of AI, or only the kinds. */
 export const projectShows = { others: "others", kindsOfAi: "kinds-of-ai" } as const;

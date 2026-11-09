@@ -136,3 +136,35 @@ async fn m7_wp15_only_administrators_set_the_most() -> Outcome {
     assert!(refused.is_err());
     Ok(())
 }
+
+#[tokio::test]
+async fn m7_wp15_a_question_whose_person_has_gone_asks_the_provider_no_more() -> Outcome {
+    let (world, _) = with_an_issue().await?;
+    set(
+        &world,
+        SettingsScope::Organization,
+        ORGANIZATION,
+        "no-limit",
+    )
+    .await?;
+    // The first round looks something up, the second waits for a provider that never answers; the
+    // question is dropped, as the server drops it when the client disconnects.
+    will_look_up(&world, 1);
+    world.ai.will_hang();
+    let waited = tokio::time::timeout(
+        std::time::Duration::from_millis(300),
+        ask(&world, question(&token(&world), "Look at everything")),
+    )
+    .await;
+    assert!(waited.is_err(), "the question was still waiting");
+    let calls = world.ai.calls().len();
+    assert_eq!(calls, 2);
+    will_look_up(&world, 5);
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert_eq!(
+        world.ai.calls().len(),
+        calls,
+        "nothing goes on after the question is dropped"
+    );
+    Ok(())
+}

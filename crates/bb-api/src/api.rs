@@ -332,9 +332,18 @@ fn same_origin(
     text(axum::http::HeaderName::from_static("sec-fetch-site")) == Some("same-origin")
 }
 
+/// The question to the assistant has no fixed time limit (WP-15: with *No limit* a question may run
+/// as long as it needs). It ends with the answer, or when the client disconnects, which drops it.
+const UNLIMITED_PATHS: [&str; 1] = ["/api/v1/assistant/questions"];
+
+/// Whether the request is held to [`TIME_LIMIT`]: an API request, but not the assistant's question.
+fn has_time_limit(path: &str) -> bool {
+    is_api(path) && !UNLIMITED_PATHS.contains(&path)
+}
+
 /// Stops an API request that takes longer than [`TIME_LIMIT`].
 async fn time_limit(request: Request, next: Next) -> Response {
-    if !is_api(request.uri().path()) {
+    if !has_time_limit(request.uri().path()) {
         return next.run(request).await;
     }
     match tokio::time::timeout(TIME_LIMIT, next.run(request)).await {
@@ -435,6 +444,14 @@ mod tests {
 
     use super::*;
     use crate::errors::ApiJson;
+
+    #[test]
+    fn m7_wp15_every_api_request_has_a_time_limit_but_the_question_to_the_assistant() {
+        assert!(has_time_limit("/api/v1/issues"));
+        assert!(has_time_limit("/api/v1/assistant/apply"));
+        assert!(!has_time_limit("/api/v1/assistant/questions"));
+        assert!(!has_time_limit("/index.html"));
+    }
 
     /// The host and port of the public address.
     fn authority() -> &'static str {

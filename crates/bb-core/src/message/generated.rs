@@ -17029,7 +17029,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-setup.intro",
-        "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the assistant, which answers questions about your work and proposes changes, and the AI apps that may sign in. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
+        "Agents, AI apps and the assistant can each be switched on or off by themselves: switching one off never switches another off. This page sets up the AI apps that may sign in, and the assistant, which answers questions about your work and proposes changes. The assistant is off until you switch it on here. Nothing is saved until a person applies it.",
     ),
     ("ai-setup.key", "Key of the provider"),
     (
@@ -17113,7 +17113,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-setup.where-people", "People"),
     ("ai-setup.where-provider", "Provider"),
     ("ai-setup.where-roles", "As their role"),
-    ("ai-setup.where-state", "AI"),
+    ("ai-setup.where-state", "The assistant"),
     ("ai-tool.add-comment", "Write a comment on an issue."),
     (
         "ai-tool.ask",
@@ -22002,7 +22002,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.assistant.look-ups-most.help",
-        "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the assistant, so a question can cost more.",
+        "How many times the assistant may look something up in Bugaboo to answer one question. A person can choose a lower number for themselves, never a higher one. With no limit, nothing stops the look-ups of a question, and the provider charges for each one.",
     ),
     (
         "setting.assistant.look-ups-most.name",

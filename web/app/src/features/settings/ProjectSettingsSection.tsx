@@ -19,7 +19,7 @@ export interface ProjectSettingsSectionProps {
   readonly projectId: string;
   /**
    * Which settings: the ones that are not the switches of a kind of AI (the default), or only those
-   * switches, agents then AI apps (WP-15), for the card *AI in this project*.
+   * switches, agents then AI apps (WP-15), for the card *Agents, AI apps and the assistant*.
    */
   readonly show?: (typeof projectShows)[keyof typeof projectShows];
 }

@@ -28,7 +28,7 @@ pub struct RecordedCall {
 #[derive(Default)]
 struct State {
     calls: Vec<RecordedCall>,
-    script: VecDeque<Result<AiAnswer, AiFailure>>,
+    script: VecDeque<Option<Result<AiAnswer, AiFailure>>>,
 }
 
 /// A provider that answers from a script. Clones share what was sent and what is to be answered,
@@ -51,14 +51,20 @@ impl FakeAiProvider {
 
     /// The next call is answered with this.
     pub fn will_answer(&self, answer: AiAnswer) {
-        locked(&self.state).script.push_back(Ok(answer));
+        locked(&self.state).script.push_back(Some(Ok(answer)));
     }
 
     /// The next call fails: the provider did not answer.
     pub fn will_fail(&self) {
         locked(&self.state)
             .script
-            .push_back(Err(AiFailure::Unavailable));
+            .push_back(Some(Err(AiFailure::Unavailable)));
+    }
+
+    /// The next call never answers, like a provider that is slow: a test drops the question to see
+    /// that nothing goes on after the person has gone.
+    pub fn will_hang(&self) {
+        locked(&self.state).script.push_back(None);
     }
 
     /// Every call so far, oldest first.
@@ -85,12 +91,14 @@ impl AiProvider for FakeAiProvider {
             had_key: !target.key.is_empty(),
             request: request.clone(),
         });
-        let answer = state.script.pop_front().unwrap_or_else(|| {
-            Ok(AiAnswer {
+        let Some(answer) = state.script.pop_front().unwrap_or_else(|| {
+            Some(Ok(AiAnswer {
                 text: "OK".to_owned(),
                 ..AiAnswer::default()
-            })
-        });
+            }))
+        }) else {
+            return Box::pin(std::future::pending());
+        };
         Box::pin(async move { answer })
     }
 }
