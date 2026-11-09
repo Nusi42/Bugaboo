@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { issueAddress } from "../../src/shared/paths.ts";
 import { tool } from "../../../tooling/load/agents.ts";
 import { type ApiSession } from "./api.ts";
-import { good, adaOfTheSample } from "./demo-m7-common.ts";
+import { shot, adaOfTheSample } from "./demo-m7-common.ts";
 import { signIn } from "./flows.ts";
 import { openHandOver, openWindow } from "./agent-work.ts";
 import { type Instance } from "./server.ts";
@@ -72,7 +72,7 @@ export async function handsOverInTheWindow(page: Page, agent: string, issue: str
   await page.goto(issueAddress(issue));
   const window = await openHandOver(page);
   await window.getByLabel(t("agent-work.agent"), { exact: true }).selectOption({ label: agent });
-  await good(page, "03-a-the-hand-over");
+  await shot(page, "03-a-the-hand-over");
   await window
     .getByRole("button", { name: t("agent-work.hand-over-confirm"), exact: true })
     .click();
@@ -102,11 +102,11 @@ export async function handsOverWithPriority(
 export async function answers(page: Page, issue: string, question: string, answer: string) {
   await page.goto(issueAddress(issue));
   await expect(page.getByText(question, { exact: false })).toBeVisible();
-  await good(page, "03-b-the-question");
+  await shot(page, "03-b-the-question");
   await page.getByLabel(t("agent-work.question-answer"), { exact: true }).fill(answer);
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
   await expect(page.getByText(t("agent-work.answered-by", { person: "Ada Brandt" }))).toBeVisible();
-  await good(page, "03-c-the-answer");
+  await shot(page, "03-c-the-answer");
 }
 
 /** Ada reviews the result: opens the window, chooses what to do, and confirms. */
@@ -125,7 +125,7 @@ export async function reviews(
   if (note !== undefined) {
     await window.getByLabel(t("agent-work.review-note-label")).fill(note);
   }
-  await good(page, `04-${choice}`);
+  await shot(page, `04-${choice}`);
   await window
     .getByRole("button", {
       name: t(

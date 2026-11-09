@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 import { issueAddress } from "../../src/shared/paths.ts";
 import { signInThroughApi } from "./accounts.ts";
 import { ask, openAssistant, proposalCard } from "./assistant.ts";
-import { adaOfTheSample, good } from "./demo-m7-common.ts";
+import { adaOfTheSample, shot } from "./demo-m7-common.ts";
 import { startFakeModel } from "./fake-model.ts";
 import { signIn } from "./flows.ts";
 import { type Instance } from "./server.ts";
@@ -51,19 +51,19 @@ export async function theAssistantAnswersAndProposes(page: Page, server: Instanc
   const panel = await openAssistant(page);
   await ask(page, `Summarize ${ISSUE}`);
   await expect(panel.getByText("Nobody has started yet.")).toBeVisible();
-  await good(page, "02-a-the-summary");
+  await shot(page, "02-a-the-summary");
   await ask(page, `Raise the priority of ${ISSUE}.`);
   await expect(proposalCard(page)).toBeVisible();
   const unchanged = await issueNow(session);
   expect(unchanged.priority).toBe(before.priority);
-  await good(page, "02-b-the-proposal");
+  await shot(page, "02-b-the-proposal");
   await proposalCard(page)
     .getByRole("button", { name: t("assistant.card.apply") })
     .click();
   await expect(proposalCard(page).getByText(t("assistant.card.saved"))).toBeVisible();
   const saved = await issueNow(session);
   expect(saved.priority).toBe("critical");
-  await good(page, "02-c-applied");
+  await shot(page, "02-c-applied");
   await model.close();
   await session.dispose();
 }

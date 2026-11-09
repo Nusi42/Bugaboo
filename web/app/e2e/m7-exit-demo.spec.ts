@@ -1,8 +1,8 @@
 import { STEP_TIMEOUT_MS } from "./support/demo-m7-common.ts";
 import { theAssistantAnswersAndProposes } from "./support/demo-m7-assistant.ts";
 import { aContributorsAppSeesLessThanTheTeam } from "./support/demo-m7.ts";
+import { aStandingRuleProposesAndChangesNothing } from "./support/demo-m7-rule.ts";
 import {
-  aStandingRuleProposesAndChangesNothing,
   aThirdAttemptIsThrownAway,
   anAgentAsksAndAdaAnswers,
   anAgentIsSentBackOnceAndThenAccepted,

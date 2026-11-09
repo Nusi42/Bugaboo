@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { paths } from "../../src/shared/paths.ts";
 import { appAtTheDoor, catchTheAnswer, codeOf } from "./connect-app.ts";
 import { anaOfTheSample, good } from "./demo-m7-common.ts";
 import { signIn } from "./flows.ts";
@@ -50,5 +51,8 @@ export async function aContributorsAppSeesLessThanTheTeam(page: Page, server: In
   // The sample hides Customer, and the time fields Cost center, from Contributors.
   expect(seen).not.toContain("Customer");
   expect(seen).not.toContain("Cost center");
-  await good(page, "01-b-the-app-is-back");
+  // The page of the app that is back is the app's own; the list of apps shows what was allowed.
+  await page.goto(paths.connectedApps);
+  await expect(page.getByText("Claude Code").first()).toBeVisible();
+  await good(page, "01-b-the-app-is-allowed");
 }
