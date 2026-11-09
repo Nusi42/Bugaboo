@@ -156,6 +156,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             let work = IssueWork {
                 id: AgentWorkId::generate(&mut self.ids()),
                 issue: issue.id,
+                project: issue.project,
                 hand_over,
                 agent: agent.id,
                 person,

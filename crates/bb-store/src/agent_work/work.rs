@@ -449,18 +449,7 @@ impl AgentWorkRecords for AuthStorage {
             .values([
                 Expr::val(work.id.stored()),
                 Expr::val(work.issue.stored()),
-                // The project of the issue, which an issue never leaves (migration 47).
-                Expr::SubQuery(
-                    None,
-                    Box::new(
-                        Query::select()
-                            .column(IssueRow::Project)
-                            .from(IssueRow::Table)
-                            .and_where(Expr::col(IssueRow::Id).eq(work.issue.stored()))
-                            .to_owned()
-                            .into(),
-                    ),
-                ),
+                Expr::val(work.project.stored()),
                 Expr::val(work.hand_over.stored()),
                 Expr::val(work.agent.stored()),
                 Expr::val(work.person.stored()),

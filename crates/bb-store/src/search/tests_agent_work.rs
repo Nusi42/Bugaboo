@@ -23,6 +23,7 @@ use super::tests_agent::{a_stored_person, agent_fields, an_agent};
 use super::tests_more::titles_of;
 use crate::AuthStorage;
 use crate::test_support::{at, event};
+use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore as _;
 
 /// The moment the tests ask at, and when the hand-overs and rules made here end.
@@ -99,11 +100,17 @@ pub(super) async fn hand_over(
         made_at: at(0),
         version: 1,
     };
-    let works: Vec<IssueWork> = issues
-        .iter()
-        .map(|issue| IssueWork {
+    let mut works: Vec<IssueWork> = Vec::new();
+    for issue in issues {
+        let project = storage
+            .issue(*issue)
+            .await?
+            .ok_or(crate::StoreError::Corrupt("an issue of a test"))?
+            .project;
+        works.push(IssueWork {
             id: AgentWorkId::from_random(made.bytes()),
             issue: *issue,
+            project,
             hand_over: record.id,
             agent,
             person,
@@ -115,8 +122,8 @@ pub(super) async fn hand_over(
             status_pending: false,
             made_at: at(0),
             version: 1,
-        })
-        .collect();
+        });
+    }
     let (stored, kept) = (record.clone(), works.clone());
     let step = made.step;
     storage

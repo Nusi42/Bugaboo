@@ -154,6 +154,10 @@ pub struct IssueWork {
     /// The issue.
     #[not_personal]
     pub issue: IssueId,
+    /// The project of the issue, which an issue never leaves: the projects an agent reaches are
+    /// read from its work alone.
+    #[not_personal]
+    pub project: ProjectId,
     /// The hand-over that gave it.
     #[not_personal]
     pub hand_over: HandOverId,

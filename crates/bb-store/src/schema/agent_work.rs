@@ -182,6 +182,7 @@ stored_tables! {
     IssueWorkRow => bb_core::agent_records::IssueWork {
         Id => id,
         Issue => issue,
+        Project => project,
         HandOver => hand_over,
         Agent => agent,
         Person => person,

@@ -243,6 +243,7 @@ pub(super) fn work_select() -> SelectStatement {
         .columns([
             IssueWorkRow::Id,
             IssueWorkRow::Issue,
+            IssueWorkRow::Project,
             IssueWorkRow::HandOver,
             IssueWorkRow::Agent,
             IssueWorkRow::Person,
@@ -263,6 +264,7 @@ pub(super) fn read_work(row: &Row) -> Result<IssueWork, StoreError> {
     Ok(IssueWork {
         id: row.id(IssueWorkRow::Id)?,
         issue: row.id(IssueWorkRow::Issue)?,
+        project: row.id(IssueWorkRow::Project)?,
         hand_over: row.id(IssueWorkRow::HandOver)?,
         agent: row.id(IssueWorkRow::Agent)?,
         person: row.id(IssueWorkRow::Person)?,
