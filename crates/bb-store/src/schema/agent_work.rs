@@ -50,6 +50,7 @@ pub(crate) enum IssueWorkRow {
     Table,
     Id,
     Issue,
+    Project,
     HandOver,
     Agent,
     Person,

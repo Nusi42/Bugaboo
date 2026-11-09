@@ -75,6 +75,7 @@ mod m0043_oauth;
 mod m0044_shown_moments;
 mod m0045_agent_pause;
 mod m0046_answer_time;
+mod m0047_work_project;
 #[cfg(test)]
 mod old_rows;
 
@@ -402,6 +403,11 @@ const ALL: &[Definition] = &[
         version: 46,
         name: "answer_time",
         steps: || Ok(m0046_answer_time::steps()),
+    },
+    Definition {
+        version: 47,
+        name: "work_project",
+        steps: || Ok(m0047_work_project::steps()),
     },
 ];
 

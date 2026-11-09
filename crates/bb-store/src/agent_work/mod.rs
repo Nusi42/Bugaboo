@@ -2,6 +2,7 @@
 //! work on an issue and what belongs to it (AI-31 to AI-35, ADR-0029). `grants` holds hand-overs,
 //! rules and proposals; `work` the work on an issue.
 
+mod current;
 mod grants;
 #[cfg(any(test, feature = "testing"))]
 mod stored;
@@ -488,17 +489,13 @@ impl AgentWorkStore for AuthStorage {
     async fn agent_reach(&self, agent: AgentId, now: Timestamp) -> Result<AgentReach, StoreError> {
         let mut reach = AgentReach::default();
         let mut open = open_work_of_agent(agent, now);
+        // The project is on the piece of work (migration 47): no issue is looked up.
         open.distinct()
-            .column((IssueRow::Table, IssueRow::Project))
-            .inner_join(
-                IssueRow::Table,
-                Expr::col((IssueRow::Table, IssueRow::Id))
-                    .equals((IssueWorkRow::Table, IssueWorkRow::Issue)),
-            );
+            .column((IssueWorkRow::Table, IssueWorkRow::Project));
         for row in self.database().fetch_all(&open).await? {
             reach
                 .projects
-                .insert(row.id::<ProjectId>(IssueRow::Project)?);
+                .insert(row.id::<ProjectId>(IssueWorkRow::Project)?);
         }
         for row in self
             .database()
