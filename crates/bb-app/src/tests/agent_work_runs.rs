@@ -1,6 +1,7 @@
 //! Throw away, the move of the status after an accept by itself, and the summary comment
 //! (AI-33, AI-35, ADR-0029, decisions 4, 6 and 7).
 
+use bb_core::ErrorCode;
 use bb_core::agent_work::{AgentWorkState, CheckResult, HandOverPower, ReviewAnswer};
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::message::Message;
@@ -9,7 +10,7 @@ use bb_policy::StartingRole;
 use super::agent_work::report_attempt;
 use super::agent_work::{Handed, handed, plain_hand_over, query};
 use super::agent_work_review::{check, ready, report, review, show};
-use super::agents::{an_agent, key_of};
+use super::agents::{an_agent, key_of, refused};
 use super::runs::open;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
@@ -127,13 +128,6 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
     change_issue(&world.ctx(), change).await.map(drop)
 }
 
-fn forbidden(outcome: &Result<(), AppError>) -> bool {
-    matches!(
-        outcome,
-        Err(AppError::Refused(bb_core::ErrorCode::Forbidden))
-    )
-}
-
 #[tokio::test]
 async fn m7_f120_an_agent_changes_a_handed_issue_only_while_an_attempt_runs() -> Outcome {
     let world = World::new().await?;
@@ -144,16 +138,16 @@ async fn m7_f120_an_agent_changes_a_handed_issue_only_while_an_attempt_runs() ->
     let before = title_of(&world, person, issue_id).await?;
     // Waiting for the agent: the hand-over allows the title, but no attempt runs, so no run takes
     // the change, and Throw away could not undo it.
-    assert!(forbidden(&retitle(&world, &given, "Before the take").await));
+    let early = retitle(&world, &given, "Before the take").await;
+    assert!(refused(&early.unwrap_err(), ErrorCode::Forbidden));
     assert_eq!(title_of(&world, person, issue_id).await?, before);
     // While the attempt runs, the change is made, and it belongs to the run of the attempt.
     report_attempt(&world.ctx(), report(&given.key, issue_id, None, 5)).await?;
     retitle(&world, &given, "While it runs").await?;
     // Ready for review: the attempt has ended, and so has the right to change.
     end_attempt(&world.ctx(), ready(&given.key, issue_id)).await?;
-    assert!(forbidden(
-        &retitle(&world, &given, "After the submit").await
-    ));
+    let late = retitle(&world, &given, "After the submit").await;
+    assert!(refused(&late.unwrap_err(), ErrorCode::Forbidden));
     assert_eq!(title_of(&world, person, issue_id).await?, "While it runs");
     Ok(())
 }
@@ -341,10 +335,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
         },
     )
     .await;
-    assert!(super::agents::refused(
-        &refused_delete.unwrap_err(),
-        bb_core::ErrorCode::Forbidden
-    ));
+    assert!(refused(&refused_delete.unwrap_err(), ErrorCode::Forbidden));
     let made = create_issue(
         &world.ctx(),
         CreateIssue {
@@ -362,10 +353,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
         },
     )
     .await;
-    assert!(super::agents::refused(
-        &made.unwrap_err(),
-        bb_core::ErrorCode::Forbidden
-    ));
+    assert!(refused(&made.unwrap_err(), ErrorCode::Forbidden));
     // A list or a search of the agent is cut to its work; the person's is not.
     for (session, expected) in [(&given.key, true), (&given.team.session_token, false)] {
         let _ = search(
@@ -413,7 +401,7 @@ async fn ai_30_an_agent_with_work_reaches_its_attempt_and_not_the_runs_of_its_pe
     let refusal = get_run(&world.ctx(), read(&given.key, theirs)).await;
     assert!(matches!(
         refusal,
-        Err(AppError::Refused(bb_core::ErrorCode::NotFound))
+        Err(AppError::Refused(ErrorCode::NotFound))
     ));
     assert!(
         preview_undo_run(&world.ctx(), read(&given.key, theirs))

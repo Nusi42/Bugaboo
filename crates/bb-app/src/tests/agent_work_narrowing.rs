@@ -475,7 +475,7 @@ async fn perf_05_the_agent_work_of_an_issue_costs_the_same_reads_for_one_agent_a
 }
 
 /// The input of a new issue under `parent`, as the agent with this key sends it.
-async fn new_under(
+pub(super) async fn new_under(
     world: &World,
     given: &Handed,
     parent: Option<IssueId>,
@@ -502,6 +502,7 @@ async fn ai_31_an_agent_creates_a_sub_issue_only_under_the_issue_it_was_handed()
         asked.powers = vec![HandOverPower::CreateSubIssues];
     })
     .await?;
+    start_attempt(&world, &given.key, given.issue).await?;
     let sub = create_issue(
         &world.ctx(),
         new_under(&world, &given, Some(given.issue)).await?,

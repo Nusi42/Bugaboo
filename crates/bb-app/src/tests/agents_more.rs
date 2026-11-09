@@ -22,9 +22,7 @@ use crate::projects::{ProjectsQuery, projects};
 use crate::settings::{ChangeSetting, SettingsQuery, SettingsScope, change_setting, settings};
 use bb_core::history::HistoryTab;
 
-use super::agents::{
-    a_team_agent, an_agent, give_work, give_work_on, key_of, key_request, list, refused,
-};
+use super::agents::{a_team_agent, an_agent, give_work, key_of, key_request, list, refused};
 
 // ---- Switches, maximums, the most agents and a person who is gone ----
 
@@ -519,7 +517,7 @@ async fn ai_04_the_mark_of_a_text_names_the_agent_only_to_a_reader_told_its_pers
     let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work_on(&world, fixer, project, issue_id);
+    super::agents::hand_title_and_take(&world, &admin, fixer, &key, issue_id).await?;
     for text in ["First", "Second"] {
         add_comment(
             &world.ctx(),

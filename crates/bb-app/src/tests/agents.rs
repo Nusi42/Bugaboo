@@ -132,33 +132,6 @@ pub(super) async fn hand_title_and_take(
     super::agent_work::start_attempt(world, key, issue).await
 }
 
-/// Gives the agent work on one issue of a project, as a hand-over will.
-pub(super) fn give_work_on(
-    world: &World,
-    agent: AgentId,
-    project: ProjectId,
-    issue: bb_core::id::IssueId,
-) {
-    give_work(world, agent, project);
-    let mut shared = world.store.lock();
-    if let Some((_, held)) = shared
-        .state
-        .agent_work
-        .iter_mut()
-        .find(|(id, _)| *id == agent)
-    {
-        held.issues.insert(issue);
-        held.handed.insert(issue);
-        held.allowances
-            .entry(issue)
-            .or_default()
-            .add(bb_core::agent_work::Allowance {
-                fields: vec!["title".to_owned()],
-                ..bb_core::agent_work::Allowance::default()
-            });
-    }
-}
-
 pub(super) fn list(session: &str) -> ProjectsQuery {
     ProjectsQuery {
         session_token: session.to_owned(),

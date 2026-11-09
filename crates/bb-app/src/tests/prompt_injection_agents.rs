@@ -31,6 +31,7 @@ async fn prompt_injection_an_issue_that_orders_an_agent_to_take_other_issues_and
         asked.fields = vec!["title".to_owned()];
     })
     .await?;
+    super::agent_work::start_attempt(&world, &given.key, given.issue).await?;
     retitle(&world, given.issue, ORDERS).await?;
     let other = an_issue(&world, given.project).await?;
     let address = given.issue.to_string();

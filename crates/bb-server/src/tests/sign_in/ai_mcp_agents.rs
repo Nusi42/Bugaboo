@@ -259,6 +259,9 @@ async fn ai_37_twenty_requests_at_once_against_a_limit_of_five_changes_let_five_
             .await?)?;
         let mut team = team(&site, &mut ada, &["Fixer"]).await?;
         let (agent, key) = team.agents.remove(0);
+        // A comment needs an attempt that runs, so the agent takes the issue first.
+        let taken = call(&Mcp::new(&app), &key, "take", json!({"issue": team.issue})).await?;
+        assert!(!failed(&taken), "{}", taken.json);
         let handles: Vec<_> = (0..20)
             .map(|at| {
                 let (app, key, issue) = (app.clone(), key.clone(), team.issue.clone());

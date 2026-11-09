@@ -457,7 +457,11 @@ async fn ai_32_an_agent_comments_only_on_an_issue_it_was_handed() -> Outcome {
         plain_hand_over(&given.team.session_token, given.agent, &[other]),
     )
     .await?;
+    // ... and only while an attempt runs.
     let comment = json!({"issue": other.to_string(), "text": "A comment"});
+    let early = used(&world, &given.key, "add_comment", comment.clone()).await;
+    assert!(refused(&early.unwrap_err(), ErrorCode::Forbidden));
+    start_attempt(&world, &given.key, other).await?;
     used(&world, &given.key, "add_comment", comment).await?;
     Ok(())
 }

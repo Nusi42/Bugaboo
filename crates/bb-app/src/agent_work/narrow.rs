@@ -183,13 +183,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .cloned())
     }
 
-    /// Refuses a write by an agent to an issue it was not handed. Adding a comment, a link or a file
-    /// needs no tick, but it needs the hand-over: on an issue a standing rule found, an agent reads
-    /// and proposes. A person is not asked.
+    /// Refuses a write by an agent to an issue it was not handed, or while no attempt of it runs
+    /// there. Adding a comment, a link or a file needs no tick, but it needs the hand-over (on an
+    /// issue a standing rule found, an agent reads and proposes) and an attempt, whose run takes
+    /// the write, so *Throw away* can undo it. A person is not asked.
     ///
     /// # Errors
-    /// `access.forbidden` for an issue the agent was not handed.
-    pub(crate) async fn ensure_agent_works_on(
+    /// `access.forbidden` for an issue the agent was not handed, before it took the issue and after
+    /// it ended its attempt.
+    pub(crate) async fn ensure_agent_runs_on(
         &self,
         actor: &Actor,
         issue: IssueId,
@@ -198,9 +200,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         };
         match self.hold_of_agent_on(agent, issue).await? {
-            Some(hold) if hold.handed => Ok(()),
+            Some(hold) if hold.handed => self.ensure_attempt_runs(agent, issue).await,
             _ => Err(ErrorCode::Forbidden.into()),
         }
+    }
+
+    /// The tail of every write of an agent: a running attempt gives its run to the events that
+    /// follow; with none, the write is refused, except what the system itself writes for the
+    /// agent while it ends its attempt and accepts it.
+    async fn ensure_attempt_runs(&self, agent: AgentId, issue: IssueId) -> Result<(), AppError> {
+        match self.run_of_attempt_on(agent, issue).await? {
+            Some(run) => self.set_run(Some(run)),
+            None if *locked(&self.accepting) == Some(issue) => {}
+            None => return Err(ErrorCode::Forbidden.into()),
+        }
+        Ok(())
     }
 
     /// Refuses a change by an agent to a member its work does not allow, and any change while no
@@ -236,12 +250,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .cloned()
             .collect();
         self.ensure_allowance_covers(&allowance, &others).await?;
-        match self.run_of_attempt_on(agent, issue).await? {
-            Some(run) => self.set_run(Some(run)),
-            None if by_the_system => {}
-            None => return Err(ErrorCode::Forbidden.into()),
-        }
-        Ok(())
+        self.ensure_attempt_runs(agent, issue).await
     }
 
     /// Refuses members the allowance does not cover: the one place that judges them, for a change
@@ -315,12 +324,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         // The work is read before the change that makes the issue: a hand-over that ends between
         // the two still lets this one through, as it does for every change an agent makes.
         let allowance = match parent {
-            Some(parent) => self
-                .hold_of_agent_on(agent, parent)
-                .await?
-                .map(|hold| hold.allowance)
-                .filter(|allowance| allowance.sub_issues)
-                .ok_or(AppError::Refused(ErrorCode::Forbidden))?,
+            Some(parent) => {
+                let allowance = self
+                    .hold_of_agent_on(agent, parent)
+                    .await?
+                    .map(|hold| hold.allowance)
+                    .filter(|allowance| allowance.sub_issues)
+                    .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
+                // The new issue belongs to the run of the attempt on its parent.
+                self.ensure_attempt_runs(agent, parent).await?;
+                allowance
+            }
             None if self
                 .reach_of_agent_now(agent)
                 .await?

@@ -358,7 +358,7 @@ async fn comp_09_a_comment_written_by_an_agent_carries_the_mark_in_the_api_and_t
     let world = World::new().await?;
     let (project, team, fixer, key) = a_team_agent(&world).await?;
     let id = an_issue(&world, project).await?;
-    super::agents::give_work_on(&world, fixer, project, id);
+    super::agents::hand_title_and_take(&world, &team.session_token, fixer, &key, id).await?;
     let comment = |session: &str, text: &str| AddComment {
         session_token: session.to_owned(),
         issue: id.to_string(),

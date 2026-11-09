@@ -115,7 +115,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .unwrap_or_else(|| mine.work.issue.to_string());
         let address = self.app_address(&app_paths::ISSUE.replace("$issue", &key));
         let text = message::agent_work_summary(attempt.number, address).render();
-        add_comment(
+        // The system writes it as the agent when the attempt has ended, so no attempt runs.
+        *locked(&self.accepting) = Some(mine.work.issue);
+        let written = add_comment(
             self,
             AddComment {
                 session_token: token.to_owned(),
@@ -124,6 +126,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             },
         )
         .await
-        .map(drop)
+        .map(drop);
+        *locked(&self.accepting) = None;
+        written
     }
 }

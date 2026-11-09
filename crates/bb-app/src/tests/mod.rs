@@ -7,6 +7,7 @@ mod agent_tools;
 mod agent_tools_more;
 mod agent_tools_writes;
 mod agent_work;
+mod agent_work_attempt_writes;
 mod agent_work_mine;
 mod agent_work_narrowing;
 mod agent_work_notices;
