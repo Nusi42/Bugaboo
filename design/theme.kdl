@@ -449,33 +449,43 @@ tokens {
     color "cat12-mark" "#9c7a4c"
     // The color of each area (issues, time, agents, settings), in its menu icon, its open menu item and
     // the top bar of its pages; the soft one is the fill of the open item, the bar and the line are those of the top bar.
+    color "area-ink" "$fg"
     color "area-issues" "#5b3fd9"
+    color "area-issues-open" "$area-issues"
     color "area-issues-bar" "$area-issues-soft"
     color "area-issues-line" "$area-issues"
     color "area-issues-soft" "#efebfe"
     color "area-time" "#0a7a72"
+    color "area-time-open" "$area-time"
     color "area-time-bar" "$area-time-soft"
     color "area-time-line" "$area-time"
     color "area-time-soft" "#e1f4f1"
     color "area-agents" "#b02f6c"
+    color "area-agents-open" "$area-agents"
     color "area-agents-bar" "$area-agents-soft"
     color "area-agents-line" "$area-agents"
     color "area-agents-soft" "#fce8f1"
     color "area-settings" "#a35700"
+    color "area-settings-open" "$area-settings"
     color "area-settings-bar" "$area-settings-soft"
     color "area-settings-line" "$area-settings"
     color "area-settings-soft" "#fcf0de"
 
     // The shadow of things that float
+    shadow "area-issues-mark" "inset 3px 0 0 $area-issues"
+    shadow "area-time-mark" "inset 3px 0 0 $area-time"
+    shadow "area-agents-mark" "inset 3px 0 0 $area-agents"
+    shadow "area-settings-mark" "inset 3px 0 0 $area-settings"
     shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14"
 }
 
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
-    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "on-disabled" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
+    text "area-ink" "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "on-disabled" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
     backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "disabled-fill" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg" "area-issues-soft" "area-time-soft" "area-agents-soft" "area-settings-soft" "area-issues-bar" "area-time-bar" "area-agents-bar" "area-settings-bar"
     restricted "on-disabled" on="disabled-fill" reason="The words of a main button that cannot be pressed are only ever drawn on its grey fill."
+    restricted "area-ink" on="area-issues-soft area-time-soft area-agents-soft area-settings-soft" reason="The words of the open menu item are only ever drawn on the fill of its area."
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -542,9 +552,9 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
-    non-text "area-issues" "area-time" "area-agents" "area-settings" "area-issues-line" "area-time-line" "area-agents-line" "area-settings-line" reason="the color of an area is an icon and a line; kept at 3:1 by the `lines` rule below."
+    non-text "area-issues" "area-time" "area-agents" "area-settings" "area-issues-line" "area-time-line" "area-agents-line" "area-settings-line" "area-issues-open" "area-time-open" "area-agents-open" "area-settings-open" reason="the color of an area is an icon and a line; kept at 3:1 by the `lines` rule below."
     lines min=3 reason="the icon of an area and the line of its open menu item are seen at 3:1 on the menu and on the fill of the area." {
-        colors "area-issues" "area-time" "area-agents" "area-settings"
+        colors "area-issues" "area-time" "area-agents" "area-settings" "area-issues-open" "area-time-open" "area-agents-open" "area-settings-open"
         on "bg-canvas" "bg-surface" "bg-raised" "bg-hover" "area-issues-soft" "area-time-soft" "area-agents-soft" "area-settings-soft"
     }
 
@@ -5583,8 +5593,8 @@ part "nav-item[variant=issues] icon" {
 
 part "nav-item[variant=issues][current]" {
     background "$area-issues-soft"
-    color "$fg"
-    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-issues"
+    color "$area-ink"
+    box-shadow "$area-issues-mark"
 }
 
 part "top-bar[variant=issues]" {
@@ -5598,8 +5608,8 @@ part "nav-item[variant=time] icon" {
 
 part "nav-item[variant=time][current]" {
     background "$area-time-soft"
-    color "$fg"
-    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-time"
+    color "$area-ink"
+    box-shadow "$area-time-mark"
 }
 
 part "top-bar[variant=time]" {
@@ -5613,8 +5623,8 @@ part "nav-item[variant=agents] icon" {
 
 part "nav-item[variant=agents][current]" {
     background "$area-agents-soft"
-    color "$fg"
-    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-agents"
+    color "$area-ink"
+    box-shadow "$area-agents-mark"
 }
 
 part "top-bar[variant=agents]" {
@@ -5628,13 +5638,29 @@ part "nav-item[variant=settings] icon" {
 
 part "nav-item[variant=settings][current]" {
     background "$area-settings-soft"
-    color "$fg"
-    box-shadow "inset calc($ring-width + $border-width) 0 0 $area-settings"
+    color "$area-ink"
+    box-shadow "$area-settings-mark"
 }
 
 part "top-bar[variant=settings]" {
     background "$area-settings-bar"
     border-bottom-color "$area-settings-line"
+}
+
+part "nav-item[variant=issues][current] icon" {
+    color "$area-issues-open"
+}
+
+part "nav-item[variant=time][current] icon" {
+    color "$area-time-open"
+}
+
+part "nav-item[variant=agents][current] icon" {
+    color "$area-agents-open"
+}
+
+part "nav-item[variant=settings][current] icon" {
+    color "$area-settings-open"
 }
 
 part "nav-item[state=busy]" {

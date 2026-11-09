@@ -4691,8 +4691,8 @@ textarea,
 
 [data-part="nav-item"][data-variant~="issues"][data-current] {
   background: var(--area-issues-soft);
-  color: var(--fg);
-  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-issues);
+  color: var(--area-ink);
+  box-shadow: var(--area-issues-mark);
 }
 
 [data-part="top-bar"][data-variant~="issues"] {
@@ -4706,8 +4706,8 @@ textarea,
 
 [data-part="nav-item"][data-variant~="time"][data-current] {
   background: var(--area-time-soft);
-  color: var(--fg);
-  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-time);
+  color: var(--area-ink);
+  box-shadow: var(--area-time-mark);
 }
 
 [data-part="top-bar"][data-variant~="time"] {
@@ -4721,8 +4721,8 @@ textarea,
 
 [data-part="nav-item"][data-variant~="agents"][data-current] {
   background: var(--area-agents-soft);
-  color: var(--fg);
-  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-agents);
+  color: var(--area-ink);
+  box-shadow: var(--area-agents-mark);
 }
 
 [data-part="top-bar"][data-variant~="agents"] {
@@ -4736,13 +4736,29 @@ textarea,
 
 [data-part="nav-item"][data-variant~="settings"][data-current] {
   background: var(--area-settings-soft);
-  color: var(--fg);
-  box-shadow: inset calc(var(--ring-width) + var(--border-width)) 0 0 var(--area-settings);
+  color: var(--area-ink);
+  box-shadow: var(--area-settings-mark);
 }
 
 [data-part="top-bar"][data-variant~="settings"] {
   background: var(--area-settings-bar);
   border-bottom-color: var(--area-settings-line);
+}
+
+[data-part="nav-item"][data-variant~="issues"][data-current] [data-part="icon"] {
+  color: var(--area-issues-open);
+}
+
+[data-part="nav-item"][data-variant~="time"][data-current] [data-part="icon"] {
+  color: var(--area-time-open);
+}
+
+[data-part="nav-item"][data-variant~="agents"][data-current] [data-part="icon"] {
+  color: var(--area-agents-open);
+}
+
+[data-part="nav-item"][data-variant~="settings"][data-current] [data-part="icon"] {
+  color: var(--area-settings-open);
 }
 
 [data-part="nav-item"][data-state~="busy"] {
