@@ -12,7 +12,7 @@ How Bugaboo gets built: in 16 milestones, each ending in something you can try. 
 |------|-----|------|
 | **Product owner** | The maintainer | Decide, try each milestone, comment on its review page, approve or ask for changes |
 | **Lead** | The main Claude session, high effort | Splits a milestone into work packages, starts builders and reviewers, brings the finished packages into `main`, writes the milestone review page |
-| **Builders** | Implementation agents, medium effort | Build one work package each, in their own Git worktree, tests first |
+| **Builders** | Implementation agents, medium effort, on the cheapest model that can do the task (see "The lead's routine", point 12) | Build one work package each, in their own Git worktree, tests first |
 | **Reviewers** | Separate agents with a fresh context | Review every work package adversarially: code, security, UX, words |
 
 ### Work packages
@@ -100,7 +100,7 @@ A session can end at any time, and a new one starts in the master and continues 
 1. **Read [`STATUS.md`](STATUS.md) first.** It holds the current milestone and wave, each work package's state and folder, open questions for the maintainer, and the next action.
 2. **Agents belong to the session that started them.** A new session finds no running builders or reviewers. Resume a package marked *building* from its branch and folder as `STATUS.md` describes, never by waiting for it.
 3. **Update `STATUS.md` after every step** (builder started, report in, review in, merge, decision), commit it on `WIN1` and fast-forward `main`, so the master's copy is always current. Before a long step (a builder, a review, a CI run), write into "Next action" what is running and how to resume it. A commit that changes only docs needs the Git hooks to pass; code needs `cargo xtask ci` before `main` moves.
-4. **Builders** (Sonnet, medium effort) work in `bugaboo.win2` and up, reset to `main` first (see "Working in a folder"). **Reviewers** start with a fresh context. Every agent that builds outside a `bugaboo.winN` folder gets a `CARGO_TARGET_DIR` of its own, never one another agent uses, and that folder is deleted once no build runs from it.
+4. **Builders** (the model chosen by point 12, medium effort) work in `bugaboo.win2` and up, reset to `main` first (see "Working in a folder"). **Reviewers** start with a fresh context. Every agent that builds outside a `bugaboo.winN` folder gets a `CARGO_TARGET_DIR` of its own, never one another agent uses, and that folder is deleted once no build runs from it.
 5. **Every builder prompt** names the work package file, the folder and the branch, and points to the rules: this section's "Working in a folder", the coding standards (including the SSOT/DRY/ODR review gate and one logical change per commit — a package lands in several commits, not one) and the glossary. Every reviewer prompt names the review gate too.
 6. **One full run at a time:** while several builders work, only one folder runs a full `cargo xtask ci` at a time, the lead's merge runs included. A builder asks the lead before a full run and waits for the go. Browser and speed tests in several folders at once share the computer's connections and processors, and the load tests then fail for reasons that are not in the code (M4-F22, M4-F25). The checks and the unit tests run at any time; while the lead's full run is on, other folders run no browser tests at all, because the connections of the computer are shared (M4-F22).
 7. **Rebase, never merge** (ADR-0041), after the review is clean: `git fetch origin && git switch -C integrate origin/WINn && git rebase WIN1` (resolve conflicts commit by commit), then `cargo xtask ci` on `integrate`, then `git switch WIN1 && git merge --ff-only integrate`, push `WIN1`, and `git merge --ff-only WIN1` in the master. No merge commit is made; the pre-push hook refuses one.
@@ -108,6 +108,15 @@ A session can end at any time, and a new one starts in the master and continues 
 9. **Memory** lives in `bugaboo.win1/.claude/memory/` (ADR-0024). Commit memory changes with the next `STATUS.md` update.
 10. **Reviews work on a phone:** milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are not committed: keep them outside the repository, and name the page in the docs instead (coding-standards §2).
 11. **Clean the folders that are done.** After a landing, run `cargo xtask folder clean <n>` for each folder whose package is merged and that no agent works in or waits on (check the running agents and `STATUS.md` first); the disk is tight. A refusal names the reason: unsaved commits are pushed or dropped on purpose, never cleaned away.
+12. **The cheapest model that can do the task.** Before an agent starts a task, or hands one on, it asks: "Can I write this as numbered steps, with the files to touch and the results to expect?" If yes, it writes those steps and gives them to a cheaper model; if no, the task still needs thinking, which it does itself (or on the strongest model) before it hands on what is then clear. A builder that meets something unclear stops and asks instead of guessing.
+
+    | Level | Model | Typical tasks |
+    |-------|-------|---------------|
+    | Plan, design, review | Opus | Package docs, decision records, code and security reviews, speed diagnosis, concurrency, what a finding means |
+    | Build to a plan | Sonnet | A feature with a written plan, a fix round from a review with file and line, UX fixes, pictures, reviews of pictures and words |
+    | Chores | Haiku | Re-running failed tests, follow-up rows, notes commits, regenerated files, renames, doc wording, a landing run and its report, cleaning folders |
+
+    This is a trial (the maintainer, 2026-11-09): the lead counts the fix rounds of each package and the model that built it through M8. If quality holds, it stays; if a cheaper model needs more rounds than it saves, the levels are reconsidered.
 
 ## Overview
 

@@ -96,7 +96,7 @@ Time on issues with a timer or by hand, estimates, a weekly timesheet and the da
 
 ## AI agents and Bugaboo as shared memory
 
-*Being built now, in milestone M7 of the [roadmap](docs/04-milestones.md). Built so far: the **assistant** beside the page, which answers questions about an issue and proposes a change that you see before and after, apply, and can undo; the page where an administrator sets AI up (the provider or a model on your own server, the agreement, what goes where); AI apps that sign in through MCP; runs of an app that can be undone in one step; and agent work on the issue: *Hand over* to an agent, its attempts, questions and plan, and the review that accepts, sends back or throws away; and *My agents*, where a person sees what their agents do and wait for, pauses or stops them, sets their limits and makes standing rules, with a page for each agent and a list of every agent for administrators. It is not finished.*
+*Being built now, in milestone M7 of the [roadmap](docs/04-milestones.md). Built so far: the **assistant** beside the page, which answers questions about an issue and proposes a change that you see before and after, apply, and can undo; the page where an administrator sets AI up (the provider or a model on your own server, the agreement, what goes where); AI apps that sign in through MCP; runs of an app that can be undone in one step; and agent work on the issue: *Hand over* to an agent, its attempts, questions and plan, and the review that accepts, sends back or throws away; and *My agents*, where a person sees what their agents do and wait for, pauses or stops them, sets their limits and makes standing rules, with a page for each agent and a list of every agent for administrators; standing rules that hand over what a saved search finds, so an agent can work with nobody watching; and a guide to AI inside the app. It is not finished.*
 
 An AI agent starts fresh every time. It remembers nothing of yesterday and knows only what is written down where it can read it. A person keeps much of a task in their head; an agent cannot.
 
@@ -144,7 +144,7 @@ The last command starts Bugaboo on a sample organization of 50 made-up people an
 
 ## Privacy
 
-Bugaboo runs where you put it and sends nothing anywhere unless an administrator turns it on (e-mail now, AI later). It has no tracking and loads nothing from other websites. Every stored field that holds personal data is marked as such, so that it can be exported, removed and kept only as long as the rules of the organization say; the tools for this come with the first release. Bugaboo helps an organization meet the GDPR; the organization that runs it stays responsible.
+Bugaboo runs where you put it and sends nothing anywhere unless an administrator turns it on (e-mail and AI). It has no tracking and loads nothing from other websites. Every stored field that holds personal data is marked as such, so that it can be exported, removed and kept only as long as the rules of the organization say; the tools for this come with the first release. Bugaboo helps an organization meet the GDPR; the organization that runs it stays responsible.
 
 ## Contributing
 
