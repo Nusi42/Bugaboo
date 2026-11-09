@@ -175,7 +175,15 @@ Enforced by: TEST-SAMPLE-DATA. The dump has the part `issues.work.ai`, and `AiPl
 
 ### Speed on 1 M issues
 
-M7 adds three scenarios to the nightly run (budgets in `tools/checks/perf-bench.toml`, PERF-BENCH, WP-13): *changes since* of an agent that may see a big project, the search `agent state is "waiting-for-you"`, and *My agents* of a person with two agents and many hand-overs, each on 1 M issues with agent work on part of them (`dataset large`).
+M7 adds three scenarios to the nightly run (budgets in `tools/checks/perf-bench.toml`, PERF-BENCH, WP-13; `web/tooling/bench/agent-scenarios.ts`): *agent-changes-since* (the tool *changes since* of an agent, asked for the oldest mark, so it reads the bounded part of the log and the match record), *search-agent-state* (`agent state is "waiting-for-the-agent"`) and *my-agents* (`/api/v1/me/agents/work` of the person who has the agents). The data is made by `dataset large` (see *Agent work*): three agents of one Team member hold the 1 % of the issues of the projects that count their IDs, about 3,300 issues each, and two standing rules over `priority is critical and statusGroup is not Done` have their match record. Numbers of the first run on 1,000,000 issues, release build, 95th percentile, against the budget of a page (100 ms) and of a search (300 ms):
+
+| Scenario | SQLite p95 | PostgreSQL p95 |
+|----------|-----------:|---------------:|
+| *agent-changes-since* | **331.1 ms** (over) | **476.1 ms** (over) |
+| *search-agent-state* | 41.0 ms | 170.8 ms |
+| *my-agents* | 73.7 ms | **119.9 ms** (over) |
+
+The two scenarios that are over their budget are open (M7-F127, M7-F128). The dataset took 41.8 minutes and 12.7 GB on SQLite and 61.1 minutes and 16.4 GB on PostgreSQL with the agent work, while other work ran on the computer.
 
 The first numbers, on this computer, in a release build, at the 95th percentile (p50 and p99 in the file of the run), against the budget of 100 ms (PERF-01):
 
