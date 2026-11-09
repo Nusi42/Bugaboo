@@ -7,7 +7,8 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { openAction } from "./support/many-changes-pages.ts";
 import { serverWord } from "./support/server-words.ts";
-import { prepareWorkflows, statusesOf, threeInProgress, tickAll } from "./support/workflows.ts";
+import { prepareWorkflows, statusesOf, threeInProgress } from "./support/workflows.ts";
+import { tickIssueList } from "./support/list-look.ts";
 
 // Changing many issues follows each issue's workflow (ISS-09, WF-04, M4 WP-07, UX §4.2): the bar
 // offers the status changes by their words, and the preview names the issue that is skipped.
@@ -22,7 +23,10 @@ test("iss_09 ticking three issues and Send to testing skips the one whose workfl
   const issues = await threeInProgress(admin);
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  await tickAll(page, issues);
+  await tickIssueList(
+    page,
+    issues.map((issue) => issue.key),
+  );
   const dialog = await openAction(page, "change", issues.length);
   const words = serverWord("workflow-change.send-to-testing");
   await dialog.getByLabel(t("issue-field.status"), { exact: true }).selectOption({ label: words });

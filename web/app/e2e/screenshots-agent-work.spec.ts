@@ -11,7 +11,7 @@ import {
   planWaiting,
   sentBack,
 } from "./support/agent-work-shots.ts";
-import { openRowsList } from "./support/agent-work-rows.ts";
+import { openRowsList } from "./support/agent-work-rows-list.ts";
 import { showAgentColumns, skipOnAPhone } from "./support/agent-work-columns.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourThemes } from "./support/four-themes.ts";

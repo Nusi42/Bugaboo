@@ -2,11 +2,11 @@ import { type Locator } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
 import { layoutOf } from "./support/layout.ts";
-import { openList, prepareLook, rowOf } from "./support/list-look.ts";
+import { openList, prepareLook, rowOf, tickIssueList } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { resolved } from "./support/styles.ts";
 import { webIssues } from "./support/issues.ts";
-import { focusRowByKeys, tickIssues } from "./support/list-pictures.ts";
+import { focusRowByKeys } from "./support/list-pictures.ts";
 
 // M5 exit, package T (A15, A16): under forced colors the colors are the system's, so a priority is
 // told by the pattern of the edge of its row: Critical a double bar, High a single bar, every other
@@ -95,7 +95,7 @@ test("ux_7_2 under forced colors the keyboard focus on a row is a double outline
   test.skip(layoutOf(page) === "phone", "a phone has no keyboard");
   await page.emulateMedia({ forcedColors: "active" });
   await openList(page);
-  await tickIssues(page, ["WEB-1"]);
+  await tickIssueList(page, ["WEB-1"]);
   const row = rowOf(page, webIssues.typo);
   await focusRowByKeys(page, row);
   await expect(row).toHaveCSS("outline-style", "double");

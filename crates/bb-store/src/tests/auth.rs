@@ -168,6 +168,101 @@ async fn sec_12_only_sessions_nobody_can_use_are_purged() -> TestResult {
     .await
 }
 
+/// A person with one session that was last used at second 100.
+async fn ada_with_a_stale_session(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+) -> Result<(UserId, SessionId), StoreError> {
+    let ada = person(source, "ada@example.test");
+    let id = ada.id;
+    let stale = session(source, id, SessionStage::Active, 1, 50, 100);
+    let session_id = stale.id;
+    change(storage, source, move |tx| {
+        Box::pin(async move {
+            AuthStorage::insert_person(tx, &ada, "hash", at(1)).await?;
+            AuthStorage::insert_session(tx, &stale).await
+        })
+    })
+    .await?;
+    Ok((id, session_id))
+}
+
+/// Waits until no marking of a session as used is on its way.
+async fn until_the_touches_are_done(storage: &AuthStorage) {
+    while storage.touches_pending() > 0 {
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Three requests of one browser that come together on a session that has not been marked as used
+/// for a while write once, not three times, and none of them waits for the write (M7-F222: the
+/// writes queued behind each other and made the slower requests of the search page slow).
+#[tokio::test(flavor = "multi_thread")]
+async fn m7_f222_requests_together_on_a_stale_session_mark_it_as_used_once() -> TestResult {
+    each_database("m7_f222_one_touch", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let (person, _) = ada_with_a_stale_session(&storage, &mut source).await?;
+        let found = storage.sessions_of(person).await?;
+        let session = found.first().ok_or("no session")?.id;
+        let before = storage.database().statements_run();
+        let (a, b, c) = tokio::join!(
+            storage.touch_session(session, at(900)),
+            storage.touch_session(session, at(901)),
+            storage.touch_session(session, at(902)),
+        );
+        a?;
+        b?;
+        c?;
+        until_the_touches_are_done(&storage).await;
+        assert_eq!(storage.database().statements_run() - before, 1);
+        let marked = storage.sessions_of(person).await?;
+        assert_eq!(marked.first().ok_or("no session")?.last_seen_at, at(900));
+        // Once the write is done the next request marks it again: a lost mark costs nothing.
+        storage.touch_session(session, at(1000)).await?;
+        until_the_touches_are_done(&storage).await;
+        let marked = storage.sessions_of(person).await?;
+        assert_eq!(marked.first().ok_or("no session")?.last_seen_at, at(1000));
+        Ok(())
+    })
+    .await
+}
+
+/// Signing out everywhere works at once whatever marking is on its way: the mark is an update of
+/// a row, never an insert, so it cannot bring a session back.
+#[tokio::test(flavor = "multi_thread")]
+async fn m7_f222_a_mark_on_its_way_does_not_bring_back_a_session_that_was_ended() -> TestResult {
+    each_database("m7_f222_no_comeback", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let (person, _) = ada_with_a_stale_session(&storage, &mut source).await?;
+        let session = storage
+            .sessions_of(person)
+            .await?
+            .first()
+            .ok_or("no session")?
+            .id;
+        storage.touch_session(session, at(900)).await?;
+        let ended = change(&storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::delete_sessions_of(tx, person, None).await })
+        })
+        .await?;
+        assert_eq!(ended, 1);
+        until_the_touches_are_done(&storage).await;
+        assert!(storage.sessions_of(person).await?.is_empty());
+        assert!(
+            storage
+                .session_by_hash(&Digest::new([1; 32]))
+                .await?
+                .is_none()
+        );
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn auth_03_a_code_step_is_accepted_once_even_when_requests_race() -> TestResult {
     each_database("auth_03_step_race", async |db| {

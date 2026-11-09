@@ -1,8 +1,8 @@
 import { expect, test } from "./support/fixtures.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
-import { focusRowByKeys, tickIssues } from "./support/list-pictures.ts";
-import { openList, prepareLook, rowOf } from "./support/list-look.ts";
+import { focusRowByKeys } from "./support/list-pictures.ts";
+import { openList, prepareLook, rowOf, tickIssueList } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { inEveryLook, resolved } from "./support/styles.ts";
 
@@ -48,7 +48,7 @@ test("ux_7_2 the keyboard focus on a row is two rings with a gap, in every theme
 }) => {
   test.skip(layoutOf(page) === "phone", "a phone has no keyboard");
   await openList(page);
-  await tickIssues(page, ["WEB-1"]);
+  await tickIssueList(page, ["WEB-1"]);
   const row = rowOf(page, webIssues.typo);
   await focusRowByKeys(page, row);
   await inEveryLook(page, async (look) => {

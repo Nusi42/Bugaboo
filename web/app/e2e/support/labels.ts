@@ -4,10 +4,10 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
-import { tickIssue } from "./tick.ts";
 import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
+import { tickIssue } from "./list-look.ts";
 
 /** Makes a label through the API and returns its ID. */
 export async function createLabel(admin: ApiSession, name: string): Promise<string> {

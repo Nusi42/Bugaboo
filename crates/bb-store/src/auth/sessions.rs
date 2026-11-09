@@ -12,9 +12,49 @@ use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::SignInSession as SessionColumns;
 
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex, PoisonError};
+
 use super::AuthStorage;
 use super::digest;
 use crate::db::Row;
+
+/// The sessions that are being marked as used right now.
+#[derive(Debug, Default)]
+pub(super) struct Touches(Mutex<HashSet<SessionId>>);
+
+impl Touches {
+    /// Takes the place of the marking of this session; `false` when one is on its way already.
+    fn begin(&self, id: SessionId) -> bool {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(id)
+    }
+
+    fn end(&self, id: SessionId) {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(&id);
+    }
+
+    /// How many sessions are being marked.
+    #[cfg(any(test, feature = "testing"))]
+    fn pending(&self) -> usize {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner).len()
+    }
+}
+
+impl AuthStorage {
+    /// How many sessions are being marked as used (the tests wait for none, so that a clock they
+    /// move on does not pass a mark that is still on its way).
+    #[cfg(any(test, feature = "testing"))]
+    #[must_use]
+    pub fn touches_pending(&self) -> usize {
+        self.touches.pending()
+    }
+}
 
 fn session_columns() -> [SessionColumns; 8] {
     [
@@ -79,14 +119,26 @@ impl SessionStore for AuthStorage {
             .collect()
     }
 
+    /// Marks the session as used without making the request wait for it: the write runs on its own,
+    /// and only one runs for a session at a time. A mark that is not made is lost without harm, the
+    /// next request makes it (M7-F222).
     async fn touch_session(&self, id: SessionId, at: Timestamp) -> Result<(), StoreError> {
-        let mut update = Query::update();
-        update
-            .table(SessionColumns::Table)
-            .value(SessionColumns::LastSeenAt, to_micros(at))
-            .and_where(Expr::col(SessionColumns::Id).eq(id.stored()))
-            .and_where(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(at)));
-        self.database.execute(&update).await.map(|_| ())
+        if !self.touches.begin(id) {
+            return Ok(());
+        }
+        let database = self.database.clone();
+        let touches = Arc::clone(&self.touches);
+        tokio::spawn(async move {
+            let mut update = Query::update();
+            update
+                .table(SessionColumns::Table)
+                .value(SessionColumns::LastSeenAt, to_micros(at))
+                .and_where(Expr::col(SessionColumns::Id).eq(id.stored()))
+                .and_where(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(at)));
+            database.execute(&update).await.ok();
+            touches.end(id);
+        });
+        Ok(())
     }
 
     async fn insert_session(

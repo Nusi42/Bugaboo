@@ -1,14 +1,14 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { issueAddress, projectIssuesAddress } from "../../src/shared/paths.ts";
+import { issueAddress } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
 import { inFourThemes } from "./four-themes.ts";
 import { issueOf, statusButton } from "./issues.ts";
-import { openAction } from "./many-changes-pages.ts";
+import { openAction, tickIssues } from "./many-changes-pages.ts";
 import { serverWord } from "./server-words.ts";
 import { type Instance } from "./server.ts";
-import { createBug, startWorkingOn, tickAll } from "./workflows.ts";
+import { createBug, startWorkingOn } from "./workflows.ts";
 
 /** Three ticked issues with *Send to testing* in the preview, and the list of a Bug. */
 export async function shootManyIssues(page: Page, server: Instance): Promise<void> {
@@ -19,8 +19,10 @@ export async function shootManyIssues(page: Page, server: Instance): Promise<voi
   await startWorkingOn(admin, bugs);
   const issues = [...bugs, await issueOf(admin, "WEB-3")];
   await admin.dispose();
-  await page.goto(projectIssuesAddress("WEB"));
-  await tickAll(page, issues);
+  await tickIssues(
+    page,
+    issues.map((issue) => issue.key),
+  );
   const dialog = await openAction(page, "change", issues.length);
   await dialog
     .getByLabel(t("issue-field.status"), { exact: true })

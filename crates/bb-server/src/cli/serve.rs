@@ -389,12 +389,18 @@ mod tests {
         // there already. It waits for the port as long as the server is starting (on a busy
         // computer that takes as long as it takes) and gives up when the server has ended.
         let client = std::thread::spawn(move || {
+            // The ceiling only stops a hang: a server that never listens and never ends.
+            let started = std::time::Instant::now();
             while std::net::TcpStream::connect((address, port)).is_err() {
                 assert!(
                     !ended.load(std::sync::atomic::Ordering::SeqCst),
                     "the server ended and did not listen"
                 );
-                std::thread::yield_now();
+                assert!(
+                    started.elapsed() < std::time::Duration::from_mins(2),
+                    "the server did not listen"
+                );
+                std::thread::sleep(std::time::Duration::from_millis(2));
             }
             let code = std::fs::read_to_string(data.join("setup-code.txt"));
             let _ = stop.send(());

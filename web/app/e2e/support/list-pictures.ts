@@ -3,7 +3,6 @@ import { join } from "node:path";
 
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { tickBox } from "./issues.ts";
 import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
@@ -83,11 +82,6 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
       await shootWindowAs(page, `${name}-${layout}`, MILESTONE, theme.id);
     }),
   );
-}
-
-/** Ticks the boxes of these issues (by their IDs), as a person does. */
-export async function tickIssues(page: Page, keys: readonly string[]): Promise<void> {
-  await inOrder(keys.map((key) => () => setBox(tickBox(page, key), true)));
 }
 
 /** Ticks the box in the head of the list, which ticks the issues shown. */

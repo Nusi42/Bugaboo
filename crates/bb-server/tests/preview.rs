@@ -55,6 +55,13 @@ mod preview {
     use bb_files::preview::{MAX_CHILD_MEMORY_BYTES, PreviewOutcome, TIME_LIMIT};
     use bb_files::{DiskFiles, PreviewCommand, PreviewRefusal};
 
+    /// The exit code of a Windows program that aborted (a refused allocation): the fast-fail code
+    /// 0xC0000409 as the signed number the system gives back.
+    #[cfg(windows)]
+    const WINDOWS_ABORT: i32 = -1_073_740_791;
+    #[cfg(not(windows))]
+    const WINDOWS_ABORT: i32 = 0;
+
     /// The program the server starts for a preview.
     const PROGRAM: &str = env!("CARGO_BIN_EXE_bugaboo");
 
@@ -135,24 +142,18 @@ mod preview {
         let (folder, files) = files();
         // A PDF of a few megabytes whose picture unpacks to one and a half times what the child
         // may use: the child cannot get the memory, ends, and the server reads that as no preview.
-        let bomb = stored(
-            &files,
-            &pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2),
-        )
-        .await;
+        let bytes = pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2);
+        let bomb = stored(&files, &bytes).await;
         assert_eq!(
             files.create_preview(bomb, PreviewKind::Pdf).await.unwrap(),
             PreviewStatus::Without
         );
-        // Whether it ended by its limit or by the clock is read from the outcome of the child, not
-        // from how long it took, which a busy computer stretches: the same bomb, with a clock long
-        // enough that only the memory can stop it.
+        // How it ended is read from the outcome of the child, not from how long it took, which a
+        // busy computer stretches: the same bomb with a clock long enough that only the memory
+        // can stop it. A refused allocation aborts the child: no exit code on Unix (a signal),
+        // the abort code of Windows there.
         let input = folder.path().join("bomb.pdf");
-        std::fs::write(
-            &input,
-            pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2),
-        )
-        .unwrap();
+        std::fs::write(&input, &bytes).unwrap();
         let outcome = bb_files::preview::create(
             &PreviewCommand::new(PROGRAM, &["preview"]).within(TIME_LIMIT * 10),
             PreviewKind::Pdf,
@@ -161,10 +162,12 @@ mod preview {
         )
         .await
         .unwrap();
-        assert!(
-            matches!(outcome, PreviewOutcome::Without(_)),
-            "it ended by its limit, not by the clock: {outcome:?}"
-        );
+        let aborted = if cfg!(windows) {
+            PreviewOutcome::Without(Some(WINDOWS_ABORT))
+        } else {
+            PreviewOutcome::Without(None)
+        };
+        assert_eq!(outcome, aborted, "it ended by its limit, not by the clock");
         assert!(preview_png(&files, bomb).await.is_none());
         let work = folder.path().join("previews").join("work");
         assert_eq!(std::fs::read_dir(&work).map_or(0, Iterator::count), 0);

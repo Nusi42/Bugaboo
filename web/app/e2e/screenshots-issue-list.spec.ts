@@ -13,12 +13,12 @@ import {
   openList,
   prepareLook,
   rowOf,
+  tickIssueList,
 } from "./support/list-look.ts";
 import {
   focusRowByKeys,
   listInFourThemes,
   pointedRowInFourThemes,
-  tickIssues,
   screenshotFolder,
 } from "./support/list-pictures.ts";
 import { webIssues } from "./support/issues.ts";
@@ -68,7 +68,7 @@ test("cfg_02 pictures: two issues ticked, and the head of the list ticked", asyn
     "the tick box of a phone is shown in the cards, with the others",
   );
   await openList(page);
-  await tickIssues(page, ["WEB-1", "WEB-2"]);
+  await tickIssueList(page, ["WEB-1", "WEB-2"]);
   await expect(rowOf(page, webIssues.login)).toHaveAttribute("data-state", /selected/u);
   await listInFourThemes(page, "ticked");
 });
@@ -81,7 +81,7 @@ test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their
     "a phone shows cards, which have no row to hover and no focus ring of a row",
   );
   await openList(page);
-  await tickIssues(page, ["WEB-1"]);
+  await tickIssueList(page, ["WEB-1"]);
   await focusRowByKeys(page, rowOf(page, webIssues.typo));
   await pointedRowInFourThemes(page, rowOf(page, webIssues.passkey), "states");
 });

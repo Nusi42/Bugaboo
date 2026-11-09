@@ -43,6 +43,8 @@ pub struct AuthStorage {
     database: Database,
     keys: Arc<KeyRing>,
     seal: Arc<LogSeal>,
+    /// The sessions that are being marked as used (`sessions.rs`).
+    touches: Arc<sessions::Touches>,
 }
 
 impl AuthStorage {
@@ -53,6 +55,7 @@ impl AuthStorage {
             database,
             keys,
             seal: Arc::new(seal),
+            touches: Arc::default(),
         }
     }
 

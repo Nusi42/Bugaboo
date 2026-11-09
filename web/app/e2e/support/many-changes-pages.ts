@@ -2,9 +2,8 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
-import { tickIssue } from "./tick.ts";
-import { inOrder } from "./sequence.ts";
 import { serverWord } from "./server-words.ts";
+import { tickIssueList } from "./list-look.ts";
 
 // The screen of changing many issues (ISS-09, M3 WP-08) as a person uses it: tick issues in the
 // list of the project, choose a new status, read the preview, confirm.
@@ -12,12 +11,7 @@ import { serverWord } from "./server-words.ts";
 /** Opens the list of the project WEB and ticks the issues. */
 export async function tickIssues(page: Page, keys: readonly string[]): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
-  // One after another, as a person does: the next box is ticked when the last one shows it.
-  await inOrder(
-    keys.map((key) => async () => {
-      await tickIssue(page, key);
-    }),
-  );
+  await tickIssueList(page, keys);
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: keys.length }) }),
   ).toBeVisible();

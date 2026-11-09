@@ -5,8 +5,8 @@ import { expectNoOverlap } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
-import { openList, prepareLook, rowOf } from "./support/list-look.ts";
-import { focusRowByKeys, pictureIfWanted, tickIssues } from "./support/list-pictures.ts";
+import { openList, prepareLook, rowOf, tickIssueList } from "./support/list-look.ts";
+import { focusRowByKeys, pictureIfWanted } from "./support/list-pictures.ts";
 import { partIn } from "./support/parts.ts";
 
 // The cue of a state of a row (selected, current, focused) is a ring inside its edge, and under forced
@@ -47,7 +47,7 @@ function expectInside(outline: Outline, drawn: boolean): void {
 /** Ticks WEB-1, focuses WEB-3 by the keys, and checks the rings of both and of the title link of WEB-3. */
 async function checkRings(page: Page, drawn: boolean): Promise<void> {
   await openList(page);
-  await tickIssues(page, ["WEB-1"]);
+  await tickIssueList(page, ["WEB-1"]);
   await focusRowByKeys(page, rowOf(page, webIssues.typo));
   expectInside(await outlineOf(rowOf(page, webIssues.login)), drawn);
   expectInside(await outlineOf(rowOf(page, webIssues.typo)), drawn);

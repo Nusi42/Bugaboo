@@ -152,8 +152,8 @@ async fn sec_17_a_search_that_is_dropped_leaves_no_limit_on_the_connection() -> 
     .await;
     assert!(dropped.is_err(), "the read should still be running");
     // The dropped read is stopped at its next step and its connection closed, so the next read on
-    // the pool of one connection is not kept waiting by it. Without that stop the dropped read
-    // would count its two billion numbers; no clock decides here, only that the read gets its turn.
+    // the pool of one connection gets its turn. The minute only stops a hang; that the limit of the
+    // dropped read does not stay on the connection is read from the reads after the sleep below.
     let tiny = tokio::time::timeout(Duration::from_mins(1), database.fetch_all(&counting(10)))
         .await
         .map_err(|_| "the dropped read kept the connection")??;

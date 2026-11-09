@@ -6,7 +6,14 @@ import { projectIssuesAddress } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
 import { ada, signInThroughApi, type Person } from "./accounts.ts";
 import { signIn } from "./flows.ts";
-import { issueOf, prepareWeb, setStatusAndPriority, versionOf, webIssues } from "./issues.ts";
+import {
+  issueOf,
+  prepareWeb,
+  setStatusAndPriority,
+  tickBox,
+  versionOf,
+  webIssues,
+} from "./issues.ts";
 import { type Instance } from "./server.ts";
 import { boxOf } from "./windows.ts";
 export { inViewChoices } from "./search-bar.ts";
@@ -121,4 +128,45 @@ export function cutHeadNames(page: Page): Promise<(string | null)[]> {
     }
     return found;
   });
+}
+
+/** How long one try to tick a box waits before the click is made again. */
+const TICK_TRY_MS = 2000;
+
+/** How long ticking one box is tried in all, far more than a computer that is busy needs. */
+const TICK_TOTAL_MS = 60_000;
+
+/**
+ * Ticks the box of an issue in the list, as a person does with the label next to it. The list
+ * draws only the rows in view, so the list is scrolled on until the row is there; a click that
+ * lands while the rows are drawn again changes nothing, so the click is made again until the box
+ * shows the tick.
+ */
+export async function tickIssue(page: Page, key: string): Promise<void> {
+  const label = page
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${t("issues.select-issue", { key })}$`, "u") });
+  await expect(async () => {
+    if ((await label.count()) === 0) {
+      await page.locator("[data-part='list-scroll']").evaluate((list) => {
+        list.scrollBy(0, list.clientHeight / 2);
+      });
+      // The row is not drawn yet: this try ends here and the next one looks again.
+      throw new Error(`The row of ${key} is not drawn yet.`);
+    }
+    if (!(await tickBox(page, key).isChecked({ timeout: TICK_TRY_MS }))) {
+      await label.click({ timeout: TICK_TRY_MS });
+    }
+    await expect(tickBox(page, key)).toBeChecked({ timeout: TICK_TRY_MS });
+  }).toPass({ timeout: TICK_TOTAL_MS });
+}
+
+/** Ticks the boxes of these issues one after another, in the list that is open. */
+export async function tickIssueList(page: Page, keys: readonly string[]): Promise<void> {
+  // One after the other, as a person does: the next box is ticked when the last one shows it.
+  const [first, ...rest] = keys;
+  if (first !== undefined) {
+    await tickIssue(page, first);
+    await tickIssueList(page, rest);
+  }
 }

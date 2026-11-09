@@ -1,11 +1,6 @@
-import { expect, type Page } from "@playwright/test";
-
-import { projectIssuesAddress } from "../../src/shared/paths.ts";
-import { ada } from "./accounts.ts";
 import { signedInAdmin } from "./access.ts";
 import { createAgent, handOverOne, putScene } from "./agent-work.ts";
-import { signIn } from "./flows.ts";
-import { createIssue, tickBox } from "./issues.ts";
+import { createIssue } from "./issues.ts";
 import { changeStatus } from "./notifications.ts";
 import { inOrder } from "./sequence.ts";
 import type { Instance } from "./server.ts";
@@ -32,14 +27,4 @@ export async function rowsOfStatuses(server: Instance): Promise<readonly string[
     }),
   );
   return keys;
-}
-
-/** Signs in, opens the list of the project with the rows of the three status groups and ticks the middle one; the first key. */
-export async function openRowsList(page: Page, server: Instance): Promise<string> {
-  const [first, second, third] = await rowsOfStatuses(server);
-  await signIn(page, ada);
-  await page.goto(projectIssuesAddress("WEB"));
-  await expect(page.getByText(third ?? "", { exact: true })).toBeVisible();
-  await tickBox(page, second ?? "").check({ force: true });
-  return first ?? "";
 }

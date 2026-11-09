@@ -17,8 +17,12 @@ use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, Tries, refused};
 const FIREFOX: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0";
 
+/// Whether the session answers. The mark that a use leaves on the session is made on its own, so
+/// this waits for it: the tests move the clock by minutes right after, and the mark belongs to
+/// the moment of the use.
 async fn signed_in(rig: &Rig, token: &str) -> bool {
-    rig.api()
+    let answered = rig
+        .api()
         .authenticate(
             Rig::info(),
             AuthenticateQuery {
@@ -26,7 +30,11 @@ async fn signed_in(rig: &Rig, token: &str) -> bool {
             },
         )
         .await
-        .is_ok()
+        .is_ok();
+    while rig.storage.touches_pending() > 0 {
+        tokio::task::yield_now().await;
+    }
+    answered
 }
 
 #[tokio::test]
