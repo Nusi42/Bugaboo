@@ -163,6 +163,7 @@ export interface MessageArguments {
   "agents.rule-ends-on": { date: string | number };
   "agents.rule-hand-over-help": { agent: string | number; limit: number };
   "agents.rule-line": { agent: string | number; search: string | number };
+  "agents.rule-may-fields": { fields: string | number };
   "agents.rule-never-ends-alone": { agent: string | number };
   "agents.rule-never-ends-help": { agent: string | number };
   "agents.rule-power-creates": { project: string | number };

@@ -43,7 +43,6 @@ const DESIGNED_OUT_PATHS: [&str; 4] = [
     "bb_app::working_hours",
     "bb_app::roles",
 ];
-/// The code that lists and calls tools through the registry and must not reach past it.
 /// Places where a word that is also the name of a tool means something else, each with the word
 /// and the reason: the word `propose` is the way of a standing rule that proposes (ADR-0029), not
 /// the tool. Exact entries only: any other file that writes a tool name as a string is still found.
@@ -60,6 +59,7 @@ const OTHER_MEANING: [(&str, &str, &str); 2] = [
     ),
 ];
 
+/// The code that lists and calls tools through the registry and must not reach past it.
 const OUTSIDE_FOLDERS: [&str; 2] = ["crates/bb-mcp/", "crates/bb-ai/"];
 
 pub(crate) struct ArchAiTools;
@@ -242,7 +242,7 @@ fn findings(sources: &[Source]) -> Vec<Finding> {
     let mut found = Vec::new();
     found.extend(table_findings(sources, &tools, &entries));
     found.extend(preview_findings(sources, &tools, &entries));
-    found.extend(second_registry_findings(sources, &tools));
+    found.extend(second_registry_findings(sources, &tools, &OTHER_MEANING));
     found.extend(dispatch_findings(sources, &entries));
     found.extend(designed_out_findings(sources, registry, &entries));
     found
@@ -432,9 +432,16 @@ fn builds_a_spec(code: &str) -> bool {
         .any(|(at, _)| !code[..at].chars().next_back().is_some_and(is_ident))
 }
 
-/// No file but the registry and the words builds a tool.
-fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> {
+/// No file but the registry and the words builds a tool, and none writes a tool name as a string,
+/// except where `allowed` says the word means something else. An entry of `allowed` that no longer
+/// matches (the file no longer writes the word) is reported, so the list stays true.
+fn second_registry_findings(
+    sources: &[Source],
+    tools: &[Tool],
+    allowed: &[(&str, &str, &str)],
+) -> Vec<Finding> {
     let mut found = Vec::new();
+    let mut used: Vec<(&str, &str)> = Vec::new();
     for (path, text) in sources {
         if path == REGISTRY || path == TOOL_WORDS || is_test_file(path) {
             continue;
@@ -447,18 +454,35 @@ fn second_registry_findings(sources: &[Source], tools: &[Tool]) -> Vec<Finding> 
             ));
         }
         for tool in tools {
-            let other = OTHER_MEANING
-                .iter()
-                .any(|(file, word, _)| *file == path && *word == tool.word);
-            if !other && code.contains(&format!("\"{}\"", tool.word)) {
-                found.push(Finding::at(
-                    path,
-                    format!(
-                        "The tool name `{}` is written as a string here. Take it from `Tool` and call the tool through the registry.",
-                        tool.word
-                    ),
-                ));
+            if !code.contains(&format!("\"{}\"", tool.word)) {
+                continue;
             }
+            if allowed
+                .iter()
+                .any(|(file, word, _)| *file == path && *word == tool.word)
+            {
+                used.push((path.as_str(), tool.word.as_str()));
+                continue;
+            }
+            found.push(Finding::at(
+                path,
+                format!(
+                    "The tool name `{}` is written as a string here. Take it from `Tool` and call the tool through the registry.",
+                    tool.word
+                ),
+            ));
+        }
+    }
+    for (file, word, _) in allowed {
+        // A file that moved shows up as a finding of its own where it writes the word now.
+        let there = sources.iter().any(|(path, _)| path == file);
+        if there && !used.contains(&(*file, *word)) {
+            found.push(Finding::at(
+                *file,
+                format!(
+                    "The list of words that mean something else than a tool names `{word}` here, and the file no longer writes it. Take the entry out of `OTHER_MEANING`."
+                ),
+            ));
         }
     }
     found
@@ -664,6 +688,58 @@ fn x() { AiToolSpec { name: a } }",
         assert!(has(&found, "`check_access`"));
         assert!(has(&found, "`work_days`"));
         assert!(has(&found, "`bb_app::roles`"));
+    }
+
+    const ALLOWED: [(&str, &str, &str); 1] = [(
+        "crates/bb-core/src/agent_work.rs",
+        "search_issues",
+        "another meaning, for the test",
+    )];
+
+    fn second_registry(sources: &[Source]) -> Vec<String> {
+        let tools = tools_named(WORDS);
+        second_registry_findings(sources, &tools, &ALLOWED)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect()
+    }
+
+    #[test]
+    fn good_example_a_word_that_means_something_else_in_the_one_file_that_says_so() {
+        let sources = vec![source(
+            "crates/bb-core/src/agent_work.rs",
+            "const WAY: &str = \"search_issues\";",
+        )];
+        assert_eq!(second_registry(&sources), Vec::<String>::new());
+    }
+
+    #[test]
+    fn bad_example_the_same_word_in_another_file_is_still_found() {
+        let sources = vec![
+            source(
+                "crates/bb-core/src/agent_work.rs",
+                "const WAY: &str = \"search_issues\";",
+            ),
+            source(
+                "crates/bb-app/src/other.rs",
+                "const NAME: &str = \"search_issues\";",
+            ),
+        ];
+        let found = second_registry(&sources);
+        assert_eq!(found.len(), 1);
+        assert!(has(&found, "`search_issues` is written as a string"));
+    }
+
+    #[test]
+    fn bad_example_an_entry_that_no_longer_matches_is_reported() {
+        let sources = vec![source(
+            "crates/bb-core/src/agent_work.rs",
+            "const WAY: u8 = 1;",
+        )];
+        assert!(has(
+            &second_registry(&sources),
+            "names `search_issues` here"
+        ));
     }
 
     #[test]

@@ -37,17 +37,40 @@ impl GrantStore for super::fake::FakeStore {
         agents: Vec<AgentId>,
         limit: u64,
     ) -> Result<Vec<StandingRule>, FakeError> {
-        Ok(page(
-            tx.state
-                .work
-                .rules
-                .iter()
-                .filter(|r| agents.contains(&r.agent) && r.state == GivingState::Open)
-                .cloned(),
-            |r| r.id,
-            None,
-            limit,
-        ))
+        // Newest first, the ID breaking a tie: as the store reads them.
+        let mut found: Vec<StandingRule> = tx
+            .state
+            .work
+            .rules
+            .iter()
+            .filter(|r| agents.contains(&r.agent) && r.state == GivingState::Open)
+            .cloned()
+            .collect();
+        found.sort_by_key(|r| (std::cmp::Reverse(r.made_at), r.id));
+        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+        Ok(found)
+    }
+
+    async fn hand_over_rule_projects_in(
+        tx: &mut Tx,
+        agent: AgentId,
+        now: Timestamp,
+    ) -> Result<Vec<ProjectId>, FakeError> {
+        let mut projects: Vec<ProjectId> = tx
+            .state
+            .work
+            .rules
+            .iter()
+            .filter(|r| {
+                r.agent == agent
+                    && r.way == bb_core::agent_work::RuleWay::HandOver
+                    && r.works_at(now)
+            })
+            .map(|r| r.project)
+            .collect();
+        projects.sort();
+        projects.dedup();
+        Ok(projects)
     }
 
     async fn rules_of_agent_in(

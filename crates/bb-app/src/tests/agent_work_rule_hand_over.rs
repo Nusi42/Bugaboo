@@ -523,3 +523,53 @@ async fn m7_f236_switching_the_setting_off_gives_a_rule_that_never_runs_out_an_e
     assert_eq!(world.store.lock().state.work.rules[0].version, rule.version);
     Ok(())
 }
+
+#[tokio::test]
+async fn m7_f236_resetting_the_setting_to_its_default_gives_the_rules_an_end_too() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    allow_never(&world, true).await?;
+    create_standing_rule(
+        &world.ctx(),
+        CreateStandingRule {
+            never_ends: true,
+            ..rule_request(&given)
+        },
+    )
+    .await?;
+    assert_eq!(jobs_of_kind(&world, "agents.rules-get-an-end"), 0);
+    // *Reset to default* turns the setting off, as a change to off does.
+    crate::settings::reset_setting(
+        &world.ctx(),
+        crate::settings::ResetSetting {
+            session_token: token(&world),
+            scope: SettingsScope::Organization,
+            key: "agents.rules-never-run-out".to_owned(),
+        },
+    )
+    .await?;
+    assert_eq!(jobs_of_kind(&world, "agents.rules-get-an-end"), 1);
+    world.ctx().run_rules_get_an_end().await?;
+    assert!(world.store.lock().state.work.rules[0].ends_at.is_some());
+    Ok(())
+}
+
+#[tokio::test]
+async fn m7_wp14_a_rule_with_a_field_no_agent_can_have_is_skipped_and_the_other_rules_work()
+-> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    let second = an_issue(&world, given.project).await?;
+    // The first rule names a field that is no member of an issue (as a retired own field is not).
+    let broken = rule_that_hands_over(&world, &given).await?;
+    world.store.lock().state.work.rules[0].fields = vec!["retired-field".to_owned()];
+    let working = rule_that_hands_over(&world, &given).await?;
+    look(&world, given.project).await?;
+    // The look did not fail; the rule that works handed both issues over, the broken one none.
+    assert_eq!(hand_overs(&world).len(), 2);
+    let found = world.store.lock().state.work.matches.clone();
+    assert!(found.iter().all(|one| one.rule == working.id));
+    assert!(found.iter().any(|one| one.issue == second));
+    assert!(found.iter().all(|one| one.rule != broken.id));
+    Ok(())
+}

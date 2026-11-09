@@ -129,15 +129,25 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub(super) struct Reach {
     may_create: BTreeSet<ProjectId>,
     off: BTreeSet<ProjectId>,
+    /// The fields the hand-overs may let the agent change, checked once.
+    fields: Vec<String>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Reads where the person may give agents work.
+    /// Reads where the person may give agents work, and checks once that `fields` are members an
+    /// agent can be given.
     ///
     /// # Errors
-    /// An internal error when the store fails.
-    pub(super) async fn hand_over_reach(&self, person: UserId) -> Result<Reach, AppError> {
+    /// `request.invalid` for a field no agent can be given, an internal error when the store
+    /// fails.
+    pub(super) async fn hand_over_reach(
+        &self,
+        person: UserId,
+        fields: Vec<String>,
+    ) -> Result<Reach, AppError> {
+        self.ensure_nameable(&fields).await?;
         Ok(Reach {
+            fields,
             may_create: self
                 .projects_where(person, Permission::CreateAgents)
                 .await?,
@@ -247,7 +257,6 @@ fn hand_over_event<S: AuthStore>(
 pub(super) struct Giving {
     pub(super) note: String,
     pub(super) powers: Vec<bb_core::agent_work::HandOverPower>,
-    pub(super) fields: Vec<String>,
     /// The most attempts on one issue; the limit of the agent when none is named.
     pub(super) budget_attempts: Option<i64>,
     pub(super) budget_minutes: Option<i64>,
@@ -371,8 +380,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// `resource.not-found` for an issue they cannot see, `access.forbidden` where they may not
-    /// hand over, `request.invalid` for an agent that cannot act for them, a field no agent can be
-    /// given, a budget or an end out of range.
+    /// hand over, `request.invalid` for an agent that cannot act for them, a budget or an end out of range.
     pub(super) async fn plan_hand_over(
         &self,
         actor: &Actor,
@@ -395,7 +403,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        self.ensure_nameable(&giving.fields).await?;
         let now = self.now();
         let days = match giving.days {
             Some(days) => days,
@@ -413,7 +420,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             person,
             note: giving.note,
             powers: giving.powers,
-            fields: giving.fields,
+            fields: reach.fields.clone(),
             budget_attempts,
             budget_minutes: giving.budget_minutes,
             budget_cost: giving.budget_cost,
@@ -476,7 +483,6 @@ pub async fn hand_over<S: AuthStore>(
     let giving = Giving {
         note: note_of(&input.note)?,
         powers: input.powers,
-        fields: input.fields,
         budget_attempts: input.budget_attempts,
         budget_minutes: input.budget_minutes,
         budget_cost: input.budget_cost,
@@ -484,7 +490,7 @@ pub async fn hand_over<S: AuthStore>(
         accept_by_itself: input.accept_by_itself,
         days: input.days,
     };
-    let reach = ctx.hand_over_reach(person).await?;
+    let reach = ctx.hand_over_reach(person, input.fields).await?;
     let view = ctx
         .plan_hand_over(&actor, &agent, &reach, giving, &input.issues, None)
         .await?

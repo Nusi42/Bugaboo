@@ -97,6 +97,27 @@ impl GrantStore for AuthStorage {
         all(transaction, &select, read_rule).await
     }
 
+    async fn hand_over_rule_projects_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+        now: Timestamp,
+    ) -> Result<Vec<ProjectId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .distinct()
+            .column(StandingRuleRow::Project)
+            .from(StandingRuleRow::Table)
+            .cond_where(working_rule(agent, now))
+            .and_where(
+                Expr::col(StandingRuleRow::Way).eq(bb_core::agent_work::RuleWay::HandOver.code()),
+            )
+            .order_by(StandingRuleRow::Project, Order::Asc);
+        let rows = transaction.fetch_all(&select).await?;
+        rows.iter()
+            .map(|row| row.id(StandingRuleRow::Project))
+            .collect()
+    }
+
     async fn every_open_rule_in(
         transaction: &mut Transaction,
     ) -> Result<Vec<StandingRule>, StoreError> {

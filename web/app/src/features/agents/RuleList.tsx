@@ -1,7 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { useNow } from "../../shared/use-now.ts";
+import { useFields } from "../fields/index.ts";
 import { ActionError } from "./ActionError.tsx";
 import { agentNamed, runsOutText, useChangeRule, type ListedAgent, type Rule } from "./agents.ts";
 import { type RuleNames } from "./rule-names.ts";
@@ -18,10 +20,19 @@ function powerText(rule: Rule, names: RuleNames): string {
 
 /** The strong settings of a rule that hands over: what its hand-overs may do besides what an agent always may, and accepting by itself. */
 function HandOverFacts({ rule }: { readonly rule: Rule }) {
+  const own = useFields().data?.fields ?? [];
   if (rule.way !== "hand-over") {
     return null;
   }
-  const powers = rule.powers.map((power) => t(`agent-work.power-${power}`)).join(", ");
+  const fields = rule.fields
+    .map((code) => fieldNameOf({ code, name: own.find((field) => field.id === code)?.name }))
+    .join(", ");
+  const says = {
+    "change-status": t("agents.rule-may-status"),
+    "create-sub-issues": t("agents.rule-may-sub-issues"),
+    "change-fields": t("agents.rule-may-fields", { fields }),
+  } as const;
+  const powers = rule.powers.map((power) => says[power]).join(", ");
   return (
     <>
       {powers === "" ? null : (

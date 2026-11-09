@@ -106,3 +106,67 @@ async fn m7_wp14_the_open_work_of_an_agent_leaves_out_what_ended_in_every_way() 
     })
     .await
 }
+
+#[tokio::test]
+async fn m7_f234_the_projects_to_look_at_are_those_of_rules_that_hand_over_and_work() -> TestResult
+{
+    each_database("m7_f234_rule_projects", async |db| {
+        use bb_core::agent_records::{GivingState, StandingRule};
+        use bb_core::agent_work::RuleWay;
+        use bb_core::id::{SavedSearchId, StandingRuleId};
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let none = storage.hand_over_rule_projects(fixer, at(NOW)).await?;
+        assert!(none.is_empty());
+        // A rule that proposes, one that ended and one that ran out do not count; two rules that
+        // hand over in the project count once, one of them with no end.
+        let specs = [
+            (RuleWay::Propose, GivingState::Open, Some(at(ENDS))),
+            (RuleWay::HandOver, GivingState::Ended, Some(at(ENDS))),
+            (RuleWay::HandOver, GivingState::Open, Some(at(NOW - 1))),
+            (RuleWay::HandOver, GivingState::Open, Some(at(ENDS))),
+            (RuleWay::HandOver, GivingState::Open, None),
+        ];
+        let mut writes = Vec::new();
+        for (way, state, ends_at) in specs {
+            writes.push(StandingRule {
+                id: StandingRuleId::from_random(made.bytes()),
+                agent: fixer,
+                person: owner,
+                search: SavedSearchId::generate(&mut made.source)
+                    .map_err(|_| crate::StoreError::Corrupt("a saved search ID"))?,
+                project: data.project,
+                way,
+                powers: Vec::new(),
+                accept_by_itself: false,
+                fields: Vec::new(),
+                creates_in: None,
+                state,
+                ends_at,
+                made_at: at(0),
+                version: 1,
+            });
+        }
+        let step = made.step + 1;
+        storage
+            .record_change(&event(&mut made.source, step), move |transaction| {
+                Box::pin(async move {
+                    for one in &writes {
+                        AuthStorage::insert_standing_rule(transaction, one).await?;
+                    }
+                    Ok(())
+                })
+            })
+            .await?;
+        let found = storage.hand_over_rule_projects(fixer, at(NOW)).await?;
+        assert_eq!(found, vec![data.project]);
+        Ok(())
+    })
+    .await
+}

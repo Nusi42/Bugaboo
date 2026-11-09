@@ -52,12 +52,18 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(), AppError> {
         let most_open = usize::try_from(agent.issues_at_once).unwrap_or(0);
         let mut already: Vec<IssueId> = Vec::new();
-        let reach = self.hand_over_reach(rule.person).await?;
+        // The fields of the rule are checked once for the look: a rule that names one no agent can
+        // be given (an own field that was retired) is left alone, and the look goes on with the
+        // other rules of the project.
+        let reach = match self.hand_over_reach(rule.person, rule.fields.clone()).await {
+            Ok(reach) => reach,
+            Err(AppError::Refused(ErrorCode::InvalidRequest)) => return Ok(()),
+            Err(other) => return Err(other),
+        };
         for issue in fresh {
             let giving = Giving {
                 note: String::new(),
                 powers: rule.powers.clone(),
-                fields: rule.fields.clone(),
                 budget_attempts: None,
                 budget_minutes: None,
                 budget_cost: None,

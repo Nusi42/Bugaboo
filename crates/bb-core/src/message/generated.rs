@@ -691,6 +691,12 @@ pub const AGENTS_RULE_ITS_AGENT: MessageKey = MessageKey::new("agents.rule-its-a
 /// The message `agents.rule-may`.
 pub const AGENTS_RULE_MAY: MessageKey = MessageKey::new("agents.rule-may");
 
+/// The message `agents.rule-may-status`.
+pub const AGENTS_RULE_MAY_STATUS: MessageKey = MessageKey::new("agents.rule-may-status");
+
+/// The message `agents.rule-may-sub-issues`.
+pub const AGENTS_RULE_MAY_SUB_ISSUES: MessageKey = MessageKey::new("agents.rule-may-sub-issues");
+
 /// The message `agents.rule-need-agent`.
 pub const AGENTS_RULE_NEED_AGENT: MessageKey = MessageKey::new("agents.rule-need-agent");
 
@@ -8907,6 +8913,15 @@ pub fn agents_rule_line(agent: impl std::fmt::Display, search: impl std::fmt::Di
     )
 }
 
+/// The message `agents.rule-may-fields`.
+#[must_use]
+pub fn agents_rule_may_fields(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.rule-may-fields"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
 /// The message `agents.rule-never-ends-alone`.
 #[must_use]
 pub fn agents_rule_never_ends_alone(agent: impl std::fmt::Display) -> Message {
@@ -16732,7 +16747,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-days", "Runs out after (days)"),
     (
         "agents.rule-days-help",
-        "Leave empty for your organization’s usual length: {usual} days unless it set another. At most {most} days; Renew starts the count again.",
+        "Leave empty for your organization’s usual length: {usual} days unless an administrator set another. At most {most} days; Renew starts the count again.",
     ),
     (
         "agents.rule-days-wrong",
@@ -16760,6 +16775,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.rule-its-agent", "its agent"),
     ("agents.rule-line", "{search} (agent {agent})"),
     ("agents.rule-may", "What the rule does with what it finds"),
+    ("agents.rule-may-fields", "change {fields}"),
+    ("agents.rule-may-status", "change the status"),
+    ("agents.rule-may-sub-issues", "create sub-issues"),
     ("agents.rule-need-agent", "Choose an agent first."),
     (
         "agents.rule-need-creates-in",

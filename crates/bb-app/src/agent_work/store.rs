@@ -86,6 +86,9 @@ pub trait GrantStore: AgentWorkStore + 'static {
         fn rules_of_agent(agent: AgentId, after: Option<RuleCursor>, limit: u64) -> Vec<StandingRule> = rules_of_agent_in;
         /// The standing rules of these agents that work, by ID, at most `limit`.
         fn open_rules_of_agents(agents: Vec<AgentId>, limit: u64) -> Vec<StandingRule> = open_rules_of_agents_in;
+        /// The projects where a rule of this agent that hands over what it finds works at `now`,
+        /// each once: where the look for room is queued when the agent has room again.
+        fn hand_over_rule_projects(agent: AgentId, now: Timestamp) -> Vec<ProjectId> = hand_over_rule_projects_in;
         /// Every standing rule that has not ended.
         fn open_rules() -> Vec<StandingRule> = every_open_rule_in;
         /// The standing rules that work in a project and have not ended.

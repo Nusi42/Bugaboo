@@ -50,6 +50,7 @@ export async function handingRuleWithNoEnd(scene: AgentsScene, agent: string): P
         powers: ["change-fields"],
         fields: ["title"],
         never_ends: true,
+        accept_by_itself: true,
       },
     }),
   );

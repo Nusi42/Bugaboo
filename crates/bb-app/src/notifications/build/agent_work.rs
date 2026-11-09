@@ -6,7 +6,7 @@
 //! reader skips an issue a person no longer sees like any other (decision 2).
 
 use bb_core::agent_records::GivingState;
-use bb_core::agent_work::{AgentWorkState, ReviewAnswer, RuleWay};
+use bb_core::agent_work::{AgentWorkState, ReviewAnswer};
 use bb_core::event::DomainEvent;
 use bb_core::id::{AgentId, AgentWorkId, HandOverId, IssueId, StandingRuleId};
 use bb_core::notification::{NotificationKind, Once};
@@ -15,9 +15,6 @@ use super::{Hears, Keeps, Round, Subject};
 use crate::agent_work::{event_member, waiting_for};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::event_members::text_set;
-
-/// The most rules of one agent the look for room reads.
-const MOST_RULES_OF_AN_AGENT: u64 = 100;
 
 /// The kind a new state of agent work is told as, if it is told at all.
 fn kind_of(state: &str, waiting: Option<&str>) -> Option<NotificationKind> {
@@ -192,18 +189,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// matches is queued for them after the round: the issues that waited for room are handed over
     /// then (ADR-0029, amendment M7, WP-14).
     async fn note_room_of(&self, round: &mut Round, agent: AgentId) -> Result<(), AppError> {
-        let rules = self
+        let projects = self
             .store()
-            .open_rules_of_agents(vec![agent], MOST_RULES_OF_AN_AGENT)
+            .hand_over_rule_projects(agent, self.now())
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let now = self.now();
-        round.rule_projects.extend(
-            rules
-                .into_iter()
-                .filter(|rule| rule.way == RuleWay::HandOver && rule.works_at(now))
-                .map(|rule| rule.project),
-        );
+        round.rule_projects.extend(projects);
         Ok(())
     }
 

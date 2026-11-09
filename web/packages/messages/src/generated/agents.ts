@@ -135,7 +135,7 @@ export const messages = {
   "agents.rule-creates-in": "Create issues in the project",
   "agents.rule-days": "Runs out after (days)",
   "agents.rule-days-help":
-    "Leave empty for your organization’s usual length: {usual} days unless it set another. At most {most} days; Renew starts the count again.",
+    "Leave empty for your organization’s usual length: {usual} days unless an administrator set another. At most {most} days; Renew starts the count again.",
   "agents.rule-days-wrong": "Write a whole number of days from 1 to {most}.",
   "agents.rule-line": "{search} (agent {agent})",
   "agents.rule-power-propose": "Proposes changes.",
@@ -154,6 +154,9 @@ export const messages = {
   "agents.rule-its-agent": "its agent",
   "agents.rule-accepts": "Accepts by itself when its checks pass.",
   "agents.rule-powers": "May also: {powers}.",
+  "agents.rule-may-status": "change the status",
+  "agents.rule-may-sub-issues": "create sub-issues",
+  "agents.rule-may-fields": "change {fields}",
   "agents.rule-never-ends-help":
     "This rule keeps giving work to {agent} until you stop it, also when nobody looks. You can stop it under My agents, in Standing rules.",
   "agents.rule-stop": "Stop the rule",

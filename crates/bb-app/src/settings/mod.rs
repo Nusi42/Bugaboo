@@ -25,7 +25,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{EntityRef, FieldChange, RecordKind};
-use bb_core::id::ProjectId;
+use bb_core::id::{IdSource, ProjectId, UserId};
 use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
 use bb_core::settings::{
     ChangedBy, FOR_TESTS_PREFIX, Layers, Level, OrganizationValue, Scope, SettingDefinition,
@@ -44,10 +44,10 @@ pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};
 use crate::auth::{
-    AppError, AuthStore, Ctx, Stops, by, change_failed, changed, fixed_entity, internal,
+    AppError, AuthStore, Ctx, EventMaker, Stops, by, change_failed, changed, fixed_entity, internal,
 };
 use crate::editing::Conflict;
-use crate::issues::{ModeChange, plan_renewals_in, renew_or_queue_in};
+use crate::issues::{ModeChange, Renewal, plan_renewals_in, renew_or_queue_in};
 use crate::projects::Why;
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
@@ -542,30 +542,19 @@ pub async fn change_setting<S: AuthStore>(
             Box::pin(async move {
                 let renewals =
                     plan_renewals_in::<S>(transaction, scope, store_key, &mode_change).await?;
+                let follows = Follows {
+                    forgets,
+                    renewals,
+                    job: rules_get_an_end,
+                };
                 if !S::put_setting_value(transaction, scope, definition, &value, now, expected)
                     .await?
                 {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                if forgets {
-                    S::forget_mail_password(transaction).await?;
-                }
-                for renewal in &renewals {
-                    renew_or_queue_in::<S>(transaction, renewal, &mut source, &events, person, now)
-                        .await?;
-                }
-                if let Some(job) = &rules_get_an_end {
-                    S::enqueue_job(
-                        transaction,
-                        job.id,
-                        &job.kind,
-                        &job.payload,
-                        job.run_at,
-                        now,
-                    )
-                    .await?;
-                }
-                Ok(())
+                follows
+                    .write_in::<S>(transaction, &mut source, &events, person, now)
+                    .await
             })
         })
         .await
@@ -581,6 +570,45 @@ pub async fn change_setting<S: AuthStore>(
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
     Ok(evaluation.authorize(view))
+}
+
+/// What follows a new value of a setting in the same change: the mail password that belonged to the
+/// old server is forgotten, the issue IDs of a project are renewed, and the rules that never run
+/// out get an end. The one place that writes them, for a change and for *Reset to default*.
+struct Follows {
+    forgets: bool,
+    renewals: Vec<Renewal>,
+    job: Option<crate::jobs::QueuedJob>,
+}
+
+impl Follows {
+    async fn write_in<S: AuthStore>(
+        &self,
+        transaction: &mut S::Transaction,
+        source: &mut (impl IdSource + Send),
+        events: &EventMaker,
+        person: UserId,
+        now: jiff::Timestamp,
+    ) -> Result<(), S::Error> {
+        if self.forgets {
+            S::forget_mail_password(transaction).await?;
+        }
+        for renewal in &self.renewals {
+            renew_or_queue_in::<S>(transaction, renewal, source, events, person, now).await?;
+        }
+        if let Some(job) = &self.job {
+            S::enqueue_job(
+                transaction,
+                job.id,
+                &job.kind,
+                &job.payload,
+                job.run_at,
+                now,
+            )
+            .await?;
+        }
+        Ok(())
+    }
 }
 
 /// Refuses a value the setting does not accept. A text its format refuses has the format's answer
@@ -655,26 +683,28 @@ pub async fn reset_setting<S: AuthStore>(
     let event = ctx.event(by(actor.person.id), entity.clone(), changes)?;
     let (store_key, now, person) = (definition.key(), ctx.now(), actor.person.id);
     let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
+    // The default of the setting that allows rules with no end is off: the rules get an end.
+    let rules_get_an_end = ctx.rules_get_an_end_job(scope, store_key, &standard)?;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 let renewals =
                     plan_renewals_in::<S>(transaction, scope, store_key, &ModeChange::Reset)
                         .await?;
+                let follows = Follows {
+                    forgets,
+                    renewals,
+                    job: rules_get_an_end,
+                };
                 if keeps_the_lock {
                     S::put_setting_value(transaction, scope, definition, &standard, now, None)
                         .await?;
                 } else {
                     S::clear_setting_value(transaction, scope, definition).await?;
                 }
-                if forgets {
-                    S::forget_mail_password(transaction).await?;
-                }
-                for renewal in &renewals {
-                    renew_or_queue_in::<S>(transaction, renewal, &mut source, &events, person, now)
-                        .await?;
-                }
-                Ok(())
+                follows
+                    .write_in::<S>(transaction, &mut source, &events, person, now)
+                    .await
             })
         })
         .await

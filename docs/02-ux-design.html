@@ -909,13 +909,14 @@ sort by priority, highest first</div>
       <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb"> Propose changes: a person applies each one</label>
       <label class="u-font-size-12-5px"><input type="radio" name="rule-may" class="cb" checked> Hand over what it finds: the agent works on each issue by itself</label>
       <div class="muted u-font-size-11px">Sorter works on at most 5 of these issues at a time; the others wait until it has room. Each issue is handed over once. You review every result.</div>
-      <div class="u-font-size-12-5px"><b>What the agent may do</b> <span class="muted">Always: read the issue and what it links to, comment, report its work, attach results, link related issues.</span></div>
+      <div class="u-font-size-12-5px"><b>What it may do</b> <span class="muted">Always: read the issue and its related issues, comment, report its work, attach results, add relations.</span></div>
       <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Change the status</label>
       <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Change these fields: Labels, Tags</label>
       <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Accept by itself when its checks pass</label>
       <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Create issues in one project: <i>Operations</i></label>
       <div class="field"><label>Runs out after</label><input type="text" value="30 days" readonly></div>
-      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Never runs out <span class="muted">(only where an administrator allows it)</span></label>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Never runs out <span class="muted">(only where an administrator allows it)</span></label>
+      <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span>This rule keeps giving work to Sorter until you stop it, also when nobody looks. You can stop it under My agents, in Standing rules.</span></div>
       <div class="muted u-font-size-11px">At most 90 days; <i>Renew</i> starts again. Never changes a field that holds people. Every issue that newly comes under the rule is written down.</div></div>
       <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Create the rule</span></div></div></div></div></div></div>
 
