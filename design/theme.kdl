@@ -2410,6 +2410,22 @@ part "priority-icon" {
 // timeline are the rows that do. A hovered, a selected or a current row keeps its tint, so the rows set no fill of their own for
 // those states: the hover line, the ring and the ticked box say the state. The rules come after the rows' own, so they win.
 
+// The row of the list comes first: the rules for a hovered row below follow it.
+part "list-row" {
+    position relative
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-row"
+    padding 0 "$pad-box"
+    border-inline-start "$size-edge solid transparent"
+    border-bottom "$border-width solid $divider"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-ui"
+}
+
 // A result of quick search is a row that can carry the state of an issue; it keeps the edge in place for every priority,
 // so the titles stand in one column. Its own rule comes before the state rules, so the tint and the edge win.
 part "quick-search.item" {
@@ -2417,6 +2433,20 @@ part "quick-search.item" {
     border-radius "$r-ctl"
     border-inline-start "$size-edge solid transparent"
     outline none
+}
+
+// A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
+// nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
+// These come before the state rules, so a tinted row keeps its tint when hovered.
+part "list-row:hover" "quick-search.item[hovered]" {
+    box-shadow "inset 0 0 0 $border-width $hover-line"
+}
+
+// The result that has the focus is ringed inside its edge and, without a group of its own, filled as selected;
+// an issue keeps its tint, as the current row of the list does.
+part "quick-search.item[focused]" {
+    background "$bg-selected"
+    use "ring-inside"
 }
 
 part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" {
@@ -2466,27 +2496,6 @@ part "list-grid" {
     display flex
     flex-direction column
     min-width 0
-}
-
-part "list-row" {
-    position relative
-    box-sizing border-box
-    display flex
-    align-items center
-    gap "$space-3"
-    min-height "$size-row"
-    padding 0 "$pad-box"
-    border-inline-start "$size-edge solid transparent"
-    border-bottom "$border-width solid $divider"
-    background "$bg-raised"
-    color "$fg"
-    font-size "$fs-ui"
-}
-
-// A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
-// nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
-part "list-row:hover" {
-    box-shadow "inset 0 0 0 $border-width $hover-line"
 }
 
 // A ticked row shows it by its ticked box and by the line under it in the accent color, so a run of ticked rows reads as one run;
@@ -5776,18 +5785,8 @@ part "quick-search.heading" {
     font-weight "$weight-regular"
 }
 
-// Hovered, as in the list, by a thin line just inside the edge: the tint of an issue stays.
-part "quick-search.item[hovered]" {
-    box-shadow "inset 0 0 0 $border-width $hover-line"
-}
-
 part "quick-search.item[disabled]" {
     opacity "$opacity-disabled"
-}
-
-part "quick-search.item[focused]" {
-    background "$bg-selected"
-    use "ring-inside"
 }
 
 part "quick-search.title" {

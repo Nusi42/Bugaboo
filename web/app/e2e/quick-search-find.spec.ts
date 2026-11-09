@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import type { Locator } from "@playwright/test";
 
 import { issueAddress } from "../src/shared/paths.ts";
 import { expectGoodWithRingsInEveryTheme } from "./support/checks.ts";
@@ -72,6 +73,21 @@ test("cfg_08_issues_look_like_rows_of_the_list", async ({ page }) => {
   await expect(plain).toHaveAttribute("data-state", /group-not-started/u);
   await expect(plain).not.toHaveAttribute("data-state", /priority-/u);
   await expect(plain.getByRole("img", { name: t("priority.normal"), exact: true })).toBeVisible();
+});
+
+/** The fill a row has now. */
+const fill = (row: Locator) => row.evaluate((node) => getComputedStyle(node).backgroundColor);
+
+test("cfg_08_the_focused_result_keeps_the_tint_of_its_group", async ({ page }) => {
+  await signIn(page, bob);
+  await ask(page, "colour");
+  // Two issues of the group Not started: the first has the focus of the list, the other has not.
+  const focused = result(page, titles.colourLow);
+  const other = result(page, titles.colourQueued);
+  await expect(focused).toHaveAttribute("data-focused", "true");
+  await expect(focused).toHaveAttribute("data-state", /group-not-started/u);
+  await expect(other).not.toHaveAttribute("data-focused", "true");
+  expect(await fill(focused)).toBe(await fill(other));
 });
 
 test("cfg_08_tinted_results_have_no_accessibility_problems_in_the_four_themes", async ({
