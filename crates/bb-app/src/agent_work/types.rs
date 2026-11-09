@@ -524,6 +524,13 @@ pub struct MyWorkItem {
     pub waits_for: Option<WaitsFor>,
 }
 
+/// What the organization allows for standing rules.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RulesAllowed {
+    /// Rules that never run out (the rule window offers *Never runs out* only then).
+    pub never_run_out: bool,
+}
+
 /// An agent another person handed to this person, who has not accepted it yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OfferedAgent {
@@ -550,7 +557,6 @@ pub struct MyAgentWork {
     pub rules: Vec<StandingRuleView>,
     /// Whether the rules were cut at the most *My agents* shows.
     pub rules_truncated: bool,
-    /// Whether the organization allows standing rules that never run out (the rule window
-    /// offers *Never runs out* only then).
-    pub rules_never_run_out: bool,
+    /// What the organization allows for standing rules.
+    pub rules_allowed: RulesAllowed,
 }

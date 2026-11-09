@@ -7951,8 +7951,8 @@ export interface components {
       pieces: components["schemas"]["MyWorkBody"][];
       /** @description The standing rules of the person's agents that work. */
       rules: components["schemas"]["StandingRuleItem"][];
-      /** @description Whether the organization allows standing rules that never run out. */
-      rules_never_run_out: boolean;
+      /** @description What the organization allows for standing rules. */
+      rules_allowed: components["schemas"]["RulesAllowedBody"];
       /** @description Whether the rules were cut at the most it holds. */
       rules_truncated: boolean;
       /** @description Whether the list was cut at the most it holds. */
@@ -9864,6 +9864,11 @@ export interface components {
       pattern?: string | null;
       /** @description The value has to be there. */
       required?: boolean;
+    };
+    /** @description What the organization allows for standing rules. */
+    RulesAllowedBody: {
+      /** @description Rules that never run out. */
+      never_run_out: boolean;
     };
     /** @description A run, as the person it belongs to sees it. */
     RunBody: {

@@ -7,7 +7,7 @@ import { daysAreRight, type DraftProps } from "./rule-draft.ts";
 
 /** When the rule runs out: the days, or *Never runs out* where an administrator allows it. */
 export function RuleEnds({ draft, onChange }: DraftProps) {
-  const allowed = useMyAgentWork().data?.rules_never_run_out === true;
+  const allowed = useMyAgentWork().data?.rules_allowed.never_run_out === true;
   return (
     <div {...partOf(part.stack)}>
       {allowed ? (

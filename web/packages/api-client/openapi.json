@@ -24081,7 +24081,7 @@
           "truncated",
           "rules",
           "rules_truncated",
-          "rules_never_run_out"
+          "rules_allowed"
         ],
         "properties": {
           "offered": {
@@ -24109,9 +24109,9 @@
             },
             "description": "The standing rules of the person's agents that work."
           },
-          "rules_never_run_out": {
-            "type": "boolean",
-            "description": "Whether the organization allows standing rules that never run out."
+          "rules_allowed": {
+            "$ref": "#/components/schemas/RulesAllowedBody",
+            "description": "What the organization allows for standing rules."
           },
           "rules_truncated": {
             "type": "boolean",
@@ -27960,6 +27960,17 @@
           "required": {
             "type": "boolean",
             "description": "The value has to be there."
+          }
+        }
+      },
+      "RulesAllowedBody": {
+        "type": "object",
+        "description": "What the organization allows for standing rules.",
+        "required": ["never_run_out"],
+        "properties": {
+          "never_run_out": {
+            "type": "boolean",
+            "description": "Rules that never run out."
           }
         }
       },

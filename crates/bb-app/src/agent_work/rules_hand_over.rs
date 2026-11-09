@@ -73,10 +73,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 most_open,
             };
             match self.hand_over_one(actor, agent, giving, issue, by).await {
-                Ok(()) => {}
+                // Handed over, or left out for the person's rights of now (looked at again later).
+                Ok(()) | Err(AppError::Refused(ErrorCode::Forbidden | ErrorCode::NotFound)) => {}
                 Err(AppError::Refused(ErrorCode::AgentLimitReached)) => break,
                 Err(AppError::Refused(ErrorCode::AgentWorkOpen)) => already.push(issue),
-                Err(AppError::Refused(ErrorCode::Forbidden | ErrorCode::NotFound)) => {}
                 Err(other) => return Err(other),
             }
         }

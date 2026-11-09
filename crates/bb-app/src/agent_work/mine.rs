@@ -9,7 +9,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, Place};
 
 use super::rules::view_of;
-use super::types::{MyAgentWork, MyAgentWorkQuery, MyWorkItem, OfferedAgent};
+use super::types::{MyAgentWork, MyAgentWorkQuery, MyWorkItem, OfferedAgent, RulesAllowed};
 use crate::access::Actor;
 use crate::agents::AgentStore;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -150,6 +150,8 @@ pub async fn my_agent_work<S: AuthStore>(
         truncated,
         rules,
         rules_truncated,
-        rules_never_run_out: ctx.rules_never_run_out().await?,
+        rules_allowed: RulesAllowed {
+            never_run_out: ctx.rules_never_run_out().await?,
+        },
     }))
 }
