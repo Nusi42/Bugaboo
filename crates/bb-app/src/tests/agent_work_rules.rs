@@ -300,6 +300,29 @@ async fn another_type(world: &World, current: IssueTypeId) -> Result<IssueTypeId
 }
 
 #[tokio::test]
+async fn m7_f120_an_agent_changes_nothing_on_an_issue_only_a_standing_rule_found() -> Outcome {
+    let world = World::new().await?;
+    let given = rule_world(&world).await?;
+    // The rule names the field *Type*, and its search finds the issue: still no hand-over, no
+    // attempt and so no run, which is why the agent only reads and proposes there.
+    create_standing_rule(&world.ctx(), rule_request(&given, vec![RuleField::Type])).await?;
+    found_by_search(&world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await?;
+    let to = another_type(&world, type_of(&world, &given).await?).await?;
+    let version = version_of(&world, &given.key, given.issue).await?;
+    let mut retype = change(&given.key, given.issue, version);
+    retype.issue_type = Some(to);
+    assert!(refused(
+        &change_issue(&world.ctx(), retype).await.unwrap_err(),
+        ErrorCode::Forbidden
+    ));
+    Ok(())
+}
+
+#[tokio::test]
 async fn ai_32_a_proposal_of_a_standing_rule_changes_nothing_until_a_person_applies_it() -> Outcome
 {
     let world = World::new().await?;
