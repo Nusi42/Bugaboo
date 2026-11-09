@@ -202,15 +202,8 @@ async fn issue_version(ada: &mut Browser, issue: &str) -> Result<i64, Failure> {
         .ok_or_else(|| "no version".into())
 }
 
-/// The lines of the tools: one for every tool of the registry, with the answer of every actor.
-async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
-    let (rig, app) = Mcp::start(db).await?;
-    let (site, ada) = Site::start(&rig, &app).await?;
-    ai_on(&rig).await?;
-    let mcp = Mcp::new(&app);
-    let roles: Vec<&str> = StartingRole::ALL.iter().map(|role| role.code()).collect();
-    let (team, _) = site.person(StartingRole::TeamMember, "matrix-team").await?;
-    let mut scene = scene(&rig, &site, ada, team).await?;
+/// A person with each starting role, with a key that may do all they may.
+async fn people_with_keys(site: &Site<'_>) -> Result<Vec<Who>, Failure> {
     let mut people: Vec<Who> = Vec::new();
     for role in StartingRole::ALL {
         let (mut person, _) = site
@@ -230,6 +223,19 @@ async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
             browser: Some(person),
         });
     }
+    Ok(people)
+}
+
+/// The lines of the tools: one for every tool of the registry, with the answer of every actor.
+async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
+    let (rig, app) = Mcp::start(db).await?;
+    let (site, ada) = Site::start(&rig, &app).await?;
+    ai_on(&rig).await?;
+    let mcp = Mcp::new(&app);
+    let roles: Vec<&str> = StartingRole::ALL.iter().map(|role| role.code()).collect();
+    let (team, _) = site.person(StartingRole::TeamMember, "matrix-team").await?;
+    let mut scene = scene(&rig, &site, ada, team).await?;
+    let mut people = people_with_keys(&site).await?;
     let signed = sign_in_app(
         &mcp,
         &mut scene.ada,
