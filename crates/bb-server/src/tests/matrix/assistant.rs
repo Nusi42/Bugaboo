@@ -3,12 +3,12 @@
 //! the provider was given and what the assistant could propose and apply. The entry point is
 //! `assistant`; its lines in `tools/checks/sec-matrix-record.txt` start with `ask`.
 //!
-//! The scene: an issue in ACME with a status, an estimate, a description and a person it is assigned to, where the
-//! description is *Never sent to AI*, and an issue in a second project that is *Never sent to AI* as
-//! a whole. Each person asks about both issues, then for a change of the title, and then tries
-//! *Apply* with a reference nobody made. The model is the fake provider, scripted to ask for exactly
-//! those tools. A Guest reports the issue they read, as in the scene of the deliveries, so the
-//! fields and the people that are masked for a Guest are really in play.
+//! The scene: an issue in ACME with a status, an estimate, a description and a person it is
+//! assigned to, where the description is *Never sent to AI*, and an issue in a second project that
+//! is *Never sent to AI* as a whole. Each person asks about both issues, then for a change of the
+//! title, and then tries *Apply* with a reference nobody made. The model is the fake provider,
+//! scripted to ask for exactly those tools. A Guest reports the issue they read, as in the scene
+//! of the deliveries, so the fields and the people that are masked for a Guest are really in play.
 
 use axum::http::StatusCode;
 use bb_api_words::sec_matrix as words;
@@ -46,7 +46,8 @@ const MADE_UP_REFERENCE: &str = "AAAA";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Asked {
     pub(super) role: StartingRole,
-    /// Whether the issue of the administrator was in what the tool read: `allowed`, else `not-found`.
+    /// Whether the issue of the administrator was in what the tool read: `allowed`, else
+    /// `not-found`.
     pub(super) read: &'static str,
     /// Whether the issue the person reads to show what is masked for them (their own, for a Guest)
     /// was in what the tool read.
@@ -370,8 +371,8 @@ async fn sec_01_the_assistant_gives_and_changes_no_more_than_the_person_may()
     bb_testing::each_database("sec_matrix_assistant", async |db| {
         let asked = run(db).await?;
         assert_eq!(asked.len(), StartingRole::ALL.len());
-        // Whatever the tables say, nothing that is kept from AI may reach the provider, *Apply* runs
-        // only for a proposal, and a reference nobody made is refused.
+        // Whatever the tables say, nothing that is kept from AI may reach the provider, *Apply*
+        // runs only for a proposal, and a reference nobody made is refused.
         for each in &asked {
             assert!(!each.leaked, "{}", each.line());
             assert_eq!(
@@ -381,10 +382,7 @@ async fn sec_01_the_assistant_gives_and_changes_no_more_than_the_person_may()
                 each.line()
             );
             assert!(
-                matches!(
-                    each.forged,
-                    words::FORBIDDEN | words::NOT_FOUND | words::INVALID_PROPOSAL
-                ),
+                words::FORGED_REFUSALS.contains(&each.forged),
                 "{}",
                 each.line()
             );

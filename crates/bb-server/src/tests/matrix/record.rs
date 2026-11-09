@@ -126,7 +126,8 @@ impl Record {
             },
         );
         Err(format!(
-            "the record {} differs from what the matrix ran ({place}). Write it again with              {}={}.",
+            "the record {} differs from what the matrix ran ({place}). Write it again with \
+             {}={}.",
             words::RECORD_PATH,
             words::WRITE_VARIABLE,
             words::WRITE_VALUE
@@ -151,15 +152,7 @@ fn stored() -> Result<(std::path::PathBuf, String), Failure> {
         .join(words::RECORD_PATH);
     let text = std::fs::read_to_string(&path)
         .map_err(|error| format!("could not read the record {}: {error}", words::RECORD_PATH))?;
-    Ok((
-        path,
-        text.replace(
-            "
-
-", "
-",
-        ),
-    ))
+    Ok((path, text.replace("\r\n", "\n")))
 }
 
 /// Compares the lines that start with `prefix` with the file of the repository, or writes them
@@ -208,7 +201,8 @@ pub(super) fn matches_the_repository_for(prefix: &str, found: &[String]) -> Resu
             },
         );
     Err(format!(
-        "the `{}` lines of the record differ from what the matrix ran ({place}). Write them again          with {}={}.",
+        "the `{}` lines of the record differ from what the matrix ran ({place}). Write them again \
+         with {}={}.",
         prefix.trim(),
         words::WRITE_VARIABLE,
         words::WRITE_VALUE

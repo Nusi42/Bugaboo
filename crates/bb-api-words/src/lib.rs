@@ -133,6 +133,8 @@ pub mod sec_matrix {
     /// An `ask` line says `forged=` [`INVALID_PROPOSAL`] when *Apply* turned away a reference that
     /// this server never made for the person (`ai.proposal-invalid`).
     pub const INVALID_PROPOSAL: &str = "proposal-invalid";
+    /// What an `ask` line may say for `forged=`: the answers that turn away a reference nobody made.
+    pub const FORGED_REFUSALS: [&str; 3] = [FORBIDDEN, NOT_FOUND, INVALID_PROPOSAL];
     /// Every entry point the record may name for a route of the API or a tool. The assistant has
     /// lines of its own ([`ENTRY_ASSISTANT`]), which name no route.
     pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];

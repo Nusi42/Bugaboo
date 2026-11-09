@@ -8,13 +8,14 @@
 //!
 //! - what the assistant read is what the tool `get_issue` answered the same person at `/mcp`, and
 //!   what it could propose is what `update_issue` answered them;
-//! - the status, the estimate and the person it is assigned to in the issue the person read to show what is masked
-//!   for them were in what the provider was given exactly as the tables of the starting roles say
-//!   (the fields *Status* and *Estimated time*, the kind *Assigned to*), and not at all when nothing
-//!   was read;
+//! - the status, the estimate and the person it is assigned to, in the issue the person read to
+//!   show what is masked for them, were in what the provider was given exactly as the tables of
+//!   the starting roles say (the fields *Status* and *Estimated time*, the kind *Assigned to*),
+//!   and not at all when nothing was read;
 //! - nothing that is *Never sent to AI* was in any request to the provider, and the issue of a
 //!   project kept from AI was refused as unknown;
-//! - *Apply* ran when there was a proposal, and only then, and a reference nobody made is turned away;
+//! - *Apply* ran when there was a proposal, and only then, and a reference nobody made is turned
+//!   away;
 //! - there is one line for every starting role, no other and none twice.
 
 use std::collections::BTreeSet;
@@ -129,16 +130,15 @@ pub(super) fn assistant_findings(record: &str) -> Vec<Finding> {
         }
         if word("read") == words::ALLOWED && word("mine") != words::ALLOWED {
             wrong(format!(
-                "{place}: it read the issue that every role asks about, so it must have read the                  one it was asked to show too (`mine={}`).",
+                "{place}: it read the issue that every role asks about, so it must have read the \
+                 one it was asked to show too (`mine={}`).",
                 word("mine")
             ));
         }
-        if !matches!(
-            word("forged"),
-            words::FORBIDDEN | words::NOT_FOUND | words::INVALID_PROPOSAL
-        ) {
+        if !words::FORGED_REFUSALS.contains(&word("forged")) {
             wrong(format!(
-                "{place}: *Apply* with a reference that was never made for them must be refused                  (`forged=proposal-invalid`, `forbidden` or `not-found`), not `{}`.",
+                "{place}: *Apply* with a reference that was never made for them must be refused \
+                 (`forged=proposal-invalid`, `forbidden` or `not-found`), not `{}`.",
                 word("forged")
             ));
         }
