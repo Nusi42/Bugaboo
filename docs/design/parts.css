@@ -4696,8 +4696,8 @@ textarea,
 }
 
 [data-part="top-bar"][data-variant~="issues"] {
-  background: var(--area-issues-soft);
-  border-bottom-color: var(--area-issues);
+  background: var(--area-issues-bar);
+  border-bottom-color: var(--area-issues-line);
 }
 
 [data-part="nav-item"][data-variant~="time"] [data-part="icon"] {
@@ -4711,8 +4711,8 @@ textarea,
 }
 
 [data-part="top-bar"][data-variant~="time"] {
-  background: var(--area-time-soft);
-  border-bottom-color: var(--area-time);
+  background: var(--area-time-bar);
+  border-bottom-color: var(--area-time-line);
 }
 
 [data-part="nav-item"][data-variant~="agents"] [data-part="icon"] {
@@ -4726,8 +4726,8 @@ textarea,
 }
 
 [data-part="top-bar"][data-variant~="agents"] {
-  background: var(--area-agents-soft);
-  border-bottom-color: var(--area-agents);
+  background: var(--area-agents-bar);
+  border-bottom-color: var(--area-agents-line);
 }
 
 [data-part="nav-item"][data-variant~="settings"] [data-part="icon"] {
@@ -4741,8 +4741,8 @@ textarea,
 }
 
 [data-part="top-bar"][data-variant~="settings"] {
-  background: var(--area-settings-soft);
-  border-bottom-color: var(--area-settings);
+  background: var(--area-settings-bar);
+  border-bottom-color: var(--area-settings-line);
 }
 
 [data-part="nav-item"][data-state~="busy"] {

@@ -4,7 +4,7 @@
 // comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
 // when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
-// Proposal B (more colour, M7-F241): a stronger brand color. Main buttons, links, the open menu item and the focus in one confident hue, with a clearer soft fill for chosen and pointed-at items.
+// A stronger brand color. Main buttons, links, the open menu item and the focus in one confident hue, with a clearer soft fill for chosen and pointed-at items.
 theme "paper" extends="default" kind="light" {
     tokens {
         color "bg-canvas" "#fbf8f3"
@@ -66,13 +66,21 @@ theme "paper" extends="default" kind="light" {
         color "cat12-bg" "#e7d6bc" more="#eee0cb"
         color "cat12-fg" "#655741"
         shadow "shadow" "0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914"
-        color "area-issues" "$fg-muted"
-        color "area-issues-soft" "$bg-surface"
-        color "area-time" "$fg-muted"
-        color "area-time-soft" "$bg-surface"
-        color "area-agents" "$fg-muted"
-        color "area-agents-soft" "$bg-surface"
-        color "area-settings" "$fg-muted"
-        color "area-settings-soft" "$bg-surface"
+        color "area-issues" "$fg"
+        color "area-issues-soft" "$bg-selected"
+        color "area-issues-bar" "$bg-canvas"
+        color "area-issues-line" "$divider"
+        color "area-time" "$fg"
+        color "area-time-soft" "$bg-selected"
+        color "area-time-bar" "$bg-canvas"
+        color "area-time-line" "$divider"
+        color "area-agents" "$fg"
+        color "area-agents-soft" "$bg-selected"
+        color "area-agents-bar" "$bg-canvas"
+        color "area-agents-line" "$divider"
+        color "area-settings" "$fg"
+        color "area-settings-soft" "$bg-selected"
+        color "area-settings-bar" "$bg-canvas"
+        color "area-settings-line" "$divider"
     }
 }
