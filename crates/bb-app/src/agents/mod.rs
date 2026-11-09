@@ -15,7 +15,7 @@ pub use manage::{
     rename_agent, set_agent_limits, stop_all_agents, take_back_offer,
 };
 pub(crate) use names::AgentNames;
-pub use store::{AgentStore, AgentWork, AgentWorkStore};
+pub use store::{AgentReach, AgentStore, AgentWorkStore, Hold};
 pub use types::{
     AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
     ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,

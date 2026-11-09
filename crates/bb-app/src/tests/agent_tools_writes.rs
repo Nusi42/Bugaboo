@@ -14,7 +14,7 @@ use serde_json::json;
 
 use super::agent_limits::{limit, the_agent};
 use super::agent_tools::{fence_above, used};
-use super::agent_work::{handed, handed_with, plain_hand_over};
+use super::agent_work::{handed, handed_with, plain_hand_over, start_attempt};
 use super::agent_work_rules::{found_by_search, made, rule_world};
 use super::agents::refused;
 use super::ai_tools::without_nonces;
@@ -157,6 +157,9 @@ async fn ai_37_a_change_to_many_issues_counts_one_change_for_each_issue() -> Out
         asked.fields = vec!["priority".to_owned()];
         hand_over(&world.ctx(), asked).await?;
         issues.push(more);
+    }
+    for issue in &issues {
+        start_attempt(&world, &first.key, *issue).await?;
     }
     limit(&world, LimitKind::ChangesAMinute, 2);
     let ctx = world.ctx();

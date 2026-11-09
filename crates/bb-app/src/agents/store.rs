@@ -16,31 +16,40 @@ use crate::auth::AccessKeyRecord;
 use crate::ports::ChangeStore;
 use crate::store_macros::{queries, reads, writes};
 
-/// What an agent has been given to work on (ADR-0029, decision 2): the projects its hand-overs and
-/// standing rules are in, and the issues of its hand-overs. Until hand-overs exist an agent has
-/// none, and may do nothing but read its own record.
+/// Where an agent has been given work (ADR-0029, decision 2): the projects its hand-overs and
+/// standing rules are in, and the projects its rules may create issues in. Until hand-overs exist
+/// an agent has none, and may do nothing but read its own record. It never lists the issues: an
+/// agent holds thousands, and a request asks about the few it touches ([`Hold`]).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct AgentWork {
+pub struct AgentReach {
     /// The projects the work is in.
     pub projects: BTreeSet<ProjectId>,
-    /// The issues handed over, or found by a standing rule.
-    pub issues: BTreeSet<IssueId>,
-    /// The issues handed over to it, as against the ones a standing rule found: it works on these
-    /// (comments, reports, attempts); on the others it reads and proposes.
-    pub handed: BTreeSet<IssueId>,
-    /// What the agent may change on each of them: the ticks of the hand-overs and the fields of
-    /// the rules. Reading, commenting and reporting need nothing.
-    pub allowances: BTreeMap<IssueId, Allowance>,
     /// The projects in which the standing rules of the agent may create issues.
     pub creates_in: BTreeSet<ProjectId>,
+}
+
+/// What an agent holds on one issue it reaches: handed over to it, or only found by a standing
+/// rule, and what it may change there.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Hold {
+    /// The issue is handed over to it, as against found by a standing rule: it works on a handed
+    /// issue (comments, reports, attempts); on the others it reads and proposes.
+    pub handed: bool,
+    /// What the agent may change: the ticks of the hand-overs and the fields of the rules. Reading,
+    /// commenting and reporting need nothing.
+    pub allowance: Allowance,
 }
 
 /// The work of agents, read as the policy needs it. The store of hand-overs and standing rules
 /// fills it (agent work); until then every agent has no work.
 pub trait AgentWorkStore: ChangeStore + 'static {
     reads! {
-        /// The work of one agent at `now`: hand-overs and rules that ran out do not count.
-        fn agent_work(agent: AgentId, now: Timestamp) -> AgentWork;
+        /// Where one agent has work at `now`: hand-overs and rules that ran out do not count.
+        fn agent_reach(agent: AgentId, now: Timestamp) -> AgentReach;
+        /// What one agent holds on each of these issues at `now`, read together: an issue it does
+        /// not reach has no entry. The one definition of an issue an agent reaches (its open work
+        /// and what its working rules found).
+        fn agent_holds(agent: AgentId, now: Timestamp, issues: Vec<IssueId>) -> BTreeMap<IssueId, Hold>;
     }
 }
 

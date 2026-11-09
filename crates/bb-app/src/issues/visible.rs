@@ -85,7 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(true);
         };
-        Ok(self.work_of_agent_now(agent).await?.issues.contains(&issue))
+        Ok(self.hold_of_agent_on(agent, issue).await?.is_some())
     }
 
     /// The answer for a comment or a relation that is not there: it does the work that one whose

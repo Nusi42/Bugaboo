@@ -23,12 +23,15 @@ use serde::Serialize;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::history::FieldChangeView;
+use crate::issues::Where;
 use crate::relations::{IssueLine, LineMaker};
 
 /// How many events one look at the log reads.
 const SCAN: u64 = 200;
 /// How many looks one request makes at the most: it never reads the whole log for one page.
 const SCANS: usize = 4;
+/// How many pieces of open work one answer lists at the most.
+const MOST_WORK_SEEN: u64 = 100;
 
 /// Ask what changed in the issues the agent may see since a mark.
 pub struct ChangesSinceQuery {
@@ -155,13 +158,41 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(seen.issues.get(&id).and_then(Option::as_ref));
         }
         let found = match self.seen_issue_by_id(actor, id).await? {
-            Some((issue, held)) => {
-                let line: Option<IssueLine> = self.line_of(actor, maker, &issue).await?;
-                line.map(|line| (issue, held, line.key))
-            }
+            Some((issue, held)) => self.line_key_of(actor, maker, issue, held).await?,
             None => None,
         };
         Ok(seen.issues.entry(id).or_insert(found).as_ref())
+    }
+
+    /// The same for an issue that is read already (the issues of a page of work are read together).
+    async fn seen_loaded<'a>(
+        &self,
+        actor: &Actor,
+        maker: &mut LineMaker,
+        seen: &'a mut Seen,
+        issue: Issue,
+    ) -> Result<Option<&'a (Issue, std::sync::Arc<Evaluation>, String)>, AppError> {
+        let id = issue.id;
+        if seen.issues.contains_key(&id) {
+            return Ok(seen.issues.get(&id).and_then(Option::as_ref));
+        }
+        let found = match self.seen_in(actor, &issue, Where::Live).await? {
+            Some(held) => self.line_key_of(actor, maker, issue, held).await?,
+            None => None,
+        };
+        Ok(seen.issues.entry(id).or_insert(found).as_ref())
+    }
+
+    /// The issue with the rights it is seen with and its readable ID, when its line can be made.
+    async fn line_key_of(
+        &self,
+        actor: &Actor,
+        maker: &mut LineMaker,
+        issue: Issue,
+        held: std::sync::Arc<Evaluation>,
+    ) -> Result<Option<(Issue, std::sync::Arc<Evaluation>, String)>, AppError> {
+        let line: Option<IssueLine> = self.line_of(actor, maker, &issue).await?;
+        Ok(line.map(|line| (issue, held, line.key)))
     }
 
     /// Who wrote what is new in an event, as the AI is told.
@@ -196,15 +227,20 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<WorkSeen>, AppError> {
         let works = self
             .store()
-            .work_of_agent(agent, None, 100)
+            .current_work_of_agent(agent, self.now(), MOST_WORK_SEEN)
             .await
             .map_err(|error| internal::<S>(&error))?;
+        // The issues are read together, and what the agent holds on them in one more read.
+        let ids: Vec<IssueId> = works.iter().map(|work| work.issue).collect();
+        self.holds_of_agent_on(agent, &ids).await?;
+        let mut issues = self.issues_named(&ids).await?;
         let mut found = Vec::new();
-        for work in works
-            .iter()
-            .filter(|work| work.state.is_open() && !work.closed)
-        {
-            if let Some((issue, _, key)) = self.seen_once(actor, maker, seen, work.issue).await? {
+        for work in &works {
+            let Some(at) = issues.iter().position(|issue| issue.id == work.issue) else {
+                continue;
+            };
+            let issue = issues.swap_remove(at);
+            if let Some((issue, _, key)) = self.seen_loaded(actor, maker, seen, issue).await? {
                 found.push(WorkSeen {
                     key: key.clone(),
                     project: issue.project,
@@ -275,7 +311,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         maker: &mut LineMaker,
         seen: &mut Seen,
-        reach: &crate::agents::AgentWork,
+        agent: bb_core::id::AgentId,
         from: i64,
         wanted: usize,
     ) -> Result<Scanned, AppError> {
@@ -293,10 +329,19 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             let full = events.len() as u64 == SCAN;
+            // What the agent holds on the issues of the events, read together: one look at the log
+            // asks once, not once for each event.
+            let named: Vec<IssueId> = events
+                .iter()
+                .filter_map(|(_, event)| IssueId::from_bytes(event.entity.id.to_bytes()).ok())
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect();
+            let reach = self.holds_of_agent_on(agent, &named).await?;
             for (at, event) in events {
                 let reached = IssueId::from_bytes(event.entity.id.to_bytes())
                     .ok()
-                    .filter(|id| reach.issues.contains(id));
+                    .filter(|id| reach.contains_key(id));
                 // The issues the work and the rules of the agent reach are looked at first, so an
                 // event of any other issue costs nothing.
                 if let Some(id) = reached
@@ -371,9 +416,8 @@ pub async fn changes_since<S: AuthStore>(
         issues: HashMap::new(),
         authors: HashMap::new(),
     };
-    let reach = ctx.work_of_agent_now(agent).await?;
     let scanned = ctx
-        .scan_changes(&actor, &mut maker, &mut seen, &reach, since.place, wanted)
+        .scan_changes(&actor, &mut maker, &mut seen, agent, since.place, wanted)
         .await?;
     let (matches, resume) = ctx
         .matches_since(

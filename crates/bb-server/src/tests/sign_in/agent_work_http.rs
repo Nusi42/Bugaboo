@@ -94,7 +94,18 @@ async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_tick
                 == StatusCode::OK,
             "its person reads both"
         );
-        // It changes the title, which was ticked, and not the priority, which was not.
+        // It changes the title, which was ticked, and not the priority, which was not: only while
+        // an attempt runs, so it takes the issue first.
+        take_work(
+            &rig.services.ctx(Rig::info()),
+            TakeWork {
+                session_token: given.key.clone(),
+                issue: given.handed.clone(),
+                version: None,
+            },
+        )
+        .await
+        .map_err(|error| format!("{error:?}"))?;
         let version = version_of(&mut given.person, &given.handed).await?;
         let title = script
             .script(

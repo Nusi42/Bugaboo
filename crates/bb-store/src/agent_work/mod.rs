@@ -7,7 +7,7 @@ mod grants;
 mod stored;
 mod work;
 
-use bb_app::agents::{AgentWork, AgentWorkStore};
+use bb_app::agents::{AgentReach, AgentWorkStore, Hold};
 use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Proposal, ProposalState, Question,
     ResultKind, Review, RuleMatch, StandingRule,
@@ -19,6 +19,8 @@ use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, ProjectId, SavedSearchId,
     StandingRuleId, UserId,
 };
+use std::collections::BTreeMap;
+
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
@@ -471,62 +473,75 @@ pub(super) fn after<I: StoredId>(
 }
 
 impl AgentWorkStore for AuthStorage {
-    /// The issues of the open work of the agent, and of the issues its open rules found, and the
-    /// projects of both and of the rules.
-    async fn agent_work(&self, agent: AgentId, now: Timestamp) -> Result<AgentWork, StoreError> {
-        self.read_agent_work(agent, now).await
-    }
-}
-
-impl AuthStorage {
-    /// Several reads one after the other, each on its own: the work of an agent is no snapshot,
-    /// and a change between them is seen on the next request.
-    async fn read_agent_work(
-        &self,
-        agent: AgentId,
-        now: Timestamp,
-    ) -> Result<AgentWork, StoreError> {
-        let mut work = AgentWork::default();
+    /// The projects of the open work of the agent and of its open rules, and the projects its
+    /// rules create issues in: no issue is listed, however many the agent holds.
+    async fn agent_reach(&self, agent: AgentId, now: Timestamp) -> Result<AgentReach, StoreError> {
+        let mut reach = AgentReach::default();
         let mut open = open_work_of_agent(agent, now);
-        open.column((IssueRow::Table, IssueRow::Id))
+        open.distinct()
             .column((IssueRow::Table, IssueRow::Project))
-            .column((HandOverRow::Table, HandOverRow::Powers))
-            .column((HandOverRow::Table, HandOverRow::Fields))
             .inner_join(
                 IssueRow::Table,
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueWorkRow::Table, IssueWorkRow::Issue)),
             );
         for row in self.database().fetch_all(&open).await? {
-            let issue = row.id::<IssueId>(IssueRow::Id)?;
-            work.issues.insert(issue);
-            work.handed.insert(issue);
-            work.projects
+            reach
+                .projects
                 .insert(row.id::<ProjectId>(IssueRow::Project)?);
+        }
+        for row in self
+            .database()
+            .fetch_all(&open_rules_of_agent(agent, now))
+            .await?
+        {
+            let rule = read_rule(&row)?;
+            reach.projects.insert(rule.project);
+            reach.creates_in.extend(rule.creates_in);
+        }
+        Ok(reach)
+    }
+
+    /// What the agent holds on each of these issues: its open work on it (handed, with the ticks of
+    /// the hand-over) and the open rules that found it (their fields), in two reads whatever the
+    /// number of issues, rules and matches.
+    async fn agent_holds(
+        &self,
+        agent: AgentId,
+        now: Timestamp,
+        issues: Vec<IssueId>,
+    ) -> Result<BTreeMap<IssueId, Hold>, StoreError> {
+        let mut holds: BTreeMap<IssueId, Hold> = BTreeMap::new();
+        if issues.is_empty() {
+            return Ok(holds);
+        }
+        let named: Vec<Vec<u8>> = issues.iter().map(|issue| issue.stored()).collect();
+        let mut open = open_work_of_agent(agent, now);
+        open.column((IssueWorkRow::Table, IssueWorkRow::Issue))
+            .column((HandOverRow::Table, HandOverRow::Powers))
+            .column((HandOverRow::Table, HandOverRow::Fields))
+            .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Issue)).is_in(named.clone()));
+        for row in self.database().fetch_all(&open).await? {
             let powers: Vec<HandOverPower> =
                 serde_json::from_str(&row.get::<String>(HandOverRow::Powers)?)?;
             let fields: Vec<String> =
                 serde_json::from_str(&row.get::<String>(HandOverRow::Fields)?)?;
-            work.allowances
-                .entry(issue)
-                .or_default()
+            let hold = holds
+                .entry(row.id::<IssueId>(IssueWorkRow::Issue)?)
+                .or_default();
+            hold.handed = true;
+            hold.allowance
                 .add(Allowance::of_hand_over(&powers, &fields));
         }
-        // The rules that work and the issues they found, in two reads whatever their number.
-        let rules = open_rules_of_agent(agent, now);
         let rules: Vec<StandingRule> = self
             .database()
-            .fetch_all(&rules)
+            .fetch_all(&open_rules_of_agent(agent, now))
             .await?
             .iter()
             .map(read_rule)
             .collect::<Result<_, _>>()?;
-        for rule in &rules {
-            work.projects.insert(rule.project);
-            work.creates_in.extend(rule.creates_in);
-        }
         if rules.is_empty() {
-            return Ok(work);
+            return Ok(holds);
         }
         let mut found = Query::select();
         found
@@ -540,19 +555,19 @@ impl AuthStorage {
                         .map(|rule| rule.id.stored())
                         .collect::<Vec<_>>(),
                 ),
-            );
+            )
+            .and_where(Expr::col(RuleMatchRow::Issue).is_in(named));
         for row in self.database().fetch_all(&found).await? {
             let rule = row.id::<StandingRuleId>(RuleMatchRow::Rule)?;
-            let issue = row.id::<IssueId>(RuleMatchRow::Issue)?;
             let Some(rule) = rules.iter().find(|held| held.id == rule) else {
                 continue;
             };
-            work.issues.insert(issue);
-            work.allowances
-                .entry(issue)
+            holds
+                .entry(row.id::<IssueId>(RuleMatchRow::Issue)?)
                 .or_default()
+                .allowance
                 .add(Allowance::of_rule(&rule.fields));
         }
-        Ok(work)
+        Ok(holds)
     }
 }

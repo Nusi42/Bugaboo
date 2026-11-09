@@ -21,7 +21,7 @@ use super::error::{AppError, internal};
 use super::limit::FailureLimit;
 use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
-use crate::agents::AgentWork;
+use crate::agents::{AgentReach, Hold};
 use crate::ai::{AiProvider, NoAiProvider};
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
@@ -209,7 +209,8 @@ impl<S> AuthServices<S> {
             accepting: Mutex::default(),
             run: Mutex::new(run),
             marks: Mutex::default(),
-            agent_work: Mutex::default(),
+            agent_reach: Mutex::default(),
+            agent_holds: Mutex::default(),
             image_hosts: Mutex::default(),
             known: Known::default(),
             acting: None,
@@ -350,9 +351,12 @@ pub struct Ctx<'a, S> {
     pub(crate) run: Mutex<Option<RunId>>,
     /// The marks of AI-written texts the request has read, for the texts of a page at once.
     pub(crate) marks: Mutex<crate::runs::Marks>,
-    /// The work of each agent the request asked about, read once (every issue an agent reads asks
-    /// whether it is part of its work).
-    pub(crate) agent_work: Mutex<HashMap<AgentId, Arc<AgentWork>>>,
+    /// Where each agent the request asked about has work, read once.
+    pub(crate) agent_reach: Mutex<HashMap<AgentId, Arc<AgentReach>>>,
+    /// What each agent holds on each issue the request asked about (every issue an agent reads
+    /// asks whether it is part of its work), read once for all the issues asked together; `None`
+    /// for an issue the agent does not reach.
+    pub(crate) agent_holds: Mutex<HashMap<(AgentId, bb_core::id::IssueId), Option<Hold>>>,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,

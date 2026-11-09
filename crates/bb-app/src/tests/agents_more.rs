@@ -437,7 +437,7 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
     let issue_id = an_issue_of(&world, project, &guest.session_token).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work_on(&world, fixer, project, issue_id);
+    super::agents::hand_title_and_take(&world, &admin, fixer, &key, issue_id).await?;
     let version = issue(
         &world.ctx(),
         IssueQuery {

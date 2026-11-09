@@ -304,6 +304,29 @@ impl AgentWorkRecords for super::fake::FakeStore {
         ))
     }
 
+    async fn current_work_of_agent_in(
+        tx: &mut Tx,
+        agent: AgentId,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Vec<IssueWork>, FakeError> {
+        let work = &tx.state.work;
+        Ok(page(
+            work.works
+                .iter()
+                .filter(|w| w.agent == agent && work.is_open(w))
+                .filter(|w| {
+                    work.hand_overs
+                        .iter()
+                        .any(|h| h.id == w.hand_over && h.ends_at > now)
+                })
+                .cloned(),
+            |w| w.id,
+            None,
+            limit,
+        ))
+    }
+
     async fn current_work_of_agents_in(
         tx: &mut Tx,
         agents: Vec<AgentId>,

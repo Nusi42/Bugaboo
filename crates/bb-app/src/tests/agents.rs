@@ -12,14 +12,14 @@ use bb_core::event::Actor;
 use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_policy::StartingRole;
 
+use super::fake_agents::AgentWork;
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::{member, starting_role};
 use super::world::{Outcome, PASSWORD, World};
 use crate::agents::{
-    AcceptAgent, AgentAction, AgentQuery, AgentWork, AgentsQuery, ChangeAgent, CreateAgent,
-    HandAgent, accept_agent, agent, change_agent, create_agent, hand_agent, my_agents,
-    organization_agents,
+    AcceptAgent, AgentAction, AgentQuery, AgentsQuery, ChangeAgent, CreateAgent, HandAgent,
+    accept_agent, agent, change_agent, create_agent, hand_agent, my_agents, organization_agents,
 };
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
 use crate::history::{HistoryQuery, history};
@@ -114,6 +114,22 @@ pub(super) fn give_work(world: &World, agent: AgentId, project: ProjectId) {
             },
         )),
     }
+}
+
+/// Hands one issue to the agent, with the title to change, and has the agent take it, so that its
+/// change is let through (a change needs an attempt that runs).
+pub(super) async fn hand_title_and_take(
+    world: &World,
+    person: &str,
+    agent: AgentId,
+    key: &str,
+    issue: bb_core::id::IssueId,
+) -> Result<(), AppError> {
+    let mut asked = super::agent_work::plain_hand_over(person, agent, &[issue]);
+    asked.powers = vec![bb_core::agent_work::HandOverPower::ChangeFields];
+    asked.fields = vec!["title".to_owned()];
+    crate::agent_work::hand_over(&world.ctx(), asked).await?;
+    super::agent_work::start_attempt(world, key, issue).await
 }
 
 /// Gives the agent work on one issue of a project, as a hand-over will.
@@ -487,7 +503,7 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
     let issue_id = an_issue(&world, project).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
     let key = key_of(&world, &admin, fixer).await?;
-    give_work_on(&world, fixer, project, issue_id);
+    hand_title_and_take(&world, &admin, fixer, &key, issue_id).await?;
     let shown = issue(
         &world.ctx(),
         IssueQuery {

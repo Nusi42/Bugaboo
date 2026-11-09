@@ -10,7 +10,7 @@ use bb_core::technical::TechnicalName;
 use serde_json::{Value, json};
 
 use super::agent_tools::{previewed, used};
-use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query};
+use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query, start_attempt};
 use super::agents::refused;
 use super::agents::{an_agent, key_of};
 use super::ai_tools::without_nonces;
@@ -24,11 +24,13 @@ use crate::issues::{ChangeIssue, SaveDescription, change_issue, issue, save_desc
 
 /// A hand-over that lets the agent change the description.
 async fn handed_with_description(world: &World) -> Result<Handed, AppError> {
-    handed_with(world, |asked| {
+    let given = handed_with(world, |asked| {
         asked.powers = vec![HandOverPower::ChangeFields];
         asked.fields = vec!["description".to_owned()];
     })
-    .await
+    .await?;
+    start_attempt(world, &given.key, given.issue).await?;
+    Ok(given)
 }
 
 fn description_of(issue: IssueId) -> Result<EditWhat, AppError> {

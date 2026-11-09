@@ -1,35 +1,30 @@
 //! What the check after a load run reads of agent work (TEST-CONCURRENT).
 use super::*;
 
+/// The most pieces of work on one issue the check reads: agents hold one each, a handful at most.
+const MOST_WORK_ON_AN_ISSUE: u64 = 100;
+
 impl crate::db::Database {
     /// The work of every agent on an issue with its attempts, oldest first: what the check after a
-    /// load run reads (TEST-CONCURRENT).
+    /// load run reads (TEST-CONCURRENT), by the reads the use cases make.
     ///
     /// # Errors
     /// Fails when the database fails or a row is unreadable.
-    #[cfg(any(test, feature = "testing"))]
     pub async fn stored_agent_work_on(
         &self,
         issue: IssueId,
     ) -> Result<Vec<(IssueWork, Vec<Attempt>)>, StoreError> {
-        let mut select = work_select();
-        select
-            .and_where(Expr::col(IssueWorkRow::Issue).eq(issue.stored()))
-            .order_by(IssueWorkRow::MadeAt, Order::Asc)
-            .order_by(IssueWorkRow::Id, Order::Asc);
+        use bb_app::agent_work::AgentWorkRecords as _;
+        let mut transaction = self.begin_read().await?;
         let mut found = Vec::new();
-        for row in self.fetch_all(&select).await? {
-            let work = read_work(&row)?;
-            let mut attempts = attempt_select();
-            attempts
-                .and_where(Expr::col(AttemptRow::Work).eq(work.id.stored()))
-                .order_by(AttemptRow::Number, Order::Asc);
-            let attempts = self
-                .fetch_all(&attempts)
+        // Newest first by the moment of the hand-over, so the oldest first is the reverse.
+        for work in
+            AuthStorage::work_on_issue_in(&mut transaction, issue, None, MOST_WORK_ON_AN_ISSUE)
                 .await?
-                .iter()
-                .map(read_attempt)
-                .collect::<Result<Vec<_>, _>>()?;
+                .into_iter()
+                .rev()
+        {
+            let attempts = AuthStorage::attempts_of_in(&mut transaction, work.id).await?;
             found.push((work, attempts));
         }
         Ok(found)

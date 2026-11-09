@@ -9,7 +9,7 @@ use bb_core::id::LockToken;
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 
-use super::agent_work::{Handed, handed_with, plain_hand_over};
+use super::agent_work::{Handed, handed_with, plain_hand_over, start_attempt};
 use super::agents::refused;
 use super::scenarios::token;
 use super::scenarios_fields::a_field;
@@ -42,6 +42,7 @@ async fn ai_31_an_agent_deletes_and_restores_a_file_only_when_it_was_given_attac
             ticking(if ticked { &["attachments"] } else { &["title"] }),
         )
         .await?;
+        start_attempt(&world, &given.key, given.issue).await?;
         let file = an_attachment(&world, given.issue, "jam.txt", A_FILE).await?;
         let delete = delete_attachment(
             &world.ctx(),
@@ -108,6 +109,9 @@ async fn two_handed(
     )
     .await
     .map_err(|error| format!("{error:?}"))?;
+    start_attempt(world, &first.key, first.issue)
+        .await
+        .map_err(|error| format!("{error:?}"))?;
     Ok((first, second))
 }
 

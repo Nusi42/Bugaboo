@@ -13,7 +13,7 @@ use bb_policy::StartingRole;
 use serde_json::json;
 
 use super::agent_work::report_attempt;
-use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query};
+use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query, start_attempt};
 use super::agent_work_review::{ready, report, review, show};
 use super::agents::{an_agent, key_of, refused};
 use super::scenarios::{a_project, token};
@@ -62,6 +62,7 @@ async fn ai_31_a_hand_over_names_only_members_an_agent_may_be_given() -> Outcome
     }
     // A text field of the catalogue is a member an agent can be given, and it changes it.
     let given = handed_with(&world, ticking(&[&text])).await?;
+    start_attempt(&world, &given.key, given.issue).await?;
     let version = issue(&world.ctx(), query(&given.key, given.issue))
         .await?
         .into_value()
@@ -133,6 +134,7 @@ async fn ai_31_an_agent_edits_and_deletes_a_comment_only_when_it_was_given_comme
 async fn ai_31_an_agent_with_comments_given_deletes_the_comment() -> Outcome {
     let world = World::new().await?;
     let given = handed_with(&world, ticking(&["comments"])).await?;
+    start_attempt(&world, &given.key, given.issue).await?;
     let comment = add_comment(
         &world.ctx(),
         AddComment {

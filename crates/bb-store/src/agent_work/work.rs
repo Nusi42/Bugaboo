@@ -337,6 +337,23 @@ impl AgentWorkRecords for AuthStorage {
         .await
     }
 
+    async fn current_work_of_agent_in(
+        transaction: &mut Transaction,
+        agent: AgentId,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Vec<IssueWork>, StoreError> {
+        let mut select = work_select();
+        select.and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).eq(agent.stored()));
+        only_open_work_at(&mut select, now);
+        all(
+            transaction,
+            &after(select, IssueWorkRow::Id, None::<AgentWorkId>, limit),
+            read_work,
+        )
+        .await
+    }
+
     async fn current_work_of_agents_in(
         transaction: &mut Transaction,
         agents: Vec<AgentId>,
@@ -346,46 +363,61 @@ impl AgentWorkRecords for AuthStorage {
     ) -> Result<Vec<IssueWork>, StoreError> {
         // Open work is what `only_open_work_at` says, of these agents; work accepted by itself is
         // closed and stays in the list of the person it was given for until they looked at it,
-        // whoever the agent belongs to now.
-        let mut open_ids = Query::select();
-        open_ids
-            .column((IssueWorkRow::Table, IssueWorkRow::Id))
-            .from(IssueWorkRow::Table);
-        only_open_work_at(&mut open_ids, now);
-        let mut select = work_select();
-        select
-            .and_where(
-                sea_query::Cond::any()
-                    .add(
-                        sea_query::Cond::all()
-                            .add(
-                                Expr::col(IssueWorkRow::Agent)
-                                    .is_in(agents.iter().map(|agent| agent.stored()).collect::<Vec<_>>()),
-                            )
-                            .add(Expr::col(IssueWorkRow::Id).in_subquery(open_ids)),
-                    )
-                    .add(
-                        sea_query::Cond::all()
-                            .add(Expr::col(IssueWorkRow::AcceptedByItself).eq(true))
-                            .add(Expr::col(IssueWorkRow::Person).eq(person.stored())),
-                    )
-                    .into(),
-            )
-            // What waits for a person first, so that a cut never takes it.
-            .order_by_expr(
-                Expr::col(IssueWorkRow::State)
-                    .is_in(AgentWorkState::WAITING_FOR_A_PERSON.map(AgentWorkState::code))
-                    .and(Expr::col(IssueWorkRow::Closed).eq(false))
-                    // Its hand-over still gives work: the same as `waits_for` of a piece that is open.
-                    .and(
-                        Expr::col(IssueWorkRow::HandOver)
-                            .in_subquery(hand_overs_giving_work_at(now)),
-                    ),
-                Order::Desc,
-            )
-            .order_by(IssueWorkRow::Id, Order::Desc)
-            .limit(limit);
-        all(transaction, &select, read_work).await
+        // whoever the agent belongs to now. Three statements that each follow an index, newest
+        // first: what waits for a person (so that a cut never takes it), the rest of the open work,
+        // and what was accepted by itself.
+        let of_agents = || {
+            let mut select = work_select();
+            select.and_where(
+                Expr::col((IssueWorkRow::Table, IssueWorkRow::Agent)).is_in(
+                    agents
+                        .iter()
+                        .map(|agent| agent.stored())
+                        .collect::<Vec<_>>(),
+                ),
+            );
+            only_open_work_at(&mut select, now);
+            select
+        };
+        let waiting_states = AgentWorkState::WAITING_FOR_A_PERSON.map(AgentWorkState::code);
+        let state = || Expr::col((IssueWorkRow::Table, IssueWorkRow::State));
+        let newest = |mut select: SelectStatement, limit: u64| {
+            select
+                .order_by((IssueWorkRow::Table, IssueWorkRow::Id), Order::Desc)
+                .limit(limit);
+            select
+        };
+        let mut found = all(
+            transaction,
+            &newest(
+                {
+                    let mut waiting = of_agents();
+                    waiting.and_where(state().is_in(waiting_states));
+                    waiting
+                },
+                limit,
+            ),
+            read_work,
+        )
+        .await?;
+        let room = |found: &Vec<IssueWork>| limit.saturating_sub(found.len() as u64);
+        if room(&found) == 0 {
+            return Ok(found);
+        }
+        let mut rest = of_agents();
+        rest.and_where(state().is_not_in(waiting_states));
+        let mut also = all(transaction, &newest(rest, room(&found)), read_work).await?;
+        let mut accepted = work_select();
+        accepted
+            .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::AcceptedByItself)).eq(true))
+            .and_where(Expr::col((IssueWorkRow::Table, IssueWorkRow::Person)).eq(person.stored()));
+        also.extend(all(transaction, &newest(accepted, room(&found)), read_work).await?);
+        also.sort_by_key(|work| std::cmp::Reverse(work.id));
+        found.extend(
+            also.into_iter()
+                .take(usize::try_from(room(&found)).unwrap_or(usize::MAX)),
+        );
+        Ok(found)
     }
 
     async fn reviews_of_in(

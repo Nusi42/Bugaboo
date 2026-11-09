@@ -6,7 +6,7 @@ use bb_core::agent_work::{HandOverPower, RuleField};
 use bb_core::id::{AgentId, IssueId, IssueTypeId, ProjectId};
 use serde_json::json;
 
-use super::agent_work::{Ground, ground, plain_hand_over, query};
+use super::agent_work::{Ground, ground, plain_hand_over, query, start_attempt};
 use super::agents::refused;
 use super::scenarios::{Added, measured, text};
 use super::scenarios_issues::an_issue;
@@ -98,6 +98,7 @@ async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked
     asked.powers = vec![HandOverPower::ChangeFields];
     asked.fields = vec!["title".to_owned()];
     hand_over(&world.ctx(), asked).await?;
+    start_attempt(&world, &key, issue_id).await?;
     let version = version_of(&world, &key, issue_id).await?;
     let mut title = change(&key, issue_id, version);
     title.title = Some("Fixed title".to_owned());

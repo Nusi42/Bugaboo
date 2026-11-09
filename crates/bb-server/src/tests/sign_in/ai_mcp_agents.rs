@@ -308,6 +308,80 @@ async fn ai_37_twenty_requests_at_once_against_a_limit_of_five_changes_let_five_
     .await
 }
 
+/// An agent that may change the title of one issue it was handed, and the issue.
+async fn titler(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    person: &mut Browser,
+) -> Result<(String, String, String), Failure> {
+    let issue = key_of(&site.create(ada, "Fix the login button").await?)?;
+    let (agent, key) = an_agent_with_a_key(person, "Fixer", None).await?;
+    ok(&person
+        .send(
+            "POST",
+            "/api/v1/hand-overs",
+            Some(
+                json!({"agent": agent, "issues": [issue], "note": "Fix the title",
+                        "powers": ["change-fields"], "fields": ["title"]}),
+            ),
+        )
+        .await?)?;
+    Ok((agent, issue, key))
+}
+
+/// The agent changes the title of its issue over MCP.
+async fn retitle(
+    mcp: &Mcp<'_>,
+    person: &mut Browser,
+    (issue, key): (&str, &str),
+    title: &str,
+) -> Result<Answer, Failure> {
+    let shown = person
+        .send("GET", &format!("{ISSUES}/{issue}"), None)
+        .await?;
+    let version = ok(&shown)?["issue"]["version"].clone();
+    call(
+        mcp,
+        key,
+        "update_issue",
+        json!({"issue": issue, "version": version, "title": title}),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn m7_f120_a_change_over_mcp_needs_an_attempt_that_runs() -> TestResult {
+    each_database("m7_f120_change_needs_attempt", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let (mut person, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        let (_, issue, key) = titler(&site, &mut ada, &mut person).await?;
+        let mcp = Mcp::new(&app);
+        let of = (issue.as_str(), key.as_str());
+        // Waiting for the agent: the hand-over allows the title, but no attempt runs.
+        assert!(failed(
+            &retitle(&mcp, &mut person, of, "Before the take").await?
+        ));
+        let taken = call(&mcp, &key, "take", json!({"issue": issue})).await?;
+        assert!(!failed(&taken), "{}", taken.json);
+        let changed = retitle(&mcp, &mut person, of, "While it runs").await?;
+        assert!(!failed(&changed), "{}", changed.json);
+        let submitted = call(&mcp, &key, "submit", json!({"issue": issue})).await?;
+        assert!(!failed(&submitted), "{}", submitted.json);
+        // Ready for review: the attempt has ended and so has the right to change.
+        assert!(failed(
+            &retitle(&mcp, &mut person, of, "After the submit").await?
+        ));
+        let shown = person
+            .send("GET", &format!("{ISSUES}/{issue}"), None)
+            .await?;
+        assert_eq!(ok(&shown)?["issue"]["title"], "While it runs");
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test]
 async fn ai_37_a_stale_change_over_the_api_gives_its_count_back() -> TestResult {
     each_database("ai_37_stale_gives_back", async |db| {
@@ -322,18 +396,10 @@ async fn ai_37_a_stale_change_over_the_api_gives_its_count_back() -> TestResult 
             )
             .await?)?;
         let (mut person, _) = site.person(StartingRole::TeamMember, "tess").await?;
-        let issue = key_of(&site.create(&mut ada, "Fix the login button").await?)?;
-        let (agent, key) = an_agent_with_a_key(&mut person, "Fixer", None).await?;
-        ok(&person
-            .send(
-                "POST",
-                "/api/v1/hand-overs",
-                Some(
-                    json!({"agent": agent, "issues": [issue], "note": "Fix the title",
-                            "powers": ["change-fields"], "fields": ["title"]}),
-                ),
-            )
-            .await?)?;
+        let (agent, issue, key) = titler(&site, &mut ada, &mut person).await?;
+        // The change is let through only while an attempt runs, so the agent takes the issue first.
+        let taken = call(&Mcp::new(&app), &key, "take", json!({"issue": issue})).await?;
+        assert!(!failed(&taken), "{}", taken.json);
         let mut script = Browser::new(&app, &super::http::called());
         // Ten changes from a version that is not the issue's: each is refused as stale, and none of
         // them counts against a limit of three.

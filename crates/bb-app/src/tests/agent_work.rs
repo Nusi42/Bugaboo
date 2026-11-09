@@ -304,6 +304,25 @@ async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome 
     Ok(())
 }
 
+/// The agent takes the issue handed to it: an attempt runs, so its changes are let through and
+/// belong to the run of the attempt (a change while no attempt runs is refused, M7-F120).
+pub(super) async fn start_attempt(
+    world: &World,
+    key: &str,
+    issue: IssueId,
+) -> Result<(), AppError> {
+    take_work(
+        &world.ctx(),
+        TakeWork {
+            session_token: key.to_owned(),
+            issue: issue.to_string(),
+            version: None,
+        },
+    )
+    .await
+    .map(drop)
+}
+
 /// A report of an attempt, as the tests of the work of agents make one: the attempt is taken first
 /// when it waits to be (only `take` starts an attempt), and what the report then answers is the
 /// answer. A work that is not waiting makes the take fail, and the report is judged on its own.

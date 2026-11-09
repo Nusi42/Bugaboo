@@ -158,7 +158,7 @@ pub(crate) struct State {
     pub(crate) never_sent: Vec<bb_core::ai::NeverSentMark>,
     pub(crate) oauth: super::fake_oauth::OAuthState,
     pub(crate) agents: Vec<bb_core::agent::Agent>,
-    pub(crate) agent_work: Vec<(bb_core::id::AgentId, crate::agents::AgentWork)>,
+    pub(crate) agent_work: Vec<(bb_core::id::AgentId, super::fake_agents::AgentWork)>,
     pub(crate) work: super::fake_agent_work::FakeAgentWork,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,

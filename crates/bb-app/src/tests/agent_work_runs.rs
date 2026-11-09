@@ -81,25 +81,7 @@ async fn ai_35_throw_away_undoes_every_attempt_in_one_step() -> Outcome {
     let before = title_of(&world, &given.team.session_token, issue_id).await?;
     // The agent starts an attempt, changes the title and says it is ready.
     report_attempt(&world.ctx(), report(&given.key, issue_id, None, 5)).await?;
-    let version = issue(&world.ctx(), query(&given.key, issue_id))
-        .await?
-        .into_value()
-        .issue
-        .version;
-    let title = ChangeIssue {
-        session_token: given.key.clone(),
-        issue: issue_id.to_string(),
-        version,
-        issue_type: None,
-        title: Some("Changed by an agent".to_owned()),
-        status: None,
-        priority: None,
-        estimated_time: None,
-        time_left: None,
-        assigned_to: None,
-        fields: std::collections::BTreeMap::default(),
-    };
-    change_issue(&world.ctx(), title).await?;
+    retitle(&world, &given, "Changed by an agent").await?;
     assert_eq!(
         title_of(&world, &given.team.session_token, issue_id).await?,
         "Changed by an agent"
@@ -119,6 +101,60 @@ async fn ai_35_throw_away_undoes_every_attempt_in_one_step() -> Outcome {
         title_of(&world, &given.team.session_token, issue_id).await?,
         before
     );
+    Ok(())
+}
+
+/// The agent of `given` changes the title of its issue.
+async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppError> {
+    let version = issue(&world.ctx(), query(&given.key, given.issue))
+        .await?
+        .into_value()
+        .issue
+        .version;
+    let change = ChangeIssue {
+        session_token: given.key.clone(),
+        issue: given.issue.to_string(),
+        version,
+        issue_type: None,
+        title: Some(title.to_owned()),
+        status: None,
+        priority: None,
+        estimated_time: None,
+        time_left: None,
+        assigned_to: None,
+        fields: std::collections::BTreeMap::default(),
+    };
+    change_issue(&world.ctx(), change).await.map(drop)
+}
+
+fn forbidden(outcome: &Result<(), AppError>) -> bool {
+    matches!(
+        outcome,
+        Err(AppError::Refused(bb_core::ErrorCode::Forbidden))
+    )
+}
+
+#[tokio::test]
+async fn m7_f120_an_agent_changes_a_handed_issue_only_while_an_attempt_runs() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "WEB").await?;
+    let issue_id = an_issue(&world, project).await?;
+    let given = titled(&world, issue_id, project).await?;
+    let person = &given.team.session_token;
+    let before = title_of(&world, person, issue_id).await?;
+    // Waiting for the agent: the hand-over allows the title, but no attempt runs, so no run takes
+    // the change, and Throw away could not undo it.
+    assert!(forbidden(&retitle(&world, &given, "Before the take").await));
+    assert_eq!(title_of(&world, person, issue_id).await?, before);
+    // While the attempt runs, the change is made, and it belongs to the run of the attempt.
+    report_attempt(&world.ctx(), report(&given.key, issue_id, None, 5)).await?;
+    retitle(&world, &given, "While it runs").await?;
+    // Ready for review: the attempt has ended, and so has the right to change.
+    end_attempt(&world.ctx(), ready(&given.key, issue_id)).await?;
+    assert!(forbidden(
+        &retitle(&world, &given, "After the submit").await
+    ));
+    assert_eq!(title_of(&world, person, issue_id).await?, "While it runs");
     Ok(())
 }
 
@@ -252,6 +288,35 @@ async fn ai_33_a_ready_attempt_leaves_one_short_comment_written_by_an_agent() ->
         written.actor,
         bb_core::event::Actor::Agent { agent, .. } if agent == given.agent
     ));
+    // The comment belongs to the run of the attempt, so every change of an agent has a run.
+    assert!(written.run.is_some(), "the summary comment carries the run");
+    Ok(())
+}
+
+#[tokio::test]
+async fn m7_f127_the_move_after_an_accept_by_itself_carries_the_run_of_the_attempt() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "WEB").await?;
+    allow_accepting(&world, project).await?;
+    let issue_id = an_issue(&world, project).await?;
+    let given = titled(&world, issue_id, project).await?;
+    finish_with_passed_check(&world, &given).await?;
+    let shared = world.store.lock();
+    let agent_events: Vec<_> = shared
+        .events
+        .iter()
+        .filter(|event| matches!(event.actor, bb_core::event::Actor::Agent { .. }))
+        .filter(|event| matches!(event.entity.kind.as_str(), "issue" | "comment"))
+        .collect();
+    assert!(agent_events.len() >= 2, "the comment and the move");
+    for event in &agent_events {
+        assert!(
+            event.run.is_some(),
+            "{} {:?} has no run",
+            event.entity.kind.as_str(),
+            event.changes
+        );
+    }
     Ok(())
 }
 

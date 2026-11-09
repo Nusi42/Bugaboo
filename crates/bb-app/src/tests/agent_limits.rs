@@ -8,7 +8,7 @@ use serde_json::json;
 
 use super::agent_tools::{previewed, used};
 use super::agent_tools_more::version_of;
-use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query};
+use super::agent_work::{Handed, handed, handed_with, plain_hand_over, query, start_attempt};
 use super::agents::refused;
 use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
@@ -236,6 +236,7 @@ async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -
         asked.fields = vec!["title".to_owned()];
     })
     .await?;
+    start_attempt(&world, &given.key, given.issue).await?;
     limit(&world, LimitKind::ChangesAMinute, 1);
     let mut counts = Vec::new();
     for title in ["One", "Two"] {

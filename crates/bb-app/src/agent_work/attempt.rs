@@ -672,6 +672,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         if gave_up {
             return Ok(());
         }
+        // The attempt has ended, so the guard no longer finds it running; what the system does for
+        // it now (the comment, the move of the status) still belongs to its run.
+        self.set_run(attempt.run);
         self.write_summary(token, mine, &attempt).await?;
         if !by_itself {
             return Ok(());

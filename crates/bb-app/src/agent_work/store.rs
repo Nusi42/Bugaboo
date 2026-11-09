@@ -187,6 +187,9 @@ pub trait AgentWorkRecords: GrantStore + 'static {
         fn agent_has_open_giving(agent: AgentId) -> bool = agent_has_open_giving_in;
         /// The work of one agent, by ID, after `after`, at most `limit`.
         fn work_of_agent(agent: AgentId, after: Option<AgentWorkId>, limit: u64) -> Vec<IssueWork> = work_of_agent_in;
+        /// The open work of one agent at `now` (its hand-over still gives work), by ID, at most
+        /// `limit`.
+        fn current_work_of_agent(agent: AgentId, now: Timestamp, limit: u64) -> Vec<IssueWork> = current_work_of_agent_in;
         /// How many issues the agent has an attempt running on now (the limit of issues at once).
         fn working_issues_of(agent: AgentId) -> u64 = working_issues_of_in;
         /// Whether another piece of work on the issue has an attempt running (all the work on the

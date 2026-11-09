@@ -1,19 +1,30 @@
 //! The agent part of the in-memory store (AI-30).
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use bb_core::agent::{Agent, AgentLimits, AgentState};
-use bb_core::id::{AccessKeyId, AgentId, UserId};
+use bb_core::agent_work::Allowance;
+use bb_core::id::{AccessKeyId, AgentId, IssueId, ProjectId, UserId};
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::agents::{AgentPosition, AgentStore, AgentWork, AgentWorkStore};
+use crate::agents::{AgentPosition, AgentReach, AgentStore, AgentWorkStore, Hold};
 use crate::auth::AccessKeyRecord;
 
-impl AgentWorkStore for FakeStore {
-    async fn agent_work(
-        &self,
-        agent: AgentId,
-        now: jiff::Timestamp,
-    ) -> Result<AgentWork, FakeError> {
-        Ok(self.read(|state| {
+/// Everything an agent has been given, the whole of it: what the fake keeps for the tests that
+/// give work by hand (`give_work_on`), joined with the records of hand-overs and rules. The ports
+/// answer from it a part at a time, as the real store does.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct AgentWork {
+    pub(crate) projects: BTreeSet<ProjectId>,
+    pub(crate) issues: BTreeSet<IssueId>,
+    pub(crate) handed: BTreeSet<IssueId>,
+    pub(crate) allowances: BTreeMap<IssueId, Allowance>,
+    pub(crate) creates_in: BTreeSet<ProjectId>,
+}
+
+impl FakeStore {
+    fn whole_work_of(&self, agent: AgentId, now: jiff::Timestamp) -> AgentWork {
+        self.read(|state| {
             let mut work = state
                 .agent_work
                 .iter()
@@ -36,12 +47,13 @@ impl AgentWorkStore for FakeStore {
                 work.handed.insert(held.issue);
                 if let Some(hand_over) = records.hand_overs.iter().find(|h| h.id == held.hand_over)
                 {
-                    work.allowances.entry(held.issue).or_default().add(
-                        bb_core::agent_work::Allowance::of_hand_over(
+                    work.allowances
+                        .entry(held.issue)
+                        .or_default()
+                        .add(Allowance::of_hand_over(
                             &hand_over.powers,
                             &hand_over.fields,
-                        ),
-                    );
+                        ));
                 }
                 work.projects.extend(
                     state
@@ -63,11 +75,45 @@ impl AgentWorkStore for FakeStore {
                     work.allowances
                         .entry(found.issue)
                         .or_default()
-                        .add(bb_core::agent_work::Allowance::of_rule(&rule.fields));
+                        .add(Allowance::of_rule(&rule.fields));
                 }
             }
             work
-        }))
+        })
+    }
+}
+
+impl AgentWorkStore for FakeStore {
+    async fn agent_reach(
+        &self,
+        agent: AgentId,
+        now: jiff::Timestamp,
+    ) -> Result<AgentReach, FakeError> {
+        let work = self.whole_work_of(agent, now);
+        Ok(AgentReach {
+            projects: work.projects,
+            creates_in: work.creates_in,
+        })
+    }
+
+    async fn agent_holds(
+        &self,
+        agent: AgentId,
+        now: jiff::Timestamp,
+        issues: Vec<IssueId>,
+    ) -> Result<BTreeMap<IssueId, Hold>, FakeError> {
+        let work = self.whole_work_of(agent, now);
+        Ok(issues
+            .into_iter()
+            .filter(|issue| work.issues.contains(issue))
+            .map(|issue| {
+                let hold = Hold {
+                    handed: work.handed.contains(&issue),
+                    allowance: work.allowances.get(&issue).cloned().unwrap_or_default(),
+                };
+                (issue, hold)
+            })
+            .collect())
     }
 }
 
@@ -158,8 +204,7 @@ impl AgentStore for FakeStore {
         agents: Vec<AgentId>,
     ) -> Result<Vec<(AgentId, jiff::Timestamp)>, FakeError> {
         Ok(self.read(|state| {
-            let mut latest: std::collections::BTreeMap<AgentId, jiff::Timestamp> =
-                std::collections::BTreeMap::new();
+            let mut latest: BTreeMap<AgentId, jiff::Timestamp> = BTreeMap::new();
             for record in &state.access_keys {
                 let (Some(agent), Some(at)) = (record.key.agent, record.key.last_used_at) else {
                     continue;

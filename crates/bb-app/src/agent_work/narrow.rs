@@ -10,7 +10,7 @@ use bb_core::agent_work::{Allowance, issue_member as key};
 use bb_core::id::{AgentId, IssueId};
 
 use crate::access::Actor;
-use crate::agents::AgentWork;
+use crate::agents::{AgentReach, Hold};
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::issues::ChangeIssue;
 
@@ -90,25 +90,81 @@ fn members_of(input: &ChangeIssue) -> Vec<String> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The work of an agent now, read once for the request.
+    /// Where an agent has work now, read once for the request.
     ///
     /// # Errors
     /// An internal error when the store fails.
-    pub(crate) async fn work_of_agent_now(
+    pub(crate) async fn reach_of_agent_now(
         &self,
         agent: AgentId,
-    ) -> Result<Arc<AgentWork>, AppError> {
-        if let Some(held) = locked(&self.agent_work).get(&agent) {
+    ) -> Result<Arc<AgentReach>, AppError> {
+        if let Some(held) = locked(&self.agent_reach).get(&agent) {
             return Ok(Arc::clone(held));
         }
         let read = Arc::new(
             self.store()
-                .agent_work(agent, self.now())
+                .agent_reach(agent, self.now())
                 .await
                 .map_err(|error| internal::<S>(&error))?,
         );
-        locked(&self.agent_work).insert(agent, Arc::clone(&read));
+        locked(&self.agent_reach).insert(agent, Arc::clone(&read));
         Ok(read)
+    }
+
+    /// What an agent holds on each of these issues now, the ones the request has not asked about
+    /// yet read together, once for the request. An issue the agent does not reach has no entry.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn holds_of_agent_on(
+        &self,
+        agent: AgentId,
+        issues: &[IssueId],
+    ) -> Result<std::collections::BTreeMap<IssueId, Hold>, AppError> {
+        let unknown: Vec<IssueId> = {
+            let held = locked(&self.agent_holds);
+            issues
+                .iter()
+                .filter(|issue| !held.contains_key(&(agent, **issue)))
+                .copied()
+                .collect()
+        };
+        if !unknown.is_empty() {
+            let mut read = self
+                .store()
+                .agent_holds(agent, self.now(), unknown.clone())
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let mut held = locked(&self.agent_holds);
+            for issue in unknown {
+                held.insert((agent, issue), read.remove(&issue));
+            }
+        }
+        let held = locked(&self.agent_holds);
+        Ok(issues
+            .iter()
+            .filter_map(|issue| {
+                held.get(&(agent, *issue))
+                    .cloned()
+                    .flatten()
+                    .map(|hold| (*issue, hold))
+            })
+            .collect())
+    }
+
+    /// What an agent holds on one issue now; `None` when it does not reach it.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn hold_of_agent_on(
+        &self,
+        agent: AgentId,
+        issue: IssueId,
+    ) -> Result<Option<Hold>, AppError> {
+        Ok(self
+            .holds_of_agent_on(agent, &[issue])
+            .await?
+            .remove(&issue))
     }
 
     /// The own field of the catalogue a member names, when it names one.
@@ -141,18 +197,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(());
         };
-        if self.work_of_agent_now(agent).await?.handed.contains(&issue) {
-            Ok(())
-        } else {
-            Err(ErrorCode::Forbidden.into())
+        match self.hold_of_agent_on(agent, issue).await? {
+            Some(hold) if hold.handed => Ok(()),
+            _ => Err(ErrorCode::Forbidden.into()),
         }
     }
 
-    /// Refuses a change by an agent to a member its work does not allow. A person is not asked.
+    /// Refuses a change by an agent to a member its work does not allow, and any change while no
+    /// attempt of the agent runs on the issue: the allowance belongs to the hand-over, but a change
+    /// belongs to a run (ADR-0029, decision 7), so *Throw away* can undo it. The one change without
+    /// an attempt is the status the system moves after an accept by itself. A person is not asked.
     /// What the agent then changes belongs to the run of its attempt.
     ///
     /// # Errors
-    /// `access.forbidden` for a member the agent may not change on this issue.
+    /// `access.forbidden` for a member the agent may not change on this issue, and for any change
+    /// before the agent took the issue or after it ended its attempt.
     pub(crate) async fn ensure_agent_may(
         &self,
         actor: &Actor,
@@ -162,9 +221,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(agent) = actor.agent() else {
             return Ok(());
         };
-        let work = self.work_of_agent_now(agent).await?;
-        self.ensure_agent_works_on(actor, issue).await?;
-        let allowance = work.allowances.get(&issue).cloned().unwrap_or_default();
+        let Some(Hold {
+            handed: true,
+            allowance,
+        }) = self.hold_of_agent_on(agent, issue).await?
+        else {
+            return Err(ErrorCode::Forbidden.into());
+        };
         let by_the_system = *locked(&self.accepting) == Some(issue);
         let accepted_status = by_the_system && members.iter().any(|member| member == STATUS);
         let others: Vec<String> = members
@@ -173,8 +236,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .cloned()
             .collect();
         self.ensure_allowance_covers(&allowance, &others).await?;
-        if let Some(run) = self.run_of_attempt_on(agent, issue).await? {
-            self.set_run(Some(run));
+        match self.run_of_attempt_on(agent, issue).await? {
+            Some(run) => self.set_run(Some(run)),
+            None if by_the_system => {}
+            None => return Err(ErrorCode::Forbidden.into()),
         }
         Ok(())
     }
@@ -249,15 +314,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         // The work is read before the change that makes the issue: a hand-over that ends between
         // the two still lets this one through, as it does for every change an agent makes.
-        let work = self.work_of_agent_now(agent).await?;
         let allowance = match parent {
-            Some(parent) => work
-                .allowances
-                .get(&parent)
+            Some(parent) => self
+                .hold_of_agent_on(agent, parent)
+                .await?
+                .map(|hold| hold.allowance)
                 .filter(|allowance| allowance.sub_issues)
-                .cloned()
                 .ok_or(AppError::Refused(ErrorCode::Forbidden))?,
-            None if work.creates_in.contains(&project) => Allowance::default(),
+            None if self
+                .reach_of_agent_now(agent)
+                .await?
+                .creates_in
+                .contains(&project) =>
+            {
+                Allowance::default()
+            }
             None => return Err(ErrorCode::Forbidden.into()),
         };
         let members = Sets {

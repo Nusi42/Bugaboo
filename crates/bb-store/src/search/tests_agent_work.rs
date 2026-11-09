@@ -4,7 +4,7 @@
 //! decides is tested here.
 
 use bb_app::agent_work::{AgentWorkRecords as _, GrantStore as _};
-use bb_app::agents::AgentWorkStore as _;
+use bb_app::agents::{AgentReach, AgentWorkStore as _, Hold};
 use bb_app::search::WorkOf;
 use bb_core::agent_records::{
     Attempt, AttemptResult, GivingState, HandOver, IssueWork, Question, ResultKind, Review,
@@ -15,7 +15,7 @@ use bb_core::id::{
     AgentId, AgentNoteId, AgentWorkId, AttemptId, HandOverId, IssueId, SavedSearchId,
     SequentialIds, StandingRuleId, UserId,
 };
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 
 use super::tests::{Data, request_with, seed};
@@ -209,6 +209,16 @@ pub(super) async fn close(
     Ok(done)
 }
 
+/// What the agent holds on these issues, as a read asks for them.
+async fn holds(
+    storage: &AuthStorage,
+    agent: AgentId,
+    now: Timestamp,
+    issues: &[IssueId],
+) -> Result<std::collections::BTreeMap<IssueId, Hold>, Failure> {
+    Ok(storage.agent_holds(agent, now, issues.to_vec()).await?)
+}
+
 #[tokio::test]
 async fn ai_33_closed_work_is_not_reached_and_a_hand_over_of_two_issues_keeps_the_other()
 -> TestResult {
@@ -230,22 +240,22 @@ async fn ai_33_closed_work_is_not_reached_and_a_hand_over_of_two_issues_keeps_th
         )
         .await?;
         let now = at(NOW);
-        let reached = storage.agent_work(fixer, now).await?;
-        assert_eq!(reached.issues.len(), 2);
+        let two = [data.issues[0].id, data.issues[1].id];
+        let reached = holds(storage, fixer, now, &two).await?;
+        assert_eq!(reached.len(), 2);
         // A review accepts the first: the hand-over stays open for the second.
         assert!(close(storage, &mut made, works[0].id, 1).await?);
         assert!(
             !close(storage, &mut made, works[0].id, 1).await?,
             "a second close on the old version finds the work changed"
         );
-        let reached = storage.agent_work(fixer, now).await?;
+        let reached = holds(storage, fixer, now, &two).await?;
         assert_eq!(
-            reached.issues.iter().copied().collect::<Vec<_>>(),
+            reached.keys().copied().collect::<Vec<_>>(),
             [data.issues[1].id],
             "the closed work is not the agent's any more, the other piece is"
         );
-        assert!(reached.allowances.contains_key(&data.issues[1].id));
-        assert!(!reached.allowances.contains_key(&data.issues[0].id));
+        assert!(reached[&data.issues[1].id].handed);
         assert!(
             storage
                 .open_work_of(fixer, data.issues[0].id)
@@ -268,8 +278,8 @@ async fn ai_33_closed_work_is_not_reached_and_a_hand_over_of_two_issues_keeps_th
             (Vec::new(), Vec::new()),
         )
         .await?;
-        let reached = storage.agent_work(fixer, now).await?;
-        assert_eq!(reached.issues.len(), 2);
+        let reached = holds(storage, fixer, now, &two).await?;
+        assert_eq!(reached.len(), 2);
         Ok(())
     })
     .await
@@ -389,19 +399,34 @@ async fn ai_31_the_allowance_follows_the_ticks_and_ends_with_the_hand_over_and_t
         )
         .await?;
         rule_that_found(storage, &mut made, (owner, fixer), &data, &[d], at(ENDS)).await?;
-        let reached = storage.agent_work(fixer, at(NOW)).await?;
-        let of = |issue: IssueId| reached.allowances.get(&issue).cloned().unwrap_or_default();
+        let four = [a, b, c, d];
+        let reached = holds(storage, fixer, at(NOW), &four).await?;
+        let of = |issue: IssueId| {
+            reached
+                .get(&issue)
+                .map(|hold| hold.allowance.clone())
+                .unwrap_or_default()
+        };
         assert_eq!(of(a).fields, ["title", "priority"]);
         assert!(of(a).status && !of(a).sub_issues);
         assert!(of(b).fields.is_empty() && !of(b).status, "ticks not given");
         assert!(of(c).sub_issues && of(c).fields.is_empty());
         assert_eq!(of(d).fields, ["issue-type"], "a rule gives its fields only");
-        assert_eq!(reached.issues.len(), 4);
-        assert!(reached.projects.contains(&data.project));
+        assert_eq!(reached.len(), 4);
+        assert!(!reached[&d].handed, "a rule hands nothing over");
+        assert!(
+            storage
+                .agent_reach(fixer, at(NOW))
+                .await?
+                .projects
+                .contains(&data.project)
+        );
         // After the end of the hand-overs and the rule the agent reaches nothing.
-        let later = storage.agent_work(fixer, at(ENDS + 1)).await?;
-        assert!(later.issues.is_empty() && later.allowances.is_empty());
-        assert!(later.projects.is_empty() && later.creates_in.is_empty());
+        assert!(holds(storage, fixer, at(ENDS + 1), &four).await?.is_empty());
+        assert_eq!(
+            storage.agent_reach(fixer, at(ENDS + 1)).await?,
+            AgentReach::default()
+        );
         // A rule that was ended is not read.
         made.step += 1;
         let step = made.step;
@@ -410,7 +435,7 @@ async fn ai_31_the_allowance_follows_the_ticks_and_ends_with_the_hand_over_and_t
                 Box::pin(async move { AuthStorage::end_grants_of_agent(transaction, fixer).await })
             })
             .await?;
-        assert!(storage.agent_work(fixer, at(NOW)).await?.issues.is_empty());
+        assert!(holds(storage, fixer, at(NOW), &four).await?.is_empty());
         Ok(())
     })
     .await
