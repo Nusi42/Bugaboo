@@ -4,29 +4,7 @@
 // comes from the base, design/theme.kdl, whose colors are Daylight's. `more=` is the color
 // when the device asks for more contrast. The file name is the theme's ID (ADR-0026).
 
-// Each area has its own color (issues, time, agents, settings), in its menu icon, its open menu item and the top bar of its pages.
 theme "daylight" extends="default" kind="light" {
     tokens {
-        color "area-ink" "$fg"
-        color "area-issues" "#5b3fd9"
-        color "area-issues-open" "$area-issues"
-        color "area-issues-bar" "$area-issues-soft"
-        color "area-issues-line" "$area-issues"
-        color "area-issues-soft" "#efebfe"
-        color "area-time" "#0a7a72"
-        color "area-time-open" "$area-time"
-        color "area-time-bar" "$area-time-soft"
-        color "area-time-line" "$area-time"
-        color "area-time-soft" "#e1f4f1"
-        color "area-agents" "#b02f6c"
-        color "area-agents-open" "$area-agents"
-        color "area-agents-bar" "$area-agents-soft"
-        color "area-agents-line" "$area-agents"
-        color "area-agents-soft" "#fce8f1"
-        color "area-settings" "#a35700"
-        color "area-settings-open" "$area-settings"
-        color "area-settings-bar" "$area-settings-soft"
-        color "area-settings-line" "$area-settings"
-        color "area-settings-soft" "#fcf0de"
     }
 }
