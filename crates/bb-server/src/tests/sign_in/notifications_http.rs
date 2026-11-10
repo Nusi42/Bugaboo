@@ -676,6 +676,7 @@ async fn sec_12_over_http_the_background_header_counts_as_use_only_on_a_post() -
         assert_eq!(read.status, StatusCode::NO_CONTENT, "{}", read.body);
         // Twenty minutes later, asking without the header: the read did not count as use, the
         // post did.
+        rig.touches_done().await;
         rig.clock.advance(20 * 60);
         ada.clear_headers();
         bob.clear_headers();
