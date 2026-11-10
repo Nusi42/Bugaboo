@@ -181,9 +181,13 @@ test.describe("on a computer the menu is a sidebar", () => {
     await page.mouse.up();
     await focusByKeyboard(page, item);
     await inEveryLook(page, () => expectRing(page, item));
+    // The open item takes the colors of its area; themes without area colors point them at the
+    // usual ones.
+    const area = await current.getAttribute("data-variant");
+    expect(area).toBeTruthy();
     await inEveryLook(page, async () => {
-      await expectCss(page, current, "background-color", "var(--bg-selected)");
-      await expectCss(page, current, "color", "var(--accent-fg)");
+      await expectCss(page, current, "background-color", `var(--area-${area}-soft)`);
+      await expectCss(page, current, "color", "var(--area-ink)");
     });
   });
 });
