@@ -176,6 +176,7 @@ async fn accept_loop(tcp: TcpListener, options: ListenerOptions, sender: mpsc::S
             tracing::debug!("connection from an address that is not a trusted proxy was closed");
             continue;
         }
+        answer_at_once(&stream);
         let sender = sender.clone();
         let acceptor = acceptor.clone();
         tokio::spawn(async move {
@@ -202,9 +203,29 @@ async fn accept_loop(tcp: TcpListener, options: ListenerOptions, sender: mpsc::S
     }
 }
 
+/// Sends what the server writes on a connection at once (`TCP_NODELAY`). Without it, the small
+/// writes of an answer waited for the acknowledgement of the browser, and one request in ten of
+/// the search page took about 330 ms instead of 45 (M7-F222). A connection that refuses the
+/// option still works, only slower, so a failure is logged and not returned.
+fn answer_at_once(stream: &TcpStream) {
+    if let Err(error) = stream.set_nodelay(true) {
+        tracing::debug!(error = %error, "sending at once could not be switched on");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn perf_01_an_accepted_connection_sends_at_once() {
+        let tcp = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = tcp.local_addr().unwrap();
+        let _client = TcpStream::connect(address).await.unwrap();
+        let (stream, _) = tcp.accept().await.unwrap();
+        answer_at_once(&stream);
+        assert!(stream.nodelay().unwrap());
+    }
 
     #[test]
     fn sec_10_mapped_addresses_become_plain_ipv4() {
