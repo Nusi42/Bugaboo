@@ -1,6 +1,6 @@
 import { summary } from "../../app/e2e/support/perf.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
-import { type Context, type Scenario } from "./scenarios.ts";
+import { type Scenario } from "./scenarios.ts";
 
 /** How many runs of a scenario are thrown away first. */
 const WARM_UP = 20;
@@ -12,6 +12,11 @@ const TOO_SLOW_IN_A_ROW = 3;
 function tooSlow(error: unknown): boolean {
   return error instanceof Error && error.message.includes("search.too-slow");
 }
+
+/** What `measure` needs of a scenario: a scenario with the context it reads, whatever that is. */
+export type Measured<C> = Pick<Scenario, "budget" | "runs" | "warmUp"> & {
+  readonly once: (context: C, round: number) => Promise<number>;
+};
 
 /** What the counted runs of one scenario took, and how many were too slow or not made. */
 class Tally {
@@ -34,7 +39,9 @@ class Tally {
 
   /** A run that took `ms`; `stopped` when the server stopped it for taking too long. */
   record(ms: number, stopped: boolean, counted: boolean): void {
-    this.inARow = stopped ? this.inARow + 1 : 0;
+    // Only counted runs may give up: the warm-up is there to throw away the slow first runs of a
+    // cold start, so a scenario whose warm-up is too slow still makes its counted runs.
+    this.inARow = stopped && counted ? this.inARow + 1 : 0;
     this.slowest = Math.max(this.slowest, stopped ? ms : 0);
     if (counted) {
       this.times.push(ms);
@@ -43,11 +50,9 @@ class Tally {
   }
 
   /** One run of a scenario into the tally. */
-  async run(scenario: Scenario, context: Context, round: number, counted: boolean): Promise<void> {
-    if (this.giveUp) {
-      if (counted) {
-        this.skip();
-      }
+  async run<C>(scenario: Measured<C>, context: C, round: number, counted: boolean): Promise<void> {
+    if (counted && this.giveUp) {
+      this.skip();
       return;
     }
     const started = performance.now();
@@ -67,14 +72,14 @@ class Tally {
  *
  * A search that the server stops for taking too long counts as the time it really took (at least
  * the limit, which the server owns and this file does not name). Once `TOO_SLOW_IN_A_ROW` runs in a row are too
- * slow, wherever in the run, the rest are not made (each would wait the full time) and count as the
+ * slow among the counted runs, the rest are not made (each would wait the full time) and count as the
  * slowest time seen, so the numbers say plainly that the budget is far over. `made` and `skipped`
  * tell how many counted runs were made and how many were counted without one; `tooSlow` counts
  * only the runs the server stopped.
  */
-export async function measure(
-  scenario: Scenario,
-  context: Context,
+export async function measure<C>(
+  scenario: Measured<C>,
+  context: C,
 ): Promise<Record<string, unknown>> {
   const tally = new Tally();
   const rounds = (count: number, counted: boolean) =>
