@@ -127,6 +127,21 @@ The maintainer decided M7-Q1 by taking the recommendation as written; [ADR-0029]
 - **Agent keys narrow like access keys** (decision 8): an agent key's permissions are the agent's rights (its person's evaluation intersected with its work and limits, ADR-0029) intersected with the key's choice and projects; what no key holds an agent key never holds, nor what an agent never holds (ADR-0029, decision 3; `NOT_FOR_AGENTS`). Agent keys always run out, at most the organization's longest time, and end when the agent is stopped. An OAuth grant of an AI app narrows the same way ([ADR-0042](0042-mcp-server-and-how-ai-apps-sign-in.md), decision 3). Enforced by: the property test `ai_30_an_agent_never_does_more_than_its_person` (WP-04), SEC-MATRIX.
 - **The security log** (decision 9) also records every agent made, handed to another person, paused, stopped or deleted, and every agent key made, renewed or taken back.
 
+## Amendment (M8, work times and themes)
+
+The maintainer took every recommendation of the M8 plan (2026-11-11); [ADR-0030](0030-planning-with-people.md) says why work times are guarded. What changes here:
+
+- **The topic *Time*** gains one permission, with its sentence, kind and starting values in the same change as its routes:
+
+  | Permission | Counts | Kind | Starting roles that have it |
+  |------------|--------|------|-----------------------------|
+  | *Enter work times for others*: enter and change other people's usual work days, work hours and away times | organization | *Manage* | *Administrator* |
+
+  It is of kind *Manage*, so no agent holds it (ADR-0029, decision 3), and it joins the list of what no key holds (decision 8, `NOT_FOR_KEYS`): entering other people's work times stays in the app. Enforced by: ARCH-PERMS, SEC-MATRIX.
+- **The share in a project** is set on *Project members* by a person who holds *Decide who has which role* in that project (a *Project lead* at the start). No new permission.
+- **Themes for everyone** are made and changed under *Change organization settings*; personal themes need no permission ([ADR-0026](0026-one-theme-file.md), update M8).
+- **The security log** (decision 9) also records every gift and removal of *Enter work times for others*, like any change of permissions. Work times themselves are not in the security log: their changes are events of the person's work times, which the person sees.
+
 ## Consequences
 
 - WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, *No access* and two access keys.

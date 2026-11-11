@@ -46,6 +46,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0040](0040-version-numbers.md) | Version numbers follow the plan: 0.9.0 is feature complete |
 | [0041](0041-linear-history.md) | Branches are rebased, never merged: `main` is a straight line |
 | [0042](0042-mcp-server-and-how-ai-apps-sign-in.md) | The MCP server and how AI apps sign in: OAuth 2.1 with PKCE inside Bugaboo, scopes that only narrow, the consent step |
+| [0043](0043-dates-and-dependencies.md) | Dates and dependencies: *Start date* and *Due date*, the date effect of a kind of relation, a warning instead of a push |
 
 ## Template
 

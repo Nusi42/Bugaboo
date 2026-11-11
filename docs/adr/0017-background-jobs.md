@@ -60,3 +60,11 @@ review; every job type has an idempotency test (part of ARCH-EVENTS test harness
   - `agents.rule-matches` is not daily: the outbox queues it after an event that changes an issue in a project where a standing rule works, at most one waiting for each rule. It writes down each issue that newly comes under the rule, with the moment, once (ADR-0029, decision 3).
   - `oauth.clean-old-grants` is daily (`FromTheStart`): it deletes authorization codes and refresh tokens that ran out, and grants that were taken back or ended, as ADR-0042, decision 3, says; a grant in use is never touched, nor one waiting while AI apps are switched off (ADR-0042, decision 4).
 - **Who a job of agents acts as.** A job that ends or records something for an agent judges nothing new: it finishes what the person decided when they handed over or made the rule, and names the agent and its person on the events. A match is written down only for an issue the agent may read at that moment (ADR-0029, decision 2).
+
+## Amendment (M8, work times)
+
+- **Kinds of M8** ([ADR-0030](0030-planning-with-people.md), amendment M8), each idempotent:
+  - `work-times.delete-old-away-times` is daily (`FromTheStart`): it deletes every away time whose last day is more than one year ago (`AWAY_TIME_KEPT_FOR`), with its note.
+  - `work-times.delete-left-shares` is daily (`FromTheStart`): it deletes the share in a project of every person who no longer has a role there, directly or through a group.
+  - A person who leaves the organization loses all their work times in the step that ends their membership, not in a job: one function of the module of work times, which *Remove a person* calls (M9). In M8 it is built and tested on its own.
+- **Nothing else of M8 is a job.** The plan is worked out when it is asked for (ADR-0030, amendment M8), and the public holidays are computed, never fetched.

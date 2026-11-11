@@ -1,6 +1,6 @@
 # ADR-0010: Styling through design tokens only
 
-Status: **Accepted** · 2026-10-04 · the styling decisions (the token file, the generator, CSS Modules) are replaced by [ADR-0026](0026-one-theme-file.md); the rest stands
+Status: **Accepted** · 2026-10-04 · the styling decisions (the token file, the generator, CSS Modules) are replaced by [ADR-0026](0026-one-theme-file.md); the rest stands · amended in M8: themes of your own
 
 ## Context
 
@@ -14,6 +14,10 @@ Four built-in themes, a theme editor, custom field looks and strict CSP, all wit
 - Custom themes and field looks store **token values or token names**, never CSS.
 - The choices of a person that are not a theme (*Compact* spacing, *Larger text*, *Less motion*) are **variants** in the token file: each switches token values through an attribute on the page (`data-spacing`, `data-text`, `data-motion`), and *Less motion* also follows the device. Sizes of spacing and text are written as the usual size times a factor token, so one choice scales everything. Where the layout changes (`bp-tablet`, `bp-computer`) is a token too, read by the app through the generated TypeScript.
 - Every theme has stronger colors for `prefers-contrast: more` (`contrastMore`). STY-CONTRAST checks them at 7:1 for text and 3:1 for lines.
+
+## Amendment (M8, themes of your own)
+
+Own themes (the custom themes of the decision above) still store token values and never CSS. How they are checked, served and limited is decided in [ADR-0026](0026-one-theme-file.md), update M8: the allowed values and the contrast checks that this record gave to a generated Rust validation now live in `bb-core` (the token list written by `cargo xtask gen theme`, the contrast maths moved from `xtask`), shared by STY-CONTRAST, the server and the theme editor.
 
 ## Consequences
 

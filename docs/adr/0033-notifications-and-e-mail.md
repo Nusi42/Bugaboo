@@ -135,6 +135,18 @@ Agent work ([ADR-0029](0029-ai-agents.md)) adds six kinds of notification, built
 - The text of a question, a plan or a note is people's text and is written like a comment (decision 3: quoted, plain text, after the link). An agent is shown as *"Fixer, agent of Ada Brandt"*, its person by *Who sees people* (ADR-0022).
 - The responsible person and the person who handed the issue over both hear of the first four; an issue they no longer see is skipped like any other (decision 2). Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-08.
 
+## Amendment (M8, work times and the time factor)
+
+Work times and the time factor ([ADR-0030](0030-planning-with-people.md)) add two kinds of notification, built by the same reader and checked again in the same way (decision 2). They go to the person whose data changed, and only when somebody else changed it. Each person changes them under *Customize*; the starting values:
+
+| Event | In the app | By e-mail |
+|---|---|---|
+| *Your work times were changed* (somebody with *Enter work times for others* entered or changed an away time, your usual work days or your work hours) | on | off |
+| *Your time factor was changed* (somebody else set the time factor of an issue whose person on the bar you are) | on | off |
+
+- An away time is named only by its days (*"Ada Brandt entered an away time for you: 26–30 Oct"*); it has no reason to name (ADR-0030, decision 2). The text of the note of an away time is never sent: only its person sees it.
+- Neither kind names another person's work times, and no notification goes to anybody else about them. Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-04 and WP-06.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).
