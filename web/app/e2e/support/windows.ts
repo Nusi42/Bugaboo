@@ -4,6 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
 import { descriptionBox } from "./description.ts";
+import { layoutOf } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
@@ -260,4 +261,14 @@ export function roomUnderLastRow(scroll: Locator): Promise<number> {
       ? Number.NEGATIVE_INFINITY
       : box.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom;
   }, part.listRow);
+}
+
+/**
+ * The empty room in a window under what it holds, past the padding of its body; none on a phone,
+ * where a window is a screen whose buttons stand at its foot (UX §6.3).
+ */
+export function roomUnderWindowContent(page: Page, window: Locator): Promise<number> {
+  return layoutOf(page) === "computer"
+    ? roomUnderContent(partIn(window, part.windowBody))
+    : Promise.resolve(0);
 }

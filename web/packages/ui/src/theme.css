@@ -63,7 +63,7 @@
   --size-col-labels: 96px;
   --size-col-project: 96px;
   --size-number-field: 120px;
-  --size-agent-window: 380px;
+  --size-agent-window: 560px;
   --size-col-title-least: 160px;
   --size-col-least: 48px;
   --size-col-most: 800px;
@@ -9676,9 +9676,15 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  min-height: var(--size-agent-window);
   min-width: 0;
   text-wrap: wrap;
+}
+
+[data-part="overlay"][data-variant~="window"]:not(
+    [data-part="overlay"][data-state~="maximized"]
+  ):has([data-part="agent-work.window"]) {
+  align-items: flex-start;
+  padding-top: max(var(--space-4), calc((var(--size-viewport) - var(--size-agent-window)) / 2));
 }
 
 [data-part="agent-work.warning"] {

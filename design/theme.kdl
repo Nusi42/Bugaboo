@@ -145,9 +145,10 @@ tokens {
     // The narrowest a number field of a hand-over is: three of them stand side by side where there is room, and one
     // under the other on a phone, where their labels would wrap to different heights.
     size "size-number-field" "120px" phone="100%"
-    // The least height of what a window of a hand-over or a review holds: the window does not grow and shrink, so its
-    // top stays where it is whatever decision is chosen.
-    size "size-agent-window" "380px"
+    // The height a window of a hand-over or a review is placed for: its top stands where the top of a window this high
+    // stands in the middle of the page, and the window grows and shrinks downwards from there with what the decision
+    // chosen needs, so its top stays where it is whatever is chosen.
+    size "size-agent-window" "560px"
     // How a row gives out its width (the browser gives the fixed columns their token before the
     // title grows): where the box is narrower than the tokens, the title gives up room first, down to
     // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give
@@ -15754,9 +15755,16 @@ part "agent-work.window" {
     display flex
     flex-direction column
     gap "$space-4"
-    min-height "$size-agent-window"
     min-width 0
     text-wrap wrap
+}
+
+// The window of a hand-over or a review is as tall as what it holds for the decision chosen (M7-F246), and keeps its
+// top whatever is chosen: it hangs from where a window of the height `size-agent-window` would start in the middle.
+// A maximized window fills the page as every window does.
+part "overlay[variant=window]:not(overlay[state=maximized]):has(agent-work.window)" {
+    align-items flex-start
+    padding-top "max($space-4, calc(($size-viewport - $size-agent-window) / 2))"
 }
 
 // What the brief lacks: the icon and the words beside it, the words starting at one edge on every line.

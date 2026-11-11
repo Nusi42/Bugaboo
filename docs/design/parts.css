@@ -8516,9 +8516,15 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  min-height: var(--size-agent-window);
   min-width: 0;
   text-wrap: wrap;
+}
+
+[data-part="overlay"][data-variant~="window"]:not(
+    [data-part="overlay"][data-state~="maximized"]
+  ):has([data-part="agent-work.window"]) {
+  align-items: flex-start;
+  padding-top: max(var(--space-4), calc((var(--size-viewport) - var(--size-agent-window)) / 2));
 }
 
 [data-part="agent-work.warning"] {
