@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M6 built, M7 planned)
+## Scope (status: M7 built, M8 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5); time on issues and working hours (M6) | The assistant, AI apps through MCP and agents (M7; threats below, planned), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5); time on issues and working hours (M6); the assistant, AI apps through MCP and agents (M7) | The timeline, work times and own themes (M8; threats below, planned), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -239,6 +239,23 @@ M7 lets AI read and change Bugaboo in three ways: the assistant (it only propose
 | Denial of service, tampering | An agent runs away with changes, or an app floods the server | The limits of an agent and its keys (ADR-0029, decision 9 and amendment M7) pause the agent with a sentence; rate limits per grant and per person; *Stop*, *Stop all my agents* and agents off; *Undo the run* in one step | TEST-CONCURRENT ("Two agents take the same issue at the same moment"); the tests of WP-07 and WP-09 |
 | Repudiation | Nobody can tell what an AI wrote, or which app or agent changed something | Every event names the person, the channel and the app or the agent; texts carry *Written with the assistant*, *Written by an AI app* or *Written by an agent* in the history, the API and every export (COMP-09); grants, agents and keys are in the security log | ARCH-EVENTS; the tests of WP-07 |
 | Information disclosure | The log of tool calls or a server log keeps what the AI read or wrote | The log of tool calls holds who, which tool, sizes, time and outcome, never content; tokens and keys never in a log; the conversation of the assistant is not stored | DATA-LOGS |
+
+### Timeline, work times and own themes (M8)
+
+M8 plans with people and lets an organization or a person make a theme of their own ([ADR-0030](../adr/0030-planning-with-people.md) and its amendment M8, [ADR-0043](../adr/0043-dates-and-dependencies.md), [ADR-0026](../adr/0026-one-theme-file.md), update M8). It adds no listener: the style sheet of an own theme (`/themes/{id}.css`) and the new routes are on the same port, and the content security policy stays `style-src 'self'`. Work times are employee data (PRIV-09) and an away time can hint at health (GDPR Art. 9), so the main threats are that somebody learns another person's work times, and that a plan turns into a judgement of how fast a person works (COMP-10). An own theme reaches every page of the people who use it, so the other main threat is that its values carry code or make the page unreadable. The packages add the test names ([M8 plan](../milestones/M8/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|------------|-----------|
+| Information disclosure | A person learns another person's away times, usual work days, work hours, shares or choice of *Holidays* through the timeline, *Group by person*, a warning, the card of a bar, a notification, a search, an export or an AI tool (PRIV-09, PRIV-12) | Work times are the kind of people information *Work times* (*Who sees people*): others see an away time only as *Away*, never its note, and a warning about a person the reader may not see says *"the assigned person is away"*. No search field and no export of M8 reads work times, the tool registry has no tool that reads them, and a notification about them goes to their person only | SEC-MATRIX (the routes of work times and the timeline, for every starting role and each choice of *Work times*), ARCH-PERSON-REF, ARCH-AI-TOOLS; the tests of WP-04, WP-06 and WP-10 |
+| Information disclosure | The timeline shows that a restricted issue or a hidden field exists: a bar, an arrow, a warning, the count of *Not scheduled yet*, or a gap in a person's row (PLAN-08) | The plan reads the issues through the compiled search as the reader; a hidden issue has no bar, no arrow, no warning and no count, a dependency on it is neither drawn nor checked, and a date field the reader cannot read counts as empty (ADR-0043, decision 2) | SEC-MATRIX (the timeline route under visibility and field levels); the tests of WP-06 |
+| Information disclosure | The time factor becomes a score of a person: listed, sorted, grouped or totalled across issues, kept per person, or set or proposed by AI (PRIV-09, COMP-10) | It belongs to the issue and goes back to ×1 when the first assigned person changes; the search language has no word for it, no list offers it as a column and no total uses it; no tool of the registry changes it (ADR-0030, amendment M8) | ARCH-AI-TOOLS, SEC-MATRIX; the tests of WP-06 |
+| Tampering | A person enters or changes another person's work times without *Enter work times for others*, or sets a share in a project without *Decide who has which role* there | The use case judges the permission before every change of another person's work times or a share; the routes declare it; no key and no agent holds *Enter work times for others* (ADR-0025, amendment M8) | ARCH-PERMS, SEC-MATRIX; the tests of WP-04 |
+| Repudiation | Somebody else changes a person's work times or the time factor of their issue, and the person never learns of it | Every change is an event that names who made it; the person gets *Your work times were changed* or *Your time factor was changed* (ADR-0033, amendment M8); the issue shows who set the time factor | ARCH-EVENTS; the tests of WP-04 and WP-06 |
+| Tampering | A drag moves an issue the person may not change, or one move changes other issues without anybody choosing it | Each moved issue is judged as the person, with the field levels of the date fields (PLAN-03); nothing moves by itself, and *Move it after* changes the issues after it only after a preview that names them (ADR-0043, decision 5) | SEC-MATRIX, ARCH-VERSIONED; the tests of WP-03 and WP-09 |
+| Tampering | A value of an own theme, or of an uploaded theme, carries CSS or script into every page that uses it | An own theme stores token values only, each checked by the kind of its token and written back by the one writer of the server; a shadow is stored as its parts, never as text; the sheet holds custom properties under the theme's frame attribute and nothing else, and the policy stays `style-src 'self'` (ADR-0026, update M8) | SEC-HEADERS, THEME-ONLY; the tests of WP-05 |
+| Elevation of privilege, information disclosure | A person makes or changes a theme for everyone without the right, or reads somebody else's personal theme | Themes for everyone need *Change organization settings*; a personal theme is served to its maker only, and any other request gets the answer of a theme that does not exist | SEC-MATRIX (the routes of themes and their style sheets); the tests of WP-05 |
+| Denial of service | A theme for everyone makes the page unreadable, or a broken theme leaves people with no usable look | A theme for everyone with a pair that is *Hard to read* is refused; a choice that names an own theme that is gone counts as the built-in theme it extended (ADR-0026, update M8) | STY-CONTRAST; the tests of WP-05 and WP-08 |
+| Denial of service | A large timeline, a flood of moves or a huge upload of a theme slows the server for everyone | The timeline answers a page of rows within the budget of timeline data (PERF-01); the number of own themes and the size of an upload are named limits, and changes count against the rate limits of a person | PERF-BENCH (the timeline of the biggest project on 1 M issues), PERF-N1; the tests of WP-05 and WP-12 |
 
 ### Boundary 4 (operator ↔ data) and the host
 
@@ -493,3 +510,32 @@ M7 sends text to an AI provider and stores the work of agents and the sign-in of
 | The log of tool calls | Security and finding abuse (AI-05) | (f) legitimate interests | The keep period of ADR-0013, amendment M7 | Administrators, through the security log of refused calls; never content |
 
 The marks of AI-written text are no personal data of their own, and the time and cost an agent reports are not a person's working time (M7-Q7).
+
+## Personal data in M8
+
+M8 stores when and how much people work, so that the timeline can plan with them, and a time factor on issues ([ADR-0030](../adr/0030-planning-with-people.md) and its amendment M8). It is employee data (PRIV-09), and an away time can hint at health (GDPR Art. 9), so Bugaboo stores no reason for it. The marks below are decided here; WP-04 and WP-06 write them on their entities, and `cargo xtask gen privacy` lists them on the generated page `docs/privacy/personal-data.md`. Enforced by: DATA-MARKS.
+
+| Entity (package) | Field | Personal data | Category | Legal basis |
+|------------------|-------|---------------|----------|-------------|
+| Away time (WP-04) | person, who entered it | yes | `identity` | `contract` |
+| Away time (WP-04) | first and last day, half days | yes | `employee_time` | `contract` |
+| Away time (WP-04) | the note (only its person sees it) | yes | `content` | `contract` |
+| Usual work days and work hours (WP-04) | person; the days of the week and the hours of each | yes | `employee_time` | `contract` |
+| Share in a project (WP-04) | person, project, share | yes | `employee_time` | `contract` |
+| Choice of *Holidays* (WP-04) | person, the choice | yes | `employee_time` | `contract` |
+| Public holidays (WP-04) | the days of Germany and its states | no | – | – |
+| Time factor of an issue (WP-06) | the factor, who set it, for which person on the bar | yes | `employee_time` | `contract` |
+| Start date and due date of an issue (WP-03) | the dates | no | – | – |
+| Own theme (WP-05) | the person of a personal theme, who made or changed a theme for everyone | yes | `identity` | `contract` |
+| Own theme (WP-05) | name, values, the built-in theme it extends | no | – | – |
+
+| Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
+|------|---------|---------------------------|------|--------------|
+| Away times, with no reason | Planning work around the days a person does not work | (b) contract (the work the organization plans with its people) | One year after their last day, then a daily job deletes them; all of them when the person leaves (ADR-0030, amendment M8) | The person, who also sees their note; who enters work times for others; others only as *Away*, as *Who sees people* (the kind *Work times*) allows |
+| Usual work days, work hours and the choice of *Holidays* | How much a person can work on a day | (b) contract (the hours come from the work contract) | Until the person changes them; deleted when the person leaves | The person; who enters work times for others; others as *Who sees people* (*Work times*) allows, and the plan uses them for bars the reader sees |
+| Shares in projects | How much of a person's work hours belong to a project | (b) contract | Until changed; deleted when the person no longer has a role in the project, or leaves | The person; who may *Decide who has which role* in the project; others as *Who sees people* (*Work times*) allows. A total above 100 % is shown to the person and the leads of those projects, without other projects' names unless they may see them |
+| The time factor of an issue | The person's own estimate of how long the issue takes them | (b) contract | With the issue; back to ×1 when the first assigned person changes | As the field allows; never in a search, a sort, a total or a report, and never set by AI |
+
+Nothing about work times leaves the server, except the e-mail of a notification to the person themselves when they switch it on (ADR-0033, amendment M8). No outside service and no AI reads work times (COMP-10), and the public holidays are computed in Bugaboo, so no service learns which state a person works in.
+
+In Germany a works council has a say in tools that can watch how employees work (Works Constitution Act, §87 (1) no. 6). The limits of ADR-0030 (no reason stored, no factor per person, no reports) are what an organization shows its works council; Bugaboo does not decide for it.

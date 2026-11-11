@@ -48,6 +48,8 @@ Rules:
 | **Related issues**       | Issues connected to this one                                       | issue links (as UI label)          |
 | **Relation**             | One connection between two issues                                  | link, edge |
 | **Kind of relation**     | What the connection means. Each kind has a name for both directions: *blocks* / *is blocked by*, *duplicate of* / *has duplicate*, *causes* / *is caused by*, *related to* | link type |
+| **Date effect**          | What a kind of relation does to dates on the timeline: none, or *Must finish first*. The starting kind *blocks* has *Must finish first*, and an organization may give it to one other kind (ADR-0043) | dependency type, link behaviour (in UI) |
+| **Dependency**           | A relation whose kind has a date effect. The timeline draws it as an arrow from the issue that must finish first to the one that waits; the issue page and the relation map show the same relation | predecessor, successor (in UI) |
 | **Relation map**         | A picture of everything connected to an issue, step by step        | graph, network, link cloud, dependency graph |
 | **Steps away**           | How many relations lie between two issues on the map               | depth, hops, degrees               |
 | **Assigned to**          | Who is working on it                                               | assignee (in UI and code)          |
@@ -56,6 +58,8 @@ Rules:
 | **Release**              | A planned version of the product, e.g. *2.4*                       | fix version, version (as object)   |
 | **Found in release**     | The release where a bug was seen                                   | affects version                    |
 | **Planned for release**  | The release that should contain the fix or feature                 | fix version, target version        |
+| **Start date**           | The built-in field with the first day of work on an issue: a calendar date, with no time of day (ADR-0043) | begin date, kick-off (in UI) |
+| **Due date**             | The built-in field with the day an issue should be done: a calendar date, with no time of day. Nothing moves it but a person or a tool that sets it; on the timeline a goal's due date is a diamond (ADR-0043) | target date, deadline date (in UI) |
 | **Visibility**           | Who may see a single issue. *Restricted* issues are visible only to chosen groups | issue security level |
 | **Tags**                 | Free words anyone can add (`login`, `slow`)                        | —                                  |
 | **Labels**               | A fixed list of words managed by admins                            | components                         |
@@ -100,7 +104,7 @@ Rules:
 | **Filter**               | One condition in a search, shown as a button (`Status: not Done`)  | clause, predicate (in UI)          |
 | **Saved search**         | A search plus how its results are shown, saved under a name        | view, filter (as saved object)     |
 | **Save search**          | Keep the search you have open, with its columns and order, under a name | save view, save filter      |
-| **Save a copy**          | Keep an open saved search as a new one of your own, private at first | clone, fork (in UI)               |
+| **Save a copy**          | Keep an open saved search as a new one of your own, private at first; in the theme editor, keep a theme as a new own theme to change | clone, fork (in UI)               |
 | **Share** (a saved search) | The window that chooses the groups and projects a saved search is shared with; each person still sees only what they may see | —                                |
 | **Share searches**       | The permission to share saved searches with a group or a project    | —                                  |
 | **Mine** / **Shared with me** | The two lists of *Saved searches*: the ones you made, and the ones others shared with you | owned, inbox (in UI) |
@@ -113,13 +117,17 @@ Rules:
 | **Timeline**             | The Gantt chart (UI tab name; help text says "Gantt chart")        | roadmap                            |
 | **Calendar**             | Issues shown on a month or week calendar by due date               | agenda (as tab name)               |
 | **Map**                  | *Show as* option that draws search results and their relations     | graph view                         |
-| **Must finish first**    | Dependency: this issue can't start until another finishes. Other kinds: *start together*, *finish together*, *finish when it starts* | finish-to-start, FS, SS, FF, SF (in UI) |
+| **Must finish first**    | The date effect of a dependency: the issue that waits can't start until the other one ends. A move that breaks it shows the plan warning *Delay* and moves nothing else (ADR-0043). The other effects, *start together*, *finish together* and *finish when it starts*, come in V1 | finish-to-start, FS, SS, FF, SF (in UI) |
 | **Plan by effort**       | Let the timeline work out a bar's length from its estimate, its time factor and the person's work days, away times and public holidays | auto-schedule, resource levelling (in UI) |
-| **Time factor**          | A value on an issue, for its assigned person: how much longer or shorter than the estimate it will take them (*×1.5*). The assigned person may always set it; it goes back to ×1 when the issue goes to another person | velocity, performance factor, speed factor (in UI) |
+| **Time factor**          | A value on an issue, for its person on the bar: how much longer or shorter than the estimate it will take them (*×1.5*). That person may always set it, also as *Takes me …*; the issue shows who set it. It goes back to ×1 when the first assigned person changes. It can be read like any field, but no search filters, sorts or groups by it, no total uses it, and AI never sets it (ADR-0030, amendment M8) | velocity, performance factor, speed factor (in UI) |
+| **Takes me …**           | The way to give the time factor as a length (*Takes me 10 days*): Bugaboo works out the factor from the estimate. The issue then says whose estimate it is (*Lea's own estimate*, *set by Ada Brandt*) | my velocity, my estimate factor (in UI) |
 | **Plan warnings**        | What the timeline points out: *Away*, *Not enough days*, *Delay*, *Too much at once*, each with what can be done | clashes, overallocation (in UI) |
+| **Move it after / Make it longer / Give it to someone else…** | The ways out of a plan warning, each a person's choice: move the issue (and the ones that wait for it, after a preview) to start after the one before it; make the bar longer up to its due date; or open the usual person picker, which suggests nobody | auto-fix, reassign (in UI) |
 | **Keep and accept**      | The answer to a plan warning that leaves the plan as it is; the warning stays, faded | ignore, dismiss (in UI) |
 | **Deadline drivers**     | The chain of issues that sets the end date; any delay moves the end | critical path (in UI)             |
-| **Milestone**            | An important date on the timeline                                  | —                                  |
+| **Milestone**            | An important date on the timeline: the due date of a goal, drawn as a diamond (ADR-0043). Releases join it in M10 | —                                  |
+| **Set dates… / Add dependency…** | The typed ways to do what a drag on the timeline does: give a bar its start and due date, or connect it to another issue. On a bar's card and in its menu, and on a phone, where nothing is dragged | reschedule, link issues (in UI) |
+| **Person on the bar**    | The first person in *Assigned to*: their work times shape the bar, and the time factor is theirs. *Group by person* shows the bar in the row of every assigned person, with a mark in the others' rows (ADR-0030, amendment M8) | bar owner (in UI) |
 | **Dashboard**            | A page of boxes showing searches, numbers and charts               | —                                  |
 | **Quick search**         | The search box for everything, `Ctrl+K`                            | command palette, omnibox           |
 | **Focus view**           | An open item takes the main area; the menu shrinks to icons and a slim list stays on the left | full-screen mode, detail view |
@@ -223,7 +231,7 @@ Rules:
 | **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
 | **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |
-| **Work times**           | A person's usual work days, work hours, shares in projects and away times; also the kind of people information that says who may see them | availability, capacity (in UI) |
+| **Work times**           | A person's usual work days, work hours, shares in projects, away times and choice of *Holidays*; also the page *My settings › Work times* and the kind of people information that says who may see them | availability, capacity (in UI) |
 | **Enter work times for others** | The permission to enter usual work days, work hours and away times for other people | — |
 | **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, team hours, staff hours, timesheets of others (in UI) |
 | **See working hours of others** | The organization permission to see other people's working hours. Nobody has it at the start, also not *Administrator* | — |
@@ -232,8 +240,9 @@ Rules:
 | **HR**                   | The starting role with *See working hours of others* and *Change working hours of others*. Nobody has it at the start; an administrator gives it, usually to a group such as *Payroll* | human resources, personnel (as the role) |
 | **Usual work days**      | The days of the week a person normally works, for example Monday to Thursday | work pattern, schedule (in UI) |
 | **Work hours**           | How many hours a person works on a usual work day, from their work contract | capacity, FTE (in UI) |
-| **Share in the project** | How much of a person's work hours belong to one project, for example 60 % | allocation, utilization (in UI) |
-| **Public holidays**      | Days nobody in a region works, from a preset per country and, for Germany, per federal state | bank holidays (in UI) |
+| **Share in the project** | How much of a person's work hours belong to one project, for example 60 %; 100 % at the start. Set on *Project members* by somebody with *Decide who has which role* there | allocation, utilization (in UI) |
+| **Public holidays**      | Days nobody works where a person works. Bugaboo works them out itself, for Germany and each of its 16 federal states (ADR-0030, amendment M8) | bank holidays (in UI) |
+| **Holidays** (the setting) | Which public holidays count for a person: *None*, *Germany* or one of the 16 states. Chosen in *My settings › Work times*; until then the organization's choice counts. Not part of *Region*, which is about how dates and numbers are written | holiday calendar, holiday region (in UI) |
 | **Project members**      | The kind of people information for lists of who works in a project. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
 | **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically; working hours are deleted only by an administrator after their keep period (ADR-0035, decision 7) | retention policy                |
@@ -271,7 +280,10 @@ Rules:
 | **and**                  | The word between two names in a text for people (*Roles and permissions*, *E-mail and notifications*): never the sign & | & (in UI, a check refuses it) |
 | **Create**               | The verb for bringing something new into Bugaboo, on every button and form. A button that opens a form says *Create an issue*, *Create a project*; the button that sends the form says *Create the issue*, *Create the project*, *Create the issue and start another* | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
-| **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
+| **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark); an organization and each person may add own themes. *Match my device* uses your light or dark choice depending on the device setting | skin |
+| **Own theme**            | A theme an organization or a person makes in the theme editor. It starts from one built-in theme and keeps only what it changes: colors, the shadow, the corners and a choice among the built-in fonts. *For everyone* (made by an administrator in *Look › Themes*, offered to everyone) or *Personal* (made in *My settings*, seen only by its maker) | custom theme, user theme (in UI) |
+| **Theme editor**         | The page that changes an own theme: color groups with plain names, a live preview of real screens, and the readability of each pair | theme builder, theme designer (in UI) |
+| **Readability** (of a color pair) | How easy a text or line is to see on its background, rated *Easy*, *OK* or *Hard to read*. A theme for everyone can't be saved while a pair is *Hard to read*; a personal one can, with a warning | contrast ratio, contrast score (in UI) |
 | **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
@@ -361,6 +373,7 @@ On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *b
 | Design tokens       | Named theme values (`bg.surface`), the only way code uses colors and sizes |
 | Message catalog     | The single file of all user-facing text                               |
 | Presentation        | How a saved search is shown (list, board, timeline, calendar)         |
+| Plan (of a timeline) | What the server works out for the rows on screen: each bar's days, the worked-out days of *Plan by effort*, the dependencies and the plan warnings, for the reader (ADR-0030, amendment M8). The browser draws it and holds no rule of it |
 | Sold model          | Customers run Bugaboo themselves (UI: *Self-hosted*)                  |
 | Served model        | We run Bugaboo for customers (UI: *Hosted by Bugaboo*)                |
 | Control plane       | Our separate system that creates, updates, backs up and monitors served instances; it holds no customer data |
