@@ -525,6 +525,7 @@ M8 stores when and how much people work, so that the timeline can plan with them
 | Choice of *Holidays* (WP-04) | person, the choice | yes | `employee_time` | `contract` |
 | Public holidays (WP-04) | the days of Germany and its states | no | – | – |
 | Time factor of an issue (WP-06) | the factor, who set it, for which person on the bar | yes | `employee_time` | `contract` |
+| Accepted plan warning (WP-06) | who accepted it; the issue, the kind and the dates it was accepted for | yes | `identity` | `contract` |
 | Start date and due date of an issue (WP-03) | the dates | no | – | – |
 | Own theme (WP-05) | the person of a personal theme, who made or changed a theme for everyone | yes | `identity` | `contract` |
 | Own theme (WP-05) | name, values, the built-in theme it extends | no | – | – |
