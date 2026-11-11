@@ -164,7 +164,7 @@
         <li><b>Sheets from the bottom</b> replace small pop-ups (choosing a person, a status, filters).</li>
         <li><b>Issue page:</b> one column. Fields are grouped under <i>Details</i>. A bottom bar offers <i>Status · Comment · Timer · More</i>.</li>
         <li><b>Swipe</b> on a list item for quick actions. The same actions are also in the item's <i>More</i> menu.</li>
-        <li><b>Timeline</b> and <b>Calendar</b> become day-by-day lists. Dates are changed in the issue's date fields, not by dragging.</li>
+        <li><b>Timeline</b> becomes a list grouped like its rows, each issue with its dates, its person and a short bar over seven weeks (§4.7); the <b>Calendar</b> becomes a day-by-day list. Dates are set with <i>Set dates…</i> or the issue's date fields, not by dragging.</li>
         <li><b>Board</b> shows one column at a time, with column names as tabs. Cards move with their <i>Move to …</i> button.</li>
         <li><b>Relation map</b> starts in its list form, with a <i>Show as picture</i> button.</li>
         <li>Settings work on phones too. The workflow and layout editors switch to their simple list form.</li>
@@ -391,6 +391,15 @@ sort by priority, highest first</div>
       <div class="step"><span>3 · Done, with Undo</span><div class="toast-demo">WEB-142 now blocks WEB-147. <u>Undo</u></div><div class="muted u-font-size-12px">The relation also shows on WEB-147 as "is blocked by WEB-142", and both histories record it.</div></div>
     </div></div></div></div></div>
 
+    <h4>Dates and the time factor <span class="ids">PLAN-01, PLAN-02, PLAN-14, ADR-0043, ADR-0030</span></h4>
+    <ul>
+      <li><b><i>Start date</i> and <i>Due date</i></b> are details like any other: they save in place with <i>Undo</i>, and a start after the due date is refused at the box (<i>"The start date is after the due date (14 Nov)."</i>).</li>
+      <li><b>Dependencies</b> are relations of a kind with a date effect (<i>blocks</i> at the start). <i>Related issues</i> shows them in their group as usual, with a small mark for <i>Must finish first</i>.</li>
+      <li><b>The time factor</b> is a row under <i>Estimated time</i>: <i>"×1.25 · Lea's own estimate"</i>, <i>"×1.5 · set by Ada Brandt"</i>, or <i>"×1 (as estimated)"</i>. <i>Change</i> opens a small window that asks <i>"How long will it take you?"</i> for the person on the bar and <i>"How long will it take Lea?"</i> for anybody else. It takes a length (<i>Takes me 10 days</i>) or a factor (<i>×1.25</i>), and shows the sum as it is typed: <i>"Estimate 8 days · ×1.25 = 10 work days"</i>. For somebody else the window adds <i>"Lea will be told."</i></li>
+      <li>The person on the bar always sees the row and may always change it; others as its field permissions allow. When the first assigned person changes, the history says <i>"Time factor back to ×1, because the issue went to Ben."</i></li>
+      <li>The time factor is never a column, a filter, a sort or a group of a list, and no total shows it (ADR-0030, amendment M8). The assistant never proposes one.</li>
+    </ul>
+
     <h3 id="s4-5"><button type="button" class="sec" data-sec>§4.5</button>New issue</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Window · 760 wide: one column below 880, and minimized as a bar at the bottom of the page (below)</div><div class="frame-body"><div class="scr win-stage">
       <div data-part="overlay.modal" data-variant="window" class="win"><section data-part="window"><div data-part="window.content"><div data-part="window.title-bar"><p data-part="window.title">New issue</p><button type="button" data-part="window.control" aria-label="Minimize"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-minus"/></svg></button><button type="button" data-part="window.control" aria-label="Maximize"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-square"/></svg></button><button type="button" data-part="window.control" data-variant="close" aria-label="Close"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"/></svg></button></div><div data-part="window.body"><div data-part="window-layout"><div data-part="window-layout.text"><div class="field"><label>Title <span class="req">(required)</span></label><input type="text" placeholder="Short summary, e.g. “Save button does nothing”"></div><div class="field"><label>Description</label><textarea placeholder="What happened? What did you expect?"></textarea></div><span><button type="button" data-part="button">Write it up for me</button></span></div><div data-part="window-layout.fields"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div></div></div><div data-part="window.footer"><span data-part="window.footer-note">Draft kept · if you close this, it waits for you</span><button type="button" data-part="button">Cancel</button><button type="button" data-part="button">Create the issue and start another</button><button type="button" data-part="button" data-variant="primary">Create the issue</button></div></div></section></div>
@@ -436,20 +445,20 @@ sort by priority, highest first</div>
       <div class="nm child"><svg data-part="status-icon" data-variant="done small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Done"><use href="#i-st-done"/></svg><span class="key">WEB-140</span>Design sign-in page</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-3pc--width-29pc" data-part="timeline-bar" data-state="group-done">WEB-140</div></div>
       <div class="nm child"><svg data-part="status-icon" data-variant="in-progress small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="In progress"><use href="#i-st-ip"/></svg><span class="key">WEB-141</span>Passkey sign-in</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-34pc--width-34pc" data-part="timeline-bar" data-state="group-in-progress">WEB-141</div></div>
       <div class="nm child"><svg data-part="status-icon" data-variant="in-progress small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="In progress"><use href="#i-st-ip"/></svg><span class="key">WEB-142</span>Login after reset</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-11pc--width-23pc" data-part="timeline-bar" data-state="group-in-progress priority-high">WEB-142</div></div>
-      <div class="nm"><svg class="ico"><use href="#i-goal"/></svg>Release 2.4</div><div class="ln"><div class="today u-left-17pc"></div><div class="ms u-left-72pc"></div></div>
+      <div class="nm"><svg class="ico"><use href="#i-goal"/></svg>Goal: Mobile app 2.0</div><div class="ln"><div class="today u-left-17pc"></div><div class="ms u-left-72pc"></div></div>
       <div class="nm child"><svg data-part="status-icon" data-variant="not-started small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Not started"><use href="#i-st-ns"/></svg><span class="key">WEB-147</span>Release notes</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-60pc--width-11pc" data-part="timeline-bar" data-state="group-not-started priority-critical">WEB-147</div></div>
     </div></div></div></div></div>
     <ul>
       <li><b>Rows:</b> on the left, rows grouped by goal (foldable; also by project, person, release or a field), each with its status icon, ID and title. On the right, the dates on a week scale with weekends shaded (16 per day at the week zoom); zoom with <i>Days · Weeks · Months · Quarters</i>; <i>Today</i> jumps to today.</li>
-      <li><b>Bars</b> use the same status colors and priority edges as the list (R4); their darker part shows how much is done. A goal shows its span as a bracket above its issues, a release as a diamond with its date.</li>
+      <li><b>Bars</b> use the same status colors and priority edges as the list (R4); their darker part shows how much is done. A goal shows its span as a bracket above its issues, and a goal with a <i>Due date</i> also a diamond on that date: the milestone of the timeline (ADR-0043). Releases join the timeline in M10.</li>
       <li><b>Today</b> is an accent line with a label (<i>Today</i>). It is no longer red, because red means <i>Critical</i>.</li>
       <li><b>Dependencies</b> are arrows from the issue that must finish first to the one that waits. They are relations that also affect dates, so the timeline, the issue page and the relation map all show the same relations.</li>
-      <li><b>Deadline drivers</b> (switch): the chain that sets the end date is outlined in the accent color; any delay on it moves the end.</li>
+      <li><b>Deadline drivers</b> (switch; V1, PLAN-05, not in M8): the chain that sets the end date is outlined in the accent color; any delay on it moves the end.</li>
       <li><b>A selected bar</b> gets handles at both ends to make it longer or shorter, a dot at its end to drag a dependency to another bar, and a small card with the issue's dates, person and effort, <i>Set dates…</i>, <i>Add dependency…</i> and <i>Open</i>. Drag a bar to move it. Every drag has this typed alternative, and every drag offers <i>Undo</i> (<i>"WEB-280 moved 1 week later · Undo"</i>).</li>
       <li><b>Not scheduled yet:</b> issues without dates wait in a tray at the side. Drag one onto the chart to give it dates.</li>
-      <li><b>Legend</b> below the toolbar: the status colors, the priority edge, goal, release, <i>Away</i> and <i>Plan warning</i>.</li>
+      <li><b>Legend</b> below the toolbar: the status colors, the priority edge, goal, the diamond of a due date, <i>Away</i>, <i>Holiday</i> and <i>Plan warning</i>.</li>
       <li>Restricted issues are left out completely: no empty bars and no arrows to something you can't see (PLAN-08).</li>
-      <li><b>On the phone:</b> a list by goal; each issue shows a small span on a seven-week scale with today marked, and the same status icon and priority edge.</li>
+      <li><b>On the phone</b> (M8-Q12): a list grouped like the rows on a computer (by goal at the start, folded the same way). Each issue shows its status icon, ID and title, its start and due date, its person on the bar, and a short bar over seven weeks with today marked, in the same status color and with the same priority edge. Nothing is dragged: tapping an issue opens its card as a sheet, with <i>Set dates…</i>, <i>Add dependency…</i> and <i>Open</i>. <i>Warnings (3)</i> at the top opens the list of plan warnings as a sheet, and <i>Not scheduled yet</i> is the last group of the list.</li>
     </ul>
     <h4>People on the timeline <span class="ids">PLAN-10…15, ADR-0030</span></h4>
     <ul>
@@ -458,6 +467,23 @@ sort by priority, highest first</div>
       <li><b>Plan by effort</b> (switch): bars get as many of the person's work days as the estimate times the time factor needs, counting work hours and the share in the project, and grow around away days and public holidays, which show as hatched gaps. Fixed due dates never move by themselves.</li>
       <li><b>The card of a bar</b> shows the effort: <i>"Estimate 8 days · ×1.25 = 10 work days · Lea's own estimate"</i> with <i>Change</i>, and the person's time: <i>"Mon–Fri, 8 hours a day · 100 % in Mobile app"</i>.</li>
       <li><b>Plan warnings</b> (a list at the side with a count, and a warning sign at the bar's end): <i>Away</i>, <i>Not enough days</i>, <i>Delay</i>, <i>Too much at once</i>, each in one sentence with its ways out as buttons: <i>Move it after</i>, <i>Make it longer</i>, <i>Give it to someone else…</i> (the usual person picker, with no suggestion of whom) and <i>Keep and accept</i>. Accepted warnings stay in the list, faded. The list ends with <i>"Away times show only as Away. Bugaboo never suggests whom to give an issue."</i></li>
+      <li><b>The dates of a bar</b> come from <i>Start date</i> and <i>Due date</i>, or from two own date fields the saved search chooses (<i>Show as › Timeline › Dates from</i>). An issue with one date is one day long, unless <i>Plan by effort</i> works out the other (ADR-0043).</li>
+    </ul>
+    <h4>People on the bars <span class="ids">PLAN-10, ADR-0030 (amendment M8)</span></h4>
+    <ul>
+      <li><b>The person on the bar</b> is the first person in <i>Assigned to</i>. An issue with more people shows the first one's picture and first name and <i>+2</i>; the card lists them all.</li>
+      <li><b><i>Group by person</i></b> shows the bar in the row of each assigned person. In the first person's row it is drawn as usual; in the others' rows it is drawn as an outline, and its card and its label for screen readers say <i>"Planned with Lea's work times"</i>.</li>
+      <li><b>Days without work</b> in a person's row and bars: away days hatched and labelled <i>Away</i>, public holidays hatched and labelled with their name (<i>Holiday: Reformation Day</i>), and days that are not the person's usual work days shaded like the weekend.</li>
+      <li><b>Who sees people</b> decides how much of this a reader sees (the kind <i>Work times</i> for the days, <i>Assigned to</i> for the name): with <i>Role only</i> the bar says <i>"Someone (Team member)"</i> and there is no <i>Group by person</i>; with <i>Hidden</i> there is no person, the days stay hatched without a word, and a warning says <i>"the assigned person is away"</i>.</li>
+    </ul>
+    <h4>The list of plan warnings <span class="ids">PLAN-13, ADR-0030, ADR-0043</span></h4>
+    <ul>
+      <li><i>Warnings (3)</i> in the toolbar opens the list at the side (on a phone, a sheet). Each warning has its sign, one sentence that names the issue and the days, and its ways out as buttons. Pointing at a warning marks its bar; choosing a way out shows what will change before it is saved.</li>
+      <li><b><i>Away</i></b> — <i>"Lea is away 26–30 Oct, while WEB-280 is planned for her."</i> <i>Move it after</i> (start after the away days), <i>Make it longer</i> (keep the start; the bar grows around the away days), <i>Give it to someone else…</i>, <i>Keep and accept</i>.</li>
+      <li><b><i>Not enough days</i></b> — <i>"WEB-280 needs 6 work days; there are 3 before its due date."</i> <i>Make it longer</i> (shows the due date it needs; the due date moves only when the person confirms), <i>Give it to someone else…</i>, <i>Keep and accept</i>.</li>
+      <li><b><i>Delay</i></b> — <i>"WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it."</i>, or for a goal <i>"Lea's away week moves Login screen past the due date of Mobile app 2.0."</i> <i>Move it after</i> (a preview names every issue that moves and its new dates), <i>Keep and accept</i>. Nothing moves until the person chooses.</li>
+      <li><b><i>Too much at once</i></b> — <i>"Lea has 9 hours planned on 27 Oct in Mobile app; her share there is 3.6 hours."</i> <i>Move it after</i> (after her other work there), <i>Give it to someone else…</i>, <i>Keep and accept</i>.</li>
+      <li><i>Give it to someone else…</i> opens the usual person picker with nobody suggested. An accepted warning stays at the end of the list, faded, with who accepted it; it comes back when the dates of its issue change.</li>
     </ul>
 
     <h3 id="s4-8"><button type="button" class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
@@ -701,12 +727,32 @@ sort by priority, highest first</div>
 
     <h3 id="s4-13"><button type="button" class="sec" data-sec>§4.13</button>My settings</h3>
     <ul>
-      <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2); <i>Spacing</i> (<i>Comfortable</i> or <i>Compact</i>), which every screen follows, the issue list and saved searches included; <i>Less motion</i>; <i>Larger text</i>.</li>
+      <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2), the built-in themes first, then the organization's themes for everyone and your own personal themes, with <i>Create a theme</i> (§5.6); <i>Spacing</i> (<i>Comfortable</i> or <i>Compact</i>), which every screen follows, the issue list and saved searches included; <i>Less motion</i>; <i>Larger text</i>.</li>
       <li><b>Region:</b> time zone, date format, <i>Time of day</i> (<i>24-hour (14:30)</i> or <i>12-hour (2:30 pm)</i>; its default follows the date format), number format, first day of the week. Every date and time on screens, in e-mails and in notifications follows these choices, the timer and the timesheet included.</li>
       <li><b>Sign-in &amp; security:</b> password, passkeys, two-step sign-in, backup codes, and <i>Where you're signed in</i> with <i>Sign out</i> per device.</li>
       <li><b>Connected apps</b> (under <i>Sign-in and security</i>): the AI apps you allowed, what each may do, when you allowed it, when it was last used, and <i>Take back</i>. <i>Sign out everywhere</i> takes back every app too. <b>Access keys:</b> create one (name; what it may do: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, single permissions under <i>More options</i>; optionally only some projects; when it runs out, 90 days unless you pick another date, at most a year), copy it once, and delete it.</li>
+      <li><b>Work times</b> (PLAN-11, PLAN-15): see below.</li>
       <li><b>Keyboard shortcuts:</b> see and change them.</li>
       <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
+    </ul>
+
+    <h4>Work times <span class="ids">PLAN-11, PLAN-15, ADR-0030</span></h4>
+    <p>The page <i>My settings › Work times</i> says when and how much you work, so the timeline can plan with you. Its introduction: <i>"When and how much you usually work, and the days you are away. The timeline plans your issues with them."</i></p>
+    <ul>
+      <li><b>Usual work days:</b> the seven days of the week, in the order your <i>Region</i> starts the week, each with a tick and its <i>work hours</i> (<i>8 hours</i>). At the start Monday to Friday, 8 hours each. The line above sums it up: <i>"Mon–Fri, 8 hours a day"</i>, or <i>"Mon–Thu, 6 hours a day"</i>. Changes save in place with <i>Undo</i>.</li>
+      <li><b>Holidays:</b> a picker with <i>As the organization (Germany)</i>, <i>None</i>, <i>Germany</i> and the 16 states by name. Under it the next three holidays that count for you (<i>"Next: 25 Dec Christmas Day, 26 Dec Second day of Christmas, 1 Jan New Year's Day"</i>), so the choice is easy to check.</li>
+      <li><b>Away times:</b> the coming ones first, then the past year's, each as its days (<i>"26–30 Oct"</i>, <i>"12 Nov, afternoon"</i>) with <i>Change</i> and <i>Delete</i>. <i>Add away time</i> opens a window: <i>From</i>, <i>To</i>, for the first day <i>Whole day</i> or <i>Afternoon only</i> and for the last day <i>Whole day</i> or <i>Morning only</i>, and a <i>Note</i> (<i>"Only you see the note."</i>). The window says once: <i>"Bugaboo stores no reason. Others see only Away."</i> An away time is deleted one year after its last day.</li>
+      <li><b>Shares in projects:</b> read only, set by the project's leads: <i>"Mobile app 60 % · Website 40 %"</i>. When they add up to more than 100 % the line says so (<i>"Your shares add up to 130 %. Your project leads see this too."</i>).</li>
+      <li><b>For someone else:</b> a person with <i>Enter work times for others</i> opens the same page from the person's page (<i>Organization settings › People › Lea Fischer › Work times</i>), with the line <i>"You are changing Lea's work times. Lea is told."</i> The note of an away time is not shown there and cannot be written for someone else.</li>
+      <li><b>On a phone:</b> one column; each day of the week is a row with its tick and hours, and <i>Add away time</i> opens as a full screen.</li>
+    </ul>
+
+    <h4>Project members and their shares <span class="ids">PLAN-15, ADR-0030</span></h4>
+    <ul>
+      <li><b><i>Project settings › Project members</i></b> lists every person who has a role in the project, directly or through a group, with their <i>Share in the project</i> (100 % at the start). Names follow the kind <i>Project members</i>; people who decide roles there always see them (§5.2).</li>
+      <li>A person with <i>Decide who has which role</i> in the project changes a share in place (a whole number from 0 to 100 %), with <i>Undo</i>. The introduction says: <i>"How much of each person's work hours belong to this project. The timeline plans with it."</i></li>
+      <li>A person whose shares add up to more than 100 % gets a mark, <i>"Over 100 % in all"</i>; pointing at it names only the projects the reader may see (<i>"…and 1 other project"</i>).</li>
+      <li>When a person no longer has a role in the project, their share goes with it.</li>
     </ul>
 
     <h4>Connecting an AI app <span class="ids">AI-22, ADR-0042</span></h4>
@@ -982,7 +1028,7 @@ sort by priority, highest first</div>
           <tr><td><code>auth.sign-up-*</code></td><td>People › People, next to <i>Invite</i> (who can create their own account)</td></tr>
           <tr><td><code>security.session-*</code>, <code>security.two-step-required</code>, <code>auth.access-key-*</code></td><td>People › Sign-in rules (how long people stay signed in, two-step sign-in for everybody, how long access keys live)</td></tr>
           <tr><td><code>appearance.*</code> (the organization's defaults)</td><td>Look › Themes</td></tr>
-          <tr><td><code>working-hours.*</code> (the preset, each rule, the keep period, <i>Totals only</i>) and <code>time.billable</code></td><td>Work › Working hours</td></tr>
+          <tr><td><code>working-hours.*</code> (the preset, each rule, the keep period, <i>Totals only</i>), <code>time.billable</code> and <code>work-times.holidays</code> (the organization's choice of <i>Holidays</i>)</td><td>Work › Working hours</td></tr>
           <tr><td><code>ai.*</code> (AI on or off, the AI provider, <i>Send names of people</i>, AI apps)</td><td>Connections › AI</td></tr>
           <tr><td><code>agents.*</code> (agents on or off, the organization's maximum limits)</td><td>Connections › Agents</td></tr>
         </tbody></table></div>
@@ -1090,6 +1136,7 @@ sort by priority, highest first</div>
         <tr><td><b>Followers</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
         <tr><td><b>Time entries</b></td><td>Names</td><td>Hidden</td><td>Hidden</td></tr>
         <tr><td><b>Project members</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
+        <tr><td><b>Work times</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
       </tbody></table>
       <div class="explain"><b>A Guest sees:</b> "Assigned to <i>someone (Team member)</i>", "<i>Someone</i> is editing the description", comments by "<i>someone (Team member)</i>" (the words of the glossary). Names, avatars and e-mail addresses never reach their browser. The preview under the table says, level by level, in which kinds the chosen role sees names, the role only, or <i>someone</i>, the way the preview of <i>Field permissions</i> lists the fields.</div>
     </div></div></div></div>
@@ -1151,7 +1198,7 @@ sort by priority, highest first</div>
         <div class="row"><i class="sw u-background-fg"></i>Main text<span class="rd ok">✓ Easy</span></div>
         <div class="row"><i class="sw u-background-fg-muted"></i>Quiet text<span class="rd ok">✓ OK</span></div>
         <div class="row"><i class="sw u-background-border"></i>Hint text<span class="rd bad">✗ Hard to read</span></div>
-        <div class="g">▸ Highlight color</div><div class="g">▸ Status &amp; tag colors</div><div class="g">▸ Font &amp; corners</div>
+        <div class="g">▸ Highlight color</div><div class="g">▸ Status and tag colors</div><div class="g">▸ Shadow, corners and fonts</div>
       </div>
       <div class="te-r"><div class="muted u-font-size-11px">Preview</div>
         <div class="box"><div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div><div class="r"><span class="tag c5">login</span><span class="tag c1">crash</span><span class="btn sm primary u-margin-left-auto">Button</span></div></div>
@@ -1160,7 +1207,13 @@ sort by priority, highest first</div>
     <ul>
       <li>Color groups on the left with plain names; a live preview of real Bugaboo screens on the right.</li>
       <li>Each text color shows a <b>readability</b> rating (<i>Easy / OK / Hard to read</i>) based on WCAG contrast. Themes for everyone can't be saved while anything is <i>Hard to read</i>; personal themes can, with a warning.</li>
-      <li><i>Make a copy</i>, <i>Download</i>, <i>Upload</i>. The four built-in themes are copied before editing.</li>
+      <li><i>Save a copy</i>, <i>Download</i>, <i>Upload</i>. The four built-in themes are copied before editing.</li>
+      <li><b>What an own theme changes</b> (M8-Q10): the colors (and the stronger colors for a device that asks for more contrast), the shadow, the corners (<i>Corners of controls</i>, <i>Corners of cards</i>), and for <i>Text</i>, <i>Headings</i> and <i>Long text</i> one of the built-in faces. Nothing else: no spacing and no font files. Each color group shows only the colors it changes from the built-in theme it started from, with <i>Use Dusk's color</i> to go back.</li>
+      <li><b>It starts from a built-in theme</b> (M8-Q11): <i>Create a theme</i> asks which one (<i>Daylight</i>, <i>Paper</i>, <i>Dusk</i>, <i>Midnight</i>), and the theme is light or dark like it. A later change of that built-in theme reaches every own theme made from it, except the values the own theme changed.</li>
+      <li><b>Saving:</b> the preview changes as you type; nothing reaches other people until <i>Save</i>. A theme for everyone with a pair that is <i>Hard to read</i> cannot be saved, and the message names the pairs with <i>Show</i>; a personal theme can, after <i>"2 pairs are hard to read. Save anyway?"</i>. While somebody edits a theme, others see <i>"Ana is editing this theme"</i> (ADR-0019).</li>
+      <li><b>Organization themes in <i>Look › Themes</i></b> (THM-04): under the organization's defaults, the list <i>Themes for everyone</i>, each with its name, the built-in theme it started from, light or dark, its readability (<i>"42 easy, 3 OK"</i>), and <i>Change</i>, <i>Save a copy</i>, <i>Download</i> and <i>Delete</i>; above it <i>Create a theme</i> and <i>Upload</i>. Deleting a theme that people use says first: <i>"12 people use this theme. They will see Dusk instead."</i></li>
+      <li><b>Personal themes in <i>My settings › Appearance</i></b>: the same list under <i>My themes</i>, seen only by you, with the same buttons.</li>
+      <li><b>On a phone:</b> the color groups are a list; the preview opens from a <i>Preview</i> button at the bottom, and the readability line stays at the top.</li>
     </ul>
 
     <h3 id="s5-7"><button type="button" class="sec" data-sec>§5.7</button>Privacy and GDPR <span class="ids">PRIV</span></h3>

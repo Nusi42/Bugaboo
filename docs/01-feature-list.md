@@ -218,10 +218,10 @@ What each means in practice:
 
 ## 10. Planning & Gantt (PLAN)
 
-- **PLAN-01 (M)** — **Timeline (Gantt chart)** for any search or project tree. Dates come from start/due fields (configurable which ones).
+- **PLAN-01 (M)** — **Timeline (Gantt chart)** for any search or project tree. Dates come from the built-in fields *Start date* and *Due date*, or from two own date fields a timeline view chooses (ADR-0043).
 - **PLAN-02 (M)** — Dependencies: **must finish first**, plus *start together*, *finish together* and *finish when it starts* in V1. Dependencies are relation kinds that also affect dates, so there is one relation model for issues, the timeline and the map (SSOT).
 - **PLAN-03 (M)** — Drag to move or resize bars, with undo and a permission check per issue.
-- **PLAN-04 (M)** — Group rows by project, goal, assigned person, release or any choice field. Collapsible hierarchy, zoom from day to quarter, a today line, and milestones.
+- **PLAN-04 (M)** — Group rows by project, goal, assigned person, release or any choice field. Collapsible hierarchy, zoom from day to quarter, a today line, and milestones (the due dates of goals, drawn as diamonds). Rows by release come with releases (ISS-08, M10).
 - **PLAN-05 (V1)** — **Deadline drivers** (critical path): highlight the chain of issues that sets the end date, and warn about impossible dependencies.
 - **PLAN-06 (V1)** — **Board**: columns from status or any choice field, optional **rows** split by a field, **card limits** per column, and dragging a card changes its status through the workflow.
 - **PLAN-07 (L)** — Baselines (planned vs. actual) and export to PNG/PDF. (The workload rows are the rows per person of PLAN-10.)
@@ -267,9 +267,9 @@ What each means in practice:
   - **Dusk** (dark, dim grey) and **Midnight** (dark, near-black/OLED).
 - **THM-02 (M)** — The **system default is used**: Bugaboo follows the OS light/dark preference automatically. Each user picks a preferred light theme and dark theme, or forces one.
 - **THM-03 (M)** — A **theme editor** in the UI:
-  - every design token (colors, typography, radius, spacing, shadows, density, focus ring) with live preview;
-  - contrast checking against WCAG AA, which warns and blocks failing text/background pairs.
-- **THM-04 (M)** — Custom themes at instance level (admin) or personal level. Duplicate, import or export them as JSON.
+  - the colors, the shadow, the corner radius and a choice among the built-in system font stacks, with live preview; no spacing, density or font files (ADR-0026, update M8);
+  - contrast checking against WCAG AA, which warns and blocks failing text/background pairs in themes for everyone.
+- **THM-04 (M)** — Custom themes (*own themes*: for everyone, made by an administrator, or personal). Each starts from a built-in theme and stores only what it changes. Duplicate, import or export them as JSON.
 - **THM-05 (V1)** — A project accent color, and branding (logo, product name, favicon) set by admins.
 - **THM-06 (M)** — Honors `prefers-contrast` and `prefers-reduced-motion`.
 
@@ -341,7 +341,7 @@ What each means in practice:
   - desktop shows multiple panes;
   - tablet shows collapsible panes;
   - phone shows a single pane with bottom navigation.
-- **UX-02 (M)** — Touch-friendly targets and gestures (swipe actions on list items). On phones the timeline is simplified to a list that you can scroll.
+- **UX-02 (M)** — Touch-friendly targets and gestures (swipe actions on list items). On phones the timeline is a list grouped like its rows, each issue with its dates, its person and a short bar over seven weeks; dates are set with *Set dates…*.
 - **UX-03 (V1)** — Installable **PWA**, with read-only offline cache of recently viewed issues.
 - **UX-04 (M)** — Accessibility to **WCAG 2.2 AA**: full keyboard operation, screen-reader labels, visible focus, and no information carried by color alone.
 - **UX-05 (M)** — Keyboard-first power use: shortcuts throughout, with a `?` cheat sheet.

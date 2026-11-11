@@ -475,7 +475,7 @@ A session can end at any time, and a new one starts in the master and continues 
 - Theme editor with readability ratings; personal and organization themes; import and export
 - Touch gestures and phone polish across all screens
 
-**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.
+**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the due date of the goal (no releases until M10, M8-Q3); set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create an own theme that fails readability and fix it.
 
 **Tests and checks added:** STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.
 
