@@ -8,8 +8,13 @@ import { askLive, LIVE_PATH, waitUntilReady, type Ask } from "../app/e2e/support
 import { closePool, exchange } from "../app/e2e/support/session-transport.ts";
 
 const running: Server[] = [];
+/** The origins whose pools of connections a test used. */
+const pooled: string[] = [];
 
 afterEach(() => {
+  for (const origin of pooled.splice(0)) {
+    closePool(origin);
+  }
   for (const server of running.splice(0)) {
     server.close();
     server.closeAllConnections();
@@ -82,13 +87,13 @@ describe("test_01 the wait for a server does not storm it with connections (M4 W
     // The sessions of the tests talk through the same pool, so the question leaves nothing behind
     // that is closed (a closed connection stays in TIME_WAIT for two minutes).
     const origin = `http://localhost:${String(late.port)}`;
+    pooled.push(origin);
     const answer = await exchange(
       { url: `${origin}${LIVE_PATH}`, method: "GET", headers: {}, body: "" },
       origin,
     );
     expect(answer.status).toBe(200);
     expect(late.connections()).toBe(1);
-    closePool(origin);
   });
 
   it("makes longer pauses between questions up to a limit", async () => {
