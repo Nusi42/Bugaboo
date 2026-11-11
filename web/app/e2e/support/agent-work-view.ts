@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import { part } from "../../../packages/ui/src/tokens.ts";
+import { partIn } from "./parts.ts";
 import { answerTo } from "./sequence.ts";
 
 /**
@@ -8,9 +10,11 @@ import { answerTo } from "./sequence.ts";
  * too (M7-F245: the question in the middle of the screen pushed the state out under the bar).
  */
 export async function showsTheAgentWork(page: Page, text: string): Promise<void> {
-  await page.locator('[data-part="agent-work"]').evaluate((node: HTMLElement) => {
-    node.scrollIntoView({ block: "start" });
-  });
+  await partIn(page, part.agentWork)
+    .first()
+    .evaluate((node: HTMLElement) => {
+      node.scrollIntoView({ block: "start" });
+    });
   await expect(page.getByText(text).first()).toBeInViewport();
 }
 
