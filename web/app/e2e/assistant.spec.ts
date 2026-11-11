@@ -151,10 +151,14 @@ test("ai_10 the keyboard alone asks, applies and discards", async ({ page, serve
   model.will(tool, { text: "Proposed." }, tool, { text: "Proposed again." });
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
-  await assistantButton(page).focus();
-  await page.keyboard.press("Enter");
   const panel = assistantPanel(page);
-  await expect(panel).toBeVisible();
+  // The page may draw the top bar again while it loads and take the focus with it (M7-F244):
+  // focus and press until the panel shows; pressing again only opens it, never closes it.
+  await expect(async () => {
+    await assistantButton(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible({ timeout: 2_000 });
+  }).toPass();
   const box = panel.getByRole("textbox", { name: t("assistant.question") });
   await box.focus();
   await page.keyboard.type("Raise the priority of WEB-1.");
