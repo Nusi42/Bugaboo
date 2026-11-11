@@ -29,9 +29,9 @@ Sample part 7 in `crates/bb-sample/src/` (the plan of the *Mobile app* goal: dat
 ## Acceptance tests (write first)
 
 - `plan_12_the_sample_plans_mobile_app_2_0_with_lea` (the sample's check, TEST-SAMPLE-DATA).
-- The TEST-CONCURRENT cases above, named *"Ten people plan at once: …"* in `web/app/e2e/concurrent/planning.spec.ts`, and their `bb-load-check` counterparts.
+- The TEST-CONCURRENT cases above in `web/app/e2e/concurrent/planning.spec.ts`, named like M7's (`ai_30_ten_people_…`): `plan_03_ten_people_move_bars_at_the_same_moments_and_no_date_is_lost`, `plan_13_a_warning_accepted_while_its_bar_moves_comes_back`, `plan_11_an_away_time_entered_while_the_plan_is_read_shows_on_the_next_answer`, `plan_13_move_it_after_while_someone_changes_an_issue_it_moves_is_refused_whole`, and their `bb-load-check` counterparts.
 - The PERF-BENCH scenario `timeline-biggest-project` (with and without *Plan by effort*).
-- Each step of the exit demo as a test of `m8-exit-demo.spec.ts`.
+- Each step of the exit demo as a test of `m8-exit-demo.spec.ts`, titled like M7's by its number and a plain sentence: *"1. Mobile app 2.0 is planned by dragging"*, *"2. Lea's away week grows her bars and warns about the goal's due date"*, *"3. A share of 50 % doubles Lea's bars"*, *"4. Lea says an issue takes her 10 days and it shows as her own estimate"*, *"5. Given to someone else, the time factor goes back to ×1"*, *"6. An own theme that is hard to read is fixed and saved for everyone"*.
 
 ## Checks
 

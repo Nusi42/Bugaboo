@@ -9,17 +9,19 @@ Bugaboo knows when and how much each person works: their usual work days and wor
 
 ## Owns
 
-The pure rules in `crates/bb-core/src/work_times/` (the records, the half days, the sum of shares) and the holidays in `crates/bb-core/src/holidays/` (Easter, the fixed days, the 16 states, the test vectors of 2026 to 2030), the use cases in `crates/bb-app/src/work_times/**`, the port and its store in `crates/bb-store/src/work_times*`, migration 50 (`crates/bb-store/src/migrations/m0050_work_times.rs`), the routes in `crates/bb-api/src/api/work_times*.rs`, the permission *Enter work times for others* in `crates/bb-policy/src/catalogue.rs`, the kind *Work times* in `crates/bb-core/src/people_kinds.rs`, the setting `work-times.holidays` in `crates/bb-core/src/settings/`, the two notification kinds in `crates/bb-app/src/notifications/`, the two daily jobs in `crates/bb-app/src/jobs/`.
+The pure rules in `crates/bb-core/src/work_times/` (the records, the half days, the sum of shares) and the holidays in `crates/bb-core/src/holidays/` (Easter, the fixed days, the 16 states, the test vectors of 2026 to 2030), the use cases in `crates/bb-app/src/work_times/**`, the port and its store in `crates/bb-store/src/work_times*`, migration 50 (`crates/bb-store/src/migrations/m0050_work_times.rs`), the routes in `crates/bb-api/src/api/work_times*.rs`, the permission *Enter work times for others* in `crates/bb-policy/src/catalogue.rs`, the kind *Work times* in `crates/bb-core/src/people_kinds.rs`, the setting `work-times.holidays` in `crates/bb-core/src/settings/work_times.rs` (new) with its one entry in `catalog.rs`, the two notification kinds in `crates/bb-app/src/notifications/`, the daily job in `crates/bb-app/src/jobs/`.
+
+**Shared files, one entry each; rebase conflicts expected:** the three packages of wave 1 each add one entry to `crates/bb-core/src/settings/catalog.rs`, `crates/bb-store/src/migrations/mod.rs`, the API router (`crates/bb-api/src/router.rs`) and `messages/en.json`, and nothing else in those files. The one who lands later rebases and keeps both entries.
 
 ## What is decided
 
-- **Records** (ADR-0030, decision 2): usual work days per person (seven days, each ticked or not, with its work hours in minutes; start Monday to Friday, 8 hours); a share per person and project (0 to 100 %, start 100 %; a person with no row has 100 %); away times (a first and a last day, a half day at either end: *Afternoon only* for the first, *Morning only* for the last; a note only its person reads; who entered it). **No reason field**: the migration has none, and the review looks for one.
+- **Records** (ADR-0030, decision 2): usual work days per person (seven days, each ticked or not, with its work hours in minutes; start Monday to Friday, 8 hours); a share per person and project (0 to 100 %, start 100 %; a person with no row has 100 %; while the person has no role in the project the share counts as nothing and is kept, and it counts again when a role comes back); away times (a first and a last day, a half day at either end: *Afternoon only* for the first, *Morning only* for the last; a note only its person reads; who entered it). **No reason field**: the migration has none, and the review looks for one.
 - **Public holidays** (amendment M8): computed in `bb-core`, pure, for *Germany* (the days every state has) and each of the 16 states by its ISO 3166-2 code (`de-by`, `de-be`, …); only holidays of a whole state. Tested against the official lists of 2026 to 2030, written into the test data from the published lists (data for the test, not a second source of the rules). No download and no outside service.
 - **The setting *Holidays*** (`work-times.holidays`; *None*, *Germany*, or a state): at the level of the organization (start *Germany*) and of each person (start *As the organization*), through the settings registry (ADR-0018, ARCH-SETTINGS). Not part of *Region*.
 - **Who may do what:** a person reads and enters their own work times. *Enter work times for others* (organization, *Manage*, *Administrator* at the start; no key and no agent holds it, ADR-0025 amendment M8) lets a person enter and change usual work days, work hours and away times of others, but never read or write the note of an away time. A share is set by a person with *Decide who has which role* in that project. Others read work times only as *Who sees people* allows for the kind *Work times* (start: *Names* for Team member and above, *Role only* for Contributor and Viewer, *Hidden* for Guest), and an away time only as *Away* with its days.
 - **Shares over 100 %:** the module answers the sum of a person's shares for the person, and for a project lead the fact that it is over 100 % with only the projects the lead may see named.
 - **Notifications** (ADR-0033, amendment M8): *Your work times were changed* when somebody else enters or changes an away time, usual work days or work hours; to the person only, never the note.
-- **Deletion** (amendment M8, ADR-0017 amendment M8): `work-times.delete-old-away-times` daily, one year after the last day (`AWAY_TIME_KEPT_FOR`); `work-times.delete-left-shares` daily, for people with no role in the project any more; one function that deletes all of a person's work times when they leave, which *Remove a person* calls in M9, built and tested now.
+- **Deletion** (amendment M8, ADR-0017 amendment M8): `work-times.delete-old-away-times` daily, one year after the last day (`AWAY_TIME_KEPT_FOR`); no job deletes shares (business data is deleted only explicitly); one function that deletes all of a person's work times when they leave, which *Remove a person* calls in M9, built and tested now.
 - **The port for the plan:** `WorkTimesStore` in `crates/bb-app/src/ports.rs`, which WP-06 reads: for a set of people and a span of days, the minutes each person can work on each day in a project (usual work days × work hours × share, minus away times and holidays), and the away days and holidays by name, already narrowed to what the reader may see. Its shape is written first in this package, so WP-06 can test against a fake.
 - **Personal data** as architecture §12, *Personal data in M8*: the marks on every new entity.
 
@@ -30,8 +32,9 @@ The pure rules in `crates/bb-core/src/work_times/` (the records, the half days, 
 3. The records, migration 50 and the marks; the store on both databases.
 4. The use cases and routes: read and change one's own work times, others' with the permission, shares on a project, the sum of shares; the permission and the kind *Work times* in the catalogues (the role page and *Who sees people* show them with their sentences).
 5. The two notification kinds and their starting values.
-6. The two daily jobs and the function for a person who leaves.
+6. The daily job and the function for a person who leaves.
 7. The port `WorkTimesStore` and its real implementation.
+8. The count of what no key holds, written by hand: architecture §7 (*Access keys*, "fourteen in all") becomes fifteen with *Enter work times for others*, with the permission's name in its list.
 
 ## Acceptance tests (write first)
 
@@ -44,7 +47,7 @@ The pure rules in `crates/bb-core/src/work_times/` (the records, the half days, 
 - `plan_11_an_away_time_is_deleted_one_year_after_its_last_day` (the clock of the app moved).
 - `plan_11_a_person_who_leaves_loses_all_work_times`.
 - `plan_15_a_share_is_set_only_with_decide_who_has_which_role_in_the_project`.
-- `plan_15_a_share_goes_when_the_person_has_no_role_in_the_project_any_more`.
+- `plan_15_a_share_counts_as_nothing_without_a_role_and_again_when_the_role_returns`.
 - `plan_15_a_project_lead_sees_over_100_percent_without_other_projects_names`.
 - `plan_15_the_minutes_of_a_day_count_work_hours_share_away_times_and_holidays` (the port, as a table).
 - SEC-MATRIX: rows for work times, away times, shares and *Enter work times for others*, for every starting role and each choice of *Work times*, both databases.
@@ -55,7 +58,7 @@ DATA-MARKS, DATA-MIGRATIONS, DATA-LOGS, ARCH-PERMS, ARCH-SETTINGS, ARCH-PERSON-R
 
 ## Review
 
-Code review with the SSOT/DRY/ODR gate: one module of work times that the plan reads through its port (no second sum of minutes in the plan), the holidays once in `bb-core`, the permission and the kind once in their catalogues, no reason anywhere. A **privacy review**: what others see of an away time, the note, the notifications, the deletion jobs, the marks and the legal basis against architecture §12; nothing of work times reaches a search, an export, a log or an AI tool.
+Code review with the SSOT/DRY/ODR gate: one module of work times that the plan reads through its port (no second sum of minutes in the plan), the holidays once in `bb-core`, the permission and the kind once in their catalogues, no reason anywhere. A **privacy review**: what others see of an away time, the note, the notifications, the deletion job and the function for a person who leaves, the marks and the legal basis against architecture §12; nothing of work times reaches a search, an export, a log or an AI tool.
 
 ## Depends on
 

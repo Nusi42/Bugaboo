@@ -9,7 +9,9 @@ An issue has a *Start date* and a *Due date* that people set, search and see in 
 
 ## Owns
 
-The two fields in the field catalogue (`crates/bb-core/src/fields.rs`, `crates/bb-core/src/issue.rs`) and in the search language (`crates/bb-searchlang/src/fields.rs`, the compiler in `crates/bb-store`), the issue's change and read in `crates/bb-app/src/issues/**` (dates only), the date effect of a kind of relation (`crates/bb-core/src/relation.rs`, `crates/bb-app/src/relations/**`, `crates/bb-store/src/` for relations), migration 49 (`crates/bb-store/src/migrations/m0049_dates_and_date_effect.rs`), the API members and routes (`crates/bb-api/src/api/issues.rs`, `relations.rs`, `fields*`), the history sentence of a date change, the field on the issue page and the new-issue form only as far as M3-F101 needs (`web/app/src/features/issues/` date row), the date effect on *Kinds of relation* (`web/app/src/features/relation-kinds/**`).
+The two fields in the field catalogue (`crates/bb-core/src/fields.rs`, `crates/bb-core/src/issue.rs`) and in the search language (`crates/bb-searchlang/src/fields.rs`, the compiler in `crates/bb-store`), the issue's change and read in `crates/bb-app/src/issues/**` (dates only), the date effect of a kind of relation (`crates/bb-core/src/relation.rs`, `crates/bb-app/src/relations/**`, `crates/bb-store/src/relations*`), migration 49 (`crates/bb-store/src/migrations/m0049_dates_and_date_effect.rs`), the API members and routes (`crates/bb-api/src/api/issues.rs`, `relations.rs`, `fields*`), the history sentence of a date change, the field on the issue page and the new-issue form only as far as M3-F101 needs (`web/app/src/features/issues/` date row), the date effect on *Kinds of relation* (`web/app/src/features/relation-kinds/**`).
+
+**Shared files, one entry each; rebase conflicts expected:** the three packages of wave 1 each add one entry to `crates/bb-core/src/settings/catalog.rs`, `crates/bb-store/src/migrations/mod.rs`, the API router (`crates/bb-api/src/router.rs`) and `messages/en.json`, and nothing else in those files. The one who lands later rebases and keeps both entries.
 
 ## What is decided
 
