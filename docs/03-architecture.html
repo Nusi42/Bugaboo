@@ -1666,9 +1666,9 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h2 id="s12"><button class="sec" data-sec>§12</button>Security: threat model and personal-data flows</h2>
 <p>Part of the security and data-flow documentation (COMP-07) for the CRA technical file and for customers' own risk assessments. It covers what is built so far and grows with every milestone: each milestone review checks that new entry points appear here.</p>
 <p>The method is STRIDE per trust boundary (boundaries from <a href="#s2">Context</a>). Every threat names the mitigation and what proves it: a check from the catalogue (<code>tools/checks/catalog.toml</code>), a test, or <em>review</em> when a person decides.</p>
-<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M6 built, M7 planned)</h3>
+<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M7 built, M8 planned)</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>In scope now</th><th>Comes later (own section then)</th></tr></thead><tbody>
-<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5); time on issues and working hours (M6)</td><td>The assistant, AI apps through MCP and agents (M7; threats below, planned), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
+<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3); attachments, mail and workflows (M4); search and lists (M5); time on issues and working hours (M6); the assistant, AI apps through MCP and agents (M7)</td><td>The timeline, work times and own themes (M8; threats below, planned), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
 </tbody></table>
 </div>
 <h3 id="s12-2"><button class="sec" data-sec>§12.2</button>Attack surface</h3>
@@ -1880,6 +1880,21 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <tr><td>Denial of service, tampering</td><td>An agent runs away with changes, or an app floods the server</td><td>The limits of an agent and its keys (ADR-0029, decision 9 and amendment M7) pause the agent with a sentence; rate limits per grant and per person; <em>Stop</em>, <em>Stop all my agents</em> and agents off; <em>Undo the run</em> in one step</td><td>TEST-CONCURRENT ("Two agents take the same issue at the same moment"); the tests of WP-07 and WP-09</td></tr>
 <tr><td>Repudiation</td><td>Nobody can tell what an AI wrote, or which app or agent changed something</td><td>Every event names the person, the channel and the app or the agent; texts carry <em>Written with the assistant</em>, <em>Written by an AI app</em> or <em>Written by an agent</em> in the history, the API and every export (COMP-09); grants, agents and keys are in the security log</td><td>ARCH-EVENTS; the tests of WP-07</td></tr>
 <tr><td>Information disclosure</td><td>The log of tool calls or a server log keeps what the AI read or wrote</td><td>The log of tool calls holds who, which tool, sizes, time and outcome, never content; tokens and keys never in a log; the conversation of the assistant is not stored</td><td>DATA-LOGS</td></tr>
+</tbody></table>
+</div>
+<h4>Timeline, work times and own themes (M8)</h4>
+<p>M8 plans with people and lets an organization or a person make a theme of their own (<a href="#adr-0030">ADR-0030</a> and its amendment M8, <a href="#adr-0043">ADR-0043</a>, <a href="#adr-0026">ADR-0026</a>, update M8). It adds no listener: the style sheet of an own theme (<code>/themes/{id}.css</code>) and the new routes are on the same port, and the content security policy stays <code>style-src 'self'</code>. Work times are employee data (PRIV-09) and an away time can hint at health (GDPR Art. 9), so the main threats are that somebody learns another person's work times, and that a plan turns into a judgement of how fast a person works (COMP-10). An own theme reaches every page of the people who use it, so the other main threat is that its values carry code or make the page unreadable. The packages add the test names (<span title="../milestones/M8/README.md in the repository">M8 plan</span>).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Information disclosure</td><td>A person learns another person's away times, usual work days, work hours, shares or choice of <em>Holidays</em> through the timeline, <em>Group by person</em>, a warning, the card of a bar, a notification, a search, an export or an AI tool (PRIV-09, PRIV-12)</td><td>Work times are the kind of people information <em>Work times</em> (<em>Who sees people</em>): others see an away time only as <em>Away</em>, never its note, and a warning about a person the reader may not see says <em>"the assigned person is away"</em>. No search field and no export of M8 reads work times, the tool registry has no tool that reads them, and a notification about them goes to their person only</td><td>SEC-MATRIX (the routes of work times and the timeline, for every starting role and each choice of <em>Work times</em>), ARCH-PERSON-REF, ARCH-AI-TOOLS; the tests of WP-04, WP-06 and WP-10</td></tr>
+<tr><td>Information disclosure</td><td>The timeline shows that a restricted issue or a hidden field exists: a bar, an arrow, a warning, the count of <em>Not scheduled yet</em>, or a gap in a person's row (PLAN-08)</td><td>The plan reads the issues through the compiled search as the reader; a hidden issue has no bar, no arrow, no warning and no count, a dependency on it is neither drawn nor checked, and a date field the reader cannot read counts as empty (ADR-0043, decision 2)</td><td>SEC-MATRIX (the timeline route under visibility and field levels); the tests of WP-06</td></tr>
+<tr><td>Information disclosure</td><td>The time factor becomes a score of a person: listed, sorted, grouped or totalled across issues, kept per person, or set or proposed by AI (PRIV-09, COMP-10)</td><td>It belongs to the issue and goes back to ×1 when the first assigned person changes; the search language has no word for it, no list offers it as a column and no total uses it; no tool of the registry changes it (ADR-0030, amendment M8)</td><td>ARCH-AI-TOOLS, SEC-MATRIX; the tests of WP-06</td></tr>
+<tr><td>Tampering</td><td>A person enters or changes another person's work times without <em>Enter work times for others</em>, or sets a share in a project without <em>Decide who has which role</em> there</td><td>The use case judges the permission before every change of another person's work times or a share; the routes declare it; no key and no agent holds <em>Enter work times for others</em> (ADR-0025, amendment M8)</td><td>ARCH-PERMS, SEC-MATRIX; the tests of WP-04</td></tr>
+<tr><td>Repudiation</td><td>Somebody else changes a person's work times or the time factor of their issue, and the person never learns of it</td><td>Every change is an event that names who made it; the person gets <em>Your work times were changed</em> or <em>Your time factor was changed</em> (ADR-0033, amendment M8); the issue shows who set the time factor</td><td>ARCH-EVENTS; the tests of WP-04 and WP-06</td></tr>
+<tr><td>Tampering</td><td>A drag moves an issue the person may not change, or one move changes other issues without anybody choosing it</td><td>Each moved issue is judged as the person, with the field levels of the date fields (PLAN-03); nothing moves by itself, and <em>Move it after</em> changes the issues after it only after a preview that names them (ADR-0043, decision 5)</td><td>SEC-MATRIX, ARCH-VERSIONED; the tests of WP-03 and WP-09</td></tr>
+<tr><td>Tampering</td><td>A value of an own theme, or of an uploaded theme, carries CSS or script into every page that uses it</td><td>An own theme stores token values only, each checked by the kind of its token and written back by the one writer of the server; a shadow is stored as its parts, never as text; the sheet holds custom properties under the theme's frame attribute and nothing else, and the policy stays <code>style-src 'self'</code> (ADR-0026, update M8)</td><td>SEC-HEADERS, THEME-ONLY; the tests of WP-05</td></tr>
+<tr><td>Elevation of privilege, information disclosure</td><td>A person makes or changes a theme for everyone without the right, or reads somebody else's personal theme</td><td>Themes for everyone need <em>Change organization settings</em>; a personal theme is served to its maker only, and any other request gets the answer of a theme that does not exist</td><td>SEC-MATRIX (the routes of themes and their style sheets); the tests of WP-05</td></tr>
+<tr><td>Denial of service</td><td>A theme for everyone makes the page unreadable, or a broken theme leaves people with no usable look</td><td>A theme for everyone with a pair that is <em>Hard to read</em> is refused; a choice that names an own theme that is gone counts as the built-in theme it extended (ADR-0026, update M8)</td><td>STY-CONTRAST; the tests of WP-05 and WP-08</td></tr>
+<tr><td>Denial of service</td><td>A large timeline, a flood of moves or a huge upload of a theme slows the server for everyone</td><td>The timeline answers a page of rows within the budget of timeline data (PERF-01); the number of own themes and the size of an upload are named limits, and changes count against the rate limits of a person</td><td>PERF-BENCH (the timeline of the biggest project on 1 M issues), PERF-N1; the tests of WP-05 and WP-12</td></tr>
 </tbody></table>
 </div>
 <h4>Boundary 4 (operator ↔ data) and the host</h4>
@@ -2103,6 +2118,32 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 </tbody></table>
 </div>
 <p>The marks of AI-written text are no personal data of their own, and the time and cost an agent reports are not a person's working time (M7-Q7).</p>
+<h3 id="s12-9"><button class="sec" data-sec>§12.9</button>Personal data in M8</h3>
+<p>M8 stores when and how much people work, so that the timeline can plan with them, and a time factor on issues (<a href="#adr-0030">ADR-0030</a> and its amendment M8). It is employee data (PRIV-09), and an away time can hint at health (GDPR Art. 9), so Bugaboo stores no reason for it. The marks below are decided here; WP-04 and WP-06 write them on their entities, and <code>cargo xtask gen privacy</code> lists them on the generated page <code>docs/privacy/personal-data.md</code>. Enforced by: DATA-MARKS.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Entity (package)</th><th>Field</th><th>Personal data</th><th>Category</th><th>Legal basis</th></tr></thead><tbody>
+<tr><td>Away time (WP-04)</td><td>person, who entered it</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Away time (WP-04)</td><td>first and last day, half days</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Away time (WP-04)</td><td>the note (only its person sees it)</td><td>yes</td><td><code>content</code></td><td><code>contract</code></td></tr>
+<tr><td>Usual work days and work hours (WP-04)</td><td>person; the days of the week and the hours of each</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Share in a project (WP-04)</td><td>person, project, share</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Choice of <em>Holidays</em> (WP-04)</td><td>person, the choice</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Public holidays (WP-04)</td><td>the days of Germany and its states</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Time factor of an issue (WP-06)</td><td>the factor, who set it, for which person on the bar</td><td>yes</td><td><code>employee_time</code></td><td><code>contract</code></td></tr>
+<tr><td>Accepted plan warning (WP-06)</td><td>who accepted it; the issue, the kind and the dates it was accepted for</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Start date and due date of an issue (WP-03)</td><td>the dates</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Own theme (WP-05)</td><td>the person of a personal theme, who made or changed a theme for everyone</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Own theme (WP-05)</td><td>name, values, the built-in theme it extends</td><td>no</td><td>–</td><td>–</td></tr>
+</tbody></table>
+</div>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th><th>Where it goes</th></tr></thead><tbody>
+<tr><td>Away times, with no reason</td><td>Planning work around the days a person does not work</td><td>(b) contract (the work the organization plans with its people)</td><td>One year after their last day, then a daily job deletes them; all of them when the person leaves (ADR-0030, amendment M8)</td><td>The person, who also sees their note; who enters work times for others; others only as <em>Away</em>, as <em>Who sees people</em> (the kind <em>Work times</em>) allows</td></tr>
+<tr><td>Usual work days, work hours and the choice of <em>Holidays</em></td><td>How much a person can work on a day</td><td>(b) contract (the hours come from the work contract)</td><td>Until the person changes them; deleted when the person leaves</td><td>The person; who enters work times for others; others as <em>Who sees people</em> (<em>Work times</em>) allows, and the plan uses them for bars the reader sees</td></tr>
+<tr><td>Shares in projects</td><td>How much of a person's work hours belong to a project</td><td>(b) contract</td><td>Until changed; deleted when the person no longer has a role in the project, or leaves</td><td>The person; who may <em>Decide who has which role</em> in the project; others as <em>Who sees people</em> (<em>Work times</em>) allows. A total above 100 % is shown to the person and the leads of those projects, without other projects' names unless they may see them</td></tr>
+<tr><td>The time factor of an issue</td><td>The person's own estimate of how long the issue takes them</td><td>(b) contract</td><td>With the issue; back to ×1 when the first assigned person changes</td><td>As the field allows; never in a search, a sort, a total or a report, and never set by AI</td></tr>
+</tbody></table>
+</div>
+<p>Nothing about work times leaves the server, except the e-mail of a notification to the person themselves when they switch it on (ADR-0033, amendment M8). No outside service and no AI reads work times (COMP-10), and the public holidays are computed in Bugaboo, so no service learns which state a person works in.</p>
+<p>In Germany a works council has a say in tools that can watch how employees work (Works Constitution Act, §87 (1) no. 6). The limits of ADR-0030 (no reason stored, no factor per person, no reports) are what an organization shows its works council; Bugaboo does not decide for it.</p>
 
 <h2 id="s13"><button class="sec" data-sec>§13</button>Decision records</h2>
 <p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.</p>
@@ -2385,7 +2426,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 
 <!-- 0010-design-tokens.md -->
 <h3 id="adr-0010"><button class="sec" data-sec>§13.10</button>ADR-0010: Styling through design tokens only</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-04 · the styling decisions (the token file, the generator, CSS Modules) are replaced by <a href="#adr-0026">ADR-0026</a>; the rest stands</p>
+<p>Status: <strong>Accepted</strong> · 2026-10-04 · the styling decisions (the token file, the generator, CSS Modules) are replaced by <a href="#adr-0026">ADR-0026</a>; the rest stands · amended in M8: themes of your own</p>
 <h4>Context</h4>
 <p>Four built-in themes, a theme editor, custom field looks and strict CSP, all without letting customization inject code.</p>
 <h4>Decision</h4>
@@ -2397,6 +2438,8 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li>The choices of a person that are not a theme (<em>Compact</em> spacing, <em>Larger text</em>, <em>Less motion</em>) are <strong>variants</strong> in the token file: each switches token values through an attribute on the page (<code>data-spacing</code>, <code>data-text</code>, <code>data-motion</code>), and <em>Less motion</em> also follows the device. Sizes of spacing and text are written as the usual size times a factor token, so one choice scales everything. Where the layout changes (<code>bp-tablet</code>, <code>bp-computer</code>) is a token too, read by the app through the generated TypeScript.</li>
 <li>Every theme has stronger colors for <code>prefers-contrast: more</code> (<code>contrastMore</code>). STY-CONTRAST checks them at 7:1 for text and 3:1 for lines.</li>
 </ul>
+<h4>Amendment (M8, themes of your own)</h4>
+<p>Own themes (the custom themes of the decision above) still store token values and never CSS. How they are checked, served and limited is decided in <a href="#adr-0026">ADR-0026</a>, update M8: the allowed values and the contrast checks that this record gave to a generated Rust validation now live in <code>bb-core</code> (the token list written by <code>cargo xtask gen theme</code>, the contrast maths moved from <code>xtask</code>), shared by STY-CONTRAST, the server and the theme editor.</p>
 <h4>Consequences</h4>
 <ul>
 <li>The design pages in <code>docs/design/</code> use the generated CSS (<code>theme.css</code>, the tokens without the component rules).</li>
@@ -2692,6 +2735,17 @@ Enforced by: ARCH-SETTINGS, and the tests <code>ai_02_ai_is_off_at_the_start_and
 </ul>
 </li>
 <li><strong>Who a job of agents acts as.</strong> A job that ends or records something for an agent judges nothing new: it finishes what the person decided when they handed over or made the rule, and names the agent and its person on the events. A match is written down only for an issue the agent may read at that moment (ADR-0029, decision 2).</li>
+</ul>
+<h4>Amendment (M8, work times)</h4>
+<ul>
+<li><strong>Kinds of M8</strong> (<a href="#adr-0030">ADR-0030</a>, amendment M8), each idempotent:
+<ul>
+<li><code>work-times.delete-old-away-times</code> is daily (<code>FromTheStart</code>): it deletes every away time whose last day is more than one year ago (<code>AWAY_TIME_KEPT_FOR</code>), with its note.</li>
+<li><code>work-times.delete-left-shares</code> is daily (<code>FromTheStart</code>): it deletes the share in a project of every person who no longer has a role there, directly or through a group.</li>
+<li>A person who leaves the organization loses all their work times in the step that ends their membership, not in a job: one function of the module of work times, which <em>Remove a person</em> calls (M9). In M8 it is built and tested on its own.</li>
+</ul>
+</li>
+<li><strong>Nothing else of M8 is a job.</strong> The plan is worked out when it is asked for (ADR-0030, amendment M8), and the public holidays are computed, never fetched.</li>
 </ul>
 
 <!-- 0018-settings-registry.md -->
@@ -3165,6 +3219,27 @@ Enforced by: ARCH-SETTINGS, and the tests <code>ai_02_ai_is_off_at_the_start_and
 <p><strong>The security log</strong> (decision 9) also records every agent made, handed to another person, paused, stopped or deleted, and every agent key made, renewed or taken back.</p>
 </li>
 </ul>
+<h4>Amendment (M8, work times and themes)</h4>
+<p>The maintainer took every recommendation of the M8 plan (2026-11-11); <a href="#adr-0030">ADR-0030</a> says why work times are guarded. What changes here:</p>
+<ul>
+<li>
+<p><strong>The topic <em>Time</em></strong> gains one permission, with its sentence, kind and starting values in the same change as its routes:</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Permission</th><th>Counts</th><th>Kind</th><th>Starting roles that have it</th></tr></thead><tbody>
+<tr><td><em>Enter work times for others</em>: enter and change other people's usual work days, work hours and away times</td><td>organization</td><td><em>Manage</em></td><td><em>Administrator</em></td></tr>
+</tbody></table>
+</div>
+<p>It is of kind <em>Manage</em>, so no agent holds it (ADR-0029, decision 3), and it joins the list of what no key holds (decision 8, <code>NOT_FOR_KEYS</code>): entering other people's work times stays in the app. Enforced by: ARCH-PERMS, SEC-MATRIX.</p>
+</li>
+<li>
+<p><strong>The share in a project</strong> is set on <em>Project members</em> by a person who holds <em>Decide who has which role</em> in that project (a <em>Project lead</em> at the start). No new permission.</p>
+</li>
+<li>
+<p><strong>Themes for everyone</strong> are made and changed under <em>Change organization settings</em>; personal themes need no permission (<a href="#adr-0026">ADR-0026</a>, update M8).</p>
+</li>
+<li>
+<p><strong>The security log</strong> (decision 9) also records every gift and removal of <em>Enter work times for others</em>, like any change of permissions. Work times themselves are not in the security log: their changes are events of the person's work times, which the person sees.</p>
+</li>
+</ul>
 <h4>Consequences</h4>
 <ul>
 <li>WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, <em>No access</em> and two access keys.</li>
@@ -3187,7 +3262,7 @@ Enforced by: ARCH-SETTINGS, and the tests <code>ai_02_ai_is_off_at_the_start_and
 
 <!-- 0026-one-theme-file.md -->
 <h3 id="adr-0026"><button class="sec" data-sec>§13.26</button>ADR-0026: One theme file for everything about how the app looks</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a> · updated in M6: a base file and one file of colors and its shadow per theme (decision M6-Q1)</p>
+<p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a> · updated in M6: a base file and one file of colors and its shadow per theme (decision M6-Q1) · updated in M8: themes of your own (M8-Q8 to Q11)</p>
 <h4>Context</h4>
 <p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way a sister project keeps its complete look in one theme file. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
 <ul>
@@ -3285,6 +3360,17 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li>
 <p><strong>Checks.</strong> STY-CONTRAST runs for every theme file and mode and names the theme's file in a finding; LINT-CSS and STY-TOKENS run again when a theme file changes; DOC-GENERATED compares the output of the base and the theme files.</p>
 </li>
+</ul>
+<h4>Update (M8, themes of your own)</h4>
+<p>The maintainer's answers M8-Q8 to Q11 (2026-11-11). They settle decision 7 and leave the others as they are. The words are the glossary's: an <em>own theme</em> is a theme an organization or a person makes, <em>for everyone</em> or <em>personal</em>.</p>
+<ul>
+<li><strong>What an own theme may set</strong> (M8-Q10). The colours (each <code>color</code> token, with its <code>more=</code> colour), the shadow (the <code>shadow</code> token that a theme file may set, stored as its parts: offsets, blur, spread and a colour, at most two layers, never as text), the corner radius (<code>r-ctl</code> and <code>r-card</code>, within the bounds the base file gives them), and for the text faces <code>font-ui</code>, <code>font-display</code> and <code>font-reader</code> a choice among the system font stacks the base file already has (named by their token, never by a font name). Nothing else: no spacing, no <em>Spacing</em>, no text size, no motion, no font file and no rule, selector or CSS text. The list of tokens an own theme may set, with their kinds and bounds, is written by <code>cargo xtask gen theme</code> from the base file into Rust (<code>crates/bb-core/src/theme/</code>), so the server, the import and the editor read one list. THM-03 says so.</li>
+<li><strong>It starts from one built-in theme and stores only what it changes</strong> (M8-Q11). An own theme names the built-in theme it extends (<em>Daylight</em>, <em>Paper</em>, <em>Dusk</em> or <em>Midnight</em>) and takes its kind (light or dark) from it; it stores only the values it changes. The values it does not change are read from the built-in theme when its style sheet is made, so a later fix of a built-in theme (M7-F241) reaches it.</li>
+<li><strong>How it reaches the page</strong> (M8-Q8). The server makes one style sheet for each own theme from its stored values, with one writer in Rust, and serves it at <code>/themes/{id}.css</code> under the content security policy <code>style-src 'self'</code>, which stays as it is (decision 5). The page links it with a <code>link</code> element when the person's choice is an own theme; the address carries the theme's version (<code>?v=</code>), so the browser keeps it as long as a hashed asset and a changed theme has a new address. The sheet sets the theme's variables under a frame attribute of its own (<code>own</code> in the <code>frame</code> line, written to the page as <code>data-own-theme</code>), on top of the built-in theme it extends, with its <code>more=</code> colours in a block for more contrast. A theme for everyone is served to every signed-in person of the organization, a personal theme only to its maker; any other request gets the answer of a theme that does not exist.</li>
+<li><strong>Contrast in one place</strong> (M8-Q9). The contrast maths (relative brightness, the ratio, CIE 1976 delta E) and the reading of the <code>contrast</code> and <code>distinct</code> rules move from the check in <code>xtask</code> into <code>bb-core</code> (<code>crates/bb-core/src/contrast/</code>, pure). <code>gen theme</code> writes the rules of the base file into Rust data beside it (DOC-GENERATED). STY-CONTRAST calls it for the built-in files, the server calls it when an own theme is saved or uploaded, and the theme editor calls it through the existing browser module <code>bb-wasm</code>, whose size PERF-BUNDLE holds. Each pair gets one rating: <em>Easy</em> when it passes the rule for more contrast (7:1 for text), <em>OK</em> when it passes its rule, <em>Hard to read</em> when it does not.</li>
+<li><strong>Saving.</strong> A theme for everyone cannot be saved while one of its pairs is <em>Hard to read</em>; the refusal names the pairs. A personal theme can be saved with a warning that names them (UX §5.6). An upload (JSON) is checked like a save: an unknown token or a value that its kind does not allow is refused with its name. Themes for everyone are made and changed by holders of <em>Change organization settings</em> (<em>Organization settings › Look › Themes</em>); any signed-in person makes personal themes (<em>My settings › Appearance</em>). The editor takes an edit lock on the theme (ADR-0019).</li>
+<li><strong>The choices of a theme.</strong> The settings <em>Light theme</em> and <em>Dark theme</em> list the built-in themes from the generated list (decision 6), then the organization's themes for everyone and the person's own personal themes of that kind. A choice that names an own theme which no longer exists, or which the person may no longer use, counts as the built-in theme it extended.</li>
+<li><strong>Checks.</strong> STY-CONTRAST grows from the built-in files to every own theme that is saved, with the same code. THEME-ONLY stays: the server's sheet is the only style that is not built from the theme files, and it holds variables only.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>
@@ -3562,7 +3648,7 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 
 <!-- 0030-planning-with-people.md -->
 <h3 id="adr-0030"><button class="sec" data-sec>§13.30</button>ADR-0030: Planning with people: who works on a bar, work times, time factors and plan warnings</h3>
-<p>Status: <strong>Accepted</strong> · amended the same day (work hours and shares; the person's own estimate) · refines PLAN-01…05 and <a href="#adr-0022">ADR-0022</a>; bounded by PRIV-09 and COMP-10</p>
+<p>Status: <strong>Accepted</strong> · amended the same day (work hours and shares; the person's own estimate) and in M8 (the person on the bar, holidays, where the plan is worked out, deletion) · refines PLAN-01…05 and <a href="#adr-0022">ADR-0022</a>; bounded by PRIV-09 and COMP-10</p>
 <h4>Context</h4>
 <p>Requirement: the timeline shows three more things: the person who works on each issue; a factor per issue and person, because people need more or less time for some tasks; and away times (holidays, other absences) per person, with Bugaboo saying where they clash with the plan or delay it.</p>
 <p>Asked how other planning tools handle different paces, the lead found five ways: time per person (hours per day, a share per project, a calendar; nearly every tool), the person doing the work estimates it (LiquidPlanner, Scrum), the pace of the whole team (Jira Plans and other sprint tools), skill levels to find people but not to set dates (Primavera P6, Planview, Kantata), and paces learned from past work. The first two were taken.</p>
@@ -3603,6 +3689,16 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 </li>
 <li>The way out is always a person's choice: <em>Move it after</em>, <em>Make it longer</em>, <em>Give it to someone else…</em> (opens the usual person picker, with no suggestion of whom, COMP-10), or <em>Keep and accept</em>. Accepted warnings stay visible in a faded form.</li>
 <li>Warnings appear only for issues and people the viewer may see; a hidden person's away time shows at most as <em>"the assigned person is away"</em>.</li>
+</ul>
+<h4>Amendment (M8, the maintainer's answers M8-Q4 to Q7 and Q13)</h4>
+<p>The maintainer took every recommendation of the M8 plan (2026-11-11). Where these points and a decision above differ, these points count. Dates and dependencies are <a href="#adr-0043">ADR-0043</a>.</p>
+<ul>
+<li><strong>The person on the bar is the first assigned person</strong> (M8-Q4). An issue may have up to 20 people in <em>Assigned to</em>; the first of them is the <em>person on the bar</em>. Their work times shape the bar, <em>Too much at once</em> counts the issue for them only, and the time factor is theirs. The time factor goes back to ×1 when the first person changes (another person is put first, or the first is taken off); adding or taking off the people after the first leaves it alone. <em>Group by person</em> shows the bar in the row of each assigned person, every copy shaped by the first person's work times; the copies in the other rows carry a mark that says so (<em>"Planned with Lea's work times"</em>). The tests: <code>plan_10_the_first_assigned_person_shapes_the_bar</code> and <code>plan_14_the_time_factor_resets_when_the_person_changes</code> (the first person, as here).</li>
+<li><strong>The time factor is readable, never searched or summed</strong> (M8-Q5). It is read on the issue and through the API like any field the reader may read, under its field permissions. The search language has no word for it, so no search filters, sorts or groups by it; no list offers it as a column (every column of a list sorts); no total, average or count uses it. No tool of the tool registry changes it, so the assistant, AI apps and agents never set it (a rule of the registry, tested: <code>plan_14_no_tool_of_the_registry_changes_the_time_factor</code>, beside <code>plan_14_no_report_or_search_sorts_by_time_factor</code>).</li>
+<li><strong>Bugaboo works out public holidays itself</strong> (M8-Q6). <code>bb-core</code> computes the fixed holidays and the ones that follow Easter, for Germany and for each of its 16 federal states, with no download and no outside service. Only holidays of a whole state count; a holiday of one town or of part of a state (the <em>Augsburger Friedensfest</em>, <em>Mariä Himmelfahrt</em> in the Bavarian towns that keep it) is entered as an away time. The results are tested against the official lists of the years 2026 to 2030 (<code>plan_11_german_holidays_match_the_official_lists_2026_to_2030</code>). More countries come when someone asks. Which holidays count for a person is the setting <em>Holidays</em> (<code>work-times.holidays</code>: <em>None</em>, <em>Germany</em> for the holidays every state has, or one of the 16 states): each person chooses theirs in <em>My settings › Work times</em>, and its default is the organization's choice, which starts as <em>Germany</em>. It is a setting of its own and not part of <em>Region</em>, which is about how dates and numbers are written. This replaces "the person picks their region" in decision 2.</li>
+<li><strong>The plan is worked out once, on the server</strong> (M8-Q7). The bars of the rows on screen, their worked-out days and their warnings are computed in Rust: the rules in <code>bb-core</code> (pure, ARCH-PURE), the use case in <code>bb-app</code>, which reads dates, dependencies and work times as the reader. The browser draws what the server answers. While a bar is dragged the browser only moves it; on release it saves the dates, and the server answers with the new plan of the rows on screen within the budget of timeline data (PERF-01: p95 under 300 ms on 1 M issues). There is no WebAssembly module of the plan and no rule of the plan in TypeScript, so the first page stays within its budget (PERF-04) and the rules live once.</li>
+<li><strong>Work times are deleted on time from M8 on</strong> (M8-Q13). The deletion comes with the data, so nothing is kept longer than decision 2 says: a daily job deletes each away time one year after its last day; a share in a project is deleted when the person no longer has a role there, and all of a person's work times (usual work days, work hours, shares, away times, the choice of <em>Holidays</em>) when the person leaves the organization (the step that <em>Remove a person</em> calls, M9). M9 shows these rules in the overview of keep periods (PRIV-05). The jobs are in <a href="#adr-0017">ADR-0017</a>, amendment M8.</li>
+<li><strong>The words of <em>Delay</em></strong> follow ADR-0043, decision 5: nothing moves by itself, so <em>Delay</em> says <em>"WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it"</em>, and the test of decision 5 is <code>plan_13_a_delay_is_shown_along_dependencies_and_moves_nothing</code>.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>
@@ -3926,6 +4022,17 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li>The first three wait for the person, so they are on by e-mail at the start: a question can be answered from the phone (the M7 exit demo).</li>
 <li>The text of a question, a plan or a note is people's text and is written like a comment (decision 3: quoted, plain text, after the link). An agent is shown as <em>"Fixer, agent of Ada Brandt"</em>, its person by <em>Who sees people</em> (ADR-0022).</li>
 <li>The responsible person and the person who handed the issue over both hear of the first four; an issue they no longer see is skipped like any other (decision 2). Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-08.</li>
+</ul>
+<h4>Amendment (M8, work times and the time factor)</h4>
+<p>Work times and the time factor (<a href="#adr-0030">ADR-0030</a>) add two kinds of notification, built by the same reader and checked again in the same way (decision 2). They go to the person whose data changed, and only when somebody else changed it. Each person changes them under <em>Customize</em>; the starting values:</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Event</th><th>In the app</th><th>By e-mail</th></tr></thead><tbody>
+<tr><td><em>Your work times were changed</em> (somebody with <em>Enter work times for others</em> entered or changed an away time, your usual work days or your work hours)</td><td>on</td><td>off</td></tr>
+<tr><td><em>Your time factor was changed</em> (somebody else set the time factor of an issue whose person on the bar you are)</td><td>on</td><td>off</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>An away time is named only by its days (<em>"Ada Brandt entered an away time for you: 26–30 Oct"</em>); it has no reason to name (ADR-0030, decision 2). The text of the note of an away time is never sent: only its person sees it.</li>
+<li>Neither kind names another person's work times, and no notification goes to anybody else about them. Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-04 and WP-06.</li>
 </ul>
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
@@ -4430,6 +4537,56 @@ A change is a new or changed start, end, period or break, or the end of a day le
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the <code>mcp</code> rows), ARCH-API-OUT, ARCH-AI-TOOLS, ARCH-DEPS, ARCH-EVENTS, DATA-MARKS, DATA-LOGS (see <code>tools/checks/catalog.toml</code>), and the tests named above and in WP-05.</p>
 <!-- COMP-10 checked: signing in and scopes rank, evaluate or assign nobody; an app does what its person tells it, as ADR-0029 decision 9 says. -->
+
+<!-- 0043-dates-and-dependencies.md -->
+<h3 id="adr-0043"><button class="sec" data-sec>§13.43</button>ADR-0043: Dates and dependencies</h3>
+<p>Status: <strong>Accepted</strong> · 2026-11-11 · refines PLAN-01, PLAN-02, PLAN-03, PLAN-04 and <a href="#adr-0030">ADR-0030</a>; the maintainer's answers M8-Q1, M8-Q2 and M8-Q3</p>
+<h4>Context</h4>
+<p>The timeline draws issues as bars over days, so an issue needs dates. Before M8 an issue has <em>Estimated time</em> and <em>Time left</em>, but no start date, and <em>Due date</em> is only a field key that search cannot read and forms block (M3-F101). Own fields can be dates. PLAN-01 asks that the dates come from start and due fields, "configurable which ones".</p>
+<p>Relations are rows of kinds that the organization edits (<em>blocks</em>, <em>duplicate of</em>, <em>causes</em>, <em>related to</em>). None of them means anything for dates, although <em>blocks</em> says what the glossary calls <em>Must finish first</em>. PLAN-02 asks for that dependency in M8 and for <em>start together</em>, <em>finish together</em> and <em>finish when it starts</em> in V1, and it asks for one relation model for issues, the timeline and the map.</p>
+<p>Many planning tools push the issues that wait when an earlier one moves. ADR-0030 rejected bars that move by themselves: it surprises people and breaks dates someone promised.</p>
+<p>The exit demo of M8 asks for "a warning for the release", but releases (ISS-08) come in M10.</p>
+<h4>Decision</h4>
+<ol>
+<li><strong>Two built-in date fields, <em>Start date</em> and <em>Due date</em></strong> (M8-Q1). Both are fields of the field catalogue in <code>bb-core</code>, like <em>Estimated time</em>: a calendar date with no time of day and no time zone, stored on the issue (migration 49). They have field permissions with the starting levels of <em>Estimated time</em>, a search word each (<code>start date</code>, <code>due date</code>) with the comparisons the search language has for dates, a place on forms and in layouts, and a column in lists. <em>Due date</em> is no longer blocked on forms (M3-F101). A <em>Start date</em> after the <em>Due date</em> of the same issue is refused with a sentence that names both. Enforced by: SEC-MATRIX (the field levels of both fields), TEST-SEARCH-ROUNDTRIP, ARCH-DB-PARITY, ARCH-API-FREEZE (two optional members, nothing renamed).</li>
+<li><strong>A timeline may use other date fields.</strong> The timeline is a view of a saved search (ADR-0034, the kind <code>ViewKind::Timeline</code>). It uses <em>Start date</em> and <em>Due date</em> unless the view names two own date fields instead, chosen in the view and stored with it. Dragging a bar changes the fields the view uses, each under its field permissions. A field the reader cannot read counts as empty for that reader, so the issue waits in <em>Not scheduled yet</em> and nothing tells that the field exists (UX §1, <em>Hidden stays hidden</em>). Enforced by: SEC-MATRIX (the timeline route under field levels), the tests of WP-06.</li>
+<li><strong>How a bar gets its days.</strong> A bar covers whole days, from its first day to its last day, both included.
+<ul>
+<li>With both dates, the bar runs from the start date to the due date.</li>
+<li>With <em>Plan by effort</em> on (ADR-0030, decision 3), an issue with <em>Estimated time</em> and a person on the bar gets its other date worked out when it has only one: forward from the start date, or back from the due date. With both dates the bar keeps them, and <em>Not enough days</em> says when the effort does not fit; the due date never moves.</li>
+<li>Otherwise an issue with one date is a bar of one day on that date.</li>
+<li>An issue with no date waits in <em>Not scheduled yet</em>.
+Worked-out days are shown, never stored: a date is stored only when a person or a tool sets it. Enforced by: the tests of WP-06 (<code>plan_12_…</code>), review (a reviewer sees in the plan's code that only a change of an issue writes a date).</li>
+</ul>
+</li>
+<li><strong>The date effect of a kind of relation</strong> (M8-Q2). A kind of relation gets a <em>date effect</em>: none, or <em>Must finish first</em>. In M8 <em>Must finish first</em> is the only effect. The starting kind <em>blocks</em> has it: the issue that blocks must finish first, and the one it blocks waits. An organization may give it to one other kind as well, so at most two kinds carry it; whoever may change kinds of relation (<em>Manage issue types</em> for the whole organization) gives or takes it. The effects <em>start together</em>, <em>finish together</em> and <em>finish when it starts</em> come in V1 (PLAN-02). Enforced by: the tests of WP-03 (<code>plan_02_…</code>), SEC-MATRIX (the route that changes a kind of relation).
+<ul>
+<li>A relation of a kind with a date effect is a <strong>dependency</strong>. The timeline draws it as an arrow from the issue that must finish first to the one that waits. The issue page, the relation map and the timeline read the same rows of relations (PLAN-02; architecture §7, <em>Relations</em>): there is no second record of dependencies. Enforced by: review (a second table or type of dependencies is an ODR finding of coding-standards §1).</li>
+<li>A dependency that would close a loop (<em>A</em> waits for <em>B</em>, and <em>B</em> for <em>A</em>, over any number of steps) is refused when the relation is made, and giving the effect to a kind is refused when its relations hold such a loop; the sentence names one loop. Loops of <em>blocks</em> that are stored already when migration 49 gives it the effect stay, and the timeline draws their arrows without checking an order along them. Enforced by: the tests of WP-03.</li>
+</ul>
+</li>
+<li><strong>A move that breaks a dependency is a warning, never a push.</strong> When an issue that waits starts on or before the last day of an issue it waits for, on the days the plan shows, both bars and the list of warnings show the plan warning <em>Delay</em> (ADR-0030, decision 5): <em>"WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it"</em>. Nothing else moves. Its ways out are those of ADR-0030: <em>Move it after</em> moves the issue that waits, and the issues that wait for it in turn, so that each starts on the first day after the one before it ends; a preview names every issue and its new dates before anything is saved. <em>Keep and accept</em> leaves the plan as it is. <em>Plan by effort</em> never moves a start along a dependency by itself. Enforced by: the tests of WP-06 (<code>plan_13_…</code>), review against ADR-0030 (<em>Moving bars by themselves</em> was rejected).</li>
+<li><strong>Every change of a date is a change of the issue.</strong> A change of <em>Start date</em> or <em>Due date</em> (on a form, by a drag, by <em>Set dates…</em>, by <em>Move it after</em>, by an AI app or an agent) is one event with the old and the new value (ADR-0007). The history shows it (<em>"Lea moved WEB-280 from 3–7 Nov to 10–14 Nov"</em>) and <em>Undo</em> takes it back. <em>Move it after</em> with the issues after it is one run, so <em>Undo</em> takes every date of it back in one step. A save carries the version it read: a change made by somebody else in between gets <em>Keep Ben's / Use mine</em>. Enforced by: ARCH-EVENTS, ARCH-VERSIONED, TEST-CONCURRENT (two people move the same bar at once).</li>
+<li><strong>Goals on the timeline; no releases yet</strong> (M8-Q3). A goal with a <em>Due date</em> is drawn as a diamond on that date: it is the milestone of the timeline that PLAN-04 names. A goal's span is a bracket over its sub-issues (UX §4.7). When a sub-issue ends after the due date of its goal, the goal shows <em>Delay</em> with the same ways out: <em>"Lea's away week moves Login screen past the due date of Mobile app 2.0"</em>. Releases (ISS-08) join the timeline in M10, and with them rows by release. Enforced by: the tests of WP-06 and WP-09.</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>Migration 49 adds the two dates to the issue and the date effect to the kinds of relation, and gives <em>blocks</em> the effect <em>Must finish first</em>. Enforced by: DATA-MIGRATIONS, ARCH-DB-PARITY.</li>
+<li>Search, forms, layouts, lists and the API know the two fields; the API grows only by additions (ARCH-API-FREEZE).</li>
+<li>The plan of ADR-0030 reads its dates and dependencies from here, and the timeline draws them. The <em>Delay</em> sentence of ADR-0030, decision 5, changes: nothing "moves too" (ADR-0030, amendment M8).</li>
+<li>An organization that plans with its own date fields keeps them; it chooses them in the timeline view.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Only own date fields, chosen in each view:</strong> no search word and no starting field permissions, and every organization would first have to set them up. Not taken as the only way; a view may still choose them.</li>
+<li><strong>Dependencies as a record of their own beside relations:</strong> two models for one connection, which PLAN-02 rules out. Rejected.</li>
+<li><strong>Push the issues that wait when an earlier one moves:</strong> what other tools do. It moves dates that people promised, without a person choosing it. Rejected, as in ADR-0030.</li>
+<li><strong>All four date effects now:</strong> the other three are V1 in PLAN-02 and need their own warnings. Not taken.</li>
+<li><strong>Releases on the timeline in M8:</strong> releases are their own record with their own rules (ISS-08, M10). Not taken; a goal's due date stands in for them.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>SEC-MATRIX, ARCH-EVENTS, ARCH-VERSIONED, ARCH-DB-PARITY, ARCH-API-FREEZE, TEST-SEARCH-ROUNDTRIP, TEST-CONCURRENT, TEST-A11Y (every drag has a typed alternative: <em>Set dates…</em>, <em>Add dependency…</em>), the tests that WP-03, WP-06 and WP-09 of M8 name, and review against ADR-0030 (no bar moves by itself).</p>
+<!-- COMP-10 checked: dates and dependencies rank, evaluate or pick nobody; Move it after moves issues, never people. -->
 
 
   </main>
