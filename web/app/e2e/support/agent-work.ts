@@ -6,7 +6,6 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { waitUntilStill } from "./agent-work-still.ts";
 import type { ApiSession } from "./api.ts";
 import { stored } from "./runs.ts";
 import type { Instance } from "./server.ts";
@@ -16,7 +15,7 @@ const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
 
 export { tickTwo } from "./labels.ts";
-export { agentWorkRead, showsTheAgentWork } from "./agent-work-view.ts";
+export { agentWorkRead, openHandOver, showsTheAgentWork } from "./agent-work-view.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */
 export async function createAgent(admin: ApiSession, name: string): Promise<string> {
@@ -237,17 +236,6 @@ export async function firstWorkOf(admin: ApiSession, issue: string) {
     throw new Error(`${issue} has no agent work.`);
   }
   return first;
-}
-
-/** Opens *More* of the issue page and chooses *Hand over to an agent*; the window it opens. */
-export async function openHandOver(page: Page): Promise<Locator> {
-  await page.getByRole("button", { name: t("issues.more"), exact: true }).click();
-  await page.getByRole("button", { name: t("agent-work.hand-over"), exact: true }).click();
-  const window = page.getByRole("dialog");
-  await expect(window).toBeVisible();
-  // It has slid in (on a phone) before anything is done in it.
-  await waitUntilStill(window);
-  return window;
 }
 
 /** The window that is open (the hand-over, the review). */
