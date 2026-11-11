@@ -5,6 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import {
   agentWorkOf,
+  agentWorkRead,
   firstWorkOf,
   handOverOne,
   createAgent,
@@ -237,10 +238,13 @@ test("ai_34 an answer to work that changed meanwhile reads the work again and ca
   changeWorkBehindTheScreen(server, work);
   const answer = page.getByLabel(t("agent-work.question-answer"), { exact: true });
   await answer.fill("An old one");
+  const readAgain = agentWorkRead(page, issue.key);
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
-  // The refusal is said, the work is read again, and the same answer goes through on the new version.
+  // The refusal is said, the work is read again, and the same answer goes through on the new version
+  // once the page has it (sent before, it would go on the old version once more).
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(answer).toHaveValue("An old one");
+  await readAgain;
   await page.getByRole("button", { name: t("agent-work.question-send"), exact: true }).click();
   await expect(
     page.getByText(t("agent-work.answered-by", { person: ada.name }), { exact: false }),
