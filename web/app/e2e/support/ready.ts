@@ -1,6 +1,6 @@
-import { request as plain } from "node:http";
-import { request as secure } from "node:https";
 import { setTimeout as sleep } from "node:timers/promises";
+
+import { exchange } from "./session-transport.ts";
 
 /** How long a server gets to start before the test gives up. */
 export const START_LIMIT_MS = 30_000;
@@ -20,35 +20,20 @@ export interface Waited {
 export type Ask = () => Promise<boolean>;
 
 /**
- * Asks the server over HTTPS whether it is alive, with the certificate it made itself. One short
- * question, closed after the answer (`agent: false`), so a question that is answered leaves one
- * connection behind and one that is refused leaves none. `https: false` is for the unit test,
- * which has no certificate.
+ * Asks the server over HTTPS whether it is alive, with the certificate it made itself. The question
+ * goes through the pool of connections of the server (`session-transport.ts`), so the connection of
+ * the answer is the one the sessions of the tests go on with: a question that is answered leaves
+ * nothing closed behind (a closed connection stays in TIME_WAIT for two minutes, and every file of
+ * tests starts a server), and one that is refused leaves nothing. `https: false` is for the unit
+ * test, which has no certificate.
  */
 export function askLive(port: number, https = true): Ask {
-  const request = https ? secure : plain;
+  const origin = `${https ? "https" : "http"}://localhost:${String(port)}`;
   return () =>
-    new Promise((done) => {
-      const question = request(
-        {
-          host: "localhost",
-          port,
-          path: LIVE_PATH,
-          method: "GET",
-          agent: false,
-          rejectUnauthorized: false,
-          headers: { connection: "close" },
-        },
-        (answer) => {
-          answer.resume();
-          done(answer.statusCode === 200);
-        },
-      );
-      question.once("error", () => {
-        done(false);
-      });
-      question.end();
-    });
+    exchange({ url: `${origin}${LIVE_PATH}`, method: "GET", headers: {}, body: "" }, origin).then(
+      (answer) => answer.status === 200,
+      () => false,
+    );
 }
 
 /**

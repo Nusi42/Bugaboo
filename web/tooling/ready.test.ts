@@ -4,7 +4,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { askLive, waitUntilReady, type Ask } from "../app/e2e/support/ready.ts";
+import { askLive, LIVE_PATH, waitUntilReady, type Ask } from "../app/e2e/support/ready.ts";
+import { closePool, exchange } from "../app/e2e/support/session-transport.ts";
 
 const running: Server[] = [];
 
@@ -73,6 +74,21 @@ describe("test_01 the wait for a server does not storm it with connections (M4 W
     // eighteen (every 50 ms).
     expect(question.asked()).toBeLessThanOrEqual(7);
     expect(late.connections()).toBe(1);
+  });
+
+  it("keeps the connection of the answer for the requests of the tests after it", async () => {
+    const late = await answersLate(300);
+    await waitUntilReady(askLive(late.port, false), alive);
+    // The sessions of the tests talk through the same pool, so the question leaves nothing behind
+    // that is closed (a closed connection stays in TIME_WAIT for two minutes).
+    const origin = `http://localhost:${String(late.port)}`;
+    const answer = await exchange(
+      { url: `${origin}${LIVE_PATH}`, method: "GET", headers: {}, body: "" },
+      origin,
+    );
+    expect(answer.status).toBe(200);
+    expect(late.connections()).toBe(1);
+    closePool(origin);
   });
 
   it("makes longer pauses between questions up to a limit", async () => {
