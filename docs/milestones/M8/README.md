@@ -21,7 +21,7 @@ M8 runs in **five waves**: wave 0 alone, then four waves of at most four builder
 | Wave | WP | Name | Who | Folder / branch |
 |------|----|------|-----|-----------------|
 | 0 | WP-01 | Decision records, words, the UX gaps, the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
-| 0 | WP-02 | A full run that is green, and the two small screen gaps of M7 | Builder | `bugaboo.win2` / `WIN2` |
+| 0 | [WP-02](WP-02-a-green-full-run.md) | A full run that is green, and the two small screen gaps of M7 | Builder | `bugaboo.win2` / `WIN2` |
 | 1 | WP-03 | Dates and dependencies on the server | Builder | `bugaboo.win3` / `WIN3` |
 | 1 | WP-04 | Work times on the server: usual work days, work hours, shares, away times, public holidays | Builder | `bugaboo.win4` / `WIN4` |
 | 1 | WP-05 | Themes of your own on the server: stored themes, their style sheet, contrast in one place | Builder | `bugaboo.win5` / `WIN5` |
@@ -33,7 +33,7 @@ M8 runs in **five waves**: wave 0 alone, then four waves of at most four builder
 | 3 | WP-11 | Touch everywhere: targets and swipe actions | Builder | `bugaboo.win4` / `WIN4` |
 | 4 | WP-12 | Sample part 7, the timeline under load, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
-Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The files of the packages (`WP-nn-….md`) are written in WP-01, after the maintainer has answered the questions below, because most answers change them.
+Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The files of the packages (`WP-nn-….md`) are written in WP-01, after the maintainer has answered the questions below, because most answers change them. WP-02 depends on none of them and starts at once.
 
 ## The packages in short
 
