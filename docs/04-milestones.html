@@ -176,7 +176,7 @@
 <p><strong>Work packages (outline):</strong></p>
 <ul>
 <li>Work folders as in ADR-0024: the main checkout is the master (<code>main</code>, never built in); <code>&lt;work root&gt;/bugaboo.win1</code> (branch <code>WIN1</code>) for the lead and integration, <code>bugaboo.win2</code> and up for builders</li>
-<li><code>main</code> kept green by the local CI runner (<code>cargo xtask ci</code>: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0037)</li>
+<li><code>main</code> kept green by the local CI runner (<code>cargo xtask ci</code>: the full local run, both databases, on Windows and in WSL); the speed benchmarks on the large dataset (<code>cargo xtask bench</code>) run by hand at each milestone exit, on a quiet computer. There is no hosted CI and no scheduled run (ADR-0037)</li>
 <li><code>.cargo/config.toml</code> with an optional, ignored <code>config.local.toml</code> for machine-specific settings; the BUILD-LOCATION guard</li>
 <li>Rust workspace with all crates as empty shells, dependency rules, <code>#![forbid(unsafe_code)]</code>, <code>rust-toolchain.toml</code></li>
 <li><code>cargo xtask</code>: check runner reading <code>tools/checks/catalog.toml</code>; <code>cargo xtask setup</code> installs all tools on Windows, Linux and WSL</li>
@@ -365,7 +365,7 @@
 <li>Search bar: Simple, Advanced and switching without loss; saved searches with sharing</li>
 <li>Issue list: columns, grouping, virtualized scrolling, bulk bar</li>
 <li>Quick search (Ctrl+K)</li>
-<li>Large dataset generator and nightly benchmarks</li>
+<li>Large dataset generator and speed benchmarks</li>
 </ul>
 <p><strong>Demo (exit):</strong> Search the sample organization in both modes; a Contributor's search on Cost center behaves like an unknown field; 1 M-issue benchmark meets the budget.</p>
 <p><strong>Tests and checks added:</strong> TEST-SEARCH-ROUNDTRIP, PERF-N1, PERF-BENCH active; search entry point in SEC-MATRIX.</p>
@@ -501,7 +501,7 @@
 <li>Release candidate: external security review recommended</li>
 </ul>
 <p><strong>Demo (exit):</strong> Install the signed MVP on a clean Windows PC and in WSL, restore a backup, download someone's data, remove a person; the release page shows SBOM and licenses.</p>
-<p><strong>Tests and checks added:</strong> Full nightly suite green for 7 nights; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.</p>
+<p><strong>Tests and checks added:</strong> Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.</p>
 <h2 id="s13"><button class="sec" data-sec>§13</button>M10 — Board, calendar, relation map and dashboards</h2>
 <p><strong>Phase:</strong> 1.0 · <strong>Goal:</strong> More ways to see and plan work.</p>
 <p><strong>Features:</strong></p>
@@ -653,7 +653,7 @@
 <li>1.0 hardening: performance tuning, full accessibility and security reviews, legal review, release</li>
 </ul>
 <p><strong>Demo (exit):</strong> Two people watch the same board; changes appear within a second without reloading; then the signed 1.0 release.</p>
-<p><strong>Tests and checks added:</strong> Live-update permission tests; 30-day nightly stability; external security test before release.</p>
+<p><strong>Tests and checks added:</strong> Live-update permission tests; external security test before release.</p>
 <h2 id="s19"><button class="sec" data-sec>§19</button>Later (not scheduled)</h2>
 <p><code>AUTH-05</code>, <code>ISS-15</code>, <code>WF-08</code>, <code>PLAN-07</code>, <code>AI-15</code>, <code>AI-16</code>, <code>NTF-06</code>, <code>NTF-07</code>, <code>NTF-08</code>, <code>NTF-09</code>, <code>DOC-10</code>. They stay possible: the architecture leaves room for each of them.</p>
 <h2 id="s20"><button class="sec" data-sec>§20</button>Decisions</h2>

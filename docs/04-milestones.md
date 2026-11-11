@@ -151,7 +151,7 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Work folders as in ADR-0024: the main checkout is the master (`main`, never built in); `<work root>/bugaboo.win1` (branch `WIN1`) for the lead and integration, `bugaboo.win2` and up for builders
-- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); nightly runs via a scheduled task. There is no hosted CI (ADR-0037)
+- `main` kept green by the local CI runner (`cargo xtask ci`: the full local run, both databases, on Windows and in WSL); the speed benchmarks on the large dataset (`cargo xtask bench`) run by hand at each milestone exit, on a quiet computer. There is no hosted CI and no scheduled run (ADR-0037)
 - `.cargo/config.toml` with an optional, ignored `config.local.toml` for machine-specific settings; the BUILD-LOCATION guard
 - Rust workspace with all crates as empty shells, dependency rules, `#![forbid(unsafe_code)]`, `rust-toolchain.toml`
 - `cargo xtask`: check runner reading `tools/checks/catalog.toml`; `cargo xtask setup` installs all tools on Windows, Linux and WSL
@@ -360,7 +360,7 @@ A session can end at any time, and a new one starts in the master and continues 
 - Search bar: Simple, Advanced and switching without loss; saved searches with sharing
 - Issue list: columns, grouping, virtualized scrolling, bulk bar
 - Quick search (Ctrl+K)
-- Large dataset generator and nightly benchmarks
+- Large dataset generator and speed benchmarks
 
 **Demo (exit):** Search the sample organization in both modes; a Contributor's search on Cost center behaves like an unknown field; 1 M-issue benchmark meets the budget.
 
@@ -512,7 +512,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Demo (exit):** Install the signed MVP on a clean Windows PC and in WSL, restore a backup, download someone's data, remove a person; the release page shows SBOM and licenses.
 
-**Tests and checks added:** Full nightly suite green for 7 nights; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.
+**Tests and checks added:** Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.
 
 ## M10 — Board, calendar, relation map and dashboards
 
@@ -688,7 +688,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Demo (exit):** Two people watch the same board; changes appear within a second without reloading; then the signed 1.0 release.
 
-**Tests and checks added:** Live-update permission tests; 30-day nightly stability; external security test before release.
+**Tests and checks added:** Live-update permission tests; external security test before release.
 
 ## Later (not scheduled)
 

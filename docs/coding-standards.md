@@ -197,7 +197,7 @@ Every check is listed **once**, in [`tools/checks/catalog.toml`](../tools/checks
 
 1. **Claude Code hooks** (`.claude/settings.json`): after an agent edits a file, the checks for that file run and errors go straight back to the agent.
 2. **Git hooks** (lefthook): fast checks on staged files at commit, the wider set on push, the commit-message check.
-3. **The full local run**: everything, plus nightly benchmarks and release-only checks (SBOM, notices). It is `cargo xtask ci` on the development PC (Windows and WSL). There is no hosted CI (ADR-0037); the pre-push hook runs the push checks and `cargo xtask ci` runs before `main` moves.
+3. **The full local run**: everything, plus release-only checks (SBOM, notices). It is `cargo xtask ci` on the development PC (Windows and WSL). There is no hosted CI (ADR-0037); the pre-push hook runs the push checks and `cargo xtask ci` runs before `main` moves. The speed benchmarks (`cargo xtask bench`) run by hand at each milestone exit, on a quiet computer; there is no scheduled run.
 
 **Tools:** rustfmt and clippy for Rust; oxfmt and oxlint with type-aware tsgolint (built on TypeScript 7) for TypeScript; stylelint for CSS; taplo, rumdl, typos and lychee for the rest; jscpd for copied blocks of Rust and TypeScript (LINT-DRY: a block of 100 tokens and 10 lines is the size, in `.jscpd.json`, and a copy that stands for now is named with the fingerprint of its block and its follow-up in `tools/checks/dry-exemptions.toml`); ast-grep for pattern rules across languages.
 

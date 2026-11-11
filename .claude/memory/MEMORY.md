@@ -14,7 +14,7 @@
 - [Rebase, never merge](rebase-not-merge.md) — branches are rebased onto WIN1 and moved forward; pre-push refuses merge commits (ADR-0041)
 - [Explicit deletion](explicit-deletion.md) — keep periods are minimums; business data is deleted only explicitly by an administrator
 - [Access rights are deliberate](access-rights-are-deliberate.md) — no masking of values derivable from readable fields; the admin chose the rights
-- [Do not wait for nightlies](dont-wait-for-nightlies.md) — go on with the next step at once; nightly results are looked at in parallel
+- [No scheduled nightly](no-scheduled-nightly.md) — task deleted 2026-11-11; bench by hand at milestone exits on a quiet machine; never wait for runs
 - [README with every push](readme-with-every-push.md) — front page, roadmap, version updated in the same landing; milestone tag on that commit
 - [Agents work unattended](agents-work-unattended.md) — rules hand over what they find; admin may allow rules with no end; no person needed (M7 WP-14)
 - [Cheapest capable model](cheapest-capable-model.md) — Opus plans/reviews, Sonnet builds to a plan, Haiku chores; trial through M8, count fix rounds
