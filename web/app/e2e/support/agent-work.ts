@@ -16,6 +16,7 @@ const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
 
 export { tickTwo } from "./labels.ts";
+export { showsTheAgentWork } from "./agent-work-view.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */
 export async function createAgent(admin: ApiSession, name: string): Promise<string> {

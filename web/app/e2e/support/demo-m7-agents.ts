@@ -7,7 +7,7 @@ import { tool } from "../../../tooling/load/agents.ts";
 import { type ApiSession } from "./api.ts";
 import { adaOfTheSample, good } from "./demo-m7-common.ts";
 import { signIn } from "./flows.ts";
-import { openHandOver, openWindow } from "./agent-work.ts";
+import { openHandOver, openWindow, showsTheAgentWork } from "./agent-work.ts";
 import { type Instance } from "./server.ts";
 
 // The agent steps of the exit demo of M7 (`m7-exit-demo.spec.ts`): Ada hands issues to her two
@@ -137,7 +137,7 @@ export async function handsOverWithPriority(
 /** Ada answers the question of the agent on the issue page (on a phone when the test runs on one). */
 export async function answers(page: Page, issue: string, question: string, answer: string) {
   await page.goto(issueAddress(issue));
-  await showsOnThePage(page, question);
+  await showsTheAgentWork(page, question);
   await good(page, "03-b-the-question");
   const field = page.getByLabel(t("agent-work.question-answer"), { exact: true });
   await field.fill(answer);
