@@ -752,7 +752,7 @@ sort by priority, highest first</div>
       <li><b><i>Project settings › Project members</i></b> lists every person who has a role in the project, directly or through a group, with their <i>Share in the project</i> (100 % at the start). Names follow the kind <i>Project members</i>; people who decide roles there always see them (§5.2).</li>
       <li>A person with <i>Decide who has which role</i> in the project changes a share in place (a whole number from 0 to 100 %), with <i>Undo</i>. The introduction says: <i>"How much of each person's work hours belong to this project. The timeline plans with it."</i></li>
       <li>A person whose shares add up to more than 100 % gets a mark, <i>"Over 100 % in all"</i>; pointing at it names only the projects the reader may see (<i>"…and 1 other project"</i>).</li>
-      <li>When a person no longer has a role in the project, their share goes with it.</li>
+      <li>When a person no longer has a role in the project, they leave the list and their share counts as nothing; it is kept, and counts again if a role comes back. Shares are deleted only when the person leaves the organization.</li>
     </ul>
 
     <h4>Connecting an AI app <span class="ids">AI-22, ADR-0042</span></h4>
@@ -1207,7 +1207,7 @@ sort by priority, highest first</div>
     <ul>
       <li>Color groups on the left with plain names; a live preview of real Bugaboo screens on the right.</li>
       <li>Each text color shows a <b>readability</b> rating (<i>Easy / OK / Hard to read</i>) based on WCAG contrast. Themes for everyone can't be saved while anything is <i>Hard to read</i>; personal themes can, with a warning.</li>
-      <li><i>Save a copy</i>, <i>Download</i>, <i>Upload</i>. The four built-in themes are copied before editing.</li>
+      <li><i>Save a copy</i>, <i>Download</i>, <i>Upload</i>. A built-in theme is never changed; <i>Create a theme</i> or <i>Save a copy</i> starts an own theme from it.</li>
       <li><b>What an own theme changes</b> (M8-Q10): the colors (and the stronger colors for a device that asks for more contrast), the shadow, the corners (<i>Corners of controls</i>, <i>Corners of cards</i>), and for <i>Text</i>, <i>Headings</i> and <i>Long text</i> one of the built-in faces. Nothing else: no spacing and no font files. Each color group shows only the colors it changes from the built-in theme it started from, with <i>Use Dusk's color</i> to go back.</li>
       <li><b>It starts from a built-in theme</b> (M8-Q11): <i>Create a theme</i> asks which one (<i>Daylight</i>, <i>Paper</i>, <i>Dusk</i>, <i>Midnight</i>), and the theme is light or dark like it. A later change of that built-in theme reaches every own theme made from it, except the values the own theme changed.</li>
       <li><b>Saving:</b> the preview changes as you type; nothing reaches other people until <i>Save</i>. A theme for everyone with a pair that is <i>Hard to read</i> cannot be saved, and the message names the pairs with <i>Show</i>; a personal theme can, after <i>"2 pairs are hard to read. Save anyway?"</i>. While somebody edits a theme, others see <i>"Ana is editing this theme"</i> (ADR-0019).</li>

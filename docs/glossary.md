@@ -243,7 +243,7 @@ Rules:
 | **Share in the project** | How much of a person's work hours belong to one project, for example 60 %; 100 % at the start. Set on *Project members* by somebody with *Decide who has which role* there | allocation, utilization (in UI) |
 | **Public holidays**      | Days nobody works where a person works. Bugaboo works them out itself, for Germany and each of its 16 federal states (ADR-0030, amendment M8) | bank holidays (in UI) |
 | **Holidays** (the setting) | Which public holidays count for a person: *None*, *Germany* or one of the 16 states. Chosen in *My settings › Work times*; until then the organization's choice counts. Not part of *Region*, which is about how dates and numbers are written | holiday calendar, holiday region (in UI) |
-| **Project members**      | The kind of people information for lists of who works in a project. People who manage people or roles always see the names there | roster, participants (in UI) |
+| **Project members**      | The kind of people information for lists of who works in a project; also the page *Project settings › Project members*, where the shares are set. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
 | **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically; working hours are deleted only by an administrator after their keep period (ADR-0035, decision 7) | retention policy                |
 
