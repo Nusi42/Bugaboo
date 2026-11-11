@@ -145,7 +145,7 @@ impl Person {
         hidden_field: &str,
     ) -> Result<(), Failure> {
         let path = format!("{ISSUES}/{}", work.key);
-        let read = self.browser.send("GET", &path, None).await?;
+        let read = self.send("GET", &path, None).await?;
         let issue = &ok(&read)?["issue"];
         let version = version_in(&read.body)?;
         let offered = issue["status_changes"].as_array().ok_or("no buttons")?;
@@ -164,7 +164,7 @@ impl Person {
         {
             body["assigned_to"] = json!([self.holder]);
         }
-        let reply = self.browser.send("PATCH", &path, Some(body)).await?;
+        let reply = self.send("PATCH", &path, Some(body)).await?;
         if reply.status == StatusCode::OK {
             book(&self.book)?.kept.push(Kept {
                 key: work.key.clone(),
@@ -178,7 +178,7 @@ impl Person {
         // read before that, so the change that was pressed can be another one by now, one that
         // asks for who does the work.
         let moved_since = reply.code() == "field.required"
-            && version_in(&self.browser.send("GET", &path, None).await?.body)? != version;
+            && version_in(&self.send("GET", &path, None).await?.body)? != version;
         match reply.code() {
             "edit.version-changed" | "workflow.no-such-change" => Ok(()),
             _ if moved_since => Ok(()),
@@ -197,6 +197,7 @@ impl Person {
             &picture,
         )
         .await?;
+        self.clock.advance(super::SECONDS_A_STEP);
         book(&self.book)?.files.push(work.key.clone());
         Ok(())
     }
@@ -231,7 +232,7 @@ impl Person {
 
     /// Opens the notifications, reads the unread count, and marks what is there as read.
     pub(super) async fn hear(&mut self) -> Result<(), Failure> {
-        let listed = self.browser.send("GET", NOTIFICATIONS, None).await?;
+        let listed = self.send("GET", NOTIFICATIONS, None).await?;
         let items = ok(&listed)?["items"].as_array().ok_or("no notifications")?;
         if self.guest {
             self.check_what_a_guest_reads(items)?;
@@ -242,12 +243,10 @@ impl Person {
             .map(|each| each["id"].clone())
             .collect();
         ok(&self
-            .browser
             .send("GET", &format!("{NOTIFICATIONS}/unread"), None)
             .await?)?;
         if !ids.is_empty() {
             let marked = self
-                .browser
                 .send(
                     "POST",
                     &format!("{NOTIFICATIONS}/read"),

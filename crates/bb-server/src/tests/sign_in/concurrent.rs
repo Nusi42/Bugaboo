@@ -5,10 +5,12 @@
 //! descriptions under their locks, comments and reads, status changes under a workflow that asks for
 //! who does the work, files, and notifications. One of the ten is a Guest, who works on the issue they
 //! reported and hears of nothing else. Some editors vanish without letting go, and
-//! some type for longer than the lease lasts. The clock of the test runs on until the last person
-//! is done, so leases really run out. Two cases are played out first, alone and by construction
-//! (an editor who vanishes, one who is too slow), so that what the run is for never depends on how
-//! fast the computer is. The people write a book of what they did; what must hold
+//! some type for longer than the lease lasts. The clock of the test moves with the work, not with
+//! the wall clock: every request a person sends moves it on by a second, and one who types for long
+//! moves it past the lease, so leases really run out, and only through what the people do, however
+//! fast or slow the computer is. Three cases are played out first, alone and by construction (an
+//! editor who vanishes, one who is too slow, one who takes long by the wall clock and saves in
+//! time), so that what the run is for never depends on how fast the computer is. The people write a book of what they did; what must hold
 //! afterwards is not defined here but in `bb-load-check`, which `cargo xtask load` calls with the
 //! book of its own run.
 
@@ -17,7 +19,6 @@ use std::time::Duration;
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_app::context::Clock as _;
 use bb_core::edit::{DRAFT_KEPT_BY, LEASE_SECONDS};
 use bb_load_check::{
     Afterwards, Book, Dayed, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows,
@@ -29,7 +30,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use tokio::task::JoinSet;
 
-use super::http::{Browser, rig_and_app};
+use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
 use super::rig::{Rig, TestClock};
 
@@ -38,9 +39,15 @@ const LOCKS: &str = "/api/v1/edit-locks";
 const PEOPLE: usize = 10;
 const ISSUE_COUNT: usize = 4;
 const ROUNDS: usize = 14;
-/// How many seconds of the clock of the test pass at every tick of the run.
-const SECONDS_A_TICK: i64 = 7;
+/// How many seconds of the clock of the test pass with every request a person sends: a person's
+/// own save under the lock takes a few requests, far less than the lease, while the requests of
+/// the whole crowd move the clock past the lease of an editor who vanished.
+const SECONDS_A_STEP: i64 = 1;
+/// How often the run looks at the locks while the people work (the wall clock only paces the looks).
 const TICK: Duration = Duration::from_millis(15);
+/// How long the editor who takes their time waits by the wall clock before saving: more than the
+/// old run gave a whole lease (its clock moved 7 seconds every 15 ms, a lease in about 130 ms).
+const WALL_WHILE: Duration = Duration::from_secs(1);
 
 type Shared = Arc<Mutex<Book>>;
 
@@ -68,8 +75,11 @@ enum Behaviour {
     ByRound,
     /// Closes the laptop and never lets go.
     Vanishes,
-    /// Types for longer than the lease lasts: nobody else moves the clock, so this one does.
-    TypesForLongAlone,
+    /// Types for longer than the lease lasts: moves the clock past the lease.
+    TypesForLong,
+    /// Takes long by the wall clock but sends nothing meanwhile, so the clock of the app does not
+    /// move and the save is in time.
+    TakesItsTime,
 }
 
 /// One person: what they do in each round is fixed by who they are, so a failure repeats.
@@ -92,6 +102,18 @@ struct Person {
 }
 
 impl Person {
+    /// Sends one request as this person; the clock of the test moves on with it.
+    async fn send(
+        &mut self,
+        method: &str,
+        path: &str,
+        body: Option<Value>,
+    ) -> Result<Reply, Failure> {
+        let reply = self.browser.send(method, path, body).await;
+        self.clock.advance(SECONDS_A_STEP);
+        reply
+    }
+
     fn issue(&self, round: usize) -> &Work {
         &self.issues[(self.number * 5 + round * 7 + self.number * round) % self.issues.len()]
     }
@@ -99,7 +121,6 @@ impl Person {
     /// Reads the issue and remembers the version that was read.
     async fn read(&mut self, work: &Work) -> Result<i64, Failure> {
         let reply = self
-            .browser
             .send("GET", &format!("{ISSUES}/{}", work.key), None)
             .await?;
         let version = version_in(ok(&reply)?)?;
@@ -117,7 +138,6 @@ impl Person {
         let mut version = self.read(work).await?;
         for _ in 0..PEOPLE * 2 {
             let reply = self
-                .browser
                 .send(
                     "PATCH",
                     &format!("{ISSUES}/{}", work.key),
@@ -147,11 +167,10 @@ impl Person {
     /// Starts the person's timer on the issue, or stops the one that runs, while the others do the
     /// same: a stop that saved time is written down, and the database must hold it once.
     async fn time(&mut self, work: &Work) -> Result<(), Failure> {
-        let timer = self.browser.send("GET", "/api/v1/me/timer", None).await?;
+        let timer = self.send("GET", "/api/v1/me/timer", None).await?;
         let timer = ok(&timer)?.clone();
         if timer.get("running").is_none() {
             let started = self
-                .browser
                 .send("POST", "/api/v1/me/timer", Some(json!({"issue": work.key})))
                 .await?;
             // A start within a second of the last one waits for the next round.
@@ -161,7 +180,6 @@ impl Person {
             };
         }
         let stopped = self
-            .browser
             .send(
                 "POST",
                 "/api/v1/me/timer/stop",
@@ -184,17 +202,15 @@ impl Person {
         let reply = match &self.day {
             Some((_, version)) if !self.taps.is_multiple_of(4) => {
                 let path = ["break/start", "break/end", "end"][self.taps % 3];
-                self.browser
-                    .send(
-                        "POST",
-                        &format!("/api/v1/me/work-days/{path}"),
-                        Some(json!({"version": version})),
-                    )
-                    .await?
+                self.send(
+                    "POST",
+                    &format!("/api/v1/me/work-days/{path}"),
+                    Some(json!({"version": version})),
+                )
+                .await?
             }
             _ => {
-                self.browser
-                    .send("POST", "/api/v1/me/work-days/start", Some(json!({})))
+                self.send("POST", "/api/v1/me/work-days/start", Some(json!({})))
                     .await?
             }
         };
@@ -221,7 +237,6 @@ impl Person {
 
     async fn comment(&mut self, work: &Work, round: usize) -> Result<(), Failure> {
         let reply = self
-            .browser
             .send(
                 "POST",
                 &format!("{ISSUES}/{}/comments", work.key),
@@ -237,7 +252,7 @@ impl Person {
     async fn lock(&mut self, work: &Work) -> Result<Option<String>, Failure> {
         let editor = format!("00000000-0000-4000-8000-{:012}", self.number);
         let body = json!({"target": what_of(&work.id), "editor_id": editor});
-        let taken = self.browser.send("POST", LOCKS, Some(body.clone())).await?;
+        let taken = self.send("POST", LOCKS, Some(body.clone())).await?;
         if ok(&taken)?["kind"] == "taken" {
             return Ok(token_of(&taken.body));
         }
@@ -245,7 +260,6 @@ impl Person {
             return Ok(None);
         }
         let over = self
-            .browser
             .send("POST", &format!("{LOCKS}/edit-anyway"), Some(body))
             .await?;
         Ok(token_of(ok(&over)?))
@@ -288,11 +302,9 @@ impl Person {
         };
         let text = format!("Text {}-{round} on {}", self.number, work.key);
         let version = self.read(work).await?;
-        let started = self.clock.now().as_second();
         let beat = json!({"target": what_of(&work.id), "lock_token": token,
             "draft": {"text": text, "base_version": version}});
         let beat = self
-            .browser
             .send("POST", &format!("{LOCKS}/renew"), Some(beat))
             .await?;
         ok(&beat)?;
@@ -301,18 +313,17 @@ impl Person {
         {
             return self.drafted(work, &text, DraftEnd::Vanished, None);
         }
-        // Every third one types for longer than the lease lasts, by the clock of the test. The
-        // clock runs on as long as anybody works, so the wait ends, and the lease has run out by
-        // then, however slow the computer is.
-        if behaviour == Behaviour::TypesForLongAlone {
+        // Every third one types for longer than the lease lasts, by the clock of the test: the
+        // lease has run out by then, however fast or slow the computer is.
+        if behaviour == Behaviour::TypesForLong
+            || (by_round && (self.number + round).is_multiple_of(3))
+        {
             self.clock.advance(LEASE_SECONDS + 1);
-        } else if by_round && (self.number + round).is_multiple_of(3) {
-            while self.clock.now().as_second() <= started + LEASE_SECONDS {
-                tokio::time::sleep(TICK).await;
-            }
+        }
+        if behaviour == Behaviour::TakesItsTime {
+            tokio::time::sleep(WALL_WHILE).await;
         }
         let saved = self
-            .browser
             .send(
                 "PUT",
                 &format!("{ISSUES}/{}/description", work.key),
@@ -338,7 +349,6 @@ impl Person {
     /// Whether the text is the draft of the person now.
     async fn is_draft(&mut self, work: &Work, text: &str) -> Result<bool, Failure> {
         let draft = self
-            .browser
             .send(
                 "GET",
                 &format!(
@@ -460,22 +470,27 @@ async fn the_crowd(
     Ok(people)
 }
 
-/// The two cases the run is for, played out alone before the crowd starts: one editor types for
-/// longer than the lease lasts and is refused with the text kept as a draft, and one vanishes
-/// without letting go. They are in the book like everything the crowd does.
-async fn the_two_cases(people: &mut [Person]) -> Result<(), Failure> {
-    let [slow, vanishing, ..] = people else {
-        return Err("fewer than two people".into());
+/// The three cases the run is for, played out alone before the crowd starts: one editor types for
+/// longer than the lease lasts and is refused with the text kept as a draft, one vanishes without
+/// letting go, and one takes long by the wall clock and still saves, because only the clock of the
+/// app counts. They are in the book like everything the crowd does.
+async fn the_three_cases(people: &mut [Person]) -> Result<(), Failure> {
+    let [slow, vanishing, unhurried, ..] = people else {
+        return Err("fewer than three people".into());
     };
     let work = slow.issue(0).clone();
-    slow.describe_as(&work, 0, Behaviour::TypesForLongAlone)
-        .await?;
+    slow.describe_as(&work, 0, Behaviour::TypesForLong).await?;
     let work = vanishing.issue(1).clone();
-    vanishing.describe_as(&work, 0, Behaviour::Vanishes).await
+    vanishing.describe_as(&work, 0, Behaviour::Vanishes).await?;
+    // The issue of the slow editor, whose lease has run out (the vanishing one still holds theirs).
+    let work = unhurried.issue(0).clone();
+    unhurried
+        .describe_as(&work, 0, Behaviour::TakesItsTime)
+        .await
 }
 
-/// All the people work until each has done their rounds. The clock runs beside them for as long as
-/// any of them is at work, and no lock is allowed to be further away than its lease.
+/// All the people work until each has done their rounds. Their requests move the clock, and no
+/// lock is allowed to be further away than its lease.
 async fn work_together(rig: &Rig, people: Vec<Person>, shared: &Shared) -> Result<(), Failure> {
     let mut working = JoinSet::new();
     for person in people {
@@ -483,7 +498,6 @@ async fn work_together(rig: &Rig, people: Vec<Person>, shared: &Shared) -> Resul
     }
     while !working.is_empty() {
         tokio::time::sleep(TICK).await;
-        rig.clock.advance(SECONDS_A_TICK);
         let rows = lock_rows(&rig.database).await?;
         let now = rig.clock_now().as_second();
         let mut guard = book(shared)?;
@@ -503,16 +517,16 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut admin) = Site::start(&rig, &app).await?;
         let shared: Shared = Arc::default();
-        // The test is about edit locks, not about sessions: the clock of the test runs about 470
-        // times as fast as the real one, so on a slow computer a person could wait out the idle
-        // time of a session between two requests. The limits are the largest the settings allow,
+        // The test is about edit locks, not about sessions: the clock of the test moves by leases
+        // while the people work, so a person could wait out the idle time of a session between two
+        // requests. The limits are the largest the settings allow,
         // set the way a deployment sets them.
         rig.set_organization_setting("security.session-idle-minutes", 1440)
             .await?;
         rig.set_organization_setting("security.session-absolute-hours", 720)
             .await?;
         let mut people = the_crowd(&rig, &site, &mut admin, &shared).await?;
-        the_two_cases(&mut people).await?;
+        the_three_cases(&mut people).await?;
         {
             let alone = book(&shared)?;
             let ended = |ending| alone.drafted.iter().any(|each| each.ending == ending);
@@ -521,10 +535,12 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
                 ended(DraftEnd::Vanished),
                 "the vanishing editor did not vanish"
             );
+            // Only the clock of the app counts: a second of the computer is no time of a lease.
+            assert!(ended(DraftEnd::Saved), "the unhurried editor was refused");
         }
         work_together(&rig, people, &shared).await?;
         // The run did what it is for: texts were kept, some saves were refused because the clock
-        // went past their lease and the text was kept as a draft, some editors vanished (the two
+        // went past their lease and the text was kept as a draft, some editors vanished (the three
         // cases played out first are there by construction, the crowd adds more).
         let book = std::mem::take(&mut *book(&shared)?);
         let ended = |ending| book.drafted.iter().any(|each| each.ending == ending);
