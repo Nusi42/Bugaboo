@@ -35,6 +35,8 @@ impl Moment for Instant {
     }
 }
 
+/// The clock of the app is a wall clock: a window counted on it (the calls of AI apps) lasts longer
+/// when the clock is set back, which is accepted, since it only makes a limit stricter for a while.
 impl Moment for Timestamp {
     fn since(self, earlier: Self) -> Duration {
         Duration::try_from(self.duration_since(earlier)).unwrap_or(Duration::ZERO)
