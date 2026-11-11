@@ -489,6 +489,11 @@ async fn the_three_cases(people: &mut [Person]) -> Result<(), Failure> {
         .await
 }
 
+/// How many texts the book says were kept.
+fn texts_kept(book: &Book) -> usize {
+    book.kept.iter().filter(|each| each.text.is_some()).count()
+}
+
 /// All the people work until each has done their rounds. Their requests move the clock, and no
 /// lock is allowed to be further away than its lease.
 async fn work_together(rig: &Rig, people: Vec<Person>, shared: &Shared) -> Result<(), Failure> {
@@ -538,13 +543,18 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
             // Only the clock of the app counts: a second of the computer is no time of a lease.
             assert!(ended(DraftEnd::Saved), "the unhurried editor was refused");
         }
+        // The texts the three cases kept, so the check below counts only what the crowd kept.
+        let kept_alone = texts_kept(&*book(&shared)?);
         work_together(&rig, people, &shared).await?;
         // The run did what it is for: texts were kept, some saves were refused because the clock
         // went past their lease and the text was kept as a draft, some editors vanished (the three
         // cases played out first are there by construction, the crowd adds more).
         let book = std::mem::take(&mut *book(&shared)?);
         let ended = |ending| book.drafted.iter().any(|each| each.ending == ending);
-        assert!(book.kept.iter().any(|each| each.text.is_some()));
+        assert!(
+            texts_kept(&book) > kept_alone,
+            "the crowd kept no text of its own"
+        );
         assert!(
             book.kept.iter().any(|each| each.title.is_some()),
             "no title was kept"
