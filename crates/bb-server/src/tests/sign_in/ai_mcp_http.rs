@@ -489,6 +489,15 @@ async fn ai_23_a_grant_over_its_limit_waits_and_changes_nothing() -> TestResult 
             .send("GET", &format!("/api/v1/projects/{}/issues", site.acme), None)
             .await?;
         assert_eq!(found.body["items"].as_array().map_or(0, Vec::len), 0, "nothing was done");
+        // The minute is one of the clock of the app, not of the computer: the calls above stand
+        // still on it however long the computer took for them, and once it has moved on by a
+        // minute the grant has room again.
+        rig.clock
+            .advance(bb_app::rate_window::PERIOD.as_secs().try_into()?);
+        let later = mcp
+            .post(Some(&signed.access), json!({"jsonrpc":"2.0","id":3,"method":"ping"}))
+            .await?;
+        assert_eq!(later.status, StatusCode::OK, "{}", later.json);
         Ok(())
     })
     .await

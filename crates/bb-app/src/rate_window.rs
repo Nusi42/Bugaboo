@@ -1,12 +1,15 @@
 //! A fixed window that counts events per key (SEC-14): the one window type of the server. The rate
 //! limits of the API (`bb-api`) and the calls of AI apps (`bb-app`) both use it, so a limit is
 //! counted one way everywhere. It holds no clock: the caller passes the moment, which keeps it pure
-//! and its tests exact.
+//! and its tests exact. The moment is the monotonic clock of the computer ([`Instant`]) or the clock
+//! of the app ([`Timestamp`]), which tests move by hand.
 
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
+
+use jiff::Timestamp;
 
 /// How long a window lasts when nothing else is said.
 pub const PERIOD: Duration = Duration::from_mins(1);
@@ -20,8 +23,26 @@ pub const MAX_CLIENTS: usize = 100_000;
 /// A full table is swept for expired counters at most this often.
 pub const SWEEP_EVERY: Duration = Duration::from_secs(1);
 
-struct Entry {
-    started: Instant,
+/// A moment a window counts from.
+pub trait Moment: Copy {
+    /// How long after `earlier` this moment is; no time when it is not after it.
+    fn since(self, earlier: Self) -> Duration;
+}
+
+impl Moment for Instant {
+    fn since(self, earlier: Self) -> Duration {
+        self.saturating_duration_since(earlier)
+    }
+}
+
+impl Moment for Timestamp {
+    fn since(self, earlier: Self) -> Duration {
+        Duration::try_from(self.duration_since(earlier)).unwrap_or(Duration::ZERO)
+    }
+}
+
+struct Entry<M> {
+    started: M,
     count: u32,
 }
 
@@ -34,27 +55,27 @@ pub enum Overflow<K> {
     Refuse,
 }
 
-/// Counts events per key in fixed windows.
-pub struct Window<K> {
+/// Counts events per key in fixed windows, on the clock that `M` is.
+pub struct Window<K, M = Instant> {
     limit: u32,
     /// How long a window lasts.
     period: Duration,
     overflow: Overflow<K>,
-    table: Mutex<Table<K>>,
+    table: Mutex<Table<K, M>>,
 }
 
 /// The counters of one window.
-struct Table<K> {
-    entries: HashMap<K, Entry>,
+struct Table<K, M> {
+    entries: HashMap<K, Entry<M>>,
     /// When expired entries were last swept out. A full table is swept at most once per
     /// [`SWEEP_EVERY`], so a flood cannot make every request scan 100,000 entries.
-    last_sweep: Option<Instant>,
+    last_sweep: Option<M>,
     /// How many sweeps ran (tests count them).
     #[cfg(test)]
     sweeps: u32,
 }
 
-impl<K: Hash + Eq + Clone> Window<K> {
+impl<K: Hash + Eq + Clone, M: Moment> Window<K, M> {
     /// A window of one minute that allows `limit` events per key.
     #[must_use]
     pub fn new(limit: u32, overflow: Overflow<K>) -> Self {
@@ -77,7 +98,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
         }
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, Table<K>> {
+    fn lock(&self) -> std::sync::MutexGuard<'_, Table<K, M>> {
         self.table.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
@@ -86,12 +107,10 @@ impl<K: Hash + Eq + Clone> Window<K> {
     ///
     /// # Errors
     /// The seconds to wait (at least one) when the key is over the limit.
-    pub fn room(&self, key: &K, now: Instant) -> Result<(), u64> {
+    pub fn room(&self, key: &K, now: M) -> Result<(), u64> {
         let table = self.lock();
         match table.entries.get(key) {
-            Some(entry)
-                if now.duration_since(entry.started) < self.period && entry.count >= self.limit =>
-            {
+            Some(entry) if now.since(entry.started) < self.period && entry.count >= self.limit => {
                 Err(seconds_left(entry.started, now, self.period))
             }
             _ => Ok(()),
@@ -115,7 +134,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
     ///
     /// # Errors
     /// The seconds to wait (at least one) when the key is over the limit.
-    pub fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
+    pub fn hit(&self, key: K, now: M) -> Result<(), u64> {
         self.hit_within(key, now, self.limit)
     }
 
@@ -124,12 +143,10 @@ impl<K: Hash + Eq + Clone> Window<K> {
     ///
     /// # Errors
     /// The seconds to wait (at least one) when the key is over `limit`.
-    pub fn room_within(&self, key: &K, now: Instant, limit: u32) -> Result<(), u64> {
+    pub fn room_within(&self, key: &K, now: M, limit: u32) -> Result<(), u64> {
         let table = self.lock();
         match table.entries.get(key) {
-            Some(entry)
-                if now.duration_since(entry.started) < self.period && entry.count >= limit =>
-            {
+            Some(entry) if now.since(entry.started) < self.period && entry.count >= limit => {
                 Err(seconds_left(entry.started, now, self.period))
             }
             _ => Ok(()),
@@ -141,7 +158,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
     ///
     /// # Errors
     /// The seconds to wait (at least one) when the key is over `limit`.
-    pub fn hit_within(&self, key: K, now: Instant, limit: u32) -> Result<(), u64> {
+    pub fn hit_within(&self, key: K, now: M, limit: u32) -> Result<(), u64> {
         let mut table = self.lock();
         let mut key = key;
         if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
@@ -157,7 +174,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
             started: now,
             count: 0,
         });
-        if now.duration_since(entry.started) >= self.period {
+        if now.since(entry.started) >= self.period {
             *entry = Entry {
                 started: now,
                 count: 0,
@@ -172,21 +189,21 @@ impl<K: Hash + Eq + Clone> Window<K> {
 }
 
 /// The seconds a key that started its window at `started` still has to wait: at least one.
-fn seconds_left(started: Instant, now: Instant, period: Duration) -> u64 {
-    let wait = period.saturating_sub(now.duration_since(started));
+fn seconds_left<M: Moment>(started: M, now: M, period: Duration) -> u64 {
+    let wait = period.saturating_sub(now.since(started));
     (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
 }
 
 /// Throws out the counters whose window is over, when the table is full. A full table is swept
 /// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
-fn create_room<K>(table: &mut Table<K>, now: Instant, period: Duration) {
+fn create_room<K, M: Moment>(table: &mut Table<K, M>, now: M, period: Duration) {
     let due = table
         .last_sweep
-        .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
+        .is_none_or(|last| now.since(last) >= SWEEP_EVERY);
     if due {
         table
             .entries
-            .retain(|_, entry| now.duration_since(entry.started) < period);
+            .retain(|_, entry| now.since(entry.started) < period);
         table.last_sweep = Some(now);
         #[cfg(test)]
         {

@@ -1,9 +1,13 @@
 //! The limits on the calls of AI apps (ADR-0042, decision 6): at most 120 calls a minute for one
 //! grant (an access key counts as its own grant) and 240 a minute for one person over all their
 //! grants and keys. A call over the limit is answered with the time to wait, and nothing of it is
-//! done. The counting is the fixed window of the rest of the server (`crate::rate_window`).
+//! done. The counting is the fixed window of the rest of the server (`crate::rate_window`), on the
+//! clock of the app: the calls of a minute are those of a minute of that clock, so a busy computer
+//! that answers slowly does not spread the calls over more windows than the app saw minutes.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use jiff::Timestamp;
 
 use bb_core::id::UserId;
 use bb_core::oauth::{
@@ -19,9 +23,9 @@ use crate::rate_window::{Overflow, Window};
 /// The calls of the last minute, by grant and by person, and the registrations of the last hour,
 /// by network.
 pub(crate) struct CallRate {
-    grants: Window<String>,
-    people: Window<UserId>,
-    registrations: Window<String>,
+    grants: Window<String, Timestamp>,
+    people: Window<UserId, Timestamp>,
+    registrations: Window<String, Timestamp>,
 }
 
 impl Default for CallRate {
@@ -49,7 +53,7 @@ pub(crate) struct Counted<'a> {
 impl CallRate {
     /// Counts one call against the grant and the person, or says how many seconds to wait. Both
     /// must have room: a call that is turned away counts against neither.
-    pub(crate) fn take(&self, counted: &Counted<'_>, now: Instant) -> Result<(), u64> {
+    pub(crate) fn take(&self, counted: &Counted<'_>, now: Timestamp) -> Result<(), u64> {
         let grant = counted.grant.to_owned();
         let wait = [
             self.grants.room(&grant, now),
@@ -80,7 +84,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.services
             .call_rate
             .registrations
-            .hit(network, Instant::now())
+            .hit(network, self.now())
             .map_err(|retry_after| AppError::Limited { retry_after })
     }
 
@@ -97,7 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     grant: &grant,
                     person: actor.person.id,
                 },
-                Instant::now(),
+                self.now(),
             )
             .map_err(|retry_after| AppError::Limited { retry_after })
     }
@@ -105,15 +109,13 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use super::*;
 
     #[test]
     fn ai_23_a_grant_over_its_limit_waits_and_the_call_counts_for_nothing() {
         let rate = CallRate::default();
-        let start = Instant::now();
-        let at = |seconds: u64| start + Duration::from_secs(seconds);
+        let start = Timestamp::from_second(1_800_000_000).unwrap_or_default();
+        let at = |seconds: i64| start + jiff::SignedDuration::from_secs(seconds);
         let person = UserId::generate(&mut bb_core::id::SequentialIds::default());
         let first = Counted {
             grant: "g1",
