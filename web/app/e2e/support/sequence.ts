@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { type Page, type Response } from "@playwright/test";
 
 /**
  * Does the steps one after the other. A browser does one thing at a time, so the steps of a test
@@ -37,5 +37,17 @@ const CONFLICT = 409;
 export function waitForRefusedChange(page: Page): Promise<unknown> {
   return page.waitForResponse(
     (response) => response.request().method() === "PATCH" && response.status() === CONFLICT,
+  );
+}
+
+/**
+ * The answer of the server to the request `method` `path` (the path of the address, as
+ * `/api/v1/standing-rules`) that the page sends next. Asked for before the step that sends it, and
+ * waited for before the test goes on: a window that closes when it is pressed does not wait for its
+ * save, and a test that leaves the page at once would cut the save.
+ */
+export function answerTo(page: Page, method: string, path: string): Promise<Response> {
+  return page.waitForResponse(
+    (answer) => answer.request().method() === method && new URL(answer.url()).pathname === path,
   );
 }

@@ -149,6 +149,14 @@ test("thm_21 a chosen choice and a switch that is on show it in every look", asy
 test("thm_21 a pressed button takes the look of what is pressed", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(paths.roles);
+  // The roles come in above the form and push its button down: the mouse goes to the button once
+  // it stands where it stays, or the press lands on what is there after the push.
+  await expect(
+    page
+      .getByRole("list", { name: t("roles.list") })
+      .getByRole("link")
+      .first(),
+  ).toBeVisible();
   const button = partWhere(page, part.button, '[data-variant~="primary"]').first();
   await button.hover();
   await page.mouse.down();

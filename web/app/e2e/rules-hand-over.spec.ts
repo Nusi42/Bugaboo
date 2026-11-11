@@ -8,6 +8,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { allowNever, fillTopOfRule, pieceCount } from "./support/rules-hand-over.ts";
+import { answerTo } from "./support/sequence.ts";
 
 // Standing rules that hand over what they find, and rules that never run out (AI-32, ADR-0029, WP-14): the window
 // offers both ways and *Never runs out* only where an administrator allows it, and a rule that hands over gives its
@@ -58,8 +59,10 @@ test("m7_wp14_a_rule_that_never_runs_out_is_offered_only_where_an_administrator_
   await expect(
     window.getByText(t("agents.rule-never-ends-help", { agent: scene.names.sorter })),
   ).toBeVisible();
+  const saved = answerTo(page, "POST", "/api/v1/standing-rules");
   await window.getByRole("button", { name: t("agents.rule-confirm") }).click();
   await expect(window).toHaveCount(0);
+  expect((await saved).ok()).toBe(true);
   await page.goto(paths.myAgents);
   await expect(page.getByText(t("agents.rule-never-ends")).first()).toBeVisible();
   await expectGoodInEveryLook(page);

@@ -246,14 +246,18 @@ export function roomUnderContent(box: Locator): Promise<number> {
   });
 }
 
-/** Scrolls a box of rows of a list to its end and says how much room is under its last row. */
-export async function roomUnderLastRow(scroll: Locator): Promise<number> {
-  await scroll.evaluate((box) => {
+/**
+ * Scrolls a box of rows of a list to its end and says how much room is under its last row. The
+ * rows are read in one go in the page: the list draws only the rows in sight, so a row found in one
+ * step can be gone in the next while it draws the end; no row (yet) is no room.
+ */
+export function roomUnderLastRow(scroll: Locator): Promise<number> {
+  return scroll.evaluate((box, row) => {
     box.scrollTop = box.scrollHeight;
-  });
-  const [last, box] = await Promise.all([
-    boxOf(partIn(scroll, part.listRow).last()),
-    boxOf(scroll),
-  ]);
-  return box.y + box.height - (last.y + last.height);
+    const rows = box.querySelectorAll(`[data-part="${row}"]`);
+    const last = rows.item(rows.length - 1);
+    return last === null
+      ? Number.NEGATIVE_INFINITY
+      : box.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom;
+  }, part.listRow);
 }
