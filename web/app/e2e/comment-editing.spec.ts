@@ -1,10 +1,11 @@
 import { t } from "@bugaboo/messages";
-import type { Page, Response } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
+import { answerTo } from "./support/sequence.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
 // Editing a comment under its lock (ISS-05, ISS-17, M3 WP-13): when the lock is somebody
@@ -35,11 +36,6 @@ async function addComment(page: Page, text: string): Promise<void> {
 /** Opens the tab of the comments. */
 async function showComments(page: Page): Promise<void> {
   await page.getByRole("tab", { name: t("history.tab-comments"), exact: true }).click();
-}
-
-/** Whether the answer is the one to the request that lets go of an edit lock. */
-function isRelease(answer: Response): boolean {
-  return answer.request().method() === "POST" && answer.url().endsWith("/api/v1/edit-locks/let-go");
 }
 
 /** The button that edits the comment. */
@@ -136,7 +132,7 @@ test("iss_05 a draft of a comment that was kept is offered when the editor opens
   // Close leaves the text as a draft and lets go of the lock. The release is a request, and a page
   // that is read again while it is on its way cancels it: the lock then stays (the person is told
   // they edit in another window), so the test goes on only when the server has answered it.
-  const released = page.waitForResponse(isRelease);
+  const released = answerTo(page, "POST", "/api/v1/edit-locks/let-go");
   await page
     .getByRole("button", { name: t("common.close"), exact: true })
     .first()

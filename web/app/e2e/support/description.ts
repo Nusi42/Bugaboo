@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { issueAddress } from "../../src/shared/paths.ts";
+import { answerTo } from "./sequence.ts";
 
 /** The box the description is written in. */
 export function descriptionBox(within: Locator | Page) {
@@ -49,9 +50,7 @@ export async function startEditing(page: Page, key: string): Promise<void> {
  * and what other people see (*… is editing*) only starts when it is given.
  */
 export async function typeUnderLock(page: Page, text: string): Promise<void> {
-  const taken = page.waitForResponse(
-    (answer) => answer.request().method() === "POST" && answer.url().endsWith("/api/v1/edit-locks"),
-  );
+  const taken = answerTo(page, "POST", "/api/v1/edit-locks");
   await descriptionBox(page).fill(text);
   expect((await taken).ok()).toBe(true);
 }

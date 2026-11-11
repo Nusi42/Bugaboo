@@ -6,6 +6,7 @@ import { ada, signInThroughApi } from "./accounts.ts";
 import { type FakeModel } from "./fake-model.ts";
 import { layoutOf } from "./layout.ts";
 import { box, dialog } from "./quick-search.ts";
+import { answerTo } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 
 /** An administrator sets up the assistant with the fake model of a test and switches AI on. */
@@ -215,8 +216,5 @@ export async function saveOutsideProvider(page: Page): Promise<void> {
  * button either while that answer is still on its way, so a check that nothing is there counts only after it.
  */
 export function assistantStatusAnswered(page: Page): Promise<unknown> {
-  return page.waitForResponse(
-    (answer) =>
-      new URL(answer.url()).pathname === "/api/v1/assistant" && answer.request().method() === "GET",
-  );
+  return answerTo(page, "GET", "/api/v1/assistant");
 }
