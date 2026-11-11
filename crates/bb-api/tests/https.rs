@@ -48,6 +48,10 @@ mod https {
     use bb_api::{HSTS_NAME, SECURITY_HEADERS, hsts_value};
 
     const LOOPBACK: &str = "127.0.0.1:0";
+    /// The end of a wait for something the server does by itself (letting go of a client, serving
+    /// a client that has a place): no time it is expected to take, only far beyond what a busy
+    /// computer needs, so a server that never does it fails the test instead of hanging the run.
+    const NEVER_DONE: Duration = Duration::from_mins(2);
 
     struct Running {
         address: SocketAddr,
@@ -340,10 +344,8 @@ Host: local",
             .await
             .unwrap();
         let mut out = Vec::new();
-        // The server waits one second for the headers (see `start_with`); the limit here is only
-        // the end of a wait for a server that never lets go, far beyond what a busy computer needs.
-        let ended =
-            tokio::time::timeout(Duration::from_mins(2), stream.read_to_end(&mut out)).await;
+        // The server waits one second for the headers (see `start_with`).
+        let ended = tokio::time::timeout(NEVER_DONE, stream.read_to_end(&mut out)).await;
         assert!(ended.is_ok(), "the server kept a half-sent request open");
     }
 
@@ -363,9 +365,10 @@ Host: local",
             waiting.is_err(),
             "a second connection was served at the limit"
         );
+        // Once the first lets go, its place is free and the second is served; how soon depends on
+        // how busy the computer is (a full run took over five seconds), not on the server.
         drop(first);
-        let answer =
-            tokio::time::timeout(Duration::from_secs(5), second.read_to_end(&mut out)).await;
+        let answer = tokio::time::timeout(NEVER_DONE, second.read_to_end(&mut out)).await;
         assert!(answer.is_ok());
         assert!(String::from_utf8_lossy(&out).contains("200 OK"));
     }
