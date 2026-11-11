@@ -22,6 +22,18 @@ const speedFiles = "**/perf-*.spec.ts";
 /** How many WebKit tests run at the same time (see the project). */
 const WEBKIT_WORKERS = 2;
 
+/**
+ * Chromium as every project but the WebKit one uses it. The servers of the tests make their own
+ * certificate, which no browser trusts: told only per context to ignore that (`ignoreHTTPSErrors`),
+ * Chromium refuses the first connection of every context and opens a second one (measured: two
+ * connections a context, against one with the switch), and each refused one stays in TIME_WAIT on
+ * the server for two minutes. With the switch at the start of the browser it opens one.
+ */
+const chromium = {
+  browserName: "chromium" as const,
+  launchOptions: { args: ["--ignore-certificate-errors"] },
+};
+
 /** What runs in the WebKit phone project. */
 const webkitPhoneFiles = [
   "**/issues.spec.ts",
@@ -51,20 +63,20 @@ export default defineConfig({
     {
       name: "tablet",
       testMatch: "**/shell.spec.ts",
-      use: { browserName: "chromium", viewport: viewports.tablet, hasTouch: true },
+      use: { ...chromium, viewport: viewports.tablet, hasTouch: true },
     },
     {
       name: "desktop",
       // A spec for a phone only (`*-phone.spec.ts`) is not run here.
       testIgnore: [speedFiles, "**/*-phone.spec.ts"],
-      use: { browserName: "chromium", viewport: viewports.computer },
+      use: { ...chromium, viewport: viewports.computer },
     },
     {
       name: "phone",
       // Ten browsers at once are shown on a computer; the phone has the locks in WebKit below.
       // A spec for a computer only (`*-computer.spec.ts`) is not run here.
       testIgnore: ["**/concurrent/**", speedFiles, "**/*-computer.spec.ts"],
-      use: { browserName: "chromium", viewport: viewports.phone, hasTouch: true },
+      use: { ...chromium, viewport: viewports.phone, hasTouch: true },
     },
     // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the
     // issue page, the new-issue dialog and the edit locks. The same files, the same servers.
@@ -90,7 +102,7 @@ export default defineConfig({
       // a miss. On a busy computer run it alone: `--project=speed --no-deps`.
       retries: 1,
       dependencies: ["tablet", "desktop", "phone", "webkit-phone"],
-      use: { browserName: "chromium", viewport: viewports.computer },
+      use: { ...chromium, viewport: viewports.computer },
     },
   ],
 });
