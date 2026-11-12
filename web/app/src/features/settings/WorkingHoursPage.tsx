@@ -6,8 +6,8 @@ import { OldWorkDays } from "./OldWorkDays.tsx";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
 import { WhoSeesWorkingHours } from "./WhoSeesWorkingHours.tsx";
 
-/** The settings that belong to *Working hours* (UX §5.1): the rules, the keep period, *Totals only*, and *Billable*. */
-const TOPICS = "working-hours.,time.";
+/** The settings that belong to *Working hours* (UX §5.1): the rules, the keep period, *Totals only*, *Billable*, and the organization's choice of *Holidays*. */
+const TOPICS = "working-hours.,time.,work-times.";
 
 /**
  * *Organization settings › Work › Working hours* (TIME-09, TIME-10, TIME-12, ADR-0018, ADR-0035): the

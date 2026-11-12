@@ -113,6 +113,16 @@ export const messages = {
   "projects.offered-in-created-organization": "Created for the whole organization.",
   "projects.offered-in-created-project":
     "Created in {project}. Offered there and below until a line says otherwise.",
+  "project-members.intro":
+    "How much of each person's work hours belong to this project. The timeline plans with it.",
+  "project-members.share-of": "Share of {name} in the project",
+  "project-members.share-set": "The share of {name} is now {percent}.",
+  "project-members.over": "Over 100 % in all",
+  "project-members.unit": "%",
+  "project-members.also-in": "Also in {projects}",
+  "project-members.others-hidden": "projects you can't see",
+  "project-members.none": "Nobody has a role in this project yet.",
+  "project-members.more": "Show more people",
 } as const;
 
 register(messages);

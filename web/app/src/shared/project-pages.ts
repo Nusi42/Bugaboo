@@ -66,6 +66,15 @@ export const projectPages = {
     needs: "decide-roles",
     title: (name) => t("assignments.title-project", { name }),
   },
+  members: {
+    path: paths.projectMembers,
+    name: "nav.project-members",
+    icon: iconName.people,
+    parent: paths.projectSettings,
+    tab: "nav.project-members",
+    needs: "decide-roles",
+    title: (project) => t("project-members.title", { project }),
+  },
   fields: {
     path: paths.projectFields,
     name: "nav.field-permissions",
@@ -135,6 +144,7 @@ export const projectPages = {
 export const settingsTabs: readonly ProjectPage[] = [
   projectPages.settings,
   projectPages.roles,
+  projectPages.members,
   projectPages.fields,
   projectPages.layouts,
   projectPages.issueTypes,

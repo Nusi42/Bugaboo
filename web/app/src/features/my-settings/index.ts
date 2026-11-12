@@ -3,6 +3,7 @@ import "@bugaboo/messages/parts/my-settings";
 
 export { AppearancePage } from "./AppearancePage.tsx";
 export { RegionPage } from "./RegionPage.tsx";
+export { usePersonalForm } from "./use-personal-form.ts";
 export { AssistantPage } from "./AssistantPage.tsx";
 export { StartPage, type StartPageProps } from "./StartPage.tsx";
 export { AccessKeysPage } from "./access-keys/AccessKeysPage.tsx";

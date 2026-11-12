@@ -38,8 +38,9 @@ const WorkingHoursScreen = lazyRouteComponent(
   "WorkingHoursPage",
 );
 
-// *My settings › Assistant* has its own file, which keeps this one short.
+// *My settings › Assistant* and the screens of work times have their own files, which keeps this one short.
 export { assistantSettingsRoute } from "./assistant-pages.tsx";
+export { personWorkTimesRoute, projectMembersRoute, workTimesRoute } from "./work-times-pages.tsx";
 
 export const homeRoute = createRoute({
   getParentRoute: () => appRoute,

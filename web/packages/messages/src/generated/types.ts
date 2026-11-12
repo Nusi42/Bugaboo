@@ -35,6 +35,7 @@ import type { messages as shell } from "./shell.ts";
 import type { messages as signIn } from "./sign-in.ts";
 import type { messages as signUp } from "./sign-up.ts";
 import type { messages as time } from "./time.ts";
+import type { messages as workTimes } from "./work-times.ts";
 import type { messages as workflows } from "./workflows.ts";
 
 export type MessageKey =
@@ -73,6 +74,7 @@ export type MessageKey =
   | keyof typeof signIn
   | keyof typeof signUp
   | keyof typeof time
+  | keyof typeof workTimes
   | keyof typeof workflows;
 
 export interface MessageArguments {
@@ -246,6 +248,7 @@ export interface MessageArguments {
   };
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
+  "common.percent": { percent: string | number };
   "common.show-all": { count: number };
   "common.time-24": { hour: string | number; minute: string | number };
   "common.time-am": { hour: string | number; minute: string | number };
@@ -533,8 +536,13 @@ export interface MessageArguments {
   "person.role-inside": { role: string | number };
   "person.roles-none": { name: string | number };
   "person.via-app": { app: string | number; who: string | number };
+  "person.work-times-intro": { name: string | number };
   "preview.line-changes": { after: string | number; field: string | number };
   "preview.summary": { changed: number; skipped: number };
+  "project-members.also-in": { projects: string | number };
+  "project-members.share-of": { name: string | number };
+  "project-members.share-set": { name: string | number; percent: string | number };
+  "project-members.title": { project: string | number };
   "projects.created": { name: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": { things: string | number };
@@ -825,6 +833,28 @@ export interface MessageArguments {
   "time.work-day.timer-text": { issue: string | number };
   "time.work-day.timer-title": { issue: string | number };
   "time.work-day.too-text": { issue: string | number };
+  "work-times.away-added": { days: string | number };
+  "work-times.away-change-name": { days: string | number };
+  "work-times.away-changed": { days: string | number };
+  "work-times.away-delete-name": { days: string | number };
+  "work-times.away-deleted": { days: string | number };
+  "work-times.back-other": { name: string | number };
+  "work-times.changing-other": { name: string | number };
+  "work-times.day-afternoon": { date: string | number };
+  "work-times.day-hours": { day: string | number };
+  "work-times.day-morning": { date: string | number };
+  "work-times.day-run": { first: string | number; last: string | number };
+  "work-times.days": { first: string | number; last: string | number };
+  "work-times.holiday-on": { date: string | number; holiday: string | number };
+  "work-times.holidays-next": { days: string | number };
+  "work-times.holidays-of": { choice: string | number };
+  "work-times.intro-other": { name: string | number };
+  "work-times.share": { percent: string | number; project: string | number };
+  "work-times.shares-over": { sum: string | number };
+  "work-times.title-other": { name: string | number };
+  "work-times.told": { name: string | number };
+  "work-times.usual-a-day": { days: string | number; length: string | number };
+  "work-times.usual-a-week": { days: string | number; length: string | number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };

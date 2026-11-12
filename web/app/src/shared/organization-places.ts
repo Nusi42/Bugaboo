@@ -28,6 +28,15 @@ const organizationTopics: readonly Place[] = [
     listed: false,
   },
   {
+    // The work times of a person are reached from their page, by a holder of the permission.
+    path: paths.personWorkTimes,
+    name: "nav.work-times",
+    icon: iconName.clock,
+    parent: paths.person,
+    anyOf: ["enter-work-times-for-others"],
+    listed: false,
+  },
+  {
     path: paths.groups,
     name: "nav.groups",
     icon: iconName.groups,

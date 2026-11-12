@@ -67,6 +67,9 @@ import {
   startPageRoute,
   statusRoute,
   themesRoute,
+  personWorkTimesRoute,
+  projectMembersRoute,
+  workTimesRoute,
 } from "./app-pages.tsx";
 import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
@@ -102,6 +105,7 @@ const routeTree = rootRoute.addChildren([
     aiGuideRoute,
     projectSettingsRoute,
     projectRolesRoute,
+    projectMembersRoute,
     projectFieldsRoute,
     projectLayoutsRoute,
     projectIssueTypesRoute,
@@ -113,6 +117,7 @@ const routeTree = rootRoute.addChildren([
       mySettingsIndexRoute,
       appearanceRoute,
       regionRoute,
+      workTimesRoute,
       assistantSettingsRoute,
       startPageRoute,
       notificationSettingsRoute,
@@ -127,6 +132,7 @@ const routeTree = rootRoute.addChildren([
       organizationSettingsIndexRoute,
       peopleRoute,
       personRoute,
+      personWorkTimesRoute,
       groupsRoute,
       groupRoute,
       rolesRoute,

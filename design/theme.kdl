@@ -167,6 +167,8 @@ tokens {
     size "size-sheet-text-top" "calc($space-1 + ($size-control - 1lh) / 2)"
     // The box of the number of a choice (up to nine digits in the code font, with the box around them).
     size "size-choice-number-box" "calc(14ch + 2 * $space-3)"
+    // The box of the work hours of a day (`7h 30m`), narrow enough to stay beside the longest weekday on a phone.
+    size "size-hours-box" "calc(8ch + 2 * $space-3)"
     // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font, and the box around it.
     size "size-sheet-day" "72px"
     // One day of the timesheet on a phone, where the names stand beside the box and there is room for it.
@@ -3978,6 +3980,16 @@ part "length-box[variant=number] field.input" {
 // than the error under it.
 part "length-box[variant=number] field.description" {
     text-wrap wrap
+}
+
+// A day of the usual work days (UX §4.13): its tick and its hours stay on one row, also on a phone, and the box of the
+// hours is as wide as a short length, so the name of the day is never broken.
+part "item[variant=day]" {
+    flex-wrap nowrap
+}
+
+part "item[variant=day] length-box" {
+    flex "0 0 $size-hours-box"
 }
 
 // Facts side by side (*10h estimated · 6h 40m left · 3h 20m spent*): a fact never breaks inside, and a line breaks only

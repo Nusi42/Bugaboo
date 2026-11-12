@@ -4436,6 +4436,9 @@ pub const NAV_PEOPLE: MessageKey = MessageKey::new("nav.people");
 /// The message `nav.people-visibility`.
 pub const NAV_PEOPLE_VISIBILITY: MessageKey = MessageKey::new("nav.people-visibility");
 
+/// The message `nav.project-members`.
+pub const NAV_PROJECT_MEMBERS: MessageKey = MessageKey::new("nav.project-members");
+
 /// The message `nav.projects`.
 pub const NAV_PROJECTS: MessageKey = MessageKey::new("nav.projects");
 
@@ -4471,6 +4474,9 @@ pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
 /// The message `nav.timesheet`.
 pub const NAV_TIMESHEET: MessageKey = MessageKey::new("nav.timesheet");
+
+/// The message `nav.work-times`.
+pub const NAV_WORK_TIMES: MessageKey = MessageKey::new("nav.work-times");
 
 /// The message `nav.working-hours`.
 pub const NAV_WORKING_HOURS: MessageKey = MessageKey::new("nav.working-hours");
@@ -4973,6 +4979,25 @@ pub const PRIORITY_LOW: MessageKey = MessageKey::new("priority.low");
 
 /// The message `priority.normal`.
 pub const PRIORITY_NORMAL: MessageKey = MessageKey::new("priority.normal");
+
+/// The message `project-members.intro`.
+pub const PROJECT_MEMBERS_INTRO: MessageKey = MessageKey::new("project-members.intro");
+
+/// The message `project-members.more`.
+pub const PROJECT_MEMBERS_MORE: MessageKey = MessageKey::new("project-members.more");
+
+/// The message `project-members.none`.
+pub const PROJECT_MEMBERS_NONE: MessageKey = MessageKey::new("project-members.none");
+
+/// The message `project-members.others-hidden`.
+pub const PROJECT_MEMBERS_OTHERS_HIDDEN: MessageKey =
+    MessageKey::new("project-members.others-hidden");
+
+/// The message `project-members.over`.
+pub const PROJECT_MEMBERS_OVER: MessageKey = MessageKey::new("project-members.over");
+
+/// The message `project-members.unit`.
+pub const PROJECT_MEMBERS_UNIT: MessageKey = MessageKey::new("project-members.unit");
 
 /// The message `projects.at-the-top`.
 pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
@@ -8114,6 +8139,102 @@ pub const WINDOW_TALLER: MessageKey = MessageKey::new("window.taller");
 /// The message `window.wider`.
 pub const WINDOW_WIDER: MessageKey = MessageKey::new("window.wider");
 
+/// The message `work-times.afternoon-only`.
+pub const WORK_TIMES_AFTERNOON_ONLY: MessageKey = MessageKey::new("work-times.afternoon-only");
+
+/// The message `work-times.away`.
+pub const WORK_TIMES_AWAY: MessageKey = MessageKey::new("work-times.away");
+
+/// The message `work-times.away-add`.
+pub const WORK_TIMES_AWAY_ADD: MessageKey = MessageKey::new("work-times.away-add");
+
+/// The message `work-times.away-change`.
+pub const WORK_TIMES_AWAY_CHANGE: MessageKey = MessageKey::new("work-times.away-change");
+
+/// The message `work-times.away-coming`.
+pub const WORK_TIMES_AWAY_COMING: MessageKey = MessageKey::new("work-times.away-coming");
+
+/// The message `work-times.away-delete`.
+pub const WORK_TIMES_AWAY_DELETE: MessageKey = MessageKey::new("work-times.away-delete");
+
+/// The message `work-times.away-intro`.
+pub const WORK_TIMES_AWAY_INTRO: MessageKey = MessageKey::new("work-times.away-intro");
+
+/// The message `work-times.away-more`.
+pub const WORK_TIMES_AWAY_MORE: MessageKey = MessageKey::new("work-times.away-more");
+
+/// The message `work-times.away-none`.
+pub const WORK_TIMES_AWAY_NONE: MessageKey = MessageKey::new("work-times.away-none");
+
+/// The message `work-times.away-past`.
+pub const WORK_TIMES_AWAY_PAST: MessageKey = MessageKey::new("work-times.away-past");
+
+/// The message `work-times.first-day`.
+pub const WORK_TIMES_FIRST_DAY: MessageKey = MessageKey::new("work-times.first-day");
+
+/// The message `work-times.from`.
+pub const WORK_TIMES_FROM: MessageKey = MessageKey::new("work-times.from");
+
+/// The message `work-times.holidays-none`.
+pub const WORK_TIMES_HOLIDAYS_NONE: MessageKey = MessageKey::new("work-times.holidays-none");
+
+/// The message `work-times.intro`.
+pub const WORK_TIMES_INTRO: MessageKey = MessageKey::new("work-times.intro");
+
+/// The message `work-times.last-day`.
+pub const WORK_TIMES_LAST_DAY: MessageKey = MessageKey::new("work-times.last-day");
+
+/// The message `work-times.morning-only`.
+pub const WORK_TIMES_MORNING_ONLY: MessageKey = MessageKey::new("work-times.morning-only");
+
+/// The message `work-times.no-reason`.
+pub const WORK_TIMES_NO_REASON: MessageKey = MessageKey::new("work-times.no-reason");
+
+/// The message `work-times.note`.
+pub const WORK_TIMES_NOTE: MessageKey = MessageKey::new("work-times.note");
+
+/// The message `work-times.note-help`.
+pub const WORK_TIMES_NOTE_HELP: MessageKey = MessageKey::new("work-times.note-help");
+
+/// The message `work-times.save-add`.
+pub const WORK_TIMES_SAVE_ADD: MessageKey = MessageKey::new("work-times.save-add");
+
+/// The message `work-times.save-change`.
+pub const WORK_TIMES_SAVE_CHANGE: MessageKey = MessageKey::new("work-times.save-change");
+
+/// The message `work-times.share-hidden`.
+pub const WORK_TIMES_SHARE_HIDDEN: MessageKey = MessageKey::new("work-times.share-hidden");
+
+/// The message `work-times.shares`.
+pub const WORK_TIMES_SHARES: MessageKey = MessageKey::new("work-times.shares");
+
+/// The message `work-times.shares-intro`.
+pub const WORK_TIMES_SHARES_INTRO: MessageKey = MessageKey::new("work-times.shares-intro");
+
+/// The message `work-times.shares-none`.
+pub const WORK_TIMES_SHARES_NONE: MessageKey = MessageKey::new("work-times.shares-none");
+
+/// The message `work-times.to`.
+pub const WORK_TIMES_TO: MessageKey = MessageKey::new("work-times.to");
+
+/// The message `work-times.usual`.
+pub const WORK_TIMES_USUAL: MessageKey = MessageKey::new("work-times.usual");
+
+/// The message `work-times.usual-changed`.
+pub const WORK_TIMES_USUAL_CHANGED: MessageKey = MessageKey::new("work-times.usual-changed");
+
+/// The message `work-times.usual-none`.
+pub const WORK_TIMES_USUAL_NONE: MessageKey = MessageKey::new("work-times.usual-none");
+
+/// The message `work-times.whole-day`.
+pub const WORK_TIMES_WHOLE_DAY: MessageKey = MessageKey::new("work-times.whole-day");
+
+/// The message `work-times.window-add`.
+pub const WORK_TIMES_WINDOW_ADD: MessageKey = MessageKey::new("work-times.window-add");
+
+/// The message `work-times.window-change`.
+pub const WORK_TIMES_WINDOW_CHANGE: MessageKey = MessageKey::new("work-times.window-change");
+
 /// The message `workflow-change.ask-for-review`.
 pub const WORKFLOW_CHANGE_ASK_FOR_REVIEW: MessageKey =
     MessageKey::new("workflow-change.ask-for-review");
@@ -9839,6 +9960,15 @@ pub fn comments_version_saved(
             ("version", Value::Text(version.to_string())),
             ("when", Value::Text(when.to_string())),
         ],
+    )
+}
+
+/// The message `common.percent`.
+#[must_use]
+pub fn common_percent(percent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.percent"),
+        vec![("percent", Value::Text(percent.to_string()))],
     )
 }
 
@@ -13039,6 +13169,15 @@ pub fn person_via_app(app: impl std::fmt::Display, who: impl std::fmt::Display) 
     )
 }
 
+/// The message `person.work-times-intro`.
+#[must_use]
+pub fn person_work_times_intro(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.work-times-intro"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `preview.line-changes`.
 #[must_use]
 pub fn preview_line_changes(
@@ -13063,6 +13202,48 @@ pub fn preview_summary(changed: i64, skipped: i64) -> Message {
             ("changed", Value::Number(changed)),
             ("skipped", Value::Number(skipped)),
         ],
+    )
+}
+
+/// The message `project-members.also-in`.
+#[must_use]
+pub fn project_members_also_in(projects: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("project-members.also-in"),
+        vec![("projects", Value::Text(projects.to_string()))],
+    )
+}
+
+/// The message `project-members.share-of`.
+#[must_use]
+pub fn project_members_share_of(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("project-members.share-of"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `project-members.share-set`.
+#[must_use]
+pub fn project_members_share_set(
+    name: impl std::fmt::Display,
+    percent: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("project-members.share-set"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("percent", Value::Text(percent.to_string())),
+        ],
+    )
+}
+
+/// The message `project-members.title`.
+#[must_use]
+pub fn project_members_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("project-members.title"),
+        vec![("project", Value::Text(project.to_string()))],
     )
 }
 
@@ -16190,6 +16371,234 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
     )
 }
 
+/// The message `work-times.away-added`.
+#[must_use]
+pub fn work_times_away_added(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.away-added"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.away-change-name`.
+#[must_use]
+pub fn work_times_away_change_name(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.away-change-name"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.away-changed`.
+#[must_use]
+pub fn work_times_away_changed(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.away-changed"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.away-delete-name`.
+#[must_use]
+pub fn work_times_away_delete_name(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.away-delete-name"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.away-deleted`.
+#[must_use]
+pub fn work_times_away_deleted(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.away-deleted"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.back-other`.
+#[must_use]
+pub fn work_times_back_other(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.back-other"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `work-times.changing-other`.
+#[must_use]
+pub fn work_times_changing_other(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.changing-other"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `work-times.day-afternoon`.
+#[must_use]
+pub fn work_times_day_afternoon(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.day-afternoon"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `work-times.day-hours`.
+#[must_use]
+pub fn work_times_day_hours(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.day-hours"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `work-times.day-morning`.
+#[must_use]
+pub fn work_times_day_morning(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.day-morning"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `work-times.day-run`.
+#[must_use]
+pub fn work_times_day_run(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.day-run"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("last", Value::Text(last.to_string())),
+        ],
+    )
+}
+
+/// The message `work-times.days`.
+#[must_use]
+pub fn work_times_days(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.days"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("last", Value::Text(last.to_string())),
+        ],
+    )
+}
+
+/// The message `work-times.holiday-on`.
+#[must_use]
+pub fn work_times_holiday_on(
+    date: impl std::fmt::Display,
+    holiday: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.holiday-on"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("holiday", Value::Text(holiday.to_string())),
+        ],
+    )
+}
+
+/// The message `work-times.holidays-next`.
+#[must_use]
+pub fn work_times_holidays_next(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.holidays-next"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `work-times.holidays-of`.
+#[must_use]
+pub fn work_times_holidays_of(choice: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.holidays-of"),
+        vec![("choice", Value::Text(choice.to_string()))],
+    )
+}
+
+/// The message `work-times.intro-other`.
+#[must_use]
+pub fn work_times_intro_other(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.intro-other"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `work-times.share`.
+#[must_use]
+pub fn work_times_share(
+    percent: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.share"),
+        vec![
+            ("percent", Value::Text(percent.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `work-times.shares-over`.
+#[must_use]
+pub fn work_times_shares_over(sum: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.shares-over"),
+        vec![("sum", Value::Text(sum.to_string()))],
+    )
+}
+
+/// The message `work-times.title-other`.
+#[must_use]
+pub fn work_times_title_other(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.title-other"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `work-times.told`.
+#[must_use]
+pub fn work_times_told(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.told"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `work-times.usual-a-day`.
+#[must_use]
+pub fn work_times_usual_a_day(
+    days: impl std::fmt::Display,
+    length: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.usual-a-day"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("length", Value::Text(length.to_string())),
+        ],
+    )
+}
+
+/// The message `work-times.usual-a-week`.
+#[must_use]
+pub fn work_times_usual_a_week(
+    days: impl std::fmt::Display,
+    length: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("work-times.usual-a-week"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("length", Value::Text(length.to_string())),
+        ],
+    )
+}
+
 /// The message `workflows.arrow-label`.
 #[must_use]
 pub fn workflows_arrow_label(
@@ -18050,6 +18459,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.nothing", "nothing"),
     ("common.off", "Off"),
     ("common.on", "On"),
+    ("common.percent", "{percent} %"),
     ("common.save", "Save"),
     ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
@@ -20388,6 +20798,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
     ("nav.people-visibility", "Who sees people"),
+    ("nav.project-members", "Project members"),
     ("nav.projects", "Projects"),
     ("nav.region", "Region"),
     ("nav.relation-kinds", "Kinds of relation"),
@@ -20400,6 +20811,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
     ("nav.timesheet", "Timesheet"),
+    ("nav.work-times", "Work times"),
     ("nav.working-hours", "Working hours"),
     ("notification.kind.agent-asks", "An agent asks you"),
     ("notification.kind.agent-gave-up", "An agent gave up"),
@@ -20883,6 +21295,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.someone", "Someone"),
     ("person.someone-inside", "someone"),
     ("person.via-app", "{who} via {app}"),
+    (
+        "person.work-times-intro",
+        "The usual work days, work hours and away times of {name}. When you change them, {name} is told.",
+    ),
     ("preview.label", "Issues in this change"),
     ("preview.line-changes", "{field}: {after}"),
     (
@@ -20893,6 +21309,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("priority.high", "High"),
     ("priority.low", "Low"),
     ("priority.normal", "Normal"),
+    ("project-members.also-in", "Also in {projects}"),
+    (
+        "project-members.intro",
+        "How much of each person's work hours belong to this project. The timeline plans with it.",
+    ),
+    ("project-members.more", "Show more people"),
+    (
+        "project-members.none",
+        "Nobody has a role in this project yet.",
+    ),
+    ("project-members.others-hidden", "projects you can't see"),
+    ("project-members.over", "Over 100 % in all"),
+    ("project-members.share-of", "Share of {name} in the project"),
+    (
+        "project-members.share-set",
+        "The share of {name} is now {percent}.",
+    ),
+    ("project-members.title", "Project members of {project}"),
+    ("project-members.unit", "%"),
     ("projects.at-the-top", "At the top level"),
     ("projects.create", "Create the project"),
     (
@@ -23721,6 +24156,93 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("window.size-menu", "Window size"),
     ("window.taller", "Taller"),
     ("window.wider", "Wider"),
+    ("work-times.afternoon-only", "Afternoon only"),
+    ("work-times.away", "Away times"),
+    ("work-times.away-add", "Add away time"),
+    ("work-times.away-added", "Away time added: {days}."),
+    ("work-times.away-change", "Change"),
+    ("work-times.away-change-name", "Change the away time {days}"),
+    ("work-times.away-changed", "Away time changed: {days}."),
+    ("work-times.away-coming", "Coming"),
+    ("work-times.away-delete", "Delete"),
+    ("work-times.away-delete-name", "Delete the away time {days}"),
+    ("work-times.away-deleted", "Away time deleted: {days}."),
+    (
+        "work-times.away-intro",
+        "The coming ones first, then those of the past year. An away time is deleted one year after its last day.",
+    ),
+    (
+        "work-times.away-more",
+        "More away times fall in this year than are shown here.",
+    ),
+    (
+        "work-times.away-none",
+        "No away times in the coming year or the past one.",
+    ),
+    ("work-times.away-past", "The past year"),
+    ("work-times.back-other", "Back to {name}"),
+    (
+        "work-times.changing-other",
+        "You are changing the work times of {name}. {name} is told.",
+    ),
+    ("work-times.day-afternoon", "{date}, afternoon"),
+    ("work-times.day-hours", "Work hours on {day}"),
+    ("work-times.day-morning", "{date}, morning"),
+    ("work-times.day-run", "{first}–{last}"),
+    ("work-times.days", "{first} – {last}"),
+    ("work-times.first-day", "The first day"),
+    ("work-times.from", "From"),
+    ("work-times.holiday-on", "{date} {holiday}"),
+    ("work-times.holidays-next", "Next: {days}"),
+    ("work-times.holidays-none", "No public holidays count."),
+    ("work-times.holidays-of", "Holidays: {choice}"),
+    (
+        "work-times.intro",
+        "When and how much you usually work, and the days you are away. The timeline plans your issues with them.",
+    ),
+    (
+        "work-times.intro-other",
+        "When and how much {name} usually works, and the days {name} is away. The timeline plans the issues of {name} with them.",
+    ),
+    ("work-times.last-day", "The last day"),
+    ("work-times.morning-only", "Morning only"),
+    (
+        "work-times.no-reason",
+        "Bugaboo stores no reason. Others see only Away.",
+    ),
+    ("work-times.note", "Note"),
+    ("work-times.note-help", "Only you see the note."),
+    ("work-times.save-add", "Add the away time"),
+    ("work-times.save-change", "Save the away time"),
+    ("work-times.share", "{project} {percent}"),
+    ("work-times.share-hidden", "A project you can't see"),
+    ("work-times.shares", "Shares in projects"),
+    (
+        "work-times.shares-intro",
+        "How much of your work hours belong to each project. Your project leads set them.",
+    ),
+    (
+        "work-times.shares-none",
+        "No share is set for you, so each of your projects counts in full.",
+    ),
+    (
+        "work-times.shares-over",
+        "Your shares add up to {sum}. Your project leads see this too.",
+    ),
+    ("work-times.title-other", "Work times of {name}"),
+    ("work-times.to", "To"),
+    ("work-times.told", "{name} will be told."),
+    ("work-times.usual", "Usual work days"),
+    ("work-times.usual-a-day", "{days}, {length} a day"),
+    ("work-times.usual-a-week", "{days}, {length} a week"),
+    (
+        "work-times.usual-changed",
+        "The usual work days were changed.",
+    ),
+    ("work-times.usual-none", "No usual work days"),
+    ("work-times.whole-day", "Whole day"),
+    ("work-times.window-add", "Add away time"),
+    ("work-times.window-change", "Change away time"),
     ("workflow-change.ask-for-review", "Ask for review"),
     ("workflow-change.back-to-work", "Back to work"),
     ("workflow-change.mark-as-done", "Mark as done"),

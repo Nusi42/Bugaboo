@@ -87,6 +87,14 @@ export const ownPlaces: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.workTimes,
+    name: "nav.work-times",
+    icon: iconName.clock,
+    parent: paths.mySettings,
+    group: "nav.group.work",
+    listed: true,
+  },
+  {
     path: paths.startPage,
     name: "nav.start-page",
     icon: iconName.home,

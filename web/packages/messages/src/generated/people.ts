@@ -102,6 +102,8 @@ export const messages = {
   "sign-up-policy.mail-off":
     "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
   "sign-up-policy.mail-link": "Set up e-mail",
+  "person.work-times-intro":
+    "The usual work days, work hours and away times of {name}. When you change them, {name} is told.",
 } as const;
 
 register(messages);

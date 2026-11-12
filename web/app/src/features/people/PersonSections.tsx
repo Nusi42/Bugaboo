@@ -4,7 +4,13 @@ import { Card, LinkRow, partOf, part } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
-import { addressInProject, groupAddress, paths } from "../../shared/paths.ts";
+import {
+  addressInProject,
+  groupAddress,
+  paths,
+  personWorkTimesAddress,
+} from "../../shared/paths.ts";
+import { usePermissions } from "../../shared/use-me.ts";
 import type { PersonLine } from "./people.ts";
 
 /** The groups of the person, for a viewer who may see groups. */
@@ -78,6 +84,24 @@ export function HeldRoles({ roles, none, cut }: HeldRolesProps) {
       )}
       {cut === undefined ? null : <p {...partOf(part.muted)}>{cut}</p>}
       <p {...partOf(part.muted)}>{t("person.roles-where")}</p>
+    </Card>
+  );
+}
+
+/**
+ * *Work times* of the person (PLAN-11): the way to their page of work times, only for a holder of
+ * *Enter work times for others*; for everybody else there is nothing to show (UX §1, *Hidden stays
+ * hidden*).
+ */
+export function WorkTimesEntry({ id, name }: { readonly id: string; readonly name: string }) {
+  if (!usePermissions().includes("enter-work-times-for-others")) {
+    return null;
+  }
+  return (
+    <Card heading={t("nav.work-times")} intro={t("person.work-times-intro", { name })}>
+      <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("nav.work-times")}>
+        <LinkRow href={personWorkTimesAddress(id)}>{t("work-times.title-other", { name })}</LinkRow>
+      </ul>
     </Card>
   );
 }

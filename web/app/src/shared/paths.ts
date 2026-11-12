@@ -16,6 +16,7 @@ export const paths = {
   mySettings: "/me",
   appearance: "/me/appearance",
   region: "/me/region",
+  workTimes: "/me/work-times",
   assistantSettings: "/me/assistant",
   notificationSettings: "/me/notifications",
   handle: "/me/handle",
@@ -32,6 +33,7 @@ export const paths = {
   organizationSettings: "/settings",
   people: "/settings/people",
   person: "/settings/people/$person",
+  personWorkTimes: "/settings/people/$person/work-times",
   groups: "/settings/groups",
   group: "/settings/groups/$group",
   issueTypes: "/settings/issue-types",
@@ -58,6 +60,7 @@ export const paths = {
   project: "/p/$project",
   projectSettings: appPaths.projectSettings,
   projectRoles: "/p/$project/settings/roles",
+  projectMembers: "/p/$project/settings/members",
   projectFields: "/p/$project/settings/fields",
   projectLayouts: "/p/$project/settings/layouts",
   projectIssueTypes: "/p/$project/settings/issue-types",
@@ -144,6 +147,11 @@ export function addressInProject(path: Extract<Path, `/p/${string}`>, shortName:
 /** The address of the page of a person, `/settings/people/<ID>`. */
 export function personAddress(id: string): string {
   return filled(paths.person, routeParam.person, id);
+}
+
+/** The address of the work times of a person, `/settings/people/<ID>/work-times`. */
+export function personWorkTimesAddress(id: string): string {
+  return filled(paths.personWorkTimes, routeParam.person, id);
 }
 
 /** The address of the page of a group, `/settings/groups/<ID>`. */

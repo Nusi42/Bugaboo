@@ -1,3 +1,6 @@
+import { t } from "@bugaboo/messages";
+
+import { formatNumber } from "./format.ts";
 import { currentRegion, numberLocales, type Region } from "./region.ts";
 
 /** The least and the most a number setting may be. */
@@ -54,4 +57,9 @@ export function centsIn(text: string, region: Region = currentRegion()): number 
     return null;
   }
   return Number(digits) * 100 + Number((places ?? "").padEnd(2, "0"));
+}
+
+/** A share in percent as people write it: "60 %", the number in the person's *Number format*. */
+export function percentText(percent: number, region: Region = currentRegion()): string {
+  return t("common.percent", { percent: formatNumber(percent, region) });
 }

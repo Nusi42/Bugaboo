@@ -2937,6 +2937,14 @@ textarea,
   text-wrap: wrap;
 }
 
+[data-part="item"][data-variant~="day"] {
+  flex-wrap: nowrap;
+}
+
+[data-part="item"][data-variant~="day"] [data-part="length-box"] {
+  flex: 0 0 var(--size-hours-box);
+}
+
 [data-part="fact-line"] {
   display: inline;
 }
