@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import {
   AssignedToRow,
   DueDateRow,
-  EstimateRow,
+  EstimateRows,
   LeftRow,
   PriorityRow,
   RunningTimerRow,
@@ -55,7 +55,7 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
     },
     {
       places: [fields.estimatedTime],
-      node: <EstimateRow key={fields.estimatedTime} blocks={blocks} changes={changes} />,
+      node: <EstimateRows key={fields.estimatedTime} blocks={blocks} changes={changes} />,
     },
     {
       places: [fields.timeLeft],

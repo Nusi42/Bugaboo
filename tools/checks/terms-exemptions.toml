@@ -198,6 +198,7 @@ term = "factor"
 at = [
   "messages/en.json#issue-field.time-factor",
   "messages/en.json#*time-factor-changed*",
+  "messages/en.json#issues.time-factor-*",
   "api:*time-factor*",
   "api:*TimeFactor*",
   "api:*time_factor*",
@@ -212,6 +213,10 @@ reason = "The glossary's own term Zoom (of the timeline): how many days a column
 # The user docs: only the phrase of the glossary term.
 [[allow]]
 term = "factor"
-at = ["userDocs/notifications/notifications.md"]
-phrases = ["the time factor"]
+at = [
+  "userDocs/notifications/notifications.md",
+  "userDocs/time/time-factor.md",
+  "userDocs/time/README.md",
+]
+phrases = ["the time factor", "The time factor", "time factor", "A factor"]
 reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor). It is not a second step of signing in."

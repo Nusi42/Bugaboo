@@ -435,6 +435,20 @@ export interface MessageArguments {
   "issues.sorted-up": { column: string | number };
   "issues.tick-all": { count: number };
   "issues.tick-narrow": { limit: number };
+  "issues.time-factor-ask-other": { name: string | number };
+  "issues.time-factor-estimate": { estimate: string | number };
+  "issues.time-factor-not-a-factor": { example: string | number };
+  "issues.time-factor-own": { factor: string | number; name: string | number };
+  "issues.time-factor-set-by": { factor: string | number; name: string | number };
+  "issues.time-factor-sum": {
+    estimate: string | number;
+    factor: string | number;
+    total: string | number;
+  };
+  "issues.time-factor-sum-length": { estimate: string | number; length: string | number };
+  "issues.time-factor-takes": { name: string | number };
+  "issues.time-factor-told": { name: string | number };
+  "issues.time-factor-value": { factor: string | number };
   "issues.time-left-worked-out": { length: string | number };
   "issues.time-left-worked-out-short": { length: string | number };
   "issues.title-of": { key: string | number; title: string | number };

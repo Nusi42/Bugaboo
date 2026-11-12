@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { centsIn, wholeNumberIn } from "./number.ts";
+import { hundredthsIn, wholeNumberIn } from "./number.ts";
 import { deviceRegion } from "./region.ts";
 
 describe("cfg_06 a number the person types is checked before it is sent", () => {
@@ -33,13 +33,13 @@ const region = (numberFormat: "point" | "comma" | "space") => ({ ...deviceRegion
 
 describe("ai_31 an amount is read the way the person writes numbers", () => {
   it("reads euros as cents in each number format", () => {
-    expect(centsIn("12.50", region("point"))).toBe(1250);
-    expect(centsIn("1,234.5", region("point"))).toBe(123_450);
-    expect(centsIn("12,50", region("comma"))).toBe(1250);
-    expect(centsIn("1.234,50", region("comma"))).toBe(123_450);
-    expect(centsIn("12,5", region("space"))).toBe(1250);
-    expect(centsIn("1 234,50", region("space"))).toBe(123_450);
-    expect(centsIn(" 3 ", region("point"))).toBe(300);
+    expect(hundredthsIn("12.50", region("point"))).toBe(1250);
+    expect(hundredthsIn("1,234.5", region("point"))).toBe(123_450);
+    expect(hundredthsIn("12,50", region("comma"))).toBe(1250);
+    expect(hundredthsIn("1.234,50", region("comma"))).toBe(123_450);
+    expect(hundredthsIn("12,5", region("space"))).toBe(1250);
+    expect(hundredthsIn("1 234,50", region("space"))).toBe(123_450);
+    expect(hundredthsIn(" 3 ", region("point"))).toBe(300);
   });
 
   it("refuses what is no amount of euros and cents", () => {
@@ -57,14 +57,14 @@ describe("ai_31 an amount is read the way the person writes numbers", () => {
       "12,",
       ",5",
     ]) {
-      expect(`${text}: ${String(centsIn(text, region("point")))}`).toBe(`${text}: null`);
+      expect(`${text}: ${String(hundredthsIn(text, region("point")))}`).toBe(`${text}: null`);
     }
   });
 
   it("takes a group mark only between groups of three digits", () => {
-    expect(centsIn("1,234,567", region("point"))).toBe(123_456_700);
-    expect(centsIn("1.234.567,5", region("comma"))).toBe(123_456_750);
-    expect(centsIn("12,34", region("point"))).toBeNull();
-    expect(centsIn("1,2,3", region("point"))).toBeNull();
+    expect(hundredthsIn("1,234,567", region("point"))).toBe(123_456_700);
+    expect(hundredthsIn("1.234.567,5", region("comma"))).toBe(123_456_750);
+    expect(hundredthsIn("12,34", region("point"))).toBeNull();
+    expect(hundredthsIn("1,2,3", region("point"))).toBeNull();
   });
 });

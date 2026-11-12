@@ -3693,6 +3693,42 @@ pub const ISSUES_SUMMARY_SEPARATOR: MessageKey = MessageKey::new("issues.summary
 /// The message `issues.summary-unassigned`.
 pub const ISSUES_SUMMARY_UNASSIGNED: MessageKey = MessageKey::new("issues.summary-unassigned");
 
+/// The message `issues.time-factor-as-estimated`.
+pub const ISSUES_TIME_FACTOR_AS_ESTIMATED: MessageKey =
+    MessageKey::new("issues.time-factor-as-estimated");
+
+/// The message `issues.time-factor-as-factor`.
+pub const ISSUES_TIME_FACTOR_AS_FACTOR: MessageKey =
+    MessageKey::new("issues.time-factor-as-factor");
+
+/// The message `issues.time-factor-ask-own`.
+pub const ISSUES_TIME_FACTOR_ASK_OWN: MessageKey = MessageKey::new("issues.time-factor-ask-own");
+
+/// The message `issues.time-factor-change`.
+pub const ISSUES_TIME_FACTOR_CHANGE: MessageKey = MessageKey::new("issues.time-factor-change");
+
+/// The message `issues.time-factor-change-name`.
+pub const ISSUES_TIME_FACTOR_CHANGE_NAME: MessageKey =
+    MessageKey::new("issues.time-factor-change-name");
+
+/// The message `issues.time-factor-factor`.
+pub const ISSUES_TIME_FACTOR_FACTOR: MessageKey = MessageKey::new("issues.time-factor-factor");
+
+/// The message `issues.time-factor-length`.
+pub const ISSUES_TIME_FACTOR_LENGTH: MessageKey = MessageKey::new("issues.time-factor-length");
+
+/// The message `issues.time-factor-nothing`.
+pub const ISSUES_TIME_FACTOR_NOTHING: MessageKey = MessageKey::new("issues.time-factor-nothing");
+
+/// The message `issues.time-factor-save`.
+pub const ISSUES_TIME_FACTOR_SAVE: MessageKey = MessageKey::new("issues.time-factor-save");
+
+/// The message `issues.time-factor-takes-me`.
+pub const ISSUES_TIME_FACTOR_TAKES_ME: MessageKey = MessageKey::new("issues.time-factor-takes-me");
+
+/// The message `issues.time-factor-way`.
+pub const ISSUES_TIME_FACTOR_WAY: MessageKey = MessageKey::new("issues.time-factor-way");
+
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
 
@@ -12326,6 +12362,122 @@ pub fn issues_tick_narrow(limit: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.tick-narrow"),
         vec![("limit", Value::Number(limit))],
+    )
+}
+
+/// The message `issues.time-factor-ask-other`.
+#[must_use]
+pub fn issues_time_factor_ask_other(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-ask-other"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.time-factor-estimate`.
+#[must_use]
+pub fn issues_time_factor_estimate(estimate: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-estimate"),
+        vec![("estimate", Value::Text(estimate.to_string()))],
+    )
+}
+
+/// The message `issues.time-factor-not-a-factor`.
+#[must_use]
+pub fn issues_time_factor_not_a_factor(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-not-a-factor"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
+/// The message `issues.time-factor-own`.
+#[must_use]
+pub fn issues_time_factor_own(
+    factor: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-own"),
+        vec![
+            ("factor", Value::Text(factor.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.time-factor-set-by`.
+#[must_use]
+pub fn issues_time_factor_set_by(
+    factor: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-set-by"),
+        vec![
+            ("factor", Value::Text(factor.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.time-factor-sum`.
+#[must_use]
+pub fn issues_time_factor_sum(
+    estimate: impl std::fmt::Display,
+    factor: impl std::fmt::Display,
+    total: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-sum"),
+        vec![
+            ("estimate", Value::Text(estimate.to_string())),
+            ("factor", Value::Text(factor.to_string())),
+            ("total", Value::Text(total.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.time-factor-sum-length`.
+#[must_use]
+pub fn issues_time_factor_sum_length(
+    estimate: impl std::fmt::Display,
+    length: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-sum-length"),
+        vec![
+            ("estimate", Value::Text(estimate.to_string())),
+            ("length", Value::Text(length.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.time-factor-takes`.
+#[must_use]
+pub fn issues_time_factor_takes(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-takes"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.time-factor-told`.
+#[must_use]
+pub fn issues_time_factor_told(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-told"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.time-factor-value`.
+#[must_use]
+pub fn issues_time_factor_value(factor: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-value"),
+        vec![("factor", Value::Text(factor.to_string()))],
     )
 }
 
@@ -21121,6 +21273,42 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.tick-narrow",
         "Narrow the search to {limit, number} issues or fewer to change them together.",
     ),
+    ("issues.time-factor-as-estimated", "×1 (as estimated)"),
+    ("issues.time-factor-as-factor", "A factor"),
+    (
+        "issues.time-factor-ask-other",
+        "How long will it take {name}?",
+    ),
+    ("issues.time-factor-ask-own", "How long will it take you?"),
+    ("issues.time-factor-change", "Change"),
+    ("issues.time-factor-change-name", "Change the time factor"),
+    ("issues.time-factor-estimate", "Estimate {estimate}"),
+    ("issues.time-factor-factor", "Factor (1 is as estimated)"),
+    ("issues.time-factor-length", "How long it takes"),
+    (
+        "issues.time-factor-not-a-factor",
+        "Type a factor like {example}.",
+    ),
+    (
+        "issues.time-factor-nothing",
+        "Type how long it takes, or a factor.",
+    ),
+    ("issues.time-factor-own", "{factor} · {name}'s own estimate"),
+    ("issues.time-factor-save", "Save the time factor"),
+    ("issues.time-factor-set-by", "{factor} · set by {name}"),
+    (
+        "issues.time-factor-sum",
+        "Estimate {estimate} · {factor} = {total}",
+    ),
+    (
+        "issues.time-factor-sum-length",
+        "Estimate {estimate} · takes {length}",
+    ),
+    ("issues.time-factor-takes", "Takes {name} …"),
+    ("issues.time-factor-takes-me", "Takes me …"),
+    ("issues.time-factor-told", "{name} will be told."),
+    ("issues.time-factor-value", "×{factor}"),
+    ("issues.time-factor-way", "Give it as"),
     ("issues.time-left-worked-out", "Worked out: {length}"),
     ("issues.time-left-worked-out-short", "{length}, worked out"),
     ("issues.title", "Issues"),

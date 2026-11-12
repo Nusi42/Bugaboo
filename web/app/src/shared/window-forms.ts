@@ -7,6 +7,7 @@ export const windowForms = {
   newIssue: "new-issue",
   timeEntry: "time-entry",
   awayTime: "away-time",
+  timeFactor: "time-factor",
 } as const;
 
 /** The name of a form that opens as a window. */

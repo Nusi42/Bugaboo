@@ -1,5 +1,5 @@
 import { nameableMembers } from "@bugaboo/api-client";
-import { centsIn, wholeNumberIn } from "../../shared/number.ts";
+import { hundredthsIn, wholeNumberIn } from "../../shared/number.ts";
 import type { OwnField, TypeInfo } from "../fields/index.ts";
 import type { Power } from "./agent-work.ts";
 
@@ -73,7 +73,7 @@ export function wholeNumber(text: string): number | undefined {
 
 /** The cost typed in euros as cents, or nothing where the box is empty or holds no amount. */
 function costCents(text: string): number | undefined {
-  return centsIn(text) ?? undefined;
+  return hundredthsIn(text) ?? undefined;
 }
 
 /** Whether every box that holds something holds what it asks: whole numbers, and an amount for the cost. */

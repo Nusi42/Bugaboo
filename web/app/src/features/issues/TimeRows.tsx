@@ -6,6 +6,7 @@ import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
 import { LengthIn, MinutesLength, SpentRow, WithSubIssuesRow } from "./TimeFacts.tsx";
+import { TimeFactorRow } from "./TimeFactorRow.tsx";
 import { hasTotals, lengthWords, timeLeftOf } from "./time-words.ts";
 import { useIssueTime } from "./use-issue-time.ts";
 
@@ -31,6 +32,20 @@ export function EstimateRow({ blocks, changes }: ChangeableRowsProps) {
         <MinutesLength minutes={minutes} />
       )}
     </DetailRow>
+  );
+}
+
+/**
+ * *Estimated time* and, under it, *Time factor* (UX §4.4): the factor is no field of a layout, so it
+ * stands where the estimate stands. It shows also where the estimate is hidden, for the person on the
+ * bar, who always sees their own factor.
+ */
+export function EstimateRows({ blocks, changes }: ChangeableRowsProps) {
+  return (
+    <>
+      <EstimateRow blocks={blocks} changes={changes} />
+      <TimeFactorRow blocks={blocks} />
+    </>
   );
 }
 

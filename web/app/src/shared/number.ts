@@ -40,13 +40,13 @@ function literal(text: string): string {
 }
 
 /**
- * The cents of an amount typed in the way the person writes numbers (`12,50` or `12.50`, with the
- * groups their format has), or `null` when what they typed is no amount with at most two places.
- * A group mark stands only between groups of three digits (`1,234.50`, never `1,2,3`); the whole part
- * has at most 12 digits, so the cents stay a safe whole number. The one place that reads an amount
- * of money.
+ * A number with at most two places typed in the way the person writes numbers (`12,50` or `12.50`,
+ * with the groups their format has), in hundredths: the cents of an amount of money, or the percent
+ * of a time factor (`1.25` is 125). `null` when what they typed is no such number. A group mark
+ * stands only between groups of three digits (`1,234.50`, never `1,2,3`); the whole part has at most
+ * 12 digits, so the hundredths stay a safe whole number. The one place that reads such a number.
  */
-export function centsIn(text: string, region: Region = currentRegion()): number | null {
+export function hundredthsIn(text: string, region: Region = currentRegion()): number | null {
   const { decimal, group } = separatorsOf(region);
   const [whole = "", places, ...rest] = text.trim().split(decimal);
   const mark = /^\s*$/u.test(group) ? String.raw`\s` : literal(group);
